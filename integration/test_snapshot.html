@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_snapshot API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_snapshot</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_snapshot.check_hashed_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">check_hashed_and_with_immediate_hash</span></span>(<span>client, volume_name, snapshot_data_integrity, volume_size=16, data_size=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Check snapshots' checksums are calculated and set and also
+check the checksums of the snapshot disk files are matched
+with the values from the api</li>
+</ol></div>
+</dd>
+<dt id="tests.test_snapshot.check_hashed_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">check_hashed_and_without_immediate_hash</span></span>(<span>client, volume_name, snapshot_data_integrity)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Sleep for 120 seconds. Check snapshots' checksums are not calculated
+and not set, because the immediate hash after snapshot creation feature
+is disabled</li>
+<li>Check snapshots' checksums are calculated and set by the periodic check
+mechanism</li>
+</ol></div>
+</dd>
+<dt id="tests.test_snapshot.check_per_volume_hash_disable"><code class="name flex">
+<span>def <span class="ident">check_per_volume_hash_disable</span></span>(<span>client, volume_name, snapshot_data_integrity)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Sleep for SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY seconds.
+Check snapshots' checksums are calculated
+and set and also check the checksums of the snapshot disk files
+are matched with the values from the api
+Check snapshots' checksums are calculated by periodic snapshot
+verification mechanism and set and also check the checksums of
+the snapshot disk files are matched with the values from the api</li>
+</ol></div>
+</dd>
+<dt id="tests.test_snapshot.check_snapshot_checksums_and_change_timestamps"><code class="name flex">
+<span>def <span class="ident">check_snapshot_checksums_and_change_timestamps</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.check_snapshot_checksums_set"><code class="name flex">
+<span>def <span class="ident">check_snapshot_checksums_set</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.corrupt_snapshot_on_local_host"><code class="name flex">
+<span>def <span class="ident">corrupt_snapshot_on_local_host</span></span>(<span>volume, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.create_snapshots"><code class="name flex">
+<span>def <span class="ident">create_snapshots</span></span>(<span>client, volume, data_size, num_snapshots)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.detect_and_repair_corrupted_replica"><code class="name flex">
+<span>def <span class="ident">detect_and_repair_corrupted_replica</span></span>(<span>client, volume_name, data_integrity_mode, retry_count=360)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Check snapshots' checksums are calculated and set and also
+check the checksums of the snapshot disk files are matched
+with the values from the api</li>
+<li>Corrupt the snapshot of replica on the local host</li>
+<li>Check the replica rebuild is ran correctly</li>
+<li>Check snapshots are repaired</li>
+</ol></div>
+</dd>
+<dt id="tests.test_snapshot.get_available_snapshot"><code class="name flex">
+<span>def <span class="ident">get_available_snapshot</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.get_available_snapshots"><code class="name flex">
+<span>def <span class="ident">get_available_snapshots</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.get_checksum_from_snapshot_disk_file"><code class="name flex">
+<span>def <span class="ident">get_checksum_from_snapshot_disk_file</span></span>(<span>data_path, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.get_checksum_in_checksum_file"><code class="name flex">
+<span>def <span class="ident">get_checksum_in_checksum_file</span></span>(<span>disk_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.get_ctime_from_snapshot_disk_file"><code class="name flex">
+<span>def <span class="ident">get_ctime_from_snapshot_disk_file</span></span>(<span>data_path, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.get_ctime_in_checksum_file"><code class="name flex">
+<span>def <span class="ident">get_ctime_in_checksum_file</span></span>(<span>disk_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.get_local_host_replica_data_path"><code class="name flex">
+<span>def <span class="ident">get_local_host_replica_data_path</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.prepare_settings_for_snapshot_test"><code class="name flex">
+<span>def <span class="ident">prepare_settings_for_snapshot_test</span></span>(<span>client, data_integrity, immediate_check, fast_replica_rebuild, period_in_second=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.test_freeze_file_system_for_snapshot"><code class="name flex">
+<span>def <span class="ident">test_freeze_file_system_for_snapshot</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Record the test start time.</li>
+<li>Set freeze-filesystem-for-snapshot to true.</li>
+<li>Create a Longhorn volume 6 GiB with a replica on every Longhorn node.</li>
+<li>Create a workload pod that mounts the volume and runs
+"dd if=/dev/random of=/path/to/file/under/mount/point bs=1M count=5000".
+(Add "status=progress" if running manually to see the progress freeze.)</li>
+<li>After the workload is running, take a snapshot.</li>
+<li>Verify the snapshot succeeded.</li>
+<li>Verify the pod completed successfully.</li>
+<li>Verify the following logs appeared in the instance-manager running the
+volume engine after the test began. (Checking logs this way isn't ideal,
+but there isn't really a better way to confirm the freeze.)</li>
+<li>"Freezing filesystem mounted at"</li>
+<li>"Unfreezing filesystem mounted at"</li>
+</ol></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_cr"><code class="name flex">
+<span>def <span class="ident">test_snapshot_cr</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>GitHub ticket: <a href="https://github.com/longhorn/longhorn/issues/6298">https://github.com/longhorn/longhorn/issues/6298</a></p>
+<ol>
+<li>set auto-cleanup-system-generated-snapshot to true</li>
+<li>Create and attach a volume with 3 replicas</li>
+<li>Delete one of the volumes replicas.</li>
+<li>Wait for the replica to rebuild and volume become healthy</li>
+<li>Verify that there is one Longhorn snapshot CR of this volume</li>
+<li>Repeat steps 3-5 about 10 times</li>
+</ol></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_detect_corruption_in_global_enabled_mode</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check the snapshot corruption can be detected and replica is rebuilt
+- global data-integrity is set to enabled
+- global immediate_hash is enabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_detect_corruption_in_global_fast_check_mode</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check the snapshot corruption can be detected and replica is rebuilt
+- global data-integrity is set to fast-check
+- global immediate_hash is enabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to enabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to disabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to enabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to fast-check</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to disabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to fast-check</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated when
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to disabled and follows the
+global setting</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated when
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to disabled and follows the
+global setting</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated
+- global data-integrity is set to enabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to disabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated
+- global data-integrity is set to enabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to disabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+are created
+- global data-integrity is set to enabled
+- global immediate_hash is enabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to enabled
+- global immediate_hash is disabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated
+- global data-integrity is set to fast-check
+- global immediate_hash is enabled
+- per-volume data-integrity is set to disabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated
+- global data-integrity is set to fast-check
+- global immediate_hash is disabled
+- per-volume data-integrity is set to disabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_fast_check_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_fast_check_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+are created
+- global data-integrity is set to fast-check
+- global immediate_hash is enabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_fast_check_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_fast_check_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to fast-check
+- global immediate_hash is disabled</p></div>
+</dd>
+<dt id="tests.test_snapshot.wait_for_snapshot_checksums_generate"><code class="name flex">
+<span>def <span class="ident">wait_for_snapshot_checksums_generate</span></span>(<span>volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_snapshot.write_device_random_data"><code class="name flex">
+<span>def <span class="ident">write_device_random_data</span></span>(<span>dev, size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_snapshot.check_hashed_and_with_immediate_hash" href="#tests.test_snapshot.check_hashed_and_with_immediate_hash">check_hashed_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.check_hashed_and_without_immediate_hash" href="#tests.test_snapshot.check_hashed_and_without_immediate_hash">check_hashed_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.check_per_volume_hash_disable" href="#tests.test_snapshot.check_per_volume_hash_disable">check_per_volume_hash_disable</a></code></li>
+<li><code><a title="tests.test_snapshot.check_snapshot_checksums_and_change_timestamps" href="#tests.test_snapshot.check_snapshot_checksums_and_change_timestamps">check_snapshot_checksums_and_change_timestamps</a></code></li>
+<li><code><a title="tests.test_snapshot.check_snapshot_checksums_set" href="#tests.test_snapshot.check_snapshot_checksums_set">check_snapshot_checksums_set</a></code></li>
+<li><code><a title="tests.test_snapshot.corrupt_snapshot_on_local_host" href="#tests.test_snapshot.corrupt_snapshot_on_local_host">corrupt_snapshot_on_local_host</a></code></li>
+<li><code><a title="tests.test_snapshot.create_snapshots" href="#tests.test_snapshot.create_snapshots">create_snapshots</a></code></li>
+<li><code><a title="tests.test_snapshot.detect_and_repair_corrupted_replica" href="#tests.test_snapshot.detect_and_repair_corrupted_replica">detect_and_repair_corrupted_replica</a></code></li>
+<li><code><a title="tests.test_snapshot.get_available_snapshot" href="#tests.test_snapshot.get_available_snapshot">get_available_snapshot</a></code></li>
+<li><code><a title="tests.test_snapshot.get_available_snapshots" href="#tests.test_snapshot.get_available_snapshots">get_available_snapshots</a></code></li>
+<li><code><a title="tests.test_snapshot.get_checksum_from_snapshot_disk_file" href="#tests.test_snapshot.get_checksum_from_snapshot_disk_file">get_checksum_from_snapshot_disk_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_checksum_in_checksum_file" href="#tests.test_snapshot.get_checksum_in_checksum_file">get_checksum_in_checksum_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_ctime_from_snapshot_disk_file" href="#tests.test_snapshot.get_ctime_from_snapshot_disk_file">get_ctime_from_snapshot_disk_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_ctime_in_checksum_file" href="#tests.test_snapshot.get_ctime_in_checksum_file">get_ctime_in_checksum_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_local_host_replica_data_path" href="#tests.test_snapshot.get_local_host_replica_data_path">get_local_host_replica_data_path</a></code></li>
+<li><code><a title="tests.test_snapshot.prepare_settings_for_snapshot_test" href="#tests.test_snapshot.prepare_settings_for_snapshot_test">prepare_settings_for_snapshot_test</a></code></li>
+<li><code><a title="tests.test_snapshot.test_freeze_file_system_for_snapshot" href="#tests.test_snapshot.test_freeze_file_system_for_snapshot">test_freeze_file_system_for_snapshot</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_cr" href="#tests.test_snapshot.test_snapshot_cr">test_snapshot_cr</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode" href="#tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode">test_snapshot_hash_detect_corruption_in_global_enabled_mode</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode" href="#tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode">test_snapshot_hash_detect_corruption_in_global_fast_check_mode</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_with_immediate_hash">test_snapshot_hash_global_disabled_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_without_immediate_hash">test_snapshot_hash_global_disabled_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash">test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash">test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_with_immediate_hash">test_snapshot_hash_global_enabled_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_without_immediate_hash">test_snapshot_hash_global_enabled_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash">test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash">test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_fast_check_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_fast_check_with_immediate_hash">test_snapshot_hash_global_fast_check_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_fast_check_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_fast_check_without_immediate_hash">test_snapshot_hash_global_fast_check_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.wait_for_snapshot_checksums_generate" href="#tests.test_snapshot.wait_for_snapshot_checksums_generate">wait_for_snapshot_checksums_generate</a></code></li>
+<li><code><a title="tests.test_snapshot.write_device_random_data" href="#tests.test_snapshot.write_device_random_data">write_device_random_data</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

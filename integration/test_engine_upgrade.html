@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_engine_upgrade API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_engine_upgrade</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_engine_upgrade.check_replica_engine"><code class="name flex">
+<span>def <span class="ident">check_replica_engine</span></span>(<span>volume, engineimage)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_engine_upgrade.engine_live_upgrade_rollback_test"><code class="name flex">
+<span>def <span class="ident">engine_live_upgrade_rollback_test</span></span>(<span>client, core_api, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_engine_upgrade.engine_live_upgrade_test"><code class="name flex">
+<span>def <span class="ident">engine_live_upgrade_test</span></span>(<span>client, core_api, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_engine_upgrade.engine_offline_upgrade_test"><code class="name flex">
+<span>def <span class="ident">engine_offline_upgrade_test</span></span>(<span>client, core_api, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_engine_upgrade.prepare_auto_upgrade_engine_to_default_version"><code class="name flex">
+<span>def <span class="ident">prepare_auto_upgrade_engine_to_default_version</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version"><code class="name flex">
+<span>def <span class="ident">test_auto_upgrade_engine_to_default_version</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:</p>
+<p>Preparation:
+1. set up a backup store
+2. Deploy a compatible new engine image</p>
+<p>Test auto upgrade to default engine in attached / detached volume:
+1. Create 2 volumes each of 0.5Gb.
+2. Attach 1 volumes vol-1. Write data to it
+3. Upgrade all volumes to the new engine image
+4. Wait until the upgrades are completed (volumes' engine image changed,
+replicas' mode change to RW for attached volumes, reference count of the
+new engine image changed, all engine and replicas' engine image changed)
+5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+6. Wait until the upgrades are completed (volumes' engine image changed,
+replica mode change to RW for attached volumes, reference count of the
+new engine image changed, all engine and replicas' engine image changed,
+etc &hellip;)
+7. verify the volumes' data</p></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_degraded_volume"><code class="name flex">
+<span>def <span class="ident">test_auto_upgrade_engine_to_default_version_degraded_volume</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:</p>
+<p>Preparation:
+1. set up a backup store
+2. Deploy a compatible new engine image</p>
+<p>Test auto upgrade engine to default version in degraded volume:
+1. set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+2. Upgrade vol-1 (an healthy attached volume) to the new engine image
+3. Wait until the upgrade are completed (volumes' engine image changed,
+replicas' mode change to RW, reference count of the new engine image
+changed, engine and replicas' engine image changed)
+4. Increase number of replica count to 4 to make the volume degraded
+5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+6. In a 2-min retry loop, verify that Longhorn doesn't automatically
+upgrade engine image for vol-1.</p></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_dr_volume"><code class="name flex">
+<span>def <span class="ident">test_auto_upgrade_engine_to_default_version_dr_volume</span></span>(<span>client, set_random_backupstore)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:</p>
+<p>Preparation:
+1. set up a backup store
+2. Deploy a compatible new engine image</p>
+<p>Test auto upgrade engine to default version in DR volume:
+1. Create a backup for vol-1. Create a DR volume from the backup
+2. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+3. Try to upgrade the DR volume engine's image to the new engine image
+4. Verify that the Longhorn API returns error. Upgrade fails.
+5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+6. Try to upgrade the DR volume engine's image to the new engine image
+7. Wait until the upgrade are completed (volumes' engine image changed,
+replicas' mode change to RW, reference count of the new engine image
+changed, engine and replicas' engine image changed)
+8. Wait for the DR volume to finish restoring
+9. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+10. In a 2-min retry loop, verify that Longhorn doesn't automatically
+upgrade engine image for DR volume.</p></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_expanding_volume"><code class="name flex">
+<span>def <span class="ident">test_auto_upgrade_engine_to_default_version_expanding_volume</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:</p>
+<p>Preparation:
+1. set up a backup store
+2. Deploy a compatible new engine image</p>
+<p>Test auto upgrade engine to default version in expanding volume:
+1. set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+2. Upgrade vol-1 to the new engine image
+3. Wait until the upgrade are completed (volumes' engine image changed,
+replicas' mode change to RW, reference count of the new engine image
+changed, engine and replicas' engine image changed)
+4. Expand the vol-0 from 1Gb to 5GB
+5. Wait for the vol-0 to start expanding
+6. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+7. While vol-0 is expanding, verify that its engine is not upgraded to
+the default engine image
+8. Wait for the expansion to finish and vol-0 is detached
+9. Verify that Longhorn upgrades vol-0's engine to the default version</p></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_crash_during_live_upgrade"><code class="name flex">
+<span>def <span class="ident">test_engine_crash_during_live_upgrade</span></span>(<span>client, core_api, make_deployment_with_pvc, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Deploy an extra engine image.</li>
+<li>Create and attach a volume to a workload, then write data into the
+volume.</li>
+<li>Send live upgrade request then immediately delete the related engine
+manager pod/engine process (The new replicas are not in active in this
+case).</li>
+<li>Verify the workload will be restarted and the volume will be reattached
+automatically.</li>
+<li>Verify the upgrade is done.
+(It actually becomes offline upgrade.)</li>
+<li>Verify volume healthy and the data is correct.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_image"><code class="name flex">
+<span>def <span class="ident">test_engine_image</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Engine Image deployment</p>
+<ol>
+<li>List Engine Images and validate basic properties.</li>
+<li>Try deleting default engine image and it should fail.</li>
+<li>Try creating a duplicate engine image as default and it should fail</li>
+<li>Get upgrade test image for the same versions</li>
+<li>Test if the upgrade test image can be deployed and deleted correctly</li>
+</ol></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_image_incompatible"><code class="name flex">
+<span>def <span class="ident">test_engine_image_incompatible</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test incompatible engine images</p>
+<ol>
+<li>Deploy incompatible engine images</li>
+<li>Make sure their state are <code>incompatible</code> once deployed.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_live_upgrade"><code class="name flex">
+<span>def <span class="ident">test_engine_live_upgrade</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test engine live upgrade</p>
+<ol>
+<li>Deploy a compatible new engine image</li>
+<li>Create a volume (with the old default engine image)</li>
+<li>Attach the volume and write <code>data</code> to it</li>
+<li>Upgrade the volume when it's attached, to the new engine image</li>
+<li>Wait until the upgrade completed, verify the volume engine image changed</li>
+<li>Wait for new replica mode update then check the engine status.</li>
+<li>Verify the reference count of the new engine image changed</li>
+<li>Verify all engine and replicas' engine image changed</li>
+<li>Check volume <code>data</code></li>
+<li>Detach the volume. Check engine and replicas's engine image again.</li>
+<li>Attach the volume.</li>
+<li>Check engine/replica engine image. Check data after reattach.</li>
+<li>Live upgrade to the original engine image,</li>
+<li>Wait for new replica mode update then check the engine status.</li>
+<li>Check old and new engine image reference count (new 0, old 1)</li>
+<li>Verify all the engine and replica images should be the old image</li>
+<li>Check volume data</li>
+<li>Detach the volume. Make sure engine and replica images are old image</li>
+</ol></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_live_upgrade_rollback"><code class="name flex">
+<span>def <span class="ident">test_engine_live_upgrade_rollback</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test engine live upgrade rollback</p>
+<ol>
+<li>Deploy <code>wrong_engine_upgrade_image</code> compatible upgrade engine image<ol>
+<li>It's not functional but compatible per metadata.</li>
+</ol>
+</li>
+<li>Create a volume with default engine image</li>
+<li>Attach it and write <code>data</code> into it.</li>
+<li>Live upgrade to the <code>wrong_engine_upgrade_image</code></li>
+<li>Try to wait for the engine upgrade to complete. Expect it to timeout.</li>
+<li>Rollback by upgrading to the <code>original_engine_image</code></li>
+<li>Make sure the rollback succeed and volume/engine engines are rolled back</li>
+<li>Wait for new replica mode update then check the engine status.</li>
+<li>Check the volume <code>data</code>.</li>
+<li>Live upgrade to the <code>wrong_engine_upgrade_image</code> again.</li>
+<li>Live upgrade will still fail.</li>
+<li>Detach the volume.</li>
+<li>The engine image for the volume will now be upgraded (since the <code>wrong</code>
+image is still compatible)</li>
+<li>Upgrade to the <code>original_engine_image</code> when detached</li>
+<li>Attach the volume and check states and <code>data</code>.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_live_upgrade_while_replica_concurrent_rebuild"><code class="name flex">
+<span>def <span class="ident">test_engine_live_upgrade_while_replica_concurrent_rebuild</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the ConcurrentReplicaRebuildPerNodeLimit won't affect volume
+live upgrade:
+1. Set <code>ConcurrentReplicaRebuildPerNodeLimit</code> to 1.
+2. Create 2 volumes then attach both volumes.
+3. Write a large amount of data into both volumes,
+so that the rebuilding will take a while.
+4. Deploy a compatible engine image and wait for ready.
+5. Make volume 1 and volume 2 state attached and healthy.
+6. Delete one replica for volume 1 to trigger the rebuilding.
+7. Do live upgrade for volume 2. The upgrade should work fine
+even if the rebuilding in volume 1 is still in progress.</p></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_live_upgrade_with_intensive_data_writing"><code class="name flex">
+<span>def <span class="ident">test_engine_live_upgrade_with_intensive_data_writing</span></span>(<span>client, core_api, volume_name, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test engine live upgrade with intensive data writing</p>
+<ol>
+<li>Deploy a compatible new engine image</li>
+<li>Create a volume(with the old default engine image) with /PV/PVC/Pod
+and wait for pod to be deployed.</li>
+<li>Write data to a tmp file in the pod and get the md5sum</li>
+<li>Upgrade the volume to the new engine image without waiting.</li>
+<li>Keep copying data from the tmp file to the volume
+during the live upgrade.</li>
+<li>Wait until the upgrade completed, verify the volume engine image changed</li>
+<li>Wait for new replica mode update then check the engine status.</li>
+<li>Verify all engine and replicas' engine image changed</li>
+<li>Verify the reference count of the new engine image changed</li>
+<li>Check the existing data.
+Then write new data to the upgraded volume and get the md5sum.</li>
+<li>Delete the pod and wait for the volume detached.
+Then check engine and replicas's engine image again.</li>
+<li>Recreate the pod.</li>
+<li>Check if the attached volume is state <code>healthy</code>
+rather than <code>degraded</code>.</li>
+<li>Check the data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_engine_upgrade.test_engine_offline_upgrade"><code class="name flex">
+<span>def <span class="ident">test_engine_offline_upgrade</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test engine offline upgrade</p>
+<ol>
+<li>Get a compatible engine image with the default engine image, and deploy</li>
+<li>Create a volume using the default engine image</li>
+<li>Attach the volume and write <code>data</code> into it</li>
+<li>Detach the volume and upgrade the volume engine to the new engine image</li>
+<li>Make sure the new engine image reference count has increased to 1</li>
+<li>Make sure we cannot delete the new engine image now (due to reference)</li>
+<li>Attach the volume and verify it's using the new image</li>
+<li>Verify the data. And verify engine and replicas' engine image changed</li>
+<li>Detach the volume</li>
+<li>Upgrade to the old engine image</li>
+<li>Verify the volume's engine image has been upgraded</li>
+<li>Attach the volume and verify the <code>data</code></li>
+</ol></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_engine_upgrade.check_replica_engine" href="#tests.test_engine_upgrade.check_replica_engine">check_replica_engine</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.engine_live_upgrade_rollback_test" href="#tests.test_engine_upgrade.engine_live_upgrade_rollback_test">engine_live_upgrade_rollback_test</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.engine_live_upgrade_test" href="#tests.test_engine_upgrade.engine_live_upgrade_test">engine_live_upgrade_test</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.engine_offline_upgrade_test" href="#tests.test_engine_upgrade.engine_offline_upgrade_test">engine_offline_upgrade_test</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.prepare_auto_upgrade_engine_to_default_version" href="#tests.test_engine_upgrade.prepare_auto_upgrade_engine_to_default_version">prepare_auto_upgrade_engine_to_default_version</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version" href="#tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version">test_auto_upgrade_engine_to_default_version</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_degraded_volume" href="#tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_degraded_volume">test_auto_upgrade_engine_to_default_version_degraded_volume</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_dr_volume" href="#tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_dr_volume">test_auto_upgrade_engine_to_default_version_dr_volume</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_expanding_volume" href="#tests.test_engine_upgrade.test_auto_upgrade_engine_to_default_version_expanding_volume">test_auto_upgrade_engine_to_default_version_expanding_volume</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_crash_during_live_upgrade" href="#tests.test_engine_upgrade.test_engine_crash_during_live_upgrade">test_engine_crash_during_live_upgrade</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_image" href="#tests.test_engine_upgrade.test_engine_image">test_engine_image</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_image_incompatible" href="#tests.test_engine_upgrade.test_engine_image_incompatible">test_engine_image_incompatible</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_live_upgrade" href="#tests.test_engine_upgrade.test_engine_live_upgrade">test_engine_live_upgrade</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_live_upgrade_rollback" href="#tests.test_engine_upgrade.test_engine_live_upgrade_rollback">test_engine_live_upgrade_rollback</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_live_upgrade_while_replica_concurrent_rebuild" href="#tests.test_engine_upgrade.test_engine_live_upgrade_while_replica_concurrent_rebuild">test_engine_live_upgrade_while_replica_concurrent_rebuild</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_live_upgrade_with_intensive_data_writing" href="#tests.test_engine_upgrade.test_engine_live_upgrade_with_intensive_data_writing">test_engine_live_upgrade_with_intensive_data_writing</a></code></li>
+<li><code><a title="tests.test_engine_upgrade.test_engine_offline_upgrade" href="#tests.test_engine_upgrade.test_engine_offline_upgrade">test_engine_offline_upgrade</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

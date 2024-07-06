@@ -1,0 +1,1652 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_basic API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_basic</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_basic.backup_failed_cleanup"><code class="name flex">
+<span>def <span class="ident">backup_failed_cleanup</span></span>(<span>client, core_api, volume_name, volume_size, failed_backup_ttl='3')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Setup the failed backup cleanup</p></div>
+</dd>
+<dt id="tests.test_basic.backup_labels_test"><code class="name flex">
+<span>def <span class="ident">backup_labels_test</span></span>(<span>client, random_labels, volume_name, size='16777216', backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.backup_status_for_unavailable_replicas_test"><code class="name flex">
+<span>def <span class="ident">backup_status_for_unavailable_replicas_test</span></span>(<span>client, volume_name, size, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.backup_test"><code class="name flex">
+<span>def <span class="ident">backup_test</span></span>(<span>client, volume_name, size, backing_image='', compression_method='lz4')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.backupstore_test"><code class="name flex">
+<span>def <span class="ident">backupstore_test</span></span>(<span>client, host_id, volname, size, compression_method)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.check_volume_and_snapshot_after_corrupting_volume_metadata_file"><code class="name flex">
+<span>def <span class="ident">check_volume_and_snapshot_after_corrupting_volume_metadata_file</span></span>(<span>client, core_api, volume_name, pod, test_pod_name, data_path1, data_md5sum1, data_path2, snap)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test volume I/O and take/delete a snapshot</p></div>
+</dd>
+<dt id="tests.test_basic.prepare_data_volume_metafile"><code class="name flex">
+<span>def <span class="ident">prepare_data_volume_metafile</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make, data_path, test_writing_data=False, writing_data_path='/data/writing_data_file')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Prepare volume and snapshot for volume metafile testing</p>
+<p>Setup:</p>
+<ol>
+<li>Create a pod using Longhorn volume</li>
+<li>Write some data to the volume then get the md5sum</li>
+<li>Create a snapshot</li>
+<li>Delete the pod and wait for the volume detached</li>
+<li>Pick up a replica on this host and get the replica data path</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.prepare_space_usage_for_rebuilding_only_volume"><code class="name flex">
+<span>def <span class="ident">prepare_space_usage_for_rebuilding_only_volume</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create a 7Gi volume and attach to the node.</li>
+<li>Make a filesystem then mount this volume.</li>
+<li>Make this volume as a disk of the node, and disable the scheduling for
+the default disk.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.restore_inc_test"><code class="name flex">
+<span>def <span class="ident">restore_inc_test</span></span>(<span>client, core_api, volume_name, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.snapshot_prune_and_coalesce_simultaneously"><code class="name flex">
+<span>def <span class="ident">snapshot_prune_and_coalesce_simultaneously</span></span>(<span>client, volume_name, backing_image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.snapshot_prune_test"><code class="name flex">
+<span>def <span class="ident">snapshot_prune_test</span></span>(<span>client, volume_name, backing_image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.snapshot_test"><code class="name flex">
+<span>def <span class="ident">snapshot_test</span></span>(<span>client, volume_name, backing_image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.test_allow_volume_creation_with_degraded_availability"><code class="name flex">
+<span>def <span class="ident">test_allow_volume_creation_with_degraded_availability</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Allow Volume Creation with Degraded Availability (API)</p>
+<p>Requirement:
+1. Set <code>allow-volume-creation-with-degraded-availability</code> to true.
+2. <code>node-level-soft-anti-affinity</code> to false.</p>
+<p>Steps:
+(degraded availability)
+1. Disable scheduling for node 2 and 3.
+2. Create a volume with three replicas.
+1. Volume should be <code>ready</code> after creation and <code>Scheduled</code> is true.
+2. One replica schedule succeed. Two other replicas failed scheduling.
+3. Enable the scheduling of node 2.
+1. One additional replica of the volume will become scheduled.
+2. The other replica is still failed to schedule.
+3. Scheduled condition is still true.
+4. Attach the volume.
+1. After the volume is attached, scheduled condition become false.
+5. Write data to the volume.
+6. Detach the volume.
+1. Scheduled condition should become true.
+7. Reattach the volume to verify the data.
+1. Scheduled condition should become false.
+8. Enable the scheduling for the node 3.
+9. Wait for the scheduling condition to become true.
+10. Detach and reattach the volume to verify the data.</p></div>
+</dd>
+<dt id="tests.test_basic.test_allow_volume_creation_with_degraded_availability_dr"><code class="name flex">
+<span>def <span class="ident">test_allow_volume_creation_with_degraded_availability_dr</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Allow Volume Creation with Degraded Availability (Restore)</p>
+<p>Requirement:
+1. Set <code>allow-volume-creation-with-degraded-availability</code> to true.
+2. <code>node-level-soft-anti-affinity</code> to false.
+3. Create a backup of 800MB.</p>
+<p>Steps:
+(DR volume)
+1. Disable scheduling for node 2 and 3.
+2. Create a DR volume from backup with 3 replicas.
+1. The scheduled condition is false.
+2. Only node 1 replica become scheduled.
+3. Enable scheduling for node 2 and 3.
+1. Replicas scheduling to node 1, 2, 3 success.
+2. Wait for restore progress to complete.
+3. The scheduled condition becomes true.
+4. Activate, attach the volume, and verify the data.</p></div>
+</dd>
+<dt id="tests.test_basic.test_allow_volume_creation_with_degraded_availability_error"><code class="name flex">
+<span>def <span class="ident">test_allow_volume_creation_with_degraded_availability_error</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Allow Volume Creation with Degraded Availability (API)</p>
+<p>Requirement:
+1. Set <code>allow-volume-creation-with-degraded-availability</code> to true.
+2. <code>node-level-soft-anti-affinity</code> to false.</p>
+<p>Steps:
+(no availability)
+1. Disable all nodes' scheduling.
+2. Create a volume with three replicas.
+1. Volume should be NotReady after creation.
+2. Scheduled condition should become false.
+3. Attaching the volume should result in error.
+4. Enable one node's scheduling.
+1. Volume should become Ready soon.
+2. Scheduled condition should become true.
+5. Attach the volume. Write data. Detach and reattach to verify the data.</p></div>
+</dd>
+<dt id="tests.test_basic.test_allow_volume_creation_with_degraded_availability_restore"><code class="name flex">
+<span>def <span class="ident">test_allow_volume_creation_with_degraded_availability_restore</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Allow Volume Creation with Degraded Availability (Restore)</p>
+<p>Requirement:
+1. Set <code>allow-volume-creation-with-degraded-availability</code> to true.
+2. <code>node-level-soft-anti-affinity</code> to false.
+3. <code>replica-replenishment-wait-interval</code> to 0.
+4. Create a backup of 800MB.</p>
+<p>Steps:
+(restore)
+1. Disable scheduling for node 2 and 3.
+2. Restore a volume with 3 replicas.
+1. The scheduled condition is true.
+2. Only node 1 replica become scheduled.
+3. Enable scheduling for node 2.
+4. Wait for the restore to complete and volume detach automatically.
+Then check the scheduled condition still true.
+5. Attach and wait for the volume.
+1. 2 Replicas successfully scheduled to node 1 and 2.
+1 Replica cannot be created due to node 3 is unscheduled.
+2. The scheduled condition becomes false.
+3. Verify the data.</p></div>
+</dd>
+<dt id="tests.test_basic.test_attach_without_frontend"><code class="name flex">
+<span>def <span class="ident">test_attach_without_frontend</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test attach in maintenance mode (without frontend)</p>
+<ol>
+<li>Create a volume and attach to the current node with enabled frontend</li>
+<li>Check volume has <code>blockdev</code></li>
+<li>Write <code>snap1_data</code> into volume and create snapshot <code>snap1</code></li>
+<li>Write more random data into volume and create another anspshot</li>
+<li>Detach the volume and reattach with disabled frontend</li>
+<li>Check volume still has <code>blockdev</code> as frontend but no endpoint</li>
+<li>Revert back to <code>snap1</code></li>
+<li>Detach and reattach the volume with enabled frontend</li>
+<li>Check volume contains data <code>snap1_data</code></li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_aws_iam_role_arn"><code class="name flex">
+<span>def <span class="ident">test_aws_iam_role_arn</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test AWS IAM Role ARN</p>
+<ol>
+<li>Set backup target to S3</li>
+<li>Check longhorn manager and aio instance manager Pods
+without 'iam.amazonaws.com/role' annotation</li>
+<li>Add AWS_IAM_ROLE_ARN to secret</li>
+<li>Check longhorn manager and aio instance manager Pods
+with 'iam.amazonaws.com/role' annotation
+and matches to AWS_IAM_ROLE_ARN in secret</li>
+<li>Update AWS_IAM_ROLE_ARN from secret</li>
+<li>Check longhorn manager and aio instance manager Pods
+with 'iam.amazonaws.com/role' annotation
+and matches to AWS_IAM_ROLE_ARN in secret</li>
+<li>Remove AWS_IAM_ROLE_ARN from secret</li>
+<li>Check longhorn manager and aio instance manager Pods
+without 'iam.amazonaws.com/role' annotation</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup"><code class="name flex">
+<span>def <span class="ident">test_backup</span></span>(<span>set_random_backupstore, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test basic backup</p>
+<p>Setup:</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Run the test for all the available backupstores.</li>
+</ol>
+<p>Steps:</p>
+<ol>
+<li>Create a backup of volume</li>
+<li>Restore the backup to a new volume</li>
+<li>Attach the new volume and make sure the data is the same as the old one</li>
+<li>Detach the volume and delete the backup.</li>
+<li>Wait for the restored volume's <code>lastBackup</code> to be cleaned (due to remove
+the backup)</li>
+<li>Delete the volume</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_block_deletion"><code class="name flex">
+<span>def <span class="ident">test_backup_block_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup block deletion</p>
+<p>Context:</p>
+<p>We want to make sure that we only delete non referenced backup blocks,
+we also don't want to delete blocks while there other backups in progress.
+The reason for this is that we don't yet know which blocks are required by
+the in progress backup, so blocks deletion could lead to a faulty backup.</p>
+<p>Setup:</p>
+<ol>
+<li>Setup minio as S3 backupstore</li>
+</ol>
+<p>Steps:</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Write 4 MB to the beginning of the volume (2 x 2MB backup blocks)</li>
+<li>Create backup(1) of the volume</li>
+<li>Overwrite the first of the backup blocks of data on the volume</li>
+<li>Create backup(2) of the volume</li>
+<li>Overwrite the first of the backup blocks of data on the volume</li>
+<li>Create backup(3) of the volume</li>
+<li>Verify backup block count == 4
+assert volume["DataStored"] == str(BLOCK_SIZE * expected_count)
+assert count of *.blk files for that volume == expected_count</li>
+<li>Create an artificial in progress backup.cfg file
+json.dumps({"Name": name, "VolumeName": volume, "CreatedTime": ""})</li>
+<li>Delete backup(2)</li>
+<li>Verify backup block count == 4 (because of the in progress backup)</li>
+<li>Delete the artificial in progress backup.cfg file</li>
+<li>Delete backup(1)</li>
+<li>Verify backup block count == 2</li>
+<li>Delete backup(3)</li>
+<li>Verify backup block count == 0</li>
+<li>Delete the backup volume</li>
+<li>Cleanup the volume</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_failed_disable_auto_cleanup"><code class="name flex">
+<span>def <span class="ident">test_backup_failed_disable_auto_cleanup</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the failed backup would be automatically deleted.</p>
+<ol>
+<li>Set the default setting <code>backupstore-poll-interval</code> to 60 (seconds)</li>
+<li>Set the default setting <code>failed-backup-ttl</code> to 0</li>
+<li>Create a volume and attach to the current node</li>
+<li>Create a empty backup for creating the backup volume</li>
+<li>Write some data to the volume</li>
+<li>Create a backup of the volume</li>
+<li>Crash all replicas</li>
+<li>Wait and check if the backup failed</li>
+<li>Wait and check if the backup was not deleted.</li>
+<li>Cleanup</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_failed_enable_auto_cleanup"><code class="name flex">
+<span>def <span class="ident">test_backup_failed_enable_auto_cleanup</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the failed backup would be automatically deleted.</p>
+<ol>
+<li>Set the default setting <code>backupstore-poll-interval</code> to 60 (seconds)</li>
+<li>Set the default setting <code>failed-backup-ttl</code> to 3 (minutes)</li>
+<li>Create a volume and attach to the current node</li>
+<li>Create a empty backup for creating the backup volume</li>
+<li>Write some data to the volume</li>
+<li>Create a backup of the volume</li>
+<li>Crash all replicas</li>
+<li>Wait and check if the backup failed</li>
+<li>Wait and check if the backup was deleted automatically</li>
+<li>Cleanup</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_labels"><code class="name flex">
+<span>def <span class="ident">test_backup_labels</span></span>(<span>set_random_backupstore, client, random_labels, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that the proper Labels are applied when creating a Backup manually.</p>
+<ol>
+<li>Create a volume</li>
+<li>Run the following steps on all backupstores</li>
+<li>Create a backup with some random labels</li>
+<li>Get backup from backupstore, verify the labels are set on the backups</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_lock_creation_during_deletion"><code class="name flex">
+<span>def <span class="ident">test_backup_lock_creation_during_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup locks
+Context:
+To test the locking mechanism that utilizes the backupstore,
+to prevent the following case of concurrent operations.
+- prevent backup creation during backup deletion</p>
+<p>steps:
+1. Create a volume, then create the corresponding PV, PVC and Pod.
+2. Wait for the pod running and the volume healthy.
+3. Write data (DATA_SIZE_IN_MB_4) to the pod volume and get the md5sum.
+4. Take a backup.
+5. Wait for the backup to be completed.
+6. Delete the backup.
+7. Create another backup of the same volume.
+8. The newly created backup should failed because there is a deletion lock.
+9. Wait for the first backup to be Deleted
+10. Create another backup of the same volume.
+11. Wait for the backup to be completed.</p></div>
+</dd>
+<dt id="tests.test_basic.test_backup_lock_deletion_during_backup"><code class="name flex">
+<span>def <span class="ident">test_backup_lock_deletion_during_backup</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup locks
+Context:
+To test the locking mechanism that utilizes the backupstore,
+to prevent the following case of concurrent operations.
+- prevent backup deletion while a backup is in progress</p>
+<p>steps:
+1. Create a volume, then create the corresponding PV, PVC and Pod.
+2. Wait for the pod running and the volume healthy.
+3. Write data to the pod volume and get the md5sum.
+4. Take a backup.
+5. Wait for the backup to be completed.
+6. Write more data into the volume and compute md5sum.
+7. Take another backup of the volume.
+8. While backup is in progress, delete the older backup up.
+9. Wait for the backup creation in progress to be completed.
+10. Check the backup store, there should be 1 backup.
+11. Restore the latest backup.
+12. Wait for the restoration to be completed. Assert md5sum from step 6.</p></div>
+</dd>
+<dt id="tests.test_basic.test_backup_lock_deletion_during_restoration"><code class="name flex">
+<span>def <span class="ident">test_backup_lock_deletion_during_restoration</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup locks
+Context:
+To test the locking mechanism that utilizes the backupstore,
+to prevent the following case of concurrent operations.
+- prevent backup deletion during backup restoration</p>
+<p>steps:
+1. Create a volume, then create the corresponding PV, PVC and Pod.
+2. Wait for the pod running and the volume healthy.
+3. Write data to the pod volume and get the md5sum.
+4. Take a backup.
+5. Wait for the backup to be completed.
+6. Start backup restoration for the backup creation.
+7. Wait for restoration to be in progress.
+8. Delete the backup from the backup store.
+9. Wait for the restoration to be completed.
+10. Assert the data from the restored volume with md5sum.
+11. Assert the backup count in the backup store with 0.</p></div>
+</dd>
+<dt id="tests.test_basic.test_backup_lock_restoration_during_deletion"><code class="name flex">
+<span>def <span class="ident">test_backup_lock_restoration_during_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup locks
+Context:
+To test the locking mechanism that utilizes the backupstore,
+to prevent the following case of concurrent operations.
+- prevent backup restoration during backup deletion</p>
+<p>steps:
+1. Create a volume, then create the corresponding PV, PVC and Pod.
+2. Wait for the pod running and the volume healthy.
+3. Write data to the pod volume and get the md5sum.
+4. Take a backup.
+5. Wait for the backup to be completed.
+6. Write more data (1.5 Gi) to the volume and take another backup.
+7. Wait for the 2nd backup to be completed.
+8. Delete the 2nd backup.
+9. Without waiting for the backup deletion completion, restore the 1st
+backup from the backup store.
+10. Verify the restored volume become faulted.
+11. Wait for the 2nd backup deletion and assert the count of the backups
+with 1 in the backup store.</p></div>
+</dd>
+<dt id="tests.test_basic.test_backup_metadata_deletion"><code class="name flex">
+<span>def <span class="ident">test_backup_metadata_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup metadata deletion</p>
+<p>Context:</p>
+<p>We want to be able to delete the metadata (.cfg) files,
+even if they are corrupt or in a bad state (missing volume.cfg).</p>
+<p>Setup:</p>
+<ol>
+<li>Setup minio as S3 backupstore</li>
+<li>Cleanup backupstore</li>
+</ol>
+<p>Steps:</p>
+<ol>
+<li>Create volume(1,2) and attach to the current node</li>
+<li>write some data to volume(1,2)</li>
+<li>Create backup(1,2) of volume(1,2)</li>
+<li>request a backup list</li>
+<li>verify backup list contains no error messages for volume(1,2)</li>
+<li>verify backup list contains backup(1,2) information for volume(1,2)</li>
+<li>delete backup(1) of volume(1,2)</li>
+<li>request a backup list</li>
+<li>verify backup list contains no error messages for volume(1,2)</li>
+<li>verify backup list only contains backup(2) information for volume(1,2)</li>
+<li>delete volume.cfg of volume(2)</li>
+<li>request backup volume deletion for volume(2)</li>
+<li>verify that volume(2) has been deleted in the backupstore.</li>
+<li>request a backup list</li>
+<li>verify backup list only contains volume(1) and no errors</li>
+<li>verify backup list only contains backup(2) information for volume(1)</li>
+<li>delete backup volume(1)</li>
+<li>verify that volume(1) has been deleted in the backupstore.</li>
+<li>cleanup</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_status_for_unavailable_replicas"><code class="name flex">
+<span>def <span class="ident">test_backup_status_for_unavailable_replicas</span></span>(<span>set_random_backupstore, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup status for unavailable replicas</p>
+<p>Context:</p>
+<p>We want to make sure that during the backup creation, once the responsible
+replica gone, the backup should in Error state and with the error message.</p>
+<p>Setup:</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Run the test for all the available backupstores</li>
+</ol>
+<p>Steps:</p>
+<ol>
+<li>Create a backup of volume</li>
+<li>Find the replica for that backup</li>
+<li>Disable scheduling on the node of that replica</li>
+<li>Delete the replica</li>
+<li>Verify backup status with Error state and with an error message</li>
+<li>Create a new backup</li>
+<li>Verify new backup was successful</li>
+<li>Cleanup (delete backups, delete volume)</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backup_volume_list"><code class="name flex">
+<span>def <span class="ident">test_backup_volume_list</span></span>(<span>set_random_backupstore, client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup volume list
+Context:
+We want to make sure that an error when listing a single backup volume
+does not stop us from listing all the other backup volumes. Otherwise a
+single faulty backup can block the retrieval of all known backup volumes.
+Setup:
+1. Setup minio as S3 backupstore
+Steps:
+1.
+Create a volume(1,2) and attach to the current node
+2.
+write some data to volume(1,2)
+3.
+Create a backup(1) of volume(1,2)
+4.
+request a backup list
+5.
+verify backup list contains no error messages for volume(1,2)
+6.
+verify backup list contains backup(1) for volume(1,2)
+7.
+place a file named "backup_1234@failure.cfg"
+into the backups folder of volume(1)
+8.
+request a backup list
+9.
+verify backup list contains no error messages for volume(1,2)
+10. verify backup list contains backup(1) for volume(1,2)
+11. delete backup volumes(1 &amp; 2)
+12. cleanup</p></div>
+</dd>
+<dt id="tests.test_basic.test_backup_volume_restore_with_access_mode"><code class="name flex">
+<span>def <span class="ident">test_backup_volume_restore_with_access_mode</span></span>(<span>core_api, set_random_backupstore, client, access_mode, overridden_restored_access_mode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the backup w/ the volume access mode, then restore a volume w/ the
+original access mode or being overridden.</p>
+<ol>
+<li>Prepare a healthy volume</li>
+<li>Create a backup for the volume</li>
+<li>Restore a volume from the backup w/o specifying the access mode
+=&gt; Validate the access mode should be the same the volume</li>
+<li>Restore a volume from the backup w/ specifying the access mode
+=&gt; Validate the access mode should be the same as the specified</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backuptarget_available_during_engine_image_not_ready"><code class="name flex">
+<span>def <span class="ident">test_backuptarget_available_during_engine_image_not_ready</span></span>(<span>client, apps_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test backup target available during engine image not ready</p>
+<ol>
+<li>Set backup target URL to S3 and NFS respectively</li>
+<li>Set poll interval to 0 and 300 respectively</li>
+<li>Scale down the engine image DaemonSet</li>
+<li>Check engine image in deploying state</li>
+<li>Configures backup target during engine image in not ready state</li>
+<li>Check backup target status.available=false</li>
+<li>Scale up the engine image DaemonSet</li>
+<li>Check backup target status.available=true</li>
+<li>Reset backup target setting</li>
+<li>Check backup target status.available=false</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_backuptarget_invalid"><code class="name flex">
+<span>def <span class="ident">test_backuptarget_invalid</span></span>(<span>apps_api, client, core_api, backupstore_invalid, make_deployment_with_pvc, pvc_name, request, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/1249">https://github.com/longhorn/longhorn/issues/1249</a></p>
+<p>This test case does not cover the UI test mentioned in the related issue's
+test steps."</p>
+<p>Setup
+- Give an incorrect value to Backup target.</p>
+<p>Given
+- Create a volume, attach it to a workload, write data into the volume.</p>
+<p>When
+- Create a backup by a manifest yaml file</p>
+<p>Then
+- Backup will be failed and the backup state is Error.
+- Backup target will be unavailable with an explanatory condition.</p></div>
+</dd>
+<dt id="tests.test_basic.test_cleanup_system_generated_snapshots"><code class="name flex">
+<span>def <span class="ident">test_cleanup_system_generated_snapshots</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Cleanup System Generated Snapshots</p>
+<ol>
+<li>Enabled 'Auto Cleanup System Generated Snapshot'.</li>
+<li>Create a volume and attach it to a node.</li>
+<li>Write some data to the volume and get the checksum of the data.</li>
+<li>Delete a random replica to trigger a system generated snapshot.</li>
+<li>Repeat Step 3 for 3 times, and make sure only one snapshot is left.</li>
+<li>Check the data with the saved checksum.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_default_storage_class_syncup"><code class="name flex">
+<span>def <span class="ident">test_default_storage_class_syncup</span></span>(<span>core_api, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Record the current Longhorn-StorageClass-related ConfigMap
+<code>longhorn-storageclass</code>.
+2. Modify the default Longhorn StorageClass <code>longhorn</code>.
+e.g., update <code>reclaimPolicy</code> from <code>Delete</code> to <code>Retain</code>.
+3. Verify that the change is reverted immediately and the manifest is the
+same as the record in ConfigMap <code>longhorn-storageclass</code>.
+4. Delete the default Longhorn StorageClass <code>longhorn</code>.
+5. Verify that the StorageClass is recreated immediately with the manifest
+the same as the record in ConfigMap <code>longhorn-storageclass</code>.
+6. Modify the content of ConfigMap <code>longhorn-storageclass</code>.
+7. Verify that the modifications will be applied to the default Longhorn
+StorageClass <code>longhorn</code> immediately.
+8. Revert the modifications of the ConfigMaps. Then wait for the
+StorageClass sync-up.</p></div>
+</dd>
+<dt id="tests.test_basic.test_delete_backup_during_restoring_volume"><code class="name flex">
+<span>def <span class="ident">test_delete_backup_during_restoring_volume</span></span>(<span>set_random_backupstore, client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test delete backup during restoring volume</p>
+<p>Context:</p>
+<p>The volume robustness should be faulted if the backup was deleted during
+restoring the volume.</p>
+<ol>
+<li>Given create volume v1 and attach to a node
+And write data 150M to volume v1</li>
+<li>When create a backup of volume v1
+And wait for that backup is completed
+And restore a volume v2 from volume v1 backup
+And delete the backup immediately</li>
+<li>Then volume v2 "robustness" should be "faulted"
+And "status" of volume restore condition should be "False",
+And "reason" of volume restore condition should be "RestoreFailure"</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_deleting_backup_volume"><code class="name flex">
+<span>def <span class="ident">test_deleting_backup_volume</span></span>(<span>set_random_backupstore, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test deleting backup volumes</p>
+<ol>
+<li>Create volume and create backup</li>
+<li>Delete the backup and make sure it's gone in the backupstore</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_dr_volume_activated_with_failed_replica"><code class="name flex">
+<span>def <span class="ident">test_dr_volume_activated_with_failed_replica</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test DR volume activated with a failed replica</p>
+<p>Context:</p>
+<p>Make sure that DR volume could be activated
+as long as there is a ready replica.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a volume and attach to a node.</li>
+<li>Create a backup of the volume with writing some data.</li>
+<li>Create a DR volume from the backup.</li>
+<li>Disable the replica rebuilding.</li>
+<li>Enable the setting <code>allow-volume-creation-with-degraded-availability</code></li>
+<li>Make a replica failed.</li>
+<li>Activate the DR volume.</li>
+<li>Enable the replica rebuilding.</li>
+<li>Attach the volume to a node.</li>
+<li>Check if data is correct.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_dr_volume_with_backup_and_backup_volume_deleted"><code class="name flex">
+<span>def <span class="ident">test_dr_volume_with_backup_and_backup_volume_deleted</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test DR volume can be activated after delete all backups.</p>
+<p>Context:</p>
+<p>We want to make sure that DR volume can activate after deleting
+some/all backups or the backup volume.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a volume and attach to the current node.</li>
+<li>Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).</li>
+<li>Create backup(0) then backup(1) for the volume.</li>
+<li>Verify backup block count == 4.</li>
+<li>Create DR volume(1) and DR volume(2) from backup(1).</li>
+<li>Verify DR volumes last backup is backup(1).</li>
+<li>Delete backup(1).</li>
+<li>Verify backup block count == 2.</li>
+<li>Verify DR volumes last backup becomes backup(0).</li>
+<li>Activate and verify DR volume(1) data is data(0).</li>
+<li>Delete backup(0).</li>
+<li>Verify backup block count == 0.</li>
+<li>Verify DR volume last backup is empty.</li>
+<li>Delete the backup volume.</li>
+<li>Activate and verify DR volume data is data(0).</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_dr_volume_with_backup_block_deletion"><code class="name flex">
+<span>def <span class="ident">test_dr_volume_with_backup_block_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test DR volume last backup after block deletion.</p>
+<p>Context:</p>
+<p>We want to make sure that when the block is delete, the DR volume picks up
+the correct last backup.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a volume and attach to the current node.</li>
+<li>Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).</li>
+<li>Create backup(0) of the volume.</li>
+<li>Overwrite backup(0) 1st blocks of data on the volume.
+(Since backup(0) contains 2 blocks of data, the updated data is
+data1["content"] + data0["content"][BACKUP_BLOCK_SIZE:])</li>
+<li>Create backup(1) of the volume.</li>
+<li>Verify backup block count == 3.</li>
+<li>Create DR volume from backup(1).</li>
+<li>Verify DR volume last backup is backup(1).</li>
+<li>Delete backup(1).</li>
+<li>Verify backup block count == 2.</li>
+<li>Verify DR volume last backup is backup(0).</li>
+<li>Overwrite backup(0) 1st blocks of data on the volume.
+(Since backup(0) contains 2 blocks of data, the updated data is
+data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:])</li>
+<li>Create backup(2) of the volume.</li>
+<li>Verify DR volume last backup is backup(2).</li>
+<li>Activate and verify DR volume data is
+data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:].</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress"><code class="name flex">
+<span>def <span class="ident">test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test DR volume last backup after block deletion aborted. This will set the
+last backup to be empty.</p>
+<p>Context:</p>
+<p>We want to make sure that when the block deletion for the last backup is
+aborted by operations such as backups in progress, the DR volume will still
+pick up the correct last backup.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a volume and attach to the current node.</li>
+<li>Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).</li>
+<li>Create backup(0) of the volume.</li>
+<li>Overwrite backup(0) 1st blocks of data on the volume.
+(Since backup(0) contains 2 blocks of data, the updated data is
+data1["content"] + data0["content"][BACKUP_BLOCK_SIZE:])</li>
+<li>Create backup(1) of the volume.</li>
+<li>Verify backup block count == 3.</li>
+<li>Create DR volume from backup(1).</li>
+<li>Verify DR volume last backup is backup(1).</li>
+<li>Create an artificial in progress backup.cfg file.
+This cfg file will convince the longhorn manager that there is a
+backup being created. Then all subsequent backup block cleanup will be
+skipped.</li>
+<li>Delete backup(1).</li>
+<li>Verify backup block count == 3 (because of the in progress backup).</li>
+<li>Verify DR volume last backup is empty.</li>
+<li>Delete the artificial in progress backup.cfg file.</li>
+<li>Overwrite backup(0) 1st blocks of data on the volume.
+(Since backup(0) contains 2 blocks of data, the updated data is
+data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:])</li>
+<li>Create backup(2) of the volume.</li>
+<li>Verify DR volume last backup is backup(2).</li>
+<li>Activate and verify DR volume data is
+data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:].</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_engine_image_daemonset_restart"><code class="name flex">
+<span>def <span class="ident">test_engine_image_daemonset_restart</span></span>(<span>client, apps_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restarting engine image daemonset</p>
+<ol>
+<li>Get the default engine image</li>
+<li>Create a volume and attach to the current node</li>
+<li>Write random data to the volume and create a snapshot</li>
+<li>Delete the engine image daemonset</li>
+<li>Engine image daemonset should be recreated</li>
+<li>In the meantime, validate the volume data to prove it's still functional</li>
+<li>Wait for the engine image to become <code>ready</code> again</li>
+<li>Check the volume data again.</li>
+<li>Write some data and create a new snapshot.<ol>
+<li>Since create snapshot will use engine image binary.</li>
+</ol>
+</li>
+<li>Check the volume data again</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_expand_pvc_with_size_round_up"><code class="name flex">
+<span>def <span class="ident">test_expand_pvc_with_size_round_up</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>test expand longhorn volume with pvc</p>
+<ol>
+<li>Create LHV,PV,PVC with size '1Gi'</li>
+<li>Attach, write data, and detach</li>
+<li>Expand volume size to '2000000000/2G' and
+check if size round up '2000683008/1908Mi'</li>
+<li>Attach, write data, and detach</li>
+<li>Expand volume size to '2Gi' and check if size is '2147483648'</li>
+<li>Attach, write data, and detach</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_expansion_basic"><code class="name flex">
+<span>def <span class="ident">test_expansion_basic</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test volume expansion using Longhorn API</p>
+<ol>
+<li>Create volume and attach to the current node</li>
+<li>Generate data <code>snap1_data</code> and write it to the volume</li>
+<li>Create snapshot <code>snap1</code></li>
+<li>Online expand the volume</li>
+<li>Verify the volume has been expanded</li>
+<li>Generate data <code>snap2_data</code> and write it to the volume</li>
+<li>Create snapshot <code>snap2</code></li>
+<li>Generate data <code>snap3_data</code> and write it after the original size</li>
+<li>Create snapshot <code>snap3</code> and verify the <code>snap3_data</code> with location</li>
+<li>Detach and reattach the volume.</li>
+<li>Verify the volume is still expanded, and <code>snap3_data</code> remain valid</li>
+<li>Detach the volume.</li>
+<li>Reattach the volume in maintenance mode</li>
+<li>Revert to <code>snap2</code> and detach.</li>
+<li>Attach the volume and check data <code>snap2_data</code></li>
+<li>Generate <code>snap4_data</code> and write it after the original size</li>
+<li>Create snapshot <code>snap4</code> and verify <code>snap4_data</code>.</li>
+<li>Detach the volume and revert to <code>snap1</code></li>
+<li>Validate <code>snap1_data</code></li>
+</ol>
+<p>TODO: Add offline expansion</p></div>
+</dd>
+<dt id="tests.test_basic.test_expansion_canceling"><code class="name flex">
+<span>def <span class="ident">test_expansion_canceling</span></span>(<span>client, core_api, volume_name, pod, pvc, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test expansion canceling</p>
+<ol>
+<li>Create a volume, then create the corresponding PV, PVC and Pod.</li>
+<li>Generate <code>test_data</code> and write to the pod</li>
+<li>Create an empty directory with expansion snapshot tmp meta file path
+so that the following offline expansion will fail</li>
+<li>Delete the pod and wait for volume detachment</li>
+<li>Try offline expansion via Longhorn API</li>
+<li>Wait for expansion failure then use Longhorn API to cancel it</li>
+<li>Create a new pod and validate the volume content</li>
+<li>Create an empty directory with expansion snapshot tmp meta file path
+so that the following online expansion will fail</li>
+<li>Try online expansion via Longhorn API</li>
+<li>Wait for expansion failure then use Longhorn API to cancel it</li>
+<li>Validate the volume content again, then re-write random data to the pod</li>
+<li>Retry online expansion, then verify the expansion done via Longhorn API</li>
+<li>Validate the volume content, then check if data writing looks fine</li>
+<li>Clean up pod, PVC, and PV</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_expansion_with_scheduling_failure"><code class="name flex">
+<span>def <span class="ident">test_expansion_with_scheduling_failure</span></span>(<span>client, core_api, volume_name, pod, pvc, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test if the running volume with scheduling failure
+can be expanded after the detachment.</p>
+<p>Prerequisite:
+Setting "soft anti-affinity" is false.</p>
+<ol>
+<li>Create a volume, then create the corresponding PV, PVC and Pod.</li>
+<li>Wait for the pod running and the volume healthy.</li>
+<li>Write data to the pod volume and get the md5sum.</li>
+<li>Disable the scheduling for a node contains a running replica.</li>
+<li>Crash the replica on the scheduling disabled node for the volume.
+Then delete the failed replica so that it won't be reused.</li>
+<li>Wait for the scheduling failure.</li>
+<li>Verify:
+7.1. <code>volume.ready == True</code>.
+7.2. <code>volume.conditions[scheduled].status == False</code>.
+7.3. the volume is Degraded.
+7.4. the new replica cannot be created.</li>
+<li>Write more data to the volume and get the md5sum</li>
+<li>Delete the pod and wait for the volume detached.</li>
+<li>Verify:
+10.1. <code>volume.ready == True</code>.
+10.2. <code>volume.conditions[scheduled].status == True</code></li>
+<li>Expand the volume and wait for the expansion succeeds.</li>
+<li>Verify there is no rebuild replica after the expansion.</li>
+<li>Recreate a new pod for the volume and wait for the pod running.</li>
+<li>Validate the volume content.</li>
+<li>Verify the expanded part can be read/written correctly.</li>
+<li>Enable the node scheduling.</li>
+<li>Wait for the volume rebuild succeeds.</li>
+<li>Verify the data written in the expanded part.</li>
+<li>Clean up pod, PVC, and PV.</li>
+</ol>
+<p>Notice that the step 1 to step 10 is identical with
+those of the case test_running_volume_with_scheduling_failure().</p></div>
+</dd>
+<dt id="tests.test_basic.test_expansion_with_size_round_up"><code class="name flex">
+<span>def <span class="ident">test_expansion_with_size_round_up</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>test expand longhorn volume</p>
+<ol>
+<li>Create and attach longhorn volume with size '1Gi'.</li>
+<li>Write data, and offline expand volume size to '2000000000/2G'.</li>
+<li>Check if size round up '2000683008' and the written data.</li>
+<li>Write data, and online expand volume size to '2Gi'.</li>
+<li>Check if size round up '2147483648' and the written data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_filesystem_trim"><code class="name flex">
+<span>def <span class="ident">test_filesystem_trim</span></span>(<span>client, fs_type)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the filesystem in the volume can be trimmed correctly.</p>
+<ol>
+<li>Create a volume with option <code>unmapMarkSnapChainRemoved</code> enabled,
+then attach to the current node.</li>
+<li>Make a filesystem and write file0 into the fs, calculate the
+checksum, then take snap0.</li>
+<li>Write file21 and calculate the checksum. Then take snap21.</li>
+<li>Unmount then reattach the volume without frontend. Revert the volume
+to snap0.</li>
+<li>Reattach and mount the volume.</li>
+<li>Write file11. Then take snap11.</li>
+<li>Write file12. Then take snap12.</li>
+<li>Write file13. Then remove file0, file11, file12, and file13.
+Verify the snapshots and volume head size are not shrunk.</li>
+<li>Do filesystem trim (via Longhorn API or cmdline).
+Verify that:<ol>
+<li>snap11 and snap12 are marked as removed.</li>
+<li>snap11, snap12, and volume head size are shrunk.</li>
+</ol>
+</li>
+<li>Disable option <code>unmapMarkSnapChainRemoved</code> for the volume.</li>
+<li>Write file14. Then take snap14.</li>
+<li>Write file15. Then remove file14 and file15.
+Verify that:<ol>
+<li>snap14 is not marked as removed and its size is not changed.</li>
+<li>volume head size is shrunk.</li>
+</ol>
+</li>
+<li>Unmount and reattach the volume. Then revert to snap21.</li>
+<li>Reattach and mount the volume. Verify the file0 and file21.</li>
+<li>Cleanup.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_hosts"><code class="name flex">
+<span>def <span class="ident">test_hosts</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check node name and IP</p></div>
+</dd>
+<dt id="tests.test_basic.test_listing_backup_volume"><code class="name flex">
+<span>def <span class="ident">test_listing_backup_volume</span></span>(<span>client, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test listing backup volumes</p>
+<ol>
+<li>Create three volumes: <code>volume1/2/3</code></li>
+<li>Setup NFS backupstore since we can manipulate the content easily</li>
+<li>Create multiple snapshots for all three volumes</li>
+<li>Rename <code>volume1</code>'s <code>volume.cfg</code> to <code>volume.cfg.tmp</code> in backupstore</li>
+<li>List backup volumes. Make sure <code>volume1</code> errors out but found other two</li>
+<li>Restore <code>volume1</code>'s <code>volume.cfg</code>.</li>
+<li>Make sure now backup volume <code>volume1</code> can be found</li>
+<li>Delete backups for <code>volume1/2</code>, make sure they cannot be found later</li>
+<li>Corrupt a backup.cfg on volume3</li>
+<li>Check that the backup is listed with the other backups of volume3</li>
+<li>Verify that the corrupted backup has Messages of type error</li>
+<li>Check that backup inspection for the previously corrupted backup fails</li>
+<li>Delete backups for <code>volume3</code>, make sure they cannot be found later</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_multiple_volumes_creation_with_degraded_availability"><code class="name flex">
+<span>def <span class="ident">test_multiple_volumes_creation_with_degraded_availability</span></span>(<span>set_random_backupstore, client, core_api, apps_api, storage_class, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: verify multiple volumes with degraded availability can be
+created, attached, detached, and deleted at nearly the same time.</p>
+<p>Given new StorageClass created with <code>numberOfReplicas=5</code>.</p>
+<p>When set <code>allow-volume-creation-with-degraded-availability</code> to <code>True</code>.
+And deploy this StatefulSet:
+<a href="https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726">https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726</a>
+Then all 10 volumes are healthy in 1 minute.</p>
+<p>When delete the StatefulSet.
+then all 10 volumes are detached in 1 minute.</p>
+<p>When find and delete the PVC of the 10 volumes.
+Then all 10 volumes are deleted in 1 minute.</p></div>
+</dd>
+<dt id="tests.test_basic.test_pvc_storage_class_name_from_backup_volume"><code class="name flex">
+<span>def <span class="ident">test_pvc_storage_class_name_from_backup_volume</span></span>(<span>set_random_backupstore, core_api, client, volume_name, pvc_name, pvc, pod_make, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the storageClasName of the restored volume's PV/PVC
+should be from the backup volume</p>
+<p>Given
+- Create a new StorageClass
+<code>kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+name: longhorn-test
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+numberOfReplicas: "3"</code>
+- Create a PVC to use this SC
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-pvc
+spec:
+accessModes:
+- ReadWriteOnce
+storageClassName: longhorn-test
+resources:
+requests:
+storage: 300Mi</code>
+- Attach the Volume and write some data</p>
+<p>When
+- Backup the Volume</p>
+<p>Then
+- the backupvolume's status.storageClassName should be
+longhorn-test</p>
+<p>When
+- Restore the backup to a new volume
+- Create PV/PVC from the new volume with create new PVC option</p>
+<p>Then
+- The new PVC's storageClassName should still be longhorn-test
+- Verify the restored data is the same as original one</p></div>
+</dd>
+<dt id="tests.test_basic.test_restore_basic"><code class="name flex">
+<span>def <span class="ident">test_restore_basic</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Create a volume and attach to a pod.
+2. Write some data into the volume and compute the checksum m1.
+3. Create a backup say b1.
+4. Write some more data into the volume and compute the checksum m2.
+5. Create a backup say b2.
+6. Delete all the data from the volume.
+7. Write some more data into the volume and compute the checksum m3.
+8. Create a backup say b3.
+9. Restore backup b1 and verify the data with m1.
+10. Restore backup b2 and verify the data with m1 and m2.
+11. Restore backup b3 and verify the data with m3.
+12. Delete the backup b2.
+13. restore the backup b3 and verify the data with m3.</p></div>
+</dd>
+<dt id="tests.test_basic.test_restore_inc"><code class="name flex">
+<span>def <span class="ident">test_restore_inc</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restore from disaster recovery volume (incremental restore)</p>
+<p>Run test against all the backupstores</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate <code>data0</code>, write to the volume, make a backup <code>backup0</code></li>
+<li>Create three DR(standby) volumes from the backup: <code>sb_volume0/1/2</code></li>
+<li>Wait for all three DR volumes to start the initial restoration</li>
+<li>Verify DR volumes's <code>lastBackup</code> is <code>backup0</code></li>
+<li>Verify snapshot/pv/pvc/change backup target are not allowed as long
+as the DR volume exists</li>
+<li>Activate standby <code>sb_volume0</code> and attach it to check the volume data</li>
+<li>Generate <code>data1</code> and write to the original volume and create <code>backup1</code></li>
+<li>Make sure <code>sb_volume1</code>'s <code>lastBackup</code> field has been updated to
+<code>backup1</code></li>
+<li>Wait for <code>sb_volume1</code> to finish incremental restoration then activate</li>
+<li>Attach and check <code>sb_volume1</code>'s data</li>
+<li>Generate <code>data2</code> and write to the original volume and create <code>backup2</code></li>
+<li>Make sure <code>sb_volume2</code>'s <code>lastBackup</code> field has been updated to
+<code>backup1</code></li>
+<li>Wait for <code>sb_volume2</code> to finish incremental restoration then activate</li>
+<li>Attach and check <code>sb_volume2</code>'s data</li>
+<li>Create PV, PVC and Pod to use <code>sb_volume2</code>, check PV/PVC/POD are good</li>
+</ol>
+<p>FIXME: Step 16 works because the disk will be treated as a unformatted disk</p></div>
+</dd>
+<dt id="tests.test_basic.test_restore_inc_with_offline_expansion"><code class="name flex">
+<span>def <span class="ident">test_restore_inc_with_offline_expansion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restore from disaster recovery volume with volume offline expansion</p>
+<p>Run test against a random backupstores</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate <code>data0</code>, write to the volume, make a backup <code>backup0</code></li>
+<li>Create three DR(standby) volumes from the backup: <code>dr_volume0/1/2</code></li>
+<li>Wait for all three DR volumes to start the initial restoration</li>
+<li>Verify DR volumes's <code>lastBackup</code> is <code>backup0</code></li>
+<li>Verify snapshot/pv/pvc/change backup target are not allowed as long
+as the DR volume exists</li>
+<li>Activate standby <code>dr_volume0</code> and attach it to check the volume data</li>
+<li>Expand the original volume. Make sure the expansion is successful.</li>
+<li>Generate <code>data1</code> and write to the original volume and create <code>backup1</code></li>
+<li>Make sure <code>dr_volume1</code>'s <code>lastBackup</code> field has been updated to
+<code>backup1</code></li>
+<li>Activate <code>dr_volume1</code> and check data <code>data0</code> and <code>data1</code></li>
+<li>Generate <code>data2</code> and write to the original volume after original SIZE</li>
+<li>Create <code>backup2</code></li>
+<li>Wait for <code>dr_volume2</code> to finish expansion, show <code>backup2</code> as latest</li>
+<li>Activate <code>dr_volume2</code> and verify <code>data2</code></li>
+<li>Detach <code>dr_volume2</code></li>
+<li>Create PV, PVC and Pod to use <code>sb_volume2</code>, check PV/PVC/POD are good</li>
+</ol>
+<p>FIXME: Step 16 works because the disk will be treated as a unformatted disk</p></div>
+</dd>
+<dt id="tests.test_basic.test_running_volume_with_scheduling_failure"><code class="name flex">
+<span>def <span class="ident">test_running_volume_with_scheduling_failure</span></span>(<span>client, core_api, volume_name, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test if the running volume still work fine
+when there is a scheduling failed replica</p>
+<p>Prerequisite:
+Setting "soft anti-affinity" is false.
+Setting "replica-replenishment-wait-interval" is 0</p>
+<ol>
+<li>Create a volume, then create the corresponding PV, PVC and Pod.</li>
+<li>Wait for the pod running and the volume healthy.</li>
+<li>Write data to the pod volume and get the md5sum.</li>
+<li>Disable the scheduling for a node contains a running replica.</li>
+<li>Crash the replica on the scheduling disabled node for the volume.</li>
+<li>Wait for the scheduling failure.</li>
+<li>Verify:
+7.1. <code>volume.ready == True</code>.
+7.2. <code>volume.conditions[scheduled].status == False</code>.
+7.3. the volume is Degraded.
+7.4. the new replica cannot be created.</li>
+<li>Write more data to the volume and get the md5sum</li>
+<li>Delete the pod and wait for the volume detached.</li>
+<li>Verify:
+10.1. <code>volume.ready == True</code>.
+10.2. <code>volume.conditions[scheduled].status == True</code></li>
+<li>Recreate a new pod for the volume and wait for the pod running.</li>
+<li>Validate the volume content, then check if data writing looks fine.</li>
+<li>Clean up pod, PVC, and PV.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_setting_default_replica_count"><code class="name flex">
+<span>def <span class="ident">test_setting_default_replica_count</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test <code>Default Replica Count</code> setting</p>
+<ol>
+<li>Set default replica count in the global settings to 5</li>
+<li>Create a volume without specify the replica count</li>
+<li>The volume should have 5 replicas (instead of the previous default 3)</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_settings"><code class="name flex">
+<span>def <span class="ident">test_settings</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check input for settings</p></div>
+</dd>
+<dt id="tests.test_basic.test_snapshot"><code class="name flex">
+<span>def <span class="ident">test_snapshot</span></span>(<span>client, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test snapshot operations</p>
+<ol>
+<li>Create a volume and attach to the node</li>
+<li>Create the empty snapshot <code>snap1</code></li>
+<li>Generate and write data <code>snap2_data</code>, then create <code>snap2</code></li>
+<li>Generate and write data <code>snap3_data</code>, then create <code>snap3</code></li>
+<li>List snapshot. Validate the snapshot chain relationship</li>
+<li>Mark <code>snap3</code> as removed. Make sure volume's data didn't change</li>
+<li>List snapshot. Make sure <code>snap3</code> is marked as removed</li>
+<li>Detach and reattach the volume in maintenance mode.</li>
+<li>Make sure the volume frontend is still <code>blockdev</code> but disabled</li>
+<li>Revert to <code>snap2</code></li>
+<li>Detach and reattach the volume with frontend enabled</li>
+<li>Make sure volume's data is <code>snap2_data</code></li>
+<li>List snapshot. Make sure <code>volume-head</code> is now <code>snap2</code>'s child</li>
+<li>Delete <code>snap1</code> and <code>snap2</code></li>
+<li>Purge the snapshot.</li>
+<li>List the snapshot, make sure <code>snap1</code> and <code>snap3</code>
+are gone. <code>snap2</code> is marked as removed.</li>
+<li>Check volume data, make sure it's still <code>snap2_data</code>.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_snapshot_prune"><code class="name flex">
+<span>def <span class="ident">test_snapshot_prune</span></span>(<span>client, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test removing the snapshot directly behinds the volume head would trigger
+snapshot prune. Snapshot pruning means removing the overlapping part from
+the snapshot based on the volume head content.</p>
+<ol>
+<li>Create a volume and attach to the node</li>
+<li>Generate and write data <code>snap1_data</code>, then create <code>snap1</code></li>
+<li>Generate and write data <code>snap2_data</code> with the same offset.</li>
+<li>Mark <code>snap1</code> as removed.
+Make sure volume's data didn't change.
+But all data of the <code>snap1</code> will be pruned.</li>
+<li>Detach and expand the volume, then wait for the expansion done.
+This will implicitly create a new snapshot <code>snap2</code>.</li>
+<li>Attach the volume.
+Make sure there is a system snapshot with the old size.</li>
+<li>Generate and write data <code>snap3_data</code> which is partially overlapped with
+<code>snap2_data</code>, plus one extra data chunk in the expanded part.</li>
+<li>Mark <code>snap2</code> as removed then do snapshot purge.
+Make sure volume's data didn't change.
+But the overlapping part of <code>snap2</code> will be pruned.</li>
+<li>Create <code>snap3</code>.</li>
+<li>Do snapshot purge for the volume. Make sure <code>snap2</code> will be removed.</li>
+<li>Generate and write data <code>snap4_data</code> which has no overlapping with
+<code>snap3_data</code>.</li>
+<li>Mark <code>snap3</code> as removed.
+Make sure volume's data didn't change.
+But there is no change for <code>snap3</code>.</li>
+<li>Create <code>snap4</code>.</li>
+<li>Generate and write data <code>snap5_data</code>, then create <code>snap5</code>.</li>
+<li>Detach and reattach the volume in maintenance mode.</li>
+<li>Make sure the volume frontend is still <code>blockdev</code> but disabled</li>
+<li>Revert to <code>snap4</code></li>
+<li>Detach and reattach the volume with frontend enabled</li>
+<li>Make sure volume's data is correct.</li>
+<li>List snapshot. Make sure <code>volume-head</code> is now <code>snap4</code>'s child</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_snapshot_prune_and_coalesce_simultaneously"><code class="name flex">
+<span>def <span class="ident">test_snapshot_prune_and_coalesce_simultaneously</span></span>(<span>client, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the prune for the snapshot directly behinds the volume head would be
+handled after all snapshot coalescing done.</p>
+<ol>
+<li>Create a volume and attach to the node</li>
+<li>Generate and write 1st data chunk <code>snap1_data</code>, then create <code>snap1</code></li>
+<li>Generate and write 2nd data chunk <code>snap2_data</code>, then create <code>snap2</code></li>
+<li>Generate and write 3rd data chunk <code>snap3_data</code>, then create <code>snap3</code></li>
+<li>Generate and write 4th data chunk <code>snap4_data</code>, then create <code>snap4</code></li>
+<li>Overwrite all existing data chunks in the volume head.</li>
+<li>Mark all snapshots as <code>Removed</code>,
+then start snapshot purge and wait for complete.</li>
+<li>List snapshot.
+Make sure there are only 2 snapshots left: <code>volume-head</code> and <code>snap4</code>.
+And <code>snap4</code> is an empty snapshot.</li>
+<li>Make sure volume's data is correct.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_space_usage_for_rebuilding_only_volume"><code class="name flex">
+<span>def <span class="ident">test_space_usage_for_rebuilding_only_volume</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test case: the normal scenario
+1. Prepare a 7Gi volume as a node disk.
+2. Create a new volume with 3Gi spec size.
+3. Write 3Gi data (using <code>dd</code>) to the volume.
+4. Take a snapshot then mark this snapshot as Removed.
+(this snapshot won't be deleted immediately.)
+5. Write 3Gi data (using <code>dd</code>) to the volume again.
+6. Delete a random replica to trigger the rebuilding.
+7. Wait for the rebuilding complete. And verify the volume actual size
+won't be greater than 2x of the volume spec size.
+8. Delete the volume.</p></div>
+</dd>
+<dt id="tests.test_basic.test_space_usage_for_rebuilding_only_volume_worst_scenario"><code class="name flex">
+<span>def <span class="ident">test_space_usage_for_rebuilding_only_volume_worst_scenario</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test case: worst scenario
+1. Prepare a 7Gi volume as a node disk.
+2. Create a new volume with 2Gi spec size.
+3. Write 2Gi data (using <code>dd</code>) to the volume.
+4. Take a snapshot then mark this snapshot as Removed.
+(this snapshot won't be deleted immediately.)
+5. Write 2Gi data (using <code>dd</code>) to the volume again.
+6. Delete a random replica to trigger the rebuilding.
+7. Write 2Gi data once the rebuilding is trigger (new replica is created).
+8. Wait for the rebuilding complete. And verify the volume actual size
+won't be greater than 3x of the volume spec size.
+9. Delete the volume.</p></div>
+</dd>
+<dt id="tests.test_basic.test_storage_class_from_backup"><code class="name flex">
+<span>def <span class="ident">test_storage_class_from_backup</span></span>(<span>set_random_backupstore, volume_name, pvc_name, storage_class, client, core_api, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restore backup using StorageClass</p>
+<ol>
+<li>Create volume and PV/PVC/POD</li>
+<li>Write <code>test_data</code> into pod</li>
+<li>Create a snapshot and back it up. Get the backup URL</li>
+<li>Create a new StorageClass <code>longhorn-from-backup</code> and set backup URL.</li>
+<li>Use <code>longhorn-from-backup</code> to create a new PVC</li>
+<li>Wait for the volume to be created and complete the restoration.</li>
+<li>Create the pod using the PVC. Verify the data</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_backup_and_restore_with_gzip_compression_method"><code class="name flex">
+<span>def <span class="ident">test_volume_backup_and_restore_with_gzip_compression_method</span></span>(<span>client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test volume backup and restore with different compression methods</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5189">https://github.com/longhorn/longhorn/issues/5189</a></p>
+<p>Given setup Backup Compression Method is "gzip"
+And setup backup concurrent limit is "4"
+And setup restore concurrent limit is "4"</p>
+<p>When create a volume and attach to the current node
+And get the volume's details
+Then verify the volume's compression method is "gzip"</p>
+<p>Then Create a backup of volume
+And Write volume random data
+Then restore the backup to a new volume
+And Attach the new volume and verify the data integrity
+And Detach the volume and delete the backup
+And Wait for the restored volume's <code>lastBackup</code> to be cleaned
+(due to remove the backup)
+And Delete the volume</p></div>
+</dd>
+<dt id="tests.test_basic.test_volume_backup_and_restore_with_lz4_compression_method"><code class="name flex">
+<span>def <span class="ident">test_volume_backup_and_restore_with_lz4_compression_method</span></span>(<span>client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test volume backup and restore with different compression methods</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5189">https://github.com/longhorn/longhorn/issues/5189</a></p>
+<p>Given setup Backup Compression Method is "lz4"
+And setup backup concurrent limit is "4"
+And setup restore concurrent limit is "4"</p>
+<p>When create a volume and attach to the current node
+And get the volume's details
+Then verify the volume's compression method is "lz4"</p>
+<p>Then Create a backup of volume
+And Write volume random data
+Then restore the backup to a new volume
+And Attach the new volume and verify the data integrity
+Then Detach the volume and delete the backup
+And Wait for the restored volume's <code>lastBackup</code> to be cleaned
+(due to remove the backup)
+And Delete the volume</p></div>
+</dd>
+<dt id="tests.test_basic.test_volume_backup_and_restore_with_none_compression_method"><code class="name flex">
+<span>def <span class="ident">test_volume_backup_and_restore_with_none_compression_method</span></span>(<span>client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test volume backup and restore with different compression methods</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5189">https://github.com/longhorn/longhorn/issues/5189</a></p>
+<p>Given setup Backup Compression Method is "none"
+And setup backup concurrent limit is "4"
+And setup restore concurrent limit is "4"</p>
+<p>When create a volume and attach to the current node
+And get the volume's details
+Then verify the volume's compression method is "none"</p>
+<p>Then Create a backup of volume
+And Write volume random data
+Then restore the backup to a new volume
+And Attach the new volume and verify the data integrity
+And Detach the volume and delete the backup
+And Wait for the restored volume's <code>lastBackup</code> to be cleaned
+(due to remove the backup)
+And Delete the volume</p></div>
+</dd>
+<dt id="tests.test_basic.test_volume_basic"><code class="name flex">
+<span>def <span class="ident">test_volume_basic</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test basic volume operations:</p>
+<ol>
+<li>Check volume name and parameter</li>
+<li>Create a volume and attach to the current node, then check volume states</li>
+<li>Check soft anti-affinity rule</li>
+<li>Write then read back to check volume data</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_iscsi_basic"><code class="name flex">
+<span>def <span class="ident">test_volume_iscsi_basic</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test basic volume operations with iscsi frontend</p>
+<ol>
+<li>Create and attach a volume with iscsi frontend</li>
+<li>Check the volume endpoint and connect it using the iscsi
+initiator on the node.</li>
+<li>Write then read back volume data for validation</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_metafile_deleted"><code class="name flex">
+<span>def <span class="ident">test_volume_metafile_deleted</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario:</p>
+<p>Test volume should still work when the volume meta file is removed
+in the replica data path.</p>
+<p>Steps:</p>
+<ol>
+<li>Delete volume meta file in this replica data path</li>
+<li>Recreate the pod and wait for the volume attached</li>
+<li>Check if the volume is Healthy after the volume attached</li>
+<li>Check volume data</li>
+<li>Check if the volume still works fine by r/w data and
+creating/removing snapshots</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_metafile_deleted_when_writing_data"><code class="name flex">
+<span>def <span class="ident">test_volume_metafile_deleted_when_writing_data</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario:</p>
+<p>While writing data, test volume should still work
+when the volume meta file is deleted in the replica data path.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a pod using Longhorn volume</li>
+<li>Delete volume meta file in this replica data path</li>
+<li>Recreate the pod and wait for the volume attached</li>
+<li>Check if the volume is Healthy after the volume attached</li>
+<li>Check volume data</li>
+<li>Check if the volume still works fine by r/w data and
+creating/removing snapshots</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_metafile_empty"><code class="name flex">
+<span>def <span class="ident">test_volume_metafile_empty</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario:</p>
+<p>Test volume should still work when there is an invalid volume meta file
+in the replica data path.</p>
+<p>Steps:</p>
+<ol>
+<li>Remove the content of the volume meta file in this replica data path</li>
+<li>Recreate the pod and wait for the volume attached</li>
+<li>Check if the volume is Healthy after the volume attached</li>
+<li>Check volume data</li>
+<li>Check if the volume still works fine by r/w data and
+creating/removing snapshots</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_multinode"><code class="name flex">
+<span>def <span class="ident">test_volume_multinode</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the volume can be attached on multiple nodes</p>
+<ol>
+<li>Create one volume</li>
+<li>Attach it on every node once, verify the state, then detach it</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_scheduling_failure"><code class="name flex">
+<span>def <span class="ident">test_volume_scheduling_failure</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test fail to schedule by disable scheduling for all the nodes</p>
+<p>Also test cannot attach a scheduling failed volume</p>
+<ol>
+<li>Disable <code>allowScheduling</code> for all nodes</li>
+<li>Create a volume.</li>
+<li>Verify the volume condition <code>Scheduled</code> is false</li>
+<li>Verify the volume is not ready for workloads</li>
+<li>Verify attaching the volume will result in error</li>
+<li>Enable <code>allowScheduling</code> for all nodes</li>
+<li>Volume should be automatically scheduled (condition become true)</li>
+<li>Volume can be attached now</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_toomanysnapshots_condition"><code class="name flex">
+<span>def <span class="ident">test_volume_toomanysnapshots_condition</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Volume TooManySnapshots Condition</p>
+<ol>
+<li>Create a volume and attach it to a node.</li>
+<li>Check the 'TooManySnapshots' condition is False.</li>
+<li>Writing data to this volume and meanwhile taking 101 snapshots.</li>
+<li>Check the 'TooManySnapshots' condition is True.</li>
+<li>Take one more snapshot to make sure snapshots works fine.</li>
+<li>Delete 2 snapshots, and check the 'TooManySnapshots' condition is
+False.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.test_volume_update_replica_count"><code class="name flex">
+<span>def <span class="ident">test_volume_update_replica_count</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test updating volume's replica count</p>
+<ol>
+<li>Create a volume with 2 replicas</li>
+<li>Attach the volume</li>
+<li>Increase the replica to 3.</li>
+<li>Volume will become degraded and start rebuilding</li>
+<li>Wait for rebuilding to complete</li>
+<li>Update the replica count to 2. Volume should remain healthy</li>
+<li>Remove 1 replicas, so there will be 2 replicas in the volume</li>
+<li>Verify the volume is still healthy</li>
+</ol>
+<p>Volume should always be healthy even only with 2 replicas.</p></div>
+</dd>
+<dt id="tests.test_basic.test_workload_with_fsgroup"><code class="name flex">
+<span>def <span class="ident">test_workload_with_fsgroup</span></span>(<span>core_api, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Deploy a StatefulSet workload that uses Longhorn volume and has
+securityContext set:
+<code>securityContext:
+runAsUser: 1000
+runAsGroup: 1000
+fsGroup: 1000</code>
+See
+<a href="https://github.com/longhorn/longhorn/issues/2964#issuecomment-910117570">https://github.com/longhorn/longhorn/issues/2964#issuecomment-910117570</a>
+for an example.</li>
+<li>Wait for the workload pod to be running</li>
+<li>Exec into the workload pod, cd into the mount point of the volume.</li>
+<li>Verify that the mount point has correct filesystem permission (e.g.,
+running <code>ls -l</code> on the mount point should return the permission in
+the format <strong><em>*rw</em></strong>*</li>
+<li>Verify that we can read/write files.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_basic.volume_basic_test"><code class="name flex">
+<span>def <span class="ident">volume_basic_test</span></span>(<span>client, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.volume_iscsi_basic_test"><code class="name flex">
+<span>def <span class="ident">volume_iscsi_basic_test</span></span>(<span>client, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_basic.volume_rw_test"><code class="name flex">
+<span>def <span class="ident">volume_rw_test</span></span>(<span>dev)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_basic.backup_failed_cleanup" href="#tests.test_basic.backup_failed_cleanup">backup_failed_cleanup</a></code></li>
+<li><code><a title="tests.test_basic.backup_labels_test" href="#tests.test_basic.backup_labels_test">backup_labels_test</a></code></li>
+<li><code><a title="tests.test_basic.backup_status_for_unavailable_replicas_test" href="#tests.test_basic.backup_status_for_unavailable_replicas_test">backup_status_for_unavailable_replicas_test</a></code></li>
+<li><code><a title="tests.test_basic.backup_test" href="#tests.test_basic.backup_test">backup_test</a></code></li>
+<li><code><a title="tests.test_basic.backupstore_test" href="#tests.test_basic.backupstore_test">backupstore_test</a></code></li>
+<li><code><a title="tests.test_basic.check_volume_and_snapshot_after_corrupting_volume_metadata_file" href="#tests.test_basic.check_volume_and_snapshot_after_corrupting_volume_metadata_file">check_volume_and_snapshot_after_corrupting_volume_metadata_file</a></code></li>
+<li><code><a title="tests.test_basic.prepare_data_volume_metafile" href="#tests.test_basic.prepare_data_volume_metafile">prepare_data_volume_metafile</a></code></li>
+<li><code><a title="tests.test_basic.prepare_space_usage_for_rebuilding_only_volume" href="#tests.test_basic.prepare_space_usage_for_rebuilding_only_volume">prepare_space_usage_for_rebuilding_only_volume</a></code></li>
+<li><code><a title="tests.test_basic.restore_inc_test" href="#tests.test_basic.restore_inc_test">restore_inc_test</a></code></li>
+<li><code><a title="tests.test_basic.snapshot_prune_and_coalesce_simultaneously" href="#tests.test_basic.snapshot_prune_and_coalesce_simultaneously">snapshot_prune_and_coalesce_simultaneously</a></code></li>
+<li><code><a title="tests.test_basic.snapshot_prune_test" href="#tests.test_basic.snapshot_prune_test">snapshot_prune_test</a></code></li>
+<li><code><a title="tests.test_basic.snapshot_test" href="#tests.test_basic.snapshot_test">snapshot_test</a></code></li>
+<li><code><a title="tests.test_basic.test_allow_volume_creation_with_degraded_availability" href="#tests.test_basic.test_allow_volume_creation_with_degraded_availability">test_allow_volume_creation_with_degraded_availability</a></code></li>
+<li><code><a title="tests.test_basic.test_allow_volume_creation_with_degraded_availability_dr" href="#tests.test_basic.test_allow_volume_creation_with_degraded_availability_dr">test_allow_volume_creation_with_degraded_availability_dr</a></code></li>
+<li><code><a title="tests.test_basic.test_allow_volume_creation_with_degraded_availability_error" href="#tests.test_basic.test_allow_volume_creation_with_degraded_availability_error">test_allow_volume_creation_with_degraded_availability_error</a></code></li>
+<li><code><a title="tests.test_basic.test_allow_volume_creation_with_degraded_availability_restore" href="#tests.test_basic.test_allow_volume_creation_with_degraded_availability_restore">test_allow_volume_creation_with_degraded_availability_restore</a></code></li>
+<li><code><a title="tests.test_basic.test_attach_without_frontend" href="#tests.test_basic.test_attach_without_frontend">test_attach_without_frontend</a></code></li>
+<li><code><a title="tests.test_basic.test_aws_iam_role_arn" href="#tests.test_basic.test_aws_iam_role_arn">test_aws_iam_role_arn</a></code></li>
+<li><code><a title="tests.test_basic.test_backup" href="#tests.test_basic.test_backup">test_backup</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_block_deletion" href="#tests.test_basic.test_backup_block_deletion">test_backup_block_deletion</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_failed_disable_auto_cleanup" href="#tests.test_basic.test_backup_failed_disable_auto_cleanup">test_backup_failed_disable_auto_cleanup</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_failed_enable_auto_cleanup" href="#tests.test_basic.test_backup_failed_enable_auto_cleanup">test_backup_failed_enable_auto_cleanup</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_labels" href="#tests.test_basic.test_backup_labels">test_backup_labels</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_lock_creation_during_deletion" href="#tests.test_basic.test_backup_lock_creation_during_deletion">test_backup_lock_creation_during_deletion</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_lock_deletion_during_backup" href="#tests.test_basic.test_backup_lock_deletion_during_backup">test_backup_lock_deletion_during_backup</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_lock_deletion_during_restoration" href="#tests.test_basic.test_backup_lock_deletion_during_restoration">test_backup_lock_deletion_during_restoration</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_lock_restoration_during_deletion" href="#tests.test_basic.test_backup_lock_restoration_during_deletion">test_backup_lock_restoration_during_deletion</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_metadata_deletion" href="#tests.test_basic.test_backup_metadata_deletion">test_backup_metadata_deletion</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_status_for_unavailable_replicas" href="#tests.test_basic.test_backup_status_for_unavailable_replicas">test_backup_status_for_unavailable_replicas</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_volume_list" href="#tests.test_basic.test_backup_volume_list">test_backup_volume_list</a></code></li>
+<li><code><a title="tests.test_basic.test_backup_volume_restore_with_access_mode" href="#tests.test_basic.test_backup_volume_restore_with_access_mode">test_backup_volume_restore_with_access_mode</a></code></li>
+<li><code><a title="tests.test_basic.test_backuptarget_available_during_engine_image_not_ready" href="#tests.test_basic.test_backuptarget_available_during_engine_image_not_ready">test_backuptarget_available_during_engine_image_not_ready</a></code></li>
+<li><code><a title="tests.test_basic.test_backuptarget_invalid" href="#tests.test_basic.test_backuptarget_invalid">test_backuptarget_invalid</a></code></li>
+<li><code><a title="tests.test_basic.test_cleanup_system_generated_snapshots" href="#tests.test_basic.test_cleanup_system_generated_snapshots">test_cleanup_system_generated_snapshots</a></code></li>
+<li><code><a title="tests.test_basic.test_default_storage_class_syncup" href="#tests.test_basic.test_default_storage_class_syncup">test_default_storage_class_syncup</a></code></li>
+<li><code><a title="tests.test_basic.test_delete_backup_during_restoring_volume" href="#tests.test_basic.test_delete_backup_during_restoring_volume">test_delete_backup_during_restoring_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_deleting_backup_volume" href="#tests.test_basic.test_deleting_backup_volume">test_deleting_backup_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_dr_volume_activated_with_failed_replica" href="#tests.test_basic.test_dr_volume_activated_with_failed_replica">test_dr_volume_activated_with_failed_replica</a></code></li>
+<li><code><a title="tests.test_basic.test_dr_volume_with_backup_and_backup_volume_deleted" href="#tests.test_basic.test_dr_volume_with_backup_and_backup_volume_deleted">test_dr_volume_with_backup_and_backup_volume_deleted</a></code></li>
+<li><code><a title="tests.test_basic.test_dr_volume_with_backup_block_deletion" href="#tests.test_basic.test_dr_volume_with_backup_block_deletion">test_dr_volume_with_backup_block_deletion</a></code></li>
+<li><code><a title="tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress" href="#tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress">test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress</a></code></li>
+<li><code><a title="tests.test_basic.test_engine_image_daemonset_restart" href="#tests.test_basic.test_engine_image_daemonset_restart">test_engine_image_daemonset_restart</a></code></li>
+<li><code><a title="tests.test_basic.test_expand_pvc_with_size_round_up" href="#tests.test_basic.test_expand_pvc_with_size_round_up">test_expand_pvc_with_size_round_up</a></code></li>
+<li><code><a title="tests.test_basic.test_expansion_basic" href="#tests.test_basic.test_expansion_basic">test_expansion_basic</a></code></li>
+<li><code><a title="tests.test_basic.test_expansion_canceling" href="#tests.test_basic.test_expansion_canceling">test_expansion_canceling</a></code></li>
+<li><code><a title="tests.test_basic.test_expansion_with_scheduling_failure" href="#tests.test_basic.test_expansion_with_scheduling_failure">test_expansion_with_scheduling_failure</a></code></li>
+<li><code><a title="tests.test_basic.test_expansion_with_size_round_up" href="#tests.test_basic.test_expansion_with_size_round_up">test_expansion_with_size_round_up</a></code></li>
+<li><code><a title="tests.test_basic.test_filesystem_trim" href="#tests.test_basic.test_filesystem_trim">test_filesystem_trim</a></code></li>
+<li><code><a title="tests.test_basic.test_hosts" href="#tests.test_basic.test_hosts">test_hosts</a></code></li>
+<li><code><a title="tests.test_basic.test_listing_backup_volume" href="#tests.test_basic.test_listing_backup_volume">test_listing_backup_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_multiple_volumes_creation_with_degraded_availability" href="#tests.test_basic.test_multiple_volumes_creation_with_degraded_availability">test_multiple_volumes_creation_with_degraded_availability</a></code></li>
+<li><code><a title="tests.test_basic.test_pvc_storage_class_name_from_backup_volume" href="#tests.test_basic.test_pvc_storage_class_name_from_backup_volume">test_pvc_storage_class_name_from_backup_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_restore_basic" href="#tests.test_basic.test_restore_basic">test_restore_basic</a></code></li>
+<li><code><a title="tests.test_basic.test_restore_inc" href="#tests.test_basic.test_restore_inc">test_restore_inc</a></code></li>
+<li><code><a title="tests.test_basic.test_restore_inc_with_offline_expansion" href="#tests.test_basic.test_restore_inc_with_offline_expansion">test_restore_inc_with_offline_expansion</a></code></li>
+<li><code><a title="tests.test_basic.test_running_volume_with_scheduling_failure" href="#tests.test_basic.test_running_volume_with_scheduling_failure">test_running_volume_with_scheduling_failure</a></code></li>
+<li><code><a title="tests.test_basic.test_setting_default_replica_count" href="#tests.test_basic.test_setting_default_replica_count">test_setting_default_replica_count</a></code></li>
+<li><code><a title="tests.test_basic.test_settings" href="#tests.test_basic.test_settings">test_settings</a></code></li>
+<li><code><a title="tests.test_basic.test_snapshot" href="#tests.test_basic.test_snapshot">test_snapshot</a></code></li>
+<li><code><a title="tests.test_basic.test_snapshot_prune" href="#tests.test_basic.test_snapshot_prune">test_snapshot_prune</a></code></li>
+<li><code><a title="tests.test_basic.test_snapshot_prune_and_coalesce_simultaneously" href="#tests.test_basic.test_snapshot_prune_and_coalesce_simultaneously">test_snapshot_prune_and_coalesce_simultaneously</a></code></li>
+<li><code><a title="tests.test_basic.test_space_usage_for_rebuilding_only_volume" href="#tests.test_basic.test_space_usage_for_rebuilding_only_volume">test_space_usage_for_rebuilding_only_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_space_usage_for_rebuilding_only_volume_worst_scenario" href="#tests.test_basic.test_space_usage_for_rebuilding_only_volume_worst_scenario">test_space_usage_for_rebuilding_only_volume_worst_scenario</a></code></li>
+<li><code><a title="tests.test_basic.test_storage_class_from_backup" href="#tests.test_basic.test_storage_class_from_backup">test_storage_class_from_backup</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_backup_and_restore_with_gzip_compression_method" href="#tests.test_basic.test_volume_backup_and_restore_with_gzip_compression_method">test_volume_backup_and_restore_with_gzip_compression_method</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_backup_and_restore_with_lz4_compression_method" href="#tests.test_basic.test_volume_backup_and_restore_with_lz4_compression_method">test_volume_backup_and_restore_with_lz4_compression_method</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_backup_and_restore_with_none_compression_method" href="#tests.test_basic.test_volume_backup_and_restore_with_none_compression_method">test_volume_backup_and_restore_with_none_compression_method</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_basic" href="#tests.test_basic.test_volume_basic">test_volume_basic</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_iscsi_basic" href="#tests.test_basic.test_volume_iscsi_basic">test_volume_iscsi_basic</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_metafile_deleted" href="#tests.test_basic.test_volume_metafile_deleted">test_volume_metafile_deleted</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_metafile_deleted_when_writing_data" href="#tests.test_basic.test_volume_metafile_deleted_when_writing_data">test_volume_metafile_deleted_when_writing_data</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_metafile_empty" href="#tests.test_basic.test_volume_metafile_empty">test_volume_metafile_empty</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_multinode" href="#tests.test_basic.test_volume_multinode">test_volume_multinode</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_scheduling_failure" href="#tests.test_basic.test_volume_scheduling_failure">test_volume_scheduling_failure</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_toomanysnapshots_condition" href="#tests.test_basic.test_volume_toomanysnapshots_condition">test_volume_toomanysnapshots_condition</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_update_replica_count" href="#tests.test_basic.test_volume_update_replica_count">test_volume_update_replica_count</a></code></li>
+<li><code><a title="tests.test_basic.test_workload_with_fsgroup" href="#tests.test_basic.test_workload_with_fsgroup">test_workload_with_fsgroup</a></code></li>
+<li><code><a title="tests.test_basic.volume_basic_test" href="#tests.test_basic.volume_basic_test">volume_basic_test</a></code></li>
+<li><code><a title="tests.test_basic.volume_iscsi_basic_test" href="#tests.test_basic.volume_iscsi_basic_test">volume_iscsi_basic_test</a></code></li>
+<li><code><a title="tests.test_basic.volume_rw_test" href="#tests.test_basic.volume_rw_test">volume_rw_test</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_csi API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_csi</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_csi.backupstore_test"><code class="name flex">
+<span>def <span class="ident">backupstore_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name, backing_image, test_data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.create_and_verify_block_volume"><code class="name flex">
+<span>def <span class="ident">create_and_verify_block_volume</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest, is_rwx)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.create_and_wait_csi_pod"><code class="name flex">
+<span>def <span class="ident">create_and_wait_csi_pod</span></span>(<span>pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.create_and_wait_csi_pod_named_pv"><code class="name flex">
+<span>def <span class="ident">create_and_wait_csi_pod_named_pv</span></span>(<span>pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.create_pv_storage"><code class="name flex">
+<span>def <span class="ident">create_pv_storage</span></span>(<span>api, cli, pv, claim, backing_image, from_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Manually create a new PV and PVC for testing.</p></div>
+</dd>
+<dt id="tests.test_csi.csi_backup_test"><code class="name flex">
+<span>def <span class="ident">csi_backup_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.csi_io_test"><code class="name flex">
+<span>def <span class="ident">csi_io_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.csi_mount_test"><code class="name flex">
+<span>def <span class="ident">csi_mount_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_size, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi.md5sum_thread"><code class="name flex">
+<span>def <span class="ident">md5sum_thread</span></span>(<span>pod_name, destination_in_pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>For test case test_csi_block_volume_online_expansion and
+test_csi_mount_volume_online_expansion use.</p>
+<p>Use a new api instance in thread or when this threading
+is still running, execute other k8s command in main thread
+will hit error Handshake status 200 OK</p></div>
+</dd>
+<dt id="tests.test_csi.test_allow_volume_creation_with_degraded_availability_csi"><code class="name flex">
+<span>def <span class="ident">test_allow_volume_creation_with_degraded_availability_csi</span></span>(<span>client, core_api, apps_api, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Allow Volume Creation with Degraded Availability (CSI)</p>
+<p>Requirement:
+1. Set <code>allow-volume-creation-with-degraded-availability</code> to true.
+2. Set <code>node-level-soft-anti-affinity</code> to false.</p>
+<p>Steps:
+1. Disable scheduling for node 3.
+2. Create a Deployment Pod with a volume and 3 replicas.
+1. After the volume is attached, scheduling error should be seen.
+3. Write data to the Pod.
+4. Scale down the deployment to 0 to detach the volume.
+1. Scheduled condition should become true.
+5. Scale up the deployment back to 1 and verify the data.
+1. Scheduled condition should become false.
+6. Enable the scheduling for node 3.
+1. Volume should start rebuilding on the node 3 soon.
+2. Once the rebuilding starts, the scheduled condition should become
+true.
+7. Once rebuild finished, scale down and back the deployment to verify
+the data.</p></div>
+</dd>
+<dt id="tests.test_csi.test_csi_backup"><code class="name flex">
+<span>def <span class="ident">test_csi_backup</span></span>(<span>set_random_backupstore, client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that backup/restore works with volumes created by CSI driver.</p>
+<p>Run the test for all the backupstores</p>
+<ol>
+<li>Create PV/PVC/Pod using dynamic provisioned volume</li>
+<li>Write data and create snapshot using Longhorn API</li>
+<li>Verify the existence of backup</li>
+<li>Create another Pod using restored backup</li>
+<li>Verify the data in the new Pod</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_block_volume"><code class="name flex">
+<span>def <span class="ident">test_csi_block_volume</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: raw block volume</p>
+<ol>
+<li>Create a PVC with <code>volumeMode = Block</code></li>
+<li>Create a pod using the PVC to dynamic provision a volume</li>
+<li>Verify the pod creation</li>
+<li>Generate <code>test_data</code> and write to the block volume directly in the pod</li>
+<li>Read the data back for validation</li>
+<li>Delete the pod and create <code>pod2</code> to use the same volume</li>
+<li>Validate the data in <code>pod2</code> is consistent with <code>test_data</code></li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_block_volume_online_expansion"><code class="name flex">
+<span>def <span class="ident">test_csi_block_volume_online_expansion</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: online expansion for block volume</p>
+<ol>
+<li>Create a new <code>storage_class</code> with <code>allowVolumeExpansion</code> set</li>
+<li>Create PVC with access mode "block" and Pod with the new StorageClass</li>
+<li>Use <code>dd</code> command copy data into volume block device.</li>
+<li>During the copy, update pvc.spec.resources to expand the volume</li>
+<li>Verify the volume expansion done using Longhorn API
+and Check the PVC &amp; PV size</li>
+<li>Wait for the copy complete.</li>
+<li>Calculate the checksum for the copied data inside the block volume
+asynchronously.</li>
+<li>During the calculation, update pvc.spec.resources to expand the volume
+again.</li>
+<li>Wait for the calculation complete, then compare the checksum.</li>
+<li>Do cleanup: Remove the original <code>test_data</code>as well as the pod and PVC.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_encrypted_block_volume"><code class="name flex">
+<span>def <span class="ident">test_csi_encrypted_block_volume</span></span>(<span>client, core_api, storage_class, crypto_secret, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: encrypted block volume</p>
+<ol>
+<li>Create a PVC with encrypted <code>volumeMode = Block</code></li>
+<li>Create a pod using the PVC to dynamic provision a volume</li>
+<li>Verify the pod creation</li>
+<li>Generate <code>test_data</code> and write to the block volume directly in the pod</li>
+<li>Read the data back for validation</li>
+<li>Delete the pod and create <code>pod2</code> to use the same volume</li>
+<li>Validate the data in <code>pod2</code> is consistent with <code>test_data</code></li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_encrypted_migratable_block_volume"><code class="name flex">
+<span>def <span class="ident">test_csi_encrypted_migratable_block_volume</span></span>(<span>client, core_api, storage_class, crypto_secret, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: encrypted migratable block volume</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/7678">https://github.com/longhorn/longhorn/issues/7678</a></p>
+<ol>
+<li>Create a PVC with encrypted <code>volumeMode = Block</code> and <code>migratable = true</code></li>
+<li>Create a pod using the PVC to dynamic provision a volume</li>
+<li>Verify the pod creation</li>
+<li>Generate <code>test_data</code> and write to the block volume directly in the pod</li>
+<li>Read the data back for validation</li>
+<li>Delete the pod and create <code>pod2</code> to use the same volume</li>
+<li>Validate the data in <code>pod2</code> is consistent with <code>test_data</code></li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_expansion_with_replica_failure"><code class="name flex">
+<span>def <span class="ident">test_csi_expansion_with_replica_failure</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test expansion success but with one replica expansion failure</p>
+<ol>
+<li>Create a new <code>storage_class</code> with <code>allowVolumeExpansion</code> set</li>
+<li>Create PVC and Pod with dynamic provisioned volume from the StorageClass</li>
+<li>Create an empty directory with expansion snapshot tmp meta file path
+for one replica so that the replica expansion will fail</li>
+<li>Generate <code>test_data</code> and write to the pod</li>
+<li>Update pvc.spec.resources to expand the volume</li>
+<li>Check expansion result using Longhorn API. There will be expansion error
+caused by the failed replica but overall the expansion should succeed.</li>
+<li>Check if the volume will reuse the failed replica during rebuilding.</li>
+<li>Validate the volume content, then check if data writing looks fine</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_io"><code class="name flex">
+<span>def <span class="ident">test_csi_io</span></span>(<span>client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that input and output on a statically defined CSI volume works as
+expected.</p>
+<p>Note: Fixtures are torn down here in reverse order that they are specified
+as a parameter. Take caution when reordering test fixtures.</p>
+<ol>
+<li>Create PV/PVC/Pod with dynamic positioned Longhorn volume</li>
+<li>Generate <code>test_data</code> and write it to volume using the equivalent
+of <code>kubectl exec</code></li>
+<li>Delete the Pod</li>
+<li>Create another pod with the same PV</li>
+<li>Check the previous created <code>test_data</code> in the new Pod</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_minimal_volume_size"><code class="name flex">
+<span>def <span class="ident">test_csi_minimal_volume_size</span></span>(<span>client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI Minimal Volume Size</p>
+<ol>
+<li>Create a PVC requesting size 5MiB. Check the PVC requested size is
+5MiB and capacity size get is 10MiB.</li>
+<li>Remove the PVC.</li>
+<li>Create a PVC requesting size 10MiB. Check the PVC requested size and
+capacity size get are both 10MiB.</li>
+<li>Create a pod to use this PVC.</li>
+<li>Write some data to the volume and read it back to compare.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_mount"><code class="name flex">
+<span>def <span class="ident">test_csi_mount</span></span>(<span>client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that a statically defined CSI volume can be created, mounted,
+unmounted, and deleted properly on the Kubernetes cluster.</p>
+<p>Note: Fixtures are torn down here in reverse order that they are specified
+as a parameter. Take caution when reordering test fixtures.</p>
+<ol>
+<li>Create a PV/PVC/Pod with pre-created Longhorn volume<ol>
+<li>Using Kubernetes manifest instead of Longhorn PV/PVC creation API</li>
+</ol>
+</li>
+<li>Make sure the pod is running</li>
+<li>Verify the volume status</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_mount_volume_online_expansion"><code class="name flex">
+<span>def <span class="ident">test_csi_mount_volume_online_expansion</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: online expansion for mount volume</p>
+<ol>
+<li>Create a new <code>storage_class</code> with <code>allowVolumeExpansion</code> set</li>
+<li>Create PVC and Pod with the new StorageClass</li>
+<li>Use <code>dd</code> command copy data into volume mount point.</li>
+<li>During the copy, update pvc.spec.resources to expand the volume</li>
+<li>Verify the volume expansion done using Longhorn API
+and Check the PVC &amp; PV size</li>
+<li>Wait for the copy complete.</li>
+<li>Calculate the checksum for the copied data inside volume mount point.</li>
+<li>Update pvc.spec.resources to expand the volume and get data checksum
+again.</li>
+<li>Wait for the calculation complete, then compare the checksum.</li>
+<li>Do cleanup: Remove the original <code>test_data</code>as well as the pod and PVC.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_csi_offline_expansion"><code class="name flex">
+<span>def <span class="ident">test_csi_offline_expansion</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: offline expansion</p>
+<ol>
+<li>Create a new <code>storage_class</code> with <code>allowVolumeExpansion</code> set</li>
+<li>Create PVC and Pod with dynamic provisioned volume from the StorageClass</li>
+<li>Generate <code>test_data</code> and write to the pod</li>
+<li>Delete the pod</li>
+<li>Update pvc.spec.resources to expand the volume</li>
+<li>Verify the volume expansion done using Longhorn API</li>
+<li>Create a new pod and validate the volume content</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_restage_volume_if_node_stage_volume_not_called"><code class="name flex">
+<span>def <span class="ident">test_restage_volume_if_node_stage_volume_not_called</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restage volume if NodeStageVolume not called (CSI)</p>
+<ol>
+<li>Create a PVC with spec.volumeMode == Block.</li>
+<li>Create a Deployment with spec.replicas == 1 that uses the PVC. Set a
+spec.selector on the Deployment so it can only run Pods on one node.</li>
+<li>Hard reboot the node running the Deployment's single Pod.</li>
+<li>Before the node comes back, force delete the "running" Pod.</li>
+<li>Before the node comes back, verify there is now one pending Pod and one
+terminating Pod.</li>
+<li>After the node comes back, verify that a Pod becomes running and remains
+running. It is fine if that Pod is different not the pending one from
+above. The automatic remount mechanism may cause some churn.</li>
+<li>Force delete the running Pod again.</li>
+<li>Verify that a Pod becomes running and remains running.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi.test_xfs_pv"><code class="name flex">
+<span>def <span class="ident">test_xfs_pv</span></span>(<span>client, core_api, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test create PV with new XFS filesystem</p>
+<ol>
+<li>Create a volume</li>
+<li>Create a PV for the existing volume, specify <code>xfs</code> as filesystem</li>
+<li>Create PVC and Pod</li>
+<li>Make sure Pod is running.</li>
+<li>Write data into the pod and read back for validation.</li>
+</ol>
+<p>Note: The volume will be formatted to XFS filesystem by Kubernetes in this
+case.</p></div>
+</dd>
+<dt id="tests.test_csi.test_xfs_pv_existing_volume"><code class="name flex">
+<span>def <span class="ident">test_xfs_pv_existing_volume</span></span>(<span>client, core_api, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test create PV with existing XFS filesystem</p>
+<ol>
+<li>Create a volume</li>
+<li>Create PV/PVC for the existing volume, specify <code>xfs</code> as filesystem</li>
+<li>Attach the volume to the current node.</li>
+<li>Format it to <code>xfs</code></li>
+<li>Create a POD using the volume</li>
+</ol>
+<p>FIXME: We should write data in step 4 and validate the data in step 5, make
+sure the disk won't be reformatted</p></div>
+</dd>
+<dt id="tests.test_csi.update_storageclass_references"><code class="name flex">
+<span>def <span class="ident">update_storageclass_references</span></span>(<span>name, pv, claim)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Rename all references to a StorageClass to a specified name.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_csi.backupstore_test" href="#tests.test_csi.backupstore_test">backupstore_test</a></code></li>
+<li><code><a title="tests.test_csi.create_and_verify_block_volume" href="#tests.test_csi.create_and_verify_block_volume">create_and_verify_block_volume</a></code></li>
+<li><code><a title="tests.test_csi.create_and_wait_csi_pod" href="#tests.test_csi.create_and_wait_csi_pod">create_and_wait_csi_pod</a></code></li>
+<li><code><a title="tests.test_csi.create_and_wait_csi_pod_named_pv" href="#tests.test_csi.create_and_wait_csi_pod_named_pv">create_and_wait_csi_pod_named_pv</a></code></li>
+<li><code><a title="tests.test_csi.create_pv_storage" href="#tests.test_csi.create_pv_storage">create_pv_storage</a></code></li>
+<li><code><a title="tests.test_csi.csi_backup_test" href="#tests.test_csi.csi_backup_test">csi_backup_test</a></code></li>
+<li><code><a title="tests.test_csi.csi_io_test" href="#tests.test_csi.csi_io_test">csi_io_test</a></code></li>
+<li><code><a title="tests.test_csi.csi_mount_test" href="#tests.test_csi.csi_mount_test">csi_mount_test</a></code></li>
+<li><code><a title="tests.test_csi.md5sum_thread" href="#tests.test_csi.md5sum_thread">md5sum_thread</a></code></li>
+<li><code><a title="tests.test_csi.test_allow_volume_creation_with_degraded_availability_csi" href="#tests.test_csi.test_allow_volume_creation_with_degraded_availability_csi">test_allow_volume_creation_with_degraded_availability_csi</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_backup" href="#tests.test_csi.test_csi_backup">test_csi_backup</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_block_volume" href="#tests.test_csi.test_csi_block_volume">test_csi_block_volume</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_block_volume_online_expansion" href="#tests.test_csi.test_csi_block_volume_online_expansion">test_csi_block_volume_online_expansion</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_encrypted_block_volume" href="#tests.test_csi.test_csi_encrypted_block_volume">test_csi_encrypted_block_volume</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_encrypted_migratable_block_volume" href="#tests.test_csi.test_csi_encrypted_migratable_block_volume">test_csi_encrypted_migratable_block_volume</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_expansion_with_replica_failure" href="#tests.test_csi.test_csi_expansion_with_replica_failure">test_csi_expansion_with_replica_failure</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_io" href="#tests.test_csi.test_csi_io">test_csi_io</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_minimal_volume_size" href="#tests.test_csi.test_csi_minimal_volume_size">test_csi_minimal_volume_size</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_mount" href="#tests.test_csi.test_csi_mount">test_csi_mount</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_mount_volume_online_expansion" href="#tests.test_csi.test_csi_mount_volume_online_expansion">test_csi_mount_volume_online_expansion</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_offline_expansion" href="#tests.test_csi.test_csi_offline_expansion">test_csi_offline_expansion</a></code></li>
+<li><code><a title="tests.test_csi.test_restage_volume_if_node_stage_volume_not_called" href="#tests.test_csi.test_restage_volume_if_node_stage_volume_not_called">test_restage_volume_if_node_stage_volume_not_called</a></code></li>
+<li><code><a title="tests.test_csi.test_xfs_pv" href="#tests.test_csi.test_xfs_pv">test_xfs_pv</a></code></li>
+<li><code><a title="tests.test_csi.test_xfs_pv_existing_volume" href="#tests.test_csi.test_xfs_pv_existing_volume">test_xfs_pv_existing_volume</a></code></li>
+<li><code><a title="tests.test_csi.update_storageclass_references" href="#tests.test_csi.update_storageclass_references">update_storageclass_references</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

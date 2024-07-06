@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -826,7 +826,7 @@ And create and attach a volume (volume-2)</p>
 longhorn-manager-zsph2                                0/1     CrashLoopBackOff   2 (8s ago)    52s
 longhorn-manager-grhsf                                0/1     CrashLoopBackOff   2 (8s ago)    51s
 </code></pre><p>And should see incompatible version error in longhorn-manager Pod logs</p>
-<pre tabindex="0"><code>time=&#34;2023-08-17T03:03:20Z&#34; level=fatal msg=&#34;Error starting manager: failed checking Engine upgrade path: incompatible Engine ei-7fa7c208 client API version: found version 7 is below required minimal version 8&#34;
+<pre tabindex="0"><code>time=&quot;2023-08-17T03:03:20Z&quot; level=fatal msg=&quot;Error starting manager: failed checking Engine upgrade path: incompatible Engine ei-7fa7c208 client API version: found version 7 is below required minimal version 8&quot;
 </code></pre><p><strong>When</strong> downgraded Longhorn to v1.5.x<br>
 <strong>Then</strong> Longhorn components should be running</p>
 <p><strong>When</strong> upgraded v1.4.1 volume (volume-1) engine<br>

@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -822,15 +822,15 @@
 <li>Click <code>Advanced</code> then <code>Add new volume</code> in <code>Configure storage</code> and fill in the fields.</li>
 <li>Adjust the auto-mount script and add to <code>User data</code> in <code>Advanced details</code>. Make sure the <code>DEV_PATH</code> matches the <code>Device name</code> of the additional volume.
 <pre tabindex="0"><code>MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary=&#34;==MYBOUNDARY==&#34;
+Content-Type: multipart/mixed; boundary=&quot;==MYBOUNDARY==&quot;
 --==MYBOUNDARY==
-Content-Type: text/x-shellscript; charset=&#34;us-ascii&#34;
+Content-Type: text/x-shellscript; charset=&quot;us-ascii&quot;
 #!/bin/bash
 # https://docs.aws.amazon.com/eks/latest/userguide/launch-templates.html#launch-template-user-data
-echo &#34;Running custom user data script&#34;
-DEV_PATH=&#34;/dev/sdb&#34;
+echo &quot;Running custom user data script&quot;
+DEV_PATH=&quot;/dev/sdb&quot;
 mkfs -t ext4 ${DEV_PATH}
-MOUNT_PATH=&#34;/mnt/longhorn&#34;
+MOUNT_PATH=&quot;/mnt/longhorn&quot;
 mkdir ${MOUNT_PATH}
 mount ${DEV_PATH} ${MOUNT_PATH}
 </code></pre></li>

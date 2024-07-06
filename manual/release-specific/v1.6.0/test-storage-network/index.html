@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -865,8 +865,8 @@ index ab626a66..a7228942 100644
            ]
          }
        ],
--      &#34;kubeconfig&#34;: &#34;/etc/cni/net.d/multus.d/multus.kubeconfig&#34;
-+      &#34;kubeconfig&#34;: &#34;/var/lib/rancher/k3s/agent/etc/cni/net.d/multus.d/multus.kubeconfig&#34;
+-      &quot;kubeconfig&quot;: &quot;/etc/cni/net.d/multus.d/multus.kubeconfig&quot;
++      &quot;kubeconfig&quot;: &quot;/var/lib/rancher/k3s/agent/etc/cni/net.d/multus.d/multus.kubeconfig&quot;
      }
  ---
  apiVersion: apps/v1
@@ -876,15 +876,15 @@ index ab626a66..a7228942 100644
        - name: kube-multus
 -        image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot
 +        image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.0.2
-         command: [&#34;/thin_entrypoint&#34;]
+         command: [&quot;/thin_entrypoint&quot;]
          args:
-         - &#34;--multus-conf-file=auto&#34;
-         - &#34;--multus-autoconfig-dir=/host/etc/cni/net.d&#34;
-         - &#34;--cni-conf-dir=/host/etc/cni/net.d&#34;
-+        - &#34;--multus-kubeconfig-file-host=/var/lib/rancher/k3s/agent/etc/cni/net.d/multus.d/multus.kubeconfig&#34;
+         - &quot;--multus-conf-file=auto&quot;
+         - &quot;--multus-autoconfig-dir=/host/etc/cni/net.d&quot;
+         - &quot;--cni-conf-dir=/host/etc/cni/net.d&quot;
++        - &quot;--multus-kubeconfig-file-host=/var/lib/rancher/k3s/agent/etc/cni/net.d/multus.d/multus.kubeconfig&quot;
          resources:
            requests:
-             cpu: &#34;100m&#34;
+             cpu: &quot;100m&quot;
 @@ -222,10 +223,10 @@ spec:
        volumes:
          - name: cni
@@ -909,17 +909,17 @@ tar -zxvf cni-plugins-linux-amd64-v1.3.0.tgz
 cp ipvlan /var/lib/rancher/k3s/data/current/bin/
 </code></pre><p><em>And</em> Setup flannels on all cluster nodes.</p>
 <pre tabindex="0"><code># Update nodes eth1 IP to N1, N2, N3
-N1=&#34;10.0.2.95&#34;
-N2=&#34;10.0.2.139&#34;
-N3=&#34;10.0.2.158&#34;
+N1=&quot;10.0.2.95&quot;
+N2=&quot;10.0.2.139&quot;
+N3=&quot;10.0.2.158&quot;
 NODES=(${N1} ${N2} ${N3})
 
-STORAGE_NETWORK_PREFIX=&#34;192.168&#34;
+STORAGE_NETWORK_PREFIX=&quot;192.168&quot;
 
-ETH1_IP=`ip a | grep eth1 | grep -Eo &#39;inet (addr:)?([0-9]*\.){3}[0-9]*&#39;  | awk &#39;{print $2}&#39;`
+ETH1_IP=`ip a | grep eth1 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*'  | awk '{print $2}'`
 
 count=1
-for n in &#34;${NODES[@]}&#34;; do
+for n in &quot;${NODES[@]}&quot;; do
     [[ ${ETH1_IP} != $n ]] &amp;&amp; ((count=count+1)) &amp;&amp; continue
 
     NET=$count
@@ -934,54 +934,54 @@ FLANNEL_IPMASQ=true
 EOF
 </code></pre><p><em>And</em> Setup routes on all cluster nodes.</p>
 <pre tabindex="0"><code># Update nodes eth1 IP to N1, N2, N3
-N1=&#34;10.0.2.95&#34;
-N2=&#34;10.0.2.139&#34;
-N3=&#34;10.0.2.158&#34;
+N1=&quot;10.0.2.95&quot;
+N2=&quot;10.0.2.139&quot;
+N3=&quot;10.0.2.158&quot;
 
-STORAGE_NETWORK_PREFIX=&#34;192.168&#34;
-ACTION=&#34;add&#34;
+STORAGE_NETWORK_PREFIX=&quot;192.168&quot;
+ACTION=&quot;add&quot;
 
-ETH1_IP=`ip a | grep eth1 | grep -Eo &#39;inet (addr:)?([0-9]*\.){3}[0-9]*&#39;  | awk &#39;{print $2}&#39;`
+ETH1_IP=`ip a | grep eth1 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*'  | awk '{print $2}'`
 
 [[ ${ETH1_IP} != ${N1} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.1.0/24 via ${N1} dev eth1
 [[ ${ETH1_IP} != ${N2} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.2.0/24 via ${N2} dev eth1
 [[ ${ETH1_IP} != ${N3} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.3.0/24 via ${N3} dev eth1
 </code></pre><p><em>And</em> Deploy <code>NetworkAttachmentDefinition</code>.</p>
 <pre tabindex="0"><code>cat &lt;&lt; EOF &gt; nad-192-168-0-0.yaml
-apiVersion: &#34;k8s.cni.cncf.io/v1&#34;
+apiVersion: &quot;k8s.cni.cncf.io/v1&quot;
 kind: NetworkAttachmentDefinition
 metadata:
   name: demo-192-168-0-0
   namespace: kube-system
   #namespace: longhorn-system
 spec:
-  config: &#39;{
-      &#34;cniVersion&#34;: &#34;0.3.1&#34;,
-      &#34;type&#34;: &#34;flannel&#34;,
-      &#34;subnetFile&#34;: &#34;/run/flannel/multus-subnet-192.168.0.0.env&#34;,
-      &#34;dataDir&#34;: &#34;/var/lib/cni/multus-subnet-192.168.0.0&#34;,
-      &#34;delegate&#34;: {
-        &#34;type&#34;: &#34;ipvlan&#34;,
-        &#34;master&#34;: &#34;eth1&#34;,
-        &#34;mode&#34;: &#34;l3&#34;,
-          &#34;capabilities&#34;: {
-            &#34;ips&#34;: true
+  config: '{
+      &quot;cniVersion&quot;: &quot;0.3.1&quot;,
+      &quot;type&quot;: &quot;flannel&quot;,
+      &quot;subnetFile&quot;: &quot;/run/flannel/multus-subnet-192.168.0.0.env&quot;,
+      &quot;dataDir&quot;: &quot;/var/lib/cni/multus-subnet-192.168.0.0&quot;,
+      &quot;delegate&quot;: {
+        &quot;type&quot;: &quot;ipvlan&quot;,
+        &quot;master&quot;: &quot;eth1&quot;,
+        &quot;mode&quot;: &quot;l3&quot;,
+          &quot;capabilities&quot;: {
+            &quot;ips&quot;: true
         }
       },
-      &#34;kubernetes&#34;: {
-          &#34;kubeconfig&#34;: &#34;/etc/cni/net.d/multus.d/multus.kubeconfig&#34;
+      &quot;kubernetes&quot;: {
+          &quot;kubeconfig&quot;: &quot;/etc/cni/net.d/multus.d/multus.kubeconfig&quot;
       }
-    }&#39;
+    }'
 EOF
 kubectl apply -f nad-192-168-0-0.yaml
 </code></pre><h4 id="thick-plugin">Thick Plugin</h4>
 <p><strong>Given</strong> K3s K8s cluster installed on EC2 instances.</p>
 <p><em>And</em> (For K3s) Establish symbolic links on all cluster nodes.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir /etc/cni
-</span></span><span style="display:flex;"><span>mkdir /opt/cni
-</span></span><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni/
-</span></span><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni/
-</span></span></code></pre></div><p><em>And</em> Deploy Multus DaemonSet on the control-plane node.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir /etc/cni
+mkdir /opt/cni
+ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni/
+ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni/
+</code></pre></div><p><em>And</em> Deploy Multus DaemonSet on the control-plane node.</p>
 <ul>
 <li>Download YAML.
 <pre tabindex="0"><code>curl -O https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.0.2/deployments/multus-daemonset-thick.yml
@@ -997,7 +997,7 @@ index eaa92ece..c895651b 100644
          - name: kube-multus
 -          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
 +          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.0.2-thick
-           command: [ &#34;/usr/src/multus-cni/bin/multus-daemon&#34; ]
+           command: [ &quot;/usr/src/multus-cni/bin/multus-daemon&quot; ]
            resources:
              requests:
 @@ -183,9 +183,11 @@ spec:
@@ -1011,8 +1011,8 @@ index eaa92ece..c895651b 100644
 -          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
 +          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.0.2-thick
            command:
-             - &#34;cp&#34;
-             - &#34;/usr/src/multus-cni/bin/multus-shim&#34;
+             - &quot;cp&quot;
+             - &quot;/usr/src/multus-cni/bin/multus-shim&quot;
 </code></pre></li>
 <li>Apply YAML to K8s cluster.
 <pre tabindex="0"><code>kubectl apply -f multus-daemonset-thick.yml
@@ -1024,17 +1024,17 @@ tar -zxvf cni-plugins-linux-amd64-v1.3.0.tgz
 cp ipvlan /var/lib/rancher/k3s/data/current/bin/
 </code></pre><p><em>And</em> Setup flannels on all cluster nodes.</p>
 <pre tabindex="0"><code># Update nodes eth1 IP to N1, N2, N3
-N1=&#34;10.0.2.95&#34;
-N2=&#34;10.0.2.139&#34;
-N3=&#34;10.0.2.158&#34;
+N1=&quot;10.0.2.95&quot;
+N2=&quot;10.0.2.139&quot;
+N3=&quot;10.0.2.158&quot;
 NODES=(${N1} ${N2} ${N3})
 
-STORAGE_NETWORK_PREFIX=&#34;192.168&#34;
+STORAGE_NETWORK_PREFIX=&quot;192.168&quot;
 
-ETH1_IP=`ip a | grep eth1 | grep -Eo &#39;inet (addr:)?([0-9]*\.){3}[0-9]*&#39;  | awk &#39;{print $2}&#39;`
+ETH1_IP=`ip a | grep eth1 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*'  | awk '{print $2}'`
 
 count=1
-for n in &#34;${NODES[@]}&#34;; do
+for n in &quot;${NODES[@]}&quot;; do
     [[ ${ETH1_IP} != $n ]] &amp;&amp; ((count=count+1)) &amp;&amp; continue
 
     NET=$count
@@ -1049,44 +1049,44 @@ FLANNEL_IPMASQ=true
 EOF
 </code></pre><p><em>And</em> Setup routes on all cluster nodes.</p>
 <pre tabindex="0"><code># Update nodes eth1 IP to N1, N2, N3
-N1=&#34;10.0.2.95&#34;
-N2=&#34;10.0.2.139&#34;
-N3=&#34;10.0.2.158&#34;
+N1=&quot;10.0.2.95&quot;
+N2=&quot;10.0.2.139&quot;
+N3=&quot;10.0.2.158&quot;
 
-STORAGE_NETWORK_PREFIX=&#34;192.168&#34;
-ACTION=&#34;add&#34;
+STORAGE_NETWORK_PREFIX=&quot;192.168&quot;
+ACTION=&quot;add&quot;
 
-ETH1_IP=`ip a | grep eth1 | grep -Eo &#39;inet (addr:)?([0-9]*\.){3}[0-9]*&#39;  | awk &#39;{print $2}&#39;`
+ETH1_IP=`ip a | grep eth1 | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*'  | awk '{print $2}'`
 
 [[ ${ETH1_IP} != ${N1} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.1.0/24 via ${N1} dev eth1
 [[ ${ETH1_IP} != ${N2} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.2.0/24 via ${N2} dev eth1
 [[ ${ETH1_IP} != ${N3} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.3.0/24 via ${N3} dev eth1
 </code></pre><p><em>And</em> Deploy <code>NetworkAttachmentDefinition</code>.</p>
 <pre tabindex="0"><code>cat &lt;&lt; EOF &gt; nad-192-168-0-0.yaml
-apiVersion: &#34;k8s.cni.cncf.io/v1&#34;
+apiVersion: &quot;k8s.cni.cncf.io/v1&quot;
 kind: NetworkAttachmentDefinition
 metadata:
   name: demo-192-168-0-0
   namespace: kube-system
   #namespace: longhorn-system
 spec:
-  config: &#39;{
-      &#34;cniVersion&#34;: &#34;0.3.1&#34;,
-      &#34;type&#34;: &#34;flannel&#34;,
-      &#34;subnetFile&#34;: &#34;/run/flannel/multus-subnet-192.168.0.0.env&#34;,
-      &#34;dataDir&#34;: &#34;/var/lib/cni/multus-subnet-192.168.0.0&#34;,
-      &#34;delegate&#34;: {
-        &#34;type&#34;: &#34;ipvlan&#34;,
-        &#34;master&#34;: &#34;eth1&#34;,
-        &#34;mode&#34;: &#34;l3&#34;,
-          &#34;capabilities&#34;: {
-            &#34;ips&#34;: true
+  config: '{
+      &quot;cniVersion&quot;: &quot;0.3.1&quot;,
+      &quot;type&quot;: &quot;flannel&quot;,
+      &quot;subnetFile&quot;: &quot;/run/flannel/multus-subnet-192.168.0.0.env&quot;,
+      &quot;dataDir&quot;: &quot;/var/lib/cni/multus-subnet-192.168.0.0&quot;,
+      &quot;delegate&quot;: {
+        &quot;type&quot;: &quot;ipvlan&quot;,
+        &quot;master&quot;: &quot;eth1&quot;,
+        &quot;mode&quot;: &quot;l3&quot;,
+          &quot;capabilities&quot;: {
+            &quot;ips&quot;: true
         }
       },
-      &#34;kubernetes&#34;: {
-          &#34;kubeconfig&#34;: &#34;/etc/cni/net.d/multus.d/multus.kubeconfig&#34;
+      &quot;kubernetes&quot;: {
+          &quot;kubeconfig&quot;: &quot;/etc/cni/net.d/multus.d/multus.kubeconfig&quot;
       }
-    }&#39;
+    }'
 EOF
 kubectl apply -f nad-192-168-0-0.yaml
 </code></pre><h3 id="test-storage-network-1">Test storage network</h3>
@@ -1103,24 +1103,24 @@ kubectl apply -f nad-192-168-0-0.yaml
 <li>Example:
 <pre tabindex="0"><code>Annotations:  k8s.v1.cni.cncf.io/network-status:
                 [{
-                    &#34;name&#34;: &#34;cbr0&#34;,
-                    &#34;interface&#34;: &#34;eth0&#34;,
-                    &#34;ips&#34;: [
-                        &#34;10.42.2.35&#34;
+                    &quot;name&quot;: &quot;cbr0&quot;,
+                    &quot;interface&quot;: &quot;eth0&quot;,
+                    &quot;ips&quot;: [
+                        &quot;10.42.2.35&quot;
                     ],
-                    &#34;mac&#34;: &#34;26:a7:d3:0d:af:68&#34;,
-                    &#34;default&#34;: true,
-                    &#34;dns&#34;: {}
+                    &quot;mac&quot;: &quot;26:a7:d3:0d:af:68&quot;,
+                    &quot;default&quot;: true,
+                    &quot;dns&quot;: {}
                 },{
-                    &#34;name&#34;: &#34;kube-system/demo-192-168-0-0&#34;,
-                    &#34;interface&#34;: &#34;lhnet1&#34;,
-                    &#34;ips&#34;: [
-                        &#34;192.168.2.230&#34;
+                    &quot;name&quot;: &quot;kube-system/demo-192-168-0-0&quot;,
+                    &quot;interface&quot;: &quot;lhnet1&quot;,
+                    &quot;ips&quot;: [
+                        &quot;192.168.2.230&quot;
                     ],
-                    &#34;mac&#34;: &#34;02:d3:d9:0b:2e:50&#34;,
-                    &#34;dns&#34;: {}
+                    &quot;mac&quot;: &quot;02:d3:d9:0b:2e:50&quot;,
+                    &quot;dns&quot;: {}
                 }]
-              k8s.v1.cni.cncf.io/networks: [{&#34;namespace&#34;: &#34;kube-system&#34;, &#34;name&#34;: &#34;demo-192-168-0-0&#34;, &#34;interface&#34;: &#34;lhnet1&#34;}]
+              k8s.v1.cni.cncf.io/networks: [{&quot;namespace&quot;: &quot;kube-system&quot;, &quot;name&quot;: &quot;demo-192-168-0-0&quot;, &quot;interface&quot;: &quot;lhnet1&quot;}]
 </code></pre></li>
 <li>Should see engine/replica <code>storageIP</code> in <code>192.168.0.0</code> subnet.</li>
 </ul>

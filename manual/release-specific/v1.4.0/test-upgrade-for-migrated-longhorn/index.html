@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -831,10 +831,10 @@
 <li>Migrate Longhorn to new chart in new rancher UI <a href="https://longhorn.io/kb/how-to-migrate-longhorn-chart-installed-in-old-rancher-ui-to-the-chart-in-new-rancher-ui/">https://longhorn.io/kb/how-to-migrate-longhorn-chart-installed-in-old-rancher-ui-to-the-chart-in-new-rancher-ui/</a>.</li>
 <li>Upgrade to longhorn 100.2.1+up1.3.1 in the UI.</li>
 <li>Verify the upgrade would be stuck at with error:
-<pre tabindex="0"><code>Patch CustomResourceDefinition &#34;volumes.longhorn.io&#34; in namespace
-error updating the resource &#34;volumes.longhorn.io&#34;:
-         cannot patch &#34;volumes.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;volumes.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true
-Error: UPGRADE FAILED: cannot patch &#34;engineimages.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;engineimages.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true &amp;&amp; cannot patch &#34;nodes.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;nodes.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true &amp;&amp; cannot patch &#34;volumes.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;volumes.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true
+<pre tabindex="0"><code>Patch CustomResourceDefinition &quot;volumes.longhorn.io&quot; in namespace
+error updating the resource &quot;volumes.longhorn.io&quot;:
+         cannot patch &quot;volumes.longhorn.io&quot; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &quot;volumes.longhorn.io&quot; is invalid: spec.conversion.strategy: Invalid value: &quot;Webhook&quot;: must be None if spec.preserveUnknownFields is true
+Error: UPGRADE FAILED: cannot patch &quot;engineimages.longhorn.io&quot; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &quot;engineimages.longhorn.io&quot; is invalid: spec.conversion.strategy: Invalid value: &quot;Webhook&quot;: must be None if spec.preserveUnknownFields is true &amp;&amp; cannot patch &quot;nodes.longhorn.io&quot; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &quot;nodes.longhorn.io&quot; is invalid: spec.conversion.strategy: Invalid value: &quot;Webhook&quot;: must be None if spec.preserveUnknownFields is true &amp;&amp; cannot patch &quot;volumes.longhorn.io&quot; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &quot;volumes.longhorn.io&quot; is invalid: spec.conversion.strategy: Invalid value: &quot;Webhook&quot;: must be None if spec.preserveUnknownFields is true
 </code></pre></li>
 <li>Apply the <a href="https://github.com/longhorn/longhorn/pull/4237#issuecomment-1195339461">workaround</a></li>
 <li>Retry upgrade to longhorn 100.2.1+up1.3.1 in the UI.</li>

@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -872,24 +872,24 @@
 <p><strong>Then</strong> Upgrade should be successful as the kubelet should restart</p>
 <p>AND No volume&rsquo;s data should be lost</p>
 <p><strong>Note</strong>: Below script can be used to kill kubelet continuously</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">while</span> true; <span style="color:#66d9ef">do</span>
-</span></span><span style="display:flex;"><span> <span style="color:#75715e"># Find the process ID of the k3s kubelet</span>
-</span></span><span style="display:flex;"><span> pid<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>ps -ef | grep kubelet | grep -v grep | awk <span style="color:#e6db74">&#39;{print $2}&#39;</span><span style="color:#66d9ef">)</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -z <span style="color:#e6db74">&#34;</span>$pid<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
-</span></span><span style="display:flex;"><span>   echo <span style="color:#e6db74">&#34;kubelet process not found&#34;</span>
-</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">else</span>
-</span></span><span style="display:flex;"><span>   <span style="color:#75715e"># Kill the k3s kubelet process</span>
-</span></span><span style="display:flex;"><span>   sudo kill $pid
-</span></span><span style="display:flex;"><span>   echo <span style="color:#e6db74">&#34;kubelet process killed&#34;</span>
-</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">fi</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span> <span style="color:#75715e"># Wait for 5 seconds before checking again</span>
-</span></span><span style="display:flex;"><span> sleep <span style="color:#ae81ff">5</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">done</span>
-</span></span></code></pre></div><h2 id="test-with-longhorn-setting-of-node-drain-policy-allow-if-replica-is-stopped">Test with Longhorn setting of &lsquo;Node Drain Policy&rsquo;: <code>allow-if-replica-is-stopped</code></h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">while</span> true; <span style="color:#66d9ef">do</span>
+ <span style="color:#75715e"># Find the process ID of the k3s kubelet</span>
+ pid<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>ps -ef | grep kubelet | grep -v grep | awk <span style="color:#e6db74">&#39;{print $2}&#39;</span><span style="color:#66d9ef">)</span>
+
+ <span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -z <span style="color:#e6db74">&#34;</span>$pid<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+   echo <span style="color:#e6db74">&#34;kubelet process not found&#34;</span>
+ <span style="color:#66d9ef">else</span>
+   <span style="color:#75715e"># Kill the k3s kubelet process</span>
+   sudo kill $pid
+   echo <span style="color:#e6db74">&#34;kubelet process killed&#34;</span>
+ <span style="color:#66d9ef">fi</span>
+
+ <span style="color:#75715e"># Wait for 5 seconds before checking again</span>
+ sleep <span style="color:#ae81ff">5</span>
+<span style="color:#66d9ef">done</span>
+</code></pre></div><h2 id="test-with-longhorn-setting-of-node-drain-policy-allow-if-replica-is-stopped">Test with Longhorn setting of &lsquo;Node Drain Policy&rsquo;: <code>allow-if-replica-is-stopped</code></h2>
 <h4 id="repeat-below-test-cases">Repeat below test cases</h4>
 <ol>
 <li>Upgrade multi node cluster using Rancher UI - RKE2 cluster</li>

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_rwx API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_rwx</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_rwx.test_encrypted_rwx_volume"><code class="name flex">
+<span>def <span class="ident">test_encrypted_rwx_volume</span></span>(<span>core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating encrypted rwx volume and use the secret in
+non longhorn-system namespace.</p>
+<ol>
+<li>Create crypto secret in non longhorn-system namespace.</li>
+<li>Create a storage class.</li>
+<li>Create a deployment with a PVC and the pods should be able to running.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_restore_rwo_volume_to_rwx"><code class="name flex">
+<span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restoring a rwo to a rwx volume.</p>
+<ol>
+<li>Create a volume with 'accessMode' rwo.</li>
+<li>Create a PV and a PVC with access mode 'readwriteonce' and attach to the
+volume.</li>
+<li>Create a pod and attach to the PVC.</li>
+<li>Write some data into the pod and compute md5sum.</li>
+<li>Take a backup of the volume.</li>
+<li>Restore the backup with 'accessMode' rwx.</li>
+<li>Create PV and PVC and attach to 2 pods.</li>
+<li>Verify the data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_delete_share_manager_pod"><code class="name flex">
+<span>def <span class="ident">test_rwx_delete_share_manager_pod</span></span>(<span>core_api, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test moving of Share manager pod from one node to another.</p>
+<ol>
+<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
+<li>Wait for StatefulSet to come up healthy.</li>
+<li>Write data and compute md5sum.</li>
+<li>Delete the share manager pod.</li>
+<li>Wait for a new pod to be created and volume getting attached.</li>
+<li>Check the data md5sum in statefulSet.</li>
+<li>Write more data to it and compute md5sum.</li>
+<li>Check the data md5sum in share manager volume.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_deployment_with_multi_pods"><code class="name flex">
+<span>def <span class="ident">test_rwx_deployment_with_multi_pods</span></span>(<span>core_api, pvc, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test deployment of 2 pods with same PVC.</p>
+<ol>
+<li>Create a volume with 'accessMode' rwx.</li>
+<li>Create a PV and a PVC with access mode 'readwritemany' and attach to the
+volume.</li>
+<li>Create a deployment of 2 pods with PVC created</li>
+<li>Wait for 2 pods to come up healthy.</li>
+<li>Write data in both pods and compute md5sum.</li>
+<li>Check the data md5sum in the share manager pod.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc"><code class="name flex">
+<span>def <span class="ident">test_rwx_multi_statefulset_with_same_pvc</span></span>(<span>core_api, pvc, statefulset, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test writing of data into a volume from multiple pods using same PVC</p>
+<ol>
+<li>Create a volume with 'accessMode' rwx.</li>
+<li>Create a PV and a PVC with access mode 'readwritemany' and attach to the
+volume.</li>
+<li>Deploy a StatefulSet of 2 pods with the existing PVC above created.</li>
+<li>Wait for both pods to come up.</li>
+<li>Create a pod with the existing PVC above created.</li>
+<li>Wait for StatefulSet to come up healthy.</li>
+<li>Write data all three pods and compute md5sum.</li>
+<li>Check the data md5sum in the share manager pod.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_offline_expansion"><code class="name flex">
+<span>def <span class="ident">test_rwx_offline_expansion</span></span>(<span>client, core_api, pvc, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
+<a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
+<p>This test case does not cover the UI test mentioned in the related issue's
+test steps."</p>
+<p>Given
+- Create a rwx pvc using longhorn storage class of size 1 Gi.</p>
+<p>And
+- Attach it to a workload (deployment) and write some data.
+- Scale down the workload, wait volume detached
+- Share manager pod will terminate automatically
+- Expand the volume to 4 Gi, wait exoansion complete</p>
+<p>When
+- Scale up workload</p>
+<p>Then
+- Share manager pod created
+- Volume healthy</p>
+<p>And
+- 1.5 Gi of data is successfully written to the expanded volume</p></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_online_expansion"><code class="name flex">
+<span>def <span class="ident">test_rwx_online_expansion</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
+<a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
+<p>This test case does not cover the UI test mentioned in the related issue's
+test steps."</p>
+<p>Given
+- Create a rwx pvc using longhorn storage class of size 1 Gi.</p>
+<p>And
+- Attach it to a workload (deployment) and write some data.</p>
+<p>When
+- Expand the volume to 5 Gi</p>
+<p>Then
+- Expansion of volume is completed.
+- Share manager pod not restart</p>
+<p>And
+- 1.5 Gi of data is successfully written to the expanded volume.</p></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_parallel_writing"><code class="name flex">
+<span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>core_api, statefulset, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test parallel writing of data</p>
+<ol>
+<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
+<li>Wait for StatefulSet to come up healthy.</li>
+<li>Create another statefulSet with same pvc which got created with first
+statefulSet.</li>
+<li>Wait for statefulSet to come up healthy.</li>
+<li>Start writing 800 MB data in first statefulSet <code>file 1</code> and start
+writing 500 MB data in second statefulSet <code>file 2</code>.</li>
+<li>Compute md5sum.</li>
+<li>Check the data md5sum in share manager pod volume</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_statefulset_scale_down_up"><code class="name flex">
+<span>def <span class="ident">test_rwx_statefulset_scale_down_up</span></span>(<span>core_api, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Scaling up and down of pods attached to rwx volume.</p>
+<ol>
+<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
+<li>Wait for StatefulSet pods to come up healthy.</li>
+<li>Write data and compute md5sum in the both pods.</li>
+<li>Delete the pods.</li>
+<li>Wait for the pods to be terminated.</li>
+<li>Verify the share manager pods are no longer available and the volume is
+detached.</li>
+<li>Recreate the pods</li>
+<li>Wait for new pods to come up.</li>
+<li>Check the data md5sum in new pods.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_volume_mount_options"><code class="name flex">
+<span>def <span class="ident">test_rwx_volume_mount_options</span></span>(<span>core_api, storage_class, pvc, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating rwx volume with custom mount options
+non longhorn-system namespace.</p>
+<ol>
+<li>Create a storage class with nfsOptions parameter.</li>
+<li>Create a deployment with a PVC and the pods should be able to run.</li>
+<li>Check the mounts on the deployment pods.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.test_rwx_with_statefulset_multi_pods"><code class="name flex">
+<span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>core_api, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creation of share manager pod and rwx volumes from 2 pods.</p>
+<ol>
+<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
+<li>Wait for both pods to come up running.</li>
+<li>Verify there are two share manager pods created in the longhorn
+namespace and they have the directory with the PV name in the
+path <code>/export</code></li>
+<li>Write data in both pods and compute md5sum.</li>
+<li>Compare md5sum of the data with the data written the share manager.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_rwx.write_data_into_pod"><code class="name flex">
+<span>def <span class="ident">write_data_into_pod</span></span>(<span>pod_name_and_data_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_rwx.test_encrypted_rwx_volume" href="#tests.test_rwx.test_encrypted_rwx_volume">test_encrypted_rwx_volume</a></code></li>
+<li><code><a title="tests.test_rwx.test_restore_rwo_volume_to_rwx" href="#tests.test_rwx.test_restore_rwo_volume_to_rwx">test_restore_rwo_volume_to_rwx</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_delete_share_manager_pod" href="#tests.test_rwx.test_rwx_delete_share_manager_pod">test_rwx_delete_share_manager_pod</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc" href="#tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc">test_rwx_multi_statefulset_with_same_pvc</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_offline_expansion" href="#tests.test_rwx.test_rwx_offline_expansion">test_rwx_offline_expansion</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_online_expansion" href="#tests.test_rwx.test_rwx_online_expansion">test_rwx_online_expansion</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_parallel_writing" href="#tests.test_rwx.test_rwx_parallel_writing">test_rwx_parallel_writing</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_statefulset_scale_down_up" href="#tests.test_rwx.test_rwx_statefulset_scale_down_up">test_rwx_statefulset_scale_down_up</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_volume_mount_options" href="#tests.test_rwx.test_rwx_volume_mount_options">test_rwx_volume_mount_options</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_with_statefulset_multi_pods" href="#tests.test_rwx.test_rwx_with_statefulset_multi_pods">test_rwx_with_statefulset_multi_pods</a></code></li>
+<li><code><a title="tests.test_rwx.write_data_into_pod" href="#tests.test_rwx.write_data_into_pod">write_data_into_pod</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

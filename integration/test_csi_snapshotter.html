@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_csi_snapshotter API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_csi_snapshotter</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_csi_snapshotter.create_pod_from_bi_type_volumesnapshot_pvc_and_check_data"><code class="name flex">
+<span>def <span class="ident">create_pod_from_bi_type_volumesnapshot_pvc_and_check_data</span></span>(<span>core_api, csivolsnap_name, pod_make, pvc, request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.delete_volumesnapshot"><code class="name flex">
+<span>def <span class="ident">delete_volumesnapshot</span></span>(<span>name, namespace)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.get_volumesnapshotcontent"><code class="name flex">
+<span>def <span class="ident">get_volumesnapshotcontent</span></span>(<span>volumesnapshot_uid)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.prepare_bi_type_test"><code class="name flex">
+<span>def <span class="ident">prepare_bi_type_test</span></span>(<span>bi_checksum, bi_url, volumesnapshotclass, volumesnapshotcontent, volumesnapshot)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.prepare_test_csi_snapshot"><code class="name flex">
+<span>def <span class="ident">prepare_test_csi_snapshot</span></span>(<span>apps_api, client, make_deployment_with_pvc, volumesnapshotclass, core_api, csi_snapshot_type='snap')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Context:</p>
+<p>After deploy the CSI snapshot CRDs, Controller at
+<https://longhorn.io/docs/\<longhorn> version>/snapshots-and-backups/
+csi-snapshot-support/enable-csi-snapshot-support/</p>
+<p>Create VolumeSnapshotClass with type=snap
+- longhorn-snapshot (type=snap)
+Create Longhorn volume test-vol
+- Size 5GB
+- Create PV/PVC/Workload for the Longhorn volume
+- Write data into volume
+- Setup backup store</p></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.restore_csi_volume_snapshot"><code class="name flex">
+<span>def <span class="ident">restore_csi_volume_snapshot</span></span>(<span>core_api, client, csivolsnap, pvc_name, pvc_request_storage_size, wait_for_restore=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_create_csi_snapshot"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_create_csi_snapshot</span></span>(<span>set_random_backupstore, apps_api, client, make_deployment_with_pvc, volume_name, volumesnapshotclass, volumesnapshot, csi_pv, pvc, core_api, pod_make, csi_snapshot_type)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Context:</p>
+<p>After deploy the CSI snapshot CRDs, Controller at
+<a href="https://longhorn.io/docs/1.4.2/snapshots-and-backups/">https://longhorn.io/docs/1.4.2/snapshots-and-backups/</a>
+csi-snapshot-support/enable-csi-snapshot-support/</p>
+<p>Create VolumeSnapshotClass with type=snap|bak
+- longhorn-snapshot (type=snap|bak)</p>
+<p>Test the extend CSI snapshot type=snap|bak support
+to Longhorn snapshot|backup</p>
+<p>Steps:</p>
+<ol>
+<li>Create Longhorn volume test-vol<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC/Workload for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+</ul>
+</li>
+<li>Test create CSI snapshot<ul>
+<li>Volume is in detached state<ul>
+<li>Scale down the workload</li>
+<li>Create VolumeSnapshot with class longhorn-snap|bak</li>
+<li>Verify that the volumesnapshot object is ready</li>
+</ul>
+</li>
+<li>Volume is in attached state<ul>
+<li>Scale up the workload</li>
+<li>Verify the Longhorn snapshot generated</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_delete_csi_snapshot_volume_detached"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_delete_csi_snapshot_volume_detached</span></span>(<span>set_random_backupstore, apps_api, client, make_deployment_with_pvc, volumesnapshotclass, volumesnapshot, core_api, csi_snapshot_type)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create volumesnapshotclass with type=snap|bak</li>
+<li>Create Longhorn volume test-vol<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC/Workload for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+<li>Create volumeSnapshot by volumesnapshotclass in step 1</li>
+</ul>
+</li>
+<li>Test delete CSI snapshot : Type is snap|bak<ul>
+<li>volume is detached<ul>
+<li>Delete the VolumeSnapshot</li>
+<li>Verify that VolumeSnapshot is not stuck in deleting</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_snap_create_volume_from_snapshot"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_snap_create_volume_from_snapshot</span></span>(<span>apps_api, client, make_deployment_with_pvc, volume_name, volumesnapshotclass, volumesnapshot, csi_pv, pvc, core_api, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Context:</p>
+<p>After deploy the CSI snapshot CRDs, Controller at
+<a href="https://longhorn.io/docs/1.4.2/snapshots-and-backups/">https://longhorn.io/docs/1.4.2/snapshots-and-backups/</a>
+csi-snapshot-support/enable-csi-snapshot-support/</p>
+<p>Create VolumeSnapshotClass with type=snap
+- longhorn-snapshot (type=snap)</p>
+<p>Test the extend CSI snapshot type=snap support to Longhorn snapshot</p>
+<p>Steps:</p>
+<ol>
+<li>
+<p>Create Longhorn volume test-vol</p>
+<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC/Workload for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+</ul>
+</li>
+<li>
+<p>Test create new volume from CSI snapshot</p>
+<ul>
+<li>Create VolumeSnapshot with class longhorn-snap</li>
+<li>Create volume from longhorn-snapshot<ul>
+<li>Source volume is attached &amp;&amp; Longhorn snapshot exist<ul>
+<li>Create PVC from snapshot generated from step 1</li>
+<li>Attach the PVC and verify data</li>
+</ul>
+</li>
+<li>Source volume is detached<ul>
+<li>Scale down the workload</li>
+<li>Create PVC from VolumeSnapshot generated from step beginning</li>
+<li>Verify PVC provision failed</li>
+<li>Scale up the workload</li>
+<li>Wait for PVC to finish provisioning and be bounded</li>
+<li>Attach the PVC test-restore-pvc and verify the data</li>
+</ul>
+</li>
+<li>Source volume is attached &amp;&amp; Longhorn snapshot doesn’t exist<ul>
+<li>Use VolumeSnapshotContent.snapshotHandle to
+specify Longhorn snapshot generated in step beginning</li>
+<li>Delete the Longhorn snapshot</li>
+<li>Create PVC from VolumeSnapshot generated from step beginning</li>
+<li>PVC should be stuck in provisioning state</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_snapshot_exist"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_snap_delete_csi_snapshot_snapshot_exist</span></span>(<span>apps_api, client, make_deployment_with_pvc, volumesnapshotclass, volumesnapshot, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create volumesnapshotclass with type=snap</li>
+<li>Create Longhorn volume test-vol<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC/Workload for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+<li>Create volumeSnapshot by volumesnapshotclass in step 1</li>
+</ul>
+</li>
+<li>Test delete CSI snapshot : Type is snap<ul>
+<li>volume is attached &amp;&amp; snapshot exist<ul>
+<li>Verify the creation of Longhorn snapshot with the name in
+the field VolumeSnapshotContent.snapshotHandle</li>
+<li>Delete the VolumeSnapshot</li>
+<li>Verify that Longhorn snapshot is removed or marked as removed</li>
+<li>Verify that the VolumeSnapshot is deleted.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist</span></span>(<span>apps_api, client, make_deployment_with_pvc, volumesnapshotclass, volumesnapshot, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create volumesnapshotclass with type=snap</li>
+<li>Create Longhorn volume test-vol<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC/Workload for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+<li>Create volumeSnapshot by volumesnapshotclass in step 1</li>
+</ul>
+</li>
+<li>Test delete CSI snapshot : Type is snap<ul>
+<li>volume is attached &amp;&amp; snapshot doesn’t exist<ul>
+<li>Delete the VolumeSnapshot</li>
+<li>VolumeSnapshot is deleted</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_with_bak_param</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Context:</p>
+<p>After deploy the CSI snapshot CRDs, Controller at
+<a href="https://longhorn.io/docs/1.2.3/snapshots-and-backups/">https://longhorn.io/docs/1.2.3/snapshots-and-backups/</a>
+csi-snapshot-support/enable-csi-snapshot-support/</p>
+<p>Create VolumeSnapshotClass with type=bak
+- longhorn-backup (type=bak)</p>
+<p>Test the extend CSI snapshot type=bak support to Longhorn snapshot</p>
+<p>Steps:</p>
+<ol>
+<li>Create Longhorn volume test-vol<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC/Workload for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+</ul>
+</li>
+<li>Test create CSI snapshot<ul>
+<li>Create VolumeSnapshot with class longhorn-backup</li>
+<li>Should have backup generated</li>
+</ul>
+</li>
+<li>Test create new volume from CSI snapshot<ul>
+<li>Create PVC from VolumeSnapshot generated in step 1</li>
+<li>Attach PVC and verify data</li>
+</ul>
+</li>
+<li>Test delete CSI snapshot<ul>
+<li>Delete VolumeSnapshot</li>
+<li>The backup should deleted as well</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param"><code class="name flex">
+<span>def <span class="ident">test_csi_snapshot_with_invalid_param</span></span>(<span>volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Context:</p>
+<p>After deploy the CSI snapshot CRDs, Controller at
+<a href="https://longhorn.io/docs/1.2.4/snapshots-and-backups/">https://longhorn.io/docs/1.2.4/snapshots-and-backups/</a>
+csi-snapshot-support/enable-csi-snapshot-support/</p>
+<p>Create VolumeSnapshotClass with type=invalid
+- invalid (type=invalid)</p>
+<p>Test the extend CSI snapshot type=invalid behavior to Longhorn snapshot</p>
+<p>Steps:</p>
+<ol>
+<li>Create Longhorn volume test-vol<ul>
+<li>Size 5GB</li>
+<li>Create PV/PVC for the Longhorn volume</li>
+<li>Write data into volume</li>
+<li>Setup backup store</li>
+</ul>
+</li>
+<li>Test create CSI snapshot<ul>
+<li>Create VolumeSnapshot with class invalid</li>
+<li>Verify that the volumesnapshot object is not ready</li>
+</ul>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_backing_image_basic</span></span>(<span>client, core_api, csi_pv, pod_make, pvc, request, volume_name, volumesnapshotclass, volumesnapshot)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Create/Delete BackingImage using VolumeSnapshot with a given Volume</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi</code></p>
+<p>Given
+- The Volume attached to a workload, having data and computed md5sum.</p>
+<p>When
+- Creating the VolumeSnapshot
+<code>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+name: test-snapshot-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+source:
+persistentVolumeClaimName: test-vol</code></p>
+<p>Then
+- A BackingImage is created with the following properties
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: `snapshot-${VolumeSnapshot.uuid}`
+namespace: longhorn-system
+spec:
+sourceType: export-from-volume
+sourceParameters:
+volume-name: test-vol
+export-type: raw</code></p>
+<p>When
+- Creating a PVC with dataSource pointing to the VolumeSnapshot
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-restore-pvc
+spec:
+storageClassName: longhorn
+dataSource:
+name: test-snapshot-backing
+kind: VolumeSnapshot
+apiGroup: snapshot.storage.k8s.io
+accessModes:
+- ReadWriteOnce
+resources:
+requests:
+storage: 5Gi</code></p>
+<p>Then
+- A Volume is created using BackingImage snapshot-${VolumeSnapshot.uuid}
+- Verifying the data and md5sum in the new Volume</p>
+<p>When
+- Delete the new Volume from the the VolumeSnapshot
+- Delete the VolumeSnapshot
+<code>&gt; kubectl delete vs/test-snapshot-backing</code></p>
+<p>Then
+- The BackingImage is deleted as well</p></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, csi_snapshot_type=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creation / restoration / deletion of a backup via the csi snapshotter</p>
+<p>Context:</p>
+<p>We want to allow the user to programmatically create/restore/delete
+longhorn backups via the csi snapshot mechanism
+ref: <a href="https://kubernetes.io/docs/concepts/storage/volume-snapshots/">https://kubernetes.io/docs/concepts/storage/volume-snapshots/</a></p>
+<p>Setup:</p>
+<ol>
+<li>Make sure your cluster contains the below crds
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/client/config/crd</li>
+<li>Make sure your cluster contains the snapshot controller
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/deploy/kubernetes/snapshot-controller</li>
+</ol>
+<p>Steps:</p>
+<p>def csi_volumesnapshot_creation_test(snapshotClass=longhorn|custom):
+1. create volume(1)
+2. write data to volume(1)
+3. create a kubernetes <code>VolumeSnapshot</code> object
+the <code>VolumeSnapshot.uuid</code> will be used to identify a
+<strong>longhorn snapshot</strong> and the associated <code>VolumeSnapshotContent</code> object
+4. check creation of a new longhorn snapshot named <code>snapshot-uuid</code>
+5. check for <code>VolumeSnapshotContent</code> named <code>snapcontent-uuid</code>
+6. wait for <code>VolumeSnapshotContent.readyToUse</code> flag to be set to <strong>true</strong>
+7. check for backup existence on the backupstore</p>
+<h1 id="the-csi-snapshot-restore-sets-the-frombackup-field-same-as">the csi snapshot restore sets the fromBackup field same as</h1>
+<h1 id="the-storageclass-based-restore-approach">the StorageClass based restore approach.</h1>
+<p>def csi_volumesnapshot_restore_test():
+8. create a <code>PersistentVolumeClaim</code> object where the <code>dataSource</code> field
+references the <code>VolumeSnapshot</code> object by name
+9. verify creation of a new volume(2) bound to the pvc created in step(8)
+10. verify data of new volume(2) equals data
+from backup (ie old data above)</p>
+<h1 id="default-longhorn-snapshot-class-is-set-to-delete">default longhorn snapshot class is set to Delete</h1>
+<h1 id="add-a-second-test-with-a-custom-snapshot-class-with-deletionpolicy">add a second test with a custom snapshot class with deletionPolicy</h1>
+<h1 id="set-to-retain-you-can-reuse-these-methods-for-that-and-other-tests">set to Retain you can reuse these methods for that and other tests</h1>
+<p>def csi_volumesnapshot_deletion_test(deletionPolicy='Delete|Retain'):
+11. delete <code>VolumeSnapshot</code> object
+12. if deletionPolicy == Delete:
+13. verify deletion of <code>VolumeSnapshot</code> and
+<code>VolumeSnapshotContent</code> objects
+14. verify deletion of backup from backupstore
+12. if deletionPolicy == Retain:
+13. verify deletion of <code>VolumeSnapshot</code>
+14. verify retention of <code>VolumeSnapshotContent</code>
+and backup on backupstore</p>
+<ol>
+<li>cleanup</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_restore_existing_backup</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make, volumesnapshotclass, volumesnapshotcontent, volumesnapshot, volsnapshotclass_delete_policy, backup_is_deleted)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test retention of a backup while deleting the associated <code>VolumeSnapshot</code>
+via the csi snapshotter</p>
+<p>Context:</p>
+<p>We want to allow the user to programmatically create/restore/delete
+longhorn backups via the csi snapshot mechanism
+ref: <a href="https://kubernetes.io/docs/concepts/storage/volume-snapshots/">https://kubernetes.io/docs/concepts/storage/volume-snapshots/</a></p>
+<p>Setup:</p>
+<ol>
+<li>Make sure your cluster contains the below crds
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/client/config/crd</li>
+<li>Make sure your cluster contains the snapshot controller
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/deploy/kubernetes/snapshot-controller</li>
+</ol>
+<p>Steps:</p>
+<ol>
+<li>create new snapshotClass with deletionPolicy set to Retain</li>
+<li>call csi_volumesnapshot_creation_test(snapshotClass=custom)</li>
+<li>call csi_volumesnapshot_restore_test()</li>
+<li>call csi_volumesnapshot_deletion_test(deletionPolicy='Retain'):</li>
+<li>cleanup</li>
+</ol></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_restore_on_demand_backing_image</span></span>(<span>bi_url, bi_checksum, client, core_api, pod_make, pvc, request, volumesnapshotclass, volumesnapshotcontent, volumesnapshot)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Restore Volume from CSI VolumeSnapshot with on-demand BackingImage</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi</code></p>
+<p>Given
+- Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage
+# NOQA
+- (snapshotHandle was dynamic with 2 different of backing images in test script)
+<code>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+name: test-on-demand-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+source:
+snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA
+volumeSnapshotRef:
+name: test-snapshot-on-demand-backing
+namespace: default</code></p>
+<pre><code>```
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+    name: test-snapshot-on-demand-backing
+spec:
+    volumeSnapshotClassName: longhorn-snapshot-vsc
+    source:
+        volumeSnapshotContentName: test-on-demand-backing
+```
+</code></pre>
+<p>When
+- Creating the PVC
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-restore-on-demand-backing
+spec:
+storageClassName: longhorn
+dataSource:
+name: test-snapshot-on-demand-backing
+kind: VolumeSnapshot
+apiGroup: snapshot.storage.k8s.io
+accessModes:
+- ReadWriteOnce
+resources:
+requests:
+storage: 5Gi</code>
+Then
+- A BackingImage is created (sourceParameters was dynamic in test script)
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: test-bi
+namespace: longhorn-system
+spec:
+sourceType: download
+sourceParameters:
+url: &lt;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2&gt;
+# NOQA
+checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA</code>
+- A Volume is created using the BackingImage <code>test-bi</code>
+- Verify the data (Directories of the backing images) exists in the mount point.</p></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_pre_provision_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_restore_pre_provision_backing_image</span></span>(<span>bi_url, bi_checksum, client, core_api, pod_make, pvc, request, volumesnapshotclass, volumesnapshotcontent, volumesnapshot)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Restore Volume from CSI VolumeSnapshot with existing BackingImage</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi</code></p>
+<p>Given
+- Creating a BackingImage
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: test-bi
+namespace: longhorn-system
+spec:
+sourceType: download
+sourceParameters:
+url: &lt;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2&gt;
+# NOQA
+checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA</code>
+- Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage
+- (snapshotHandle was dynamic with 2 different of backing images in test script)
+<code>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+name: test-existing-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+source:
+snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA
+volumeSnapshotRef:
+name: test-snapshot-existing-backing
+namespace: default</code></p>
+<pre><code>```
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+    name: test-snapshot-existing-backing
+spec:
+    volumeSnapshotClassName: longhorn-snapshot-vsc
+    source:
+        volumeSnapshotContentName: test-existing-backing
+```
+</code></pre>
+<p>When
+- Creating the PVC
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-restore-existing-backing
+spec:
+storageClassName: longhorn
+dataSource:
+name: test-snapshot-existing-backing
+kind: VolumeSnapshot
+apiGroup: snapshot.storage.k8s.io
+accessModes:
+- ReadWriteOnce
+resources:
+requests:
+storage: 5Gi</code></p>
+<p>Then
+- A Volume is created using the BackingImage <code>test-bi</code>
+- Verify the data (Directories of the backing images) exists in the mount point.</p></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.volumesnapshot"><code class="name flex">
+<span>def <span class="ident">volumesnapshot</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.volumesnapshotclass"><code class="name flex">
+<span>def <span class="ident">volumesnapshotclass</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.volumesnapshotcontent"><code class="name flex">
+<span>def <span class="ident">volumesnapshotcontent</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.wait_for_volumesnapshot_ready"><code class="name flex">
+<span>def <span class="ident">wait_for_volumesnapshot_ready</span></span>(<span>volumesnapshot_name, namespace, ready_to_use=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_csi_snapshotter.wait_volumesnapshot_deleted"><code class="name flex">
+<span>def <span class="ident">wait_volumesnapshot_deleted</span></span>(<span>name, namespace, retry_counts=150, can_be_deleted=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_csi_snapshotter.create_pod_from_bi_type_volumesnapshot_pvc_and_check_data" href="#tests.test_csi_snapshotter.create_pod_from_bi_type_volumesnapshot_pvc_and_check_data">create_pod_from_bi_type_volumesnapshot_pvc_and_check_data</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.delete_volumesnapshot" href="#tests.test_csi_snapshotter.delete_volumesnapshot">delete_volumesnapshot</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.get_volumesnapshotcontent" href="#tests.test_csi_snapshotter.get_volumesnapshotcontent">get_volumesnapshotcontent</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.prepare_bi_type_test" href="#tests.test_csi_snapshotter.prepare_bi_type_test">prepare_bi_type_test</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.prepare_test_csi_snapshot" href="#tests.test_csi_snapshotter.prepare_test_csi_snapshot">prepare_test_csi_snapshot</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.restore_csi_volume_snapshot" href="#tests.test_csi_snapshotter.restore_csi_volume_snapshot">restore_csi_volume_snapshot</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_create_csi_snapshot" href="#tests.test_csi_snapshotter.test_csi_snapshot_create_csi_snapshot">test_csi_snapshot_create_csi_snapshot</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_delete_csi_snapshot_volume_detached" href="#tests.test_csi_snapshotter.test_csi_snapshot_delete_csi_snapshot_volume_detached">test_csi_snapshot_delete_csi_snapshot_volume_detached</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_snap_create_volume_from_snapshot" href="#tests.test_csi_snapshotter.test_csi_snapshot_snap_create_volume_from_snapshot">test_csi_snapshot_snap_create_volume_from_snapshot</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_snapshot_exist" href="#tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_snapshot_exist">test_csi_snapshot_snap_delete_csi_snapshot_snapshot_exist</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist" href="#tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist">test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param" href="#tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param">test_csi_snapshot_with_bak_param</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param" href="#tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param">test_csi_snapshot_with_invalid_param</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic">test_csi_volumesnapshot_backing_image_basic</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_basic">test_csi_volumesnapshot_basic</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup">test_csi_volumesnapshot_restore_existing_backup</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image">test_csi_volumesnapshot_restore_on_demand_backing_image</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_pre_provision_backing_image" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_pre_provision_backing_image">test_csi_volumesnapshot_restore_pre_provision_backing_image</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.volumesnapshot" href="#tests.test_csi_snapshotter.volumesnapshot">volumesnapshot</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.volumesnapshotclass" href="#tests.test_csi_snapshotter.volumesnapshotclass">volumesnapshotclass</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.volumesnapshotcontent" href="#tests.test_csi_snapshotter.volumesnapshotcontent">volumesnapshotcontent</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.wait_for_volumesnapshot_ready" href="#tests.test_csi_snapshotter.wait_for_volumesnapshot_ready">wait_for_volumesnapshot_ready</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.wait_volumesnapshot_deleted" href="#tests.test_csi_snapshotter.wait_volumesnapshot_deleted">wait_volumesnapshot_deleted</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

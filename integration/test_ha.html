@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_ha API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_ha</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_ha.ha_backup_deletion_recovery_test"><code class="name flex">
+<span>def <span class="ident">ha_backup_deletion_recovery_test</span></span>(<span>client, volume_name, size, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_ha.ha_rebuild_replica_test"><code class="name flex">
+<span>def <span class="ident">ha_rebuild_replica_test</span></span>(<span>client, volname)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_ha.ha_salvage_test"><code class="name flex">
+<span>def <span class="ident">ha_salvage_test</span></span>(<span>client, core_api, volume_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_ha.ha_simple_recovery_test"><code class="name flex">
+<span>def <span class="ident">ha_simple_recovery_test</span></span>(<span>client, volume_name, size, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_ha.prepare_engine_not_fully_deployed_environment"><code class="name flex">
+<span>def <span class="ident">prepare_engine_not_fully_deployed_environment</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Taint node-1 with the taint: key=value:NoSchedule</li>
+<li>Delete the pod on node-1 of the engine image DaemonSet.
+Or delete the engine image DaemonSet and wait for Longhorn
+to automatically recreates it.</li>
+<li>Wait for the engine image CR state become deploying</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.prepare_engine_not_fully_deployed_environment_with_volumes"><code class="name flex">
+<span>def <span class="ident">prepare_engine_not_fully_deployed_environment_with_volumes</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create 2 volumes, vol-1 and vol-2 with 3 replicas</li>
+<li>Taint node-1 with the taint: key=value:NoSchedule</li>
+<li>Attach vol-1 to node-1. Change the number of replicas of vol-1
+to 2. Delete the replica on node-1</li>
+<li>Delete the pod on node-1 of the engine image DaemonSet.
+Or delete the engine image DaemonSet and wait for Longhorn
+to automatically recreates it.</li>
+<li>Wait for the engine image CR state become deploying</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.prepare_upgrade_image_not_fully_deployed_environment"><code class="name flex">
+<span>def <span class="ident">prepare_upgrade_image_not_fully_deployed_environment</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_ha.restore_with_replica_failure"><code class="name flex">
+<span>def <span class="ident">restore_with_replica_failure</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, allow_degraded_availability, disable_rebuild, replica_failure_mode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>restore_with_replica_failure is reusable by a number of similar tests.
+In general, it attempts a volume restore, kills one of the restoring
+replicas, and verifies the restore can still complete. The manner in which
+a replica is killed and the settings enabled at the time vary with the
+parameters.</p></div>
+</dd>
+<dt id="tests.test_ha.set_tags_for_node_and_its_disks"><code class="name flex">
+<span>def <span class="ident">set_tags_for_node_and_its_disks</span></span>(<span>client, node, tags)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_ha.test_all_replica_restore_failure"><code class="name flex">
+<span>def <span class="ident">test_all_replica_restore_failure</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if all replica restore failure will lead to the restore volume
+becoming Faulted, and if the auto salvage feature is disabled for
+the faulted restore volume.</p>
+<ol>
+<li>Enable auto-salvage.</li>
+<li>Set the a random backupstore.</li>
+<li>Do cleanup for the backupstore.</li>
+<li>Create a pod with a volume and wait for pod to start.</li>
+<li>Write data to the pod volume and get the md5sum.</li>
+<li>Create a backup for the volume.</li>
+<li>Randomly delete some data blocks of the backup, which will lead to
+all replica restore failures later.</li>
+<li>Restore a volume from the backup.</li>
+<li>Wait for the volume restore in progress by checking if:
+9.1. <code>volume.restoreStatus</code> shows the related restore info.
+9.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.
+9.3. <code>volume.ready == false</code>.</li>
+<li>Wait for the restore volume Faulted.</li>
+<li>Check if <code>volume.conditions[Restore].status == False &amp;&amp;
+volume.conditions[Restore].reason == "RestoreFailure"</code>.</li>
+<li>Check if <code>volume.ready == false</code>.</li>
+<li>Make sure auto-salvage is not triggered even the feature is enabled.</li>
+<li>Verify if PV/PVC cannot be created from Longhorn.</li>
+<li>Verify the faulted volume cannot be attached to a node.</li>
+<li>Verify this faulted volume can be deleted.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_auto_remount_with_subpath"><code class="name flex">
+<span>def <span class="ident">test_auto_remount_with_subpath</span></span>(<span>client, core_api, storage_class, sts_name, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Auto Remount With Subpath</p>
+<p>Context:</p>
+<p>Instead of manually finding and remounting all mount points of the volume,
+we delete the workload pod so that Kubernetes handles those works.
+This new implementation also solves the issue that remount doesn't
+support subpath (e.g. when pod use subpath in PVC).
+longhorn/longhorn#1719</p>
+<p>Steps:</p>
+<ol>
+<li>Deploy a storage class with parameter <code>numberOfReplicas: 1</code></li>
+<li>Deploy a statefulset with <code>replicas: 1</code> and using the above storageclass
+Make sure the container in the pod template uses subpath, like this:
+```yaml
+volumeMounts:</li>
+<li>name: <PVC-NAME>
+mountPath: /data/sub
+subPath: sub
+```</li>
+<li>exec into statefulset pod, create a file <code>test_data.txt</code>
+inside the folder <code>/data/sub</code></li>
+<li>Delete the statefulset replica instance manager pod.
+This action simulates a network disconnection.</li>
+<li>Wait for volume <code>healthy</code>, then verify the file checksum.</li>
+<li>Repeat step #4~#5 for 3 times.</li>
+<li>Update <code>numberOfReplicas</code> to 3.</li>
+<li>Wait for replicas rebuilding finishes.</li>
+<li>Delete one of the statefulset engine instance manager pod.</li>
+<li>Wait for volume remount.
+Then verify the file checksum.</li>
+<li>Delete statefulset pod.</li>
+<li>Wait for pod recreation and volume remount.
+Then verify the file checksum.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_autosalvage_with_data_locality_enabled"><code class="name flex">
+<span>def <span class="ident">test_autosalvage_with_data_locality_enabled</span></span>(<span>client, core_api, make_deployment_with_pvc, volume_name, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This e2e test follows the manual test steps at:
+<a href="https://github.com/longhorn/longhorn/issues/2778#issue-939331805">https://github.com/longhorn/longhorn/issues/2778#issue-939331805</a></p>
+<p>Preparation:
+1. Let's call the 3 nodes: node-1, node-2, node-3</p>
+<p>Steps:
+1. Add the tag <code>node-1</code> to <code>node-1</code>
+2. Create a volume with 1 replica, data-locality set to best-effort,
+and tag set to <code>node-1</code>
+3. Create PV/PVC from the volume.
+4. Create a pod that uses the PVC. Set node selector for the pod so that
+it will be schedule on to <code>node-2</code>. This makes sure that there is a
+failed-to-scheduled local replica
+5. Wait for the pod to be in running state.
+6. Kill the aio instance manager on <code>node-1</code>.
+7. In a 3-min retry loop, verify that Longhorn salvage the volume
+and the workload pod is restarted. Exec into the workload pod.
+Verify that read/write to the volume is ok
+8. Exec into the longhorn manager pod on <code>node-2</code>.
+Running <code>ss -a -n | grep :8500 | wc -l</code> to find the number of socket
+connections from this manager pod to instance manager pods.
+In a 2-min loop, verify that the number of socket connection is &lt;= 20</p>
+<p>Cleaning up:
+1. Clean up the node tag</p></div>
+</dd>
+<dt id="tests.test_ha.test_disable_replica_rebuild"><code class="name flex">
+<span>def <span class="ident">test_disable_replica_rebuild</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test disable replica rebuild</p>
+<ol>
+<li>Disable node scheduling on node-2 and node-3. To make sure
+replica scheduled on node-1.</li>
+<li>Set 'Concurrent Replica Rebuild Per Node Limit' to 0.</li>
+<li>Create a volume with 1 replica and attach it to node-1.</li>
+<li>Enable scheduling on node-2 and node-3. Set node-1 scheduling to
+'Disable' and 'Enable' eviction on node-1.</li>
+<li>Wait for 30 seconds, and check no eviction happen.</li>
+<li>'Enable' node-1 scheduling and 'Disable' node-1 eviction.</li>
+<li>Detach the volume and update data locality to 'best-effort'.</li>
+<li>Attach the volume to node-2, and wait for 30 seconds, and check
+no data locality happen.</li>
+<li>Detach the volume and update data locality to 'disable'.</li>
+<li>Attach the volume to node-2 and update the replica number to 2.</li>
+<li>Wait for 30 seconds, and no new replica scheduled and volume is
+at 'degraded' state.</li>
+<li>Set 'Concurrent Replica Rebuild Per Node Limit' to 5, and wait for
+replica rebuild and volume becomes 'healthy' state with 2 replicas.</li>
+<li>Set 'Concurrent Replica Rebuild Per Node Limit' to 0, delete one
+replica.</li>
+<li>Wait for 30 seconds, no rebuild should get triggered. The volume
+should stay in 'degraded' state with 1 replica.</li>
+<li>Set 'Concurrent Replica Rebuild Per Node Limit' to 5, and wait for
+replica rebuild and volume becomes 'healthy' state with 2 replicas.</li>
+<li>Clean up the volume.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_dr_volume_with_restore_command_error"><code class="name flex">
+<span>def <span class="ident">test_dr_volume_with_restore_command_error</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test if Longhorn can capture and handle the restore command error
+rather than the error triggered the data restoring.</p>
+<ol>
+<li>Set a random backupstore.</li>
+<li>Create a volume, then create the corresponding PV, PVC and Pod.</li>
+<li>Write data to the pod volume and get the md5sum
+after the pod running.</li>
+<li>Create the 1st backup.</li>
+<li>Create a DR volume from the backup.</li>
+<li>Wait for the DR volume restore complete.</li>
+<li>Create a non-empty directory <code>volume-delta-&lt;last backup name&gt;.img</code>
+in one replica directory of the DR volume. This will fail the
+restore command call later.</li>
+<li>Write data to the original volume then create the 2nd backup.</li>
+<li>Wait for incremental restore complete.
+Then verify the DR volume is Degraded
+and there is one failed replica.</li>
+<li>Verify the failed replica will be reused for rebuilding
+(restore actually).</li>
+<li>Activate the DR volume and wait for it complete.</li>
+<li>Create PV/PVC/Pod for the activated volume.</li>
+<li>Validate the volume content.</li>
+<li>Verify Writing data to the activated volume is fine.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_crash_for_dr_volume"><code class="name flex">
+<span>def <span class="ident">test_engine_crash_for_dr_volume</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test DR volume can be recovered after
+the engine crashes unexpectedly.</p>
+<ol>
+<li>Setup a random backupstore.</li>
+<li>Create volume and start the pod.</li>
+<li>Write random data to the pod volume and get the md5sum.</li>
+<li>Create a backup for the volume.</li>
+<li>Create a DR volume from the backup.</li>
+<li>Wait for the DR volume init restore complete.</li>
+<li>Wait more data to the original volume and get the md5sum</li>
+<li>Create the 2nd backup for the original volume.</li>
+<li>Wait for the incremental restore triggered
+after the 2nd backup creation.</li>
+<li>Crash the DR volume engine process during the incremental restore.</li>
+<li>Wait for the DR volume detaching.</li>
+<li>Wait for the DR volume reattached.</li>
+<li>Verify the DR volume:
+13.1. <code>volume.ready == false</code>.
+13.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.
+13.3. <code>volume.standby == true</code></li>
+<li>Activate the DR volume and wait for detached.</li>
+<li>Create a pod for the restored volume and wait for the pod start.</li>
+<li>Check the data md5sum for the DR volume.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_crash_for_restore_volume"><code class="name flex">
+<span>def <span class="ident">test_engine_crash_for_restore_volume</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test volume can successfully retry restoring after
+the engine crashes unexpectedly.</p>
+<ol>
+<li>Setup a random backupstore.</li>
+<li>Create volume and start the pod.</li>
+<li>Write random data to the pod volume and get the md5sum.</li>
+<li>Create a backup for the volume.</li>
+<li>Restore a new volume from the backup.</li>
+<li>Crash the engine during the restore.</li>
+<li>Wait for the volume detaching.</li>
+<li>Wait for the volume reattached.</li>
+<li>Verify if
+9.1. <code>volume.ready == false</code>.
+9.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.</li>
+<li>Wait for the volume restore complete and detached.</li>
+<li>Recreate a pod for the restored volume and wait for the pod start.</li>
+<li>Check the data md5sum for the restored data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_image_miss_scheduled_perform_volume_operations"><code class="name flex">
+<span>def <span class="ident">test_engine_image_miss_scheduled_perform_volume_operations</span></span>(<span>core_api, client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test volume operations when engine image DaemonSet is miss
+scheduled</p>
+<ol>
+<li>Create a volume, vol-1, of 3 replicas</li>
+<li>Taint node-1 with the taint: key=value:NoSchedule</li>
+<li>Verify that we can attach, take snapshot, take a backup,
+expand, then detach vol-1</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_image_not_fully_deployed_perform_auto_upgrade_engine"><code class="name flex">
+<span>def <span class="ident">test_engine_image_not_fully_deployed_perform_auto_upgrade_engine</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test auto upgrade engine feature when engine image DaemonSet is
+not fully deployed</p>
+<p>Prerequisite:
+Prepare system for the test by calling the method
+prepare_engine_not_fully_deployed_evnironment to have
+tainted node and not fully deployed engine.</p>
+<ol>
+<li>Create 2 volumes vol-1 and vol-2 with 2 replicas</li>
+<li>Deploy a new engine image, new-ei</li>
+<li>Upgrade vol-1 and vol-2 to the new-ei</li>
+<li>Attach vol-2 to current-node</li>
+<li>Set <code>Concurrent Automatic Engine Upgrade Per Node Limit</code> setting to 3</li>
+<li>In a 2-min retry, verify that Longhorn upgrades the engine image of
+vol-1 and vol-2.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume"><code class="name flex">
+<span>def <span class="ident">test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume</span></span>(<span>client, core_api, set_random_backupstore)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test DR, restoring, expanding volumes when engine image DaemonSet
+is not fully deployed</p>
+<p>Prerequisite:
+Prepare system for the test by calling the method
+prepare_engine_not_fully_deployed_evnironment to have
+tainted node and not fully deployed engine.</p>
+<ol>
+<li>Create volume vol-1 with 2 replicas</li>
+<li>Attach vol-1 to node-2, write data and create backup</li>
+<li>Create a DR volume (vol-dr) of 2 replicas.</li>
+<li>Verify that 2 replicas are on node-2 and node-3 and the DR volume
+is attached to either node-2 or node-3.
+Let's say it is attached to node-x</li>
+<li>Taint node-x with the taint <code>key=value:NoSchedule</code></li>
+<li>Delete the pod of engine image DeamonSet on node-x. Now, the engine
+image is missing on node-1 and node-x</li>
+<li>Verify that vol-dr is auto-attached node-y.</li>
+<li>Restore a volume from backupstore with name vol-rs and replica count
+is 1</li>
+<li>Verify that replica is on node-y and the volume successfully restored.</li>
+<li>Wait for vol-rs to finish restoring</li>
+<li>Expand vol-rs.</li>
+<li>Verify that the expansion is ok</li>
+<li>Set <code>Replica Replenishment Wait Interval</code> setting to 600</li>
+<li>Crash the replica of vol-1 on node-x. Wait for the replica to fail</li>
+<li>In a 2-min retry verify that Longhorn doesn't create new replica
+for vol-1 and doesn't reuse the failed replica on node-x</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_image_not_fully_deployed_perform_engine_upgrade"><code class="name flex">
+<span>def <span class="ident">test_engine_image_not_fully_deployed_perform_engine_upgrade</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test engine upgrade when engine image DaemonSet is not fully
+deployed</p>
+<p>Prerequisite:
+Prepare system for the test by calling the method
+prepare_engine_not_fully_deployed_evnironment_with_volumes to have
+2 volumes, tainted node and not fully deployed engine.</p>
+<ol>
+<li>Deploy a new engine image, new-ei</li>
+<li>Detach vol-1, verify that you can upgrade vol-1 to new-ei</li>
+<li>Detach then attach vol-1 to node-2</li>
+<li>Verify that you can live upgrade vol-1 to back to default engine image</li>
+<li>Try to upgrade vol-2 to new-ei</li>
+<li>Verify that the engineUpgrade API call returns error</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_image_not_fully_deployed_perform_replica_scheduling"><code class="name flex">
+<span>def <span class="ident">test_engine_image_not_fully_deployed_perform_replica_scheduling</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replicas scheduling when engine image DaemonSet is not fully
+deployed</p>
+<p>Prerequisite:
+Prepare system for the test by calling the method
+prepare_engine_not_fully_deployed_evnironment to have
+tainted node and not fully deployed engine.</p>
+<ol>
+<li>Disable the scheduling for node-2</li>
+<li>Create a volume, vol-1, with 2 replicas, attach to node-3</li>
+<li>Verify that there is one replica fail to be scheduled</li>
+<li>enable the scheduling for node-2</li>
+<li>Verify that replicas are scheduled onto node-2 and node-3</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_engine_image_not_fully_deployed_perform_volume_operations"><code class="name flex">
+<span>def <span class="ident">test_engine_image_not_fully_deployed_perform_volume_operations</span></span>(<span>client, core_api, set_random_backupstore)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test volume operations when engine image DaemonSet is not fully
+deployed</p>
+<p>Prerequisite:
+Prepare system for the test by calling the method
+prepare_engine_not_fully_deployed_evnironment_with_volumes to have
+2 volumes, tainted node and not fully deployed engine.</p>
+<ol>
+<li>Verify that functions (snapshot, backup, detach) are working ok
+for vol-1</li>
+<li>Detach vol-1</li>
+<li>Attach vol-1 to node-1. Verify that Longhorn cannot attach vol-1 to
+node-1 since there is no engine image on node-1. The attach API call
+returns error</li>
+<li>Verify that we can attach to another node, take snapshot, take a backup,
+expand, then detach vol-1</li>
+<li>Verify that vol-2 cannot be attached to tainted nodes. The attach API
+call returns error</li>
+<li>Verify that vol-2 can attach to non-tainted node with degrade status</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_ha_backup_deletion_recovery"><code class="name flex">
+<span>def <span class="ident">test_ha_backup_deletion_recovery</span></span>(<span>set_random_backupstore, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test deleting the restored snapshot and rebuild</p>
+<p>Backupstore: all</p>
+<ol>
+<li>Create volume and attach it to the current node.</li>
+<li>Write <code>data</code> to the volume and create snapshot <code>snap2</code></li>
+<li>Backup <code>snap2</code> to create a backup.</li>
+<li>Create volume <code>res_volume</code> from the backup. Check volume <code>data</code>.</li>
+<li>Check snapshot chain, make sure <code>backup_snapshot</code> exists.</li>
+<li>Delete the <code>backup_snapshot</code> and purge snapshots.</li>
+<li>After purge complete, delete one replica to verify rebuild works.</li>
+</ol>
+<p>FIXME: Needs improvement, e.g. rebuild when no snapshot is deleted for
+restored backup.</p></div>
+</dd>
+<dt id="tests.test_ha.test_ha_prohibit_deleting_last_replica"><code class="name flex">
+<span>def <span class="ident">test_ha_prohibit_deleting_last_replica</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test prohibiting deleting the last replica</p>
+<ol>
+<li>Create volume with one replica and attach to the current node.</li>
+<li>Try to delete the replica. It should error out</li>
+</ol>
+<p>FIXME: Move out of test_ha.py</p></div>
+</dd>
+<dt id="tests.test_ha.test_ha_recovery_with_expansion"><code class="name flex">
+<span>def <span class="ident">test_ha_recovery_with_expansion</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test recovery with volume expansion</p>
+<ol>
+<li>Create a volume and attach it to the current node.</li>
+<li>Write a large amount of data to the volume</li>
+<li>Remove one random replica and wait for the rebuilding starts</li>
+<li>Expand the volume immediately after the rebuilding start</li>
+<li>check and wait for the volume expansion and rebuilding</li>
+<li>Write more data to the volume</li>
+<li>Remove another replica of volume</li>
+<li>Wait volume to start rebuilding and complete</li>
+<li>Check the data intacty</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_ha_salvage"><code class="name flex">
+<span>def <span class="ident">test_ha_salvage</span></span>(<span>client, core_api, volume_name, disable_auto_salvage)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test salvage when volume faulted
+TODO
+The test cases should cover the following four cases:
+1. Manual salvage with revision counter enabled.
+2. Manual salvage with revision counter disabled.
+3. Auto salvage with revision counter enabled.
+4. Auto salvage with revision counter enabled.</p>
+<p>Setting: Disable auto salvage</p>
+<p>Case 1: Delete all replica processes using instance manager</p>
+<ol>
+<li>Create volume and attach to the current node</li>
+<li>Write <code>data</code> to the volume.</li>
+<li>Crash all the replicas using Instance Manager API<ol>
+<li>Cannot do it using Longhorn API since a. it will delete data, b. the
+last replica is not allowed to be deleted</li>
+</ol>
+</li>
+<li>Make sure volume detached automatically and changed into <code>faulted</code> state</li>
+<li>Make sure both replicas reports <code>failedAt</code> timestamp.</li>
+<li>Salvage the volume</li>
+<li>Verify that volume is in <code>detached</code> <code>unknown</code> state. No longer <code>faulted</code></li>
+<li>Verify that all the replicas' <code>failedAt</code> timestamp cleaned.</li>
+<li>Attach the volume and check <code>data</code></li>
+</ol>
+<p>Case 2: Crash all replica processes</p>
+<p>Same steps as Case 1 except on step 3, use SIGTERM to crash the processes</p>
+<p>Setting: Enabled auto salvage.</p>
+<p>Case 3: Revision counter disabled.</p>
+<ol>
+<li>Set 'Automatic salvage' to true.</li>
+<li>Set 'Disable Revision Counter' to true.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Attach the volume to a node and write some data to it and save the
+checksum.</li>
+<li>Delete all replica processes using instance manager or
+crash all replica processes using SIGTERM.</li>
+<li>Wait for volume to <code>faulted</code>, then <code>healthy</code>.</li>
+<li>Verify all 3 replicas are reused successfully.</li>
+<li>Check the data in the volume and make sure it's the same as the
+checksum saved on step 5.</li>
+</ol>
+<p>Case 4: Revision counter enabled.</p>
+<ol>
+<li>Set 'Automatic salvage' to true.</li>
+<li>Set 'Disable Revision Counter' to false.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Attach the volume to a node and write some data to it and save the
+checksum.</li>
+<li>Delete all replica processes using instance manager or
+crash all replica processes using SIGTERM.</li>
+<li>Wait for volume to <code>faulted</code>, then <code>healthy</code>.</li>
+<li>Verify there are 3 replicas, they are all from previous replicas.</li>
+<li>Check the data in the volume and make sure it's the same as the
+checksum saved on step 5.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_ha_simple_recovery"><code class="name flex">
+<span>def <span class="ident">test_ha_simple_recovery</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test recovering from one replica failure</p>
+<ol>
+<li>Create volume and attach to the current node</li>
+<li>Write <code>data</code> to the volume.</li>
+<li>Remove one of the replica using Longhorn API</li>
+<li>Wait for a new replica to be rebuilt.</li>
+<li>Check the volume data</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion"><code class="name flex">
+<span>def <span class="ident">test_inc_restoration_with_multiple_rebuild_and_expansion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the rebuild is disabled for the DR volume
+1. Setup a random backupstore.
+2. Create a pod with a volume and wait for pod to start.
+3. Write data to the volume and get the md5sum.
+4. Create the 1st backup for the volume.
+5. Create a DR volume based on the backup
+and wait for the init restoration complete.
+6. Shutdown the pod and wait for the std volume detached.
+7. Offline expand the std volume and wait for expansion complete.
+8. Re-launch a pod for the std volume.
+9. Write more data to the std volume. Make sure there is data in the
+expanded part.
+10. Create the 2nd backup and wait for the backup creation complete.
+11. For the DR volume, delete one replica and trigger incremental restore
+simultaneously.
+12. Wait for the inc restoration complete and the volume becoming Healthy.
+13. Check the DR volume size and snapshot info. Make sure there is only
+one snapshot in the volume.
+14. Online expand the std volume and wait for expansion complete.
+15. Write data to the std volume then create the 3rd backup.
+16. Trigger the inc restore then re-verify the snapshot info.
+17. Activate the DR volume.
+18. Create PV/PVC/Pod for the activated volume
+and wait for the pod start.
+19. Check if the restored volume is state <code>healthy</code>
+after the attachment.
+20. Check md5sum of the data in the activated volume.
+21. Crash one random replica. Then verify the rebuild still works fine for
+the activated volume.
+22. Do cleanup.</p></div>
+</dd>
+<dt id="tests.test_ha.test_rebuild_after_replica_file_crash"><code class="name flex">
+<span>def <span class="ident">test_rebuild_after_replica_file_crash</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test replica rebuild should be triggered if any crashes happened.</p>
+<ol>
+<li>Create a longhorn volume with replicas.</li>
+<li>Write random data to the volume and get the md5sum.</li>
+<li>Remove file <code>volume-head-000.img</code> from one of the replicas.</li>
+<li>Wait replica rebuild to be triggered.</li>
+<li>Verify the old replica containing the crashed file will be reused.</li>
+<li>Read the data from the volume and verify the md5sum.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_rebuild_failure_with_intensive_data"><code class="name flex">
+<span>def <span class="ident">test_rebuild_failure_with_intensive_data</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test rebuild failure with intensive data writing</p>
+<ol>
+<li>Create PV/PVC/POD with livenss check</li>
+<li>Create volume and wait for pod to start</li>
+<li>Write data to <code>/data/test1</code> inside the pod and get <code>original_checksum_1</code></li>
+<li>Write data to <code>/data/test2</code> inside the pod and get <code>original_checksum_2</code></li>
+<li>Find running replicas of the volume</li>
+<li>Crash one of the running replicas.</li>
+<li>Wait for the replica rebuild to start</li>
+<li>Crash the replica which is sending data to the rebuilding replica</li>
+<li>Wait for volume to finish two rebuilds and become healthy</li>
+<li>Check md5sum for both data location</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node"><code class="name flex">
+<span>def <span class="ident">test_rebuild_replica_and_from_replica_on_the_same_node</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test the corner case that the from-replica and the rebuilding replica
+are on the same node</p>
+<p>Test prerequisites:
+- set Replica Node Level Soft Anti-Affinity disabled</p>
+<ol>
+<li>Disable the setting replica-soft-anti-affinity.</li>
+<li>Set replica replenishment wait interval to an appropriate value.</li>
+<li>Create a pod with Longhorn volume and wait for pod to start</li>
+<li>Write data to <code>/data/test</code> inside the pod and get <code>original_checksum</code></li>
+<li>Disable scheduling for all nodes except for one.</li>
+<li>Find running replicas of the volume</li>
+<li>Crash 2 running replicas.</li>
+<li>Wait for the replica rebuild to start.</li>
+<li>Check if the rebuilding replica is one of the crashed replica,
+and this reused replica is rebuilt on the only available node.</li>
+<li>Check md5sum for the written data</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_rebuild_with_inc_restoration"><code class="name flex">
+<span>def <span class="ident">test_rebuild_with_inc_restoration</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the rebuild is disabled for the DR volume
+1. Setup a random backupstore.
+2. Create a pod with a volume and wait for pod to start.
+3. Write data to <code>/data/test1</code> inside the pod and get the md5sum.
+4. Create the 1st backup for the volume.
+5. Create a DR volume based on the backup
+and wait for the init restoration complete.
+6. Write more data to the original volume then create the 2nd backup.
+7. Delete one replica and trigger incremental restore simultaneously.
+8. Wait for the inc restoration complete and the volume becoming Healthy.
+9. Activate the DR volume.
+10. Create PV/PVC/Pod for the activated volume
+and wait for the pod start.
+11. Check if the restored volume is state <code>healthy</code>
+after the attachment.
+12. Check md5sum of the data in the activated volume.
+13. Do cleanup.</p></div>
+</dd>
+<dt id="tests.test_ha.test_rebuild_with_restoration"><code class="name flex">
+<span>def <span class="ident">test_rebuild_with_restoration</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the rebuild is disabled for the restoring volume.</p>
+<p>This is similar to test_single_replica_restore_failure and
+test_single_replica_unschedulable_restore_failure. In this version, a
+replica is deleted. We expect a new replica to be rebuilt in its place and
+the restore to complete.</p>
+<ol>
+<li>Setup a random backupstore.</li>
+<li>Do cleanup for the backupstore.</li>
+<li>Create a pod with a volume and wait for pod to start.</li>
+<li>Write data to the pod volume and get the md5sum.</li>
+<li>Create a backup for the volume.</li>
+<li>Restore a volume from the backup.</li>
+<li>Wait for the volume restore start.</li>
+<li>Delete one replica during the restoration.</li>
+<li>Wait for the restoration complete and the volume detached.</li>
+<li>Check if the replica is rebuilt.</li>
+<li>Create PV/PVC/Pod for the restored volume and wait for the pod start.</li>
+<li>Check if the restored volume is state <code>Healthy</code>
+after the attachment.</li>
+<li>Check md5sum of the data in the restored volume.</li>
+<li>Do cleanup.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_recovery_from_im_deletion"><code class="name flex">
+<span>def <span class="ident">test_recovery_from_im_deletion</span></span>(<span>client, core_api, volume_name, make_deployment_with_pvc, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/3070">https://github.com/longhorn/longhorn/issues/3070</a></p>
+<p>Steps:
+1. Create a volume and PV/PVC.
+2. Create a deployment with 1 pod having below in command section on node-1
+and attach to the volume.
+command:
+- "/bin/sh"
+- "-ec"
+- |
+touch /data/test
+tail -f /data/test
+3. Wait for the pod to become healthy.
+4. Write small(100MB) data.
+5. Kill the instance-manager-e on node-1.
+6. Wait for the instance-manager-e pod to become healthy.
+7. Wait for pod to get terminated and recreated.
+8. Read and write in the pod to verify the pod is accessible.</p></div>
+</dd>
+<dt id="tests.test_ha.test_replica_failure_during_attaching"><code class="name flex">
+<span>def <span class="ident">test_replica_failure_during_attaching</span></span>(<span>settings_reset, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set a short interval for setting replica-replenishment-wait-interval.
+2. Disable the setting soft-node-anti-affinity.
+3. Create volume1 with 1 replica. and attach it to the host node.
+4. Mount volume1 to a new mount point. then use it as an extra node disk.
+5. Disable the scheduling for the default disk of the host node,
+and make sure the extra disk is the only available disk on the node.
+6. Create and attach volume2, then write data to volume2.
+7. Detach volume2.
+8. Directly unmount volume1 and remove the related mount point directory.
+&ndash;&gt; Verify the extra disk becomes unavailable.
+9. Attach volume2.
+&ndash;&gt; Verify volume will be attached with state Degraded.
+10. Wait for the replenishment interval.
+&ndash;&gt; Verify a new replica cannot be scheduled.
+11. Enable the default disk for the host node.
+12. Wait for volume2 becoming Healthy.
+13. Verify data content and r/w capability for volume2.</p></div>
+</dd>
+<dt id="tests.test_ha.test_replica_should_not_be_created_when_no_suitable_node_found"><code class="name flex">
+<span>def <span class="ident">test_replica_should_not_be_created_when_no_suitable_node_found</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica should not be created when no suitable node is found.</p>
+<ol>
+<li>Make sure 'Replica Node Level Soft Anti-Affinity' is disabled.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Attach the volume to a node and write some data to it and
+save the checksum.</li>
+<li>Increase the volume replica number to 4.</li>
+<li>No Replica should be created.</li>
+<li>Volume should show failed to schedule.</li>
+<li>Decrease the volume replica number to 3.</li>
+<li>Volume should be healthy.</li>
+<li>Check the data in the volume and make sure it's same as the checksum.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_restore_volume_with_invalid_backupstore"><code class="name flex">
+<span>def <span class="ident">test_restore_volume_with_invalid_backupstore</span></span>(<span>client, volume_name, backupstore_s3)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the invalid backup target will lead to to volume restore.</p>
+<ol>
+<li>Enable auto-salvage.</li>
+<li>Set a S3 backupstore. (Cannot use NFS server here before fixing #1295)</li>
+<li>Create a volume then a backup.</li>
+<li>Invalidate the target URL.
+(e.g.: s3://backupbucket-invalid@us-east-1/backupstore-invalid)</li>
+<li>Restore a volume from the backup should return error.
+(The fromBackup fields of the volume create API should consist of
+the invalid target URL and the valid backup volume info)</li>
+<li>Check restore volume not created.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_retain_potentially_useful_replicas_in_autosalvage_loop"><code class="name flex">
+<span>def <span class="ident">test_retain_potentially_useful_replicas_in_autosalvage_loop</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue:
+<a href="https://github.com/longhorn/longhorn/issues/7425">https://github.com/longhorn/longhorn/issues/7425</a></p>
+<p>Related manual test steps:
+<a href="https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916">https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916</a></p>
+<p>Steps:
+1. Create a volume with numberOfReplicas=2 and staleReplicaTimeout=1.
+Consider its two replicas ReplicaA and ReplicaB.
+2. Attach the volume to a node.
+3. Write data to the volume.
+4. Exec into the instance-manager for ReplicaB and delete all .img.meta
+files. This makes it impossible to restart ReplicaB successfully.
+5. Cordon the node for Replica A. This makes it unavailable for
+autosalvage.
+6. Crash the instance-managers for both ReplicaA and ReplicaB.
+7. Wait one minute and fifteen seconds. This is longer than
+staleReplicaTimeout.
+8. Confirm the volume is not healthy.
+9. Confirm ReplicaA was not deleted.
+10. Delete ReplicaB.
+11. Wait for the volume to become healthy.
+12. Verify the data.</p></div>
+</dd>
+<dt id="tests.test_ha.test_reuse_failed_replica"><code class="name flex">
+<span>def <span class="ident">test_reuse_failed_replica</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set a long wait interval for
+setting <code>replica-replenishment-wait-interval</code>.
+2. Disable the setting soft node anti-affinity.
+3. Create and attach a volume. Then write data to the volume.
+4. Disable the scheduling for a node.
+5. Mess up the data of a random snapshot or the volume head for a replica.
+Then crash the replica on the node.
+&ndash;&gt; Verify Longhorn won't create a new replica on the node
+for the volume.
+6. Update setting <code>replica-replenishment-wait-interval</code> to
+a small value.
+7. Verify no new replica will be created.
+8. Verify volume replica scheduling should fail.
+9. Update setting <code>replica-replenishment-wait-interval</code> to a large value.
+10. Enable the scheduling for the node.
+11. Verify the failed replica (in step 5) will be reused.
+12. Verify the volume r/w still works fine.</p></div>
+</dd>
+<dt id="tests.test_ha.test_reuse_failed_replica_with_scheduling_check"><code class="name flex">
+<span>def <span class="ident">test_reuse_failed_replica_with_scheduling_check</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set a long wait interval for
+setting <code>replica-replenishment-wait-interval</code>.
+2. Disable the setting soft node anti-affinity.
+3. Add tags for all nodes and disks.
+4. Create and attach a volume with node and disk selectors.
+Then write data to the volume.
+5. Disable the scheduling for the 2 nodes (node1 and node2).
+6. Crash the replicas on the node1 and node2.
+&ndash;&gt; Verify Longhorn won't create new replicas on the nodes.
+7. Remove tags for node1 and the related disks.
+8. Enable the scheduling for node1 and node2.
+9. Verify the only failed replica on node2 is reused.
+10. Add the tags back for node1 and the related disks.
+11. Verify the failed replica on node1 is reused.
+12. Verify the volume r/w still works fine.</p></div>
+</dd>
+<dt id="tests.test_ha.test_salvage_auto_crash_all_replicas"><code class="name flex">
+<span>def <span class="ident">test_salvage_auto_crash_all_replicas</span></span>(<span>client, core_api, storage_class, sts_name, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test automatic salvage feature by crashing all the replicas</p>
+<p>Case #1: crash all replicas
+1. Create StorageClass and StatefulSet.
+2. Write random data to the pod and get the md5sum.
+3. Run <code>sync</code> command inside the pod to make sure data flush to the volume.
+4. Crash all replica processes using SIGTERM.
+5. Wait for volume to <code>faulted</code>, then <code>healthy</code>.
+6. Wait for K8s to terminate the pod and statefulset to bring pod to
+<code>Pending</code>, then <code>Running</code>.
+7. Check volume path exist in the pod.
+8. Check md5sum of the data in the pod.
+Case #2: crash one replica and then crash all replicas
+9. Crash one of the replica.
+10. Try to wait for rebuild start and the rebuilding replica running.
+11. Crash all the replicas.
+12. Make sure volume and pod recovers.
+13. Check md5sum of the data in the pod.</p>
+<p>FIXME: Step 5 is only a intermediate state, maybe no way to get it for sure</p></div>
+</dd>
+<dt id="tests.test_ha.test_single_replica_failed_during_engine_start"><code class="name flex">
+<span>def <span class="ident">test_single_replica_failed_during_engine_start</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test if the volume still works fine when there is
+an invalid replica/backend in the engine starting phase.</p>
+<p>Prerequisite:
+Setting "replica-replenishment-wait-interval" is 0</p>
+<ol>
+<li>Create a pod using Longhorn volume.</li>
+<li>Write some data to the volume then get the md5sum.</li>
+<li>Create a snapshot.</li>
+<li>Repeat step2 and step3 for 3 times then there should be 3 snapshots.</li>
+<li>Randomly pick up a replica and
+manually messing up the snapshot meta file.</li>
+<li>Delete the pod and wait for the volume detached.</li>
+<li>Recreate the pod and wait for the volume attached.</li>
+<li>Check if the volume is Degraded and
+if the chosen replica is ERR once the volume attached.</li>
+<li>Wait for volume rebuild and volume becoming Healthy.</li>
+<li>Check volume data.</li>
+<li>Check if the volume still works fine by
+r/w data and creating/removing snapshots.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_single_replica_restore_failure"><code class="name flex">
+<span>def <span class="ident">test_single_replica_restore_failure</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if one replica restore failure will lead to the restore volume
+becoming Degraded, and if the restore volume is still usable after
+the failure.</p>
+<p>This is similar to test_rebuild_with_restoration and
+test_single_replica_unschedulable_restore_failure. In this version, a
+replica is crashed. We expect the crashed replica to be rebuilt and the
+restore to complete.</p>
+<ol>
+<li>Setup a random backupstore.</li>
+<li>Do cleanup for the backupstore.</li>
+<li>Create a pod with a volume and wait for pod to start.</li>
+<li>Write data to the pod volume and get the md5sum.</li>
+<li>Create a backup for the volume.</li>
+<li>Restore a volume from the backup.</li>
+<li>Wait for the volume restore start.</li>
+<li>Crash one replica during the restoration.</li>
+<li>Wait for the restoration complete and the volume detached.</li>
+<li>Check if the replica is rebuilt.</li>
+<li>Create PV/PVC/Pod for the restored volume and wait for the pod start.</li>
+<li>Check if the restored volume is state <code>Healthy</code>
+after the attachment.</li>
+<li>Check md5sum of the data in the restored volume.</li>
+<li>Do cleanup.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_single_replica_unschedulable_restore_failure"><code class="name flex">
+<span>def <span class="ident">test_single_replica_unschedulable_restore_failure</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the restore can complete if a restoring replica is killed
+while it is ongoing and cannot be recovered.</p>
+<p>This is similar to test_rebuild_with_restoration and
+test_single_replica_restore_failure. In this version, a replica is crashed
+and not allowed to recover. However, we enable
+allow-volume-creation-with-degraded-availability, so we expect the restore
+to complete anyway.</p>
+<ol>
+<li>Setup a random backupstore.</li>
+<li>Do cleanup for the backupstore.</li>
+<li>Enable allow-volume-creation-with-degraded-availability (to allow
+restoration to complete without all replicas).</li>
+<li>Create a pod with a volume and wait for pod to start.</li>
+<li>Write data to the pod volume and get the md5sum.</li>
+<li>Create a backup for the volume.</li>
+<li>Restore a volume from the backup.</li>
+<li>Wait for the volume restore start.</li>
+<li>Disable replica rebuilding (to ensure the killed replica cannot
+recover).</li>
+<li>Crash one replica during the restoration.</li>
+<li>Wait for the restoration complete and the volume detached.</li>
+<li>Create PV/PVC/Pod for the restored volume and wait for the pod start.</li>
+<li>Check if the restored volume is state <code>Healthy</code>
+after the attachment.</li>
+<li>Check md5sum of the data in the restored volume.</li>
+<li>Do cleanup.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.test_volume_reattach_after_engine_sigkill"><code class="name flex">
+<span>def <span class="ident">test_volume_reattach_after_engine_sigkill</span></span>(<span>client, core_api, storage_class, sts_name, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the volume can be reattached after using SIGKILL
+to crash the engine process</p>
+<ol>
+<li>Create StorageClass and StatefulSet.</li>
+<li>Write random data to the pod and get the md5sum.</li>
+<li>Crash the engine process by SIGKILL in the engine manager.</li>
+<li>Wait for volume to <code>faulted</code>, then <code>healthy</code>.</li>
+<li>Wait for K8s to terminate the pod and statefulset to bring pod to
+<code>Pending</code>, then <code>Running</code>.</li>
+<li>Check volume path exist in the pod.</li>
+<li>Check md5sum of the data in the pod.</li>
+<li>Check new data written to the volume is successful.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_ha.wait_pod_for_remount_request"><code class="name flex">
+<span>def <span class="ident">wait_pod_for_remount_request</span></span>(<span>client, core_api, volume_name, pod_name, original_md5sum, data_path='/data/test')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_ha.ha_backup_deletion_recovery_test" href="#tests.test_ha.ha_backup_deletion_recovery_test">ha_backup_deletion_recovery_test</a></code></li>
+<li><code><a title="tests.test_ha.ha_rebuild_replica_test" href="#tests.test_ha.ha_rebuild_replica_test">ha_rebuild_replica_test</a></code></li>
+<li><code><a title="tests.test_ha.ha_salvage_test" href="#tests.test_ha.ha_salvage_test">ha_salvage_test</a></code></li>
+<li><code><a title="tests.test_ha.ha_simple_recovery_test" href="#tests.test_ha.ha_simple_recovery_test">ha_simple_recovery_test</a></code></li>
+<li><code><a title="tests.test_ha.prepare_engine_not_fully_deployed_environment" href="#tests.test_ha.prepare_engine_not_fully_deployed_environment">prepare_engine_not_fully_deployed_environment</a></code></li>
+<li><code><a title="tests.test_ha.prepare_engine_not_fully_deployed_environment_with_volumes" href="#tests.test_ha.prepare_engine_not_fully_deployed_environment_with_volumes">prepare_engine_not_fully_deployed_environment_with_volumes</a></code></li>
+<li><code><a title="tests.test_ha.prepare_upgrade_image_not_fully_deployed_environment" href="#tests.test_ha.prepare_upgrade_image_not_fully_deployed_environment">prepare_upgrade_image_not_fully_deployed_environment</a></code></li>
+<li><code><a title="tests.test_ha.restore_with_replica_failure" href="#tests.test_ha.restore_with_replica_failure">restore_with_replica_failure</a></code></li>
+<li><code><a title="tests.test_ha.set_tags_for_node_and_its_disks" href="#tests.test_ha.set_tags_for_node_and_its_disks">set_tags_for_node_and_its_disks</a></code></li>
+<li><code><a title="tests.test_ha.test_all_replica_restore_failure" href="#tests.test_ha.test_all_replica_restore_failure">test_all_replica_restore_failure</a></code></li>
+<li><code><a title="tests.test_ha.test_auto_remount_with_subpath" href="#tests.test_ha.test_auto_remount_with_subpath">test_auto_remount_with_subpath</a></code></li>
+<li><code><a title="tests.test_ha.test_autosalvage_with_data_locality_enabled" href="#tests.test_ha.test_autosalvage_with_data_locality_enabled">test_autosalvage_with_data_locality_enabled</a></code></li>
+<li><code><a title="tests.test_ha.test_disable_replica_rebuild" href="#tests.test_ha.test_disable_replica_rebuild">test_disable_replica_rebuild</a></code></li>
+<li><code><a title="tests.test_ha.test_dr_volume_with_restore_command_error" href="#tests.test_ha.test_dr_volume_with_restore_command_error">test_dr_volume_with_restore_command_error</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_crash_for_dr_volume" href="#tests.test_ha.test_engine_crash_for_dr_volume">test_engine_crash_for_dr_volume</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_crash_for_restore_volume" href="#tests.test_ha.test_engine_crash_for_restore_volume">test_engine_crash_for_restore_volume</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_image_miss_scheduled_perform_volume_operations" href="#tests.test_ha.test_engine_image_miss_scheduled_perform_volume_operations">test_engine_image_miss_scheduled_perform_volume_operations</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_image_not_fully_deployed_perform_auto_upgrade_engine" href="#tests.test_ha.test_engine_image_not_fully_deployed_perform_auto_upgrade_engine">test_engine_image_not_fully_deployed_perform_auto_upgrade_engine</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume" href="#tests.test_ha.test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume">test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_image_not_fully_deployed_perform_engine_upgrade" href="#tests.test_ha.test_engine_image_not_fully_deployed_perform_engine_upgrade">test_engine_image_not_fully_deployed_perform_engine_upgrade</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_image_not_fully_deployed_perform_replica_scheduling" href="#tests.test_ha.test_engine_image_not_fully_deployed_perform_replica_scheduling">test_engine_image_not_fully_deployed_perform_replica_scheduling</a></code></li>
+<li><code><a title="tests.test_ha.test_engine_image_not_fully_deployed_perform_volume_operations" href="#tests.test_ha.test_engine_image_not_fully_deployed_perform_volume_operations">test_engine_image_not_fully_deployed_perform_volume_operations</a></code></li>
+<li><code><a title="tests.test_ha.test_ha_backup_deletion_recovery" href="#tests.test_ha.test_ha_backup_deletion_recovery">test_ha_backup_deletion_recovery</a></code></li>
+<li><code><a title="tests.test_ha.test_ha_prohibit_deleting_last_replica" href="#tests.test_ha.test_ha_prohibit_deleting_last_replica">test_ha_prohibit_deleting_last_replica</a></code></li>
+<li><code><a title="tests.test_ha.test_ha_recovery_with_expansion" href="#tests.test_ha.test_ha_recovery_with_expansion">test_ha_recovery_with_expansion</a></code></li>
+<li><code><a title="tests.test_ha.test_ha_salvage" href="#tests.test_ha.test_ha_salvage">test_ha_salvage</a></code></li>
+<li><code><a title="tests.test_ha.test_ha_simple_recovery" href="#tests.test_ha.test_ha_simple_recovery">test_ha_simple_recovery</a></code></li>
+<li><code><a title="tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion" href="#tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion">test_inc_restoration_with_multiple_rebuild_and_expansion</a></code></li>
+<li><code><a title="tests.test_ha.test_rebuild_after_replica_file_crash" href="#tests.test_ha.test_rebuild_after_replica_file_crash">test_rebuild_after_replica_file_crash</a></code></li>
+<li><code><a title="tests.test_ha.test_rebuild_failure_with_intensive_data" href="#tests.test_ha.test_rebuild_failure_with_intensive_data">test_rebuild_failure_with_intensive_data</a></code></li>
+<li><code><a title="tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node" href="#tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node">test_rebuild_replica_and_from_replica_on_the_same_node</a></code></li>
+<li><code><a title="tests.test_ha.test_rebuild_with_inc_restoration" href="#tests.test_ha.test_rebuild_with_inc_restoration">test_rebuild_with_inc_restoration</a></code></li>
+<li><code><a title="tests.test_ha.test_rebuild_with_restoration" href="#tests.test_ha.test_rebuild_with_restoration">test_rebuild_with_restoration</a></code></li>
+<li><code><a title="tests.test_ha.test_recovery_from_im_deletion" href="#tests.test_ha.test_recovery_from_im_deletion">test_recovery_from_im_deletion</a></code></li>
+<li><code><a title="tests.test_ha.test_replica_failure_during_attaching" href="#tests.test_ha.test_replica_failure_during_attaching">test_replica_failure_during_attaching</a></code></li>
+<li><code><a title="tests.test_ha.test_replica_should_not_be_created_when_no_suitable_node_found" href="#tests.test_ha.test_replica_should_not_be_created_when_no_suitable_node_found">test_replica_should_not_be_created_when_no_suitable_node_found</a></code></li>
+<li><code><a title="tests.test_ha.test_restore_volume_with_invalid_backupstore" href="#tests.test_ha.test_restore_volume_with_invalid_backupstore">test_restore_volume_with_invalid_backupstore</a></code></li>
+<li><code><a title="tests.test_ha.test_retain_potentially_useful_replicas_in_autosalvage_loop" href="#tests.test_ha.test_retain_potentially_useful_replicas_in_autosalvage_loop">test_retain_potentially_useful_replicas_in_autosalvage_loop</a></code></li>
+<li><code><a title="tests.test_ha.test_reuse_failed_replica" href="#tests.test_ha.test_reuse_failed_replica">test_reuse_failed_replica</a></code></li>
+<li><code><a title="tests.test_ha.test_reuse_failed_replica_with_scheduling_check" href="#tests.test_ha.test_reuse_failed_replica_with_scheduling_check">test_reuse_failed_replica_with_scheduling_check</a></code></li>
+<li><code><a title="tests.test_ha.test_salvage_auto_crash_all_replicas" href="#tests.test_ha.test_salvage_auto_crash_all_replicas">test_salvage_auto_crash_all_replicas</a></code></li>
+<li><code><a title="tests.test_ha.test_single_replica_failed_during_engine_start" href="#tests.test_ha.test_single_replica_failed_during_engine_start">test_single_replica_failed_during_engine_start</a></code></li>
+<li><code><a title="tests.test_ha.test_single_replica_restore_failure" href="#tests.test_ha.test_single_replica_restore_failure">test_single_replica_restore_failure</a></code></li>
+<li><code><a title="tests.test_ha.test_single_replica_unschedulable_restore_failure" href="#tests.test_ha.test_single_replica_unschedulable_restore_failure">test_single_replica_unschedulable_restore_failure</a></code></li>
+<li><code><a title="tests.test_ha.test_volume_reattach_after_engine_sigkill" href="#tests.test_ha.test_volume_reattach_after_engine_sigkill">test_volume_reattach_after_engine_sigkill</a></code></li>
+<li><code><a title="tests.test_ha.wait_pod_for_remount_request" href="#tests.test_ha.wait_pod_for_remount_request">wait_pod_for_remount_request</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

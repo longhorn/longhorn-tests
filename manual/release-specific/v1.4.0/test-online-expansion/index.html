@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -836,11 +836,11 @@
 <p><strong>When</strong> Do online expansion for volume 1.</p>
 <p><strong>Then</strong> The expansion of volume 1 should get stuck. (old engine image + old instance manager)</p>
 <p><em>And</em> The engine CR of volume 1 should contain the expansion error. e.g.,</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">status</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">lastExpansionError</span>: <span style="color:#ae81ff">cannot do online expansion for the old engine vol-e-b2d9b924</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">with cli API version 6</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">lastExpansionFailedAt</span>: <span style="color:#e6db74">2022-12-29 02:44:15.481809613 +0000</span> <span style="color:#ae81ff">UTC m=+146155.850227034</span>
-</span></span></code></pre></div><p><em>And</em> Expansion can be canceled.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">status</span>:
+  <span style="color:#f92672">lastExpansionError</span>: <span style="color:#ae81ff">cannot do online expansion for the old engine vol-e-b2d9b924</span>
+  <span style="color:#ae81ff">with cli API version 6</span>
+  <span style="color:#f92672">lastExpansionFailedAt</span>: <span style="color:#e6db74">2022-12-29 02:44:15.481809613 +0000</span> <span style="color:#ae81ff">UTC m=+146155.850227034</span>
+</code></pre></div><p><em>And</em> Expansion can be canceled.</p>
 <p><strong>When</strong> Do live upgrade for volume 1.</p>
 <p><em>And</em> Retry online expansion.</p>
 <p><strong>Then</strong> The expansion should get stuck. (new engine image + old instance manager)</p>

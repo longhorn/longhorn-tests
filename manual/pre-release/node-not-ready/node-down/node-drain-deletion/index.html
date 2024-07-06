@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -856,13 +856,13 @@ node/&lt;node-name&gt; evicted
 <p><strong>Given</strong> 1 PVC/PV/LHV created through Longhorn UI
 <em>And</em> LHV is not yet attached/replicated.</p>
 <p><strong>When</strong> kubectl drain nodes.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>NODE<span style="color:#f92672">=</span>centos-worker-0
-</span></span><span style="display:flex;"><span>kubectl cordon <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
-</span></span><span style="display:flex;"><span>kubectl drain --force --ignore-daemonsets --delete-emptydir-data --grace-period<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
-</span></span></code></pre></div><p><strong>Then</strong> all node should successfully drain.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">NODE<span style="color:#f92672">=</span>centos-worker-0
+kubectl cordon <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
+kubectl drain --force --ignore-daemonsets --delete-emptydir-data --grace-period<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
+</code></pre></div><p><strong>Then</strong> all node should successfully drain.</p>
 <p>NOTE: We might still 1 or 2 times of the pod&rsquo;s disruption budget message, but will drain successfully in the end.</p>
 <pre tabindex="0"><code class="language-log" data-lang="log">evicting pod longhorn-system/instance-manager-r-xxxxxxxx
-error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
+error when evicting pods/&quot;instance-manager-r-xxxxxxxx&quot; -n &quot;longhorn-system&quot; (will retry after 5s): Cannot evict pod as it would violate the pod's disruption budget.
 </code></pre><h2 id="stopped-replicas-on-deleted-nodes-should-not-be-counted-as-healthy-replicas-when-draining-nodes">Stopped replicas on deleted nodes should not be counted as healthy replicas when draining nodes</h2>
 <p>When draining a node, the node will be set as unscheduled and all pods should be evicted.</p>
 <p>By Longhorn&rsquo;s default settings, the replica will only be evicted if there is another healthy replica on the running node.</p>
@@ -874,15 +874,15 @@ error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-
 <p><em>And</em> Create a 5Gi detached volume with 2 replicas.</p>
 <p><em>And</em> Stop Node_1 that contains one of the replicas.</p>
 <p><em>And</em> Update the <code>Node Drain Policy</code> setting to <code>block-if-contains-last-replica</code> and confirm with following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
-</span></span></code></pre></div><p><strong>When</strong> Attempts to drain Node_2 that contains remaining replica.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
-</span></span></code></pre></div><p><strong>Then</strong> The Node_2 becomes cordoned.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
+</code></pre></div><p><strong>When</strong> Attempts to drain Node_2 that contains remaining replica.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
+</code></pre></div><p><strong>Then</strong> The Node_2 becomes cordoned.</p>
 <p><em>And</em> All pods on Node_2 are evicted except the replica instance manager pod.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
-</span></span></code></pre></div><p><em>And</em> The message like below keeps appearing.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
+</code></pre></div><p><em>And</em> The message like below keeps appearing.</p>
 <pre tabindex="0"><code>evicting pod longhorn-system/instance-manager-r-xxxxxxxx
-error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
+error when evicting pods/&quot;instance-manager-r-xxxxxxxx&quot; -n &quot;longhorn-system&quot; (will retry after 5s): Cannot evict pod as it would violate the pod's disruption budget.
 </code></pre><p><em>And</em> The last healthy replica exists on the Node_2.</p>
 <h2 id="setting-allow-node-drain-with-the-last-healthy-replica-protects-the-last-healthy-replica-with-pod-disruption-budget-pdb">Setting <code>Allow Node Drain with the Last Healthy Replica</code> protects the last healthy replica with Pod Disruption Budget (PDB)</h2>
 <h4 id="related-issue-1">Related Issue:</h4>
@@ -893,16 +893,16 @@ error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-
 <p><em>And</em> Create a 5Gi detached volume with 2 replicas.</p>
 <p><em>And</em> Stop Node_1 that contains one of the replicas.</p>
 <p><em>And</em> Update the <code>Node Drain Policy</code> setting to <code>block-if-contains-last-replica</code> and confirm with following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
-</span></span></code></pre></div><p><em>And</em> Drain Node_2 so that all pods on Node_2 are evicted, but the replica instance manager pod is still on Node_2 because it is protected by PDB.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
-</span></span></code></pre></div><p><em>And</em> Update the <code>Node Drain Policy</code> setting to <code>always-allow</code> and confirm with following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
-</span></span></code></pre></div><p><strong>Then</strong> The pod <code>longhorn-system/instance-manager-r-xxxxxxxx</code> will be evicted successfully and the following command can be used to ensure that only daemonset pods such as <code>engine-image</code>, <code>longhorn-csi-plugin</code> and <code>longhorn-manager</code> daemonset pods are running on Node_2:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
-</span></span></code></pre></div><p><em>And</em> The PDB will be deleted and can be verified with the following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pdb &lt;replica name, e.g., instance-manager-r-xxxxxxxx&gt; -n longhorn-system
-</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
+</code></pre></div><p><em>And</em> Drain Node_2 so that all pods on Node_2 are evicted, but the replica instance manager pod is still on Node_2 because it is protected by PDB.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
+</code></pre></div><p><em>And</em> Update the <code>Node Drain Policy</code> setting to <code>always-allow</code> and confirm with following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
+</code></pre></div><p><strong>Then</strong> The pod <code>longhorn-system/instance-manager-r-xxxxxxxx</code> will be evicted successfully and the following command can be used to ensure that only daemonset pods such as <code>engine-image</code>, <code>longhorn-csi-plugin</code> and <code>longhorn-manager</code> daemonset pods are running on Node_2:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
+</code></pre></div><p><em>And</em> The PDB will be deleted and can be verified with the following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get pdb &lt;replica name, e.g., instance-manager-r-xxxxxxxx&gt; -n longhorn-system
+</code></pre></div>
     </article>
   <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node-not-ready/node-down/node-drain-deletion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>

@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -826,29 +826,29 @@
 <li>longhorn-ui</li>
 </ul>
 <p><strong>When</strong> Run a shell within Longhorn component images using Docker.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>docker run --entrypoint bash --user root -it &lt;IMAGE&gt;
-</span></span></code></pre></div><p><strong>And</strong> Execute <code>zypper ref &amp;&amp; zypper update</code> command inside the container.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --entrypoint bash --user root -it &lt;IMAGE&gt;
+</code></pre></div><p><strong>And</strong> Execute <code>zypper ref &amp;&amp; zypper update</code> command inside the container.</p>
 <p><strong>Then</strong> Verify that the command outputs <code>Nothing to do</code>.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>&gt; zypper ref <span style="color:#f92672">&amp;&amp;</span> zypper update
-</span></span><span style="display:flex;"><span>Refreshing service <span style="color:#e6db74">&#39;container-suseconnect-zypp&#39;</span>.
-</span></span><span style="display:flex;"><span>Retrieving repository <span style="color:#e6db74">&#39;SLE_BCI&#39;</span> metadata ...............................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
-</span></span><span style="display:flex;"><span>Building repository <span style="color:#e6db74">&#39;SLE_BCI&#39;</span> cache ....................................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
-</span></span><span style="display:flex;"><span>Warning: The gpg key signing file <span style="color:#e6db74">&#39;repomd.xml&#39;</span> has expired.
-</span></span><span style="display:flex;"><span>  Repository:       snappy
-</span></span><span style="display:flex;"><span>  Key Fingerprint:  4F2F A05B 2C65 89C3 FD12 055E F7C6 E425 ED34 <span style="color:#ae81ff">0235</span>
-</span></span><span style="display:flex;"><span>  Key Name:         system:snappy OBS Project &lt;system:snappy@build.opensuse.org&gt;
-</span></span><span style="display:flex;"><span>  Key Algorithm:    RSA <span style="color:#ae81ff">2048</span>
-</span></span><span style="display:flex;"><span>  Key Created:      Sat Oct <span style="color:#ae81ff">31</span> 16:59:39 <span style="color:#ae81ff">2020</span>
-</span></span><span style="display:flex;"><span>  Key Expires:      Mon Jan  <span style="color:#ae81ff">9</span> 16:59:39 <span style="color:#ae81ff">2023</span> <span style="color:#f92672">(</span>EXPIRED<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>  Rpm Name:         gpg-pubkey-ed340235-5f9d97fb
-</span></span><span style="display:flex;"><span>Retrieving repository <span style="color:#e6db74">&#39;snappy&#39;</span> metadata ................................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
-</span></span><span style="display:flex;"><span>Building repository <span style="color:#e6db74">&#39;snappy&#39;</span> cache .....................................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
-</span></span><span style="display:flex;"><span>All repositories have been refreshed.
-</span></span><span style="display:flex;"><span>Refreshing service <span style="color:#e6db74">&#39;container-suseconnect-zypp&#39;</span>.
-</span></span><span style="display:flex;"><span>Loading repository data...
-</span></span><span style="display:flex;"><span>Reading installed packages...
-</span></span><span style="display:flex;"><span>Nothing to <span style="color:#66d9ef">do</span>.
-</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; zypper ref <span style="color:#f92672">&amp;&amp;</span> zypper update
+Refreshing service <span style="color:#e6db74">&#39;container-suseconnect-zypp&#39;</span>.
+Retrieving repository <span style="color:#e6db74">&#39;SLE_BCI&#39;</span> metadata ...............................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
+Building repository <span style="color:#e6db74">&#39;SLE_BCI&#39;</span> cache ....................................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
+Warning: The gpg key signing file <span style="color:#e6db74">&#39;repomd.xml&#39;</span> has expired.
+  Repository:       snappy
+  Key Fingerprint:  4F2F A05B 2C65 89C3 FD12 055E F7C6 E425 ED34 <span style="color:#ae81ff">0235</span>
+  Key Name:         system:snappy OBS Project &lt;system:snappy@build.opensuse.org&gt;
+  Key Algorithm:    RSA <span style="color:#ae81ff">2048</span>
+  Key Created:      Sat Oct <span style="color:#ae81ff">31</span> 16:59:39 <span style="color:#ae81ff">2020</span>
+  Key Expires:      Mon Jan  <span style="color:#ae81ff">9</span> 16:59:39 <span style="color:#ae81ff">2023</span> <span style="color:#f92672">(</span>EXPIRED<span style="color:#f92672">)</span>
+  Rpm Name:         gpg-pubkey-ed340235-5f9d97fb
+Retrieving repository <span style="color:#e6db74">&#39;snappy&#39;</span> metadata ................................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
+Building repository <span style="color:#e6db74">&#39;snappy&#39;</span> cache .....................................................................................................................<span style="color:#f92672">[</span><span style="color:#66d9ef">done</span><span style="color:#f92672">]</span>
+All repositories have been refreshed.
+Refreshing service <span style="color:#e6db74">&#39;container-suseconnect-zypp&#39;</span>.
+Loading repository data...
+Reading installed packages...
+Nothing to <span style="color:#66d9ef">do</span>.
+</code></pre></div>
     </article>
   <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.7.0/test-build-image-package-up-to-date.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>

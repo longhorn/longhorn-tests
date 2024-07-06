@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_orphan API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_orphan</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_orphan.create_disks_on_host"><code class="name flex">
+<span>def <span class="ident">create_disks_on_host</span></span>(<span>client, disk_names, request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.create_orphaned_directories_on_host"><code class="name flex">
+<span>def <span class="ident">create_orphaned_directories_on_host</span></span>(<span>volume, disk_paths, num_orphans)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.create_volume_with_replica_on_host"><code class="name flex">
+<span>def <span class="ident">create_volume_with_replica_on_host</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.delete_extra_disks_on_host"><code class="name flex">
+<span>def <span class="ident">delete_extra_disks_on_host</span></span>(<span>client, disk_names)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.delete_orphan"><code class="name flex">
+<span>def <span class="ident">delete_orphan</span></span>(<span>client, orphan_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.delete_orphaned_directory_on_host"><code class="name flex">
+<span>def <span class="ident">delete_orphaned_directory_on_host</span></span>(<span>directories)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.delete_orphans"><code class="name flex">
+<span>def <span class="ident">delete_orphans</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.generate_random_id"><code class="name flex">
+<span>def <span class="ident">generate_random_id</span></span>(<span>num_bytes)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.test_delete_orphan_after_orphaned_dir_is_deleted"><code class="name flex">
+<span>def <span class="ident">test_delete_orphan_after_orphaned_dir_is_deleted</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the immediate deletion of orphan CRs after the orphaned replica
+directory is deleted
+1. Create a new disk for holding valid and invalid orphaned replica
+directories
+2. Create a volume and attach to the current node
+3. Create a valid orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the orphan CR for the orphaned replica
+directories
+6. Delete the on-disk orphaned replica directories
+7. Delete the orphan CRs immediately
+8. Verify orphan list is empty</p></div>
+</dd>
+<dt id="tests.test_orphan.test_delete_orphans"><code class="name flex">
+<span>def <span class="ident">test_delete_orphans</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the deletion of orphaned replica directories
+1. Create a new disk holding valid and invalid orphaned replica
+directories
+2. Create a volume and attach to the current node
+3. Create multiple orphaned replica directories by copying the
+active replica directory
+4. Clean up volume
+5. Verify orphan list contains CRs for the valid orphaned replica
+directories
+6. Delete all orphan CRs
+7. Verify orphan list is empty and the orphan replica directories are
+deleted
+8. Verify all orphaned replica directories are deleted</p></div>
+</dd>
+<dt id="tests.test_orphan.test_disk_evicted"><code class="name flex">
+<span>def <span class="ident">test_disk_evicted</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the orphan CR is deleted in background but on-disk data still exists
+if the disk is evicted
+1. Create a new disk for holding valid and invalid orphaned
+replica directories
+2. Create a volume and attach to the current node
+3. Create a valid orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the valid orphaned replica directory
+6. Evict the disk containing the orphaned replica directory
+7. Verify the orphan CR is deleted in background, but the on-disk orphaned
+replica directory still exists
+8. Set the disk scheduleable again
+9. Verify the orphan CR is created again and the on-disk orphaned replica
+directory still exists</p></div>
+</dd>
+<dt id="tests.test_orphan.test_node_evicted"><code class="name flex">
+<span>def <span class="ident">test_node_evicted</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the orphan CR is deleted in background but on-disk data still exists
+if the node is evicted
+1. Create a new-disk for holding valid and invalid orphaned replica
+directories
+2. Create a volume and attach to the current node
+3. Create a valid orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the valid orphaned replica directory
+6. Evict the node containing the orphaned replica directory
+7. Verify the orphan CR is deleted in background, but the on-disk
+orphaned replica directory still exists
+8. Disable node eviction
+9. Verify the orphan CR is created again and the on-disk orphaned replica
+directory still exists</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphan_auto_deletion"><code class="name flex">
+<span>def <span class="ident">test_orphan_auto_deletion</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphaned dirs creation and background deletion in multiple disks
+1. Create a new disks for holding orphaned replica directories
+2. Create a volume and attach to the current node
+3. Create orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the orphan CRs for replica
+directories
+6. Enable the orphan-auto-deletion setting
+7. Verify orphan list is empty and the orphaned directory is
+deleted in background
+8. Clean up disk</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphan_creation_and_background_deletion_in_multiple_disks"><code class="name flex">
+<span>def <span class="ident">test_orphan_creation_and_background_deletion_in_multiple_disks</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphaned dirs creation and background deletion in multiple disks
+1. Create multiple new-disks for holding orphaned replica directories
+2. Create a volume and attach to the current node
+3. Create multiple orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the orphan CRs for replica
+directories
+6. Delete the orphaned replica directories in background
+7. Verify orphan list is empty</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphan_creation_and_deletion_in_multiple_disks"><code class="name flex">
+<span>def <span class="ident">test_orphan_creation_and_deletion_in_multiple_disks</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphan creation and deletion in multiple disks
+1. Create multiple new-disks for holding orphaned replica directories
+2. Create a volume and attach to the current node
+3. Create multiple orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the orphan CRs for replica
+directories
+6. Delete all orphaned CRs
+7. Verify orphan list is empty
+8. Verify orphaned replica directories are deleted</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphan_with_same_orphaned_dir_name_in_another_disk"><code class="name flex">
+<span>def <span class="ident">test_orphan_with_same_orphaned_dir_name_in_another_disk</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphan creation and deletion with same orphaned dir name in
+another disk
+1. Create a volume and attach to the current node's default disk
+2. Create a new disks for holding orphaned replica directories
+3. Create orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the orphan CRs for replica directories
+6. Delete the orphaned replica directories
+7. Verify orphan list is empty</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphaned_dirs_in_duplicated_disks"><code class="name flex">
+<span>def <span class="ident">test_orphaned_dirs_in_duplicated_disks</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphaned dirs in duplicated disks. LH should not create a orphan CR
+for the orphaned dir in the deduplicate and unscheduled disk.
+1. Create a new disk for holding orphaned replica directories
+2. Create a folder under the new disk. This folder will be the duplicated
+disk. Add it to the node.
+3. Create a volume and attach to the current node
+4. Create multiple orphaned replica directories in the two disks by
+copying the active replica directory
+5. Clean up volume
+6. Verify orphan list only contains the orphan CRs for replica directories
+in the ready disk
+7. Delete all orphan CRs
+8. Verify orphan list is empty
+9. Verify orphaned directories in the new disk are deleted
+10. Verify orphaned directories in the duplicated disk are no deleted</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphaned_dirs_with_wrong_naming_format"><code class="name flex">
+<span>def <span class="ident">test_orphaned_dirs_with_wrong_naming_format</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphan CRs are not created for the orphaned directories with wrong
+naming formats
+1. Create a new disk holding valid and invalid orphaned replica
+directories
+2. Create a volume and then attach to the current node
+3. Create one valid orphaned replica directories by copying the active
+replica directory
+4. Create multiple invalid orphan replica directories with wrong naming
+format
+5. Clean up volume
+6. Verify orphan list only contains the orphan CR for valid orphaned
+replica directory
+7. Clean up disk</p></div>
+</dd>
+<dt id="tests.test_orphan.test_orphaned_replica_dir_missing"><code class="name flex">
+<span>def <span class="ident">test_orphaned_replica_dir_missing</span></span>(<span>client, volume_name, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test orphan CRs are deleted in background if the orphaned replica
+directories are missing
+1. Create a new disk for holding valid and invalid orphaned replica
+directories
+2. Create a volume and attach to the current node
+3. Create a orphaned replica directories by copying the active
+replica directory
+4. Clean up volume
+5. Verify orphan list contains the orphan CRs for the orphaned replica
+directories
+6. Delete the on-disk orphaned replica directories
+7. Verify the orphan CR is deleted in background
+8. Clean up disk</p></div>
+</dd>
+<dt id="tests.test_orphan.wait_for_file_count"><code class="name flex">
+<span>def <span class="ident">wait_for_file_count</span></span>(<span>path, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_orphan.wait_for_orphan_count"><code class="name flex">
+<span>def <span class="ident">wait_for_orphan_count</span></span>(<span>client, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_orphan.create_disks_on_host" href="#tests.test_orphan.create_disks_on_host">create_disks_on_host</a></code></li>
+<li><code><a title="tests.test_orphan.create_orphaned_directories_on_host" href="#tests.test_orphan.create_orphaned_directories_on_host">create_orphaned_directories_on_host</a></code></li>
+<li><code><a title="tests.test_orphan.create_volume_with_replica_on_host" href="#tests.test_orphan.create_volume_with_replica_on_host">create_volume_with_replica_on_host</a></code></li>
+<li><code><a title="tests.test_orphan.delete_extra_disks_on_host" href="#tests.test_orphan.delete_extra_disks_on_host">delete_extra_disks_on_host</a></code></li>
+<li><code><a title="tests.test_orphan.delete_orphan" href="#tests.test_orphan.delete_orphan">delete_orphan</a></code></li>
+<li><code><a title="tests.test_orphan.delete_orphaned_directory_on_host" href="#tests.test_orphan.delete_orphaned_directory_on_host">delete_orphaned_directory_on_host</a></code></li>
+<li><code><a title="tests.test_orphan.delete_orphans" href="#tests.test_orphan.delete_orphans">delete_orphans</a></code></li>
+<li><code><a title="tests.test_orphan.generate_random_id" href="#tests.test_orphan.generate_random_id">generate_random_id</a></code></li>
+<li><code><a title="tests.test_orphan.test_delete_orphan_after_orphaned_dir_is_deleted" href="#tests.test_orphan.test_delete_orphan_after_orphaned_dir_is_deleted">test_delete_orphan_after_orphaned_dir_is_deleted</a></code></li>
+<li><code><a title="tests.test_orphan.test_delete_orphans" href="#tests.test_orphan.test_delete_orphans">test_delete_orphans</a></code></li>
+<li><code><a title="tests.test_orphan.test_disk_evicted" href="#tests.test_orphan.test_disk_evicted">test_disk_evicted</a></code></li>
+<li><code><a title="tests.test_orphan.test_node_evicted" href="#tests.test_orphan.test_node_evicted">test_node_evicted</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphan_auto_deletion" href="#tests.test_orphan.test_orphan_auto_deletion">test_orphan_auto_deletion</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphan_creation_and_background_deletion_in_multiple_disks" href="#tests.test_orphan.test_orphan_creation_and_background_deletion_in_multiple_disks">test_orphan_creation_and_background_deletion_in_multiple_disks</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphan_creation_and_deletion_in_multiple_disks" href="#tests.test_orphan.test_orphan_creation_and_deletion_in_multiple_disks">test_orphan_creation_and_deletion_in_multiple_disks</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphan_with_same_orphaned_dir_name_in_another_disk" href="#tests.test_orphan.test_orphan_with_same_orphaned_dir_name_in_another_disk">test_orphan_with_same_orphaned_dir_name_in_another_disk</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphaned_dirs_in_duplicated_disks" href="#tests.test_orphan.test_orphaned_dirs_in_duplicated_disks">test_orphaned_dirs_in_duplicated_disks</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphaned_dirs_with_wrong_naming_format" href="#tests.test_orphan.test_orphaned_dirs_with_wrong_naming_format">test_orphaned_dirs_with_wrong_naming_format</a></code></li>
+<li><code><a title="tests.test_orphan.test_orphaned_replica_dir_missing" href="#tests.test_orphan.test_orphaned_replica_dir_missing">test_orphaned_replica_dir_missing</a></code></li>
+<li><code><a title="tests.test_orphan.wait_for_file_count" href="#tests.test_orphan.wait_for_file_count">wait_for_file_count</a></code></li>
+<li><code><a title="tests.test_orphan.wait_for_orphan_count" href="#tests.test_orphan.wait_for_orphan_count">wait_for_orphan_count</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

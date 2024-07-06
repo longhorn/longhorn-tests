@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -833,6 +833,7 @@ And engine image pods <code>Ready</code> are <code>1/1</code>.</p>
 engine-image-ei-b907910b-g4kpd   1/1   Running   0             4m3s
 engine-image-ei-b907910b-46k6t   1/1   Running   0             4m3s
 engine-image-ei-b907910b-t6wnd   1/1   Running   1 (17s ago)   4m3s
+
 </code></pre><p>And EngineImage custom resource state <code>deployed</code></p>
 <pre tabindex="0"><code>&gt; kubectl -n longhorn-system get engineimage
 NAME          STATE      IMAGE                                    REFCOUNT   BUILDDATE   AGE
@@ -842,6 +843,7 @@ ei-b907910b   deployed   longhornio/longhorn-engine:master-head   0          3d2
 longhornio-longhorn-engine-master-head
 &gt; ls /var/lib/longhorn/engine-binaries/longhornio-longhorn-engine-master-head/
 longhorn
+
 </code></pre><p>And volume can create and attach.</p>
 <h3 id="test-remove-engine-binary-in-engine-image-pod-should-recover">Test remove engine binary in engine image pod should recover</h3>
 <p><strong>Given</strong> EngineImage custom resource deployed</p>
@@ -861,6 +863,7 @@ And engine image pods <code>Ready</code> are <code>1/1</code>.</p>
 engine-image-ei-b907910b-g4kpd   1/1   Running   0               18m
 engine-image-ei-b907910b-t6wnd   1/1   Running   1 (14m ago)     18m
 engine-image-ei-b907910b-46k6t   1/1   Running   1 (2m21s ago)   18m
+
 </code></pre><p>And EngineImage custom resource state <code>deployed</code></p>
 <pre tabindex="0"><code>&gt; kubectl -n longhorn-system get engineimage
 NAME          STATE      IMAGE                                    REFCOUNT   BUILDDATE   AGE

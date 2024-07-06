@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_kubernetes API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_kubernetes</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_kubernetes.delete_and_wait_statefulset_only"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_statefulset_only</span></span>(<span>api, ss)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_kubernetes.provision_and_wait_pv"><code class="name flex">
+<span>def <span class="ident">provision_and_wait_pv</span></span>(<span>client, core_api, storage_class, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Provision a new Longhorn Volume via Storage Class and wait for the Volume
+and its associated resources to be created.</p>
+<p>This method also waits for the Kubernetes Status to be properly set on the
+Volume.</p>
+<p>:param client: An instance of the Longhorn client.
+:param core_api: An instance of the Kubernetes CoreV1API client.
+:param storage_class: A dict representing a Storage Class spec.
+:param pvc: A dict representing a Persistent Volume Claim spec.
+:return: The Persistent Volume that was provisioned.</p></div>
+</dd>
+<dt id="tests.test_kubernetes.test_backup_kubernetes_status"><code class="name flex">
+<span>def <span class="ident">test_backup_kubernetes_status</span></span>(<span>set_random_backupstore, client, core_api, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that Backups have KubernetesStatus stored properly when there is an
+associated PersistentVolumeClaim and Pod.</p>
+<ol>
+<li>Setup a random backupstore</li>
+<li>Set settings Longhorn Static StorageClass to <code>longhorn-static-test</code></li>
+<li>Create a volume and PV/PVC. Verify the StorageClass of PVC</li>
+<li>Create a Pod using the PVC.</li>
+<li>Check volume's Kubernetes status to reflect PV/PVC/Pod correctly.</li>
+<li>Create a backup for the volume.</li>
+<li>Verify the labels of created backup reflect PV/PVC/Pod status.</li>
+<li>Restore the backup to a volume. Wait for restoration to complete.</li>
+<li>Check the volume's Kubernetes Status<ol>
+<li>Make sure the <code>lastPodRefAt</code> and <code>lastPVCRefAt</code> is snapshot created
+time</li>
+</ol>
+</li>
+<li>Delete the backup and restored volume.</li>
+<li>Delete PV/PVC/Pod.</li>
+<li>Verify volume's Kubernetes Status updated to reflect history data.</li>
+<li>Attach the volume and create another backup. Verify the labels</li>
+<li>Verify the volume's Kubernetes status.</li>
+<li>Restore the previous backup to a new volume. Wait for restoration.</li>
+<li>Verify the restored volume's Kubernetes status.<ol>
+<li>Make sure <code>lastPodRefAt</code> and <code>lastPVCRefAt</code> matched volume on step
+12</li>
+</ol>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly"><code class="name flex">
+<span>def <span class="ident">test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly</span></span>(<span>client, core_api, statefulset, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI umount when Longhorn block device is disconnected unexpectedly</p>
+<p>GitHub ticket: <a href="https://github.com/longhorn/longhorn/issues/3778">https://github.com/longhorn/longhorn/issues/3778</a></p>
+<ol>
+<li>Deloy a statefulset that has volumeClaimTemplates with
+volumeMode: Block</li>
+<li>Crash the engine process of the volume to simulate Longhorn block
+device is disconnected unexpectedly</li>
+<li>Delete the workload pod</li>
+<li>Verify that the pod is able to terminated and a new pod is able
+start</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_delete_provisioned_pvc"><code class="name flex">
+<span>def <span class="ident">test_delete_provisioned_pvc</span></span>(<span>client, core_api, storage_class, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that deleting the Persistent Volume Claim for a dynamically
+provisioned Volume properly deletes the Volume and the associated
+Kubernetes resources.</p>
+<ol>
+<li>Create a Storage Class to test with.</li>
+<li>Create a Persistent Volume Claim that requests a Volume from that
+Storage Class.</li>
+<li>Wait for the Volume to be provisioned and for the Kubernetes Status to
+be updated correctly.</li>
+<li>Attempt to delete the Persistent Volume Claim.</li>
+<li>Verify that the associated Volume and its resources have been deleted.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_delete_with_provisioned_pv"><code class="name flex">
+<span>def <span class="ident">test_delete_with_provisioned_pv</span></span>(<span>client, core_api, storage_class, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that deleting a Volume with dynamically provisioned Persistent Volume
+and Persistent Volume Claim resources successfully deletes the Volume and
+cleans up those resources.</p>
+<ol>
+<li>Create a Storage Class to test with.</li>
+<li>Create a Persistent Volume Claim that requests a Volume from that
+Storage Class.</li>
+<li>Wait for the Volume to be provisioned and for the Kubernetes Status to
+be updated correctly.</li>
+<li>Attempt to delete the Volume.</li>
+<li>Verify that the Volume and its associated resources have been deleted.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_delete_with_static_pv"><code class="name flex">
+<span>def <span class="ident">test_delete_with_static_pv</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that deleting a Volume with related static Persistent Volume and
+Persistent Volume Claim resources successfully deletes the Volume and
+cleans up those resources.</p>
+<ol>
+<li>Create a Volume in Longhorn.</li>
+<li>Create a static Persistent Volume and Persistent Volume Claim for the
+Volume through Longhorn.</li>
+<li>Wait for the Kubernetes Status to indicate the existence of these
+resources.</li>
+<li>Attempt deletion of the Volume.</li>
+<li>Verify that the Volume and its associated resources have been deleted.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_kubernetes_status"><code class="name flex">
+<span>def <span class="ident">test_kubernetes_status</span></span>(<span>client, core_api, storage_class, statefulset, csi_pv, pvc, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Volume feature: Kubernetes Status</p>
+<ol>
+<li>Create StorageClass with <code>reclaimPolicy = Retain</code></li>
+<li>Create a statefulset <code>kubernetes-status-test</code> with the StorageClass<ol>
+<li>The statefulset has scale of 2.</li>
+</ol>
+</li>
+<li>Get the volume name from the SECOND pod of the StateufulSet pod and
+create an <code>extra_pod</code> with the same volume on the same node</li>
+<li>Check the volumes that used by the StatefulSet<ol>
+<li>The volume used by the FIRST StatefulSet pod will have one workload</li>
+<li>The volume used by the SECOND StatefulSet pod will have two
+workloads</li>
+<li>Validate related status, e.g. pv/pod name/state, workload
+name/type</li>
+</ol>
+</li>
+<li>Check the volumes again<ol>
+<li>PV/PVC should still be bound</li>
+<li>The volume used by the FIRST pod should have history data</li>
+<li>The volume used by the SECOND and extra pod should have current data
+point to the extra pod</li>
+</ol>
+</li>
+<li>Delete the extra pod<ol>
+<li>Now all the volume's should only have history data(<code>lastPodRefAt</code>
+set)</li>
+</ol>
+</li>
+<li>Delete the PVC<ol>
+<li>PVC should be updated with status <code>Released</code> and become history data</li>
+</ol>
+</li>
+<li>Delete PV<ol>
+<li>All the Kubernetes status information should be cleaned up.</li>
+</ol>
+</li>
+<li>Reuse the two Longhorn volumes to create new pods<ol>
+<li>Since the <code>reclaimPolicy == Retain</code>, volume won't be deleted by
+Longhorn</li>
+<li>Check the Kubernetes status now updated, with pod info but empty
+workload</li>
+<li>Default Longhorn Static StorageClass will remove the PV with PVC,
+but leave Longhorn volume</li>
+</ol>
+</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_pv_creation"><code class="name flex">
+<span>def <span class="ident">test_pv_creation</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating PV using Longhorn API</p>
+<ol>
+<li>Create volume</li>
+<li>Create PV for the volume</li>
+<li>Try to create another PV for the same volume. It should fail.</li>
+<li>Check Kubernetes Status for the volume since PV is created.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_kubernetes.test_pvc_creation_with_default_sc_set"><code class="name flex">
+<span>def <span class="ident">test_pvc_creation_with_default_sc_set</span></span>(<span>client, core_api, storage_class, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating PVC with default StorageClass set</p>
+<p>The target is to make sure the newly create PV/PVC won't use default
+StorageClass, and if there is no default StorageClass, PV/PVC can still be
+created.</p>
+<ol>
+<li>Create a StorageClass and set it to be the default StorageClass</li>
+<li>Update static StorageClass to <code>longhorn-static-test</code></li>
+<li>Create volume then PV/PVC.</li>
+<li>Make sure the newly created PV/PVC using StorageClass
+<code>longhorn-static-test</code></li>
+<li>Create pod with PVC.</li>
+<li>Verify volume's Kubernetes Status</li>
+<li>Remove PVC and Pod.</li>
+<li>Verify volume's Kubernetes Status only contains current PV and history</li>
+<li>Wait for volume to detach (since pod is deleted)</li>
+<li>Reuse the volume on a new pod. Wait for the pod to start</li>
+<li>Verify volume's Kubernetes Status reflect the new pod.</li>
+<li>Delete PV/PVC/Pod.</li>
+<li>Verify volume's Kubernetes Status only contains history</li>
+<li>Delete the default StorageClass.</li>
+<li>Create PV/PVC for the volume.</li>
+<li>Make sure the PV's StorageClass is static StorageClass</li>
+</ol></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_kubernetes.delete_and_wait_statefulset_only" href="#tests.test_kubernetes.delete_and_wait_statefulset_only">delete_and_wait_statefulset_only</a></code></li>
+<li><code><a title="tests.test_kubernetes.provision_and_wait_pv" href="#tests.test_kubernetes.provision_and_wait_pv">provision_and_wait_pv</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_backup_kubernetes_status" href="#tests.test_kubernetes.test_backup_kubernetes_status">test_backup_kubernetes_status</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly" href="#tests.test_kubernetes.test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly">test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_delete_provisioned_pvc" href="#tests.test_kubernetes.test_delete_provisioned_pvc">test_delete_provisioned_pvc</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_delete_with_provisioned_pv" href="#tests.test_kubernetes.test_delete_with_provisioned_pv">test_delete_with_provisioned_pv</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_delete_with_static_pv" href="#tests.test_kubernetes.test_delete_with_static_pv">test_delete_with_static_pv</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_kubernetes_status" href="#tests.test_kubernetes.test_kubernetes_status">test_kubernetes_status</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_pv_creation" href="#tests.test_kubernetes.test_pv_creation">test_pv_creation</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_pvc_creation_with_default_sc_set" href="#tests.test_kubernetes.test_pvc_creation_with_default_sc_set">test_pvc_creation_with_default_sc_set</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

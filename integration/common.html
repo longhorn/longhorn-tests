@@ -1,0 +1,2764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.common API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.common</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.common.activate_standby_volume"><code class="name flex">
+<span>def <span class="ident">activate_standby_volume</span></span>(<span>client, volume_name, frontend='blockdev')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.apps_api"><code class="name flex">
+<span>def <span class="ident">apps_api</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new AppsV1API instance.</p>
+<h2 id="returns">Returns</h2>
+<p>A new AppsV1API Instance.</p></div>
+</dd>
+<dt id="tests.common.assert_backup_state"><code class="name flex">
+<span>def <span class="ident">assert_backup_state</span></span>(<span>b_actual, b_expected)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.assert_from_assert_error_check_threads"><code class="name flex">
+<span>def <span class="ident">assert_from_assert_error_check_threads</span></span>(<span>thrd_list)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check all threads in thrd_list are done and their status</p>
+<h2 id="parameters">Parameters</h2>
+<p>thrd_list: thread list created by create_assert_error_check_thread.</p></div>
+</dd>
+<dt id="tests.common.backing_image_feature_supported"><code class="name flex">
+<span>def <span class="ident">backing_image_feature_supported</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.batch_v1_api"><code class="name flex">
+<span>def <span class="ident">batch_v1_api</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new BatchV1Api instance.</p>
+<h2 id="returns">Returns</h2>
+<p>A new BatchV1Api Instance.</p></div>
+</dd>
+<dt id="tests.common.check_all_support_bundle_managers_deleted"><code class="name flex">
+<span>def <span class="ident">check_all_support_bundle_managers_deleted</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_backing_image_disk_map_status"><code class="name flex">
+<span>def <span class="ident">check_backing_image_disk_map_status</span></span>(<span>client, bi_name, expect_cnt, expect_disk_state)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_block_device_size"><code class="name flex">
+<span>def <span class="ident">check_block_device_size</span></span>(<span>volume, size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_csi"><code class="name flex">
+<span>def <span class="ident">check_csi</span></span>(<span>core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_csi_expansion"><code class="name flex">
+<span>def <span class="ident">check_csi_expansion</span></span>(<span>core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_device_data"><code class="name flex">
+<span>def <span class="ident">check_device_data</span></span>(<span>dev, data, check_checksum=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_longhorn"><code class="name flex">
+<span>def <span class="ident">check_longhorn</span></span>(<span>core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_pod_existence"><code class="name flex">
+<span>def <span class="ident">check_pod_existence</span></span>(<span>api, pod_name, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_pv_existence"><code class="name flex">
+<span>def <span class="ident">check_pv_existence</span></span>(<span>api, pv_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_pvc_existence"><code class="name flex">
+<span>def <span class="ident">check_pvc_existence</span></span>(<span>api, pvc_name, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_pvc_in_specific_status"><code class="name flex">
+<span>def <span class="ident">check_pvc_in_specific_status</span></span>(<span>api, pvc_name, status)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">check_recurring_jobs</span></span>(<span>client, recurring_jobs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_statefulset_existence"><code class="name flex">
+<span>def <span class="ident">check_statefulset_existence</span></span>(<span>api, ss_name, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_volume_data"><code class="name flex">
+<span>def <span class="ident">check_volume_data</span></span>(<span>volume, data, check_checksum=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_volume_endpoint"><code class="name flex">
+<span>def <span class="ident">check_volume_endpoint</span></span>(<span>v)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_volume_existence"><code class="name flex">
+<span>def <span class="ident">check_volume_existence</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_volume_last_backup"><code class="name flex">
+<span>def <span class="ident">check_volume_last_backup</span></span>(<span>client, volume_name, last_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.check_volume_replicas"><code class="name flex">
+<span>def <span class="ident">check_volume_replicas</span></span>(<span>volume, spec, tag_mapping)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check the replicas on the volume to ensure that they were scheduled
+properly.
+:param volume: The Volume to check.
+:param spec: The spec to validate the Tag against.
+:param tag_mapping: The mapping of Nodes to the Tags they have.
+:raise AssertionError: If the Volume doesn't match all the conditions.</p></div>
+</dd>
+<dt id="tests.common.cleanup_all_backing_images"><code class="name flex">
+<span>def <span class="ident">cleanup_all_backing_images</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_all_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">cleanup_all_recurring_jobs</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_all_support_bundles"><code class="name flex">
+<span>def <span class="ident">cleanup_all_support_bundles</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all support bundles
+:param client: The Longhorn client to use in the request.</p></div>
+</dd>
+<dt id="tests.common.cleanup_all_volumes"><code class="name flex">
+<span>def <span class="ident">cleanup_all_volumes</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all volumes
+:param client: The Longhorn client to use in the request.</p></div>
+</dd>
+<dt id="tests.common.cleanup_client"><code class="name flex">
+<span>def <span class="ident">cleanup_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_crypto_secret"><code class="name flex">
+<span>def <span class="ident">cleanup_crypto_secret</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_host_disk"><code class="name flex">
+<span>def <span class="ident">cleanup_host_disk</span></span>(<span>vol_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_host_disks"><code class="name flex">
+<span>def <span class="ident">cleanup_host_disks</span></span>(<span>client, *args)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_node_disks"><code class="name flex">
+<span>def <span class="ident">cleanup_node_disks</span></span>(<span>client, node_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_storage_class"><code class="name flex">
+<span>def <span class="ident">cleanup_storage_class</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_test_disks"><code class="name flex">
+<span>def <span class="ident">cleanup_test_disks</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.cleanup_volume"><code class="name flex">
+<span>def <span class="ident">cleanup_volume</span></span>(<span>client, volume)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up the volume after the test.
+:param client: The Longhorn client to use in the request.
+:param volume: The volume to clean up.</p></div>
+</dd>
+<dt id="tests.common.cleanup_volume_by_name"><code class="name flex">
+<span>def <span class="ident">cleanup_volume_by_name</span></span>(<span>client, vol_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.client"><code class="name flex">
+<span>def <span class="ident">client</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return an individual Longhorn API client for testing.</p></div>
+</dd>
+<dt id="tests.common.clients"><code class="name flex">
+<span>def <span class="ident">clients</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.copy_file_to_volume_dev_mb_data"><code class="name flex">
+<span>def <span class="ident">copy_file_to_volume_dev_mb_data</span></span>(<span>src_path, dest_path, src_offset, dest_offset, size_in_mb, timeout_cnt=5)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.copy_pod_volume_data"><code class="name flex">
+<span>def <span class="ident">copy_pod_volume_data</span></span>(<span>api, pod_name, src_path, dest_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.core_api"><code class="name flex">
+<span>def <span class="ident">core_api</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new CoreV1API instance.</p>
+<h2 id="returns">Returns</h2>
+<p>A new CoreV1API Instance.</p></div>
+</dd>
+<dt id="tests.common.crash_engine_process_with_sigkill"><code class="name flex">
+<span>def <span class="ident">crash_engine_process_with_sigkill</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.crash_replica_processes"><code class="name flex">
+<span>def <span class="ident">crash_replica_processes</span></span>(<span>client, api, volname, replicas=None, wait_to_fail=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_and_check_volume"><code class="name flex">
+<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored', access_mode='rwo')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new volume with the specified parameters. Assert that the new
+volume is detached and that all of the requested parameters match.</p>
+<p>:param client: The Longhorn client to use in the request.
+:param volume_name: The name of the volume.
+:param num_of_replicas: The number of replicas the volume should have.
+:param size: The size of the volume, as a string representing the number
+of bytes.
+:param backing_image: The backing image to use for the volume.
+:param frontend: The frontend to use for the volume.
+:return: The volume instance created.</p></div>
+</dd>
+<dt id="tests.common.create_and_wait_deployment"><code class="name flex">
+<span>def <span class="ident">create_and_wait_deployment</span></span>(<span>apps_api, deployment_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_and_wait_pod"><code class="name flex">
+<span>def <span class="ident">create_and_wait_pod</span></span>(<span>api, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates a new Pod attached to a PersistentVolumeClaim for testing.</p>
+<p>The function will block until the Pod is online or until it times out,
+whichever occurs first. The volume created by the manifest passed in will
+be mounted to '/data'.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+<dt><strong><code>volume</code></strong></dt>
+<dd>The volume manifest.</dd>
+</dl></div>
+</dd>
+<dt id="tests.common.create_and_wait_statefulset"><code class="name flex">
+<span>def <span class="ident">create_and_wait_statefulset</span></span>(<span>statefulset_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new StatefulSet for testing.</p>
+<p>This function will block until all replicas in the StatefulSet are online
+or it times out, whichever occurs first.</p></div>
+</dd>
+<dt id="tests.common.create_assert_error_check_thread"><code class="name flex">
+<span>def <span class="ident">create_assert_error_check_thread</span></span>(<span>func, *args)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Do func by threading with arguments</p>
+<h2 id="parameters">Parameters</h2>
+<p>func:
+function that want to do things in parallel.
+args:
+arguments for function.</p></div>
+</dd>
+<dt id="tests.common.create_backing_image_with_matching_url"><code class="name flex">
+<span>def <span class="ident">create_backing_image_with_matching_url</span></span>(<span>client, name, url)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_backup"><code class="name flex">
+<span>def <span class="ident">create_backup</span></span>(<span>client, volname, data={}, labels={})</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_backup_from_volume_attached_to_pod"><code class="name flex">
+<span>def <span class="ident">create_backup_from_volume_attached_to_pod</span></span>(<span>client, core_api, volume_name, pod_name, data_path='/data/test', data_size=100)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write data in the pod and take a backup.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>client</code></strong></dt>
+<dd>The Longhorn client to use in the request.</dd>
+<dt><strong><code>core_api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+<dt><strong><code>volume_name</code></strong></dt>
+<dd>The volume name which is attached to the pod.</dd>
+<dt><strong><code>data_path</code></strong></dt>
+<dd>File name suffixed to the mount point. e.g /data/file</dd>
+<dt><strong><code>data_size</code></strong></dt>
+<dd>Size of the data to be written in the pod.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The backup volume name, backup, checksum of data written in the
+backup</p></div>
+</dd>
+<dt id="tests.common.create_crypto_secret"><code class="name flex">
+<span>def <span class="ident">create_crypto_secret</span></span>(<span>secret_manifest, namespace='longhorn-system')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_deployment_and_write_data"><code class="name flex">
+<span>def <span class="ident">create_deployment_and_write_data</span></span>(<span>client, core_api, make_deployment_with_pvc, volume_name, size, replica_count, data_size, attach_node_id=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_host_disk"><code class="name flex">
+<span>def <span class="ident">create_host_disk</span></span>(<span>client, vol_name, size, node_id)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_pv_for_volume"><code class="name flex">
+<span>def <span class="ident">create_pv_for_volume</span></span>(<span>client, core_api, volume, pv_name, fs_type='ext4')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_pvc"><code class="name flex">
+<span>def <span class="ident">create_pvc</span></span>(<span>pvc_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_pvc_for_volume"><code class="name flex">
+<span>def <span class="ident">create_pvc_for_volume</span></span>(<span>client, core_api, volume, pvc_name, pvc_namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_pvc_spec"><code class="name flex">
+<span>def <span class="ident">create_pvc_spec</span></span>(<span>name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a volume manifest using the given name for the PVC.</p>
+<p>This spec is used to test dynamically provisioned PersistentVolumes (those
+created using a storage class).</p></div>
+</dd>
+<dt id="tests.common.create_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">create_recurring_jobs</span></span>(<span>client, recurring_jobs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_rwx_volume_with_storageclass"><code class="name flex">
+<span>def <span class="ident">create_rwx_volume_with_storageclass</span></span>(<span>client, core_api, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_snapshot"><code class="name flex">
+<span>def <span class="ident">create_snapshot</span></span>(<span>longhorn_api_client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_statefulset"><code class="name flex">
+<span>def <span class="ident">create_statefulset</span></span>(<span>statefulset_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new StatefulSet for testing.</p></div>
+</dd>
+<dt id="tests.common.create_storage_class"><code class="name flex">
+<span>def <span class="ident">create_storage_class</span></span>(<span>sc_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_support_bundle"><code class="name flex">
+<span>def <span class="ident">create_support_bundle</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_volume"><code class="name flex">
+<span>def <span class="ident">create_volume</span></span>(<span>client, vol_name, size, node_id, r_num)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_volume_and_backup"><code class="name flex">
+<span>def <span class="ident">create_volume_and_backup</span></span>(<span>client, vol_name, vol_size, backup_data_size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.create_volume_and_write_data"><code class="name flex">
+<span>def <span class="ident">create_volume_and_write_data</span></span>(<span>client, volume_name, volume_size='16777216')</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Write the data to volume</li>
+</ol></div>
+</dd>
+<dt id="tests.common.crypto_secret"><code class="name flex">
+<span>def <span class="ident">crypto_secret</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.csi_pv"><code class="name flex">
+<span>def <span class="ident">csi_pv</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.csi_pv_backingimage"><code class="name flex">
+<span>def <span class="ident">csi_pv_backingimage</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.csi_pvc_name"><code class="name flex">
+<span>def <span class="ident">csi_pvc_name</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_and_wait_deployment"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_deployment</span></span>(<span>apps_api, deployment_name, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_and_wait_longhorn"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_longhorn</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Delete a volume from Longhorn.</p></div>
+</dd>
+<dt id="tests.common.delete_and_wait_pod"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_pod</span></span>(<span>api, pod_name, namespace='default', wait=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Delete a specified Pod.</p>
+<p>This function does not check if the Pod does exist and will throw an error
+if a nonexistent Pod is specified.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+</dl></div>
+</dd>
+<dt id="tests.common.delete_and_wait_pv"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_pv</span></span>(<span>api, pv_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_and_wait_pvc"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name, retry_counts=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_and_wait_statefulset"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_statefulset</span></span>(<span>api, client, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_and_wait_volume_attachment"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_volume_attachment</span></span>(<span>storage_api, volume_attachment_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_backup"><code class="name flex">
+<span>def <span class="ident">delete_backup</span></span>(<span>client, volume_name, backup_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_backup_volume"><code class="name flex">
+<span>def <span class="ident">delete_backup_volume</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_crypto_secret"><code class="name flex">
+<span>def <span class="ident">delete_crypto_secret</span></span>(<span>namespace, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_replica_on_test_node"><code class="name flex">
+<span>def <span class="ident">delete_replica_on_test_node</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_replica_processes"><code class="name flex">
+<span>def <span class="ident">delete_replica_processes</span></span>(<span>client, api, volname)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_statefulset"><code class="name flex">
+<span>def <span class="ident">delete_statefulset</span></span>(<span>apps_api, statefulset)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_storage_class"><code class="name flex">
+<span>def <span class="ident">delete_storage_class</span></span>(<span>sc_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.delete_support_bundle"><code class="name flex">
+<span>def <span class="ident">delete_support_bundle</span></span>(<span>node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.dev_read"><code class="name flex">
+<span>def <span class="ident">dev_read</span></span>(<span>dev, start, count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.dev_write"><code class="name flex">
+<span>def <span class="ident">dev_write</span></span>(<span>dev, start, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.disable_auto_salvage"><code class="name flex">
+<span>def <span class="ident">disable_auto_salvage</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.download_support_bundle"><code class="name flex">
+<span>def <span class="ident">download_support_bundle</span></span>(<span>node_id, name, client, target_path='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.enable_default_disk"><code class="name flex">
+<span>def <span class="ident">enable_default_disk</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.exec_command_in_pod"><code class="name flex">
+<span>def <span class="ident">exec_command_in_pod</span></span>(<span>api, command, pod_name, namespace, container=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Execute command in the pod.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+<dt><strong><code>command</code></strong></dt>
+<dd>The command to execute in the pod.</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>The namespace where the pod exists.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The output of the command.</p></div>
+</dd>
+<dt id="tests.common.exec_instance_manager"><code class="name flex">
+<span>def <span class="ident">exec_instance_manager</span></span>(<span>api, im_name, cmd)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.exec_local"><code class="name flex">
+<span>def <span class="ident">exec_local</span></span>(<span>cmd)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.exec_nsenter"><code class="name flex">
+<span>def <span class="ident">exec_nsenter</span></span>(<span>cmd, process_name=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.expand_and_wait_for_pvc"><code class="name flex">
+<span>def <span class="ident">expand_and_wait_for_pvc</span></span>(<span>api, pvc, size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.fail_replica_expansion"><code class="name flex">
+<span>def <span class="ident">fail_replica_expansion</span></span>(<span>client, api, volname, size, replicas=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.find_ancestor_process_by_name"><code class="name flex">
+<span>def <span class="ident">find_ancestor_process_by_name</span></span>(<span>ancestor_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.find_backup"><code class="name flex">
+<span>def <span class="ident">find_backup</span></span>(<span>client, vol_name, snap_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>find_backup will look for a backup on the backupstore
+it's important to note, that this can only be used for completed backups
+since the backup.cfg will only be written once a backup operation has
+been completed successfully</p></div>
+</dd>
+<dt id="tests.common.find_backup_volume"><code class="name flex">
+<span>def <span class="ident">find_backup_volume</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.find_dockerd_pid"><code class="name flex">
+<span>def <span class="ident">find_dockerd_pid</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.find_process_pid"><code class="name flex">
+<span>def <span class="ident">find_process_pid</span></span>(<span>process_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.find_replica_for_backup"><code class="name flex">
+<span>def <span class="ident">find_replica_for_backup</span></span>(<span>client, volume_name, backup_id)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.find_self"><code class="name flex">
+<span>def <span class="ident">find_self</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.fix_replica_expansion_failure"><code class="name flex">
+<span>def <span class="ident">fix_replica_expansion_failure</span></span>(<span>client, api, volname, size, replicas=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_attachment_ticket_id"><code class="name flex">
+<span>def <span class="ident">generate_attachment_ticket_id</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_pod_with_pvc_manifest"><code class="name flex">
+<span>def <span class="ident">generate_pod_with_pvc_manifest</span></span>(<span>pod_name, pvc_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_random_data"><code class="name flex">
+<span>def <span class="ident">generate_random_data</span></span>(<span>count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_random_pos"><code class="name flex">
+<span>def <span class="ident">generate_random_pos</span></span>(<span>size, used={})</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_random_suffix"><code class="name flex">
+<span>def <span class="ident">generate_random_suffix</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_sts_name"><code class="name flex">
+<span>def <span class="ident">generate_sts_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.generate_support_bundle"><code class="name flex">
+<span>def <span class="ident">generate_support_bundle</span></span>(<span>case_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate support bundle into folder ./support_bundle/case_name.zip</p>
+<p>Won't generate support bundle if current support bundle count
+greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>case_name</code></strong></dt>
+<dd>support bundle will named case_name.zip</dd>
+</dl></div>
+</dd>
+<dt id="tests.common.generate_volume_name"><code class="name flex">
+<span>def <span class="ident">generate_volume_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_all_support_bundle_manager_deployments"><code class="name flex">
+<span>def <span class="ident">get_all_support_bundle_manager_deployments</span></span>(<span>apps_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_apps_api_client"><code class="name flex">
+<span>def <span class="ident">get_apps_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_backupstore_poll_interval"><code class="name flex">
+<span>def <span class="ident">get_backupstore_poll_interval</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_backupstore_url"><code class="name flex">
+<span>def <span class="ident">get_backupstore_url</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_backupstores"><code class="name flex">
+<span>def <span class="ident">get_backupstores</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_client"><code class="name flex">
+<span>def <span class="ident">get_client</span></span>(<span>address)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_clients"><code class="name flex">
+<span>def <span class="ident">get_clients</span></span>(<span>hosts)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_clone_volume_name"><code class="name flex">
+<span>def <span class="ident">get_clone_volume_name</span></span>(<span>client, source_volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_compatibility_test_image"><code class="name flex">
+<span>def <span class="ident">get_compatibility_test_image</span></span>(<span>cli_v, cli_minv, ctl_v, ctl_minv, data_v, data_minv)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_core_api_client"><code class="name flex">
+<span>def <span class="ident">get_core_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_custom_object_api_client"><code class="name flex">
+<span>def <span class="ident">get_custom_object_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_default_engine_image"><code class="name flex">
+<span>def <span class="ident">get_default_engine_image</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_deployment_pod_names"><code class="name flex">
+<span>def <span class="ident">get_deployment_pod_names</span></span>(<span>core_api, deployment)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_device_checksum"><code class="name flex">
+<span>def <span class="ident">get_device_checksum</span></span>(<span>dev)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_disk_uuid"><code class="name flex">
+<span>def <span class="ident">get_disk_uuid</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_engine_host_id"><code class="name flex">
+<span>def <span class="ident">get_engine_host_id</span></span>(<span>client, vol_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_engine_image_status_value"><code class="name flex">
+<span>def <span class="ident">get_engine_image_status_value</span></span>(<span>client, ei_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_host_disk_size"><code class="name flex">
+<span>def <span class="ident">get_host_disk_size</span></span>(<span>disk)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_host_replica_count"><code class="name flex">
+<span>def <span class="ident">get_host_replica_count</span></span>(<span>client, volume_name, host_id, chk_running=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_iscsi_ip"><code class="name flex">
+<span>def <span class="ident">get_iscsi_ip</span></span>(<span>iscsi)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_iscsi_lun"><code class="name flex">
+<span>def <span class="ident">get_iscsi_lun</span></span>(<span>iscsi)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_iscsi_port"><code class="name flex">
+<span>def <span class="ident">get_iscsi_port</span></span>(<span>iscsi)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_iscsi_target"><code class="name flex">
+<span>def <span class="ident">get_iscsi_target</span></span>(<span>iscsi)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_k8s_zone_label"><code class="name flex">
+<span>def <span class="ident">get_k8s_zone_label</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_liveness_probe_spec"><code class="name flex">
+<span>def <span class="ident">get_liveness_probe_spec</span></span>(<span>initial_delay=5, period=5)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_longhorn_api_client"><code class="name flex">
+<span>def <span class="ident">get_longhorn_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_mgr_ips"><code class="name flex">
+<span>def <span class="ident">get_mgr_ips</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_pod_data_md5sum"><code class="name flex">
+<span>def <span class="ident">get_pod_data_md5sum</span></span>(<span>api, pod_name, path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_process_info"><code class="name flex">
+<span>def <span class="ident">get_process_info</span></span>(<span>p_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_pv_manifest"><code class="name flex">
+<span>def <span class="ident">get_pv_manifest</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_pvc_manifest"><code class="name flex">
+<span>def <span class="ident">get_pvc_manifest</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_random_client"><code class="name flex">
+<span>def <span class="ident">get_random_client</span></span>(<span>clients)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_scheduling_api_client"><code class="name flex">
+<span>def <span class="ident">get_scheduling_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_self_host_id"><code class="name flex">
+<span>def <span class="ident">get_self_host_id</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_statefulset_pod_info"><code class="name flex">
+<span>def <span class="ident">get_statefulset_pod_info</span></span>(<span>api, s_set)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_storage_api_client"><code class="name flex">
+<span>def <span class="ident">get_storage_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_support_bundle"><code class="name flex">
+<span>def <span class="ident">get_support_bundle</span></span>(<span>node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_support_bundle_url"><code class="name flex">
+<span>def <span class="ident">get_support_bundle_url</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_update_disks"><code class="name flex">
+<span>def <span class="ident">get_update_disks</span></span>(<span>disks)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_upgrade_test_image"><code class="name flex">
+<span>def <span class="ident">get_upgrade_test_image</span></span>(<span>cli_v, cli_minv, ctl_v, ctl_minv, data_v, data_minv)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_version_api_client"><code class="name flex">
+<span>def <span class="ident">get_version_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_volume_dev_mb_data_md5sum"><code class="name flex">
+<span>def <span class="ident">get_volume_dev_mb_data_md5sum</span></span>(<span>path, offset_in_mb, length_in_mb)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_volume_endpoint"><code class="name flex">
+<span>def <span class="ident">get_volume_endpoint</span></span>(<span>v)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_volume_engine"><code class="name flex">
+<span>def <span class="ident">get_volume_engine</span></span>(<span>v)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_volume_name"><code class="name flex">
+<span>def <span class="ident">get_volume_name</span></span>(<span>api, pvc_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Given a PersistentVolumeClaim, return the name of the associated PV.</p></div>
+</dd>
+<dt id="tests.common.get_volume_recurring_jobs_and_groups"><code class="name flex">
+<span>def <span class="ident">get_volume_recurring_jobs_and_groups</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.get_volume_running_replica_cnt"><code class="name flex">
+<span>def <span class="ident">get_volume_running_replica_cnt</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.is_backupTarget_nfs"><code class="name flex">
+<span>def <span class="ident">is_backupTarget_nfs</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.is_backupTarget_s3"><code class="name flex">
+<span>def <span class="ident">is_backupTarget_s3</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.is_k8s_node_gke_cos"><code class="name flex">
+<span>def <span class="ident">is_k8s_node_gke_cos</span></span>(<span>core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.is_k8s_node_label"><code class="name flex">
+<span>def <span class="ident">is_k8s_node_label</span></span>(<span>core_api, label_key, label_value, node_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.is_replica_available"><code class="name flex">
+<span>def <span class="ident">is_replica_available</span></span>(<span>r)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.iscsi_login"><code class="name flex">
+<span>def <span class="ident">iscsi_login</span></span>(<span>iscsi_ep)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.iscsi_logout"><code class="name flex">
+<span>def <span class="ident">iscsi_logout</span></span>(<span>iscsi_ep)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.json_string_go_to_python"><code class="name flex">
+<span>def <span class="ident">json_string_go_to_python</span></span>(<span>str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.lazy_umount_disk"><code class="name flex">
+<span>def <span class="ident">lazy_umount_disk</span></span>(<span>mount_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.load_k8s_config"><code class="name flex">
+<span>def <span class="ident">load_k8s_config</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.make_deployment_cpu_request"><code class="name flex">
+<span>def <span class="ident">make_deployment_cpu_request</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.make_deployment_with_pvc"><code class="name flex">
+<span>def <span class="ident">make_deployment_with_pvc</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.monitor_restore_progress"><code class="name flex">
+<span>def <span class="ident">monitor_restore_progress</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.mount_disk"><code class="name flex">
+<span>def <span class="ident">mount_disk</span></span>(<span>dev, mount_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.node_default_tags"><code class="name flex">
+<span>def <span class="ident">node_default_tags</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Assign the Tags under DEFAULT_TAGS to the Longhorn client's Nodes to
+provide a base set of Tags to work with in the tests.
+:return: A dictionary mapping a Node's ID to the Tags it has.</p></div>
+</dd>
+<dt id="tests.common.offline_expand_attached_volume"><code class="name flex">
+<span>def <span class="ident">offline_expand_attached_volume</span></span>(<span>client, volume_name, size='33554432')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.parse_iscsi_endpoint"><code class="name flex">
+<span>def <span class="ident">parse_iscsi_endpoint</span></span>(<span>iscsi)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.pod"><code class="name flex">
+<span>def <span class="ident">pod</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.pod_make"><code class="name flex">
+<span>def <span class="ident">pod_make</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.prepare_host_disk"><code class="name flex">
+<span>def <span class="ident">prepare_host_disk</span></span>(<span>dev, vol_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.prepare_pod_with_data_in_mb"><code class="name flex">
+<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', num_of_replicas=3, data_path='/data/test', data_size_in_mb=100, add_liveness_probe=True, access_mode='rwo')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.prepare_statefulset_with_data_in_mb"><code class="name flex">
+<span>def <span class="ident">prepare_statefulset_with_data_in_mb</span></span>(<span>client, core_api, statefulset, sts_name, storage_class, data_path='/data/test', data_size_in_mb=100)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.priority_class"><code class="name flex">
+<span>def <span class="ident">priority_class</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.pvc"><code class="name flex">
+<span>def <span class="ident">pvc</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.pvc_backingimage"><code class="name flex">
+<span>def <span class="ident">pvc_backingimage</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.pvc_name"><code class="name flex">
+<span>def <span class="ident">pvc_name</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.random_labels"><code class="name flex">
+<span>def <span class="ident">random_labels</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.read_pod_block_volume_data"><code class="name flex">
+<span>def <span class="ident">read_pod_block_volume_data</span></span>(<span>api, pod_name, data_size, offset, device_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.read_volume_data"><code class="name flex">
+<span>def <span class="ident">read_volume_data</span></span>(<span>api, pod_name, filename='test')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieve data from a Pod's volume.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The data contained within the volume.</p></div>
+</dd>
+<dt id="tests.common.recurring_job_feature_supported"><code class="name flex">
+<span>def <span class="ident">recurring_job_feature_supported</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.reset_disks_for_all_nodes"><code class="name flex">
+<span>def <span class="ident">reset_disks_for_all_nodes</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.reset_engine_image"><code class="name flex">
+<span>def <span class="ident">reset_engine_image</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.reset_longhorn_node_zone"><code class="name flex">
+<span>def <span class="ident">reset_longhorn_node_zone</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.reset_node"><code class="name flex">
+<span>def <span class="ident">reset_node</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.reset_nodes_taint"><code class="name flex">
+<span>def <span class="ident">reset_nodes_taint</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.reset_settings"><code class="name flex">
+<span>def <span class="ident">reset_settings</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.restart_and_wait_ready_engine_count"><code class="name flex">
+<span>def <span class="ident">restart_and_wait_ready_engine_count</span></span>(<span>client, ready_engine_count)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Delete/restart engine daemonset and wait ready engine image count after
+daemonset restart</p></div>
+</dd>
+<dt id="tests.common.restore_backup_and_get_data_checksum"><code class="name flex">
+<span>def <span class="ident">restore_backup_and_get_data_checksum</span></span>(<span>client, core_api, backup, pod, file_name='', command='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Restore the backup in a pod and get the checksum of all the files
+or checksum of a particular file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>client</code></strong></dt>
+<dd>The Longhorn client to use in the request.</dd>
+<dt><strong><code>core_api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>backup</code></strong></dt>
+<dd>The backup to be restored.</dd>
+<dt><strong><code>pod</code></strong></dt>
+<dd>Pod fixture.</dd>
+<dt><strong><code>file_name</code></strong></dt>
+<dd>Optional - File whose checksum to be computed.</dd>
+<dt><strong><code>command</code></strong></dt>
+<dd>Optional - command to be executed in the pod.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The checksum as a dictionary as in file_name=checksum and the
+output of the command executed in the pod.</p></div>
+</dd>
+<dt id="tests.common.rwx_statefulset"><code class="name flex">
+<span>def <span class="ident">rwx_statefulset</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.scale_up_engine_image_daemonset"><code class="name flex">
+<span>def <span class="ident">scale_up_engine_image_daemonset</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.scheduling_api"><code class="name flex">
+<span>def <span class="ident">scheduling_api</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new SchedulingV1API instance.</p>
+<h2 id="returns">Returns</h2>
+<p>A new CoreV1API Instance.</p></div>
+</dd>
+<dt id="tests.common.set_and_wait_k8s_nodes_zone_label"><code class="name flex">
+<span>def <span class="ident">set_and_wait_k8s_nodes_zone_label</span></span>(<span>core_api, node_zone_map)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.set_k8s_node_label"><code class="name flex">
+<span>def <span class="ident">set_k8s_node_label</span></span>(<span>core_api, node_name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.set_k8s_node_zone_label"><code class="name flex">
+<span>def <span class="ident">set_k8s_node_zone_label</span></span>(<span>core_api, node_name, zone_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.set_node_cordon"><code class="name flex">
+<span>def <span class="ident">set_node_cordon</span></span>(<span>api, node_name, to_cordon)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a kubernetes node schedulable status</p></div>
+</dd>
+<dt id="tests.common.set_node_scheduling"><code class="name flex">
+<span>def <span class="ident">set_node_scheduling</span></span>(<span>client, node, allowScheduling, retry=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.set_node_scheduling_eviction"><code class="name flex">
+<span>def <span class="ident">set_node_scheduling_eviction</span></span>(<span>client, node, allowScheduling, evictionRequested, retry=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.set_node_tags"><code class="name flex">
+<span>def <span class="ident">set_node_tags</span></span>(<span>client, node, tags=[], retry=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set the tags on a node without modifying its scheduling status.
+Retry if "too many retries error" happened.
+:param client: The Longhorn client to use in the request.
+:param node: The Node to update.
+:param tags: The tags to set on the node.
+:return: The updated Node.</p></div>
+</dd>
+<dt id="tests.common.settings_reset"><code class="name flex">
+<span>def <span class="ident">settings_reset</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.size_to_string"><code class="name flex">
+<span>def <span class="ident">size_to_string</span></span>(<span>volume_size)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert a volume size to string format to pass into Kubernetes.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>volume_size</code></strong></dt>
+<dd>The size of the volume in bytes.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The size of the volume in gigabytes as a passable string to Kubernetes.</p></div>
+</dd>
+<dt id="tests.common.statefulset"><code class="name flex">
+<span>def <span class="ident">statefulset</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.storage_class"><code class="name flex">
+<span>def <span class="ident">storage_class</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.sts_name"><code class="name flex">
+<span>def <span class="ident">sts_name</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.system_backup_feature_supported"><code class="name flex">
+<span>def <span class="ident">system_backup_feature_supported</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.system_backup_random_name"><code class="name flex">
+<span>def <span class="ident">system_backup_random_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.system_backup_wait_for_state"><code class="name flex">
+<span>def <span class="ident">system_backup_wait_for_state</span></span>(<span>state, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.system_backups_cleanup"><code class="name flex">
+<span>def <span class="ident">system_backups_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all system backups
+:param client: The Longhorn client to use in the request.</p></div>
+</dd>
+<dt id="tests.common.system_restore_random_name"><code class="name flex">
+<span>def <span class="ident">system_restore_random_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.system_restore_wait_for_state"><code class="name flex">
+<span>def <span class="ident">system_restore_wait_for_state</span></span>(<span>state, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.system_restores_cleanup"><code class="name flex">
+<span>def <span class="ident">system_restores_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all system restores
+:param client: The Longhorn client to use in the request.</p></div>
+</dd>
+<dt id="tests.common.umount_disk"><code class="name flex">
+<span>def <span class="ident">umount_disk</span></span>(<span>mount_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.update_node_disks"><code class="name flex">
+<span>def <span class="ident">update_node_disks</span></span>(<span>client, node_name, disks, retry=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.update_recurring_job"><code class="name flex">
+<span>def <span class="ident">update_recurring_job</span></span>(<span>client, name, groups, labels, cron='', retain=0, concurrency=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.update_setting"><code class="name flex">
+<span>def <span class="ident">update_setting</span></span>(<span>client, name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.update_statefulset_manifests"><code class="name flex">
+<span>def <span class="ident">update_statefulset_manifests</span></span>(<span>ss_manifest, sc_manifest, name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write in a new StatefulSet name and the proper StorageClass name for tests.</p></div>
+</dd>
+<dt id="tests.common.volume_name"><code class="name flex">
+<span>def <span class="ident">volume_name</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.volume_read"><code class="name flex">
+<span>def <span class="ident">volume_read</span></span>(<span>v, start, count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.volume_valid"><code class="name flex">
+<span>def <span class="ident">volume_valid</span></span>(<span>dev)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.volume_write"><code class="name flex">
+<span>def <span class="ident">volume_write</span></span>(<span>v, start, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_and_get_any_deployment_pod"><code class="name flex">
+<span>def <span class="ident">wait_and_get_any_deployment_pod</span></span>(<span>core_api, deployment_name, is_phase='Running')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add mechanism to wait for a stable running pod when deployment restarts its
+workload, since Longhorn manager could create/delete the new workload pod
+multiple times, it's possible that we get an unstable pod which will be
+deleted immediately, so add a wait mechanism to get a stable running pod.
+ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.com/longhorn/longhorn/issues/4814</a></p></div>
+</dd>
+<dt id="tests.common.wait_and_get_pv_for_pvc"><code class="name flex">
+<span>def <span class="ident">wait_and_get_pv_for_pvc</span></span>(<span>api, pvc_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_delete_deployment"><code class="name flex">
+<span>def <span class="ident">wait_delete_deployment</span></span>(<span>apps_api, deployment_name, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_delete_dm_device"><code class="name flex">
+<span>def <span class="ident">wait_delete_dm_device</span></span>(<span>api, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_delete_pod"><code class="name flex">
+<span>def <span class="ident">wait_delete_pod</span></span>(<span>api, pod_uid, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_delete_pv"><code class="name flex">
+<span>def <span class="ident">wait_delete_pv</span></span>(<span>api, pv_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_delete_pvc"><code class="name flex">
+<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name, retry_counts=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_delete_volume_attachment"><code class="name flex">
+<span>def <span class="ident">wait_delete_volume_attachment</span></span>(<span>storage_api, volume_attachment_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_deployment_replica_ready"><code class="name flex">
+<span>def <span class="ident">wait_deployment_replica_ready</span></span>(<span>apps_api, deployment_name, desired_replica_count, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_all_instance_manager_running"><code class="name flex">
+<span>def <span class="ident">wait_for_all_instance_manager_running</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backing_image_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_delete</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backing_image_disk_cleanup"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_disk_cleanup</span></span>(<span>client, bi_name, disk_id)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backing_image_in_disk_fail"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_in_disk_fail</span></span>(<span>client, backing_img_name, disk_uuid)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backing_image_status"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_status</span></span>(<span>client, backing_img_name, image_status)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_completion"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_count"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_count</span></span>(<span>backup_volume, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_delete</span></span>(<span>client, volume_name, backup_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_failed"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_failed</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_restore_completed"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_restore_completed</span></span>(<span>client, name, backup_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_state"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_state</span></span>(<span>client, volume_name, predicate, retry_count=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_target_available"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_target_available</span></span>(<span>client, available)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_to_start"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_to_start</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300, chk_progress=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_volume"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_volume</span></span>(<span>client, vol_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_volume_backing_image_synced"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_volume_backing_image_synced</span></span>(<span>client, volume_name, backing_image, retry_count=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_backup_volume_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_volume_delete</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_cron_job_count"><code class="name flex">
+<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_api, number, label='', retry_counts=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_cron_job_create"><code class="name flex">
+<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_api, label='', retry_counts=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_cron_job_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_api, label='', retry_counts=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_deployed_engine_image_count"><code class="name flex">
+<span>def <span class="ident">wait_for_deployed_engine_image_count</span></span>(<span>client, image_name, expected_cnt)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_device_login"><code class="name flex">
+<span>def <span class="ident">wait_for_device_login</span></span>(<span>dest_path, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_disk_conditions"><code class="name flex">
+<span>def <span class="ident">wait_for_disk_conditions</span></span>(<span>client, node_name, disk_name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_disk_status"><code class="name flex">
+<span>def <span class="ident">wait_for_disk_status</span></span>(<span>client, node_name, disk_name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_disk_storage_available"><code class="name flex">
+<span>def <span class="ident">wait_for_disk_storage_available</span></span>(<span>client, node_name, disk_name, disk_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_disk_update"><code class="name flex">
+<span>def <span class="ident">wait_for_disk_update</span></span>(<span>client, name, disk_num)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_disk_uuid"><code class="name flex">
+<span>def <span class="ident">wait_for_disk_uuid</span></span>(<span>client, node_name, uuid)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_dr_volume_expansion"><code class="name flex">
+<span>def <span class="ident">wait_for_dr_volume_expansion</span></span>(<span>longhorn_api_client, volume_name, size_str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_engine_image_condition"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_condition</span></span>(<span>client, image_name, state)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>state: "True", "False"</p></div>
+</dd>
+<dt id="tests.common.wait_for_engine_image_creation"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_creation</span></span>(<span>client, image_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_engine_image_deletion"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_deletion</span></span>(<span>client, core_api, engine_image_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_engine_image_incompatible"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_incompatible</span></span>(<span>client, image_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_engine_image_ref_count"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_ref_count</span></span>(<span>client, image_name, count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_engine_image_state"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_state</span></span>(<span>client, image_name, state)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_expansion_error_clear"><code class="name flex">
+<span>def <span class="ident">wait_for_expansion_error_clear</span></span>(<span>longhorn_api_client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_expansion_failure"><code class="name flex">
+<span>def <span class="ident">wait_for_expansion_failure</span></span>(<span>client, volume_name, last_failed_at='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_instance_manager_count"><code class="name flex">
+<span>def <span class="ident">wait_for_instance_manager_count</span></span>(<span>client, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_instance_manager_desire_state"><code class="name flex">
+<span>def <span class="ident">wait_for_instance_manager_desire_state</span></span>(<span>client, core_api, im_name, state, desire=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_node_mountpropagation_condition"><code class="name flex">
+<span>def <span class="ident">wait_for_node_mountpropagation_condition</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_node_schedulable_condition"><code class="name flex">
+<span>def <span class="ident">wait_for_node_schedulable_condition</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_node_tag_update"><code class="name flex">
+<span>def <span class="ident">wait_for_node_tag_update</span></span>(<span>client, name, tags)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_node_update"><code class="name flex">
+<span>def <span class="ident">wait_for_node_update</span></span>(<span>client, name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pod_annotation"><code class="name flex">
+<span>def <span class="ident">wait_for_pod_annotation</span></span>(<span>core_api, label_selector, anno_key, anno_val)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pod_phase"><code class="name flex">
+<span>def <span class="ident">wait_for_pod_phase</span></span>(<span>core_api, pod_name, pod_phase, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pod_remount"><code class="name flex">
+<span>def <span class="ident">wait_for_pod_remount</span></span>(<span>core_api, pod_name, chk_path='/data/lost+found')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pod_restart"><code class="name flex">
+<span>def <span class="ident">wait_for_pod_restart</span></span>(<span>core_api, pod_name, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pods_volume_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_pods_volume_delete</span></span>(<span>client, pod_list, retry_counts=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pods_volume_state"><code class="name flex">
+<span>def <span class="ident">wait_for_pods_volume_state</span></span>(<span>client, pod_list, field, value, retry_counts=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_pvc_phase"><code class="name flex">
+<span>def <span class="ident">wait_for_pvc_phase</span></span>(<span>api, pvc_name, phase)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_rebuild_complete"><code class="name flex">
+<span>def <span class="ident">wait_for_rebuild_complete</span></span>(<span>client, volume_name, retry_count=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_rebuild_start"><code class="name flex">
+<span>def <span class="ident">wait_for_rebuild_start</span></span>(<span>client, volume_name, retry_count=150, retry_interval=1)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_recurring_jobs_cleanup"><code class="name flex">
+<span>def <span class="ident">wait_for_recurring_jobs_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_replica_directory"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_directory</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_replica_failed"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name, retry_cnts=150, retry_ivl=1)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_replica_running"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_running</span></span>(<span>client, volname, replica_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_replica_scheduled"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_scheduled</span></span>(<span>client, volume_name, to_nodes, expect_success=2, expect_fail=0, anti_affinity=False, chk_vol_healthy=True, chk_replica_running=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_restoration_start"><code class="name flex">
+<span>def <span class="ident">wait_for_restoration_start</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_running_engine_image_count"><code class="name flex">
+<span>def <span class="ident">wait_for_running_engine_image_count</span></span>(<span>image_name, engine_cnt)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_snapshot_count"><code class="name flex">
+<span>def <span class="ident">wait_for_snapshot_count</span></span>(<span>volume, number, retry_counts=120, count_removed=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_snapshot_purge"><code class="name flex">
+<span>def <span class="ident">wait_for_snapshot_purge</span></span>(<span>client, volume_name, *snaps)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_support_bundle_cleanup"><code class="name flex">
+<span>def <span class="ident">wait_for_support_bundle_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_support_bundle_state"><code class="name flex">
+<span>def <span class="ident">wait_for_support_bundle_state</span></span>(<span>state, node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_attached"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_attached</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_clone_status"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_clone_status</span></span>(<span>client, name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_condition_restore"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_condition_restore</span></span>(<span>client, name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_condition_scheduled"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_condition_scheduled</span></span>(<span>client, name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_condition_toomanysnapshots"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_condition_toomanysnapshots</span></span>(<span>client, name, key, value, expected_message=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_creation"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_creation</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_current_image"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_current_image</span></span>(<span>client, name, image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_degraded"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_degraded</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_delete</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_detached"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_detached</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_detached_unknown"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_detached_unknown</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_endpoint"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_endpoint</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_expansion"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_expansion</span></span>(<span>longhorn_api_client, volume_name, expected_size='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_faulted"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_faulted</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_frontend_disabled"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_frontend_disabled</span></span>(<span>client, volume_name, state=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_healthy"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_healthy</span></span>(<span>client, name, retry_count=150)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_healthy_no_frontend"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_healthy_no_frontend</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_migration_node"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_migration_node</span></span>(<span>client, volume_name, node_id, expected_replica_count=-1)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_migration_ready"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_migration_ready</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_option_trim_auto_removing_snapshots"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_option_trim_auto_removing_snapshots</span></span>(<span>client, volume_name, enabled)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_recurring_job_update"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_recurring_job_update</span></span>(<span>volume, jobs=[], groups=[])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_replica_auto_balance_update"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replica_auto_balance_update</span></span>(<span>client, volume_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_replica_count"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replica_count</span></span>(<span>client, name, count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_replicas_mode"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replicas_mode</span></span>(<span>client, volname, mode, replica_names=None, replica_count=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_replicas_running_on_hosts"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replicas_running_on_hosts</span></span>(<span>client, volume_name, host_ids, replica_balanced)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_restoration_completed"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_restoration_completed</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_restoration_start"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_restoration_start</span></span>(<span>client, volume_name, backup_name, progress=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_volume_status"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_status</span></span>(<span>client, name, key, value, retry_count=360)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_longhorn_node_zone_reset"><code class="name flex">
+<span>def <span class="ident">wait_longhorn_node_zone_reset</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_pod"><code class="name flex">
+<span>def <span class="ident">wait_pod</span></span>(<span>pod_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_pod_attach_after_first_backup_completion"><code class="name flex">
+<span>def <span class="ident">wait_pod_attach_after_first_backup_completion</span></span>(<span>client, core_api, volume_name, label_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_scheduling_failure"><code class="name flex">
+<span>def <span class="ident">wait_scheduling_failure</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait and make sure no new replicas are running on the specified
+volume. Trigger a failed assertion of one is detected.
+:param client: The Longhorn client to use in the request.
+:param volume_name: The name of the volume.</p></div>
+</dd>
+<dt id="tests.common.wait_statefulset"><code class="name flex">
+<span>def <span class="ident">wait_statefulset</span></span>(<span>statefulset_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_volume_kubernetes_status"><code class="name flex">
+<span>def <span class="ident">wait_volume_kubernetes_status</span></span>(<span>client, volume_name, expect_ks)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.write_device_random_data"><code class="name flex">
+<span>def <span class="ident">write_device_random_data</span></span>(<span>dev, position={})</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.write_pod_block_volume_data"><code class="name flex">
+<span>def <span class="ident">write_pod_block_volume_data</span></span>(<span>api, pod_name, test_data, offset, device_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.write_pod_volume_data"><code class="name flex">
+<span>def <span class="ident">write_pod_volume_data</span></span>(<span>api, pod_name, test_data, filename='test')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write data into a Pod's volume.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+<dt><strong><code>test_data</code></strong></dt>
+<dd>The data to be written.</dd>
+</dl></div>
+</dd>
+<dt id="tests.common.write_pod_volume_random_data"><code class="name flex">
+<span>def <span class="ident">write_pod_volume_random_data</span></span>(<span>api, pod_name, path, size_in_mb)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.write_volume_data"><code class="name flex">
+<span>def <span class="ident">write_volume_data</span></span>(<span>volume, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.write_volume_dev_random_mb_data"><code class="name flex">
+<span>def <span class="ident">write_volume_dev_random_mb_data</span></span>(<span>path, offset_in_mb, length_in_mb, timeout_cnt=3)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.write_volume_random_data"><code class="name flex">
+<span>def <span class="ident">write_volume_random_data</span></span>(<span>volume, position={})</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="tests.common.AssertErrorCheckThread"><code class="flex name class">
+<span>class <span class="ident">AssertErrorCheckThread</span></span>
+<span>(</span><span>target, args)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class is used for catching exception caused in threads,
+especially for AssertionError now.</p>
+<h2 id="parameters">Parameters</h2>
+<p>target
+:
+The threading function.
+args
+:
+Arguments of the target function.</p>
+<p>This constructor should always be called with keyword arguments. Arguments are:</p>
+<p><em>group</em> should be None; reserved for future extension when a ThreadGroup
+class is implemented.</p>
+<p><em>target</em> is the callable object to be invoked by the run()
+method. Defaults to None, meaning nothing is called.</p>
+<p><em>name</em> is the thread name. By default, a unique name is constructed of
+the form "Thread-N" where N is a small decimal number.</p>
+<p><em>args</em> is the argument tuple for the target invocation. Defaults to ().</p>
+<p><em>kwargs</em> is a dictionary of keyword arguments for the target
+invocation. Defaults to {}.</p>
+<p>If a subclass overrides the constructor, it must make sure to invoke
+the base class constructor (Thread.<strong>init</strong>()) before doing anything
+else to the thread.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AssertErrorCheckThread(threading.Thread):
+    &#34;&#34;&#34;
+        This class is used for catching exception caused in threads,
+        especially for AssertionError now.
+
+        Parameters:
+            target  :       The threading function.
+            args    :       Arguments of the target function.
+    &#34;&#34;&#34;
+    def __init__(self, target, args):
+        threading.Thread.__init__(self)
+        self.target = target
+        self.args = args
+        self.asserted = None
+
+    def run(self):
+        try:
+            self.target(*self.args)
+        except AssertionError as e:
+            self.asserted = e
+
+    def join(self):
+        threading.Thread.join(self)
+        if self.asserted:
+            raise self.asserted</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>threading.Thread</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="tests.common.AssertErrorCheckThread.join"><code class="name flex">
+<span>def <span class="ident">join</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait until the thread terminates.</p>
+<p>This blocks the calling thread until the thread whose join() method is
+called terminates &ndash; either normally or through an unhandled exception
+or until the optional timeout occurs.</p>
+<p>When the timeout argument is present and not None, it should be a
+floating point number specifying a timeout for the operation in seconds
+(or fractions thereof). As join() always returns None, you must call
+is_alive() after join() to decide whether a timeout happened &ndash; if the
+thread is still alive, the join() call timed out.</p>
+<p>When the timeout argument is not present or None, the operation will
+block until the thread terminates.</p>
+<p>A thread can be join()ed many times.</p>
+<p>join() raises a RuntimeError if an attempt is made to join the current
+thread as that would cause a deadlock. It is also an error to join() a
+thread before it has been started and attempts to do so raises the same
+exception.</p></div>
+</dd>
+<dt id="tests.common.AssertErrorCheckThread.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Method representing the thread's activity.</p>
+<p>You may override this method in a subclass. The standard run() method
+invokes the callable object passed to the object's constructor as the
+target argument, if any, with sequential and keyword arguments taken
+from the args and kwargs arguments, respectively.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="tests.common.timeout"><code class="flex name class">
+<span>class <span class="ident">timeout</span></span>
+<span>(</span><span>seconds=1, error_message='Timeout')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class timeout:
+
+    def __init__(self, seconds=1, error_message=&#39;Timeout&#39;):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise Exception(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="tests.common.timeout.handle_timeout"><code class="name flex">
+<span>def <span class="ident">handle_timeout</span></span>(<span>self, signum, frame)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.common.activate_standby_volume" href="#tests.common.activate_standby_volume">activate_standby_volume</a></code></li>
+<li><code><a title="tests.common.apps_api" href="#tests.common.apps_api">apps_api</a></code></li>
+<li><code><a title="tests.common.assert_backup_state" href="#tests.common.assert_backup_state">assert_backup_state</a></code></li>
+<li><code><a title="tests.common.assert_from_assert_error_check_threads" href="#tests.common.assert_from_assert_error_check_threads">assert_from_assert_error_check_threads</a></code></li>
+<li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
+<li><code><a title="tests.common.batch_v1_api" href="#tests.common.batch_v1_api">batch_v1_api</a></code></li>
+<li><code><a title="tests.common.check_all_support_bundle_managers_deleted" href="#tests.common.check_all_support_bundle_managers_deleted">check_all_support_bundle_managers_deleted</a></code></li>
+<li><code><a title="tests.common.check_backing_image_disk_map_status" href="#tests.common.check_backing_image_disk_map_status">check_backing_image_disk_map_status</a></code></li>
+<li><code><a title="tests.common.check_block_device_size" href="#tests.common.check_block_device_size">check_block_device_size</a></code></li>
+<li><code><a title="tests.common.check_csi" href="#tests.common.check_csi">check_csi</a></code></li>
+<li><code><a title="tests.common.check_csi_expansion" href="#tests.common.check_csi_expansion">check_csi_expansion</a></code></li>
+<li><code><a title="tests.common.check_device_data" href="#tests.common.check_device_data">check_device_data</a></code></li>
+<li><code><a title="tests.common.check_longhorn" href="#tests.common.check_longhorn">check_longhorn</a></code></li>
+<li><code><a title="tests.common.check_pod_existence" href="#tests.common.check_pod_existence">check_pod_existence</a></code></li>
+<li><code><a title="tests.common.check_pv_existence" href="#tests.common.check_pv_existence">check_pv_existence</a></code></li>
+<li><code><a title="tests.common.check_pvc_existence" href="#tests.common.check_pvc_existence">check_pvc_existence</a></code></li>
+<li><code><a title="tests.common.check_pvc_in_specific_status" href="#tests.common.check_pvc_in_specific_status">check_pvc_in_specific_status</a></code></li>
+<li><code><a title="tests.common.check_recurring_jobs" href="#tests.common.check_recurring_jobs">check_recurring_jobs</a></code></li>
+<li><code><a title="tests.common.check_statefulset_existence" href="#tests.common.check_statefulset_existence">check_statefulset_existence</a></code></li>
+<li><code><a title="tests.common.check_volume_data" href="#tests.common.check_volume_data">check_volume_data</a></code></li>
+<li><code><a title="tests.common.check_volume_endpoint" href="#tests.common.check_volume_endpoint">check_volume_endpoint</a></code></li>
+<li><code><a title="tests.common.check_volume_existence" href="#tests.common.check_volume_existence">check_volume_existence</a></code></li>
+<li><code><a title="tests.common.check_volume_last_backup" href="#tests.common.check_volume_last_backup">check_volume_last_backup</a></code></li>
+<li><code><a title="tests.common.check_volume_replicas" href="#tests.common.check_volume_replicas">check_volume_replicas</a></code></li>
+<li><code><a title="tests.common.cleanup_all_backing_images" href="#tests.common.cleanup_all_backing_images">cleanup_all_backing_images</a></code></li>
+<li><code><a title="tests.common.cleanup_all_recurring_jobs" href="#tests.common.cleanup_all_recurring_jobs">cleanup_all_recurring_jobs</a></code></li>
+<li><code><a title="tests.common.cleanup_all_support_bundles" href="#tests.common.cleanup_all_support_bundles">cleanup_all_support_bundles</a></code></li>
+<li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
+<li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
+<li><code><a title="tests.common.cleanup_crypto_secret" href="#tests.common.cleanup_crypto_secret">cleanup_crypto_secret</a></code></li>
+<li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
+<li><code><a title="tests.common.cleanup_host_disks" href="#tests.common.cleanup_host_disks">cleanup_host_disks</a></code></li>
+<li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
+<li><code><a title="tests.common.cleanup_storage_class" href="#tests.common.cleanup_storage_class">cleanup_storage_class</a></code></li>
+<li><code><a title="tests.common.cleanup_test_disks" href="#tests.common.cleanup_test_disks">cleanup_test_disks</a></code></li>
+<li><code><a title="tests.common.cleanup_volume" href="#tests.common.cleanup_volume">cleanup_volume</a></code></li>
+<li><code><a title="tests.common.cleanup_volume_by_name" href="#tests.common.cleanup_volume_by_name">cleanup_volume_by_name</a></code></li>
+<li><code><a title="tests.common.client" href="#tests.common.client">client</a></code></li>
+<li><code><a title="tests.common.clients" href="#tests.common.clients">clients</a></code></li>
+<li><code><a title="tests.common.copy_file_to_volume_dev_mb_data" href="#tests.common.copy_file_to_volume_dev_mb_data">copy_file_to_volume_dev_mb_data</a></code></li>
+<li><code><a title="tests.common.copy_pod_volume_data" href="#tests.common.copy_pod_volume_data">copy_pod_volume_data</a></code></li>
+<li><code><a title="tests.common.core_api" href="#tests.common.core_api">core_api</a></code></li>
+<li><code><a title="tests.common.crash_engine_process_with_sigkill" href="#tests.common.crash_engine_process_with_sigkill">crash_engine_process_with_sigkill</a></code></li>
+<li><code><a title="tests.common.crash_replica_processes" href="#tests.common.crash_replica_processes">crash_replica_processes</a></code></li>
+<li><code><a title="tests.common.create_and_check_volume" href="#tests.common.create_and_check_volume">create_and_check_volume</a></code></li>
+<li><code><a title="tests.common.create_and_wait_deployment" href="#tests.common.create_and_wait_deployment">create_and_wait_deployment</a></code></li>
+<li><code><a title="tests.common.create_and_wait_pod" href="#tests.common.create_and_wait_pod">create_and_wait_pod</a></code></li>
+<li><code><a title="tests.common.create_and_wait_statefulset" href="#tests.common.create_and_wait_statefulset">create_and_wait_statefulset</a></code></li>
+<li><code><a title="tests.common.create_assert_error_check_thread" href="#tests.common.create_assert_error_check_thread">create_assert_error_check_thread</a></code></li>
+<li><code><a title="tests.common.create_backing_image_with_matching_url" href="#tests.common.create_backing_image_with_matching_url">create_backing_image_with_matching_url</a></code></li>
+<li><code><a title="tests.common.create_backup" href="#tests.common.create_backup">create_backup</a></code></li>
+<li><code><a title="tests.common.create_backup_from_volume_attached_to_pod" href="#tests.common.create_backup_from_volume_attached_to_pod">create_backup_from_volume_attached_to_pod</a></code></li>
+<li><code><a title="tests.common.create_crypto_secret" href="#tests.common.create_crypto_secret">create_crypto_secret</a></code></li>
+<li><code><a title="tests.common.create_deployment_and_write_data" href="#tests.common.create_deployment_and_write_data">create_deployment_and_write_data</a></code></li>
+<li><code><a title="tests.common.create_host_disk" href="#tests.common.create_host_disk">create_host_disk</a></code></li>
+<li><code><a title="tests.common.create_pv_for_volume" href="#tests.common.create_pv_for_volume">create_pv_for_volume</a></code></li>
+<li><code><a title="tests.common.create_pvc" href="#tests.common.create_pvc">create_pvc</a></code></li>
+<li><code><a title="tests.common.create_pvc_for_volume" href="#tests.common.create_pvc_for_volume">create_pvc_for_volume</a></code></li>
+<li><code><a title="tests.common.create_pvc_spec" href="#tests.common.create_pvc_spec">create_pvc_spec</a></code></li>
+<li><code><a title="tests.common.create_recurring_jobs" href="#tests.common.create_recurring_jobs">create_recurring_jobs</a></code></li>
+<li><code><a title="tests.common.create_rwx_volume_with_storageclass" href="#tests.common.create_rwx_volume_with_storageclass">create_rwx_volume_with_storageclass</a></code></li>
+<li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
+<li><code><a title="tests.common.create_statefulset" href="#tests.common.create_statefulset">create_statefulset</a></code></li>
+<li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
+<li><code><a title="tests.common.create_support_bundle" href="#tests.common.create_support_bundle">create_support_bundle</a></code></li>
+<li><code><a title="tests.common.create_volume" href="#tests.common.create_volume">create_volume</a></code></li>
+<li><code><a title="tests.common.create_volume_and_backup" href="#tests.common.create_volume_and_backup">create_volume_and_backup</a></code></li>
+<li><code><a title="tests.common.create_volume_and_write_data" href="#tests.common.create_volume_and_write_data">create_volume_and_write_data</a></code></li>
+<li><code><a title="tests.common.crypto_secret" href="#tests.common.crypto_secret">crypto_secret</a></code></li>
+<li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
+<li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
+<li><code><a title="tests.common.csi_pvc_name" href="#tests.common.csi_pvc_name">csi_pvc_name</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_deployment" href="#tests.common.delete_and_wait_deployment">delete_and_wait_deployment</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_longhorn" href="#tests.common.delete_and_wait_longhorn">delete_and_wait_longhorn</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_pod" href="#tests.common.delete_and_wait_pod">delete_and_wait_pod</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_pv" href="#tests.common.delete_and_wait_pv">delete_and_wait_pv</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_pvc" href="#tests.common.delete_and_wait_pvc">delete_and_wait_pvc</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_statefulset" href="#tests.common.delete_and_wait_statefulset">delete_and_wait_statefulset</a></code></li>
+<li><code><a title="tests.common.delete_and_wait_volume_attachment" href="#tests.common.delete_and_wait_volume_attachment">delete_and_wait_volume_attachment</a></code></li>
+<li><code><a title="tests.common.delete_backup" href="#tests.common.delete_backup">delete_backup</a></code></li>
+<li><code><a title="tests.common.delete_backup_volume" href="#tests.common.delete_backup_volume">delete_backup_volume</a></code></li>
+<li><code><a title="tests.common.delete_crypto_secret" href="#tests.common.delete_crypto_secret">delete_crypto_secret</a></code></li>
+<li><code><a title="tests.common.delete_replica_on_test_node" href="#tests.common.delete_replica_on_test_node">delete_replica_on_test_node</a></code></li>
+<li><code><a title="tests.common.delete_replica_processes" href="#tests.common.delete_replica_processes">delete_replica_processes</a></code></li>
+<li><code><a title="tests.common.delete_statefulset" href="#tests.common.delete_statefulset">delete_statefulset</a></code></li>
+<li><code><a title="tests.common.delete_storage_class" href="#tests.common.delete_storage_class">delete_storage_class</a></code></li>
+<li><code><a title="tests.common.delete_support_bundle" href="#tests.common.delete_support_bundle">delete_support_bundle</a></code></li>
+<li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>
+<li><code><a title="tests.common.dev_write" href="#tests.common.dev_write">dev_write</a></code></li>
+<li><code><a title="tests.common.disable_auto_salvage" href="#tests.common.disable_auto_salvage">disable_auto_salvage</a></code></li>
+<li><code><a title="tests.common.download_support_bundle" href="#tests.common.download_support_bundle">download_support_bundle</a></code></li>
+<li><code><a title="tests.common.enable_default_disk" href="#tests.common.enable_default_disk">enable_default_disk</a></code></li>
+<li><code><a title="tests.common.exec_command_in_pod" href="#tests.common.exec_command_in_pod">exec_command_in_pod</a></code></li>
+<li><code><a title="tests.common.exec_instance_manager" href="#tests.common.exec_instance_manager">exec_instance_manager</a></code></li>
+<li><code><a title="tests.common.exec_local" href="#tests.common.exec_local">exec_local</a></code></li>
+<li><code><a title="tests.common.exec_nsenter" href="#tests.common.exec_nsenter">exec_nsenter</a></code></li>
+<li><code><a title="tests.common.expand_and_wait_for_pvc" href="#tests.common.expand_and_wait_for_pvc">expand_and_wait_for_pvc</a></code></li>
+<li><code><a title="tests.common.fail_replica_expansion" href="#tests.common.fail_replica_expansion">fail_replica_expansion</a></code></li>
+<li><code><a title="tests.common.find_ancestor_process_by_name" href="#tests.common.find_ancestor_process_by_name">find_ancestor_process_by_name</a></code></li>
+<li><code><a title="tests.common.find_backup" href="#tests.common.find_backup">find_backup</a></code></li>
+<li><code><a title="tests.common.find_backup_volume" href="#tests.common.find_backup_volume">find_backup_volume</a></code></li>
+<li><code><a title="tests.common.find_dockerd_pid" href="#tests.common.find_dockerd_pid">find_dockerd_pid</a></code></li>
+<li><code><a title="tests.common.find_process_pid" href="#tests.common.find_process_pid">find_process_pid</a></code></li>
+<li><code><a title="tests.common.find_replica_for_backup" href="#tests.common.find_replica_for_backup">find_replica_for_backup</a></code></li>
+<li><code><a title="tests.common.find_self" href="#tests.common.find_self">find_self</a></code></li>
+<li><code><a title="tests.common.fix_replica_expansion_failure" href="#tests.common.fix_replica_expansion_failure">fix_replica_expansion_failure</a></code></li>
+<li><code><a title="tests.common.generate_attachment_ticket_id" href="#tests.common.generate_attachment_ticket_id">generate_attachment_ticket_id</a></code></li>
+<li><code><a title="tests.common.generate_pod_with_pvc_manifest" href="#tests.common.generate_pod_with_pvc_manifest">generate_pod_with_pvc_manifest</a></code></li>
+<li><code><a title="tests.common.generate_random_data" href="#tests.common.generate_random_data">generate_random_data</a></code></li>
+<li><code><a title="tests.common.generate_random_pos" href="#tests.common.generate_random_pos">generate_random_pos</a></code></li>
+<li><code><a title="tests.common.generate_random_suffix" href="#tests.common.generate_random_suffix">generate_random_suffix</a></code></li>
+<li><code><a title="tests.common.generate_sts_name" href="#tests.common.generate_sts_name">generate_sts_name</a></code></li>
+<li><code><a title="tests.common.generate_support_bundle" href="#tests.common.generate_support_bundle">generate_support_bundle</a></code></li>
+<li><code><a title="tests.common.generate_volume_name" href="#tests.common.generate_volume_name">generate_volume_name</a></code></li>
+<li><code><a title="tests.common.get_all_support_bundle_manager_deployments" href="#tests.common.get_all_support_bundle_manager_deployments">get_all_support_bundle_manager_deployments</a></code></li>
+<li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
+<li><code><a title="tests.common.get_backupstore_poll_interval" href="#tests.common.get_backupstore_poll_interval">get_backupstore_poll_interval</a></code></li>
+<li><code><a title="tests.common.get_backupstore_url" href="#tests.common.get_backupstore_url">get_backupstore_url</a></code></li>
+<li><code><a title="tests.common.get_backupstores" href="#tests.common.get_backupstores">get_backupstores</a></code></li>
+<li><code><a title="tests.common.get_client" href="#tests.common.get_client">get_client</a></code></li>
+<li><code><a title="tests.common.get_clients" href="#tests.common.get_clients">get_clients</a></code></li>
+<li><code><a title="tests.common.get_clone_volume_name" href="#tests.common.get_clone_volume_name">get_clone_volume_name</a></code></li>
+<li><code><a title="tests.common.get_compatibility_test_image" href="#tests.common.get_compatibility_test_image">get_compatibility_test_image</a></code></li>
+<li><code><a title="tests.common.get_core_api_client" href="#tests.common.get_core_api_client">get_core_api_client</a></code></li>
+<li><code><a title="tests.common.get_custom_object_api_client" href="#tests.common.get_custom_object_api_client">get_custom_object_api_client</a></code></li>
+<li><code><a title="tests.common.get_default_engine_image" href="#tests.common.get_default_engine_image">get_default_engine_image</a></code></li>
+<li><code><a title="tests.common.get_deployment_pod_names" href="#tests.common.get_deployment_pod_names">get_deployment_pod_names</a></code></li>
+<li><code><a title="tests.common.get_device_checksum" href="#tests.common.get_device_checksum">get_device_checksum</a></code></li>
+<li><code><a title="tests.common.get_disk_uuid" href="#tests.common.get_disk_uuid">get_disk_uuid</a></code></li>
+<li><code><a title="tests.common.get_engine_host_id" href="#tests.common.get_engine_host_id">get_engine_host_id</a></code></li>
+<li><code><a title="tests.common.get_engine_image_status_value" href="#tests.common.get_engine_image_status_value">get_engine_image_status_value</a></code></li>
+<li><code><a title="tests.common.get_host_disk_size" href="#tests.common.get_host_disk_size">get_host_disk_size</a></code></li>
+<li><code><a title="tests.common.get_host_replica_count" href="#tests.common.get_host_replica_count">get_host_replica_count</a></code></li>
+<li><code><a title="tests.common.get_iscsi_ip" href="#tests.common.get_iscsi_ip">get_iscsi_ip</a></code></li>
+<li><code><a title="tests.common.get_iscsi_lun" href="#tests.common.get_iscsi_lun">get_iscsi_lun</a></code></li>
+<li><code><a title="tests.common.get_iscsi_port" href="#tests.common.get_iscsi_port">get_iscsi_port</a></code></li>
+<li><code><a title="tests.common.get_iscsi_target" href="#tests.common.get_iscsi_target">get_iscsi_target</a></code></li>
+<li><code><a title="tests.common.get_k8s_zone_label" href="#tests.common.get_k8s_zone_label">get_k8s_zone_label</a></code></li>
+<li><code><a title="tests.common.get_liveness_probe_spec" href="#tests.common.get_liveness_probe_spec">get_liveness_probe_spec</a></code></li>
+<li><code><a title="tests.common.get_longhorn_api_client" href="#tests.common.get_longhorn_api_client">get_longhorn_api_client</a></code></li>
+<li><code><a title="tests.common.get_mgr_ips" href="#tests.common.get_mgr_ips">get_mgr_ips</a></code></li>
+<li><code><a title="tests.common.get_pod_data_md5sum" href="#tests.common.get_pod_data_md5sum">get_pod_data_md5sum</a></code></li>
+<li><code><a title="tests.common.get_process_info" href="#tests.common.get_process_info">get_process_info</a></code></li>
+<li><code><a title="tests.common.get_pv_manifest" href="#tests.common.get_pv_manifest">get_pv_manifest</a></code></li>
+<li><code><a title="tests.common.get_pvc_manifest" href="#tests.common.get_pvc_manifest">get_pvc_manifest</a></code></li>
+<li><code><a title="tests.common.get_random_client" href="#tests.common.get_random_client">get_random_client</a></code></li>
+<li><code><a title="tests.common.get_scheduling_api_client" href="#tests.common.get_scheduling_api_client">get_scheduling_api_client</a></code></li>
+<li><code><a title="tests.common.get_self_host_id" href="#tests.common.get_self_host_id">get_self_host_id</a></code></li>
+<li><code><a title="tests.common.get_statefulset_pod_info" href="#tests.common.get_statefulset_pod_info">get_statefulset_pod_info</a></code></li>
+<li><code><a title="tests.common.get_storage_api_client" href="#tests.common.get_storage_api_client">get_storage_api_client</a></code></li>
+<li><code><a title="tests.common.get_support_bundle" href="#tests.common.get_support_bundle">get_support_bundle</a></code></li>
+<li><code><a title="tests.common.get_support_bundle_url" href="#tests.common.get_support_bundle_url">get_support_bundle_url</a></code></li>
+<li><code><a title="tests.common.get_update_disks" href="#tests.common.get_update_disks">get_update_disks</a></code></li>
+<li><code><a title="tests.common.get_upgrade_test_image" href="#tests.common.get_upgrade_test_image">get_upgrade_test_image</a></code></li>
+<li><code><a title="tests.common.get_version_api_client" href="#tests.common.get_version_api_client">get_version_api_client</a></code></li>
+<li><code><a title="tests.common.get_volume_dev_mb_data_md5sum" href="#tests.common.get_volume_dev_mb_data_md5sum">get_volume_dev_mb_data_md5sum</a></code></li>
+<li><code><a title="tests.common.get_volume_endpoint" href="#tests.common.get_volume_endpoint">get_volume_endpoint</a></code></li>
+<li><code><a title="tests.common.get_volume_engine" href="#tests.common.get_volume_engine">get_volume_engine</a></code></li>
+<li><code><a title="tests.common.get_volume_name" href="#tests.common.get_volume_name">get_volume_name</a></code></li>
+<li><code><a title="tests.common.get_volume_recurring_jobs_and_groups" href="#tests.common.get_volume_recurring_jobs_and_groups">get_volume_recurring_jobs_and_groups</a></code></li>
+<li><code><a title="tests.common.get_volume_running_replica_cnt" href="#tests.common.get_volume_running_replica_cnt">get_volume_running_replica_cnt</a></code></li>
+<li><code><a title="tests.common.is_backupTarget_nfs" href="#tests.common.is_backupTarget_nfs">is_backupTarget_nfs</a></code></li>
+<li><code><a title="tests.common.is_backupTarget_s3" href="#tests.common.is_backupTarget_s3">is_backupTarget_s3</a></code></li>
+<li><code><a title="tests.common.is_k8s_node_gke_cos" href="#tests.common.is_k8s_node_gke_cos">is_k8s_node_gke_cos</a></code></li>
+<li><code><a title="tests.common.is_k8s_node_label" href="#tests.common.is_k8s_node_label">is_k8s_node_label</a></code></li>
+<li><code><a title="tests.common.is_replica_available" href="#tests.common.is_replica_available">is_replica_available</a></code></li>
+<li><code><a title="tests.common.iscsi_login" href="#tests.common.iscsi_login">iscsi_login</a></code></li>
+<li><code><a title="tests.common.iscsi_logout" href="#tests.common.iscsi_logout">iscsi_logout</a></code></li>
+<li><code><a title="tests.common.json_string_go_to_python" href="#tests.common.json_string_go_to_python">json_string_go_to_python</a></code></li>
+<li><code><a title="tests.common.lazy_umount_disk" href="#tests.common.lazy_umount_disk">lazy_umount_disk</a></code></li>
+<li><code><a title="tests.common.load_k8s_config" href="#tests.common.load_k8s_config">load_k8s_config</a></code></li>
+<li><code><a title="tests.common.make_deployment_cpu_request" href="#tests.common.make_deployment_cpu_request">make_deployment_cpu_request</a></code></li>
+<li><code><a title="tests.common.make_deployment_with_pvc" href="#tests.common.make_deployment_with_pvc">make_deployment_with_pvc</a></code></li>
+<li><code><a title="tests.common.monitor_restore_progress" href="#tests.common.monitor_restore_progress">monitor_restore_progress</a></code></li>
+<li><code><a title="tests.common.mount_disk" href="#tests.common.mount_disk">mount_disk</a></code></li>
+<li><code><a title="tests.common.node_default_tags" href="#tests.common.node_default_tags">node_default_tags</a></code></li>
+<li><code><a title="tests.common.offline_expand_attached_volume" href="#tests.common.offline_expand_attached_volume">offline_expand_attached_volume</a></code></li>
+<li><code><a title="tests.common.parse_iscsi_endpoint" href="#tests.common.parse_iscsi_endpoint">parse_iscsi_endpoint</a></code></li>
+<li><code><a title="tests.common.pod" href="#tests.common.pod">pod</a></code></li>
+<li><code><a title="tests.common.pod_make" href="#tests.common.pod_make">pod_make</a></code></li>
+<li><code><a title="tests.common.prepare_host_disk" href="#tests.common.prepare_host_disk">prepare_host_disk</a></code></li>
+<li><code><a title="tests.common.prepare_pod_with_data_in_mb" href="#tests.common.prepare_pod_with_data_in_mb">prepare_pod_with_data_in_mb</a></code></li>
+<li><code><a title="tests.common.prepare_statefulset_with_data_in_mb" href="#tests.common.prepare_statefulset_with_data_in_mb">prepare_statefulset_with_data_in_mb</a></code></li>
+<li><code><a title="tests.common.priority_class" href="#tests.common.priority_class">priority_class</a></code></li>
+<li><code><a title="tests.common.pvc" href="#tests.common.pvc">pvc</a></code></li>
+<li><code><a title="tests.common.pvc_backingimage" href="#tests.common.pvc_backingimage">pvc_backingimage</a></code></li>
+<li><code><a title="tests.common.pvc_name" href="#tests.common.pvc_name">pvc_name</a></code></li>
+<li><code><a title="tests.common.random_labels" href="#tests.common.random_labels">random_labels</a></code></li>
+<li><code><a title="tests.common.read_pod_block_volume_data" href="#tests.common.read_pod_block_volume_data">read_pod_block_volume_data</a></code></li>
+<li><code><a title="tests.common.read_volume_data" href="#tests.common.read_volume_data">read_volume_data</a></code></li>
+<li><code><a title="tests.common.recurring_job_feature_supported" href="#tests.common.recurring_job_feature_supported">recurring_job_feature_supported</a></code></li>
+<li><code><a title="tests.common.reset_disks_for_all_nodes" href="#tests.common.reset_disks_for_all_nodes">reset_disks_for_all_nodes</a></code></li>
+<li><code><a title="tests.common.reset_engine_image" href="#tests.common.reset_engine_image">reset_engine_image</a></code></li>
+<li><code><a title="tests.common.reset_longhorn_node_zone" href="#tests.common.reset_longhorn_node_zone">reset_longhorn_node_zone</a></code></li>
+<li><code><a title="tests.common.reset_node" href="#tests.common.reset_node">reset_node</a></code></li>
+<li><code><a title="tests.common.reset_nodes_taint" href="#tests.common.reset_nodes_taint">reset_nodes_taint</a></code></li>
+<li><code><a title="tests.common.reset_settings" href="#tests.common.reset_settings">reset_settings</a></code></li>
+<li><code><a title="tests.common.restart_and_wait_ready_engine_count" href="#tests.common.restart_and_wait_ready_engine_count">restart_and_wait_ready_engine_count</a></code></li>
+<li><code><a title="tests.common.restore_backup_and_get_data_checksum" href="#tests.common.restore_backup_and_get_data_checksum">restore_backup_and_get_data_checksum</a></code></li>
+<li><code><a title="tests.common.rwx_statefulset" href="#tests.common.rwx_statefulset">rwx_statefulset</a></code></li>
+<li><code><a title="tests.common.scale_up_engine_image_daemonset" href="#tests.common.scale_up_engine_image_daemonset">scale_up_engine_image_daemonset</a></code></li>
+<li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
+<li><code><a title="tests.common.set_and_wait_k8s_nodes_zone_label" href="#tests.common.set_and_wait_k8s_nodes_zone_label">set_and_wait_k8s_nodes_zone_label</a></code></li>
+<li><code><a title="tests.common.set_k8s_node_label" href="#tests.common.set_k8s_node_label">set_k8s_node_label</a></code></li>
+<li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
+<li><code><a title="tests.common.set_node_cordon" href="#tests.common.set_node_cordon">set_node_cordon</a></code></li>
+<li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
+<li><code><a title="tests.common.set_node_scheduling_eviction" href="#tests.common.set_node_scheduling_eviction">set_node_scheduling_eviction</a></code></li>
+<li><code><a title="tests.common.set_node_tags" href="#tests.common.set_node_tags">set_node_tags</a></code></li>
+<li><code><a title="tests.common.settings_reset" href="#tests.common.settings_reset">settings_reset</a></code></li>
+<li><code><a title="tests.common.size_to_string" href="#tests.common.size_to_string">size_to_string</a></code></li>
+<li><code><a title="tests.common.statefulset" href="#tests.common.statefulset">statefulset</a></code></li>
+<li><code><a title="tests.common.storage_class" href="#tests.common.storage_class">storage_class</a></code></li>
+<li><code><a title="tests.common.sts_name" href="#tests.common.sts_name">sts_name</a></code></li>
+<li><code><a title="tests.common.system_backup_feature_supported" href="#tests.common.system_backup_feature_supported">system_backup_feature_supported</a></code></li>
+<li><code><a title="tests.common.system_backup_random_name" href="#tests.common.system_backup_random_name">system_backup_random_name</a></code></li>
+<li><code><a title="tests.common.system_backup_wait_for_state" href="#tests.common.system_backup_wait_for_state">system_backup_wait_for_state</a></code></li>
+<li><code><a title="tests.common.system_backups_cleanup" href="#tests.common.system_backups_cleanup">system_backups_cleanup</a></code></li>
+<li><code><a title="tests.common.system_restore_random_name" href="#tests.common.system_restore_random_name">system_restore_random_name</a></code></li>
+<li><code><a title="tests.common.system_restore_wait_for_state" href="#tests.common.system_restore_wait_for_state">system_restore_wait_for_state</a></code></li>
+<li><code><a title="tests.common.system_restores_cleanup" href="#tests.common.system_restores_cleanup">system_restores_cleanup</a></code></li>
+<li><code><a title="tests.common.umount_disk" href="#tests.common.umount_disk">umount_disk</a></code></li>
+<li><code><a title="tests.common.update_node_disks" href="#tests.common.update_node_disks">update_node_disks</a></code></li>
+<li><code><a title="tests.common.update_recurring_job" href="#tests.common.update_recurring_job">update_recurring_job</a></code></li>
+<li><code><a title="tests.common.update_setting" href="#tests.common.update_setting">update_setting</a></code></li>
+<li><code><a title="tests.common.update_statefulset_manifests" href="#tests.common.update_statefulset_manifests">update_statefulset_manifests</a></code></li>
+<li><code><a title="tests.common.volume_name" href="#tests.common.volume_name">volume_name</a></code></li>
+<li><code><a title="tests.common.volume_read" href="#tests.common.volume_read">volume_read</a></code></li>
+<li><code><a title="tests.common.volume_valid" href="#tests.common.volume_valid">volume_valid</a></code></li>
+<li><code><a title="tests.common.volume_write" href="#tests.common.volume_write">volume_write</a></code></li>
+<li><code><a title="tests.common.wait_and_get_any_deployment_pod" href="#tests.common.wait_and_get_any_deployment_pod">wait_and_get_any_deployment_pod</a></code></li>
+<li><code><a title="tests.common.wait_and_get_pv_for_pvc" href="#tests.common.wait_and_get_pv_for_pvc">wait_and_get_pv_for_pvc</a></code></li>
+<li><code><a title="tests.common.wait_delete_deployment" href="#tests.common.wait_delete_deployment">wait_delete_deployment</a></code></li>
+<li><code><a title="tests.common.wait_delete_dm_device" href="#tests.common.wait_delete_dm_device">wait_delete_dm_device</a></code></li>
+<li><code><a title="tests.common.wait_delete_pod" href="#tests.common.wait_delete_pod">wait_delete_pod</a></code></li>
+<li><code><a title="tests.common.wait_delete_pv" href="#tests.common.wait_delete_pv">wait_delete_pv</a></code></li>
+<li><code><a title="tests.common.wait_delete_pvc" href="#tests.common.wait_delete_pvc">wait_delete_pvc</a></code></li>
+<li><code><a title="tests.common.wait_delete_volume_attachment" href="#tests.common.wait_delete_volume_attachment">wait_delete_volume_attachment</a></code></li>
+<li><code><a title="tests.common.wait_deployment_replica_ready" href="#tests.common.wait_deployment_replica_ready">wait_deployment_replica_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_all_instance_manager_running" href="#tests.common.wait_for_all_instance_manager_running">wait_for_all_instance_manager_running</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_delete" href="#tests.common.wait_for_backing_image_delete">wait_for_backing_image_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_in_disk_fail" href="#tests.common.wait_for_backing_image_in_disk_fail">wait_for_backing_image_in_disk_fail</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_status" href="#tests.common.wait_for_backing_image_status">wait_for_backing_image_status</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_count" href="#tests.common.wait_for_backup_count">wait_for_backup_count</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_failed" href="#tests.common.wait_for_backup_failed">wait_for_backup_failed</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_state" href="#tests.common.wait_for_backup_state">wait_for_backup_state</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_target_available" href="#tests.common.wait_for_backup_target_available">wait_for_backup_target_available</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_to_start" href="#tests.common.wait_for_backup_to_start">wait_for_backup_to_start</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_volume" href="#tests.common.wait_for_backup_volume">wait_for_backup_volume</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_volume_backing_image_synced" href="#tests.common.wait_for_backup_volume_backing_image_synced">wait_for_backup_volume_backing_image_synced</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_cron_job_count" href="#tests.common.wait_for_cron_job_count">wait_for_cron_job_count</a></code></li>
+<li><code><a title="tests.common.wait_for_cron_job_create" href="#tests.common.wait_for_cron_job_create">wait_for_cron_job_create</a></code></li>
+<li><code><a title="tests.common.wait_for_cron_job_delete" href="#tests.common.wait_for_cron_job_delete">wait_for_cron_job_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_deployed_engine_image_count" href="#tests.common.wait_for_deployed_engine_image_count">wait_for_deployed_engine_image_count</a></code></li>
+<li><code><a title="tests.common.wait_for_device_login" href="#tests.common.wait_for_device_login">wait_for_device_login</a></code></li>
+<li><code><a title="tests.common.wait_for_disk_conditions" href="#tests.common.wait_for_disk_conditions">wait_for_disk_conditions</a></code></li>
+<li><code><a title="tests.common.wait_for_disk_status" href="#tests.common.wait_for_disk_status">wait_for_disk_status</a></code></li>
+<li><code><a title="tests.common.wait_for_disk_storage_available" href="#tests.common.wait_for_disk_storage_available">wait_for_disk_storage_available</a></code></li>
+<li><code><a title="tests.common.wait_for_disk_update" href="#tests.common.wait_for_disk_update">wait_for_disk_update</a></code></li>
+<li><code><a title="tests.common.wait_for_disk_uuid" href="#tests.common.wait_for_disk_uuid">wait_for_disk_uuid</a></code></li>
+<li><code><a title="tests.common.wait_for_dr_volume_expansion" href="#tests.common.wait_for_dr_volume_expansion">wait_for_dr_volume_expansion</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_condition" href="#tests.common.wait_for_engine_image_condition">wait_for_engine_image_condition</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_creation" href="#tests.common.wait_for_engine_image_creation">wait_for_engine_image_creation</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_deletion" href="#tests.common.wait_for_engine_image_deletion">wait_for_engine_image_deletion</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_incompatible" href="#tests.common.wait_for_engine_image_incompatible">wait_for_engine_image_incompatible</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_ref_count" href="#tests.common.wait_for_engine_image_ref_count">wait_for_engine_image_ref_count</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_state" href="#tests.common.wait_for_engine_image_state">wait_for_engine_image_state</a></code></li>
+<li><code><a title="tests.common.wait_for_expansion_error_clear" href="#tests.common.wait_for_expansion_error_clear">wait_for_expansion_error_clear</a></code></li>
+<li><code><a title="tests.common.wait_for_expansion_failure" href="#tests.common.wait_for_expansion_failure">wait_for_expansion_failure</a></code></li>
+<li><code><a title="tests.common.wait_for_instance_manager_count" href="#tests.common.wait_for_instance_manager_count">wait_for_instance_manager_count</a></code></li>
+<li><code><a title="tests.common.wait_for_instance_manager_desire_state" href="#tests.common.wait_for_instance_manager_desire_state">wait_for_instance_manager_desire_state</a></code></li>
+<li><code><a title="tests.common.wait_for_node_mountpropagation_condition" href="#tests.common.wait_for_node_mountpropagation_condition">wait_for_node_mountpropagation_condition</a></code></li>
+<li><code><a title="tests.common.wait_for_node_schedulable_condition" href="#tests.common.wait_for_node_schedulable_condition">wait_for_node_schedulable_condition</a></code></li>
+<li><code><a title="tests.common.wait_for_node_tag_update" href="#tests.common.wait_for_node_tag_update">wait_for_node_tag_update</a></code></li>
+<li><code><a title="tests.common.wait_for_node_update" href="#tests.common.wait_for_node_update">wait_for_node_update</a></code></li>
+<li><code><a title="tests.common.wait_for_pod_annotation" href="#tests.common.wait_for_pod_annotation">wait_for_pod_annotation</a></code></li>
+<li><code><a title="tests.common.wait_for_pod_phase" href="#tests.common.wait_for_pod_phase">wait_for_pod_phase</a></code></li>
+<li><code><a title="tests.common.wait_for_pod_remount" href="#tests.common.wait_for_pod_remount">wait_for_pod_remount</a></code></li>
+<li><code><a title="tests.common.wait_for_pod_restart" href="#tests.common.wait_for_pod_restart">wait_for_pod_restart</a></code></li>
+<li><code><a title="tests.common.wait_for_pods_volume_delete" href="#tests.common.wait_for_pods_volume_delete">wait_for_pods_volume_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_pods_volume_state" href="#tests.common.wait_for_pods_volume_state">wait_for_pods_volume_state</a></code></li>
+<li><code><a title="tests.common.wait_for_pvc_phase" href="#tests.common.wait_for_pvc_phase">wait_for_pvc_phase</a></code></li>
+<li><code><a title="tests.common.wait_for_rebuild_complete" href="#tests.common.wait_for_rebuild_complete">wait_for_rebuild_complete</a></code></li>
+<li><code><a title="tests.common.wait_for_rebuild_start" href="#tests.common.wait_for_rebuild_start">wait_for_rebuild_start</a></code></li>
+<li><code><a title="tests.common.wait_for_recurring_jobs_cleanup" href="#tests.common.wait_for_recurring_jobs_cleanup">wait_for_recurring_jobs_cleanup</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_directory" href="#tests.common.wait_for_replica_directory">wait_for_replica_directory</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
+<li><code><a title="tests.common.wait_for_restoration_start" href="#tests.common.wait_for_restoration_start">wait_for_restoration_start</a></code></li>
+<li><code><a title="tests.common.wait_for_running_engine_image_count" href="#tests.common.wait_for_running_engine_image_count">wait_for_running_engine_image_count</a></code></li>
+<li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
+<li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
+<li><code><a title="tests.common.wait_for_support_bundle_cleanup" href="#tests.common.wait_for_support_bundle_cleanup">wait_for_support_bundle_cleanup</a></code></li>
+<li><code><a title="tests.common.wait_for_support_bundle_state" href="#tests.common.wait_for_support_bundle_state">wait_for_support_bundle_state</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_attached" href="#tests.common.wait_for_volume_attached">wait_for_volume_attached</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_clone_status" href="#tests.common.wait_for_volume_clone_status">wait_for_volume_clone_status</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_condition_restore" href="#tests.common.wait_for_volume_condition_restore">wait_for_volume_condition_restore</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_condition_scheduled" href="#tests.common.wait_for_volume_condition_scheduled">wait_for_volume_condition_scheduled</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_condition_toomanysnapshots" href="#tests.common.wait_for_volume_condition_toomanysnapshots">wait_for_volume_condition_toomanysnapshots</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_creation" href="#tests.common.wait_for_volume_creation">wait_for_volume_creation</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_current_image" href="#tests.common.wait_for_volume_current_image">wait_for_volume_current_image</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_degraded" href="#tests.common.wait_for_volume_degraded">wait_for_volume_degraded</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_delete" href="#tests.common.wait_for_volume_delete">wait_for_volume_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_detached" href="#tests.common.wait_for_volume_detached">wait_for_volume_detached</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_detached_unknown" href="#tests.common.wait_for_volume_detached_unknown">wait_for_volume_detached_unknown</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_endpoint" href="#tests.common.wait_for_volume_endpoint">wait_for_volume_endpoint</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_expansion" href="#tests.common.wait_for_volume_expansion">wait_for_volume_expansion</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_faulted" href="#tests.common.wait_for_volume_faulted">wait_for_volume_faulted</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_frontend_disabled" href="#tests.common.wait_for_volume_frontend_disabled">wait_for_volume_frontend_disabled</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_healthy" href="#tests.common.wait_for_volume_healthy">wait_for_volume_healthy</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_healthy_no_frontend" href="#tests.common.wait_for_volume_healthy_no_frontend">wait_for_volume_healthy_no_frontend</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_migration_node" href="#tests.common.wait_for_volume_migration_node">wait_for_volume_migration_node</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_migration_ready" href="#tests.common.wait_for_volume_migration_ready">wait_for_volume_migration_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_option_trim_auto_removing_snapshots" href="#tests.common.wait_for_volume_option_trim_auto_removing_snapshots">wait_for_volume_option_trim_auto_removing_snapshots</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_recurring_job_update" href="#tests.common.wait_for_volume_recurring_job_update">wait_for_volume_recurring_job_update</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replica_auto_balance_update" href="#tests.common.wait_for_volume_replica_auto_balance_update">wait_for_volume_replica_auto_balance_update</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replica_count" href="#tests.common.wait_for_volume_replica_count">wait_for_volume_replica_count</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replicas_mode" href="#tests.common.wait_for_volume_replicas_mode">wait_for_volume_replicas_mode</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replicas_running_on_hosts" href="#tests.common.wait_for_volume_replicas_running_on_hosts">wait_for_volume_replicas_running_on_hosts</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_restoration_completed" href="#tests.common.wait_for_volume_restoration_completed">wait_for_volume_restoration_completed</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_restoration_start" href="#tests.common.wait_for_volume_restoration_start">wait_for_volume_restoration_start</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_status" href="#tests.common.wait_for_volume_status">wait_for_volume_status</a></code></li>
+<li><code><a title="tests.common.wait_longhorn_node_zone_reset" href="#tests.common.wait_longhorn_node_zone_reset">wait_longhorn_node_zone_reset</a></code></li>
+<li><code><a title="tests.common.wait_pod" href="#tests.common.wait_pod">wait_pod</a></code></li>
+<li><code><a title="tests.common.wait_pod_attach_after_first_backup_completion" href="#tests.common.wait_pod_attach_after_first_backup_completion">wait_pod_attach_after_first_backup_completion</a></code></li>
+<li><code><a title="tests.common.wait_scheduling_failure" href="#tests.common.wait_scheduling_failure">wait_scheduling_failure</a></code></li>
+<li><code><a title="tests.common.wait_statefulset" href="#tests.common.wait_statefulset">wait_statefulset</a></code></li>
+<li><code><a title="tests.common.wait_volume_kubernetes_status" href="#tests.common.wait_volume_kubernetes_status">wait_volume_kubernetes_status</a></code></li>
+<li><code><a title="tests.common.write_device_random_data" href="#tests.common.write_device_random_data">write_device_random_data</a></code></li>
+<li><code><a title="tests.common.write_pod_block_volume_data" href="#tests.common.write_pod_block_volume_data">write_pod_block_volume_data</a></code></li>
+<li><code><a title="tests.common.write_pod_volume_data" href="#tests.common.write_pod_volume_data">write_pod_volume_data</a></code></li>
+<li><code><a title="tests.common.write_pod_volume_random_data" href="#tests.common.write_pod_volume_random_data">write_pod_volume_random_data</a></code></li>
+<li><code><a title="tests.common.write_volume_data" href="#tests.common.write_volume_data">write_volume_data</a></code></li>
+<li><code><a title="tests.common.write_volume_dev_random_mb_data" href="#tests.common.write_volume_dev_random_mb_data">write_volume_dev_random_mb_data</a></code></li>
+<li><code><a title="tests.common.write_volume_random_data" href="#tests.common.write_volume_random_data">write_volume_random_data</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="tests.common.AssertErrorCheckThread" href="#tests.common.AssertErrorCheckThread">AssertErrorCheckThread</a></code></h4>
+<ul class="">
+<li><code><a title="tests.common.AssertErrorCheckThread.join" href="#tests.common.AssertErrorCheckThread.join">join</a></code></li>
+<li><code><a title="tests.common.AssertErrorCheckThread.run" href="#tests.common.AssertErrorCheckThread.run">run</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="tests.common.timeout" href="#tests.common.timeout">timeout</a></code></h4>
+<ul class="">
+<li><code><a title="tests.common.timeout.handle_timeout" href="#tests.common.timeout.handle_timeout">handle_timeout</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

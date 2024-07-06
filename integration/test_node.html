@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_node API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_node</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_node.check_all_replicas_evict_state"><code class="name flex">
+<span>def <span class="ident">check_all_replicas_evict_state</span></span>(<span>client, volume_name, expect_state)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.check_node_auto_evict_state"><code class="name flex">
+<span>def <span class="ident">check_node_auto_evict_state</span></span>(<span>client, target_node, expect_state)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.check_replica_evict_state"><code class="name flex">
+<span>def <span class="ident">check_replica_evict_state</span></span>(<span>client, volume_name, node, expect_state)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.drain_node"><code class="name flex">
+<span>def <span class="ident">drain_node</span></span>(<span>core_api, node)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.get_all_replica_name"><code class="name flex">
+<span>def <span class="ident">get_all_replica_name</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.get_replica_detail"><code class="name flex">
+<span>def <span class="ident">get_replica_detail</span></span>(<span>replica_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get allreplica information by this function</p></div>
+</dd>
+<dt id="tests.test_node.make_replica_on_specific_node"><code class="name flex">
+<span>def <span class="ident">make_replica_on_specific_node</span></span>(<span>client, volume_name, node)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.random_disk_path"><code class="name flex">
+<span>def <span class="ident">random_disk_path</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.reset_default_disk_label"><code class="name flex">
+<span>def <span class="ident">reset_default_disk_label</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.reset_disk_and_tag_annotations"><code class="name flex">
+<span>def <span class="ident">reset_disk_and_tag_annotations</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.reset_disk_settings"><code class="name flex">
+<span>def <span class="ident">reset_disk_settings</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_node.test_auto_detach_volume_when_node_is_cordoned"><code class="name flex">
+<span>def <span class="ident">test_auto_detach_volume_when_node_is_cordoned</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test auto detach volume when node is cordoned</p>
+<ol>
+<li>Set <code>detach-manually-attached-volumes-when-cordoned</code> to <code>false</code>.</li>
+<li>Create a volume and attached to the node through API (manually).</li>
+<li>Cordon the node.</li>
+<li>Set <code>detach-manually-attached-volumes-when-cordoned</code> to <code>true</code>.</li>
+<li>Volume will be detached automatically.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_disable_scheduling_on_cordoned_node"><code class="name flex">
+<span>def <span class="ident">test_disable_scheduling_on_cordoned_node</span></span>(<span>client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: schedule replica based on
+<code>Disable Scheduling On Cordoned Node</code> setting</p>
+<ol>
+<li>Set <code>Disable Scheduling On Cordoned Node</code> to true.</li>
+<li>Set <code>Replica Soft Anti-Affinity</code> to false.</li>
+<li>Set cordon on one node.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Set <code>Disable Scheduling On Cordoned Node</code> to false.</li>
+<li>Automatically the scheduler should creates three replicas
+from step 5 failure.</li>
+<li>Attach this volume, write data to it and check the data.</li>
+<li>Delete the test volume.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled"><code class="name flex">
+<span>def <span class="ident">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</span></span>(<span>client, volume_name, request, settings_reset, reset_disk_settings)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:</p>
+<ol>
+<li>Disable the setting <code>Replica Node Level Soft Anti-affinity</code></li>
+<li>Create a volume. Make sure there is a replica on each worker node.</li>
+<li>Write some data to the volume.</li>
+<li>Add a new schedulable disk to node-1.</li>
+<li>Disable the scheduling and enable eviction for the old disk on node-1.</li>
+<li>Verify that the replica on the old disk move to the new disk</li>
+<li>Make replica count as 1, Delete the replicas on other 2 nodes.
+Verify the data from the volume.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_disk_migration"><code class="name flex">
+<span>def <span class="ident">test_disk_migration</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Disable the node soft anti-affinity.</li>
+<li>Create a new host disk.</li>
+<li>Disable the default disk and add the extra disk with scheduling enabled
+for the current node.</li>
+<li>Launch a Longhorn volume with 1 replica.
+Then verify the only replica is scheduled to the new disk.</li>
+<li>Write random data to the volume then verify the data.</li>
+<li>Detach the volume.</li>
+<li>Unmount then remount the disk to another path. (disk migration)</li>
+<li>Create another Longhorn disk based on the migrated path.</li>
+<li>Verify the Longhorn disk state.</li>
+<li>The Longhorn disk added before the migration should
+become "unschedulable".</li>
+<li>The Longhorn disk created after the migration should
+become "schedulable".</li>
+<li>Verify the replica DiskID and the path is updated.</li>
+<li>Attach the volume. Then verify the state and the data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_do_not_react_to_brief_kubelet_restart"><code class="name flex">
+<span>def <span class="ident">test_do_not_react_to_brief_kubelet_restart</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the node controller ignores Ready == False due to KubeletNotReady for
+ten seconds before reacting.</p>
+<p>Repeat the following five times:
+1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+are running on.
+2. Kill the kubelet process (e.g. <code>pkill kubelet</code>).
+3. Verify status.conditions[type == Ready] != False for the Longhorn node
+we are running on at any point for at least ten seconds.</p></div>
+</dd>
+<dt id="tests.test_node.test_drain_with_block_for_eviction_failure"><code class="name flex">
+<span>def <span class="ident">test_drain_with_block_for_eviction_failure</span></span>(<span>client, core_api, volume_name, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test drain never completes with node-drain-policy block-for-eviction</p>
+<ol>
+<li>Set <code>node-drain-policy</code> to <code>block-for-eviction</code>.</li>
+<li>Create a volume.</li>
+<li>Ensure (through soft anti-affinity, high replica count, and/or not
+enough disks) that an evicted replica of the volume cannot be scheduled
+elsewhere.</li>
+<li>Write data to the volume.</li>
+<li>Drain a node one of the volume's replicas is scheduled to.</li>
+<li>While the drain is ongoing:</li>
+<li>Verify that <code>node.status.autoEvicting == true</code>.</li>
+<li>Verify that <code>replica.spec.evictionRequested == true</code>.</li>
+<li>Verify the drain never completes.</li>
+<li>Stop the drain, check volume is healthy and data correct</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_drain_with_block_for_eviction_if_contains_last_replica_success"><code class="name flex">
+<span>def <span class="ident">test_drain_with_block_for_eviction_if_contains_last_replica_success</span></span>(<span>client, core_api, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test drain completes after evicting replicas with node-drain-policy
+block-for-eviction-if-contains-last-replica</p>
+<ol>
+<li>Set <code>node-drain-policy</code> to
+<code>block-for-eviction-if-contains-last-replica</code>.</li>
+<li>Create one volume with a single replica and another volume with three
+replicas.</li>
+<li>Ensure (through soft anti-affinity, low replica count, and/or enough
+disks) that evicted replicas of both volumes can be scheduled elsewhere.</li>
+<li>Write data to the volumes.</li>
+<li>Drain a node both volumes have a replica scheduled to.</li>
+<li>While the drain is ongoing:</li>
+<li>Verify that the volume with three replicas becomes degraded.</li>
+<li>Verify that <code>node.status.autoEvicting == true</code>.</li>
+<li>Optionally verify that <code>replica.spec.evictionRequested == true</code> on the
+replica for the volume that only has one.</li>
+<li>Optionally verify that <code>replica.spec.evictionRequested == false</code> on
+the replica for the volume that has three.</li>
+<li>Verify the drain completes.</li>
+<li>Uncordon the node.</li>
+<li>Verify the replica for the volume with one replica has moved to a
+different node.</li>
+<li>Verify the replica for the volume with three replicas has not moved.</li>
+<li>Verify that <code>node.status.autoEvicting == false</code>.</li>
+<li>Verify that <code>replica.spec.evictionRequested == false</code> on all replicas.</li>
+<li>Verify the the data in both volumes.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_drain_with_block_for_eviction_success"><code class="name flex">
+<span>def <span class="ident">test_drain_with_block_for_eviction_success</span></span>(<span>client, core_api, volume_name, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test drain completes after evicting replica with node-drain-policy
+block-for-eviction</p>
+<ol>
+<li>Set <code>node-drain-policy</code> to <code>block-for-eviction</code>.</li>
+<li>Create a volume.</li>
+<li>Ensure (through soft anti-affinity, low replica count, and/or enough
+disks) that an evicted replica of the volume can be scheduled elsewhere.</li>
+<li>Write data to the volume.</li>
+<li>Drain a node one of the volume's replicas is scheduled to.</li>
+<li>While the drain is ongoing:</li>
+<li>Verify that <code>node.status.autoEvicting == true</code>.</li>
+<li>Optionally verify that <code>replica.spec.evictionRequested == true</code>.</li>
+<li>Verify the drain completes.</li>
+<li>Uncordon the node.</li>
+<li>Verify the replica on the drained node has moved to a different one.</li>
+<li>Verify that <code>node.status.autoEvicting == false</code>.</li>
+<li>Verify that <code>replica.spec.evictionRequested == false</code>.</li>
+<li>Verify the volume's data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_config_annotation"><code class="name flex">
+<span>def <span class="ident">test_node_config_annotation</span></span>(<span>client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node feature: default disks/node configuration</p>
+<ol>
+<li>Set node 0 label and annotation.</li>
+<li>Set node 1 label but with invalid annotation (invalid path and tag)</li>
+<li>Cleanup disks on node 0 and 1.<ol>
+<li>The initial default disk will not be recreated.</li>
+</ol>
+</li>
+<li>Enable setting <code>create default disk labeled nodes</code></li>
+<li>Wait for node tag to update on node 0.</li>
+<li>Verify node 0 has correct disk and tags set.</li>
+<li>Verify node 1 has no disk or tag.</li>
+<li>Update node 1's label and tag to be valid</li>
+<li>Verify now node 1 has correct disk and tags set</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_config_annotation_invalid"><code class="name flex">
+<span>def <span class="ident">test_node_config_annotation_invalid</span></span>(<span>client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test invalid node annotations for default disks/node configuration</p>
+<p>Case1: The invalid disk annotation shouldn't intervene the node controller.</p>
+<ol>
+<li>Set invalid disk annotation</li>
+<li>The node tag or disks won't be updated</li>
+<li>Create a new disk. It will be updated by the node controller.</li>
+</ol>
+<p>Case2: The existing node disks keep unchanged even if the annotation is
+corrected.</p>
+<ol>
+<li>Set valid disk annotation but set <code>allowScheduling</code> to false, etc.</li>
+<li>Make sure the current disk won't change</li>
+</ol>
+<p>Case3: the correct annotation should be applied after cleaning up all disks</p>
+<ol>
+<li>Delete all the disks on the node</li>
+<li>Wait for the config from disk annotation applied</li>
+</ol>
+<p>Case4: The invalid tag annotation shouldn't intervene the node controller.</p>
+<ol>
+<li>Cleanup the node annotation and remove the node disks/tags</li>
+<li>Set invalid tag annotation</li>
+<li>Disk and tags configuration will not be applied</li>
+<li>Disk and tags can still be updated on the node</li>
+</ol>
+<p>Case5: The existing node keep unchanged even if the tag annotation is fixed
+up.</p>
+<ol>
+<li>With existing tags, change tag annotation.</li>
+<li>It won't change the current node's tag</li>
+</ol>
+<p>Case6: Clean up all node tags then the correct annotation should be applied</p>
+<ol>
+<li>Clean the current tags</li>
+<li>New tags from node annotation should be applied</li>
+</ol>
+<p>Case7: Same disk name in annotation shouldn't intereven the node controller
+1. Create one disk for node
+2. Set the same name in annotation and set label and enable
+"Create Default Disk on Labeled Nodes" in settings.
+3. The node tag or disks won't be updated.</p></div>
+</dd>
+<dt id="tests.test_node.test_node_config_annotation_missing"><code class="name flex">
+<span>def <span class="ident">test_node_config_annotation_missing</span></span>(<span>client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node labeled for configuration but no annotation</p>
+<ol>
+<li>Set setting <code>create default disk labeled nodes</code> to true</li>
+<li>Set the config label on node 0 but leave annotation empty</li>
+<li>Verify disk update works.</li>
+<li>Verify tag update works</li>
+<li>Verify using tag annotation for configuration works.</li>
+<li>After remove the tag annotation, verify unset tag node works fine.</li>
+<li>Set tag annotation again. Verify node updated for the tag.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_controller_sync_disk_state"><code class="name flex">
+<span>def <span class="ident">test_node_controller_sync_disk_state</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node controller to sync disk state</p>
+<ol>
+<li>Set setting <code>StorageMinimalAvailablePercentage</code> to 100</li>
+<li>All the disks will become <code>unschedulable</code>.</li>
+<li>Restore setting <code>StorageMinimalAvailablePercentage</code> to previous</li>
+<li>All the disks will become <code>schedulable</code>.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_controller_sync_storage_available"><code class="name flex">
+<span>def <span class="ident">test_node_controller_sync_storage_available</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node controller sync storage available correctly</p>
+<ol>
+<li>Create a host disk <code>test_disk</code> on the current node</li>
+<li>Write 1MiB data to the disk, and run <code>sync</code></li>
+<li>Verify the disk <code>storageAvailable</code> will update to include the file</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_controller_sync_storage_scheduled"><code class="name flex">
+<span>def <span class="ident">test_node_controller_sync_storage_scheduled</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node controller sync storage scheduled correctly</p>
+<ol>
+<li>Wait until no disk has anything scheduled</li>
+<li>Create a volume with "number of nodes" replicas</li>
+<li>Confirm that each disks now has "volume size" scheduled</li>
+<li>Confirm every disks are still schedulable.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_default_disk_added_back_with_extra_disk_unmounted"><code class="name flex">
+<span>def <span class="ident">test_node_default_disk_added_back_with_extra_disk_unmounted</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[Node] Test adding default disk back with extra disk is unmounted
+on the node</p>
+<ol>
+<li>Clean up all disks on node 1.</li>
+<li>Recreate the default disk with "allowScheduling" disabled for
+node 1.</li>
+<li>Create a Longhorn volume and attach it to node 1.</li>
+<li>Use the Longhorn volume as an extra host disk and
+enable "allowScheduling" of the default disk for node 1.</li>
+<li>Verify all disks on node 1 are "Schedulable".</li>
+<li>Delete the default disk on node 1.</li>
+<li>Unmount the extra disk on node 1.
+And wait for it becoming "Unschedulable".</li>
+<li>Create and add the default disk back on node 1.</li>
+<li>Wait and verify the default disk should become "Schedulable".</li>
+<li>Mount extra disk back on node 1.</li>
+<li>Wait and verify this extra disk should become "Schedulable".</li>
+<li>Delete the host disk <code>extra_disk</code>.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_default_disk_labeled"><code class="name flex">
+<span>def <span class="ident">test_node_default_disk_labeled</span></span>(<span>client, core_api, random_disk_path, reset_default_disk_label, reset_disk_settings)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node feature: create default Disk according to the node label</p>
+<p>Makes sure the created Disk matches the Default Data Path Setting.</p>
+<ol>
+<li>Add labels to node 0 and 1, don't add label to node 2.</li>
+<li>Remove all the disks on node 1 and 2.<ol>
+<li>The initial default disk will not be recreated.</li>
+</ol>
+</li>
+<li>Set setting <code>default disk path</code> to a random disk path.</li>
+<li>Set setting <code>create default disk labeled node</code> to true.</li>
+<li>Check node 0. It should still use the previous default disk path.<ol>
+<li>Due to we didn't remove the disk from node 0.</li>
+</ol>
+</li>
+<li>Check node 1. A new disk should be created at the random disk path.</li>
+<li>Check node 2. There is still no disks</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_disk_update"><code class="name flex">
+<span>def <span class="ident">test_node_disk_update</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test update node disks</p>
+<p>The test will use Longhorn to create disks on the node.</p>
+<ol>
+<li>Get the current node</li>
+<li>Try to delete all the disks. It should fail due to scheduling is enabled</li>
+<li>Create two disks <code>disk1</code> and <code>disk2</code>, attach them to the current node.</li>
+<li>Add two disks to the current node.</li>
+<li>Verify two extra disks have been added to the node</li>
+<li>Disable the two disks' scheduling, and set StorageReserved</li>
+<li>Update the two disks.</li>
+<li>Validate all the disks properties.</li>
+<li>Delete other two disks. Validate deletion works.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_eviction"><code class="name flex">
+<span>def <span class="ident">test_node_eviction</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node eviction (assuming this is a 3 nodes cluster)</p>
+<p>Case: node 1, 3 to node 1, 2 eviction
+1. Disable scheduling on node 2.
+2. Create pv, pvc, pod with volume of 2 replicas.
+3. Write some data and get the checksum.
+4. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+5. Set 'Eviction Requested' to 'true' and disable scheduling on node 3.
+6. Check volume 'healthy' and wait for replicas running on node 1 and 2.
+7. Check volume data checksum.</p></div>
+</dd>
+<dt id="tests.test_node.test_node_eviction_multiple_volume"><code class="name flex">
+<span>def <span class="ident">test_node_eviction_multiple_volume</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node eviction (assuming this is a 3 nodes cluster)</p>
+<ol>
+<li>Disable scheduling on node 1.</li>
+<li>Create pv, pvc, pod with volume 1 of 2 replicas.</li>
+<li>Write some data to volume 1 and get the checksum.</li>
+<li>Create pv, pvc, pod with volume 2 of 2 replicas.</li>
+<li>Write some data to volume 2 and get the checksum.</li>
+<li>Set 'Eviction Requested' to 'true' and disable scheduling on node 2.</li>
+<li>Set 'Eviction Requested' to 'false' and enable scheduling on node 1.</li>
+<li>Check volume 'healthy' and wait for replicas running on node 1 and 3.</li>
+<li>delete pods to detach volume 1 and 2.</li>
+<li>Set 'Eviction Requested' to 'false' and enable scheduling on node 2.</li>
+<li>Set 'Eviction Requested' to 'true' and disable scheduling on node 1.</li>
+<li>Wait for replicas running on node 2 and 3.</li>
+<li>Create pod 1 and pod 2. Volume 1 and 2 will be automatically
+attached.</li>
+<li>Check volume 'healthy', and replicas running on node 2 and 3.</li>
+<li>Check volume data checksum for volume 1 and 2.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_eviction_no_schedulable_node"><code class="name flex">
+<span>def <span class="ident">test_node_eviction_no_schedulable_node</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node eviction (assuming this is a 3 nodes cluster)</p>
+<ol>
+<li>Disable scheduling on node 3.</li>
+<li>Create pv, pvc, pod with volume of 2 replicas.</li>
+<li>Write some data and get the checksum.</li>
+<li>Disable scheduling and set 'Eviction Requested' to 'true' on node 1.</li>
+<li>Volume should be failed to schedule new replica.</li>
+<li>Set 'Eviction Requested' to 'false' to cancel node 1 eviction.</li>
+<li>Check replica has the same hostID.</li>
+<li>Check volume data checksum.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_node_eviction_soft_anti_affinity"><code class="name flex">
+<span>def <span class="ident">test_node_eviction_soft_anti_affinity</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node eviction (assuming this is a 3 nodes cluster)</p>
+<p>Case #1: node 1,2 to node 2 eviction
+1. Disable scheduling on node 3.
+2. Create pv, pvc, pod with volume of 2 replicas.
+3. Write some data and get the checksum.
+7. Set 'Eviction Requested' to 'true' and disable scheduling on node 1.
+8. Set 'Replica Node Level Soft Anti-Affinity' to 'true'.
+9. Check volume 'healthy' and wait for replicas running on node 2
+Case #2: node 2 to node 1, 3 eviction
+10. Enable scheduling on node 1 and 3.
+11. Set 'Replica Node Level Soft Anti-Affinity' to 'false'.
+12. Set 'Eviction Requested' to 'true' and disable scheduling on node 2.
+13. Check volume 'healthy' and wait for replicas running on node 1 and 3.
+14. Check volume data checksum.</p></div>
+</dd>
+<dt id="tests.test_node.test_node_umount_disk"><code class="name flex">
+<span>def <span class="ident">test_node_umount_disk</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[Node] Test umount and delete the extra disk on the node</p>
+<ol>
+<li>Create host disk and attach it to the current node</li>
+<li>Disable the existing disk's scheduling on the current node</li>
+<li>Add the disk to the current node</li>
+<li>Wait for node to recognize the disk</li>
+<li>Create a volume with "number of nodes" replicas</li>
+<li>Umount the disk from the host</li>
+<li>Verify the disk <code>READY</code> condition become false.<ol>
+<li>Maximum and available storage become zero.</li>
+<li>No change to storage scheduled and storage reserved.</li>
+</ol>
+</li>
+<li>Try to delete the extra disk, it should fail due to need to disable
+scheduling first</li>
+<li>Update the other disk on the node to be allow scheduling. Disable the
+scheduling for the extra disk</li>
+<li>Mount the disk back</li>
+<li>Verify the disk <code>READY</code> condition become true, and other states</li>
+<li>Umount and delete the disk.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_datapath_cleanup"><code class="name flex">
+<span>def <span class="ident">test_replica_datapath_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replicas data path cleanup</p>
+<p>Test prerequisites:
+- Enable Replica Node Level Soft Anti-Affinity setting</p>
+<ol>
+<li>Create host disk <code>extra_disk</code> and add it to the current node.</li>
+<li>Disable all the disks except for the ones on the current node.</li>
+<li>Create a volume with 5 replicas (soft anti-affinity on)<ol>
+<li>To make sure both default disk and extra disk can have one replica</li>
+<li>Current we don't have anti-affinity for disks on the same node</li>
+</ol>
+</li>
+<li>Verify the data path for replicas are created.</li>
+<li>Delete the volume.</li>
+<li>Verify the data path for replicas are deleted.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_exceed_over_provisioning"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_exceed_over_provisioning</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: exceeding overprovisioning parameter</p>
+<ol>
+<li>Set setting <code>overprovisioning</code> to 100 (default)</li>
+<li>Update every disks to set 1G available for scheduling</li>
+<li>Try to schedule a volume of 2G. Volume scheduled condition should be
+false</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_just_under_over_provisioning"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_just_under_over_provisioning</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: just under overprovisioning parameter</p>
+<ol>
+<li>Set setting <code>overprovisioning</code> to 100 (default)</li>
+<li>Get the maximum size of all the disks</li>
+<li>Create a volume using maximum_size - 2MiB as the volume size.</li>
+<li>Volume scheduled condition should be true.</li>
+<li>Make sure every replica landed on different nodes's default disk.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_large_volume_fit_small_disk"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_large_volume_fit_small_disk</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: not schedule a large volume to small disk</p>
+<ol>
+<li>Create a host disk <code>small_disk</code> and attach i to the current node.</li>
+<li>Create a new large volume.</li>
+<li>Verify the volume wasn't scheduled on the <code>small_disk</code>.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_no_disks"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_no_disks</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler with no disks available</p>
+<ol>
+<li>Delete all the disks on all the nodes</li>
+<li>Create a volume.</li>
+<li>Wait for volume condition <code>scheduled</code> to be false.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_rebuild_restore_is_too_big"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_rebuild_restore_is_too_big</span></span>(<span>set_random_backupstore, client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: rebuild/restore can be too big to fit a disk</p>
+<ol>
+<li>Create a small host disk with <code>SIZE</code> and add it to the current node.</li>
+<li>Create a volume with size <code>SIZE</code>.</li>
+<li>Disable all scheduling except for the small disk.</li>
+<li>Write a data size <code>SIZE * 0.9</code> to the volume and make a backup</li>
+<li>Create a restored volume with 1 replica from backup.<ol>
+<li>Verify the restored volume cannot be scheduled since the existing
+data cannot fit in the small disk</li>
+</ol>
+</li>
+<li>Delete a replica of volume.<ol>
+<li>Verify the volume reports <code>scheduled = false</code> due to unable to find
+a suitable disk for rebuilding replica, since the replica with the
+existing data cannot fit in the small disk</li>
+</ol>
+</li>
+<li>Enable the scheduling for other disks, disable scheduling for small disk</li>
+<li>Verify the volume reports <code>scheduled = true</code>. And verify the data.</li>
+<li>Cleanup the volume.</li>
+<li>Verify the restored volume reports <code>scheduled = true</code>.</li>
+<li>Wait for the restored volume to complete restoration, then check data.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_too_large_volume_fit_any_disks"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_too_large_volume_fit_any_disks</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: volume is too large to fit any disks</p>
+<ol>
+<li>Disable all default disks on all nodes by setting storageReserved to
+maximum size</li>
+<li>Create volume.</li>
+<li>Verify the volume scheduled condition is false.</li>
+<li>Reduce the storageReserved on all the disks to just enough for one
+replica.</li>
+<li>The volume should automatically change scheduled condition to true</li>
+<li>Attach the volume.</li>
+<li>Make sure every replica landed on different nodes's default disk.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_update_minimal_available"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_update_minimal_available</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: update setting <code>minimal available</code></p>
+<ol>
+<li>Set setting <code>minimal available</code> to 100% (means no one can schedule)</li>
+<li>Verify for all disks' schedulable condition to become false.</li>
+<li>Create a volume. Verify it's unschedulable.</li>
+<li>Set setting <code>minimal available</code> back to default setting</li>
+<li>Disk should become schedulable now.</li>
+<li>Volume should be scheduled now.</li>
+<li>Attach the volume.</li>
+<li>Make sure every replica landed on different nodes's default disk.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_replica_scheduler_update_over_provisioning"><code class="name flex">
+<span>def <span class="ident">test_replica_scheduler_update_over_provisioning</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test replica scheduler: update overprovisioning setting</p>
+<ol>
+<li>Set setting <code>overprovisioning</code> to 0. (disable all scheduling)</li>
+<li>Create a new volume. Verify volume's <code>scheduled</code> condition is false.</li>
+<li>Set setting <code>over provisioning</code> to 200%.</li>
+<li>Verify volume's <code>scheduled</code> condition now become true.</li>
+<li>Attach the volume.</li>
+<li>Make sure every replica landed on different nodes's default disk.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.test_update_node"><code class="name flex">
+<span>def <span class="ident">test_update_node</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test update node scheduling</p>
+<ol>
+<li>Get list of nodes</li>
+<li>Update scheduling to false for current node</li>
+<li>Read back to verify</li>
+<li>Update scheduling to true for current node</li>
+<li>Read back to verify</li>
+</ol></div>
+</dd>
+<dt id="tests.test_node.wait_drain_complete"><code class="name flex">
+<span>def <span class="ident">wait_drain_complete</span></span>(<span>future, timeout, copmpleted=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait concurrent.futures object complete in a duration</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_node.check_all_replicas_evict_state" href="#tests.test_node.check_all_replicas_evict_state">check_all_replicas_evict_state</a></code></li>
+<li><code><a title="tests.test_node.check_node_auto_evict_state" href="#tests.test_node.check_node_auto_evict_state">check_node_auto_evict_state</a></code></li>
+<li><code><a title="tests.test_node.check_replica_evict_state" href="#tests.test_node.check_replica_evict_state">check_replica_evict_state</a></code></li>
+<li><code><a title="tests.test_node.drain_node" href="#tests.test_node.drain_node">drain_node</a></code></li>
+<li><code><a title="tests.test_node.get_all_replica_name" href="#tests.test_node.get_all_replica_name">get_all_replica_name</a></code></li>
+<li><code><a title="tests.test_node.get_replica_detail" href="#tests.test_node.get_replica_detail">get_replica_detail</a></code></li>
+<li><code><a title="tests.test_node.make_replica_on_specific_node" href="#tests.test_node.make_replica_on_specific_node">make_replica_on_specific_node</a></code></li>
+<li><code><a title="tests.test_node.random_disk_path" href="#tests.test_node.random_disk_path">random_disk_path</a></code></li>
+<li><code><a title="tests.test_node.reset_default_disk_label" href="#tests.test_node.reset_default_disk_label">reset_default_disk_label</a></code></li>
+<li><code><a title="tests.test_node.reset_disk_and_tag_annotations" href="#tests.test_node.reset_disk_and_tag_annotations">reset_disk_and_tag_annotations</a></code></li>
+<li><code><a title="tests.test_node.reset_disk_settings" href="#tests.test_node.reset_disk_settings">reset_disk_settings</a></code></li>
+<li><code><a title="tests.test_node.test_auto_detach_volume_when_node_is_cordoned" href="#tests.test_node.test_auto_detach_volume_when_node_is_cordoned">test_auto_detach_volume_when_node_is_cordoned</a></code></li>
+<li><code><a title="tests.test_node.test_disable_scheduling_on_cordoned_node" href="#tests.test_node.test_disable_scheduling_on_cordoned_node">test_disable_scheduling_on_cordoned_node</a></code></li>
+<li><code><a title="tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled" href="#tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</a></code></li>
+<li><code><a title="tests.test_node.test_disk_migration" href="#tests.test_node.test_disk_migration">test_disk_migration</a></code></li>
+<li><code><a title="tests.test_node.test_do_not_react_to_brief_kubelet_restart" href="#tests.test_node.test_do_not_react_to_brief_kubelet_restart">test_do_not_react_to_brief_kubelet_restart</a></code></li>
+<li><code><a title="tests.test_node.test_drain_with_block_for_eviction_failure" href="#tests.test_node.test_drain_with_block_for_eviction_failure">test_drain_with_block_for_eviction_failure</a></code></li>
+<li><code><a title="tests.test_node.test_drain_with_block_for_eviction_if_contains_last_replica_success" href="#tests.test_node.test_drain_with_block_for_eviction_if_contains_last_replica_success">test_drain_with_block_for_eviction_if_contains_last_replica_success</a></code></li>
+<li><code><a title="tests.test_node.test_drain_with_block_for_eviction_success" href="#tests.test_node.test_drain_with_block_for_eviction_success">test_drain_with_block_for_eviction_success</a></code></li>
+<li><code><a title="tests.test_node.test_node_config_annotation" href="#tests.test_node.test_node_config_annotation">test_node_config_annotation</a></code></li>
+<li><code><a title="tests.test_node.test_node_config_annotation_invalid" href="#tests.test_node.test_node_config_annotation_invalid">test_node_config_annotation_invalid</a></code></li>
+<li><code><a title="tests.test_node.test_node_config_annotation_missing" href="#tests.test_node.test_node_config_annotation_missing">test_node_config_annotation_missing</a></code></li>
+<li><code><a title="tests.test_node.test_node_controller_sync_disk_state" href="#tests.test_node.test_node_controller_sync_disk_state">test_node_controller_sync_disk_state</a></code></li>
+<li><code><a title="tests.test_node.test_node_controller_sync_storage_available" href="#tests.test_node.test_node_controller_sync_storage_available">test_node_controller_sync_storage_available</a></code></li>
+<li><code><a title="tests.test_node.test_node_controller_sync_storage_scheduled" href="#tests.test_node.test_node_controller_sync_storage_scheduled">test_node_controller_sync_storage_scheduled</a></code></li>
+<li><code><a title="tests.test_node.test_node_default_disk_added_back_with_extra_disk_unmounted" href="#tests.test_node.test_node_default_disk_added_back_with_extra_disk_unmounted">test_node_default_disk_added_back_with_extra_disk_unmounted</a></code></li>
+<li><code><a title="tests.test_node.test_node_default_disk_labeled" href="#tests.test_node.test_node_default_disk_labeled">test_node_default_disk_labeled</a></code></li>
+<li><code><a title="tests.test_node.test_node_disk_update" href="#tests.test_node.test_node_disk_update">test_node_disk_update</a></code></li>
+<li><code><a title="tests.test_node.test_node_eviction" href="#tests.test_node.test_node_eviction">test_node_eviction</a></code></li>
+<li><code><a title="tests.test_node.test_node_eviction_multiple_volume" href="#tests.test_node.test_node_eviction_multiple_volume">test_node_eviction_multiple_volume</a></code></li>
+<li><code><a title="tests.test_node.test_node_eviction_no_schedulable_node" href="#tests.test_node.test_node_eviction_no_schedulable_node">test_node_eviction_no_schedulable_node</a></code></li>
+<li><code><a title="tests.test_node.test_node_eviction_soft_anti_affinity" href="#tests.test_node.test_node_eviction_soft_anti_affinity">test_node_eviction_soft_anti_affinity</a></code></li>
+<li><code><a title="tests.test_node.test_node_umount_disk" href="#tests.test_node.test_node_umount_disk">test_node_umount_disk</a></code></li>
+<li><code><a title="tests.test_node.test_replica_datapath_cleanup" href="#tests.test_node.test_replica_datapath_cleanup">test_replica_datapath_cleanup</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_exceed_over_provisioning" href="#tests.test_node.test_replica_scheduler_exceed_over_provisioning">test_replica_scheduler_exceed_over_provisioning</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_just_under_over_provisioning" href="#tests.test_node.test_replica_scheduler_just_under_over_provisioning">test_replica_scheduler_just_under_over_provisioning</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_large_volume_fit_small_disk" href="#tests.test_node.test_replica_scheduler_large_volume_fit_small_disk">test_replica_scheduler_large_volume_fit_small_disk</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_no_disks" href="#tests.test_node.test_replica_scheduler_no_disks">test_replica_scheduler_no_disks</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_rebuild_restore_is_too_big" href="#tests.test_node.test_replica_scheduler_rebuild_restore_is_too_big">test_replica_scheduler_rebuild_restore_is_too_big</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_too_large_volume_fit_any_disks" href="#tests.test_node.test_replica_scheduler_too_large_volume_fit_any_disks">test_replica_scheduler_too_large_volume_fit_any_disks</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_update_minimal_available" href="#tests.test_node.test_replica_scheduler_update_minimal_available">test_replica_scheduler_update_minimal_available</a></code></li>
+<li><code><a title="tests.test_node.test_replica_scheduler_update_over_provisioning" href="#tests.test_node.test_replica_scheduler_update_over_provisioning">test_replica_scheduler_update_over_provisioning</a></code></li>
+<li><code><a title="tests.test_node.test_update_node" href="#tests.test_node.test_update_node">test_update_node</a></code></li>
+<li><code><a title="tests.test_node.wait_drain_complete" href="#tests.test_node.wait_drain_complete">wait_drain_complete</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

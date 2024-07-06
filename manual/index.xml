@@ -4,8 +4,7 @@
     <title>Manual Test Cases on Longhorn Manual Test Cases</title>
     <link>https://longhorn.github.io/longhorn-tests/manual/</link>
     <description>Recent content in Manual Test Cases on Longhorn Manual Test Cases</description>
-    <generator>Hugo</generator>
-    <language>en-us</language>
-    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -871,7 +871,7 @@ Ref <a href="https://github.com/longhorn/longhorn/issues/5208">5208</a></p>
 <li>All pods on node-2 are evicted except the replica instance manager pod.</li>
 <li>The message like below keeps appearing.
 <pre tabindex="0"><code>evicting pod longhorn-system/instance-manager-r-xxxxxxxx
-error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
+error when evicting pods/&quot;instance-manager-r-xxxxxxxx&quot; -n &quot;longhorn-system&quot; (will retry after 5s): Cannot evict pod as it would violate the pod's disruption budget.
 </code></pre></li>
 </ul>
 <h3 id="2-upgrade-kubernetes-for-k3s-cluster-with-standalone-system-upgrade-controller-deployment">2. Upgrade Kubernetes for k3s cluster with standalone System Upgrade Controller deployment</h3>
@@ -898,7 +898,7 @@ error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-
       - key: node-role.kubernetes.io/master
         operator: In
         values:
-        - &#34;true&#34;
+        - &quot;true&quot;
     serviceAccountName: system-upgrade
     drain:
       force: true

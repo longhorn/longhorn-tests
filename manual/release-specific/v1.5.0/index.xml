@@ -4,22 +4,36 @@
     <title>v1.5.0 on Longhorn Manual Test Cases</title>
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/</link>
     <description>Recent content in v1.5.0 on Longhorn Manual Test Cases</description>
-    <generator>Hugo</generator>
-    <language>en-us</language>
-    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test upgrade responder collecting extra info</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-upgrade-responder-collect-extra-info/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-upgrade-responder-collect-extra-info/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/5235&#xA;Test step Given Patch build and deploy Longhorn.&#xA;diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -&#x9;checkUpgradeURL = &amp;#34;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;#34; +&#x9;checkUpgradeURL = &amp;#34;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;#34; ) type SettingController struct { Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&#xA;And Deploy upgrade responder stack.&#xA;When Wait 1~2 hours for collection data to send to the influxDB database.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/5235
+Test step Given Patch build and deploy Longhorn.
+diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -	checkUpgradeURL = &amp;quot;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;quot; +	checkUpgradeURL = &amp;quot;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;quot; ) type SettingController struct {  Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+ And Deploy upgrade responder stack.
+When Wait 1~2 hours for collection data to send to the influxDB database.</description>
     </item>
+    
     <item>
       <title>Test Volume Replica Zone Soft Anti-Affinity Setting</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/5358&#xA;Test step - Enable Volume Replica Zone Soft Anti-Affinity Setting Given EKS Cluster with 3 nodes across 2 AWS zones (zone#1, zone#2)&#xA;And Deploy Longhorn v1.5.0&#xA;And Disable global replica zone anti-affinity&#xA;And Create a volume with 2 replicas, replicaZoneSoftAntiAffinity=enabled and attach it to a node.&#xA;When Scale volume replicas to 3&#xA;Then New replica should be scheduled&#xA;And No error messages in the longhorn manager pod logs.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/5358
+Test step - Enable Volume Replica Zone Soft Anti-Affinity Setting Given EKS Cluster with 3 nodes across 2 AWS zones (zone#1, zone#2)
+And Deploy Longhorn v1.5.0
+And Disable global replica zone anti-affinity
+And Create a volume with 2 replicas, replicaZoneSoftAntiAffinity=enabled and attach it to a node.
+When Scale volume replicas to 3
+Then New replica should be scheduled
+And No error messages in the longhorn manager pod logs.</description>
     </item>
+    
   </channel>
 </rss>

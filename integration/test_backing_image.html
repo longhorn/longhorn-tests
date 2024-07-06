@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
+<title>tests.test_backing_image API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_backing_image</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_backing_image.backing_image_basic_operation_test"><code class="name flex">
+<span>def <span class="ident">backing_image_basic_operation_test</span></span>(<span>client, volume_name, bi_name, bi_url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Backing Image APIs.</p>
+<ol>
+<li>Create a backing image.</li>
+<li>Create and attach a Volume with the backing image set.</li>
+<li>Verify that the all disk states in the backing image are "downloaded".</li>
+<li>Try to use the API to manually clean up one disk for the backing image
+but get failed.</li>
+<li>Try to use the API to directly delete the backing image
+but get failed.</li>
+<li>Delete the volume.</li>
+<li>Use the API to manually clean up one disk for the backing image</li>
+<li>Delete the backing image.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_backing_image.backing_image_cleanup"><code class="name flex">
+<span>def <span class="ident">backing_image_cleanup</span></span>(<span>core_api, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.backing_image_content_test"><code class="name flex">
+<span>def <span class="ident">backing_image_content_test</span></span>(<span>client, volume_name_prefix, bi_name, bi_url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify the content of the Backing Image is accessible and read-only for
+all volumes.</p>
+<ol>
+<li>Create a backing image. (Done by the caller)</li>
+<li>Create a Volume with the backing image set then attach it to host node.</li>
+<li>Verify that the all disk states in the backing image are "downloaded".</li>
+<li>Verify volume can be directly mounted and there is already data in the
+filesystem due to the backing image.</li>
+<li>Verify the volume r/w.</li>
+<li>Launch one more volume with the same backing image.</li>
+<li>Verify the data content of the new volume is the same as the data in
+step 4.</li>
+<li>Do cleanup. (Done by the caller)</li>
+</ol></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_auto_resync"><code class="name flex">
+<span>def <span class="ident">test_backing_image_auto_resync</span></span>(<span>bi_url, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create a backing image.</li>
+<li>Create and attach a 3-replica volume using the backing image.</li>
+<li>Wait for the attachment complete.</li>
+<li>Manually remove the backing image on the current node.</li>
+<li>Wait for the file state in the disk/on this node become failed.</li>
+<li>Wait for the file recovering automatically.</li>
+<li>Validate the volume.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_basic_operation"><code class="name flex">
+<span>def <span class="ident">test_backing_image_basic_operation</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_cleanup"><code class="name flex">
+<span>def <span class="ident">test_backing_image_cleanup</span></span>(<span>core_api, client)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create multiple backing image.</li>
+<li>Create and attach multiple 3-replica volume using those backing image.</li>
+<li>Wait for the attachment complete.</li>
+<li>Delete the volumes then the backing images.</li>
+<li>Verify all backing image manager pods will be terminated when the last
+backing image is gone.</li>
+<li>Repeat step1 to step5 for multiple times. Make sure each time the test
+is using the same the backing image namings.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_content"><code class="name flex">
+<span>def <span class="ident">test_backing_image_content</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_with_disk_migration"><code class="name flex">
+<span>def <span class="ident">test_backing_image_with_disk_migration</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Update settings:</li>
+<li>Disable Node Soft Anti-affinity.</li>
+<li>Set Replica Replenishment Wait Interval to a relatively long value.</li>
+<li>Create a new host disk.</li>
+<li>Disable the default disk and add the extra disk with scheduling enabled
+for the current node.</li>
+<li>Create a backing image.</li>
+<li>Create and attach a 2-replica volume with the backing image set.
+Then verify:</li>
+<li>there is a replica scheduled to the new disk.</li>
+<li>there are 2 entries in the backing image disk file status map,
+and both are state <code>ready</code>.</li>
+<li>Directly mount the volume (without making filesystem) to a directory.
+Then verify the content of the backing image by checking the existence
+of the directory <code>&lt;Mount point&gt;/guests/</code>.</li>
+<li>Write random data to the mount point then verify the data.</li>
+<li>Unmount the host disk. Then verify:</li>
+<li>The replica in the host disk will be failed.</li>
+<li>The disk state in the backing image will become <code>unknown</code>.</li>
+<li>Remount the host disk to another path. Then create another Longhorn disk
+based on the migrated path (disk migration).</li>
+<li>Verify the following.<ol>
+<li>The disk added in step3 (before the migration) should
+be "unschedulable".</li>
+<li>The disk added in step9 (after the migration) should
+become "schedulable".</li>
+<li>The failed replica will be reused. And the replica DiskID as well as
+the disk path is updated.</li>
+<li>The 2-replica volume r/w works fine.</li>
+<li>The disk state in the backing image will become <code>ready</code> again.</li>
+</ol>
+</li>
+<li>Do cleanup.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_with_wrong_md5sum"><code class="name flex">
+<span>def <span class="ident">test_backing_image_with_wrong_md5sum</span></span>(<span>bi_url, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_backup_labels_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_backup_labels_with_backing_image</span></span>(<span>set_random_backupstore, client, random_labels, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_backup_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_backup_with_backing_image</span></span>(<span>set_random_backupstore, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_csi_backup_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_backup_with_backing_image</span></span>(<span>set_random_backupstore, client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_csi_io_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_io_with_backing_image</span></span>(<span>client, core_api, csi_pv_backingimage, pvc_backingimage, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_csi_mount_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_mount_with_backing_image</span></span>(<span>client, core_api, csi_pv_backingimage, pvc_backingimage, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_engine_live_upgrade_rollback_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_engine_live_upgrade_rollback_with_backing_image</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_engine_live_upgrade_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_engine_live_upgrade_with_backing_image</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_engine_offline_upgrade_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_engine_offline_upgrade_with_backing_image</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_exporting_backing_image_from_volume"><code class="name flex">
+<span>def <span class="ident">test_exporting_backing_image_from_volume</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach the 1st volume.</li>
+<li>Make a filesystem for the 1st volume.</li>
+<li>Export this volume to the 1st backing image
+via the backing image creation HTTP API. And the export type is qcow2.</li>
+<li>Create and attach the 2nd volume which uses the 1st backing image.</li>
+<li>Make sure the 2nd volume can be directly mount.</li>
+<li>Write random data to the mount point then get the checksum.</li>
+<li>Unmount and detach the 2nd volume.</li>
+<li>Export the 2nd volume as the 2nd backing image.
+Remember to set the export type to qcow2.</li>
+<li>Create and attach the 3rd volume which uses the 2nd backing image.</li>
+<li>Directly mount the 3rd volume. Then verify the data in the 3rd volume
+is the same as that of the 2nd volume.</li>
+<li>Do cleanup.</li>
+</ol></div>
+</dd>
+<dt id="tests.test_backing_image.test_ha_backup_deletion_recovery"><code class="name flex">
+<span>def <span class="ident">test_ha_backup_deletion_recovery</span></span>(<span>set_random_backupstore, client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_ha_salvage_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_ha_salvage_with_backing_image</span></span>(<span>client, core_api, disable_auto_salvage, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_ha_simple_recovery_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_ha_simple_recovery_with_backing_image</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_recurring_job_labels_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_labels_with_backing_image</span></span>(<span>set_random_backupstore, client, random_labels, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_snapshot_prune_and_coalesce_simultaneously_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_snapshot_prune_and_coalesce_simultaneously_with_backing_image</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_snapshot_prune_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_snapshot_prune_with_backing_image</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_snapshot_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_snapshot_with_backing_image</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_volume_basic_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_volume_basic_with_backing_image</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_volume_iscsi_basic_with_backing_image"><code class="name flex">
+<span>def <span class="ident">test_volume_iscsi_basic_with_backing_image</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.test_backing_image.test_volume_wait_for_backing_image_condition"><code class="name flex">
+<span>def <span class="ident">test_volume_wait_for_backing_image_condition</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the volume condition "WaitForBackingImage"</p>
+<p>Given
+- Create a BackingImage</p>
+<p>When
+- Creating the Volume with the BackingImage while it is still in progress</p>
+<p>Then
+- The condition "WaitForBackingImage" of the Volume
+would be first True and then change to False when
+the BackingImage is ready and all the replicas are in running state.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_backing_image.backing_image_basic_operation_test" href="#tests.test_backing_image.backing_image_basic_operation_test">backing_image_basic_operation_test</a></code></li>
+<li><code><a title="tests.test_backing_image.backing_image_cleanup" href="#tests.test_backing_image.backing_image_cleanup">backing_image_cleanup</a></code></li>
+<li><code><a title="tests.test_backing_image.backing_image_content_test" href="#tests.test_backing_image.backing_image_content_test">backing_image_content_test</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_auto_resync" href="#tests.test_backing_image.test_backing_image_auto_resync">test_backing_image_auto_resync</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_basic_operation" href="#tests.test_backing_image.test_backing_image_basic_operation">test_backing_image_basic_operation</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_cleanup" href="#tests.test_backing_image.test_backing_image_cleanup">test_backing_image_cleanup</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_content" href="#tests.test_backing_image.test_backing_image_content">test_backing_image_content</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_with_disk_migration" href="#tests.test_backing_image.test_backing_image_with_disk_migration">test_backing_image_with_disk_migration</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_with_wrong_md5sum" href="#tests.test_backing_image.test_backing_image_with_wrong_md5sum">test_backing_image_with_wrong_md5sum</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backup_labels_with_backing_image" href="#tests.test_backing_image.test_backup_labels_with_backing_image">test_backup_labels_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backup_with_backing_image" href="#tests.test_backing_image.test_backup_with_backing_image">test_backup_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_csi_backup_with_backing_image" href="#tests.test_backing_image.test_csi_backup_with_backing_image">test_csi_backup_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_csi_io_with_backing_image" href="#tests.test_backing_image.test_csi_io_with_backing_image">test_csi_io_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_csi_mount_with_backing_image" href="#tests.test_backing_image.test_csi_mount_with_backing_image">test_csi_mount_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_engine_live_upgrade_rollback_with_backing_image" href="#tests.test_backing_image.test_engine_live_upgrade_rollback_with_backing_image">test_engine_live_upgrade_rollback_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_engine_live_upgrade_with_backing_image" href="#tests.test_backing_image.test_engine_live_upgrade_with_backing_image">test_engine_live_upgrade_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_engine_offline_upgrade_with_backing_image" href="#tests.test_backing_image.test_engine_offline_upgrade_with_backing_image">test_engine_offline_upgrade_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_exporting_backing_image_from_volume" href="#tests.test_backing_image.test_exporting_backing_image_from_volume">test_exporting_backing_image_from_volume</a></code></li>
+<li><code><a title="tests.test_backing_image.test_ha_backup_deletion_recovery" href="#tests.test_backing_image.test_ha_backup_deletion_recovery">test_ha_backup_deletion_recovery</a></code></li>
+<li><code><a title="tests.test_backing_image.test_ha_salvage_with_backing_image" href="#tests.test_backing_image.test_ha_salvage_with_backing_image">test_ha_salvage_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_ha_simple_recovery_with_backing_image" href="#tests.test_backing_image.test_ha_simple_recovery_with_backing_image">test_ha_simple_recovery_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_recurring_job_labels_with_backing_image" href="#tests.test_backing_image.test_recurring_job_labels_with_backing_image">test_recurring_job_labels_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_snapshot_prune_and_coalesce_simultaneously_with_backing_image" href="#tests.test_backing_image.test_snapshot_prune_and_coalesce_simultaneously_with_backing_image">test_snapshot_prune_and_coalesce_simultaneously_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_snapshot_prune_with_backing_image" href="#tests.test_backing_image.test_snapshot_prune_with_backing_image">test_snapshot_prune_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_snapshot_with_backing_image" href="#tests.test_backing_image.test_snapshot_with_backing_image">test_snapshot_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_volume_basic_with_backing_image" href="#tests.test_backing_image.test_volume_basic_with_backing_image">test_volume_basic_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_volume_iscsi_basic_with_backing_image" href="#tests.test_backing_image.test_volume_iscsi_basic_with_backing_image">test_volume_iscsi_basic_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_volume_wait_for_backing_image_condition" href="#tests.test_backing_image.test_volume_wait_for_backing_image_condition">test_volume_wait_for_backing_image_condition</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+</footer>
+</body>
+</html>

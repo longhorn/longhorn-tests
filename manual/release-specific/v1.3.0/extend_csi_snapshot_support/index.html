@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -818,37 +818,37 @@
 <ol>
 <li>Deploy the CSI snapshot CRDs, Controller as instructed at <a href="https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/">https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/</a></li>
 <li>Deploy 4 VolumeSnapshotClass:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-backup-2</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">bak</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-snapshot</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">snap</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">invalid-class</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">invalid</span>
-</span></span></code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
+<span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-backup-2</span>
+<span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">bak</span>
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-snapshot</span>
+<span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">snap</span>
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshotClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">invalid-class</span>
+<span style="color:#f92672">driver</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">deletionPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">invalid</span>
+</code></pre></div></li>
 <li>Create Longhorn volume <code>test-vol</code> of 5GB. Create PV/PVC for the Longhorn volume.</li>
 <li>Create a workload that uses the volume. Write some data to the volume.
 Make sure data persist to the volume by running <code>sync</code></li>
@@ -860,15 +860,15 @@ Make sure data persist to the volume by running <code>sync</code></li>
 <p><code>type</code> is <code>bak</code> or <code>&quot;&quot;</code></p>
 <ul>
 <li>Create a VolumeSnapshot with the following yaml
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">volumeSnapshotClassName</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">source</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">persistentVolumeClaimName</span>: <span style="color:#ae81ff">test-vol</span>
-</span></span></code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">volumeSnapshotClassName</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
+  <span style="color:#f92672">source</span>:
+    <span style="color:#f92672">persistentVolumeClaimName</span>: <span style="color:#ae81ff">test-vol</span>
+</code></pre></div></li>
 <li>Verify that a backup is created.</li>
 <li>Delete the <code>test-snapshot-longhorn-backup</code></li>
 <li>Verify that the backup is deleted</li>
@@ -908,22 +908,22 @@ Make sure data persist to the volume by running <code>sync</code></li>
 <li>From <code>longhorn-backup</code> type
 <ul>
 <li>Create a new PVC with the flowing yaml:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-restore-pvc</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">longhorn</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dataSource</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">apiGroup</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">accessModes</span>:
-</span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">ReadWriteOnce</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">resources</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">requests</span>:
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">5Gi</span>
-</span></span></code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-restore-pvc</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">longhorn</span>
+  <span style="color:#f92672">dataSource</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup</span>
+    <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
+    <span style="color:#f92672">apiGroup</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io</span>
+  <span style="color:#f92672">accessModes</span>:
+    - <span style="color:#ae81ff">ReadWriteOnce</span>
+  <span style="color:#f92672">resources</span>:
+    <span style="color:#f92672">requests</span>:
+      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">5Gi</span>
+</code></pre></div></li>
 <li>Attach the PVC <code>test-restore-pvc</code> and verify the data</li>
 <li>Delete the PVC</li>
 </ul>
@@ -933,22 +933,22 @@ Make sure data persist to the volume by running <code>sync</code></li>
 <li>Source volume is attached &amp;&amp; Longhorn snapshot exist
 <ul>
 <li>Create a PVC with the following yaml:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-restore-pvc</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">longhorn</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dataSource</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-snapshot</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">apiGroup</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">accessModes</span>:
-</span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">ReadWriteOnce</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">resources</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">requests</span>:
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">5Gi</span>
-</span></span></code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-restore-pvc</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">longhorn</span>
+  <span style="color:#f92672">dataSource</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-snapshot</span>
+    <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
+    <span style="color:#f92672">apiGroup</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io</span>
+  <span style="color:#f92672">accessModes</span>:
+    - <span style="color:#ae81ff">ReadWriteOnce</span>
+  <span style="color:#f92672">resources</span>:
+    <span style="color:#f92672">requests</span>:
+      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">5Gi</span>
+</code></pre></div></li>
 <li>Attach the PVC <code>test-restore-pvc</code> and verify the data</li>
 <li>Delete the PVC</li>
 </ul>
@@ -1021,27 +1021,27 @@ PVC should be stuck in provisioning because Longhorn snapshot of the source volu
 <li>Wait for a bunch of data to be written (1GB)</li>
 <li>take a backup(1) by</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>  <span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup1</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">spec</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumeSnapshotClassName</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">source</span>:
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">persistentVolumeClaimName</span>: <span style="color:#ae81ff">test-vol</span>
-</span></span></code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  <span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+  <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
+  <span style="color:#f92672">metadata</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup1</span>
+  <span style="color:#f92672">spec</span>:
+    <span style="color:#f92672">volumeSnapshotClassName</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
+    <span style="color:#f92672">source</span>:
+      <span style="color:#f92672">persistentVolumeClaimName</span>: <span style="color:#ae81ff">test-vol</span>
+</code></pre></div><ul>
 <li>wait for a bunch of data to be written (1GB)</li>
 <li>take a backup(2) by</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>  <span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">metadata</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup2</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">spec</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumeSnapshotClassName</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">source</span>:
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">persistentVolumeClaimName</span>: <span style="color:#ae81ff">test-vol</span>
-</span></span></code></pre></div><ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  <span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">snapshot.storage.k8s.io/v1beta1</span>
+  <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeSnapshot</span>
+  <span style="color:#f92672">metadata</span>:
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-snapshot-longhorn-backup2</span>
+  <span style="color:#f92672">spec</span>:
+    <span style="color:#f92672">volumeSnapshotClassName</span>: <span style="color:#ae81ff">longhorn-backup-1</span>
+    <span style="color:#f92672">source</span>:
+      <span style="color:#f92672">persistentVolumeClaimName</span>: <span style="color:#ae81ff">test-vol</span>
+</code></pre></div><ul>
 <li>immediately request deletion of backup(1)</li>
 <li>verify that backup(2) completes successfully.</li>
 <li>verify that backup(1) has not been deleted.</li>

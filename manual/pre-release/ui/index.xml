@@ -4,15 +4,16 @@
     <title>UI on Longhorn Manual Test Cases</title>
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/</link>
     <description>Recent content in UI on Longhorn Manual Test Cases</description>
-    <generator>Hugo</generator>
-    <language>en-us</language>
-    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>ui sanity check</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/ui-sanity-check/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/ui-sanity-check/</guid>
       <description>Access Longhorn UI on Chrome, Firefox and Safari latest/stable version. Check the pages. All the text, form, tables should be proper. Verify all the links at the bottom, they shouldn&amp;rsquo;t be broken and redirects to right pages. Check the setting page, all the settings&amp;rsquo;s text, values should be proper. Create Backing Image, volume, pv, pvc and recurring jobs using UI. Take volume snapshot, create volume backup, and system backup using UI.</description>
     </item>
+    
   </channel>
 </rss>

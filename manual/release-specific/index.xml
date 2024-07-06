@@ -4,8 +4,7 @@
     <title>Release specific tests on Longhorn Manual Test Cases</title>
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/</link>
     <description>Recent content in Release specific tests on Longhorn Manual Test Cases</description>
-    <generator>Hugo</generator>
-    <language>en-us</language>
-    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

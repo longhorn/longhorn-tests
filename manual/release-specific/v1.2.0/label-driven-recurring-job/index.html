@@ -21,28 +21,28 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/">UI  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/">Volume  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/">Kubernetes  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/">Backup  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/">Node  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/">Scheduling  </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/">Upgrade  </a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
@@ -836,7 +836,7 @@
 <em>And</em> recurringJob should be removed in volume spec.
 <em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should not have <code>recurringJobs</code>.<br>
 <em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should     have <code>recurringJobSelector</code>.</p>
-<pre tabindex="0"><code>recurringJobSelector:{&#34;name&#34;:&#34;snapshot-1-97893a05-77074ba4&#34;,&#34;isGroup&#34;:false{&#34;name&#34;:&#34;backup-1-954b3c8c-59467025&#34;,&#34;isGroup&#34;:false}]&#39;
+<pre tabindex="0"><code>recurringJobSelector:{&quot;name&quot;:&quot;snapshot-1-97893a05-77074ba4&quot;,&quot;isGroup&quot;:false{&quot;name&quot;:&quot;backup-1-954b3c8c-59467025&quot;,&quot;isGroup&quot;:false}]'
 </code></pre><p>When create new PVC.<br>
 And volume should be labeled with items in <code>recurringJobSelector</code>.<br>
 And recurringJob should not exist in volume spec.</p>

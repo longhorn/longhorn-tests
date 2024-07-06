@@ -2,9 +2,23 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/integration/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-upgrade-responder-collectiing-average-sizes-for-v1-volumes-only/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</loc>
   </url><url>
@@ -33,22 +47,6 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/upgrade-k8s/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/upgrade-k8s/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/access-lh-gui-using-rancher-ui/</loc>
   </url><url>
