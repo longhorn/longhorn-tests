@@ -53,7 +53,11 @@ main(){
   setup_longhorn_ui_nodeport
   export_longhorn_ui_url
 
-  run_longhorn_e2e_test
+  if [[ "${OUT_OF_CLUSTER}" == true ]]; then
+    run_longhorn_e2e_test_out_of_cluster
+  else
+    run_longhorn_e2e_test
+  fi
 }
 
 main
