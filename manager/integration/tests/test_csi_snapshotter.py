@@ -1323,10 +1323,12 @@ def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
     assert len(backing_images) == 1
     wait_for_backing_image_status(client, backing_images[0].name,
                                   BACKING_IMAGE_STATE_READY)
-    assert backing_images[0].sourceType == BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME # NOQA
-    assert backing_images[0].parameters["volume-name"] == pv_name
-    assert not backing_images[0].deletionTimestamp
-    assert len(backing_images[0].diskFileStatusMap) == 1
+
+    backing_image = client.by_id_backing_image(backing_images[0].name)
+    assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME # NOQA
+    assert backing_image.parameters["volume-name"] == pv_name
+    assert not backing_image.deletionTimestamp
+    assert len(backing_image.diskFileStatusMap) == 3
 
     restore_pvc_name = "test-restore-pvc"
     restore_pvc_size = pvc["spec"]["resources"]["requests"]["storage"]
@@ -1605,7 +1607,7 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image(bi_url, # NOQA
     assert backing_image.parameters["url"] == bi_url
     assert backing_image.currentChecksum == bi_checksum
     assert not backing_image.deletionTimestamp
-    assert len(backing_image.diskFileStatusMap) == 1
+    assert len(backing_image.diskFileStatusMap) == 3
 
     create_pod_from_bi_type_volumesnapshot_pvc_and_check_data(core_api,
                                                               csivolsnap_name,
