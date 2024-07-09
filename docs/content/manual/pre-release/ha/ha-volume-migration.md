@@ -82,6 +82,13 @@ kubetail -n longhorn-system -l 'app in (longhorn-manager,longhorn-csi-plugin)'
 
 # Watch volume to check if it becomes detached or faulted.
 kubectl -n longhorn-system get volume -oyaml -w | grep -e state -e robustness
+
+# Check the names of engines and replicas before and then after triggering the scenario for comparison. 
+# - Some scenarios result in a new engine becoming active (e.g. test-e-0 is replaced by test-e-1).
+# - Some scenarios result in new replicas becoming active (e.g. test-r-45032d2c is gone, but test-r-b28953eb is in its
+#   place).
+kubectl -n longhorn-system get engine
+kubectl -n longhorn-system get replica
 ```
 
 5. Before a test, verify the volume migration is ready. Logs should indicate "Volume migration engine is ready", and:
@@ -221,10 +228,11 @@ k delete --wait=false -f va-1.yaml && sleep 1 && kl delete pod instance-manager-
 
 #### 2.4 Rollback immediately after crash
 
-The volume automatically detaches from the old node. Then, it reattaches to the new node.
+The volume automatically detaches from the old node. Then, it reattaches to the old node.
 
 ```bash
 kl delete --wait=false pod instance-manager-699da83c0e9d22726e667344227e096b && sleep 0.5 && k delete -f va-2.yaml
+# OR
 kl delete --wait=false pod instance-manager-699da83c0e9d22726e667344227e096b && sleep 1 && k delete -f va-2.yaml
 ```
 
