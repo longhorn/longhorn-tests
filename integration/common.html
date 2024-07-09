@@ -226,6 +226,12 @@ properly.
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.cleanup_disks_on_node"><code class="name flex">
+<span>def <span class="ident">cleanup_disks_on_node</span></span>(<span>client, node_id, *disks)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.cleanup_host_disk"><code class="name flex">
 <span>def <span class="ident">cleanup_host_disk</span></span>(<span>vol_name)</span>
 </code></dt>
@@ -2122,6 +2128,12 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_volume_replica_rebuilt_on_same_node_different_disk"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replica_rebuilt_on_same_node_different_disk</span></span>(<span>client, node_name, volume_name, old_disk_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_volume_replicas_mode"><code class="name flex">
 <span>def <span class="ident">wait_for_volume_replicas_mode</span></span>(<span>client, volname, mode, replica_names=None, replica_count=None)</span>
 </code></dt>
@@ -2424,6 +2436,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
 <li><code><a title="tests.common.cleanup_crypto_secret" href="#tests.common.cleanup_crypto_secret">cleanup_crypto_secret</a></code></li>
+<li><code><a title="tests.common.cleanup_disks_on_node" href="#tests.common.cleanup_disks_on_node">cleanup_disks_on_node</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disks" href="#tests.common.cleanup_host_disks">cleanup_host_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
@@ -2717,6 +2730,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_volume_recurring_job_update" href="#tests.common.wait_for_volume_recurring_job_update">wait_for_volume_recurring_job_update</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replica_auto_balance_update" href="#tests.common.wait_for_volume_replica_auto_balance_update">wait_for_volume_replica_auto_balance_update</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replica_count" href="#tests.common.wait_for_volume_replica_count">wait_for_volume_replica_count</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replica_rebuilt_on_same_node_different_disk" href="#tests.common.wait_for_volume_replica_rebuilt_on_same_node_different_disk">wait_for_volume_replica_rebuilt_on_same_node_different_disk</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replicas_mode" href="#tests.common.wait_for_volume_replicas_mode">wait_for_volume_replicas_mode</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replicas_running_on_hosts" href="#tests.common.wait_for_volume_replicas_running_on_hosts">wait_for_volume_replicas_running_on_hosts</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_restoration_completed" href="#tests.common.wait_for_volume_restoration_completed">wait_for_volume_restoration_completed</a></code></li>

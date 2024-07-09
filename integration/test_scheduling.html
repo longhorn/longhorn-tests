@@ -425,6 +425,37 @@ And 1 replicas running on node-1.
 And volume-1 data should be the same as written.
 And volume-2 data should be the same as written.</p></div>
 </dd>
+<dt id="tests.test_scheduling.test_replica_auto_balance_disk_in_pressure"><code class="name flex">
+<span>def <span class="ident">test_replica_auto_balance_disk_in_pressure</span></span>(<span>client, core_api, apps_api, volume_name, statefulset, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: Test replica auto balance disk in pressure</p>
+<p>Description: This test simulates a scenario where a disk reaches a certain
+pressure threshold (80%), triggering the replica auto balance
+to rebuild the replicas to another disk with enough available
+space. Replicas should not be rebuilted at the same time.</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/4105">https://github.com/longhorn/longhorn/issues/4105</a></p>
+<p>Given setting "replica-soft-anti-affinity" is "false"
+And setting "replica-auto-balance-disk-pressure-percentage" is "80"
+And new 1Gi disk 1 is created on self node
+new 1Gi disk 2 is created on self node
+And disk scheduling is disabled for disk 1 on self node
+disk scheduling is disabled for default disk on self node
+And node scheduling is disabled for all nodes except self node
+And new storageclass is created with <code>numberOfReplicas: 1</code>
+And statefulset 0 is created with 1 replicaset
+statefulset 1 is created with 1 replicaset
+statefulset 2 is created with 1 replicaset
+And all statefulset volume replicas are scheduled on disk 1
+And data is written to all statefulset volumes until disk 1 is pressured
+And disk 1 pressure is exceeded threshold (80%)</p>
+<p>When enable disk scheduling for disk 1 on self node
+And update setting "replica-auto-balance" to "best-effort"</p>
+<p>Then at least 1 replicas should be rebuilt on disk 2
+And at least 1 replica should not be rebuilt on disk 2
+And disk 1 should be below disk pressure threshold (80%)
+And all statefulset volume data should be intact</p></div>
+</dd>
 <dt id="tests.test_scheduling.test_replica_auto_balance_node_best_effort"><code class="name flex">
 <span>def <span class="ident">test_replica_auto_balance_node_best_effort</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -719,6 +750,7 @@ failed assertion if one can't be found.
 <li><code><a title="tests.test_scheduling.test_hard_anti_affinity_offline_rebuild" href="#tests.test_scheduling.test_hard_anti_affinity_offline_rebuild">test_hard_anti_affinity_offline_rebuild</a></code></li>
 <li><code><a title="tests.test_scheduling.test_hard_anti_affinity_scheduling" href="#tests.test_scheduling.test_hard_anti_affinity_scheduling">test_hard_anti_affinity_scheduling</a></code></li>
 <li><code><a title="tests.test_scheduling.test_replica_auto_balance_disabled_volume_spec_enabled" href="#tests.test_scheduling.test_replica_auto_balance_disabled_volume_spec_enabled">test_replica_auto_balance_disabled_volume_spec_enabled</a></code></li>
+<li><code><a title="tests.test_scheduling.test_replica_auto_balance_disk_in_pressure" href="#tests.test_scheduling.test_replica_auto_balance_disk_in_pressure">test_replica_auto_balance_disk_in_pressure</a></code></li>
 <li><code><a title="tests.test_scheduling.test_replica_auto_balance_node_best_effort" href="#tests.test_scheduling.test_replica_auto_balance_node_best_effort">test_replica_auto_balance_node_best_effort</a></code></li>
 <li><code><a title="tests.test_scheduling.test_replica_auto_balance_node_least_effort" href="#tests.test_scheduling.test_replica_auto_balance_node_least_effort">test_replica_auto_balance_node_least_effort</a></code></li>
 <li><code><a title="tests.test_scheduling.test_replica_auto_balance_with_data_locality" href="#tests.test_scheduling.test_replica_auto_balance_with_data_locality">test_replica_auto_balance_with_data_locality</a></code></li>
