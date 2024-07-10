@@ -117,6 +117,87 @@ is using the same the backing image namings.</li>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.test_backing_image.test_backing_image_disk_eviction"><code class="name flex">
+<span>def <span class="ident">test_backing_image_disk_eviction</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Disk Eviction
+- Create BackingImage with one copy
+- Evict the disk where the copy is currently on
+- The BackingImage will be evicted to other node
+because every node has only one disk
+- Check the disk is not the same as before</p></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_min_number_of_replicas"><code class="name flex">
+<span>def <span class="ident">test_backing_image_min_number_of_replicas</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the backing image minNumberOfCopies</p>
+<p>Given
+- Create a BackingImage
+- Update the minNumberOfCopies to 2</p>
+<p>When
+- The BackingImage is prepared and transferred to manager</p>
+<p>Then
+- There will be two ready file of the BackingIamge</p>
+<p>Given
+- Set the setting backing-image-cleanup-wait-interval to 1 minute</p>
+<p>When
+- Update the minNumberOfCopies to 1
+- Wait for 1 minute</p>
+<p>Then
+- There will be one ready BackingImage file left.</p></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_node_eviction"><code class="name flex">
+<span>def <span class="ident">test_backing_image_node_eviction</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Node Eviction
+- Create BackingImage with one copy
+- Evict the node where the copy is on
+- The BackingImage will be evicted to another node</p></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_selector_setting"><code class="name flex">
+<span>def <span class="ident">test_backing_image_selector_setting</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><ul>
+<li>Set node1 with nodeTag = [node1], diskTag = [node1]</li>
+<li>Set node2 with nodeTag = [node2], diskTag = [node2]</li>
+<li>Create a BackingImage with<ul>
+<li>minNumberOfCopies = 2</li>
+<li>nodeSelector = [node1]</li>
+<li>diskSelector = [node1]</li>
+</ul>
+</li>
+<li>After creation, the first BackingImage copy will be on node1, disk1</li>
+<li>Wait for a while, the second one will never show up</li>
+<li>Create the Volume with<ul>
+<li>numberOfReplicas = 1</li>
+<li>nodeSelector = [node2]</li>
+<li>diskSelector = [node2]</li>
+</ul>
+</li>
+<li>The volume condition Scheduled will be false</li>
+</ul></div>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_unable_eviction"><code class="name flex">
+<span>def <span class="ident">test_backing_image_unable_eviction</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><ul>
+<li>Set node1 nodeTag = [node1], diskTag = [node1]</li>
+<li>Create a BackingImage with following settings to place the copy on node1<ul>
+<li>minNumberOfCopies = 1</li>
+<li>nodeSelector = [node1]</li>
+<li>diskSelector = [node1]</li>
+</ul>
+</li>
+<li>Evict node1</li>
+<li>The copy would not be deleted because it is the only copy</li>
+<li>The copy can't be copied to other nodes because of the selector settings.</li>
+</ul></div>
+</dd>
 <dt id="tests.test_backing_image.test_backing_image_with_disk_migration"><code class="name flex">
 <span>def <span class="ident">test_backing_image_with_disk_migration</span></span>(<span>)</span>
 </code></dt>
@@ -324,6 +405,11 @@ the BackingImage is ready and all the replicas are in running state.</p></div>
 <li><code><a title="tests.test_backing_image.test_backing_image_basic_operation" href="#tests.test_backing_image.test_backing_image_basic_operation">test_backing_image_basic_operation</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_cleanup" href="#tests.test_backing_image.test_backing_image_cleanup">test_backing_image_cleanup</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_content" href="#tests.test_backing_image.test_backing_image_content">test_backing_image_content</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_disk_eviction" href="#tests.test_backing_image.test_backing_image_disk_eviction">test_backing_image_disk_eviction</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_min_number_of_replicas" href="#tests.test_backing_image.test_backing_image_min_number_of_replicas">test_backing_image_min_number_of_replicas</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_node_eviction" href="#tests.test_backing_image.test_backing_image_node_eviction">test_backing_image_node_eviction</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_selector_setting" href="#tests.test_backing_image.test_backing_image_selector_setting">test_backing_image_selector_setting</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_unable_eviction" href="#tests.test_backing_image.test_backing_image_unable_eviction">test_backing_image_unable_eviction</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_with_disk_migration" href="#tests.test_backing_image.test_backing_image_with_disk_migration">test_backing_image_with_disk_migration</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_with_wrong_md5sum" href="#tests.test_backing_image.test_backing_image_with_wrong_md5sum">test_backing_image_with_wrong_md5sum</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backup_labels_with_backing_image" href="#tests.test_backing_image.test_backup_labels_with_backing_image">test_backup_labels_with_backing_image</a></code></li>

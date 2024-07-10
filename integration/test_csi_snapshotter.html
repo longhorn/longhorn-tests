@@ -376,6 +376,66 @@ storage: 5Gi</code></p>
 <p>Then
 - The BackingImage is deleted as well</p></div>
 </dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_with_selectors"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_backing_image_with_selectors</span></span>(<span>client, core_api, csi_pv, pod_make, pvc, request, volume_name, volumesnapshotclass, volumesnapshot)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Create BackingImage with nodeSelector and diskSelector
+using VolumeSnapshot with a given Volume</p>
+<p>This test is to test users can set the nodeSelector and diskSelector
+through csi volumeSnapshot.
+For the scheduling, we already test it in backing image e2e tests.
+For the content verification,
+we already test it in test_csi_volumesnapshot_backing_image_basic.</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi
+nodeSelector: "node1"
+diskSelector: "ssd"</code></p>
+<p>Given
+- The Volume test-vol attached to a workload,
+having data and computed md5sum.
+- Create the PV and PVC from the Volume</p>
+<p>When
+- Creating the VolumeSnapshot
+<code>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+name: test-snapshot-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+source:
+persistentVolumeClaimName: test-vol</code></p>
+<p>Then
+- A BackingImage is created with the correct selectors
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: `snapshot-${VolumeSnapshot.uuid}`
+namespace: longhorn-system
+spec:
+sourceType: export-from-volume
+sourceParameters:
+volume-name: test-vol
+export-type: raw
+nodeSelector:
+- node1
+diskSelector:
+- node1</code></p>
+<p>When
+- Delete the new Volume from the the VolumeSnapshot
+- Delete the VolumeSnapshot
+<code>&gt; kubectl delete vs/test-snapshot-backing</code></p>
+<p>Then
+- The BackingImage is deleted as well</p></div>
+</dd>
 <dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic"><code class="name flex">
 <span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, csi_snapshot_type=None)</span>
 </code></dt>
@@ -674,6 +734,7 @@ storage: 5Gi</code></p>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param" href="#tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param">test_csi_snapshot_with_bak_param</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param" href="#tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param">test_csi_snapshot_with_invalid_param</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic">test_csi_volumesnapshot_backing_image_basic</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_with_selectors" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_with_selectors">test_csi_volumesnapshot_backing_image_with_selectors</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_basic">test_csi_volumesnapshot_basic</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup">test_csi_volumesnapshot_restore_existing_backup</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image">test_csi_volumesnapshot_restore_on_demand_backing_image</a></code></li>
