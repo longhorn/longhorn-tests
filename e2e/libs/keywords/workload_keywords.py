@@ -22,15 +22,11 @@ from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
 from workload.workload import get_pod_node
-from workload.pod import list_pods
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
-from utility.constant import LABEL_TEST
-from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
-from node.utility import check_replica_locality
 from node.node import Node
 
 from volume import Volume

@@ -5,9 +5,10 @@ import time
 import random
 import yaml
 import signal
+import subprocess
+
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
-import subprocess
 
 from longhorn import from_env
 

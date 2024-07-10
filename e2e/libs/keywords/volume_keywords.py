@@ -6,7 +6,6 @@ from node.utility import check_replica_locality
 
 from replica import Replica
 
-from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_REPLICA_NAMES
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
