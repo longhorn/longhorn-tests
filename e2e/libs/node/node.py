@@ -1,14 +1,14 @@
-import os
 import time
 import re
-from kubernetes import client
 
+from kubernetes import client
 from robot.libraries.BuiltIn import BuiltIn
+
+from utility.constant import DISK_BEING_SYNCING
+from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-from utility.constant import DISK_BEING_SYNCING
-from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 
 class Node:
 
