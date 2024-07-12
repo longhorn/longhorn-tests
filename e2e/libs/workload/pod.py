@@ -91,6 +91,7 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
 
     return manifest
 
+
 def new_busybox_manifest(pod_name, claim_name):
     logging(f"Creating busybox pod {pod_name} using pvc {claim_name}")
     filepath = "./templates/workload/pod.yaml"
@@ -100,6 +101,7 @@ def new_busybox_manifest(pod_name, claim_name):
         manifest_dict['metadata']['name'] = pod_name
         manifest_dict['metadata']['labels']['app'] = pod_name
         return manifest_dict
+
 
 def create_pod(manifest, is_wait_for_pod_running=False):
     core_api = client.CoreV1Api()
@@ -123,12 +125,14 @@ def delete_pod(name, namespace='default'):
     except rest.ApiException as e:
         assert e.status == 404
 
+
 def list_pods(namespace='default', label_selector=None):
     core_api = client.CoreV1Api()
     return core_api.list_namespaced_pod(
         namespace=namespace,
         label_selector=label_selector
     )
+
 
 def wait_delete_pod(name, namespace='default'):
     api = client.CoreV1Api()
@@ -145,6 +149,7 @@ def wait_delete_pod(name, namespace='default'):
         time.sleep(retry_interval)
     assert not found
 
+
 def cleanup_pods():
     pods = list_pods(
         label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}"
@@ -153,6 +158,7 @@ def cleanup_pods():
     logging(f'Cleaning up {len(pods.items)} pods')
     for pod in pods.items:
         delete_pod(pod.metadata.name)
+
 
 def get_pod(name, namespace='default'):
     try:

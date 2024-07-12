@@ -198,6 +198,7 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
 
     assert False, f"Timeout waiting for {workload_name} pods {wait_for_stable_pod} stable)"
 
+
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
     def count_pod_in_specifc_state_duration(count_pod_in_state_duration, pods, expect_state):
         for pod in pods:
@@ -226,6 +227,7 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
         time.sleep(retry_interval)
 
     assert False, f"Timeout waiting for {workload_name} pod in state: {expect_state})"
+
 
 def get_pod_node(pod):
     return pod.spec.node_name
