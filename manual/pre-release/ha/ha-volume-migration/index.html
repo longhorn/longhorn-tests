@@ -815,97 +815,324 @@
   <h1 id="title">HA Volume Migration</h1>
   <div>
     <article id="content">
-       <ol>
-<li>
-<p>Create a migratable volume:</p>
+       <h2 id="basic-instructions">Basic instructions</h2>
 <ol>
-<li>Deploy a migratable StorageClass. e.g., <a href="https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml">https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml</a></li>
-<li>Create a PVC with access mode <code>ReadWriteMany</code> via this StorageClass.</li>
+<li>Deploy a migratable StorageClass. E.g.:</li>
 </ol>
-</li>
-<li>
-<p>Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set <code>fromBackup</code> in the StorageClass) and attach it instead.</p>
-</li>
-<li>
-<p>Start the migration by request attaching to another node for the volume.</p>
-</li>
-<li>
-<p>Trigger the following scenarios then confirm or rollback the migration:</p>
-<hr>
-<table>
-<thead>
-<tr>
-<th><strong>#</strong></th>
-<th><strong>Scenario</strong></th>
-<th><strong>Migration Confirmation</strong></th>
-<th><strong>Migration Rollback</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>New engine crash</td>
-<td>If the request is successfully sent before the migration engine &amp; replicas being removed, the volume should be auto reattached after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>2</td>
-<td>All new replica crash</td>
-<td>If the request is successfully sent before the migration engine &amp; replicas being removed, the volume should keep running (then may start rebuilding) after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>3</td>
-<td>Old engine crash</td>
-<td>If the request is successfully sent before the volume becoming Faulted, the volume should keep running after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>4</td>
-<td>All old replica crash</td>
-<td>If the request is successfully sent before the volume becoming Faulted, the volume should keep running (then may start rebuilding) after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>5</td>
-<td>Degraded volume</td>
-<td>Should succeed</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>6</td>
-<td>One replica node down</td>
-<td>Should succeed</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>7</td>
-<td>New engine node down</td>
-<td>The request should be rejected</td>
-<td>Should succeed</td>
-</tr>
-<tr>
-<td>8</td>
-<td>Old engine node down</td>
-<td>The request should be rejected</td>
-<td>The request should be accepted. But the volume should keep state Unknown after the rollback since it&rsquo;s on a down node.</td>
-</tr>
-</tbody>
-</table>
-<p>Note:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-sc</span>
+<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+  <span style="color:#f92672">migratable</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+</code></pre></div><ol start="2">
+<li>Create a migratable Volume. E.g.:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-pvc</span>
+  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">default</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">accessModes</span>:
+    - <span style="color:#ae81ff">ReadWriteMany</span>
+  <span style="color:#f92672">volumeMode</span>: <span style="color:#ae81ff">Block</span>
+  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">test-sc</span>
+  <span style="color:#f92672">resources</span>:
+    <span style="color:#f92672">requests</span>:
+      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">1Gi</span>
+</code></pre></div><ol start="3">
+<li>Attach the volume to a node and wait for it to become running. E.g.:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeAttachment</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-va-1</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">attacher</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+  <span style="color:#f92672">nodeName</span>: <span style="color:#ae81ff">&lt;old_node&gt;</span>
+  <span style="color:#f92672">source</span>:
+    <span style="color:#f92672">persistentVolumeName</span>: <span style="color:#ae81ff">&lt;volume_name&gt;</span>
+</code></pre></div><ol start="4">
+<li>Write some data into the volume.</li>
+<li>Start the migration by attaching the volume to a second node.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">VolumeAttachment</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">test-va-2</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">attacher</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+  <span style="color:#f92672">nodeName</span>: <span style="color:#ae81ff">&lt;new_node&gt;</span>
+  <span style="color:#f92672">source</span>:
+    <span style="color:#f92672">persistentVolumeName</span>: <span style="color:#ae81ff">&lt;volume_name&gt;</span>
+</code></pre></div><ol start="4">
+<li>Trigger the scenarios described below with commands like the:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Attempt to confirm the migration by detaching from &lt;old_node&gt;.</span>
+kubectl -n longhorn-system delete -f va-1.yaml
+
+<span style="color:#75715e"># Attempt to roll back the migration by detaching from &lt;new_node&gt;.</span>
+kubectl -n longhorn-system delete -f va-2.yaml
+
+<span style="color:#75715e"># Check the migration status of the volume.</span>
+kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
+
+<span style="color:#75715e"># View migration related logs.</span>
+kubetail -n longhorn-system -l <span style="color:#e6db74">&#39;app in (longhorn-manager,longhorn-csi-plugin)&#39;</span>
+
+<span style="color:#75715e"># Watch volume to check if it becomes detached or faulted.</span>
+kubectl -n longhorn-system get volume -oyaml -w | grep -e state -e robustness
+
+<span style="color:#75715e"># Check the names of engines and replicas before and then after triggering the scenario for comparison. </span>
+<span style="color:#75715e"># - Some scenarios result in a new engine becoming active (e.g. test-e-0 is replaced by test-e-1).</span>
+<span style="color:#75715e"># - Some scenarios result in new replicas becoming active (e.g. test-r-45032d2c is gone, but test-r-b28953eb is in its</span>
+<span style="color:#75715e">#   place).</span>
+kubectl -n longhorn-system get engine
+kubectl -n longhorn-system get replica
+</code></pre></div><ol start="5">
+<li>Before a test, verify the volume migration is ready. Logs should indicate &ldquo;Volume migration engine is ready&rdquo;, and:</li>
+</ol>
+<pre tabindex="0"><code>kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
+    migrationNodeID: eweber-v126-worker-9c1451b4-6464j
+    nodeID: eweber-v126-worker-9c1451b4-kgxdq
+    currentMigrationNodeID: eweber-v126-worker-9c1451b4-6464j
+    currentNodeID: eweber-v126-worker-9c1451b4-kgxdq
+    pendingNodeID: &quot;&quot;
+</code></pre><h2 id="scenarios">Scenarios</h2>
+<h3 id="1-new-engine-crash">1. New engine crash</h3>
+<p>Crash the engine on the migration node by killing its instance-manager pod.</p>
+<h4 id="11-confirmation-immediately-after-crash">1.1. Confirmation immediately after crash</h4>
+<p>Migration engine and replicas are recreated. Then, confirmation succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-ea5f8778d6c99e747289ff09c322d75a <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> k delete -f va-1.yaml
+<span style="color:#75715e"># OR</span>
+kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-ea5f8778d6c99e747289ff09c322d75a <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> k delete -f va-1.yaml
+</code></pre></div><ul>
+<li>&ldquo;Waiting to confirm migration until migration engine is ready&rdquo;</li>
+<li>&ldquo;Confirming migration&rdquo;</li>
+<li>No detachment</li>
+<li>New engine and replicas</li>
+</ul>
+<h4 id="12-confirmation-immediately-before-crash">1.2. Confirmation immediately before crash</h4>
+<p>Confirmation succeeds. Then, the volume detaches from and reattaches to the new node.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k delete --wait<span style="color:#f92672">=</span>false -f va-1.yaml <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-ea5f8778d6c99e747289ff09c322d75a
+<span style="color:#75715e"># OR</span>
+k delete --wait<span style="color:#f92672">=</span>false -f va-1.yaml <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-ea5f8778d6c99e747289ff09c322d75a
+</code></pre></div><ul>
+<li>&ldquo;Confirming migration&rdquo;</li>
+<li>&ldquo;&hellip;selected to detach from <new>&rdquo;</li>
+<li>&ldquo;&hellip;selected to attach to <new>&rdquo;</li>
+<li>New engine and replicas</li>
+</ul>
+<h4 id="13-rollback-immediately-before-or-after-crash">1.3. Rollback immediately before or after crash</h4>
+<p>Rollback succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-ea5f8778d6c99e747289ff09c322d75a <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> k delete -f va-2.yaml
+<span style="color:#75715e"># OR</span>
+kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-ea5f8778d6c99e747289ff09c322d75a <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> k delete -f va-2.yaml
+<span style="color:#75715e"># OR</span>
+k delete --wait<span style="color:#f92672">=</span>false -f va-2.yaml <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-ea5f8778d6c99e747289ff09c322d75a
+<span style="color:#75715e"># OR</span>
+k delete --wait<span style="color:#f92672">=</span>false -f va-2.yaml <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-ea5f8778d6c99e747289ff09c322d75a
+</code></pre></div><ul>
+<li>&ldquo;Rolling back migration&rdquo;</li>
+<li>No detachment</li>
+<li>Same engine and replicas</li>
+</ul>
+<h3 id="2-old-engine-crash">2. Old engine crash</h3>
+<p>Crash the engine on the old node by killing its instance-manager pod.</p>
+<h4 id="21-no-immediate-confirmation-or-rollback">2.1 No immediate confirmation or rollback</h4>
+<p>The volume completely detaches and remains detached. Logs indicate next steps. Deleting either of the two
+VolumeAttachments gets the volume unstuck.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl delete pod instance-manager-699da83c0e9d22726e667344227e096b
+</code></pre></div><ul>
+<li>&ldquo;&hellip;selected to detach from <old>&rdquo;</li>
+<li>&ldquo;Cancelling migration for detached volume&hellip;&rdquo;</li>
+<li>MigrationFailed event</li>
+<li>&ldquo;Volume migration between <old> and <new> failed; detach volume from extra node to resume&rdquo;</li>
+</ul>
+<pre tabindex="0"><code>kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
+    migrationNodeID: &quot;&quot;
+    nodeID: &quot;&quot;
+    currentMigrationNodeID: &quot;&quot;
+    currentNodeID: &quot;&quot;
+    pendingNodeID: &quot;&quot;
+</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl delete -f va-2.yaml
+</code></pre></div><pre tabindex="0"><code>kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
+    migrationNodeID: &quot;&quot;
+    nodeID: eweber-v126-worker-9c1451b4-kgxdq
+    currentMigrationNodeID: &quot;&quot;
+    currentNodeID: eweber-v126-worker-9c1451b4-kgxdq
+    pendingNodeID: &quot;&quot;
+</code></pre><h4 id="22-confirmation-immediately-after-crash">2.2 Confirmation immediately after crash</h4>
+<p>The volume automatically detaches from the old node. Then, it reattaches to the new node.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-699da83c0e9d22726e667344227e096b <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> k delete -f va-1.yaml
+<span style="color:#75715e"># OR</span>
+kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-699da83c0e9d22726e667344227e096b <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> k delete -f va-1.yaml
+</code></pre></div><ul>
+<li>&ldquo;&hellip;selected to detach from <old>&rdquo;</li>
+<li>&ldquo;Cancelling migration for detached volume&hellip;&rdquo;</li>
+<li>MigrationFailed event</li>
+<li>&ldquo;&hellip;selected to attach to <new>&rdquo;</li>
+<li>Same engine and replicas</li>
+</ul>
+<h4 id="23-confirmation-immediately-before-crash">2.3 Confirmation immediately before crash</h4>
+<p>Confirmation succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k delete --wait<span style="color:#f92672">=</span>false -f va-1.yaml <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-699da83c0e9d22726e667344227e096b
+<span style="color:#75715e"># OR</span>
+k delete --wait<span style="color:#f92672">=</span>false -f va-1.yaml <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-699da83c0e9d22726e667344227e096b
+</code></pre></div><ul>
+<li>&ldquo;Confirming migration&hellip;&rdquo;</li>
+<li>No detachment</li>
+<li>New engine and replicas</li>
+</ul>
+<h4 id="24-rollback-immediately-after-crash">2.4 Rollback immediately after crash</h4>
+<p>The volume automatically detaches from the old node. Then, it reattaches to the old node.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-699da83c0e9d22726e667344227e096b <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> k delete -f va-2.yaml
+<span style="color:#75715e"># OR</span>
+kl delete --wait<span style="color:#f92672">=</span>false pod instance-manager-699da83c0e9d22726e667344227e096b <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> k delete -f va-2.yaml
+</code></pre></div><ul>
+<li>&ldquo;&hellip;selected to detach from <old>&rdquo;</li>
+<li>&ldquo;Cancelling migration for detached volume&hellip;&rdquo;</li>
+<li>MigrationFailed event</li>
+<li>&ldquo;&hellip;selected to attach to <old>&rdquo;</li>
+<li>Same engine and replicas</li>
+</ul>
+<h4 id="25-rollback-immediately-before-crash">2.5 Rollback immediately before crash</h4>
+<p>Confirmation succeeds. Then, the volume detaches from and reattaches to the old node.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k delete --wait<span style="color:#f92672">=</span>false -f va-2.yaml <span style="color:#f92672">&amp;&amp;</span> sleep 0.5 <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-699da83c0e9d22726e667344227e096b
+<span style="color:#75715e"># OR</span>
+k delete --wait<span style="color:#f92672">=</span>false -f va-2.yaml <span style="color:#f92672">&amp;&amp;</span> sleep <span style="color:#ae81ff">1</span> <span style="color:#f92672">&amp;&amp;</span> kl delete pod instance-manager-699da83c0e9d22726e667344227e096b
+</code></pre></div><ul>
+<li>&ldquo;Rolling back migration&rdquo;</li>
+<li>&ldquo;&hellip;selected to detach from <old>&rdquo;</li>
+<li>&ldquo;&hellip;selected to attach to <old>&rdquo;</li>
+<li>Same engine and replicas (rolled back)</li>
+</ul>
+<h3 id="3-single-replica-crash">3. Single replica crash</h3>
+<p>Crash the replica on a node that is neither the old or migration node by cordoning the node and killing its
+instance-manager pod.</p>
+<h4 id="31-degraded-before-migration-and-confirmation">3.1 Degraded before migration and confirmation</h4>
+<p>Migration starts while the volume is degraded. Confirmation succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k cordon eweber-v126-worker-9c1451b4-rw5hf
+kl delete pod instance-manager-6852914a55e4566d3ddea43529df22e0
+k delete -f va-1.yaml
+</code></pre></div><ul>
+<li>&ldquo;Confirming migration&rdquo;</li>
+<li>No detachment</li>
+<li>New engine and replicas</li>
+</ul>
+<h4 id="32-degraded-before-migration-and-rollback">3.2 Degraded before migration and rollback</h4>
+<p>Migration starts while the volume is degraded. Rollback succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k cordon eweber-v126-worker-9c1451b4-rw5hf
+kl delete pod instance-manager-6852914a55e4566d3ddea43529df22e0
+
+k apply -f va-1.yaml
+k apply -f va-2.yaml
+k delete -f va-2.yaml
+</code></pre></div><ul>
+<li>&ldquo;Rolling back migration&rdquo;</li>
+<li>No detachment</li>
+<li>Same engine and replicas</li>
+</ul>
+<h4 id="33-degraded-between-migration-start-and-confirmation">3.3 Degraded between migration start and confirmation</h4>
+<p>Confirmation succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k apply -f va-1.yaml
+k apply -f va-2.yaml
+
+k cordon eweber-v126-worker-9c1451b4-rw5hf
+kl delete pod instance-manager-6852914a55e4566d3ddea43529df22e0
+
+k delete -f va-1.yaml
+</code></pre></div><ul>
+<li>&ldquo;Confirming migration&rdquo;</li>
+<li>New engine and replicas</li>
+</ul>
+<h4 id="34-degraded-between-migration-start-and-rollback">3.4 Degraded between migration start and rollback</h4>
+<p>Rollback succeeds.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">k apply -f va-1.yaml
+k apply -f va-2.yaml
+
+k cordon eweber-v126-worker-9c1451b4-rw5hf
+kl delete pod instance-manager-6852914a55e4566d3ddea43529df22e0
+
+k delete -f va-2.yaml
+</code></pre></div><ul>
+<li>Rolling back migration</li>
+<li>Same engine and replicas</li>
+</ul>
+<h3 id="4-attempt-to-attach-to-three-nodes">4. Attempt to attach to three nodes</h3>
+<p>The third attachment fails.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kl apply -f va-1.yaml
+kl apply -f va-2.yaml
+kl apply -f va-3.yaml
+</code></pre></div><ul>
+<li>test-va-1 attached</li>
+<li>test-va-2 attached</li>
+<li>test-va-3 not attached</li>
+<li>&ldquo;&hellip;cannot attach migratable volume to more than two nodes&hellip;&rdquo;</li>
+</ul>
+<h3 id="5-new-engine-node-down">5. New engine node down</h3>
 <ol>
-<li>Scenario 1-5 can be handled by integration test. But we need to manually test them before the the implementation.</li>
-<li>For Scenario 1-4, Longhorn may behave differently based on when the request is sent to the backend. To verify if there are race conditions, I would recommend repeating those cases multiple times. Please be aware that the timing of sending requests is important. You can choose different timing when you repeatedly test those cases.
-For migration confirmation, as I mentioned above, the migration should succeed once the request is received before Longhorn updating the volume to an unavailable status. Otherwise, the request will be rejected until the auto recovery is done.
-For migration rollback, it&rsquo;s better to verify the rollback always works and won&rsquo;t affect the volume auto recovery no matter when the request is received. e.g., the request can be accepted while the volume is in detaching or attaching (both are parts of the auto reattachment flow).</li>
-<li>Migration confirmation/rollback success does not mean the volume should keep running. Instead, it means the volume won&rsquo;t be stuck in a buggy state and can be automatically recovered in the end. As for the exact expect behaviors, please follow the above table.</li>
+<li>Hard shut down the node running the migration engine.</li>
+<li>Wait until Kubernetes recognizes the node is down. (This is IMPORTANT! Otherwise, it is a different test case.)</li>
+<li>Attempt a confirmation or rollback.</li>
 </ol>
-</li>
-<li>
-<p>Check if the volume works fine on the desired node after migration confirmation/rollback. And there is no extra process in instance manager pods.
-You can enter into the instance manager pods, list all engine/replicas processes, and verify if there is a corresponding engine/replica CR for each process.</p>
-</li>
+<h4 id="51-confirmation">5.1 Confirmation</h4>
+<p>The volume is allowed to detach from the old node (special logic in code). It attempts to attach to cleanly attach to
+the migration node, but is stuck until it comes back.</p>
+<ul>
+<li>&ldquo;Waiting to confirm migration until migration engine is ready&rdquo;</li>
+<li>&ldquo;Detaching volume for attempted migration to down node&rdquo;</li>
+<li>&ldquo;&hellip;selected to attach to <new>&rdquo;</li>
+<li>Same engine and replicas</li>
+<li>Stuck in attaching waiting for node to come back</li>
+</ul>
+<pre tabindex="0"><code>kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
+    migrationNodeID: &quot;&quot;
+    nodeID: eweber-v126-worker-9c1451b4-6464j
+    currentMigrationNodeID: &quot;&quot;
+    currentNodeID: &quot;&quot;
+    pendingNodeID: &quot;&quot;
+</code></pre><h4 id="52-rollback">5.2 Rollback</h4>
+<p>Rollback succeeds.</p>
+<ul>
+<li>&ldquo;Rolling back migration&rdquo;</li>
+<li>No detachment</li>
+<li>Same engine and replicas</li>
+</ul>
+<h3 id="6-old-engine-node-down">6. Old engine node down</h3>
+<ol>
+<li>Hard shut down the node running the old engine.</li>
+<li>Wait until Kubernetes recognizes the node is down. (This is IMPORTANT! Otherwise, it is a different test case.)</li>
+<li>Attempt a confirmation or rollback.</li>
 </ol>
+<h4 id="61-confirmation">6.1 Confirmation</h4>
+<p>The migration is stuck until the Kubernetes pod eviction controller decides to terminate the instance-manager pod that
+was running on the old node. Then, Longhorn detaches the volume and cleanly reattaches it to the migration node.</p>
+<ul>
+<li>&ldquo;Waiting to confirm migration&hellip;&rdquo; (new engine crashes when old one does)</li>
+<li>Eventually&hellip;</li>
+<li>&ldquo;&hellip;selected to detach from <old>&rdquo;</li>
+<li>&ldquo;Cancelling migration for detached volume&hellip;&rdquo;</li>
+<li>&ldquo;&hellip;selected to attach to <new>&rdquo;</li>
+<li>Same engine and replicas</li>
+</ul>
+<h4 id="62-rollback">6.2 Rollback</h4>
+<p>The migration is stuck until the Kubernetes pod eviction controller decides to terminate the instance-manager pod that
+was running on the old node. Then, Longhorn detaches the volume and attempts to cleanly reattach it to the old node, but
+it is stuck until the node comes back.</p>
+<ul>
+<li>&ldquo;Rolling back migration&rdquo;</li>
+<li>Stuck in attached with engine and one replica unknown</li>
+<li>Eventually&hellip;</li>
+<li>&ldquo;&hellip;selected to detach from <old>&rdquo;</li>
+<li>&ldquo;&hellip;selected to attach to <old>&rdquo;</li>
+<li>Stuck in attaching waiting for node to come back</li>
+<li>Same engine and replicas</li>
+</ul>
 
     </article>
   <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/ha/ha-volume-migration.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>

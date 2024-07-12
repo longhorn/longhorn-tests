@@ -30,9 +30,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/ha-volume-migration/</guid>
-      <description>Create a migratable volume:
- Deploy a migratable StorageClass. e.g., https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml Create a PVC with access mode ReadWriteMany via this StorageClass.    Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set fromBackup in the StorageClass) and attach it instead.
-  Start the migration by request attaching to another node for the volume.</description>
+      <description>Basic instructions  Deploy a migratable StorageClass. E.g.:  kind: StorageClass apiVersion: storage.k8s.io/v1 metadata: name: test-sc provisioner: driver.longhorn.io allowVolumeExpansion: true parameters: numberOfReplicas: &amp;#34;3&amp;#34; migratable: &amp;#34;true&amp;#34; Create a migratable Volume. E.g.:  apiVersion: v1 kind: PersistentVolumeClaim metadata: name: test-pvc namespace: default spec: accessModes: - ReadWriteMany volumeMode: Block storageClassName: test-sc resources: requests: storage: 1Gi Attach the volume to a node and wait for it to become running. E.g.:  apiVersion: storage.k8s.io/v1 kind: VolumeAttachment metadata: name: test-va-1 spec: attacher: driver.</description>
     </item>
     
   </channel>
