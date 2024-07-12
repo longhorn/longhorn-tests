@@ -182,6 +182,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-storage-network-support-for-rwx-volume/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/storage-network/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-support-bundle-node-collection-timeout/</loc>

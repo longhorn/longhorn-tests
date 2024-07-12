@@ -812,66 +812,54 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Support bundle node collection timeout</h1>
+  <h1 id="title">Storage Network Support for RWX Volume</h1>
   <div>
     <article id="content">
-       <p>When the timeout expires, the support bundle generation will proceed without requiring the collection of node bundles.</p>
-<h2 id="related-issues">Related issues</h2>
+       <h2 id="related-issues">Related Issues</h2>
 <ul>
-<li><a href="https://github.com/longhorn/longhorn/issues/8623">https://github.com/longhorn/longhorn/issues/8623</a></li>
+<li><a href="https://github.com/longhorn/longhorn/issues/8184">https://github.com/longhorn/longhorn/issues/8184</a></li>
 </ul>
-<h2 id="test-support-bundle-image-supports-node-collection-timeout">Test support bundle image supports node collection timeout</h2>
-<p><strong>Given</strong> Run the support bundle manager image (version 0.0.38 or later) using Docker.</p>
-<pre tabindex="0"><code>&gt; docker run -it longhornio/support-bundle-kit:v0.0.38 bash
-</code></pre><p><strong>When</strong> Execute <code>support-bundle-kit manager --help</code>.<br>
-<strong>Then</strong> The help menu displays the <code>--node-timeout</code> option.</p>
-<pre tabindex="0"><code>&gt; support-bundle-kit manager --help | grep node-timeout
-      --node-timeout duration       The support bundle node collection time out
-</code></pre><h2 id="test-support-bundle-node-collection-timeout-setting">Test <code>support-bundle-node-collection-timeout</code> setting</h2>
-<p><strong>Given</strong> Simulate the node bundle blockage by patching the <a href="https://github.com/rancher/support-bundle-kit">rancher/support-bundle-kit</a> code base and create an image.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-diff" data-lang="diff">diff --git a/pkg/manager/manager.go b/pkg/manager/manager.go
-index 87e7b147..1835820b 100644
-<span style="color:#f92672">--- a/pkg/manager/manager.go
-</span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/pkg/manager/manager.go
-</span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -324,7 +324,7 @@ func (m *SupportBundleManager) completeNode(node string) {
-</span><span style="color:#75715e"></span>        _, ok := m.expectedNodes[node]
-        if ok {
-                logrus.Debugf(&#34;Complete node %s&#34;, node)
-<span style="color:#f92672">-               delete(m.expectedNodes, node)
-</span><span style="color:#f92672"></span><span style="color:#a6e22e">+               // delete(m.expectedNodes, node)
-</span><span style="color:#a6e22e"></span>        } else {
-                logrus.Warnf(&#34;Complete an unknown node %s&#34;, node)
-        }
-</code></pre></div><p><strong>And</strong> Configure <code>support-bundle-manager-image</code> setting value to use the image created in the previous step.</p>
-<pre tabindex="0"><code>&gt; kubectl -n longhorn-system edit settings.longhorn.io support-bundle-manager-image
+<h2 id="test-longhorn-upgrade-with-pre-existing-rwx-volume-workloads-and-storage-network-configured">Test Longhorn Upgrade with Pre-existing RWX Volume Workloads and Storage Network Configured</h2>
+<p>Verify the behavior of Longhorn RWX volume workloads during and after the cluster upgrade process with existing storage network configured. Ensure no disruption to existing workload pods during the upgrade.</p>
+<p><strong>Given</strong> A cluster with Longhorn v1.6.2 installed.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl -n longhorn-system get daemonsets.apps longhorn-manager -o yaml | grep image:
+        image: longhornio/longhorn-manager:v1.6.2
+</code></pre></div><p><strong>And</strong> The <code>storage-network</code> setting is set to a valid NAD.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl -n longhorn-system get setting storage-network
+NAME              VALUE                          AGE
+storage-network   kube-system/demo-192-168-0-0   66s
+</code></pre></div><p><strong>And</strong> The <code>auto-delete-pod-when-volume-detached-unexpectedly</code> setting is set to true.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl -n longhorn-system get setting auto-delete-pod-when-volume-detached-unexpectedly
+NAME                                                VALUE   AGE
+auto-delete-pod-when-volume-detached-unexpectedly   true    85s
+</code></pre></div><p><strong>And</strong> RWX volume workload 1 is created.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl get pod
+NAME                     READY   STATUS    RESTARTS   AGE
+rwx-1-6c6dd9764c-jrqvh   2/2     Running   <span style="color:#ae81ff">0</span>          98s
+rwx-1-6c6dd9764c-k66f8   2/2     Running   <span style="color:#ae81ff">0</span>          98s
+rwx-1-6c6dd9764c-rqnkf   2/2     Running   <span style="color:#ae81ff">0</span>          98s
+</code></pre></div><p><strong>When</strong> update Longhorn to v1.7.0.</p>
+<p><strong>Then</strong> Longhorn CSI plugin pods are not annotated with the storage network.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl -n longhorn-system get pod longhorn-csi-plugin-682cr -o yaml | grep k8s.v1.cni.cncf.io/networks
+</code></pre></div><p><strong>And</strong> workload 1 is not restarted.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl -n longhorn-system get pod -l app<span style="color:#f92672">=</span>longhorn-csi-plugin
+NAME                        READY   STATUS    RESTARTS   AGE
+longhorn-csi-plugin-682cr   3/3     Running   <span style="color:#ae81ff">0</span>          22s
+longhorn-csi-plugin-bkbbr   3/3     Running   <span style="color:#ae81ff">0</span>          22s
+longhorn-csi-plugin-dkzjz   3/3     Running   <span style="color:#ae81ff">0</span>          22s
 
-&gt; kubectl -n longhorn-system get settings.longhorn.io support-bundle-manager-image
-NAME                           VALUE                                         AGE
-support-bundle-manager-image   c3y1huang/research:48-lh-support-bundle-kit   7d23h
-</code></pre><p><strong>And</strong> Set <code>support-bundle-node-collection-timeout</code> setting value to 5.</p>
-<pre tabindex="0"><code class="language-bsah" data-lang="bsah">&gt; kubectl -n longhorn-system edit settings.longhorn.io support-bundle-node-collection-timeout
-
-&gt; kubectl -n longhorn-system get settings.longhorn.io support-bundle-node-collection-timeout
-NAME                                     VALUE   AGE
-support-bundle-node-collection-timeout   5       1h
-</code></pre><p><strong>When</strong> Generate a support bundle using Longhorn UI.<br>
-<strong>And</strong> Monitor the support bundle manager logs.</p>
-<pre tabindex="0"><code>&gt; kubectl -n longhorn-system logs `kubectl -n longhorn-system get pod -l app=support-bundle-manager --no-headers | awk '{print $1}'` -f
-</code></pre><p><strong>Then</strong> The support bundle is generated after the configured timeout.</p>
-<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get pod -l app=support-bundle-agent
-NAME                                                            READY   STATUS    RESTARTS   AGE
-supportbundle-agent-support-bundle-2024-05-28t03-01-40z-d7x7x   1/1     Running   0          5m1s
-supportbundle-agent-support-bundle-2024-05-28t03-01-40z-jxj6c   1/1     Running   0          5m1s
-supportbundle-agent-support-bundle-2024-05-28t03-01-40z-mmrll   1/1     Running   0          5m1s
-&gt; kubectl -n longhorn-system get pod -l app=support-bundle-agent
-NAME                                                            READY   STATUS        RESTARTS   AGE
-supportbundle-agent-support-bundle-2024-05-28t03-01-40z-mmrll   0/1     Terminating   0          5m2s
-supportbundle-agent-support-bundle-2024-05-28t03-01-40z-jxj6c   0/1     Terminating   0          5m2s
-</code></pre><p><strong>And</strong> A timeout log is recorded in the support bundle manager pod logs.</p>
-<pre tabindex="0"><code>time=&quot;2024-05-28T03:07:07Z&quot; level=info msg=&quot;Some nodes are timeout, not all node bundles are received.&quot;
-</code></pre>
+&gt; kubectl get pod
+NAME                     READY   STATUS    RESTARTS   AGE
+rwx-1-6c6dd9764c-jrqvh   2/2     Running   <span style="color:#ae81ff">0</span>          3m32s
+rwx-1-6c6dd9764c-k66f8   2/2     Running   <span style="color:#ae81ff">0</span>          3m32s
+rwx-1-6c6dd9764c-rqnkf   2/2     Running   <span style="color:#ae81ff">0</span>          3m32s
+</code></pre></div><p><strong>And</strong> workload 1 data is accessible.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl exec -it rwx-1-6c6dd9764c-jrqvh -- ls /data
+Defaulted container <span style="color:#e6db74">&#34;run&#34;</span> out of: run, nginx
+index.html  lost+found
+</code></pre></div>
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.7.0/test-support-bundle-node-collection-timeout.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.7.0/test-storage-network-support-for-rwx-volume.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

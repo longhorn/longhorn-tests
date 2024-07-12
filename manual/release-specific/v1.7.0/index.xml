@@ -42,6 +42,17 @@ kubectl get events --field-selector involvedObject.name=${POD_NAME} -w And There
     </item>
     
     <item>
+      <title>Storage Network Support for RWX Volume</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-storage-network-support-for-rwx-volume/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-storage-network-support-for-rwx-volume/</guid>
+      <description>Related Issues  https://github.com/longhorn/longhorn/issues/8184  Test Longhorn Upgrade with Pre-existing RWX Volume Workloads and Storage Network Configured Verify the behavior of Longhorn RWX volume workloads during and after the cluster upgrade process with existing storage network configured. Ensure no disruption to existing workload pods during the upgrade.
+Given A cluster with Longhorn v1.6.2 installed.
+&amp;gt; kubectl -n longhorn-system get daemonsets.apps longhorn-manager -o yaml | grep image: image: longhornio/longhorn-manager:v1.6.2 And The storage-network setting is set to a valid NAD.</description>
+    </item>
+    
+    <item>
       <title>Support bundle node collection timeout</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-support-bundle-node-collection-timeout/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
