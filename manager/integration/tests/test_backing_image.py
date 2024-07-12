@@ -40,6 +40,15 @@ from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
 from common import write_volume_dev_random_mb_data, get_device_checksum
 from common import check_backing_image_disk_map_status
+from common import update_setting
+from common import set_tags_for_node_and_its_disks
+from common import get_node_by_disk_id
+from common import set_node_scheduling_eviction
+from common import get_update_disks
+from common import update_node_disks
+from common import check_backing_image_single_copy_disk_eviction
+from common import check_backing_image_single_copy_node_eviction
+from common import check_backing_image_eviction_failed
 from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
 from common import BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_STATE_READY
@@ -636,6 +645,7 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
                                   BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
 
 
+@pytest.mark.backing_image  # NOQA
 def test_volume_wait_for_backing_image_condition(client): # NOQA
     """
     Test the volume condition "WaitForBackingImage"
@@ -694,3 +704,218 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
     volume_endpoint = get_volume_endpoint(volume2)
     vol2_cksum = get_device_checksum(volume_endpoint)
     assert vol1_cksum == vol2_cksum
+
+
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_min_number_of_replicas(client): # NOQA
+    """
+    Test the backing image minNumberOfCopies
+
+    Given
+    - Create a BackingImage
+    - Update the minNumberOfCopies to 2
+
+    When
+    - The BackingImage is prepared and transferred to manager
+
+    Then
+    - There will be two ready file of the BackingIamge
+
+    Given
+    - Set the setting backing-image-cleanup-wait-interval to 1 minute
+
+    When
+    - Update the minNumberOfCopies to 1
+    - Wait for 1 minute
+
+    Then
+    - There will be one ready BackingImage file left.
+    """
+    bi_url = BACKING_IMAGE_RAW_URL
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, bi_url)
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    backing_image = backing_image.updateMinNumberOfCopies(minNumberOfCopies=2)
+
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, "ready")
+
+    update_setting(client, "backing-image-cleanup-wait-interval", "1")
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    backing_image = backing_image.updateMinNumberOfCopies(minNumberOfCopies=1)
+
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+    cleanup_all_backing_images(client)
+
+
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_selector_setting(client, volume_name): # NOQA
+    """
+    - Set node1 with nodeTag = [node1], diskTag = [node1]
+    - Set node2 with nodeTag = [node2], diskTag = [node2]
+    - Create a BackingImage with
+        - minNumberOfCopies = 2
+        - nodeSelector = [node1]
+        - diskSelector = [node1]
+    - After creation, the first BackingImage copy will be on node1, disk1
+    - Wait for a while, the second one will never show up
+    - Create the Volume with
+        - numberOfReplicas = 1
+        - nodeSelector = [node2]
+        - diskSelector = [node2]
+    - The volume condition Scheduled will be false
+    """
+
+    tags_1 = ["node1"]
+    tags_2 = ["node2"]
+    nodes = client.list_node()
+    node_1, node_2, node_3 = nodes
+    set_tags_for_node_and_its_disks(client, node_1, tags_1)
+    set_tags_for_node_and_its_disks(client, node_2, tags_2)
+
+    backing_image_node_selector = ["node1"]
+    backing_image_disk_selector = ["node1"]
+    bi_url = BACKING_IMAGE_RAW_URL
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, bi_url,
+        minNumberOfCopies=2,
+        nodeSelector=backing_image_node_selector,
+        diskSelector=backing_image_disk_selector)
+    time.sleep(10)
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+
+    volume_node_selector = ["node2"]
+    volume_disk_selector = ["node2"]
+    client.create_volume(name=volume_name, size=str(BACKING_IMAGE_EXT4_SIZE),
+                         numberOfReplicas=1,
+                         diskSelector=volume_disk_selector,
+                         nodeSelector=volume_node_selector,
+                         backingImage=BACKING_IMAGE_NAME)
+    vol = wait_for_volume_detached(client, volume_name)
+    assert vol.diskSelector == volume_disk_selector
+    assert vol.nodeSelector == volume_node_selector
+
+    assert vol.conditions.Scheduled.status == "False"
+    cleanup_all_volumes(client)
+    cleanup_all_backing_images(client)
+
+
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_node_eviction(client): # NOQA
+    """
+    Test Node Eviction
+    - Create BackingImage with one copy
+    - Evict the node where the copy is on
+    - The BackingImage will be evicted to another node
+    """
+    bi_url = BACKING_IMAGE_RAW_URL
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, bi_url, minNumberOfCopies=1)
+
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    disk_id = next(iter(backing_image.diskFileStatusMap))
+
+    node = get_node_by_disk_id(client, disk_id)
+    node = set_node_scheduling_eviction(
+        client, node, allowScheduling=False, evictionRequested=True)
+
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+    check_backing_image_single_copy_node_eviction(
+        client, BACKING_IMAGE_NAME, node)
+
+    # Set node1 back to allow scheduling
+    node = set_node_scheduling_eviction(
+        client, node, allowScheduling=True, evictionRequested=False)
+
+    cleanup_all_backing_images(client)
+
+
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_disk_eviction(client): # NOQA
+    """
+    Test Disk Eviction
+    - Create BackingImage with one copy
+    - Evict the disk where the copy is currently on
+    - The BackingImage will be evicted to other node
+      because every node has only one disk
+    - Check the disk is not the same as before
+    """
+    bi_url = BACKING_IMAGE_RAW_URL
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, bi_url, minNumberOfCopies=1)
+
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    disk_id = next(iter(backing_image.diskFileStatusMap))
+    node = get_node_by_disk_id(client, disk_id)
+
+    # Evict the disk on the node
+    # and check the backing image file is evicted to other disk
+    update_disks = get_update_disks(node.disks)
+    for disk in update_disks.values():
+        disk.allowScheduling = False
+        disk.evictionRequested = True
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+    check_backing_image_single_copy_disk_eviction(
+        client, BACKING_IMAGE_NAME, disk_id)
+
+    # Reset the disk scheduling and eviction requested
+    update_disks = get_update_disks(node.disks)
+    for disk in update_disks.values():
+        disk.allowScheduling = True
+        disk.evictionRequested = False
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+
+    cleanup_all_backing_images(client)
+
+
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_unable_eviction(client): # NOQA
+    """
+    - Set node1 nodeTag = [node1], diskTag = [node1]
+    - Create a BackingImage with following settings to place the copy on node1
+        - minNumberOfCopies = 1
+        - nodeSelector = [node1]
+        - diskSelector = [node1]
+    - Evict node1
+    - The copy would not be deleted because it is the only copy
+    - The copy can't be copied to other nodes because of the selector settings.
+    """
+    tags_1 = ["node1"]
+    nodes = client.list_node()
+    node_1, node_2, node_3 = nodes
+    set_tags_for_node_and_its_disks(client, node_1, tags_1)
+
+    backing_image_node_selector = ["node1"]
+    backing_image_disk_selector = ["node1"]
+    bi_url = BACKING_IMAGE_RAW_URL
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, bi_url,
+        minNumberOfCopies=2,
+        nodeSelector=backing_image_node_selector,
+        diskSelector=backing_image_disk_selector)
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    previous_disk_id = next(iter(backing_image.diskFileStatusMap))
+
+    node_1 = set_node_scheduling_eviction(
+        client, node_1, allowScheduling=False, evictionRequested=True)
+
+    check_backing_image_eviction_failed(BACKING_IMAGE_NAME)
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    current_disk_id = next(iter(backing_image.diskFileStatusMap))
+
+    assert previous_disk_id == current_disk_id
+
+    node_1 = set_node_scheduling_eviction(
+        client, node_1, allowScheduling=True, evictionRequested=False)

@@ -221,6 +221,8 @@ SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
 SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
 SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
+SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES = \
+    "default-min-number-of-backing-image-copies"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -313,6 +315,10 @@ BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
 BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
                                   "failed to list backup volumes in",
                                   "error listing backup volume names"]
+
+FAILED_DELETING_REASONE = "FailedDeleting"
+BACKINGIMAGE_FAILED_EVICT_MSG = \
+    "since there is no other healthy backing image copy"
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -5315,7 +5321,9 @@ def assert_backup_state(b_actual, b_expected):
     assert b_expected.messages == b_actual.messages is None
 
 
-def create_backing_image_with_matching_url(client, name, url):
+def create_backing_image_with_matching_url(client, name, url,
+                                           minNumberOfCopies=1,
+                                           nodeSelector=[], diskSelector=[]):
     backing_images = client.list_backing_image()
     found = False
     for bi in backing_images:
@@ -5340,13 +5348,16 @@ def create_backing_image_with_matching_url(client, name, url):
             expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
         bi = client.create_backing_image(
             name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
-            parameters={"url": url}, expectedChecksum=expected_checksum)
+            parameters={"url": url}, expectedChecksum=expected_checksum,
+            minNumberOfCopies=minNumberOfCopies,
+            nodeSelector=nodeSelector, diskSelector=diskSelector)
     assert bi
 
     is_ready = False
     for i in range(RETRY_COUNTS):
         bi = client.by_id_backing_image(name)
-        if len(bi.diskFileStatusMap) == 1 and bi.currentChecksum != "":
+        if (len(bi.diskFileStatusMap) == minNumberOfCopies and
+                bi.currentChecksum != ""):
             for disk, status in iter(bi.diskFileStatusMap.items()):
                 if status.state == "ready":
                     is_ready = True
@@ -6322,3 +6333,104 @@ def wait_for_volume_replica_rebuilt_on_same_node_different_disk(client, node_nam
 
     assert new_disk_name != old_disk_name, \
         "Failed to rebuild replica disk to another disk"
+
+
+def set_tags_for_node_and_its_disks(client, node, node_tags, disks_tags_map): # NOQA
+    for disk_name in node.disks.keys():
+        if disk_name in disks_tags_map:
+            node.disks[disk_name].tags = disks_tags_map[disk_name]
+
+    node = update_node_disks(client, node.name, disks=node.disks)
+    for disk_name in node.disks.keys():
+        if disk_name in disks_tags_map:
+            assert node.disks[disk_name].tags == disks_tags_map[disk_name]
+
+    if len(node_tags) == 0:
+        expected_tags = []
+    else:
+        expected_tags = list(node_tags)
+
+    node = set_node_tags(client, node, node_tags)
+    assert node.tags == expected_tags
+
+
+def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
+    if len(tags) == 0:
+        expected_tags = []
+    else:
+        expected_tags = list(tags)
+
+    for disk_name in node.disks.keys():
+        node.disks[disk_name].tags = tags
+    node = update_node_disks(client, node.name, disks=node.disks)
+    for disk_name in node.disks.keys():
+        assert node.disks[disk_name].tags == expected_tags
+
+    node = set_node_tags(client, node, tags)
+    assert node.tags == expected_tags
+
+    return node
+
+
+def get_node_by_disk_id(client, disk_id): # NOQA
+    nodes = client.list_node()
+
+    for node in nodes:
+        disks = node.disks
+        for name, disk in iter(disks.items()):
+            if disk.diskUUID == disk_id:
+                return node
+    # should handle empty result in caller
+    return ""
+
+
+def check_backing_image_single_copy_disk_eviction(client, bi_name, old_disk_id): # NOQA
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(bi_name)
+        current_disk_id = next(iter(backing_image.diskFileStatusMap))
+        if current_disk_id != old_disk_id:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert current_disk_id != old_disk_id
+
+
+def check_backing_image_single_copy_node_eviction(client, bi_name, old_node): # NOQA
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(bi_name)
+        current_disk_id = next(iter(backing_image.diskFileStatusMap))
+        current_node = get_node_by_disk_id(client, current_disk_id)
+        if current_node.name != old_node.name:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert current_node.name != old_node.name
+
+
+def check_backing_image_eviction_failed(name): # NOQA
+    core_client = get_core_api_client()
+    selector = "involvedObject.kind=BackingImage,involvedObject.name=" + name
+    check = False
+
+    for i in range(RETRY_COUNTS_LONG):
+        events = core_client.list_namespaced_event(
+            namespace=LONGHORN_NAMESPACE,
+            field_selector=selector,
+        ).items
+        if len(events) == 0:
+            continue
+
+        for j in range(len(events)):
+            if (events[j].reason == FAILED_DELETING_REASONE and
+                    BACKINGIMAGE_FAILED_EVICT_MSG in events[j].message):
+                check = True
+                break
+
+        if check:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert check

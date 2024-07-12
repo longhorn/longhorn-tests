@@ -81,6 +81,7 @@ from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 from common import wait_scheduling_failure
+from common import set_tags_for_node_and_its_disks
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2303,24 +2304,6 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
            {replica_1.name, replica_2.name, replica_3.name}
     data = common.write_volume_data(vol, data)
     check_volume_data(vol, data)
-
-
-def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
-    if len(tags) == 0:
-        expected_tags = []
-    else:
-        expected_tags = list(tags)
-
-    for disk_name in node.disks.keys():
-        node.disks[disk_name].tags = tags
-    node = update_node_disks(client, node.name, disks=node.disks)
-    for disk_name in node.disks.keys():
-        assert node.disks[disk_name].tags == expected_tags
-
-    node = set_node_tags(client, node, tags)
-    assert node.tags == expected_tags
-
-    return node
 
 
 def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_name): # NOQA
