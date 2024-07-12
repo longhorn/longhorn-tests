@@ -14,12 +14,12 @@ Create volume ${volume_id}
 Create volume ${volume_id} with
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}    2    3    &{config}
+    create_volume   ${volume_name}    &{config}
 
 Create DR volume ${volume_id} from backup ${backup_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_url} =    get_backup_url    ${backup_id}
-    create_volume   ${volume_name}    2    3    frontend=    Standby=True    fromBackup=${backup_url}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}
 
 No volume created
     ${volumes} =    list_volumes
@@ -28,10 +28,6 @@ No volume created
 Validate volume ${volume_id} replicas anti-affinity
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_volume_replicas_anti_affinity    ${volume_name}
-
-Create volume ${volume_id} with ${size} GB and ${replica_count} replicas
-    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}    ${size}    ${replica_count}
 
 Update volume ${volume_id} replica count to ${replica_count}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -245,7 +241,7 @@ Create persistentvolumeclaim for volume ${volume_id} will fail
     Run Keyword And Expect Error    *    create_persistentvolumeclaim_for_volume    ${volume_name}    retry=False
 
 Create volume ${volume_id} with ${size} GB and no replicas on the attached node
-    Create volume ${volume_id} with ${size} GB and 3 replicas
+    Create volume ${volume_id} with    size=${size}Gi    numberOfReplicas=3
     Attach volume ${volume_id} to node 1
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 2

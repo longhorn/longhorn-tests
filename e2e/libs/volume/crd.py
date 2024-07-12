@@ -12,7 +12,7 @@ from utility.utility import logging
 from utility.utility import get_cr
 
 from volume.base import Base
-from volume.constant import GIBIBYTE
+from volume.constant import GIBIBYTE, MEBIBYTE
 from volume.rest import Rest
 
 
@@ -25,7 +25,10 @@ class CRD(Base):
         self.engine = Engine()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
-        size = str(int(size) * GIBIBYTE)
+        size_suffix = size[-2:]
+        size_number = size[:-2]
+        size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
+        size = str(int(size_number) * size_unit)
         accessMode = accessMode.lower()
         body = {
             "apiVersion": "longhorn.io/v1beta2",

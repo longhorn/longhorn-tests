@@ -19,16 +19,17 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Test Setting Concurrent Rebuild Limit
     [Documentation]    Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
     Given Set setting concurrent-replica-rebuild-per-node-limit to 1
 
-    When Create volume 0 with 5 GB and 3 replicas
+    When Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
-    And Create volume 1 with 5 GB and 3 replicas
+    And Create volume 1 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 1
     And Wait for volume 1 healthy
 

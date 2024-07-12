@@ -17,6 +17,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Test Migration Confirm
@@ -33,7 +34,7 @@ Test Migration Confirm
     ...                8. Detach volume from node 1
     ...                9. Observe volume migrated to node 2 (single active engine)
     ...                10. Validate initially written test data
-    Given Create volume 0 with    migratable=True    accessMode=RWX
+    Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 0
     And Wait for volume 0 healthy
     And Write data to volume 0
