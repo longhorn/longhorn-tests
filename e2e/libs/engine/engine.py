@@ -18,7 +18,7 @@ class Engine(Base):
         return self.engine.get_engines(volume_name, node_name)
 
     def get_engine_by_volume(self, volume):
-        engines = self.engine.get_engines(volume["metadata"]["name"])
+        engines = self.get_engines(volume["metadata"]["name"])
         assert len(engines) == 1, \
             f"Expected exactly one engine but found {len(engines)}"
 

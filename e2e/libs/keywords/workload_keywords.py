@@ -151,7 +151,6 @@ class workload_keywords:
         self.volume.wait_for_volume_attached(volume_name)
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
-        self.volume.wait_for_volume_detached(volume_name)
 
     def wait_for_pod_kept_in_state(self, workload_name, expect_state, namespace="default"):
         assert expect_state in ["Terminating", "ContainerCreating", "Running"], f"Unknown expected pod state: {expect_state}: "
