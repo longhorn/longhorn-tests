@@ -14,13 +14,14 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Test Backing Image Basic Operation
     [Tags]    coretest
     [Documentation]    Test Backing Image APIs.
     Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-    When Create volume 0 with    backingImage=bi
+    When Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0

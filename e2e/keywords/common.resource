@@ -27,6 +27,12 @@ Set test environment
     setup_control_plane_network_latency
     set_backupstore
 
+    update_setting    v2-data-engine    true
+    ${worker_nodes}=    get_worker_nodes
+    FOR    ${worker_node}    IN    @{worker_nodes}
+        add_disk    ${worker_node}    block    /dev/xvdh
+    END
+
 Cleanup test resources
     cleanup_control_plane_network_latency
     reset_node_schedule
