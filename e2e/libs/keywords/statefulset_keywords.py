@@ -1,5 +1,3 @@
-from robot.libraries.BuiltIn import BuiltIn
-
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from utility.constant import LABEL_TEST

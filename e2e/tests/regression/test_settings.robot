@@ -6,6 +6,11 @@ Test Tags    regression
 Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/deployment.resource
+Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/workload.resource
+Resource    ../keywords/longhorn.resource
+Resource    ../keywords/sharemanager.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -66,3 +71,31 @@ Test Setting Concurrent Rebuild Limit
     And Wait for volume 0 healthy
     Then Check volume 0 data is intact
     And Check volume 1 data is intact
+
+Test Setting Storage Network For RWX Volume Enabled
+    [Tags]    setting    volume    rwx    storage-network
+    [Documentation]    Test if setting Storage Network For RWX Volume Enabled works correctly.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/8184
+    ...
+    ...                Precondition: Storage network configured.
+
+    Given Set setting storage-network-for-rwx-volume-enabled to false
+    When Create persistentvolumeclaim 0 using RWX volume
+    And Create deployment 0 with persistentvolumeclaim 0 with max replicaset
+    Then Check Longhorn workload pods not annotated with k8s.v1.cni.cncf.io/networks
+        ...    longhorn-csi-plugin
+        ...    longhorn-share-manager
+    And Check sharemanager not using headless service
+
+    And Delete deployment 0
+    And Delete persistentvolumeclaim 0
+    And Wait for all sharemanager to be deleted
+
+    When Set setting storage-network-for-rwx-volume-enabled to true
+    And Create persistentvolumeclaim 1 using RWX volume
+    And Create deployment 1 with persistentvolumeclaim 1 with max replicaset
+    Then Check Longhorn workload pods is annotated with k8s.v1.cni.cncf.io/networks
+        ...    longhorn-csi-plugin
+        ...    longhorn-share-manager
+    And Check sharemanager is using headless service
