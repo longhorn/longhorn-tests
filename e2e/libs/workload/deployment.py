@@ -8,6 +8,8 @@ from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
 
+from persistentvolumeclaim import PersistentVolumeClaim
+
 
 def create_deployment(name, claim_name, replicaset=1):
     filepath = f"./templates/workload/deployment.yaml"
@@ -31,6 +33,8 @@ def create_deployment(name, claim_name, replicaset=1):
         deployment = api.create_namespaced_deployment(
             namespace=namespace,
             body=manifest_dict)
+
+        PersistentVolumeClaim().set_label(claim_name, 'app', name)
 
         deployment_name = deployment.metadata.name
         replicas = deployment.spec.replicas
