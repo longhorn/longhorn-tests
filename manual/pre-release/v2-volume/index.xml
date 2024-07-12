@@ -13,7 +13,7 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/v2-volume/sanity-check/</guid>
       <description>Related doc: https://longhorn.io/docs/1.6.0/v2-data-engine/features/
- Support both amd64 and arm64 Volume creation, attachment, detachment and deletion Automatic offline replica rebuilding Orphaned replica management Snapshot creation, deletion and reversion Volume backup and restoration Selective v2 Data Engine activation Upgrade Longhorn from previous version with v2 volume  </description>
+ Support both amd64 and arm64 Volume creation, attachment, detachment and deletion Filesystem trim Replica online rebuilding Orphaned replica management Snapshot creation, deletion and reversion Volume backup and restoration Selective v2 Data Engine activation Upgrade Longhorn from previous version with v2 volume v2 volume live upgrade  </description>
     </item>
     
   </channel>
