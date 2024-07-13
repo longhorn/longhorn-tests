@@ -80,6 +80,8 @@ from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
+from common import wait_scheduling_failure
+from common import set_tags_for_node_and_its_disks
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -1932,21 +1934,20 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     check_volume_data(volume, data)
 
 
-def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
+def test_replica_should_not_be_created_when_no_suitable_node_found(client, volume_name, settings_reset): # NOQA
     """
-    Test extra failed to scheduled replica cleanup
-    when no eviction requested
+    Test replica should not be created when no suitable node is found.
 
     1. Make sure 'Replica Node Level Soft Anti-Affinity' is disabled.
     2. Create a volume with 3 replicas.
     3. Attach the volume to a node and write some data to it and
     save the checksum.
     4. Increase the volume replica number to 4.
-    5. Volume should show failed to schedule and an extra stop replica.
-    6. Decrease the volume replica number to 3.
-    7. Volume should show healthy and the extra failed to scheduled replica
-    should be removed.
-    8. Check the data in the volume and make sure it's same as the checksum.
+    5. No Replica should be created.
+    6. Volume should show failed to schedule.
+    7. Decrease the volume replica number to 3.
+    8. Volume should be healthy.
+    9. Check the data in the volume and make sure it's same as the checksum.
     """
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -1966,19 +1967,16 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     volume = wait_for_volume_healthy(client, volume_name)
     data = write_volume_random_data(volume)
     volume = volume.updateReplicaCount(replicaCount=4)
-    wait_for_volume_replica_count(client, volume_name, 4)
+    try:
+        wait_for_volume_replica_count(client, volume_name, 4)
+        raise AssertionError("Replica should not be created")
+    except AssertionError:
+        pass
 
-    volume = client.by_id_volume(volume_name)
+    volume = wait_for_volume_degraded(client, volume_name)
 
-    err_replica = None
-    for replica in volume.replicas:
-        if replica.running is False:
-            err_replica = replica
-            break
-
-    assert err_replica is not None
-    assert err_replica.running is False
-    assert err_replica.mode == ""
+    assert volume.conditions.Scheduled.status == "False"
+    assert volume.conditions.Scheduled.reason == "ReplicaSchedulingFailure"
 
     volume = volume.updateReplicaCount(replicaCount=3)
     wait_for_volume_replica_count(client, volume_name, 3)
@@ -2221,13 +2219,9 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
            for the volume.
     6. Update setting `replica-replenishment-wait-interval` to
        a small value.
-    7. Verify Longhorn starts to create a new replica for the volume.
-       Notice that the new replica scheduling will fail.
-    8. Update setting `replica-replenishment-wait-interval` to
-       a large value.
-    9. Delete the newly created replica.
-       --> Verify Longhorn won't create a new replica on the node
-           for the volume.
+    7. Verify no new replica will be created.
+    8. Verify volume replica scheduling should fail.
+    9. Update setting `replica-replenishment-wait-interval` to a large value.
     10. Enable the scheduling for the node.
     11. Verify the failed replica (in step 5) will be reused.
     12. Verify the volume r/w still works fine.
@@ -2288,34 +2282,18 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
         client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
     client.update(replenish_wait_setting, value=str(short_wait))
 
-    new_replica = None
-    for i in range(RETRY_COUNTS):
-        vol = client.by_id_volume(volume_name)
-        for r in vol.replicas:
-            if r.name not in {replica_1.name, replica_2.name, replica_3.name}:
-                new_replica = r
-        if new_replica is not None:
-            break
-        time.sleep(RETRY_INTERVAL)
-    assert new_replica is not None
-    assert new_replica.hostId == ""
+    try:
+        common.wait_for_volume_replica_count(client, volume_name,
+                                             len(vol.replicas)+1)
+        raise Exception("No new replica should be created")
+    except AssertionError:
+        pass
+
+    wait_scheduling_failure(client, volume_name)
 
     replenish_wait_setting = \
         client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
     client.update(replenish_wait_setting, value=str(long_wait))
-
-    vol = client.by_id_volume(volume_name)
-    vol.replicaRemove(name=new_replica.name)
-    # Removing replica doesn't take effect immediately
-    # Wait for Longhorn to finish removing it before process
-    for i in range(RETRY_COUNTS):
-        vol = client.by_id_volume(volume_name)
-        if len(vol.replicas) == 3:
-            break
-        time.sleep(RETRY_INTERVAL)
-    current_replica_names = set([r.name for r in vol.replicas])
-    assert current_replica_names == \
-           {replica_1.name, replica_2.name, replica_3.name}
 
     current_host = client.by_id_node(id=host_id)
     client.update(current_host, allowScheduling=True)
@@ -2326,24 +2304,6 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
            {replica_1.name, replica_2.name, replica_3.name}
     data = common.write_volume_data(vol, data)
     check_volume_data(vol, data)
-
-
-def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
-    if len(tags) == 0:
-        expected_tags = []
-    else:
-        expected_tags = list(tags)
-
-    for disk_name in node.disks.keys():
-        node.disks[disk_name].tags = tags
-    node = update_node_disks(client, node.name, disks=node.disks)
-    for disk_name in node.disks.keys():
-        assert node.disks[disk_name].tags == expected_tags
-
-    node = set_node_tags(client, node, tags)
-    assert node.tags == expected_tags
-
-    return node
 
 
 def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_name): # NOQA
@@ -2467,7 +2427,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     9. Attach volume2.
        --> Verify volume will be attached with state Degraded.
     10. Wait for the replenishment interval.
-        --> Verify a new replica will be created but it cannot be scheduled.
+        --> Verify a new replica cannot be scheduled.
     11. Enable the default disk for the host node.
     12. Wait for volume2 becoming Healthy.
     13. Verify data content and r/w capability for volume2.
@@ -2520,11 +2480,13 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
                                   VOLUME_ROBUSTNESS_DEGRADED)
 
     time.sleep(10)
-    wait_for_volume_replica_count(client, volume_name_2, 4)
-    common.wait_for_volume_condition_scheduled(client, volume_name_2,
-                                               "status", "False")
-    volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.Scheduled.reason == "ReplicaSchedulingFailure"
+    try:
+        wait_for_volume_replica_count(client, volume_name_2, 4)
+        raise AssertionError("No new replica should be created")
+    except AssertionError:
+        pass
+
+    wait_scheduling_failure(client, volume_name_2)
 
     update_disks[default_disk_name].allowScheduling = True
     update_disks["extra-disk"]["allowScheduling"] = False
@@ -3220,7 +3182,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     command = 'ss -a -n | grep :8500 | wc -l'
     for i in range(RETRY_EXEC_COUNTS):
         socket_cnt = exec_command_in_pod(
-            core_api, command, mgr_name, 'longhorn-system')
+            core_api, command, mgr_name, 'longhorn-system', 'longhorn-manager')
         assert int(socket_cnt) < 20
 
         time.sleep(RETRY_EXEC_INTERVAL)

@@ -179,6 +179,8 @@ SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     "allow-recurring-job-while-volume-detached"
 SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
 SETTING_REPLICA_AUTO_BALANCE = "replica-auto-balance"
+SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE = \
+    "replica-auto-balance-disk-pressure-percentage"
 SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
     "replica-replenishment-wait-interval"
 SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
@@ -219,6 +221,8 @@ SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
 SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
 SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
+SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES = \
+    "default-min-number-of-backing-image-copies"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -311,6 +315,10 @@ BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
 BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
                                   "failed to list backup volumes in",
                                   "error listing backup volume names"]
+
+FAILED_DELETING_REASONE = "FailedDeleting"
+BACKINGIMAGE_FAILED_EVICT_MSG = \
+    "since there is no other healthy backing image copy"
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -838,7 +846,7 @@ def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
             tty=False)
 
 
-def exec_command_in_pod(api, command, pod_name, namespace):
+def exec_command_in_pod(api, command, pod_name, namespace, container=None):
     """
     Execute command in the pod.
     Args:
@@ -859,7 +867,7 @@ def exec_command_in_pod(api, command, pod_name, namespace):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, namespace,
             command=exec_command, stderr=True, stdin=False, stdout=True,
-            tty=False)
+            container=container, tty=False)
 
 
 def get_pod_data_md5sum(api, pod_name, path):
@@ -1789,6 +1797,35 @@ def reset_nodes_taint(client):
         core_api.patch_node(node.id, {
             "spec": {"taints": []}
         })
+
+
+def cleanup_disks_on_node(client, node_id, *disks):  # NOQA
+    # Disable scheduling for the new disks on self node
+    node = client.by_id_node(node_id)
+    for name, disk in node.disks.items():
+        if disk.path != DEFAULT_DISK_PATH:
+            disk.allowScheduling = False
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, node_id, len(update_disks))
+
+    # Remove new disks on self node and enable scheduling for the default disk
+    default_disks = {}
+    for name, disk in iter(node.disks.items()):
+        if disk.path == DEFAULT_DISK_PATH:
+            disk.allowScheduling = True
+            default_disks[name] = disk
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=default_disks, retry=True)
+    wait_for_disk_update(client, node_id, len(default_disks))
+
+    # Cleanup host disks
+    for disk in disks:
+        cleanup_host_disks(client, disk)
 
 
 def get_client(address):
@@ -3301,13 +3338,19 @@ def wait_for_volume_migration_ready(client, volume_name):
     return v
 
 
-def wait_for_volume_migration_node(client, volume_name, node_id):
+def wait_for_volume_migration_node(client, volume_name, node_id,
+                                   expected_replica_count=-1):
     ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
+
+        if expected_replica_count == -1:
+            expected_replica_count = v.numberOfReplicas
+        assert expected_replica_count >= 0
+
         engines = v.controllers
         replicas = v.replicas
-        if len(engines) == 1 and len(replicas) == v.numberOfReplicas:
+        if len(engines) == 1 and len(replicas) == expected_replica_count:
             e = engines[0]
             if e.endpoint != "":
                 assert e.hostId == node_id
@@ -5278,7 +5321,9 @@ def assert_backup_state(b_actual, b_expected):
     assert b_expected.messages == b_actual.messages is None
 
 
-def create_backing_image_with_matching_url(client, name, url):
+def create_backing_image_with_matching_url(client, name, url,
+                                           minNumberOfCopies=1,
+                                           nodeSelector=[], diskSelector=[]):
     backing_images = client.list_backing_image()
     found = False
     for bi in backing_images:
@@ -5303,13 +5348,16 @@ def create_backing_image_with_matching_url(client, name, url):
             expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
         bi = client.create_backing_image(
             name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
-            parameters={"url": url}, expectedChecksum=expected_checksum)
+            parameters={"url": url}, expectedChecksum=expected_checksum,
+            minNumberOfCopies=minNumberOfCopies,
+            nodeSelector=nodeSelector, diskSelector=diskSelector)
     assert bi
 
     is_ready = False
     for i in range(RETRY_COUNTS):
         bi = client.by_id_backing_image(name)
-        if len(bi.diskFileStatusMap) == 1 and bi.currentChecksum != "":
+        if (len(bi.diskFileStatusMap) == minNumberOfCopies and
+                bi.currentChecksum != ""):
             for disk, status in iter(bi.diskFileStatusMap.items()):
                 if status.state == "ready":
                     is_ready = True
@@ -6182,7 +6230,9 @@ def system_restore_wait_for_state(state, name, client):  # NOQA
         except Exception:
             time.sleep(RETRY_INTERVAL_LONG)
 
-    assert ok
+    assert ok, \
+        f" Expected state {state}, " \
+        f" but got {system_restore.state} after {RETRY_COUNTS} attempts"
 
 
 def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
@@ -6262,3 +6312,125 @@ def wait_delete_dm_device(api, name):
             break
         time.sleep(RETRY_INTERVAL)
     assert not found
+
+
+def wait_for_volume_replica_rebuilt_on_same_node_different_disk(client, node_name, volume_name, old_disk_name):  # NOQA
+    new_disk_name = ""
+    for _ in range(RETRY_COUNTS_SHORT):
+        time.sleep(RETRY_INTERVAL_LONG)
+
+        node = client.by_id_node(node_name)
+        disks = node.disks
+        new_disk_name = ""
+        for name, disk in disks.items():
+            # if scheduledReplica has prefix of volume-name
+            for scheduledReplica, _ in disk.scheduledReplica.items():
+                if scheduledReplica.startswith(volume_name):
+                    new_disk_name = name
+                    break
+        if new_disk_name != old_disk_name:
+            break
+
+    assert new_disk_name != old_disk_name, \
+        "Failed to rebuild replica disk to another disk"
+
+
+def set_tags_for_node_and_its_disks(client, node, node_tags, disks_tags_map): # NOQA
+    for disk_name in node.disks.keys():
+        if disk_name in disks_tags_map:
+            node.disks[disk_name].tags = disks_tags_map[disk_name]
+
+    node = update_node_disks(client, node.name, disks=node.disks)
+    for disk_name in node.disks.keys():
+        if disk_name in disks_tags_map:
+            assert node.disks[disk_name].tags == disks_tags_map[disk_name]
+
+    if len(node_tags) == 0:
+        expected_tags = []
+    else:
+        expected_tags = list(node_tags)
+
+    node = set_node_tags(client, node, node_tags)
+    assert node.tags == expected_tags
+
+
+def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
+    if len(tags) == 0:
+        expected_tags = []
+    else:
+        expected_tags = list(tags)
+
+    for disk_name in node.disks.keys():
+        node.disks[disk_name].tags = tags
+    node = update_node_disks(client, node.name, disks=node.disks)
+    for disk_name in node.disks.keys():
+        assert node.disks[disk_name].tags == expected_tags
+
+    node = set_node_tags(client, node, tags)
+    assert node.tags == expected_tags
+
+    return node
+
+
+def get_node_by_disk_id(client, disk_id): # NOQA
+    nodes = client.list_node()
+
+    for node in nodes:
+        disks = node.disks
+        for name, disk in iter(disks.items()):
+            if disk.diskUUID == disk_id:
+                return node
+    # should handle empty result in caller
+    return ""
+
+
+def check_backing_image_single_copy_disk_eviction(client, bi_name, old_disk_id): # NOQA
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(bi_name)
+        current_disk_id = next(iter(backing_image.diskFileStatusMap))
+        if current_disk_id != old_disk_id:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert current_disk_id != old_disk_id
+
+
+def check_backing_image_single_copy_node_eviction(client, bi_name, old_node): # NOQA
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(bi_name)
+        current_disk_id = next(iter(backing_image.diskFileStatusMap))
+        current_node = get_node_by_disk_id(client, current_disk_id)
+        if current_node.name != old_node.name:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert current_node.name != old_node.name
+
+
+def check_backing_image_eviction_failed(name): # NOQA
+    core_client = get_core_api_client()
+    selector = "involvedObject.kind=BackingImage,involvedObject.name=" + name
+    check = False
+
+    for i in range(RETRY_COUNTS_LONG):
+        events = core_client.list_namespaced_event(
+            namespace=LONGHORN_NAMESPACE,
+            field_selector=selector,
+        ).items
+        if len(events) == 0:
+            continue
+
+        for j in range(len(events)):
+            if (events[j].reason == FAILED_DELETING_REASONE and
+                    BACKINGIMAGE_FAILED_EVICT_MSG in events[j].message):
+                check = True
+                break
+
+        if check:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert check

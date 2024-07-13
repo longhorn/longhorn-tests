@@ -26,6 +26,7 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     Given Set setting node-down-pod-deletion-policy to do-nothing
     When Create persistentvolumeclaim 0 using RWO volume
     And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
 
     # Delete replicas to have the volume with its only replica located on different nodes.
@@ -46,6 +47,7 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
 
     When Create persistentvolumeclaim 0 using RWO volume
     And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
 
     # Delete replicas to have the volume with its only replica located on the same node.
@@ -65,6 +67,7 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
 
     When Create persistentvolumeclaim 0 using RWO volume
     And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
 
     # Delete replicas to have the volume with its only replica located on different nodes.
@@ -83,6 +86,7 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
 
     When Create persistentvolumeclaim 0 using RWO volume
     And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
 
     # Delete replicas to have the volume with its only replica located on the same node
@@ -101,6 +105,7 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
     Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
 
     When Create statefulset 0 using RWO volume
+    And Wait for volume of statefulset 0 healthy
     And Write 100 MB data to file data in statefulset 0
 
     # Delete replicas to have the volume with its only replica located on different nodes.
@@ -118,6 +123,7 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
     Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
 
     When Create statefulset 0 using RWO volume
+    And Wait for volume of statefulset 0 healthy
     And Write 100 MB data to file data in statefulset 0
 
     # Delete replicas to have the volume with its only replica located on the same.

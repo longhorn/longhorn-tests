@@ -1,5 +1,4 @@
 from snapshot import Snapshot
-from utility.utility import logging
 
 
 class snapshot_keywords:

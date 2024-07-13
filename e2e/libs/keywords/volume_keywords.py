@@ -1,13 +1,17 @@
 import asyncio
 import time
+
 from node import Node
 from node.utility import check_replica_locality
 
-from utility.constant import ANNOT_CHECKSUM
+from replica import Replica
+
+from utility.constant import ANNOT_REPLICA_NAMES
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+
 from volume import Volume
 
 
@@ -16,6 +20,7 @@ class volume_keywords:
     def __init__(self):
         self.node = Node()
         self.volume = Volume()
+        self.replica = Replica()
 
     def cleanup_volumes(self):
         volumes = self.volume.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
@@ -24,7 +29,7 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size=2, numberOfReplicas=3, frontend="blockdev", migratable=False, accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup=""):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup=""):
         logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup)
 
@@ -268,3 +273,28 @@ class volume_keywords:
 
     def create_persistentvolumeclaim_for_volume(self, volume_name, retry=True):
         self.volume.create_persistentvolumeclaim(volume_name, retry)
+
+    def record_volume_replica_names(self, volume_name):
+        replica_list = self.replica.get(volume_name, node_name="")
+        assert replica_list != "", f"failed to get replicas"
+
+        replica_names = [replica['metadata']['name'] for replica in replica_list['items']]
+        logging(f"Found volume {volume_name} replicas: {replica_names}")
+
+        replica_names_str = ",".join(replica_names)
+        self.volume.set_annotation(volume_name, ANNOT_REPLICA_NAMES, replica_names_str)
+
+    def check_volume_replica_names_recorded(self, volume_name):
+        replica_names_str = self.volume.get_annotation_value(volume_name, ANNOT_REPLICA_NAMES)
+        expected_replica_names = sorted(replica_names_str.split(","))
+
+        replica_list = self.replica.get(volume_name, node_name="")
+        assert replica_list != "", f"failed to get replicas"
+
+        actual_replica_names = [replica['metadata']['name'] for replica in replica_list['items']]
+        actual_replica_names = sorted(actual_replica_names)
+
+        assert actual_replica_names == expected_replica_names, \
+            f"Volume {volume_name} replica names mismatched:\n" \
+            f"Want: {expected_replica_names}\n" \
+            f"Got: {actual_replica_names}"

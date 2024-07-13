@@ -100,10 +100,10 @@ from common import BACKUP_COMPRESSION_METHOD_GZIP
 from common import BACKUP_COMPRESSION_METHOD_NONE
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
-from common import RETRY_COUNTS_SHORT
 from common import scale_up_engine_image_daemonset
 from common import BACKUP_TARGET_MESSAGE_EMPTY_URL
 from common import BACKUP_TARGET_MESSAGES_INVALID
+from common import wait_scheduling_failure
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -2896,22 +2896,20 @@ def test_running_volume_with_scheduling_failure(
     3. Write data to the pod volume and get the md5sum.
     4. Disable the scheduling for a node contains a running replica.
     5. Crash the replica on the scheduling disabled node for the volume.
-    6. Wait for the scheduling failure which is caused
-       by the new replica creation.
+    6. Wait for the scheduling failure.
     7. Verify:
       7.1. `volume.ready == True`.
       7.2. `volume.conditions[scheduled].status == False`.
       7.3. the volume is Degraded.
-      7.4. the new replica is created but it is not running.
+      7.4. the new replica cannot be created.
     8. Write more data to the volume and get the md5sum
     9. Delete the pod and wait for the volume detached.
-    10. Verify the scheduling failed replica is removed.
-    11. Verify:
-      11.1. `volume.ready == True`.
-      11.2. `volume.conditions[scheduled].status == True`
-    12. Recreate a new pod for the volume and wait for the pod running.
-    13. Validate the volume content, then check if data writing looks fine.
-    14. Clean up pod, PVC, and PV.
+    10. Verify:
+      10.1. `volume.ready == True`.
+      10.2. `volume.conditions[scheduled].status == True`
+    11. Recreate a new pod for the volume and wait for the pod running.
+    12. Validate the volume content, then check if data writing looks fine.
+    13. Clean up pod, PVC, and PV.
     """
 
     replica_node_soft_anti_affinity_setting = \
@@ -2965,15 +2963,11 @@ def test_running_volume_with_scheduling_failure(
     wait_for_volume_condition_scheduled(client, volume_name, "reason",
                                         CONDITION_REASON_SCHEDULING_FAILURE)
     volume = wait_for_volume_degraded(client, volume_name)
-    assert len(volume.replicas) == 4
-    assert volume.ready
-    for r in volume.replicas:
-        if r.name not in existing_replicas:
-            new_replica = r
-            break
-    assert new_replica
-    assert not new_replica.running
-    assert not new_replica.hostId
+    try:
+        common.wait_for_volume_replica_count(client, volume_name, 4)
+        raise Exception("No new replica should be created")
+    except AssertionError:
+        pass
 
     data_path2 = "/data/test2"
     write_pod_volume_random_data(core_api, test_pod_name,
@@ -2985,12 +2979,7 @@ def test_running_volume_with_scheduling_failure(
     volume = wait_for_volume_condition_scheduled(client, volume_name, "status",
                                                  CONDITION_STATUS_TRUE)
     assert volume.ready
-    # The scheduling failed replica will be removed
-    # so that the volume can be reattached later.
     assert len(volume.replicas) == 3
-    for r in volume.replicas:
-        assert r.hostId != ""
-        assert r.name != new_replica.name
 
     create_and_wait_pod(core_api, pod)
     wait_for_volume_degraded(client, volume_name)
@@ -3027,30 +3016,28 @@ def test_expansion_with_scheduling_failure(
     4. Disable the scheduling for a node contains a running replica.
     5. Crash the replica on the scheduling disabled node for the volume.
        Then delete the failed replica so that it won't be reused.
-    6. Wait for the scheduling failure which is caused
-       by the new replica creation.
+    6. Wait for the scheduling failure.
     7. Verify:
       7.1. `volume.ready == True`.
       7.2. `volume.conditions[scheduled].status == False`.
       7.3. the volume is Degraded.
-      7.4. the new replica is created but it is not running.
+      7.4. the new replica cannot be created.
     8. Write more data to the volume and get the md5sum
     9. Delete the pod and wait for the volume detached.
-    10. Verify the scheduling failed replica is removed.
-    11. Verify:
-      11.1. `volume.ready == True`.
-      11.2. `volume.conditions[scheduled].status == True`
-    12. Expand the volume and wait for the expansion succeeds.
-    13. Verify there is no rebuild replica after the expansion.
-    14. Recreate a new pod for the volume and wait for the pod running.
-    15. Validate the volume content.
-    16. Verify the expanded part can be read/written correctly.
-    17. Enable the node scheduling.
-    18. Wait for the volume rebuild succeeds.
-    19. Verify the data written in the expanded part.
-    20. Clean up pod, PVC, and PV.
+    10. Verify:
+      10.1. `volume.ready == True`.
+      10.2. `volume.conditions[scheduled].status == True`
+    11. Expand the volume and wait for the expansion succeeds.
+    12. Verify there is no rebuild replica after the expansion.
+    13. Recreate a new pod for the volume and wait for the pod running.
+    14. Validate the volume content.
+    15. Verify the expanded part can be read/written correctly.
+    16. Enable the node scheduling.
+    17. Wait for the volume rebuild succeeds.
+    18. Verify the data written in the expanded part.
+    19. Clean up pod, PVC, and PV.
 
-    Notice that the step 1 to step 11 is identical with
+    Notice that the step 1 to step 10 is identical with
     those of the case test_running_volume_with_scheduling_failure().
     """
     replica_node_soft_anti_affinity_setting = \
@@ -3110,16 +3097,11 @@ def test_expansion_with_scheduling_failure(
     wait_for_volume_condition_scheduled(client, volume_name, "reason",
                                         CONDITION_REASON_SCHEDULING_FAILURE)
     volume = wait_for_volume_degraded(client, volume_name)
-    assert len(volume.replicas) == 3
-    assert volume.ready
-    for r in volume.replicas:
-        assert r.name != failed_replica.name
-        if r.name not in old_replicas:
-            new_replica = r
-            break
-    assert new_replica
-    assert not new_replica.running
-    assert not new_replica.hostId
+    try:
+        common.wait_for_volume_replica_count(client, volume_name, 3)
+        raise Exception("No new replica should be created")
+    except AssertionError:
+        pass
 
     data_path2 = "/data/test2"
     write_pod_volume_random_data(core_api, test_pod_name,
@@ -3131,12 +3113,7 @@ def test_expansion_with_scheduling_failure(
     volume = wait_for_volume_condition_scheduled(client, volume_name, "status",
                                                  CONDITION_STATUS_TRUE)
     assert volume.ready
-    # The scheduling failed replica will be removed
-    # so that the volume can be reattached later.
     assert len(volume.replicas) == 2
-    for r in volume.replicas:
-        assert r.hostId != ""
-        assert r.name != new_replica.name
 
     expanded_size = str(400 * Mi)
     volume.expand(size=expanded_size)
@@ -3717,8 +3694,8 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     4. Wait for the restore to complete and volume detach automatically.
        Then check the scheduled condition still true.
     5. Attach and wait for the volume.
-        1. Replicas scheduling to node 1 and 2 success.
-           Replica scheduling to node 3 fail.
+        1. 2 Replicas successfully scheduled to node 1 and 2.
+           1 Replica cannot be created due to node 3 is unscheduled.
         2. The scheduled condition becomes false.
         3. Verify the data.
     """
@@ -3804,11 +3781,11 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
                                                 to_nodes=[node1.name,
                                                           node2.name],
                                                 expect_success=2,
-                                                expect_fail=1,
+                                                expect_fail=0,
                                                 chk_vol_healthy=False,
                                                 chk_replica_running=False)
-    wait_for_volume_condition_scheduled(client, dst_vol_name,
-                                        "status", "False")
+
+    wait_scheduling_failure(client, dst_vol_name)
 
     # verify the data
     dst_md5sum = get_pod_data_md5sum(core_api, dst_pod_name, data_path)
@@ -5693,7 +5670,7 @@ def test_backuptarget_invalid(apps_api, # NOQA
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
 
-    for i in range(RETRY_COUNTS_SHORT):
+    for i in range(RETRY_COUNTS):
         api = get_custom_object_api_client()
         backups = api.list_namespaced_custom_object("longhorn.io",
                                                     "v1beta2",

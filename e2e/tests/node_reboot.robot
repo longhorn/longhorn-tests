@@ -11,6 +11,7 @@ Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/setting.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -197,8 +198,8 @@ Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Wr
     END
 
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
-    Given Create volume 0 with 2 GB and 1 replicas
-    And Create volume 1 with 2 GB and 3 replicas
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=1
+    And Create volume 1 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
     And Attach volume 1
     And Keep writing data to volume 0
@@ -217,8 +218,8 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
     END
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
-    Given Create volume 0 with 2 GB and 1 replicas
-    And Create volume 1 with 2 GB and 3 replicas
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=1
+    And Create volume 1 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
     And Attach volume 1
     And Keep writing data to volume 0
@@ -234,4 +235,27 @@ Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
         And Check recurringjobs for volume 1 work
         And Check volume 0 works
         And Check volume 1 works
+    END
+
+Power Off Replica Node Should Not Rebuild New Replica On Same Node
+    [Tags]    replica   reboot
+    [Documentation]    Ensures that no new replica is created and rebuilt on the
+    ...                same node if the node is powered off for a duration longer
+    ...                than the replica-replenishment-wait-interval. When the node
+    ...                is powered on, the existing replica should be reused.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/1992
+
+    Given Set setting replica-replenishment-wait-interval to 30
+    And Set setting replica-soft-anti-affinity to false
+    And Create volume 0 with    size=1Gi    numberOfReplicas=3
+    And Attach volume 0 to node 0
+    And Record volume 0 replica names
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Power off node 1 for 1 mins
+        And Wait for longhorn ready
+        And Wait for volume 0 healthy
+
+        Then Check volume 0 replica names are as recorded
     END

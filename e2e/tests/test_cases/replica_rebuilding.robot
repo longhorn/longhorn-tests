@@ -37,7 +37,7 @@ Replica Rebuilding
     ...                - the rebuilding progress in UI page looks good.
     ...                - the data content is correct after rebuilding.
     ...                - volume r/w works fine.
-    When Create volume 0 with 10 GB and 3 replicas
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
 
