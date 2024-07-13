@@ -106,6 +106,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-longhorn-cli-longhornctl/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/lh-hardend-rancher/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</loc>

@@ -19,6 +19,23 @@ And Integration tests should pass.</description>
     </item>
     
     <item>
+      <title>Longhorn Commandline Interface (longhornctl)</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-longhorn-cli-longhornctl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-longhorn-cli-longhornctl/</guid>
+      <description>Related issues  https://github.com/longhorn/longhorn/issues/7927  Test install preflight Given longhornctl binary.
+And longhornctl image.
+When Execute longhornctl install preflight.
+&amp;gt; ./bin/longhornctl -l debug --image=&amp;#34;c3y1huang/research:longhornctl-407&amp;#34; install preflight Then Command should succeed.
+INFO[2024-06-24T10:23:16+08:00] Completed preflight installer. Use &#39;longhornctl check preflight&#39; to check the result. Test check preflight Given longhornctl binary.
+And longhornctl image.
+When Execute longhornctl check preflight.
+&amp;gt; ./bin/longhornctl -l debug --image=&amp;#34;c3y1huang/research:longhornctl-407&amp;#34; check preflight Then Command should show result.
+INFO[2024-06-24T10:24:54+08:00] Retrieved preflight checker result: ip-10-0-2-106: info: - Service iscsid is running - NFS4 is supported - Package nfs-client is installed - Package open-iscsi is installed - CPU instruction set sse4_2 is supported - HugePages is enabled - Module nvme_tcp is loaded - Module uio_pci_generic is loaded ip-10-0-2-181: info: - Service iscsid is running - NFS4 is supported - Package nfs-client is installed - Package open-iscsi is installed - CPU instruction set sse4_2 is supported - HugePages is enabled - Module nvme_tcp is loaded - Module uio_pci_generic is loaded ip-10-0-2-219: info: - Service iscsid is running - NFS4 is supported - Package nfs-client is installed - Package open-iscsi is installed - CPU instruction set sse4_2 is supported - HugePages is enabled - Module nvme_tcp is loaded - Module uio_pci_generic is loaded And Command should succeed.</description>
+    </item>
+    
+    <item>
       <title>Node Disk Support</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-node-disk-support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
