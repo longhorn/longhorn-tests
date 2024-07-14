@@ -19,7 +19,8 @@ class Rest(Base):
             parameters={
                 "url": url
             },
-            expectedChecksum=expected_checksum
+            expectedChecksum=expected_checksum,
+            minNumberOfCopies=1
         )
 
         ready = False
