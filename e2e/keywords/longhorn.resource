@@ -18,7 +18,6 @@ Library             ../libs/keywords/workload_keywords.py
 *** Keywords ***
 Wait for longhorn ready
     wait_for_all_instance_manager_running
-    wait_for_workloads_pods_running    ${longhorn_workloads}    longhorn-system
 
 Wait for Longhorn workloads pods stable
     [Arguments]    @{args}
