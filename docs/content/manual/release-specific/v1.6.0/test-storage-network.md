@@ -28,7 +28,9 @@ https://github.com/longhorn/longhorn/issues/6953
 - Use subnet-2 for network interface 2
 - Disable `Auto-assign public IP`
 - Add security group inbound rule to allow `All traffic` from `Anywhere-IPv4`
-- Stop `Source/destination check`
+- Stop `Source/destination check`. There does not appear to be a way to do this from `Launch instances` in the console,
+  so be sure to do it from `Instances`, `Actions`, `Networking`, `Change source/destination check` after creation.
+  Failure to do so will cause traffic on the 192.168.0.0/16 (between `lhnet1` interfaces) to be blocked.
 
 *And* Create 3 elastic IPs.
 
