@@ -5,8 +5,6 @@ from datetime import datetime
 from kubernetes import client
 
 from recurringjob.base import Base
-from recurringjob.constant import RETRY_COUNTS
-from recurringjob.constant import RETRY_INTERVAL
 
 from utility.utility import filter_cr
 from utility.utility import get_longhorn_client

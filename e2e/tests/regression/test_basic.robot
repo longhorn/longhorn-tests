@@ -18,6 +18,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Keywords ***
 Create volume with invalid name should fail
@@ -39,7 +40,7 @@ Test Volume Basic
     ...
     ...                1. Create a volume and attach to the current node, then check volume states
     ...                2. Write then read back to check volume data
-    Given Create volume 0 with 2 GB and 3 replicas
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     When Attach volume 0
     And Wait for volume 0 healthy
 
@@ -52,7 +53,7 @@ Test Volume Basic
 Test Snapshot
     [Tags]    coretest
     [Documentation]    Test snapshot operations
-    Given Create volume 0
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     When Attach volume 0
     And Wait for volume 0 healthy
 

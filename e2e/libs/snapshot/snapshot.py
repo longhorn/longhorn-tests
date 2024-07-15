@@ -1,8 +1,8 @@
 from snapshot.base import Base
 from snapshot.crd import CRD
 from snapshot.rest import Rest
+
 from strategy import LonghornOperationStrategy
-from utility.utility import logging
 
 
 class Snapshot(Base):

@@ -51,7 +51,7 @@ Node Disconnect And Keep Data Writing And Have Replica On The Disconnected Node
     ...                The volume become healthy.
     Given Set setting auto-salvage to false
 
-    When Create volume 0 with 10 GB and 3 replicas
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
 
@@ -89,7 +89,7 @@ Node Disconnect And Have Replica On Disconnected Node
     ...                The volume will be in an attached state with its robustness unknown at first, then the volume become healthy.
     Given Set setting auto-salvage to false
 
-    When Create volume 0 with 10 GB and 3 replicas
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
@@ -123,7 +123,7 @@ Node Disconnect With Statefulset
         Then Check statefulset 0 data in file data is intact
     END
 
-    When Create volume 0 with 1 GB and 3 replicas
+    When Create volume 0 with    size=1Gi    numberOfReplicas=3
     And Attach volume 0 to statefulset 0 node
     And Wait for volume 0 healthy
 

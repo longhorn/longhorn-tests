@@ -1,8 +1,9 @@
 import os
 import time
-from utility.utility import logging
+
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
 
 class Setting:
 

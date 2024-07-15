@@ -17,6 +17,7 @@ Library             ../libs/keywords/backing_image_keywords.py
 Library             ../libs/keywords/setting_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/backup_keywords.py
+Library             ../libs/keywords/sharemanager_keywords.py
 
 *** Keywords ***
 Set test environment
@@ -25,6 +26,12 @@ Set test environment
 
     setup_control_plane_network_latency
     set_backupstore
+
+    update_setting    v2-data-engine    true
+    ${worker_nodes}=    get_worker_nodes
+    FOR    ${worker_node}    IN    @{worker_nodes}
+        add_disk    ${worker_node}    block    /dev/xvdh
+    END
 
 Cleanup test resources
     cleanup_control_plane_network_latency

@@ -15,7 +15,7 @@ ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Delete Replica While Replica Rebuilding
-    Given Create volume 0 with 2 GB and 3 replicas
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
@@ -32,7 +32,7 @@ Delete Replica While Replica Rebuilding
     END
 
 Reboot Volume Node While Replica Rebuilding
-    Given Create volume 0 with 5 GB and 3 replicas
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0
     And Write data to volume 0
 
@@ -47,7 +47,7 @@ Reboot Volume Node While Replica Rebuilding
     END
 
 Reboot Replica Node While Replica Rebuilding
-    Given Create volume 0 with 5 GB and 3 replicas
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0
     And Write data to volume 0
 

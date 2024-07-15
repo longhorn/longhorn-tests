@@ -18,7 +18,7 @@ ${RETRY_INTERVAL}    1
 *** Test Cases ***
 
 Stress Volume Node CPU When Replica Is Rebuilding
-    Given Create volume 0 with 5 GB and 3 replicas
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0
     And Write data to volume 0
 
@@ -32,7 +32,7 @@ Stress Volume Node CPU When Replica Is Rebuilding
     END
 
 Stress Volume Node CPU When Volume Is Detaching and Attaching
-    Given Create volume 0 with 5 GB and 3 replicas
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0
     And Write data to volume 0
 
