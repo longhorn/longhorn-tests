@@ -131,6 +131,7 @@ def add_or_update_statefulset_annotation(name, annotation_key, annotation_value,
         body=statefulset
     )
 
+
 def get_statefulset_annotation_value(name, annotation_key, namespace="default"):
     statefulset = get_statefulset(name, namespace)
     return statefulset['metadata']['annotations'].get(annotation_key)

@@ -1,8 +1,9 @@
 import time
+
 from kubernetes import client
 from kubernetes.client.rest import ApiException
+
 from utility.utility import get_retry_count_and_interval
-from utility.utility import logging
 
 
 class PersistentVolume():

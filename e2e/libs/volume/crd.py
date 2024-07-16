@@ -1,14 +1,18 @@
 import time
-from kubernetes.client.rest import ApiException
+
 from kubernetes import client
+from kubernetes.client.rest import ApiException
+
 from engine import Engine
+
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
+
 from volume.base import Base
-from volume.constant import GIBIBYTE
+from volume.constant import GIBIBYTE, MEBIBYTE
 from volume.rest import Rest
 
 
@@ -21,7 +25,10 @@ class CRD(Base):
         self.engine = Engine()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
-        size = str(int(size) * GIBIBYTE)
+        size_suffix = size[-2:]
+        size_number = size[:-2]
+        size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
+        size = str(int(size_number) * size_unit)
         accessMode = accessMode.lower()
         body = {
             "apiVersion": "longhorn.io/v1beta2",
@@ -244,8 +251,8 @@ class CRD(Base):
         keep_state_desire_time = 20
         for i in range(keep_state_desire_time):
             volume = self.get(volume_name)
-            logging(f"Checking volume {volume} kept in status {desired_state}")
-            assert volume["status"]["state"] == desired_state
+            logging(f"Checking volume {volume_name} kept in status {desired_state}")
+            assert volume["status"]["state"] == desired_state, volume
             time.sleep(self.retry_interval)
 
     def wait_for_volume_robustness(self, volume_name, desired_state):

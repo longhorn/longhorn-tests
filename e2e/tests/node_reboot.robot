@@ -198,8 +198,8 @@ Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Wr
     END
 
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
-    Given Create volume 0 with 2 GB and 1 replicas
-    And Create volume 1 with 2 GB and 3 replicas
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=1
+    And Create volume 1 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
     And Attach volume 1
     And Keep writing data to volume 0
@@ -218,8 +218,8 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
     END
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
-    Given Create volume 0 with 2 GB and 1 replicas
-    And Create volume 1 with 2 GB and 3 replicas
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=1
+    And Create volume 1 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
     And Attach volume 1
     And Keep writing data to volume 0
@@ -248,7 +248,7 @@ Power Off Replica Node Should Not Rebuild New Replica On Same Node
 
     Given Set setting replica-replenishment-wait-interval to 30
     And Set setting replica-soft-anti-affinity to false
-    And Create volume 0 with 1 GB and 3 replicas
+    And Create volume 0 with    size=1Gi    numberOfReplicas=3
     And Attach volume 0 to node 0
     And Record volume 0 replica names
 

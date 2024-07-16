@@ -22,6 +22,9 @@ def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 // parameter for v2 test
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : true
 
+// parameter for running test as a pod or a container
+def OUT_OF_CLUSTER = params.OUT_OF_CLUSTER ? params.OUT_OF_CLUSTER : false
+
 node {
 
     withCredentials([
@@ -126,6 +129,7 @@ node {
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
+                                       --env OUT_OF_CLUSTER=${OUT_OF_CLUSTER} \
                                        --env IMAGE_NAME=${imageName} \
                                        -v /var/run/docker.sock:/var/run/docker.sock \
                                        --mount source="vol-${imageName}",target=/tmp \

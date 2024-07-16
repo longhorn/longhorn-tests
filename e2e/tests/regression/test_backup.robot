@@ -20,6 +20,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Keywords ***
 Snapshot PV PVC could not be created on DR volume 1
@@ -36,10 +37,10 @@ Test Backup Volume List
     ...    We want to make sure that an error when listing a single backup volume
     ...    does not stop us from listing all the other backup volumes. Otherwise a
     ...    single faulty backup can block the retrieval of all known backup volumes.
-    Given Create volume 0
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
-    And Create volume 1
+    And Create volume 1 with    dataEngine=${DATA_ENGINE}
     And Attach volume 1
     And Wait for volume 1 healthy
 
@@ -61,7 +62,7 @@ Test Backup Volume List
 
 Test Incremental Restore
     [Documentation]    Test restore from disaster recovery volume (incremental restore)
-    Given Create volume 0
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0

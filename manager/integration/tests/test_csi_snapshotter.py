@@ -29,6 +29,7 @@ from common import generate_volume_name, Mi, wait_and_get_pv_for_pvc, create_pvc
 from common import make_deployment_with_pvc, apps_api # NOQA
 from common import check_pvc_in_specific_status # NOQA
 from common import wait_for_pvc_phase
+from common import update_setting
 from common import BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_RAW_URL, BACKING_IMAGE_RAW_CHECKSUM
 from common import BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, RETRY_COUNTS_SHORT
@@ -37,6 +38,7 @@ from common import wait_for_backing_image_status, exec_command_in_pod
 from common import delete_and_wait_pod, delete_and_wait_pvc
 from common import BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
 from common import create_backing_image_with_matching_url
+from common import SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES
 
 CSI_SNAPSHOT_TYPE_SNAP = "snap"
 CSI_SNAPSHOT_TYPE_BAK = "bak"
@@ -48,7 +50,10 @@ def volumesnapshotclass(request):
         manifests = []
 
         @staticmethod
-        def create_volumesnapshotclass(name, deletepolicy, snapshot_type=None):
+        def create_volumesnapshotclass(name,
+                                       deletepolicy,
+                                       snapshot_type=None,
+                                       parameters=None):
             manifest = {
                 'kind': 'VolumeSnapshotClass',
                 'apiVersion': 'snapshot.storage.k8s.io/v1',
@@ -59,8 +64,16 @@ def volumesnapshotclass(request):
                 'deletionPolicy': deletepolicy
             }
 
+            manifest_parameters = {}
             if snapshot_type is not None:
-                manifest.update({'parameters': {'type': snapshot_type}})
+                manifest_parameters.update({"type": snapshot_type})
+
+            if parameters is not None:
+                manifest_parameters.update(parameters)
+
+            if len(manifest_parameters) != 0:
+                manifest.update({"parameters": manifest_parameters})
+            print(f"manifest: {manifest}")
 
             VolumeSnapshotClassFactory.manifests.append(manifest)
 
@@ -1207,6 +1220,125 @@ def test_csi_snapshot_with_invalid_param(
 
     request.addfinalizer(finalizer)
 
+def test_csi_volumesnapshot_backing_image_with_selectors(client, # NOQA
+                                                         core_api, # NOQA
+                                                         csi_pv, # NOQA
+                                                         pod_make, # NOQA
+                                                         pvc, # NOQA
+                                                         request, # NOQA
+                                                         volume_name, # NOQA
+                                                         volumesnapshotclass, # NOQA
+                                                         volumesnapshot): # NOQA
+    """
+    Test Create BackingImage with nodeSelector and diskSelector
+    using VolumeSnapshot with a given Volume
+
+    This test is to test users can set the nodeSelector and diskSelector
+    through csi volumeSnapshot.
+    For the scheduling, we already test it in backing image e2e tests.
+    For the content verification,
+    we already test it in test_csi_volumesnapshot_backing_image_basic.
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+            nodeSelector: "node1"
+            diskSelector: "ssd"
+        ```
+
+    Given
+    - The Volume test-vol attached to a workload,
+      having data and computed md5sum.
+    - Create the PV and PVC from the Volume
+
+    When
+    - Creating the VolumeSnapshot
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                persistentVolumeClaimName: test-vol
+        ```
+
+    Then
+    - A BackingImage is created with the correct selectors
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: `snapshot-${VolumeSnapshot.uuid}`
+            namespace: longhorn-system
+        spec:
+            sourceType: export-from-volume
+            sourceParameters:
+                volume-name: test-vol
+                export-type: raw
+            nodeSelector:
+                - node1
+            diskSelector:
+                - node1
+        ```
+
+    When
+    - Delete the new Volume from the the VolumeSnapshot
+    - Delete the VolumeSnapshot
+        ```
+        > kubectl delete vs/test-snapshot-backing
+        ```
+
+    Then
+    - The BackingImage is deleted as well
+    """
+    csi_snapshot_type = "bi"
+    storage_class_name = "longhorn-snapshot-vsc"
+    csisnapclass = \
+        volumesnapshotclass(name=storage_class_name,
+                            deletepolicy="Delete",
+                            snapshot_type=csi_snapshot_type,
+                            parameters={
+                                "nodeSelector": "node1",
+                                "diskSelector": "ssd"
+                            })
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api,
+                                    csi_pv, pvc, pod_make,
+                                    volume_name,
+                                    data_path="/data/test")
+
+    csivolsnap_name = "test-snapshot-backing"
+    csivolsnap_namespace = "default"
+    _ = volumesnapshot(csivolsnap_name,
+                       csivolsnap_namespace,
+                       csisnapclass["metadata"]["name"],
+                       "persistentVolumeClaimName",
+                       pvc_name)
+    backing_images = client.list_backing_image()
+    assert len(backing_images) == 1
+    assert backing_images[0].diskSelector == ["ssd"]
+    assert backing_images[0].nodeSelector == ["node1"]
+
+    def finalizer():
+        delete_and_wait_pod(core_api, pod_name)
+        delete_and_wait_pvc(core_api, pvc_name)
+        delete_volumesnapshot(csivolsnap_name, "default")
+        wait_volumesnapshot_deleted(csivolsnap_name,
+                                    "default")
+
+    request.addfinalizer(finalizer)
+
 
 def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
                                                 core_api, # NOQA
@@ -1298,6 +1430,7 @@ def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
     Then
     - The BackingImage is deleted as well
     """
+    update_setting(client, SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES, "1")
     csi_snapshot_type = "bi"
     storage_class_name = "longhorn-snapshot-vsc"
     csisnapclass = \
@@ -1323,10 +1456,12 @@ def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
     assert len(backing_images) == 1
     wait_for_backing_image_status(client, backing_images[0].name,
                                   BACKING_IMAGE_STATE_READY)
-    assert backing_images[0].sourceType == BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME # NOQA
-    assert backing_images[0].parameters["volume-name"] == pv_name
-    assert not backing_images[0].deletionTimestamp
-    assert len(backing_images[0].diskFileStatusMap) == 1
+
+    backing_image = client.by_id_backing_image(backing_images[0].name)
+    assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME # NOQA
+    assert backing_image.parameters["volume-name"] == pv_name
+    assert not backing_image.deletionTimestamp
+    assert len(backing_image.diskFileStatusMap) == 1
 
     restore_pvc_name = "test-restore-pvc"
     restore_pvc_size = pvc["spec"]["resources"]["requests"]["storage"]
@@ -1575,6 +1710,7 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image(bi_url, # NOQA
     - A Volume is created using the BackingImage `test-bi`
     - Verify the data (Directories of the backing images) exists in the mount point.
     """
+    update_setting(client, SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES, "1")
     csivolsnap, csivolsnap_name = prepare_bi_type_test(bi_checksum,
                                                        bi_url,
                                                        volumesnapshotclass,

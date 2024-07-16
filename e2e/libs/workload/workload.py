@@ -1,14 +1,16 @@
 import time
 import asyncio
+
 from kubernetes import client
 from kubernetes.stream import stream
 
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
-from workload.pod import is_pod_terminated_by_kubelet
+
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 from workload.constant import WAIT_FOR_POD_KEPT_IN_STATE_TIME
+from workload.pod import is_pod_terminated_by_kubelet
 
 
 def get_workload_pod_names(workload_name):
@@ -19,8 +21,10 @@ def get_workload_pod_names(workload_name):
     return pod_names
 
 
-def get_workload_pods(workload_name, namespace="default"):
-    label_selector = f"app={workload_name}"
+def get_workload_pods(workload_name, namespace="default", label_selector=""):
+    if label_selector == "":
+        label_selector = f"app={workload_name}"
+
     pods = list_namespaced_pod(
         namespace=namespace,
         label_selector=label_selector)
@@ -43,22 +47,10 @@ def get_workload_pods(workload_name, namespace="default"):
 
 def get_workload_volume_name(workload_name):
     api = client.CoreV1Api()
-    pvc_name = get_workload_pvc_name(workload_name)
+    pvc_name = get_workload_persistent_volume_claim_name(workload_name)
     pvc = api.read_namespaced_persistent_volume_claim(
         name=pvc_name, namespace='default')
     return pvc.spec.volume_name
-
-
-def get_workload_pvc_name(workload_name):
-    api = client.CoreV1Api()
-    pod = get_workload_pods(workload_name)[0]
-    logging(f"Got pod {pod.metadata.name} for workload {workload_name}")
-    for volume in pod.spec.volumes:
-        if volume.name == 'pod-data':
-            pvc_name = volume.persistent_volume_claim.claim_name
-            break
-    assert pvc_name
-    return pvc_name
 
 
 def get_workload_persistent_volume_claim_name(workload_name, index=0):
@@ -78,9 +70,6 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
         claim_names.append(item.metadata.name)
     claim_names.sort()
 
-    #TODO
-    # assertion fails when the workload is a deployment
-    # because the pvc doesn't have app=workload_name label
     assert len(claim_names) > 0, f"Failed to get PVC names for workload {workload_name}"
     return claim_names
 
@@ -194,6 +183,7 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
 
     assert False, f"Timeout waiting for {workload_name} pods {wait_for_stable_pod} stable)"
 
+
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
     def count_pod_in_specifc_state_duration(count_pod_in_state_duration, pods, expect_state):
         for pod in pods:
@@ -223,5 +213,14 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
 
     assert False, f"Timeout waiting for {workload_name} pod in state: {expect_state})"
 
+
 def get_pod_node(pod):
     return pod.spec.node_name
+
+
+def is_workload_pods_has_annotations(workload_name, annotation_key, namespace="default", label_selector=""):
+    pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
+    for pod in pods:
+        if not (pod.metadata.annotations and annotation_key in pod.metadata.annotations):
+            return False
+    return True

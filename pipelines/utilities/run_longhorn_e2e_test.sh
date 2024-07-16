@@ -85,38 +85,28 @@ run_longhorn_e2e_test_out_of_cluster(){
 
   eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"
 
-  if [[ -n ${LONGHORN_TESTS_CUSTOM_IMAGE} ]]; then
-    cat /tmp/instance_mapping
-    cp "${KUBECONFIG}" /tmp/kubeconfig
-    CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
-    docker run --pull=always \
-               --network=container:"${IMAGE_NAME}" \
-               --name "${CONTAINER_NAME}" \
-               -e LONGHORN_BACKUPSTORE="${LONGHORN_BACKUPSTORES}" \
-               -e LONGHORN_BACKUPSTORE_POLL_INTERVAL="${LONGHORN_BACKUPSTORE_POLL_INTERVAL}" \
-               -e AWS_ACCESS_KEY_ID="${TF_VAR_lh_aws_access_key}" \
-               -e AWS_SECRET_ACCESS_KEY="${TF_VAR_lh_aws_secret_key}" \
-               -e AWS_DEFAULT_REGION="${TF_VAR_aws_region}" \
-               -e LONGHORN_CLIENT_URL="${LONGHORN_CLIENT_URL}" \
-               -e KUBECONFIG="/tmp/kubeconfig" \
-               -e HOST_PROVIDER="${LONGHORN_TEST_CLOUDPROVIDER}" \
-               -e LAB_URL="${TF_VAR_lab_url}" \
-               -e LAB_ACCESS_KEY="${TF_VAR_lab_access_key}" \
-               -e LAB_SECRET_KEY="${TF_VAR_lab_secret_key}" \
-               -e LAB_CLUSTER_ID="$(cat /tmp/cluster_id)" \
-               --mount source="vol-${IMAGE_NAME}",target=/tmp \
-               "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
-    docker stop "${CONTAINER_NAME}"
-    docker rm "${CONTAINER_NAME}"
-  else
-    export LONGHORN_BACKUPSTORES=${LONGHORN_BACKUPSTORES}
-    export LONGHORN_BACKUPSTORE_POLL_INTERVAL=${LONGHORN_BACKUPSTORE_POLL_INTERVAL}
-    cd e2e
-    python3 -m venv .
-    source bin/activate
-    pip install -r requirements.txt
-    ./run.sh "${ROBOT_COMMAND_ARGS[@]}"
-  fi
+  cat /tmp/instance_mapping
+  cp "${KUBECONFIG}" /tmp/kubeconfig
+  CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
+  docker run --pull=always \
+             --network=container:"${IMAGE_NAME}" \
+             --name "${CONTAINER_NAME}" \
+             -e LONGHORN_BACKUPSTORE="${LONGHORN_BACKUPSTORES}" \
+             -e LONGHORN_BACKUPSTORE_POLL_INTERVAL="${LONGHORN_BACKUPSTORE_POLL_INTERVAL}" \
+             -e AWS_ACCESS_KEY_ID="${TF_VAR_lh_aws_access_key}" \
+             -e AWS_SECRET_ACCESS_KEY="${TF_VAR_lh_aws_secret_key}" \
+             -e AWS_DEFAULT_REGION="${TF_VAR_aws_region}" \
+             -e LONGHORN_CLIENT_URL="${LONGHORN_CLIENT_URL}" \
+             -e KUBECONFIG="/tmp/kubeconfig" \
+             -e HOST_PROVIDER="${LONGHORN_TEST_CLOUDPROVIDER}" \
+             -e LAB_URL="${TF_VAR_lab_url}" \
+             -e LAB_ACCESS_KEY="${TF_VAR_lab_access_key}" \
+             -e LAB_SECRET_KEY="${TF_VAR_lab_secret_key}" \
+             -e LAB_CLUSTER_ID="$(cat /tmp/cluster_id)" \
+             --mount source="vol-${IMAGE_NAME}",target=/tmp \
+             "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
+  docker stop "${CONTAINER_NAME}"
+  docker rm "${CONTAINER_NAME}"
 
   cp /tmp/test-report/log.html "${WORKSPACE}/log.html"
   cp /tmp/test-report/output.xml "${WORKSPACE}/output.xml"

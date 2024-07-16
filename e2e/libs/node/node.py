@@ -1,14 +1,14 @@
-import os
 import time
 import re
-from kubernetes import client
 
+from kubernetes import client
 from robot.libraries.BuiltIn import BuiltIn
+
+from utility.constant import DISK_BEING_SYNCING
+from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-from utility.constant import DISK_BEING_SYNCING
-from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 
 class Node:
 
@@ -22,10 +22,26 @@ class Node:
         for _ in range(self.retry_count):
             try:
                 node.diskUpdate(disks=disks)
+                self.wait_for_disk_update(node_name, len(disks))
                 break
             except Exception as e:
                 logging(f"Updating node {node_name} disk error: {e}")
             time.sleep(self.retry_interval)
+
+    def wait_for_disk_update(self, node_name, disk_num):
+        for i in range(self.retry_count):
+            node = get_longhorn_client().by_id_node(node_name)
+            if len(node.disks) == disk_num:
+                all_updated = True
+                disks = node.disks
+                for d in disks:
+                    if disks[d]["diskUUID"] == "":
+                        all_updated = False
+                        break
+                if all_updated:
+                    break
+            time.sleep(self.retry_interval)
+        assert len(node.disks) == disk_num, f"Waiting for node {node_name} disk updated to {disk_num} failed: {disks}"
 
     def add_disk(self, node_name, disk):
         node = get_longhorn_client().by_id_node(node_name)

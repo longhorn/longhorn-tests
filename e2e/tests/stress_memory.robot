@@ -19,7 +19,7 @@ ${RETRY_INTERVAL}    1
 *** Test Cases ***
 
 Stress Volume Node Memory When Replica Is Rebuilding
-    Given Create volume 0 with 5 GB and 3 replicas
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0
     And Write data to volume 0
 
@@ -33,7 +33,7 @@ Stress Volume Node Memory When Replica Is Rebuilding
     END
 
 Stress Volume Node Memory When Volume Is Detaching and Attaching
-    Given Create volume 0 with 5 GB and 3 replicas
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0
     And Write data to volume 0
 
@@ -70,6 +70,7 @@ Stress Volume Node Memory When Volume Is Offline Expanding
         When Expand statefulset 0 volume by 100 MiB
 
         Then Wait for statefulset 0 volume size expanded
+        And Wait for statefulset 0 volume detached
         And Scale up statefulset 0 to attach volume
         And Wait for volume of statefulset 0 healthy
         And Check statefulset 0 data in file 0.txt is intact
