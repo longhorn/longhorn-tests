@@ -847,7 +847,9 @@
 <li>Use subnet-2 for network interface 2</li>
 <li>Disable <code>Auto-assign public IP</code></li>
 <li>Add security group inbound rule to allow <code>All traffic</code> from <code>Anywhere-IPv4</code></li>
-<li>Stop <code>Source/destination check</code></li>
+<li>Stop <code>Source/destination check</code>. There does not appear to be a way to do this from <code>Launch instances</code> in the console,
+so be sure to do it from <code>Instances</code>, <code>Actions</code>, <code>Networking</code>, <code>Change source/destination check</code> after creation.
+Failure to do so will cause traffic on the 192.168.0.0/16 (between <code>lhnet1</code> interfaces) to be blocked.</li>
 </ul>
 <p><em>And</em> Create 3 elastic IPs.</p>
 <p><em>And</em> Associate one of the elastic IP to one of the EC2 instance network interface 1.</p>
