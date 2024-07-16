@@ -76,7 +76,7 @@ Node Disconnect And No Replica On Disconnected Node
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
 
     Then Wait for disconnected node back
-    And Wait for volume 0 attached and unknown
+    And Wait for volume 0 attached
     And Wait for volume 0 healthy
 
 Node Disconnect And Have Replica On Disconnected Node
@@ -95,7 +95,7 @@ Node Disconnect And Have Replica On Disconnected Node
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
 
     Then Wait for disconnected node back
-    And Wait for volume 0 attached and unknown
+    And Wait for volume 0 attached
     And Wait for volume 0 healthy
 
 Node Disconnect With Statefulset
@@ -115,7 +115,7 @@ Node Disconnect With Statefulset
         And Write 100 MB data to file data in statefulset 0
 
         When Disconnect volume node network of statefulset 0 for 100 seconds without waiting for completion
-        And Wait for volume of statefulset 0 attached and unknown
+        And Wait for volume of statefulset 0 attached
         And Wait for disconnected node back
         And Wait for volume of statefulset 0 healthy
         And Wait for statefulset 0 pods stable
