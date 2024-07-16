@@ -83,6 +83,9 @@ class PersistentVolumeClaim():
         return self.claim.list(claim_namespace=claim_namespace,
                              label_selector=label_selector)
 
+    def set_label(self, claim_name, label_key, label_value, claim_namespace="default"):
+        return self.claim.set_label(claim_name, label_key, label_value, claim_namespace=claim_namespace)
+
     def set_annotation(self, claim_name, annotation_key, annotation_value, claim_namespace="default"):
         return self.claim.set_annotation(claim_name, annotation_key, annotation_value, claim_namespace=claim_namespace)
 
@@ -100,6 +103,3 @@ class PersistentVolumeClaim():
         logging(f"Expanding PVC {claim_name} from {current_size} to {target_size}")
         expanded_size = self.claim.expand(claim_name, target_size)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
-
-    def get_volume_name(self, claim_name, claim_namespace):
-        return self.claim.get_volume_name(claim_name, claim_namespace)

@@ -47,22 +47,10 @@ def get_workload_pods(workload_name, namespace="default", label_selector=""):
 
 def get_workload_volume_name(workload_name):
     api = client.CoreV1Api()
-    pvc_name = get_workload_pvc_name(workload_name)
+    pvc_name = get_workload_persistent_volume_claim_name(workload_name)
     pvc = api.read_namespaced_persistent_volume_claim(
         name=pvc_name, namespace='default')
     return pvc.spec.volume_name
-
-
-def get_workload_pvc_name(workload_name):
-    api = client.CoreV1Api()
-    pod = get_workload_pods(workload_name)[0]
-    logging(f"Got pod {pod.metadata.name} for workload {workload_name}")
-    for volume in pod.spec.volumes:
-        if volume.name == 'pod-data':
-            pvc_name = volume.persistent_volume_claim.claim_name
-            break
-    assert pvc_name
-    return pvc_name
 
 
 def get_workload_persistent_volume_claim_name(workload_name, index=0):
@@ -82,9 +70,6 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
         claim_names.append(item.metadata.name)
     claim_names.sort()
 
-    #TODO
-    # assertion fails when the workload is a deployment
-    # because the pvc doesn't have app=workload_name label
     assert len(claim_names) > 0, f"Failed to get PVC names for workload {workload_name}"
     return claim_names
 
