@@ -546,6 +546,7 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
         write_data_complete = False
     assert write_data_complete
 
+    subprocess.check_call(["sync"])
     executor = ThreadPoolExecutor(max_workers=5)
     future = executor.submit(md5sum_thread, pod_name, pod_dev_volume_path)
 
@@ -615,6 +616,7 @@ def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc,
         write_data_complete = False
     assert write_data_complete
 
+    subprocess.check_call(["sync"])
     command = 'md5sum {}'.format(volume_data_path)
     md5_before_expanding = \
         exec_command_in_pod(core_api, command, pod_name, 'default').\
