@@ -88,7 +88,7 @@ variable "lh_aws_instance_name_worker" {
 
 variable "lh_aws_instance_root_block_device_size_worker" {
   type        = number
-  default     = 40
+  default     = 200
 }
 
 variable "k8s_distro_name" {
