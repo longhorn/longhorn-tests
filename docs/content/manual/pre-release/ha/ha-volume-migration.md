@@ -2,6 +2,11 @@
 title: HA Volume Migration
 ---
 
+## Related issues
+
+- https://github.com/longhorn/longhorn/issues/3401
+- https://github.com/longhorn/longhorn/issues/8735
+
 ## Basic instructions
 
 1. Deploy a migratable StorageClass. E.g.:
@@ -65,7 +70,7 @@ spec:
     persistentVolumeName: <volume_name>
 ```
 
-4. Trigger the scenarios described below with commands like the:
+6. Trigger the scenarios described below with commands like:
 
 ```bash
 # Attempt to confirm the migration by detaching from <old_node>.
@@ -91,7 +96,7 @@ kubectl -n longhorn-system get engine
 kubectl -n longhorn-system get replica
 ```
 
-5. Before a test, verify the volume migration is ready. Logs should indicate "Volume migration engine is ready", and:
+7. Before a test, verify the volume migration is ready. Logs should indicate "Volume migration engine is ready", and:
 
 ```
 kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
@@ -380,7 +385,9 @@ Rollback succeeds.
 
 1. Hard shut down the node running the old engine.
 2. Wait until Kubernetes recognizes the node is down. (This is IMPORTANT! Otherwise, it is a different test case.)
-3. Attempt a confirmation or rollback.
+3. Verify the volume is no longer attached and no longer migrating. It should remain in this state indefinitely until
+   a confirmation or rollback is attempted.
+4. Attempt a confirmation or rollback.
 
 #### 6.1 Confirmation
 
