@@ -12,7 +12,6 @@ from common import make_deployment_with_pvc  # NOQA
 from common import pod as pod_manifest  # NOQA
 from common import Mi, Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
 from common import VOLUME_RWTEST_SIZE
-from common import VOLUME_CONDITION_SCHEDULED
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import LONGHORN_NAMESPACE
@@ -858,7 +857,11 @@ def test_allow_volume_creation_with_degraded_availability_csi(
                                          namespace='default',
                                          name=deployment_name)
     vol = common.wait_for_volume_detached(client, vol.name)
-    assert vol.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+    # The volume condition cannot change in the same reconcile loop as the
+    # volume state changes to detached. We need to wait for the condition
+    # change instead of just checking it once directly.
+    common.wait_for_volume_condition_scheduled(client, vol.name, "status",
+                                               common.CONDITION_STATUS_TRUE)
 
     deployment['spec']['replicas'] = 1
     apps_api.patch_namespaced_deployment(body=deployment,
