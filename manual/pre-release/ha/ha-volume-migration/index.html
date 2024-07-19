@@ -818,7 +818,12 @@
   <h1 id="title">HA Volume Migration</h1>
   <div>
     <article id="content">
-       <h2 id="basic-instructions">Basic instructions</h2>
+       <h2 id="related-issues">Related issues</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/3401">https://github.com/longhorn/longhorn/issues/3401</a></li>
+<li><a href="https://github.com/longhorn/longhorn/issues/8735">https://github.com/longhorn/longhorn/issues/8735</a></li>
+</ul>
+<h2 id="basic-instructions">Basic instructions</h2>
 <ol>
 <li>Deploy a migratable StorageClass. E.g.:</li>
 </ol>
@@ -872,8 +877,8 @@
   <span style="color:#f92672">nodeName</span>: <span style="color:#ae81ff">&lt;new_node&gt;</span>
   <span style="color:#f92672">source</span>:
     <span style="color:#f92672">persistentVolumeName</span>: <span style="color:#ae81ff">&lt;volume_name&gt;</span>
-</code></pre></div><ol start="4">
-<li>Trigger the scenarios described below with commands like the:</li>
+</code></pre></div><ol start="6">
+<li>Trigger the scenarios described below with commands like:</li>
 </ol>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Attempt to confirm the migration by detaching from &lt;old_node&gt;.</span>
 kubectl -n longhorn-system delete -f va-1.yaml
@@ -896,7 +901,7 @@ kubectl -n longhorn-system get volume -oyaml -w | grep -e state -e robustness
 <span style="color:#75715e">#   place).</span>
 kubectl -n longhorn-system get engine
 kubectl -n longhorn-system get replica
-</code></pre></div><ol start="5">
+</code></pre></div><ol start="7">
 <li>Before a test, verify the volume migration is ready. Logs should indicate &ldquo;Volume migration engine is ready&rdquo;, and:</li>
 </ol>
 <pre tabindex="0"><code>kubectl -n longhorn-system get volume -oyaml | grep -i nodeid
@@ -1110,6 +1115,8 @@ the migration node, but is stuck until it comes back.</p>
 <ol>
 <li>Hard shut down the node running the old engine.</li>
 <li>Wait until Kubernetes recognizes the node is down. (This is IMPORTANT! Otherwise, it is a different test case.)</li>
+<li>Verify the volume is no longer attached and no longer migrating. It should remain in this state indefinitely until
+a confirmation or rollback is attempted.</li>
 <li>Attempt a confirmation or rollback.</li>
 </ol>
 <h4 id="61-confirmation">6.1 Confirmation</h4>
