@@ -505,6 +505,12 @@ def delete_backup_volume(client, volume_name):
     wait_for_backup_volume_delete(client, volume_name)
 
 
+def delete_backup_backing_image(client, backing_image_name):
+    bbi = client.by_id_backupBackingImage(backing_image_name)
+    client.delete(bbi)
+    wait_for_backup_backing_image_delete(client, backing_image_name)
+
+
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
@@ -2016,6 +2022,20 @@ def wait_for_backup_volume_delete(client, name):
         if not found:
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
+    assert not found
+
+
+def wait_for_backup_backing_image_delete(client, name):
+    for _ in range(RETRY_COUNTS):
+        bbis = client.list_backupBackingImage()
+        found = False
+        for bbi in bbis:
+            if bbi.name == name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
     assert not found
 
 

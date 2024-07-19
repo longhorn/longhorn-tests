@@ -19,6 +19,7 @@ from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
 from common import delete_backup_volume
+from common import delete_backup_backing_image
 from common import get_backupstore_url
 from common import get_backupstore_poll_interval
 from common import get_backupstores
@@ -172,13 +173,19 @@ def backup_cleanup():
 
 def backupstore_cleanup(client):
     backup_volumes = client.list_backup_volume()
-
     # we delete the whole backup volume, which skips block gc
     for backup_volume in backup_volumes:
         delete_backup_volume(client, backup_volume.name)
 
     backup_volumes = client.list_backup_volume()
     assert backup_volumes.data == []
+
+    backup_backing_images = client.list_backup_backing_image()
+    for backup_backing_image in backup_backing_images:
+        delete_backup_backing_image(client, backup_backing_image.name)
+
+    backup_backing_images = client.list_backup_backing_image()
+    assert backup_backing_images.data == []
 
 
 def minio_get_api_client(client, core_api, minio_secret_name):
