@@ -614,6 +614,12 @@ if a nonexistent Pod is specified.</p>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.delete_backup_backing_image"><code class="name flex">
+<span>def <span class="ident">delete_backup_backing_image</span></span>(<span>client, backing_image_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.delete_backup_volume"><code class="name flex">
 <span>def <span class="ident">delete_backup_volume</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -1684,6 +1690,12 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_backup_backing_image_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_backing_image_delete</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_backup_completion"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300)</span>
 </code></dt>
@@ -2520,6 +2532,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.delete_and_wait_statefulset" href="#tests.common.delete_and_wait_statefulset">delete_and_wait_statefulset</a></code></li>
 <li><code><a title="tests.common.delete_and_wait_volume_attachment" href="#tests.common.delete_and_wait_volume_attachment">delete_and_wait_volume_attachment</a></code></li>
 <li><code><a title="tests.common.delete_backup" href="#tests.common.delete_backup">delete_backup</a></code></li>
+<li><code><a title="tests.common.delete_backup_backing_image" href="#tests.common.delete_backup_backing_image">delete_backup_backing_image</a></code></li>
 <li><code><a title="tests.common.delete_backup_volume" href="#tests.common.delete_backup_volume">delete_backup_volume</a></code></li>
 <li><code><a title="tests.common.delete_crypto_secret" href="#tests.common.delete_crypto_secret">delete_crypto_secret</a></code></li>
 <li><code><a title="tests.common.delete_replica_on_test_node" href="#tests.common.delete_replica_on_test_node">delete_replica_on_test_node</a></code></li>
@@ -2686,6 +2699,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_in_disk_fail" href="#tests.common.wait_for_backing_image_in_disk_fail">wait_for_backing_image_in_disk_fail</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_status" href="#tests.common.wait_for_backing_image_status">wait_for_backing_image_status</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_backing_image_delete" href="#tests.common.wait_for_backup_backing_image_delete">wait_for_backup_backing_image_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_count" href="#tests.common.wait_for_backup_count">wait_for_backup_count</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
