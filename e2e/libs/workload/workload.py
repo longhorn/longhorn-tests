@@ -11,6 +11,7 @@ from utility.utility import list_namespaced_pod
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 from workload.constant import WAIT_FOR_POD_KEPT_IN_STATE_TIME
 from workload.pod import is_pod_terminated_by_kubelet
+from workload.pod import wait_for_pod_status
 
 
 def get_workload_pod_names(workload_name):
@@ -76,6 +77,9 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
 
 def write_pod_random_data(pod_name, size_in_mb, file_name,
                           data_directory="/data", ):
+
+    wait_for_pod_status(pod_name, "Running")
+
     data_path = f"{data_directory}/{file_name}"
     api = client.CoreV1Api()
     write_data_cmd = [
@@ -92,6 +96,9 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
 
 def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data"):
+
+    wait_for_pod_status(pod_name, "Running")
+
     api = client.CoreV1Api()
     write_cmd = [
         '/bin/sh',
@@ -108,6 +115,9 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
 
 
 def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directory="/data"):
+
+    wait_for_pod_status(pod_name, "Running")
+
     file_path = f"{data_directory}/{file_name}"
     api = client.CoreV1Api()
     cmd_get_file_checksum = [
