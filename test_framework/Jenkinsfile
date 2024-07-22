@@ -196,7 +196,7 @@ node {
             }
 
             stage ('longhorn coverage') {
-                if(!params.LONGHORN_UPGRADE_TEST && !params.AIR_GAP_INSTALLATION && JOB_BASE_NAME != "longhorn-tests-regression") {
+                if(!params.LONGHORN_UPGRADE_TEST && !params.AIR_GAP_INSTALLATION && JOB_BASE_NAME != "longhorn-tests-regression" && DISTRO == "sles") {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} test_framework/scripts/longhorn-coverage.sh"
 
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-manager-profile.html ."
