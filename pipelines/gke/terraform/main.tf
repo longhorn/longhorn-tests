@@ -43,6 +43,7 @@ resource "google_container_cluster" "cluster" {
   subnetwork         = google_compute_subnetwork.subnetwork.id
   location           = data.google_compute_zones.available.names[0]
   remove_default_node_pool = true
+  deletion_protection = false
   initial_node_count       = 1
   cluster_autoscaling {
     autoscaling_profile = "OPTIMIZE_UTILIZATION"
