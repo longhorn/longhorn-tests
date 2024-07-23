@@ -4158,8 +4158,14 @@ def delete_storage_class(sc_name):
 
 def cleanup_storage_class():
     # premium-rwo, standard-rwo and standard are installed in gke by default
+    # azurefile-csi, azurefile-csi-premium, azurefile-premium, managed,
+    # managed-csi, managed-csi-premium, managed-premium are installed
+    # in aks by default
     skip_sc_deletes = ["longhorn", "local-path",
-                       "premium-rwo", "standard-rwo", "standard"]
+                       "premium-rwo", "standard-rwo", "standard",
+                       "azurefile-csi", "azurefile-csi-premium",
+                       "azurefile-premium", "managed", "managed-csi",
+                       "managed-csi-premium", "managed-premium"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
