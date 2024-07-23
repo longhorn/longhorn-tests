@@ -398,6 +398,21 @@ def test_support_bundle_should_not_timeout(client, core_api):  # NOQA
         body=support_bundle
     )
 
+    # Wait for the SupportBundle size to be updated
+    for _ in range(RETRY_COUNTS):
+        support_bundle = custom_obj_api.get_namespaced_custom_object(
+            group=group,
+            version=version,
+            namespace=LONGHORN_NAMESPACE,
+            plural=plural,
+            name=support_bundle_name
+        )
+        if support_bundle["status"]["filesize"] == int(zip_size):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert support_bundle["status"]["filesize"] == int(zip_size), \
+        f"Expected size={zip_size}, got {support_bundle['status']['filesize']}"
+
     download_support_bundle(node_id, support_bundle_name, client)
     wait_for_support_bundle_cleanup(client)
     check_all_support_bundle_managers_deleted()
