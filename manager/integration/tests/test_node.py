@@ -2732,9 +2732,15 @@ def check_replica_evict_state(client, volume_name, node, expect_state): # NOQA
         if replica.hostId == node.id:
             replica_name = replica.name
             break
+    assert replica_name, f"Can not find {volume_name} replica on {node}"
 
-    replica_info = get_replica_detail(replica_name)
-    eviction_requested = replica_info["spec"]["evictionRequested"]
+    for i in range(RETRY_COUNTS):
+        replica_info = get_replica_detail(replica_name)
+        eviction_requested = replica_info["spec"]["evictionRequested"]
+        if eviction_requested is expect_state:
+            return
+        time.sleep(RETRY_INTERVAL)
+
     assert eviction_requested is expect_state
 
 

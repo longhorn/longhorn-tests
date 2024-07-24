@@ -547,8 +547,13 @@ main(){
     run_longhorn_upgrade_test
     run_longhorn_tests
   else
-    get_longhorn_chart
-    install_longhorn_by_chart
+    if [[ "${DISTRO}" == "sles" ]]; then
+      get_longhorn_chart
+      install_longhorn_by_chart
+    else
+      generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
+      install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
+    fi
     run_longhorn_tests
   fi
 }
