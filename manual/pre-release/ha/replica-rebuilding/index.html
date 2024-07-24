@@ -818,88 +818,56 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test backing image</h1>
+  <h1 id="title">Replica Rebuilding</h1>
   <div>
     <article id="content">
-       <h2 id="test-upload">Test upload</h2>
+       <h3 id="basic-rebuilding-test">Basic Rebuilding test</h3>
 <ol>
-<li>Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local.</li>
-<li>Click the backing image creation button in UI, choose <code>Upload From Local</code>, select the file then start upload.</li>
-<li>Wait for the initialization complete. Then the upload progress will be shown.</li>
-<li>During the uploading, verify the corresponding backing image data source pod won&rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</li>
-<li>Open another backing image UI page, the progress can be still found in the backing image detail page.</li>
-<li>When the upload is in progress, refresh the UI page to interrupt the upload.</li>
-<li>Verified that the upload failed without retry (typically the retry will happen after 1~2 minute). And there is a message indicates the failure.</li>
-<li>Delete the failed one then restart the uploading by creating a new backing image.</li>
-<li>Create and attach a volume with the backing image. Verify the data content is correct.</li>
-<li>Do cleanup.</li>
+<li>Create and attach a volume.</li>
+<li>Write a large amount of data to the volume.</li>
+<li>Disable disk scheduling and the node scheduling for one replica.</li>
+<li>Crash the replica progress. Verify
+<ol>
+<li>the corresponding replica will become ERROR.</li>
+<li>the volume will keep robustness Degraded.</li>
 </ol>
-<h3 id="upload-via-rancher-uri">Upload via Rancher URI</h3>
-<p><sup>Related issue: <a href="https://github.com/longhorn/longhorn/issues/3129">3129</a> with fix in Longhorn v1.3.0+</sup></p>
-<ol>
-<li>With Rancher v2.6.x create a cluster and install Longhorn from <em>Apps &amp; Marketplace</em>
-<ul>
-<li>or import an existing cluster with Longhorn installed</li>
-</ul>
 </li>
-<li>Open the cluster from Cluster Explorer via Rancher UI</li>
-<li>Open Longhorn from the Cluster Explorer navigation menu</li>
-<li>Click on the Longhorn app to open the UI
-<ul>
-<li>An example URL: <small><code>https://rancer.server.domain/k8s/clusters/CLUSTER-ID/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/backingImage</code></small></li>
-</ul>
+<li>Enable the disk scheduling. Verify nothing changes.</li>
+<li>Enable the node scheduling. Verify.
+<ol>
+<li>the failed replica is reused by Longhorn.</li>
+<li>the rebuilding progress in UI page looks good.</li>
+<li>the data content is correct after rebuilding.</li>
+<li>volume r/w works fine.</li>
+</ol>
 </li>
-<li>Create a new backing image with <strong>Upload From Local</strong></li>
-<li>Verify the uploaded image matches its size or checksum</li>
-</ol>
-<h3 id="upload-via-ingress-controller">Upload via Ingress Controller</h3>
-<p><sup>Related issue: <a href="https://github.com/longhorn/longhorn/issues/2937">2937</a> with fix in v1.2.0+</sup></p>
+<li>Direct delete one replica via UI. Verify
 <ol>
-<li>Install and create Ingress Loadbalancer with proper hostname configuration
-<ul>
-<li>On Rancher v2.6.x Cluster Explorer &gt; open the cluster under testing &gt; Service and Discovery &gt; Ingresses</li>
-</ul>
+<li>a new replica will be replenished immediately.</li>
+<li>the rebuilding progress in UI page looks good.</li>
+<li>the data content is correct after rebuilding.</li>
+<li>volume r/w works fine.</li>
+</ol>
 </li>
-<li>Access Longhorn UI with the hostname URL</li>
-<li>Create a new backing image with <strong>Upload From Local</strong></li>
-<li>Verify the uploaded image matches its size or checksum</li>
 </ol>
-<h2 id="test-csi-backing-image">Test CSI backing image</h2>
-<ol>
-<li>Create a valid backing image</li>
-<li>Create a StorageClass, which use the same backing image name but different data source type/parameters.</li>
-<li>Create a PVC with the StorageClass.
-==&gt; The corresponding creation should fail. The longhorn-csi-plugin will repeatedly print out error logs like this <code>existing backing image %v data source is different from the parameters in the creation request or StorageClass</code>.</li>
-<li>Delete the PVC and the StorageClass.</li>
-<li>Recreate a StorageClass in which the backing image fields match the existing backing image.</li>
-<li>Create a PVC with the StorageClass.
-==&gt; The corresponding volume creation should succeed.</li>
-<li>Delete the PVC and the backing image.</li>
-<li>ReCreate a PVC with the StorageClass.
-==&gt; Longhorn will create a backing image then create the corresponding volume.</li>
-<li>Do cleanup.</li>
-</ol>
-<h2 id="test-backing-image-creation-via-yaml">Test backing image creation via YAML</h2>
-<ol>
-<li>Run
-<pre tabindex="0"><code>echo &quot;
-apiVersion: longhorn.io/v1beta1
-kind: BackingImage
-metadata:
-  name: bi-test
-  namespace: longhorn-system
-spec:
-  sourceType: download
-  sourceParameters:
-    url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-&quot; | kubectl -n longhorn-system apply -f -
-</code></pre></li>
-<li>Verify the backing image is created and ready for use.</li>
-</ol>
-<p>Notice: It&rsquo;s better not to create a backing image with type <code>upload</code> via YAML. Otherwise, you need to find a way to send the upload HTTP request manually.</p>
+<h3 id="auto-balancing-of-replica-rebuilding">Auto balancing of replica rebuilding</h3>
+<h4 id="related-issue">Related issue:</h4>
+<p><a href="https://github.com/longhorn/longhorn/issues/4105">https://github.com/longhorn/longhorn/issues/4105</a></p>
+<p>Given Setting &ldquo;replica-soft-anti-affinity&rdquo; is &ldquo;false&rdquo;</p>
+<p>And Setting &ldquo;replica-auto-balance-disk-pressure-percentage&rdquo; is &ldquo;80&rdquo;</p>
+<p>And Disable node scheduling on 2 nodes. let&rsquo;s say node-2 &amp; node-3</p>
+<p>And Create multiple volumes to reach disk space percentage more 50%</p>
+<p>When Enable node scheduling on node-2</p>
+<p>Then Replica should rebuilt on node-2 to reduce the pressure on node-1</p>
+<p>When Setting &ldquo;replica-auto-balance-disk-pressure-percentage&rdquo; is &ldquo;40&rdquo;</p>
+<p>And Enable node scheduling on node-3</p>
+<p>Then Replica should rebuilt on node-3</p>
+<p>When Replica rebuilding is in progress, kill the replica process</p>
+<p>Then Replica should be failed and a new replica rebuilding should get trigger</p>
+<p>And No orphaned data should be leftover on the disk</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.2.0/test-backing-image-upload.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/ha/replica-rebuilding.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

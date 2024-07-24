@@ -162,6 +162,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-kubelet-restart-no-pending-pod-event/</loc>
