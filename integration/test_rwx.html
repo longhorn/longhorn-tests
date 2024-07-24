@@ -73,7 +73,8 @@ is 'RWX'.</li>
 <li>Wait for StatefulSet to come up healthy.</li>
 <li>Write data and compute md5sum.</li>
 <li>Delete the share manager pod.</li>
-<li>Wait for a new pod to be created and volume getting attached.</li>
+<li>The workload pod should still be functioning
+and the volume should remain attached.</li>
 <li>Check the data md5sum in statefulSet.</li>
 <li>Write more data to it and compute md5sum.</li>
 <li>Check the data md5sum in share manager volume.</li>
