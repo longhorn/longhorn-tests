@@ -25,6 +25,7 @@ from common import get_backupstore_poll_interval
 from common import get_backupstores
 from common import system_backups_cleanup
 from common import get_custom_object_api_client
+from common import wait_for_backup_delete
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
@@ -615,6 +616,10 @@ def backupstore_delete_dummy_in_progress_backup(client, core_api, volume_name):
                                        core_api,
                                        volume_name,
                                        "backup-dummy")
+    # Longhorn automatically creates backup resource in the cluster
+    # when there is a backup in the backupstore.
+    # We need to check if the backup resource is deleted as well.
+    wait_for_backup_delete(client, volume_name, "backup-dummy")
 
 
 def backupstore_delete_random_backup_block(client, core_api, volume_name):
