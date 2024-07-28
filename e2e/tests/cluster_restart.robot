@@ -9,6 +9,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/setting.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -18,10 +19,13 @@ ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
 ${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
+${RWX_VOLUME_FAST_FAILOVER}    false
+
 
 *** Test Cases ***
 Restart Cluster While Workload Heavy Writing
-    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create storageclass nfs-4-2 with    nfsOptions=vers=4.2,noresvport,timeo=450,retrans=8
     And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume

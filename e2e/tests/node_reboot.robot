@@ -22,10 +22,12 @@ ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
 ${VOLUME_TYPE}    RWO
 ${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
+${RWX_VOLUME_FAST_FAILOVER}    false
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing
-    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
@@ -63,7 +65,8 @@ Reboot Node One By One While Workload Heavy Writing
     END
 
 Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
@@ -101,7 +104,8 @@ Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot All Worker Nodes While Workload Heavy Writing
-    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
@@ -137,7 +141,8 @@ Reboot All Worker Nodes While Workload Heavy Writing
     END
 
 Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
@@ -173,7 +178,8 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot Volume Node While Workload Heavy Writing
-    Given Create statefulset 0 using ${VOLUME_TYPE} volume
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create statefulset 0 using ${VOLUME_TYPE} volume
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
 
