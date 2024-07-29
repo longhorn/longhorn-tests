@@ -17,9 +17,10 @@ Create volume ${volume_id} with
     create_volume   ${volume_name}    &{config}
 
 Create DR volume ${volume_id} from backup ${backup_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_url} =    get_backup_url    ${backup_id}
-    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
 No volume created
     ${volumes} =    list_volumes
