@@ -5526,6 +5526,18 @@ def update_setting(client, name, value):
         f"expect update setting {name} to be {value}, but it's {setting.value}"
 
 
+def update_persistent_volume_claim(core_api, name, namespace, claim):
+    for _ in range(RETRY_COUNTS):
+        try:
+            core_api.replace_namespaced_persistent_volume_claim(
+                name, namespace, claim
+            )
+            break
+        except Exception as e:
+            print(e)
+            time.sleep(RETRY_INTERVAL)
+
+
 def create_recurring_jobs(client, recurring_jobs):
     time.sleep(60 - datetime.utcnow().second)
 
