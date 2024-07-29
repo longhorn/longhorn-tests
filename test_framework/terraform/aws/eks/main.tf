@@ -127,6 +127,9 @@ resource "aws_eks_node_group" "node_group" {
     max_size     = 6
     min_size     = 1
   }
+  lifecycle {
+    ignore_changes = [scaling_config[0].desired_size]
+  }
   update_config {
     max_unavailable = 1
   }
