@@ -53,3 +53,8 @@ Cleanup test resources
 Cleanup test resources include off nodes
     Power on off node
     Cleanup test resources
+
+Convert GB to MB
+    [Arguments]    ${size_in_gb}
+    ${size_in_mb}=    Evaluate    ${size_in_gb} * 1024
+    [Return]    ${size_in_mb}

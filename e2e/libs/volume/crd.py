@@ -64,6 +64,7 @@ class CRD(Base):
                 self.wait_for_volume_state(volume_name, "detached")
             else:
                 self.wait_for_volume_state(volume_name, "attached")
+            self.wait_for_restore_required_status(volume_name, Standby)
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
@@ -74,10 +75,6 @@ class CRD(Base):
             assert volume['spec']['backingImage'] == backingImage, f"expect volume backingImage is {backingImage}, but it's {volume['spec']['backingImage']}"
             assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
             assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
-            if not Standby:
-                assert volume['status']['restoreRequired'] is False, f"expect volume restoreRequired is False, but it's {volume['status']['restoreRequired']}"
-            else:
-                assert volume['status']['restoreRequired'] is True, f"expect volume restoreRequired is True, but it's {volume['status']['restoreRequired']}"
         except ApiException as e:
             logging(e)
 
@@ -225,6 +222,21 @@ class CRD(Base):
                     logging(f"Waiting for volume deleting error: {e}")
             time.sleep(self.retry_interval)
         assert False, f"expect volume {volume_name} deleted but it still exists"
+
+    def wait_for_restore_required_status(self, volume_name, restore_required_state):
+        volume = None
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} restoreRequired={restore_required_state} ({i}) ...")
+            try:
+                volume = self.get(volume_name)
+                if volume["status"]["restoreRequired"] == restore_required_state:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} restoreRequired status error: {e}")
+            time.sleep(self.retry_interval)
+        assert volume["status"]["restoreRequired"] == restore_required_state, \
+            f"Expected volume {volume_name} restoreRequired={restore_required_state},\n" \
+            f"but got {volume['status']['restoreRequired']}\n"
 
     def wait_for_volume_state(self, volume_name, desired_state):
         volume = None

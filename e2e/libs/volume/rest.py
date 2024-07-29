@@ -67,6 +67,9 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert volume['state'] == desired_state
 
+    def wait_for_restore_required_status(self, volume_name, restore_required_state):
+        return NotImplemented
+
     def wait_for_volume_migration_ready(self, volume_name):
         return NotImplemented
 
@@ -287,7 +290,15 @@ class Rest(Base):
         assert engine.requestedBackupRestore == ""
 
     def create_persistentvolume(self, volume_name, retry):
-        self.get(volume_name).pvCreate(pvName=volume_name, fsType="ext4")
+        for _ in range(self.retry_count):
+            volume = self.get(volume_name)
+            if hasattr(volume, 'pvCreate'):
+                break
+            print(f"Attempt {_ + 1}: 'pvCreate' method not found. Retrying...")
+            time.sleep(self.retry_interval)
+        else:
+            raise AttributeError(f"'dict' object has no attribute 'pvCreate' after {self.retry_count} attempts.")
+        volume.pvCreate(pvName=volume_name, fsType="ext4")
 
         if not retry:
             return
@@ -301,7 +312,15 @@ class Rest(Base):
         assert created
 
     def create_persistentvolumeclaim(self, volume_name, retry):
-        self.get(volume_name).pvcCreate(namespace="default", pvcName=volume_name)
+        for _ in range(self.retry_count):
+            volume = self.get(volume_name)
+            if hasattr(volume, 'pvcCreate'):
+                break
+            print(f"Attempt {_ + 1}: 'pvcCreate' method not found. Retrying...")
+            time.sleep(self.retry_interval)
+        else:
+            raise AttributeError(f"'dict' object has no attribute 'pvcCreate' after {self.retry_count} attempts.")
+        volume.pvcCreate(namespace="default", pvcName=volume_name)
 
         if not retry:
             return

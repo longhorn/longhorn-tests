@@ -64,7 +64,7 @@ class Base(ABC):
     def get_backup_volume(self, volume_name):
         return NotImplemented
 
-    def wait_for_backup_completed(self, volume_name, snapshot_name):
+    def wait_for_backup_completed(self, volume_name, snapshot_name, timeout):
         return NotImplemented
 
     @abstractmethod
@@ -85,6 +85,10 @@ class Base(ABC):
 
     @abstractmethod
     def check_restored_volume_checksum(self, volume_name, backup_name):
+        return NotImplemented
+
+    @abstractmethod
+    def get_restored_checksum(self, backup_name):
         return NotImplemented
 
     @abstractmethod
