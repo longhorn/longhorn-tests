@@ -351,6 +351,17 @@ create_aws_secret(){
 }
 
 
+longhornctl_check(){
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.0-rc2/longhornctl-linux-amd64 -o longhornctl
+  chmod +x longhornctl
+  ./longhornctl install preflight
+  ./longhornctl check preflight
+  if [[ -n $(./longhornctl check preflight 2>&1 | grep error) ]]; then
+    exit 1
+  fi
+}
+
+
 run_longhorn_upgrade_test(){
   LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-manager-test:master-head"}
 
@@ -508,6 +519,12 @@ main(){
   if [[ "${TF_VAR_enable_mtls}" == true ]]; then
     enable_mtls
   fi
+
+  # msg="failed to get package manager" error="operating system (amzn) is not supported"
+  if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]]; then
+    longhornctl_check
+  fi
+
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
       create_registry_secret
