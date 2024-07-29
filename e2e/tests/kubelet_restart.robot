@@ -6,6 +6,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
+Resource    ../keywords/setting.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -14,10 +15,12 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${RWX_VOLUME_FAST_FAILOVER}    false
 
 *** Test Cases ***
 Restart Volume Node Kubelet While Workload Heavy Writing
-    Given Create statefulset 0 using RWO volume
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create statefulset 0 using RWO volume
     And Create statefulset 1 using RWX volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -34,7 +37,8 @@ Restart Volume Node Kubelet While Workload Heavy Writing
     END
 
 Stop Volume Node Kubelet For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Create statefulset 0 using RWO volume
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create statefulset 0 using RWO volume
     And Create statefulset 1 using RWX volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
