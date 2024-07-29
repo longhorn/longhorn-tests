@@ -82,6 +82,7 @@ from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 from common import wait_scheduling_failure
 from common import set_tags_for_node_and_its_disks
+from common import wait_for_tainted_node_engine_image_undeployed
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2506,7 +2507,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     common.wait_for_disk_update(client, node.name, 1)
 
 
-def prepare_upgrade_image_not_fully_deployed_environment(client): # NOQA
+def prepare_upgrade_image_not_fully_deployed_environment(client, excluded_nodes=[]): # NOQA
     # deploy upgrade image, wait until 2 running pods because 1 node tainted
     default_img = common.get_default_engine_image(client)
     default_img = client.by_id_engine_image(default_img.name)
@@ -2523,7 +2524,8 @@ def prepare_upgrade_image_not_fully_deployed_environment(client): # NOQA
                                                          data_v, data_minv)
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
-    wait_for_deployed_engine_image_count(client, new_img.name, 2)
+    wait_for_deployed_engine_image_count(client, new_img.name, 2,
+                                         excluded_nodes)
     new_img = client.by_id_engine_image(new_img.name)
 
     return engine_upgrade_image, new_img
@@ -2542,7 +2544,15 @@ def prepare_engine_not_fully_deployed_environment(client, core_api): # NOQA
 
     restart_and_wait_ready_engine_count(client, 2)
     default_img = common.get_default_engine_image(client)
-    wait_for_deployed_engine_image_count(client, default_img.name, 2)
+    default_img_name = default_img.name
+
+    # check if tainted node is marked as not deployed in `nodeDeploymentMap`.
+    wait_for_tainted_node_engine_image_undeployed(client,
+                                                  default_img_name,
+                                                  taint_node_id)
+
+    wait_for_deployed_engine_image_count(client, default_img_name, 2,
+                                         [taint_node_id])
 
     return taint_node_id
 
@@ -2757,7 +2767,8 @@ def test_engine_image_not_fully_deployed_perform_engine_upgrade(client, core_api
     volume1 = wait_for_volume_detached(client, volume1.name)
 
     engine_upgrade_image, new_img = \
-        prepare_upgrade_image_not_fully_deployed_environment(client)
+        prepare_upgrade_image_not_fully_deployed_environment(client,
+                                                             [tainted_node_id])
 
     # expected refCount: 1 for volume + 1 for engine and number of replicas(2)
     expect_ref_count = 4
@@ -2869,7 +2880,8 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
     6. In a 2-min retry, verify that Longhorn upgrades the engine image of
        vol-1 and vol-2.
     """
-    prepare_engine_not_fully_deployed_environment(client, core_api)
+    tainted_node_id = \
+        prepare_engine_not_fully_deployed_environment(client, core_api)
 
     volume1 = create_and_check_volume(client, "vol-1",
                                       num_of_replicas=2,
@@ -2885,7 +2897,8 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
     wait_for_engine_image_ref_count(client, default_img.name, 8)
 
     engine_upgrade_image, new_img = \
-        prepare_upgrade_image_not_fully_deployed_environment(client)
+        prepare_upgrade_image_not_fully_deployed_environment(client,
+                                                             [tainted_node_id])
 
     volume1.engineUpgrade(image=engine_upgrade_image)
     volume2.engineUpgrade(image=engine_upgrade_image)

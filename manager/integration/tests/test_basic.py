@@ -3514,7 +3514,11 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     # detach volume
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+    # The volume condition cannot change in the same reconcile loop as the
+    # volume state changes to detached. We need to wait for the condition
+    # change instead of just checking it once directly.
+    common.wait_for_volume_condition_scheduled(client, volume.name, "status",
+                                               CONDITION_STATUS_TRUE)
 
     # re-attach volume to verify the data
     volume.attach(hostId=self_host)
@@ -3761,7 +3765,11 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     # wait to complete restore
     common.wait_for_volume_restoration_completed(client, dst_vol_name)
     dst_vol = common.wait_for_volume_detached(client, dst_vol_name)
-    assert dst_vol.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+    # The volume condition cannot change in the same reconcile loop as the
+    # volume state changes to detached. We need to wait for the condition
+    # change instead of just checking it once directly.
+    common.wait_for_volume_condition_scheduled(client, dst_vol.name, "status",
+                                               CONDITION_STATUS_TRUE)
 
     # attach the volume
     create_pv_for_volume(client, core_api, dst_vol, dst_vol_name)

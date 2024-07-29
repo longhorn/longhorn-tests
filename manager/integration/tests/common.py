@@ -3738,20 +3738,42 @@ def scale_up_engine_image_daemonset(client):
     wait_for_deployed_engine_image_count(client, default_img.name, 3)
 
 
-def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
+def wait_for_deployed_engine_image_count(client, image_name, expected_cnt,
+                                         exclude_nodes=[]):
     for i in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
         image = client.by_id_engine_image(image_name)
         deployed_cnt = 0
         if image.nodeDeploymentMap is None:
             continue
-        for item in image.nodeDeploymentMap:
-            if image.nodeDeploymentMap[item] is True:
+        for node_name in image.nodeDeploymentMap:
+            if node_name in exclude_nodes:
+                continue
+            if image.nodeDeploymentMap[node_name] is True:
                 deployed_cnt = deployed_cnt + 1
         if deployed_cnt == expected_cnt:
             break
-        time.sleep(RETRY_INTERVAL)
 
     assert deployed_cnt == expected_cnt, f"image = {image}"
+
+
+def wait_for_tainted_node_engine_image_undeployed(client,
+                                                  img_name, tainted_node):
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        tainted_node_excluded = False
+        img = client.by_id_engine_image(img_name)
+        if img.nodeDeploymentMap is None:
+            continue
+        for node_name in img.nodeDeploymentMap:
+            if node_name != tainted_node:
+                continue
+            if img.nodeDeploymentMap[node_name] is False:
+                tainted_node_excluded = True
+                break
+        if tainted_node_excluded:
+            break
+    assert img.nodeDeploymentMap[tainted_node] is False
 
 
 def wait_for_running_engine_image_count(image_name, engine_cnt):
@@ -4136,8 +4158,14 @@ def delete_storage_class(sc_name):
 
 def cleanup_storage_class():
     # premium-rwo, standard-rwo and standard are installed in gke by default
+    # azurefile-csi, azurefile-csi-premium, azurefile-premium, managed,
+    # managed-csi, managed-csi-premium, managed-premium are installed
+    # in aks by default
     skip_sc_deletes = ["longhorn", "local-path",
-                       "premium-rwo", "standard-rwo", "standard"]
+                       "premium-rwo", "standard-rwo", "standard",
+                       "azurefile-csi", "azurefile-csi-premium",
+                       "azurefile-premium", "managed", "managed-csi",
+                       "managed-csi-premium", "managed-premium"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:

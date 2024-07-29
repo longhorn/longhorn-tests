@@ -126,7 +126,7 @@ resource "null_resource" "registration_controlplane_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -150,7 +150,7 @@ resource "null_resource" "registration_worker_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_instance.lh_aws_instance_worker_rke2[count.index].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -168,7 +168,7 @@ resource "null_resource" "package_install_controlplane_rke2" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup jq apparmor-parser",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup jq",
       "sudo shutdown -r now",
     ]
 
@@ -176,12 +176,35 @@ resource "null_resource" "package_install_controlplane_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
 
+}
+
+resource "time_sleep" "wait_controlplane_1_minute_rke2" {
+
+  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+
+  depends_on = [
+    null_resource.package_install_controlplane_rke2
+  ]
+
+  create_duration = "60s"
+}
+
+resource "aws_ec2_instance_state" "controlplane_state_rke2" {
+
+  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+
+  depends_on = [
+    time_sleep.wait_controlplane_1_minute_rke2
+  ]
+
+  instance_id = aws_instance.lh_aws_instance_controlplane_rke2[count.index].id
+  state       = "running"
 }
 
 # node initialization step 2: install required packages after get repos
@@ -195,7 +218,7 @@ resource "null_resource" "package_install_worker_rke2" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client jq apparmor-parser",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client jq",
       "sudo shutdown -r now",
     ]
 
@@ -203,7 +226,7 @@ resource "null_resource" "package_install_worker_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_instance.lh_aws_instance_worker_rke2[count.index].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -211,12 +234,35 @@ resource "null_resource" "package_install_worker_rke2" {
 
 }
 
+resource "time_sleep" "wait_worker_1_minute_rke2" {
+
+  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+
+  depends_on = [
+    null_resource.package_install_worker_rke2
+  ]
+
+  create_duration = "60s"
+}
+
+resource "aws_ec2_instance_state" "worker_state_rke2" {
+
+  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+
+  depends_on = [
+    time_sleep.wait_worker_1_minute_rke2
+  ]
+
+  instance_id = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  state       = "running"
+}
+
 # node initialization step 3: setup rke2 cluster for master node
 resource "null_resource" "cluster_setup_controlplane_rke2" {
   count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
 
   depends_on = [
-    null_resource.package_install_controlplane_rke2
+    aws_ec2_instance_state.controlplane_state_rke2
   ]
 
   provisioner "remote-exec" {
@@ -225,7 +271,7 @@ resource "null_resource" "cluster_setup_controlplane_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -238,7 +284,7 @@ resource "null_resource" "cluster_setup_worker_rke2" {
   count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
 
   depends_on = [
-    null_resource.package_install_worker_rke2,
+    aws_ec2_instance_state.worker_state_rke2,
     null_resource.cluster_setup_controlplane_rke2
   ]
 
@@ -248,7 +294,7 @@ resource "null_resource" "cluster_setup_worker_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_instance.lh_aws_instance_worker_rke2[count.index].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -273,7 +319,7 @@ resource "null_resource" "make_sure_k8s_components_running_controlplane_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -298,13 +344,13 @@ resource "null_resource" "rsync_kubeconfig_file_rke2" {
 
     connection {
       type     = "ssh"
-      user     = "suse"
+      user     = "ec2-user"
       host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
 
   provisioner "local-exec" {
-    command = "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l suse -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/rke2/rke2.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' rke2.yaml"
+    command = "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/rke2/rke2.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' rke2.yaml"
   }
 }
