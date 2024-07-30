@@ -520,8 +520,9 @@ main(){
     enable_mtls
   fi
 
-  # msg="failed to get package manager" error="operating system (amzn) is not supported"
-  if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]]; then
+  # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
+  if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
+    [[ "${DISTRO}" != "sle-micro" ]]; then
     longhornctl_check
   fi
 
