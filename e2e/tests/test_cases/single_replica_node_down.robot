@@ -4,6 +4,7 @@ Documentation    Single replica node down
 Test Tags    manual_test_case
 
 Resource    ../keywords/common.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/recurringjob.resource
@@ -20,11 +21,13 @@ Test Teardown    Cleanup test resources include off nodes
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Replica Node
-    Given Set setting node-down-pod-deletion-policy to do-nothing
-    When Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to do-nothing
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -43,9 +46,9 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Volume Node
-    Given Set setting node-down-pod-deletion-policy to do-nothing
-
-    When Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to do-nothing
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -63,9 +66,9 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Replica Node
-    Given Set setting node-down-pod-deletion-policy to delete-deployment-pod
-
-    When Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-deployment-pod
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -82,9 +85,9 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
     And Power on off node
 
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Volume Node
-    Given Set setting node-down-pod-deletion-policy to delete-deployment-pod
-
-    When Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-deployment-pod
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -102,9 +105,9 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Replica Node
-    Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
-
-    When Create statefulset 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
+    When Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Wait for volume of statefulset 0 healthy
     And Write 100 MB data to file data in statefulset 0
 
@@ -120,9 +123,9 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
     And Power on off node
 
 Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Volume Node
-    Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
-
-    When Create statefulset 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
+    When Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Wait for volume of statefulset 0 healthy
     And Write 100 MB data to file data in statefulset 0
 

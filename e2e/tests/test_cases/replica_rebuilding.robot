@@ -4,6 +4,7 @@ Documentation    Replica Rebuilding
 Test Tags    manual_test_case
 
 Resource    ../keywords/common.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/node.resource
@@ -15,6 +16,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    30
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Replica Rebuilding
@@ -37,7 +39,7 @@ Replica Rebuilding
     ...                - the rebuilding progress in UI page looks good.
     ...                - the data content is correct after rebuilding.
     ...                - volume r/w works fine.
-    When Create volume 0 with    size=10Gi    numberOfReplicas=3
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
 
