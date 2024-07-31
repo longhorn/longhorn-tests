@@ -26,6 +26,7 @@ ${RWX_VOLUME_FAST_FAILOVER}    false
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing
+    [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
@@ -65,6 +66,7 @@ Reboot Node One By One While Workload Heavy Writing
     END
 
 Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Heavy Writing
+    [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
@@ -104,6 +106,7 @@ Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot All Worker Nodes While Workload Heavy Writing
+    [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
@@ -141,6 +144,7 @@ Reboot All Worker Nodes While Workload Heavy Writing
     END
 
 Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing
+    [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
     And Create persistentvolumeclaim 0 using RWO volume
@@ -178,6 +182,7 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot Volume Node While Workload Heavy Writing
+    [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create statefulset 0 using ${VOLUME_TYPE} volume
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -191,6 +196,7 @@ Reboot Volume Node While Workload Heavy Writing
     END
 
 Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing
+    [Tags]    reboot
     Given Create statefulset 0 using RWO volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -204,6 +210,7 @@ Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Wr
     END
 
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
+    [Tags]    recurring_job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1
     And Create volume 1 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
@@ -224,6 +231,7 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
     END
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
+    [Tags]    recurring_job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1
     And Create volume 1 with    size=2Gi    numberOfReplicas=3
     And Attach volume 0
