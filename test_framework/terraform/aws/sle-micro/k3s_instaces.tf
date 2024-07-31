@@ -218,7 +218,7 @@ resource "null_resource" "package_install_worker_k3s" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client jq",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup jq",
       "sudo shutdown -r now",
     ]
 
