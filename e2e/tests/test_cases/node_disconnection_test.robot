@@ -5,6 +5,7 @@ Documentation    Node disconnection test
 Test Tags    manual_test_case
 
 Resource    ../keywords/common.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/network.resource
@@ -18,6 +19,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    3
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Node Disconnect And Keep Data Writing And No Replica On The Disconnected Node
@@ -51,7 +53,7 @@ Node Disconnect And Keep Data Writing And Have Replica On The Disconnected Node
     ...                The volume become healthy.
     Given Set setting auto-salvage to false
 
-    When Create volume 0 with    size=10Gi    numberOfReplicas=3
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
 
@@ -89,7 +91,7 @@ Node Disconnect And Have Replica On Disconnected Node
     ...                The volume will be in an attached state with its robustness unknown at first, then the volume become healthy.
     Given Set setting auto-salvage to false
 
-    When Create volume 0 with    size=10Gi    numberOfReplicas=3
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
@@ -109,7 +111,8 @@ Node Disconnect With Statefulset
     ...                Verify the data and the pod still works fine.
     ...                Repeat step 2~6 for 3 times.
     ...                Create, Attach, and detach other volumes to the recovered node. All volumes should work fine.
-    Given Create statefulset 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Write 100 MB data to file data in statefulset 0
@@ -123,7 +126,7 @@ Node Disconnect With Statefulset
         Then Check statefulset 0 data in file data is intact
     END
 
-    When Create volume 0 with    size=1Gi    numberOfReplicas=3
+    When Create volume 0 with    size=1Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to statefulset 0 node
     And Wait for volume 0 healthy
 
