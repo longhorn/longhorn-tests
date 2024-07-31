@@ -61,7 +61,7 @@ resource "google_container_node_pool" "node_pool" {
   }
 
   node_config {
-    machine_type = "e2-standard-2"
+    machine_type = "e2-standard-4"
     image_type = "UBUNTU_CONTAINERD"
   }
 }
