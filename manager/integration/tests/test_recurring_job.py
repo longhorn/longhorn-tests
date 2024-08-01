@@ -44,6 +44,7 @@ from common import wait_deployment_replica_ready
 from common import create_and_wait_statefulset
 from common import get_statefulset_pod_info
 from common import update_statefulset_manifests
+from common import update_persistent_volume_claim
 
 from common import check_pod_existence
 from common import exec_command_in_pod
@@ -2231,9 +2232,7 @@ def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
     label_key_2 = f"recurring-job-group.longhorn.io/{recurring_job_name_2}"
     claim.metadata.labels[label_key_1] = "enabled"
     claim.metadata.labels[label_key_2] = "enabled"
-    core_api.replace_namespaced_persistent_volume_claim(
-        pvc_name, 'default', claim
-    )
+    update_persistent_volume_claim(core_api, pvc_name, 'default', claim)
     wait_for_volume_recurring_job_update(volume,
                                          jobs=[recurring_job_name_1],
                                          groups=[recurring_job_name_2])
@@ -2243,9 +2242,7 @@ def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
     )
 
     del claim.metadata.labels[label_key_2]
-    core_api.replace_namespaced_persistent_volume_claim(
-        pvc_name, 'default', claim
-    )
+    update_persistent_volume_claim(core_api, pvc_name, 'default', claim)
     wait_for_volume_recurring_job_update(volume,
                                          jobs=[recurring_job_name_1],
                                          groups=[])
@@ -2329,9 +2326,7 @@ def test_recurring_job_source_label(client, core_api, volume_name):  # NOQA
 
     label_key = f"recurring-job.longhorn.io/{RECURRING_JOB_NAME}"
     claim.metadata.labels[label_key] = "enabled"
-    core_api.replace_namespaced_persistent_volume_claim(
-        pvc_name, 'default', claim
-    )
+    update_persistent_volume_claim(core_api, pvc_name, 'default', claim)
 
     wait_for_volume_recurring_job_update(volume,
                                          jobs=[RECURRING_JOB_NAME],
@@ -2344,9 +2339,7 @@ def test_recurring_job_source_label(client, core_api, volume_name):  # NOQA
     )
 
     del claim.metadata.labels[label_key]
-    core_api.replace_namespaced_persistent_volume_claim(
-        pvc_name, 'default', claim
-    )
+    update_persistent_volume_claim(core_api, pvc_name, 'default', claim)
 
     try:
         wait_for_volume_recurring_job_update(volume,
@@ -2373,9 +2366,7 @@ def add_recurring_job_source_to_pvc(name, core_api):  # NOQA
         claim.metadata.labels = {}
 
     claim.metadata.labels["recurring-job.longhorn.io/source"] = "enabled"
-    core_api.replace_namespaced_persistent_volume_claim(
-        name, 'default', claim
-    )
+    update_persistent_volume_claim(core_api, name, 'default', claim)
 
 
 def remove_recurring_job_source_to_pvc(name, core_api):  # NOQA
@@ -2387,9 +2378,7 @@ def remove_recurring_job_source_to_pvc(name, core_api):  # NOQA
         claim.metadata.labels = {}
 
     del claim.metadata.labels["recurring-job.longhorn.io/source"]
-    core_api.replace_namespaced_persistent_volume_claim(
-        name, 'default', claim
-    )
+    update_persistent_volume_claim(core_api, name, 'default', claim)
 
 
 def wait_for_actual_size_change_mb(client, vol_name, old_size,  # NOQA
