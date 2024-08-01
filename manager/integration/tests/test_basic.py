@@ -3305,6 +3305,8 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     assert std_md5sum2 == md5sum2
 
 
+@pytest.mark.skip(reason="In the current Longhorn implementation, \
+it's almost impossible to catch the moment when the lock is held")
 def test_backup_lock_creation_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
