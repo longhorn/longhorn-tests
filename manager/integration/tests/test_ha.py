@@ -871,6 +871,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, std_volume_name,
+            volume_size=str(2*Gi),
             data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_2)
 
     std_volume = client.by_id_volume(std_volume_name)
@@ -880,7 +881,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
     dr_volume_name = volume_name + "-dr"
-    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+    client.create_volume(name=dr_volume_name, size=str(2*Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
                          frontend="", standby=True)
     wait_for_volume_creation(client, dr_volume_name)
@@ -888,7 +889,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
 
     data_path2 = "/data/test2"
     write_pod_volume_random_data(core_api, std_pod_name,
-                                 data_path2, DATA_SIZE_IN_MB_2)
+                                 data_path2, DATA_SIZE_IN_MB_4)
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
     snap2 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
@@ -896,6 +897,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild during the incremental restoration
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
     dr_volume = client.by_id_volume(dr_volume_name)
     for r in dr_volume.replicas:
         failed_replica = r.name
