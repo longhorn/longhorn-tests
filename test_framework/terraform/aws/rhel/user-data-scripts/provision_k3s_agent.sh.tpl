@@ -10,7 +10,7 @@ fi
 
 sudo yum update -y
 sudo yum group install -y "Development Tools"
-sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup
+sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup device-mapper
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
@@ -18,11 +18,13 @@ sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 modprobe uio
 modprobe uio_pci_generic
 modprobe nvme-tcp
+modprobe dm_crypt
 touch /etc/modules-load.d/modules.conf
 cat > /etc/modules-load.d/modules.conf <<EOF
 uio
 uio_pci_generic
 nvme-tcp
+dm_crypt
 EOF
 
 echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
