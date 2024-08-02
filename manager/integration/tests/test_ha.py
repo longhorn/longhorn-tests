@@ -708,10 +708,11 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, csi_
     pod_name, pv_name, pvc_name, original_md5sum_1 = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, volume_name,
+            volume_size=str(2*Gi),
             data_path=data_path_1, data_size_in_mb=DATA_SIZE_IN_MB_4)
     create_snapshot(client, volume_name)
     write_pod_volume_random_data(core_api, pod_name,
-                                 data_path_2, DATA_SIZE_IN_MB_3)
+                                 data_path_2, DATA_SIZE_IN_MB_4)
     original_md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
 
     volume = client.by_id_volume(volume_name)
@@ -773,7 +774,8 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(client, core_api, vol
     pod_name, pv_name, pvc_name, original_md5sum = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, volume_name,
-            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_4)
+            volume_size=str(2*Gi),
+            data_path=data_path, data_size_in_mb=2*Gi)
 
     volume = client.by_id_volume(volume_name)
     original_replicas = volume.replicas
