@@ -130,11 +130,15 @@ def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directo
         command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
         tty=False)
 
+    logging(f"Checked {pod_name} file {file_name} checksum: \
+        Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}")
+
     if actual_checksum != expected_checksum:
-        message = f"Got {file_path} checksum = {actual_checksum} \
-            Expected checksum = {expected_checksum}"
+        message = f"Checked {pod_name} file {file_name} checksum failed. \
+        Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}"
         logging(message)
-        time.sleep(self.retry_count)
+        retry_count, _ = get_retry_count_and_interval()
+        time.sleep(retry_count)
         assert False, message
 
 
