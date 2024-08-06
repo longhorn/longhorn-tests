@@ -149,12 +149,20 @@ def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directo
                 command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
                 tty=False)
 
-            assert actual_checksum == expected_checksum, f"Got {file_path} checksum = {actual_checksum} \
-                    Expected checksum = {expected_checksum}"
+            logging(f"Checked {pod_name} file {file_name} checksum: \
+                Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}")
+
+            if actual_checksum != expected_checksum:
+                message = f"Checked {pod_name} file {file_name} checksum failed. \
+                    Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}"
+                logging(message)
+                time.sleep(retry_count)
+                assert False, message
             return
         except Exception as e:
             logging(f"Checking pod {pod_name} data checksum failed with error: {e}")
             time.sleep(retry_interval)
+    assert False, f"Checking pod {pod_name} data checksum failed"
 
 
 def wait_for_workload_pods_running(workload_name, namespace="default"):
