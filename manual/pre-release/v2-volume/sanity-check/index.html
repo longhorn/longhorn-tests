@@ -822,19 +822,71 @@
   <div>
     <article id="content">
        <h2 id="related-doc">Related doc:</h2>
-<p><a href="https://longhorn.io/docs/1.6.0/v2-data-engine/features/">https://longhorn.io/docs/1.6.0/v2-data-engine/features/</a></p>
+<p><a href="https://longhorn.io/docs/1.7.0/v2-data-engine/features/">https://longhorn.io/docs/1.7.0/v2-data-engine/features/</a></p>
+<h2 id="tests-prerequisite">Tests Prerequisite</h2>
 <ul>
-<li>Support both amd64 and arm64</li>
-<li>Volume creation, attachment, detachment and deletion</li>
-<li><a href="https://github.com/longhorn/longhorn/issues/7534">Filesystem trim</a></li>
-<li>Replica online rebuilding</li>
-<li><a href="https://github.com/longhorn/longhorn/issues/5827">Orphaned replica management</a></li>
-<li>Snapshot creation, deletion and reversion</li>
-<li>Volume backup and restoration</li>
-<li><a href="https://github.com/longhorn/longhorn/issues/7015">Selective v2 Data Engine activation</a></li>
-<li>Upgrade Longhorn from previous version with v2 volume</li>
-<li><a href="https://github.com/longhorn/longhorn/issues/6001">v2 volume live upgrade</a></li>
+<li>Load the kernel modules on the each Longhorn node
+<pre tabindex="0"><code>modprobe vfio_pci
+modprobe uio_pci_generic
+</code></pre></li>
 </ul>
+<h3 id="test-items">Test Items</h3>
+<h4 id="1-support-both-amd64-and-amd64">1. Support both AMD64 and AMD64</h4>
+<h4 id="2-volume-creation-attachment-detachment-and-deletion">2. Volume creation, attachment, detachment and deletion</h4>
+<h4 id="3-block-disk-managementhttpsgithubcomlonghornlonghornissues7672">3. <a href="https://github.com/longhorn/longhorn/issues/7672">Block disk management</a></h4>
+<h4 id="4-orphaned-replica-managementhttpsgithubcomlonghornlonghornissues5827">4. <a href="https://github.com/longhorn/longhorn/issues/5827">Orphaned replica management</a></h4>
+<h5 id="creating-a-v2-orphan-replica-in-longhorn">Creating a v2 Orphan Replica in Longhorn</h5>
+<ol>
+<li>
+<p><strong>Execute the <code>go-spdk-helper</code> Command in the Instance Manager Pod</strong>:</p>
+<ul>
+<li>Use the following <code>kubectl</code> command to execute the <code>go-spdk-helper</code> tool directly within the specified instance manager pod. This command will create a new logical volume (LVOL) in the desired logical volume store (LVSTORE).</li>
+<li>Command syntax:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl -n longhorn-system exec -it &lt;instance-manager-pod-name&gt; -- /bin/bash -c <span style="color:#e6db74">&#34;go-spdk-helper lvol create --lvs-name &lt;DISK_NAME&gt; --lvol-name &lt;LVOL_NAME&gt; --size &lt;LVOL_SIZE_IN_MIB&gt;&#34;</span>
+</code></pre></div></li>
+<li>Replace the placeholders with your specific values:
+<ul>
+<li><code>&lt;instance-manager-pod-name&gt;</code>: The name of your instance manager pod.</li>
+<li><code>&lt;LVSTORE_NAME&gt;</code>: The name of the volume where the replica will be created.</li>
+<li><code>&lt;DISK_NAME&gt;</code>: The name for the disk on the node.</li>
+<li><code>&lt;LVOL_SIZE_IN_MIB&gt;</code>: The size of the logical volume in MiB.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Example</strong>:</p>
+<ul>
+<li>Here’s an example where an LVOL named <code>test001</code> is created in the LVSTORE <code>disk-2</code> with a size of <code>12400</code> MiB:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl -n longhorn-system exec -it instance-manager-cddd0dac94705fc3e267c2e157224257 -- /bin/bash -c <span style="color:#e6db74">&#34;go-spdk-helper lvol create --lvs-name disk-2 --lvol-name test001 --size 12400&#34;</span>
+</code></pre></div></li>
+</ul>
+</li>
+<li>
+<p><strong>Verify the Creation</strong>:</p>
+<ul>
+<li>After executing the command, you should receive a JSON output similar to the following:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;alias&#34;</span>: <span style="color:#e6db74">&#34;disk-2/test001&#34;</span>,
+    <span style="color:#f92672">&#34;uuid&#34;</span>: <span style="color:#e6db74">&#34;57666291-2516-4140-af6d-cc086c8ae98c&#34;</span>
+}
+</code></pre></div></li>
+<li>This output confirms that the LVOL was successfully created with the specified alias and UUID.</li>
+</ul>
+</li>
+</ol>
+<h4 id="5-snapshot-creation-deletion-and-reversion">5. Snapshot creation, deletion and reversion</h4>
+<h4 id="6-volume-backup-and-restoration">6. Volume backup and restoration</h4>
+<h4 id="7-selective-v2-data-engine-activationhttpsgithubcomlonghornlonghornissues7015">7. <a href="https://github.com/longhorn/longhorn/issues/7015">Selective v2 Data Engine activation</a></h4>
+<h4 id="8-upgrade-longhorn-from-previous-version-with-v2-volume">8. Upgrade Longhorn from previous version with v2 volume</h4>
+<h4 id="9-v2-volume-live-upgrade-for-data-planehttpsgithubcomlonghornlonghornissues6001">9. <a href="https://github.com/longhorn/longhorn/issues/6001">v2 volume live upgrade for data plane</a></h4>
+<blockquote>
+<p><strong>Note:</strong></p>
+<p>In this item, it should be excluded.</p>
+<p>Ref: <a href="https://github.com/longhorn/longhorn/issues/6001#issuecomment-2272532533">https://github.com/longhorn/longhorn/issues/6001#issuecomment-2272532533</a></p>
+</blockquote>
+<h4 id="10-filesystem-trimhttpsgithubcomlonghornlonghornissues7534">10. <a href="https://github.com/longhorn/longhorn/issues/7534">Filesystem trim</a></h4>
+<h4 id="11-replica-online-rebuildinghttpsgithubcomlonghornlonghornissues7199">11. <a href="https://github.com/longhorn/longhorn/issues/7199">Replica online rebuilding</a></h4>
 
     </article>
   <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/v2-volume/sanity-check.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>

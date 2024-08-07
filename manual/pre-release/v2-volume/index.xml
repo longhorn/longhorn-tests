@@ -12,8 +12,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/v2-volume/sanity-check/</guid>
-      <description>Related doc: https://longhorn.io/docs/1.6.0/v2-data-engine/features/
- Support both amd64 and arm64 Volume creation, attachment, detachment and deletion Filesystem trim Replica online rebuilding Orphaned replica management Snapshot creation, deletion and reversion Volume backup and restoration Selective v2 Data Engine activation Upgrade Longhorn from previous version with v2 volume v2 volume live upgrade  </description>
+      <description>Related doc: https://longhorn.io/docs/1.7.0/v2-data-engine/features/
+Tests Prerequisite  Load the kernel modules on the each Longhorn node modprobe vfio_pci modprobe uio_pci_generic   Test Items 1. Support both AMD64 and AMD64 2. Volume creation, attachment, detachment and deletion 3. Block disk management 4. Orphaned replica management Creating a v2 Orphan Replica in Longhorn   Execute the go-spdk-helper Command in the Instance Manager Pod:
+ Use the following kubectl command to execute the go-spdk-helper tool directly within the specified instance manager pod.</description>
     </item>
     
   </channel>
