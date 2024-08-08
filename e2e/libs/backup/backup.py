@@ -41,6 +41,9 @@ class Backup(Base):
     def restore(self, volume_name, backup_id):
         return NotImplemented
 
+    def get_data_checksum(self, backup_name):
+        return self.backup.get_data_checksum(backup_name)
+
     def check_restored_volume_checksum(self, volume_name, backup_name):
         return self.backup.check_restored_volume_checksum(volume_name, backup_name)
 

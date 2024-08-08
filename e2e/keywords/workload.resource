@@ -176,3 +176,12 @@ Check ${workload_kind} ${workload_id} pod is ${expect_state} on another node
 Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
+
+Create Backup ${backup_id} for volume of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    create_backup_for_workload_volume    ${backup_id}    ${workload_name}
+
+Check ${workload_kind} ${workload_id} file ${file_name} is restored from backup ${backup_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${backup_name} =    get_backup_name    ${backup_id}
+    check_workload_file_is_restored    ${workload_name}    ${file_name}    ${backup_name}
