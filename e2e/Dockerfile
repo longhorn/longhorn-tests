@@ -11,7 +11,7 @@ ARG KUBECTL_VERSION=v1.30.0
 ARG YQ_VERSION=v4.24.2
 
 RUN zypper ref -f
-RUN zypper in -y vim-small nfs-client xfsprogs e2fsprogs util-linux-systemd gcc python311-devel gawk java-17-openjdk tar awk gzip wget && \
+RUN zypper in -y vim-small nfs-client xfsprogs e2fsprogs util-linux-systemd gcc python311-devel gawk java-21-openjdk tar awk gzip wget && \
     rm -rf /var/cache/zypp/*
 
 RUN curl -sO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/${ARCH}/kubectl && \
