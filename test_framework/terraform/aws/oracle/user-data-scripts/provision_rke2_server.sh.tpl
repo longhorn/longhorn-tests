@@ -1,13 +1,11 @@
 #!/bin/bash
 
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
-
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq nc rsync
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
+sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="server" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 

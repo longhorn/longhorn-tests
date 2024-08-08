@@ -29,14 +29,14 @@ variable "arch" {
   default     = "amd64"
 }
 
-variable "distro_version" {
+variable "os_distro_version" {
   type        = string
-  default     = "9.3"
+  default     = "9.4"
 }
 
 variable "aws_ami_oraclelinux_account_number" {
   type        = string
-  default     = "131827586825"
+  default     = "679593333241"
 }
 
 variable "lh_aws_instance_count_controlplane" {
