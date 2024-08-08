@@ -1,13 +1,12 @@
 #!/bin/bash
 
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
-
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
+# disable nm-cloud-setup otherwise k3s-agent service won’t start.
+sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 modprobe uio
 modprobe uio_pci_generic
