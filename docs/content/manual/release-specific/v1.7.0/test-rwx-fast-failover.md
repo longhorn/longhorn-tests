@@ -15,6 +15,23 @@ title: RWX Fast Failover
 ### Scale Test
 **Given** Longhorn cluster with 3 worker nodes.
 
+**And** Deploy an RWX volume with the following storage class settings (nfsOptions: "hard,timeo=50,retrans=1")
+
+```yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: longhorn-test
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "3"
+  staleReplicaTimeout: "2880"
+  fromBackup: ""
+  fsType: "ext4"
+  nfsOptions: "hard,timeo=50,retrans=1"
 Make multiple deployments with a script such as
 ```shell
 #!/bin/bash
