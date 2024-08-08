@@ -71,6 +71,20 @@ done
 
 **Verify** that the CPU and memory use grows, but only by a small amount.
 
+Here is the expected outcome:
+
+| **Metric**                           | **Fast Failover Enabled** | **Fast Failover Disabled** | **Difference**             |
+|--------------------------------------|---------------------------|----------------------------|----------------------------|
+| **1. Number of API Requests**        | 59 req/s                  | 37.5 req/s                 | **+57.3%**                 |
+| **2. RPC Rate**                      | 57 ops/s                  | 37 ops/s                   | **+54.1%**                 |
+| **3. Memory Usage**                  | Higher Peaks/Minima       | Lower Peaks/Minima         | More usage with Fast Failover Enabled |
+| **4. Longhorn Manager CPU/RAM**      | 417MB / 0.13 CPU          | 405MB / 0.1 CPU            | **+3% RAM** / **+30% CPU** |
+| **5. Share Manager CPU/RAM**         | 2.25GB / 0.26 CPU         | 2.2GB / 0.235 CPU          | **+2.3% RAM** / **+10.6% CPU** |
+
+Ref. https://github.com/longhorn/longhorn/issues/6205#issuecomment-2262625965
+
+If newer Longhorn version consume more resources than that, then the test is considered as failed
+
 **If possible** monitor the API server requests similar to the method in the report https://github.com/longhorn/longhorn/blob/master/scalability/reference-setup-performance-scalability-and-sizing-guidelines/public-cloud/medium-node-spec.md#longhorn-control-plane-performance
 
 **Verify** that the API request rate remains low.
