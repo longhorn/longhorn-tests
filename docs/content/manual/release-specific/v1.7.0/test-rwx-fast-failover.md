@@ -36,7 +36,7 @@ Make multiple deployments with a script such as
 ```shell
 #!/bin/bash
 
-for i in {1..70}; do
+for i in {1..60}; do
   cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
