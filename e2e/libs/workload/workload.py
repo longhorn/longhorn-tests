@@ -80,62 +80,81 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
     wait_for_pod_status(pod_name, "Running")
 
-    data_path = f"{data_directory}/{file_name}"
-    api = client.CoreV1Api()
-    write_data_cmd = [
-        '/bin/sh',
-        '-c',
-        f"dd if=/dev/urandom of={data_path} bs=1M count={size_in_mb} status=none;\
-          sync;\
-          md5sum {data_path} | awk \'{{print $1}}\'"
-    ]
-    return stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=write_data_cmd, stderr=True, stdin=False, stdout=True,
-        tty=False)
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for _ in range(retry_count):
+        try:
+            data_path = f"{data_directory}/{file_name}"
+            api = client.CoreV1Api()
+            write_data_cmd = [
+                '/bin/sh',
+                '-c',
+                f"dd if=/dev/urandom of={data_path} bs=1M count={size_in_mb} status=none;\
+                sync;\
+                md5sum {data_path} | awk \'{{print $1}}\'"
+            ]
+            return stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=write_data_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+        except Exception as e:
+            logging(f"Writing random data to pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
 
 
 def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data"):
 
     wait_for_pod_status(pod_name, "Running")
 
-    api = client.CoreV1Api()
-    write_cmd = [
-        '/bin/sh',
-        '-c',
-        f"while true; do dd if=/dev/urandom of={path} bs=1M count={size_in_mb} status=none; done > /dev/null 2> /dev/null &"
-    ]
+    retry_count, retry_interval = get_retry_count_and_interval()
 
-    logging(f"Creating process to keep writing data to pod {pod_name}")
-    res = stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=write_cmd, stderr=True, stdin=False, stdout=True,
-        tty=False)
-    assert res == "", f"Failed to create process to keep writing data to pod {pod_name}"
+    for _ in range(retry_count):
+        try:
+            api = client.CoreV1Api()
+            write_cmd = [
+                '/bin/sh',
+                '-c',
+                f"while true; do dd if=/dev/urandom of={path} bs=1M count={size_in_mb} status=none; done > /dev/null 2> /dev/null &"
+            ]
+
+            logging(f"Creating process to keep writing data to pod {pod_name}")
+            res = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=write_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+            assert res == "", f"Failed to create process to keep writing data to pod {pod_name}"
+            return
+        except Exception as e:
+            logging(f"Writing data to pod {pod_name} failed with error: {e}")
+            time.sleep(retry_interval)
 
 
 def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directory="/data"):
 
     wait_for_pod_status(pod_name, "Running")
 
-    file_path = f"{data_directory}/{file_name}"
-    api = client.CoreV1Api()
-    cmd_get_file_checksum = [
-        '/bin/sh',
-        '-c',
-        f"md5sum {file_path} | awk \'{{print $1}}\'"
-    ]
-    actual_checksum = stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
-        tty=False)
+    retry_count, retry_interval = get_retry_count_and_interval()
 
-    if actual_checksum != expected_checksum:
-        message = f"Got {file_path} checksum = {actual_checksum} \
-            Expected checksum = {expected_checksum}"
-        logging(message)
-        time.sleep(self.retry_count)
-        assert False, message
+    for _ in range(retry_count):
+        try:
+            file_path = f"{data_directory}/{file_name}"
+            api = client.CoreV1Api()
+            cmd_get_file_checksum = [
+                '/bin/sh',
+                '-c',
+                f"md5sum {file_path} | awk \'{{print $1}}\'"
+            ]
+            actual_checksum = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
+                tty=False)
+
+            assert actual_checksum == expected_checksum, f"Got {file_path} checksum = {actual_checksum} \
+                    Expected checksum = {expected_checksum}"
+            return
+        except Exception as e:
+            logging(f"Checking pod {pod_name} data checksum failed with error: {e}")
+            time.sleep(retry_interval)
 
 
 def wait_for_workload_pods_running(workload_name, namespace="default"):

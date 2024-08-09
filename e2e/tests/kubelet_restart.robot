@@ -1,7 +1,10 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
+Test Tags    negative
+
 Resource    ../keywords/common.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/workload.resource
@@ -16,12 +19,14 @@ ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
 ${RWX_VOLUME_FAST_FAILOVER}    false
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Restart Volume Node Kubelet While Workload Heavy Writing
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create statefulset 0 using RWO volume
-    And Create statefulset 1 using RWX volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
@@ -38,8 +43,9 @@ Restart Volume Node Kubelet While Workload Heavy Writing
 
 Stop Volume Node Kubelet For More Than Pod Eviction Timeout While Workload Heavy Writing
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create statefulset 0 using RWO volume
-    And Create statefulset 1 using RWX volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0

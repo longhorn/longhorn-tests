@@ -10,6 +10,7 @@ from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 
 import time
+import asyncio
 
 
 def get_control_plane_node_network_latency_in_ms():
@@ -40,7 +41,7 @@ def cleanup_control_plane_network_latency():
             res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)
             assert res, "cleanup control plane network failed"
 
-def disconnect_node_network(node_name, disconnection_time_in_sec=10):
+async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
         command=["nsenter", "--mount=/rootfs/proc/1/ns/mnt", "--net=/rootfs/proc/1/ns/net", "--", "sh"],
@@ -50,7 +51,7 @@ def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     pod_name = manifest['metadata']['name']
     create_pod(manifest, is_wait_for_pod_running=True)
 
-    time.sleep(disconnection_time_in_sec)
+    await asyncio.sleep(disconnection_time_in_sec)
 
     delete_pod(pod_name)
 

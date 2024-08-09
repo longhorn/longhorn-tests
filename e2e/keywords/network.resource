@@ -15,6 +15,18 @@ Disconnect volume node network of statefulset ${statefulset_id} for ${duration} 
     ${node_name} =    get_volume_node    ${volume_name}
     disconnect_node_network    ${node_name}    ${duration}
 
+Disconnect volume nodes network for ${duration} seconds
+    [Arguments]    @{args}
+    @{node_list} =    Create List
+    FOR    ${arg}    IN    @{args}
+        @{workload} =    Split String    ${arg}
+        ${workload_name} =    generate_name_with_suffix    ${workload}[0]    ${workload}[1]
+        ${volume_name} =    get_workload_volume_name    ${workload_name}
+        ${node_name} =    get_volume_node    ${volume_name}
+        Append To List    ${node_list}    ${node_name}
+    END
+    disconnect_network_on_nodes    ${duration}    ${node_list}
+
 Disconnect volume node network of statefulset ${statefulset_id} for ${duration} seconds without waiting for completion
     ${workload_name} =   generate_name_with_suffix    statefulset    ${statefulset_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
