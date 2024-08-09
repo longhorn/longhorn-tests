@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1.7.0
+# syntax=docker/dockerfile:1.9.0
 
-FROM registry.suse.com/bci/python:3.11
+FROM registry.suse.com/bci/python:3.12
 
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/arm64" ]; then \

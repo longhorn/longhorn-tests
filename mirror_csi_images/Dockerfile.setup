@@ -6,6 +6,6 @@ WORKDIR $WORKSPACE
 
 RUN apk add --no-cache skopeo docker jq bash grep
 
-COPY --from=docker/buildx-bin:v0.13 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+COPY --from=docker/buildx-bin:v0.16 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 
 COPY [".", "$WORKSPACE"]
