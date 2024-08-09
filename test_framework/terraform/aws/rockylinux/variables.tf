@@ -31,12 +31,12 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "9.3"
+  default     = "9.4"
 }
 
 variable "aws_ami_rockylinux_account_number" {
   type        = string
-  default     = "679593333241"
+  default     = "792107900819"
 }
 
 variable "lh_aws_instance_count_controlplane" {
