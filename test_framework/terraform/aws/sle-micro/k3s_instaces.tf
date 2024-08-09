@@ -168,7 +168,7 @@ resource "null_resource" "package_install_controlplane_k3s" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup jq",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client jq",
       "sudo shutdown -r now",
     ]
 
@@ -218,7 +218,7 @@ resource "null_resource" "package_install_worker_k3s" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup jq",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup device-mapper jq",
       "sudo shutdown -r now",
     ]
 

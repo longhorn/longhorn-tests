@@ -5,11 +5,13 @@ set -e
 sudo modprobe uio
 sudo modprobe uio_pci_generic
 sudo modprobe nvme-tcp
+sudo modprobe dm_crypt
 sudo touch /etc/modules-load.d/modules.conf
 sudo sh -c "cat > /etc/modules-load.d/modules.conf <<EOF
 uio
 uio_pci_generic
 nvme-tcp
+dm_crypt
 EOF"
 
 sudo sh -c "echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages"

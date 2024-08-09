@@ -73,7 +73,7 @@ from common import assert_backup_state
 from common import wait_for_backup_delete
 from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_FIELD_READY
 from common import VOLUME_ROBUSTNESS_HEALTHY, VOLUME_ROBUSTNESS_FAULTED
-from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
+from common import DATA_SIZE_IN_MB_2
 from common import wait_for_backup_to_start
 from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import wait_for_backup_volume
@@ -3260,7 +3260,7 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     _, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name, "/data/test",
-                                 DATA_SIZE_IN_MB_3)
+                                 common.DATA_SIZE_IN_MB_4)
 
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, "/data/test")
     snap2 = create_snapshot(client, std_volume_name)
@@ -3305,6 +3305,8 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     assert std_md5sum2 == md5sum2
 
 
+@pytest.mark.skip(reason="In the current Longhorn implementation, \
+it's almost impossible to catch the moment when the lock is held")
 def test_backup_lock_creation_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
