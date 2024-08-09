@@ -42,6 +42,7 @@ resource "google_container_cluster" "cluster" {
   network            = google_compute_network.vpc_network.id
   subnetwork         = google_compute_subnetwork.subnetwork.id
   location           = data.google_compute_zones.available.names[0]
+  min_master_version = "1.30.2-gke.1587003"
   remove_default_node_pool = true
   deletion_protection = false
   initial_node_count       = 1
@@ -62,6 +63,6 @@ resource "google_container_node_pool" "node_pool" {
 
   node_config {
     machine_type = "e2-standard-4"
-    image_type = "UBUNTU_CONTAINERD"
+    image_type = var.distro
   }
 }
