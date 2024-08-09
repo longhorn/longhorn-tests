@@ -36,6 +36,7 @@ node {
                                        --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
                                        --env TF_VAR_gcp_project=${GCP_PROJECT} \
                                        --env TF_VAR_gcp_auth_file=/src/longhorn-tests/gcp_creds.json \
+                                       --env TF_VAR_distro=${DISTRO} \
                                        ${imageName}
                 """
 

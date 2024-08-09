@@ -287,6 +287,11 @@ main(){
   set -x
 
   create_longhorn_namespace
+
+  if [[ "${TF_VAR_distro}" == "COS_CONTAINERD" ]]; then
+    kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-gke-cos-node-agent.yaml
+  fi
+
   if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi
