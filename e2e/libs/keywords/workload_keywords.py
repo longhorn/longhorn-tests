@@ -1,6 +1,8 @@
 import multiprocessing
 import asyncio
 
+from backup import Backup
+
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
@@ -39,6 +41,7 @@ class workload_keywords:
         self.node = Node()
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
+        self.backup = Backup()
 
     def create_pod(self, pod_name, claim_name):
         logging(f'Creating pod {pod_name} using pvc {claim_name}')
@@ -84,6 +87,13 @@ class workload_keywords:
         pod_name = get_workload_pod_names(workload_name)[0]
         volume_name = get_volume_name_by_pod(pod_name)
         expected_checksum = self.volume.get_annotation_value(volume_name, ANNOT_CHECKSUM)
+
+        logging(f'Checking checksum for file {file_name} in pod {pod_name}')
+        check_pod_data_checksum(expected_checksum, pod_name, file_name)
+
+    def check_workload_file_is_restored(self, workload_name, file_name, backup_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+        expected_checksum = self.backup.get_data_checksum(backup_name)
 
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
@@ -169,3 +179,9 @@ class workload_keywords:
             if not is_workload_pods_has_annotations(workload_name, annotation_key, namespace=namespace, label_selector=label_selector):
                 return False
         return True
+
+    def create_backup_for_workload_volume(self, backup_id, workload_name):
+        volume_name = get_workload_volume_name(workload_name)
+
+        logging(f'Creating backup for workload {workload_name} volume {volume_name}')
+        self.backup.create(volume_name, backup_id)

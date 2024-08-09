@@ -12,6 +12,8 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/backup.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backupstore.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/deployment.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -68,11 +70,11 @@ Test Incremental Restore
     And Write data 0 to volume 0
     And Create backup 0 for volume 0
 
-    When Create DR volume 1 from backup 0
+    When Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
     And Wait for volume 1 restoration from backup 0 completed
-    And Create DR volume 2 from backup 0
+    And Create DR volume 2 from backup 0    dataEngine=${DATA_ENGINE}
     And Wait for volume 2 restoration from backup 0 completed
-    And Create DR volume 3 from backup 0
+    And Create DR volume 3 from backup 0    dataEngine=${DATA_ENGINE}
     And Wait for volume 3 restoration from backup 0 completed
 
     Then Snapshot PV PVC could not be created on DR volume 1
@@ -110,3 +112,44 @@ Test Incremental Restore
     And Delete pod 0
     And Delete persistentvolumeclaim for volume 3
     And Delete persistentvolume for volume 3
+
+Test Incremental Restore When Writing Data To Filesystem
+    [Documentation]    Test restore from disaster recovery volume (incremental restore)
+
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    And Write 2048 MB data to file data in deployment 0
+    And Create backup 0 for volume of deployment 0
+
+    When Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}    size=3Gi    numberOfReplicas=3
+    And Wait for volume 1 restoration from backup 0 completed
+
+    And Create DR volume 2 from backup 0    dataEngine=${DATA_ENGINE}    size=3Gi    numberOfReplicas=3
+    And Wait for volume 2 restoration from backup 0 completed
+
+    And Create DR volume 3 from backup 0    dataEngine=${DATA_ENGINE}    size=3Gi    numberOfReplicas=3
+    And Wait for volume 3 restoration from backup 0 completed
+
+    Then Snapshot PV PVC could not be created on DR volume 1
+    And Backup target could not be changed when DR volume exist
+
+    When Activate DR volume 1
+    And Create deployment 1 for volume 1
+    Then Check deployment 1 file data is restored from backup 0
+
+    When Write 2048 MB data to file data in deployment 0
+    And Create backup 1 for volume of deployment 0
+    And Wait for volume 2 restoration from backup 1 completed
+    And Activate DR volume 2
+    And Create deployment 2 for volume 2
+    Then Check deployment 2 file data is restored from backup 1
+
+    When Write 2048 MB data to file data in deployment 0
+    And Create backup 2 for volume of deployment 0
+    And Wait for volume 3 restoration from backup 2 completed
+    And Activate DR volume 3
+    And Create deployment 3 for volume 3
+    Then Check deployment 3 file data is restored from backup 2

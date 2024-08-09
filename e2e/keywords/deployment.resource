@@ -19,6 +19,14 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     ${node_count} =    Get length  ${node_names}
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
+Create deployment ${deployment_id} for volume ${volume_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+
+    create_persistentvolume_for_volume    ${volume_name}
+    create_persistentvolumeclaim_for_volume    ${volume_name}
+    create_deployment    ${deployment_name}    ${volume_name}
+
 Delete deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     delete_deployment    ${deployment_name}
