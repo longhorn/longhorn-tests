@@ -74,8 +74,9 @@ class workload_keywords:
     def write_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
 
-        logging(f'Writing {size_in_mb} MB random data to pod {pod_name}')
+        logging(f'Writing {size_in_mb} MB random data to pod {pod_name} file {file_name}')
         checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
+        logging(f"Storing pod {pod_name} file {file_name} checksum = {checksum}")
 
         volume_name = get_volume_name_by_pod(pod_name)
         self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
