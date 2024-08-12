@@ -87,7 +87,7 @@ parameters:
 
 **Repeat** The mount option cases with `Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly` disabled.
 
-## Test Resource Use
+## Test Resource Usage
 
 **Given** Longhorn cluster with 3 worker nodes.
 
