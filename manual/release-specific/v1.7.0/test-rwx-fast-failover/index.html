@@ -821,75 +821,186 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Longhorn with engine is not deployed on all the nodes</h1>
+  <h1 id="title">RWX Fast Failover</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related Issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2081">https://github.com/longhorn/longhorn/issues/2081</a></p>
-<h2 id="scenarios">Scenarios:</h2>
-<h3 id="case-1-test-volume-operations-when-some-of-the-engine-image-daemonset-pods-are-miss-scheduled">Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled</h3>
-<ol>
-<li>Install Longhorn in a 3-node cluster: <code>node-1</code>, <code>node-2</code>, <code>node-3</code></li>
-<li>Create a volume, <code>vol-1</code>, of 3 replicas</li>
-<li>Create another volume, <code>vol-2</code>, of 3 replicas</li>
-<li>Taint <code>node-1</code> with the taint: <code>key=value:NoSchedule</code></li>
-<li>Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
-</ol>
-<h3 id="case-2-test-volume-operations-when-some-of-engine-image-daemonset-pods-are-not-fully-deployed">Case 2: Test volume operations when some of engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Continue from case 1</li>
-<li>Attach <code>vol-1</code> to <code>node-1</code>. Change the number of replicas of <code>vol-1</code> to 2. Delete the replica on <code>node-1</code></li>
-<li>Delete the pod on <code>node-1</code> of the engine image DaemonSet. Or delete the engine image DaemonSet and wait for Longhorn to automatically recreates it.</li>
-<li>Notice that the engine image CR state become deploying</li>
-<li>Verify that functions (detach, snapshot, backup) are working ok for <code>vol-1</code></li>
-<li>Detach <code>vol-1</code></li>
-<li>Verify that Longhorn cannot attach <code>vol-1</code> to <code>node-1</code> since there is no engine image on <code>node-1</code></li>
-<li>Check that all functions (attach to other nodes, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
-<li>Verify that <code>vol-2</code> cannot be attached to any nodes because one of its replica is sitting on the <code>node-1</code> which doesn&rsquo;t have the engine image</li>
-</ol>
-<h3 id="case-3-test-engine-upgrade-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 3: Test engine upgrade when some of the engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Continue from case 2</li>
-<li>Deploy a new engine image, <code>newEI</code></li>
-<li>Verify that you can upgrade <code>vol-1</code> to <code>newEI</code> (both live and offline upgrade)</li>
-<li>Verify that you can not upgrade <code>vol-2</code> to <code>newEI</code></li>
-</ol>
-<h3 id="case-4-test-replicas-scheduling-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 4: Test replicas scheduling when some of the engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Continue from case 2</li>
-<li>Create a new volume, <code>vol-3</code>, with 2 replicas</li>
-<li>Verify that replicas of <code>vol-3</code> are on <code>node-2</code> and <code>node-3</code></li>
-<li>Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume,&hellip; ) are working ok for <code>vol-3</code></li>
-</ol>
-<h3 id="case-5-test-longhorn-upgrade-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 5: Test Longhorn upgrade when some of the engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Continue from case 3</li>
-<li>Upgrade Longhorn to a new version</li>
-<li>Verify that the upgrade is not blocked. Longhorn successfully upgrades to the new version using the same default engine image even though the default engine image is not fully deployed.</li>
-</ol>
-<h3 id="case-6-test-auto-upgrade-engine-feature-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 6: Test <code>auto upgrade engine</code> feature when some of the engine image DaemonSet pods are not fully deployed</h3>
-<p>With the engine image is missing on <code>node-1</code>, we need  to re-verify the manual test for feature <code>auto upgrade engine</code> <a href="https://github.com/longhorn/longhorn-tests/blob/master/docs/content/manual/pre-release/upgrade/auto-upgrade-engine.md">https://github.com/longhorn/longhorn-tests/blob/master/docs/content/manual/pre-release/upgrade/auto-upgrade-engine.md</a>
-Make sure that Longhorn automatically upgrades engine image for volumes that are either:</p>
-<ol>
-<li>in the detached state, and has the new engine image on all replicas' node</li>
-<li>in the attached state, and has the new engine image on all replicas' node and attaching node</li>
-</ol>
-<h3 id="case-7-test-auto-attach-volume-for-recurring-backup-job-feature-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 7: Test <code>auto attach volume for recurring backup job</code> feature when some of the engine image DaemonSet pods are not fully deployed</h3>
-<p>Verify that the recurring backup job only attaches the volume to a node that has the engine image deployed.</p>
-<h3 id="case-8-test-dr-restoring-expanding-volumes--when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 8: Test DR, restoring, expanding volumes  when some of the engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Create a DR volume of 2 replicas. Verify that 2 replicas are on <code>node-2</code> and <code>node-3</code> and the DR volume is attached to either <code>node-2</code> or <code>node-3</code>. Let&rsquo;s say it is attached to <code>node-2</code></li>
-<li>Taint <code>node-2</code> with the taint: <code>key=value:NoSchedule</code></li>
-<li>Delete the pod of engine image DeamonSet on <code>node-2</code>. Now, the engine image is missing on <code>node-1</code> and <code>node-2</code></li>
-<li>Verify that the owner ID of the DR volume temporarily moves to <code>node-3</code>. And the DR volume will be auto-attached to <code>node-3</code>.</li>
-<li>Restore a volume from backupstore. Set the replica to 1. Verify that replica is on <code>node-3</code> and the volume successfully restored.</li>
-<li>Expand the restored volume in the previous step. Verify that the expansion is ok</li>
-</ol>
-<h3 id="case-9-test-reusing-failed-replica-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 9: Test reusing failed replica when some of the engine image DaemonSet pods are not fully deployed</h3>
-<p>Verify that Longhorn doesn&rsquo;t reuse the failed replicas on nodes that don&rsquo;t have engine image deployed</p>
+       <h2 id="related-issues">Related issues</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/6205">https://github.com/longhorn/longhorn/issues/6205</a></li>
+</ul>
+<h2 id="lep">LEP</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/pull/9069">https://github.com/longhorn/longhorn/pull/9069</a></li>
+</ul>
+<h2 id="test-failover-with-io">Test Failover with I/O</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Enable the feature by setting <code>rwx-enable-fast-failover</code> to true.
+Ensure that setting <code>auto-delete-pod-when-volume-detached-unexpectedly</code> is set to its default value of true.</p>
+<p><strong>And</strong> Deploy an RWX volume with default storage class.  Run an app pod with the RWX volume on each worker node.  Execute the command in each app pod</p>
+<pre><code>    `( exec 7&lt;&gt;/data/testfile-${i}; flock -x 7; while date | dd conv=fsync &gt;&amp;7 ; do sleep 1; done )`
+
+    where ${i} is the node number.
+</code></pre>
+<p><strong>Then</strong> Turn off or restart the node where share-manager is running.</p>
+<p><strong>Verify</strong> The share-manager pod is recreated on a different node.
+- In the client side, IO to the RWX volume will hang until a share-manager pod replacement is successfully created on another node.<br>
+- During the outage, the server rejects READ and WRITE operations and non-reclaim locking requests (i.e., other LOCK and OPEN operations) with an error of NFS4ERR_GRACE.<br>
+- New share-manager pod is created in under 20 seconds.<br>
+- Outage, including grace period, should be less than 60 seconds.</p>
+<h2 id="test-mount-options">Test Mount Options</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Enable the feature by setting <code>rwx-enable-fast-failover</code> to true.
+Ensure that setting <code>auto-delete-pod-when-volume-detached-unexpectedly</code> is set to its default value of true.</p>
+<p><strong>And</strong> Create a custom storage class with settings (nfsOptions: &ldquo;hard,timeo=50,retrans=1&rdquo;)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test-hard</span>
+<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+  <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+  <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+  <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+  <span style="color:#f92672">nfsOptions</span>: <span style="color:#e6db74">&#34;hard,timeo=50,retrans=1&#34;</span>
+</code></pre></div><p><strong>And</strong> Use the deployment in <a href="%5Bhttps://github.com/longhorn/longhorn/blob/master/examples/rwx/rwx-nginx-deployment.yaml%5D(https://github.com/longhorn/longhorn/blob/master/examples/rwx/rwx-nginx-deployment.yaml)%C2%A0">example</a> with the custom storage class.</p>
+<p><strong>Then</strong> Turn off the node where share-manager is running.</p>
+<p><strong>Verify</strong> The share-manager pod is recreated on a different node.<br>
+- The other active clients should not run into stale handle errors after the failover.<br>
+- New share-manager pod is created in under 20 seconds.<br>
+- Outage, including grace period, should be less than 60 seconds.</p>
+<p><strong>Repeat</strong> Using a different storage class with soft NFS mount</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test-soft</span>
+<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+  <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+  <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+  <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+  <span style="color:#f92672">nfsOptions</span>: <span style="color:#e6db74">&#34;soft,timeo=250,retrans=5&#34;</span>
+</code></pre></div><p><strong>Repeat</strong> The mount option cases with <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code> disabled.</p>
+<h2 id="test-resource-usage">Test Resource Usage</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Default Longhorn storage class (including normal mount options.  Results should be independent of mount options.)</p>
+<p><strong>And</strong> <code>Enable RWX Fast Failover</code> set to true.  <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code> also set to true.</p>
+<p>Make multiple deployments with a script such as</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">for</span> i in <span style="color:#f92672">{</span>1..60<span style="color:#f92672">}</span>; <span style="color:#66d9ef">do</span>
+  cat <span style="color:#e6db74">&lt;&lt;EOF | kubectl apply -f -
+</span><span style="color:#e6db74">apiVersion: v1
+</span><span style="color:#e6db74">kind: PersistentVolumeClaim
+</span><span style="color:#e6db74">metadata:
+</span><span style="color:#e6db74">  name: rwx-volume-pvc-$i
+</span><span style="color:#e6db74">  namespace: default
+</span><span style="color:#e6db74">spec:
+</span><span style="color:#e6db74">  accessModes:
+</span><span style="color:#e6db74">    - ReadWriteMany
+</span><span style="color:#e6db74">  volumeMode: Filesystem
+</span><span style="color:#e6db74">  storageClassName: longhorn-test
+</span><span style="color:#e6db74">  resources:
+</span><span style="color:#e6db74">    requests:
+</span><span style="color:#e6db74">      storage: 200Mi
+</span><span style="color:#e6db74">---
+</span><span style="color:#e6db74">apiVersion: apps/v1
+</span><span style="color:#e6db74">kind: Deployment
+</span><span style="color:#e6db74">metadata:
+</span><span style="color:#e6db74">  name: app-$i
+</span><span style="color:#e6db74">  namespace: default
+</span><span style="color:#e6db74">spec:
+</span><span style="color:#e6db74">  replicas: 3
+</span><span style="color:#e6db74">  selector:
+</span><span style="color:#e6db74">    matchLabels:
+</span><span style="color:#e6db74">      app: app-$i
+</span><span style="color:#e6db74">  template:
+</span><span style="color:#e6db74">    metadata:
+</span><span style="color:#e6db74">      labels:
+</span><span style="color:#e6db74">        app: app-$i
+</span><span style="color:#e6db74">    spec:
+</span><span style="color:#e6db74">      containers:
+</span><span style="color:#e6db74">      - name: app
+</span><span style="color:#e6db74">        image: busybox
+</span><span style="color:#e6db74">        command: [&#34;/bin/sh&#34;, &#34;-c&#34;, &#34;exec 7&lt;&gt;/data/testfile-$(hostname -s); flock -x 7; while date | dd conv=fsync &gt;&amp;7 ; do sleep 1; done&#34;]
+</span><span style="color:#e6db74">        volumeMounts:
+</span><span style="color:#e6db74">        - mountPath: /data
+</span><span style="color:#e6db74">          name: rwx-volume-pvc-$i
+</span><span style="color:#e6db74">      volumes:
+</span><span style="color:#e6db74">      - name: rwx-volume-pvc-$i
+</span><span style="color:#e6db74">        persistentVolumeClaim:
+</span><span style="color:#e6db74">          claimName: rwx-volume-pvc-$i
+</span><span style="color:#e6db74">EOF</span>
+<span style="color:#66d9ef">done</span>
+</code></pre></div><p><strong>Then</strong> with the <code>rwx-enable-fast-failover</code> setting off, check the CPU and memory use totals for longhorn-manager and longhorn-share-manager pods, using something like <code>kubectl -n longhorn-system top pod</code>.  Establish baseline values.</p>
+<p><strong>Then</strong> set <code>rwx-enable-fast-failover</code> to true, and scale down and up the deployments so that they will start updating and monitoring the leases.</p>
+<p><strong>Verify</strong> that the CPU and memory use grows, but only by a small amount.</p>
+<p>Here is the expected outcome:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Metric</strong></th>
+<th><strong>Fast Failover Enabled</strong></th>
+<th><strong>Fast Failover Disabled</strong></th>
+<th><strong>Difference</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Number of API Requests</strong></td>
+<td>59 req/s</td>
+<td>37.5 req/s</td>
+<td><strong>+57.3%</strong></td>
+</tr>
+<tr>
+<td><strong>2. RPC Rate</strong></td>
+<td>57 ops/s</td>
+<td>37 ops/s</td>
+<td><strong>+54.1%</strong></td>
+</tr>
+<tr>
+<td><strong>3. Memory Usage</strong></td>
+<td>Higher Peaks/Minima</td>
+<td>Lower Peaks/Minima</td>
+<td>More usage with Fast Failover Enabled</td>
+</tr>
+<tr>
+<td><strong>4. Longhorn Manager CPU/RAM</strong></td>
+<td>417MB / 0.13 CPU</td>
+<td>405MB / 0.1 CPU</td>
+<td><strong>+3% RAM</strong> / <strong>+30% CPU</strong></td>
+</tr>
+<tr>
+<td><strong>5. Share Manager CPU/RAM</strong></td>
+<td>2.25GB / 0.26 CPU</td>
+<td>2.2GB / 0.235 CPU</td>
+<td><strong>+2.3% RAM</strong> / <strong>+10.6% CPU</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Ref. <a href="https://github.com/longhorn/longhorn/issues/6205#issuecomment-2262625965">https://github.com/longhorn/longhorn/issues/6205#issuecomment-2262625965</a></p>
+<p>If newer Longhorn version consume more resources than that, then the test is considered as failed</p>
+<p><strong>If possible</strong> monitor the API server requests similar to the method in the report <a href="https://github.com/longhorn/longhorn/blob/master/scalability/reference-setup-performance-scalability-and-sizing-guidelines/public-cloud/medium-node-spec.md#longhorn-control-plane-performance">https://github.com/longhorn/longhorn/blob/master/scalability/reference-setup-performance-scalability-and-sizing-guidelines/public-cloud/medium-node-spec.md#longhorn-control-plane-performance</a></p>
+<p><strong>Verify</strong> that the API request rate remains low.</p>
+<p><strong>Reference</strong> How to set up a Grafana Testing Environment on Rancher
+<a href="https://github.com/longhorn/longhorn/issues/6205#issuecomment-2264430975">https://github.com/longhorn/longhorn/issues/6205#issuecomment-2264430975</a></p>
+<h2 id="test-multiple-simultaneous-failovers">Test Multiple Simultaneous Failovers.</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>With</strong> the same deployments as in <code>Test Resource Usage</code> (but perhaps only 20-30 of them), and fast failover enabled,</p>
+<p><strong>Then</strong> pick a node and restart it.</p>
+<p><strong>Verify</strong> the share-managers on that node are recreated one of the remaining nodes.<br>
+- Every RWX volume with share-manager pods on the failed node are relocated to another node.  I/O can resume on its own after the shortened grace period.<br>
+- RWX volumes with share-manager pods not on the failed node should continue to operate without any disruption.</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.1/partial-engine-deployment.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.7.0/test-rwx-fast-failover.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

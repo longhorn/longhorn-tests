@@ -59,6 +59,18 @@ kubectl get events --field-selector involvedObject.name=${POD_NAME} -w And There
     </item>
     
     <item>
+      <title>RWX Fast Failover</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-rwx-fast-failover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-rwx-fast-failover/</guid>
+      <description>Related issues  https://github.com/longhorn/longhorn/issues/6205  LEP  https://github.com/longhorn/longhorn/pull/9069  Test Failover with I/O Given Longhorn cluster with 3 worker nodes.
+And Enable the feature by setting rwx-enable-fast-failover to true. Ensure that setting auto-delete-pod-when-volume-detached-unexpectedly is set to its default value of true.
+And Deploy an RWX volume with default storage class. Run an app pod with the RWX volume on each worker node. Execute the command in each app pod
+ `( exec 7&amp;lt;&amp;gt;/data/testfile-${i}; flock -x 7; while date | dd conv=fsync &amp;gt;&amp;amp;7 ; do sleep 1; done )` where ${i} is the node number.</description>
+    </item>
+    
+    <item>
       <title>Storage Network Support for RWX Volume</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-storage-network-support-for-rwx-volume/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
