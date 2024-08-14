@@ -1,6 +1,8 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
+Test Tags    negative
+
 Resource    ../keywords/common.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource

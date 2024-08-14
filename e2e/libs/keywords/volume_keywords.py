@@ -111,7 +111,14 @@ class volume_keywords:
             node_name = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
         logging(f"Deleting volume {volume_name}'s replica on node {node_name}")
-        self.volume.delete_replica(volume_name, node_name)
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for _ in range(retry_count):
+            try:
+                self.volume.delete_replica(volume_name, node_name)
+                return
+            except Exception as e:
+                logging(f"Deleting volume {volume_name}'s replica on node {node_name} failed with error: {e} ... ({_})")
+                time.sleep(retry_interval)
 
     def delete_replica_on_nodes(self, volume_name, replica_locality):
         check_replica_locality(replica_locality)

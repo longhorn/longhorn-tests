@@ -15,3 +15,9 @@ variable "test_name" {
   type        = string
   default     = "lh-gke-tests"
 }
+
+variable "distro" {
+  type        = string
+  default     = "COS_CONTAINERD"
+  description = "the default distro used by a new node pool [UBUNTU_CONTAINERD, COS_CONTAINERD]  (default: COS_CONTAINERD)"
+}

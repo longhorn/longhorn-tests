@@ -10,11 +10,13 @@ sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 modprobe uio
 modprobe uio_pci_generic
+modprobe vfio_pci
 modprobe nvme-tcp
 touch /etc/modules-load.d/modules.conf
 cat > /etc/modules-load.d/modules.conf <<EOF
 uio
 uio_pci_generic
+vfio_pci
 nvme-tcp
 EOF
 

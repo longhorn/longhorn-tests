@@ -1,6 +1,8 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
+Test Tags    negative
+
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/longhorn.resource
@@ -23,22 +25,24 @@ ${RETRY_INTERVAL}    1
 ${VOLUME_TYPE}    RWO
 ${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 ${RWX_VOLUME_FAST_FAILOVER}    false
+${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
-    And Create persistentvolumeclaim 0 using RWO volume
-    And Create persistentvolumeclaim 1 using RWX volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Create deployment 2 with persistentvolumeclaim 2
 
-    And Create statefulset 0 using RWO volume
-    And Create statefulset 1 using RWX volume
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
     And Create statefulset 2 using RWO volume with strict-local storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -69,16 +73,17 @@ Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Hea
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
-    And Create persistentvolumeclaim 0 using RWO volume
-    And Create persistentvolumeclaim 1 using RWX volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Create deployment 2 with persistentvolumeclaim 2
 
-    And Create statefulset 0 using RWO volume
-    And Create statefulset 1 using RWX volume
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
     And Create statefulset 2 using RWO volume with strict-local storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -109,16 +114,17 @@ Reboot All Worker Nodes While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
-    And Create persistentvolumeclaim 0 using RWO volume
-    And Create persistentvolumeclaim 1 using RWX volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Create deployment 2 with persistentvolumeclaim 2
 
-    And Create statefulset 0 using RWO volume
-    And Create statefulset 1 using RWX volume
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
     And Create statefulset 2 using RWO volume with strict-local storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -147,16 +153,17 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
-    And Create persistentvolumeclaim 0 using RWO volume
-    And Create persistentvolumeclaim 1 using RWX volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Create deployment 2 with persistentvolumeclaim 2
 
-    And Create statefulset 0 using RWO volume
-    And Create statefulset 1 using RWX volume
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
     And Create statefulset 2 using RWO volume with strict-local storageclass
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
@@ -184,41 +191,57 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
 Reboot Volume Node While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create statefulset 0 using ${VOLUME_TYPE} volume
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
-
         When Reboot volume node of statefulset 0
         And Wait for volume of statefulset 0 healthy
         And Wait for statefulset 0 pods stable
-
         Then Check statefulset 0 works
+
+        And Keep writing data to pod of statefulset 1
+        When Reboot volume node of statefulset 1
+        And Wait for volume of statefulset 1 healthy
+        And Wait for statefulset 1 pods stable
+        Then Check statefulset 1 works
     END
 
 Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing
     [Tags]    reboot
-    Given Create statefulset 0 using RWO volume
-
+    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Create statefulset 1 using RWX volume with longhorn-test storageclass
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
-
         When Power off volume node of statefulset 0 for 6 minutes
         And Wait for volume of statefulset 0 healthy
         And Wait for statefulset 0 pods stable
-
         Then Check statefulset 0 works
+
+        And Keep writing data to pod of statefulset 1
+        When Power off volume node of statefulset 1 for 6 minutes
+        And Wait for volume of statefulset 1 healthy
+        And Wait for statefulset 1 pods stable
+        Then Check statefulset 1 works
     END
 
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
     [Tags]    recurring_job
-    Given Create volume 0 with    size=2Gi    numberOfReplicas=1
-    And Create volume 1 with    size=2Gi    numberOfReplicas=3
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Create volume 1 with    size=2Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Create volume 2 with    size=2Gi    numberOfReplicas=3    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Attach volume 1
+    And Attach volume 2
     And Keep writing data to volume 0
     And Keep writing data to volume 1
+    And Keep writing data to volume 2
     And Create snapshot and backup recurringjob for volume 0
     And Create snapshot and backup recurringjob for volume 1
+    And Create snapshot and backup recurringjob for volume 2
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Reboot volume 0 volume node
@@ -226,20 +249,26 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
 
         Then Check recurringjobs for volume 0 work
         And Check recurringjobs for volume 1 work
+        And Check recurringjobs for volume 2 work
         And Check volume 0 works
         And Check volume 1 works
+        And Check volume 2 works
     END
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
     [Tags]    recurring_job
-    Given Create volume 0 with    size=2Gi    numberOfReplicas=1
-    And Create volume 1 with    size=2Gi    numberOfReplicas=3
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Create volume 1 with    size=2Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Create volume 2 with    size=2Gi    numberOfReplicas=3    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Attach volume 1
+    And Attach volume 2
     And Keep writing data to volume 0
     And Keep writing data to volume 1
+    And Keep writing data to volume 2
     And Create snapshot and backup recurringjob for volume 0
     And Create snapshot and backup recurringjob for volume 1
+    And Create snapshot and backup recurringjob for volume 2
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Reboot volume 1 replica node
@@ -247,8 +276,10 @@ Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
 
         Then Check recurringjobs for volume 0 work
         And Check recurringjobs for volume 1 work
+        And Check recurringjobs for volume 2 work
         And Check volume 0 works
         And Check volume 1 works
+        And Check volume 2 works
     END
 
 Power Off Replica Node Should Not Rebuild New Replica On Same Node
