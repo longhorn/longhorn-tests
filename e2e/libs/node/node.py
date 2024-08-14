@@ -35,9 +35,9 @@ class Node:
                 all_updated = True
                 disks = node.disks
                 for d in disks:
-                    if disks[d]["diskUUID"] == "" or
-                        not disks[d]["conditions"] or
-                        disks[d]["conditions"]["Ready"]["status"] != "True" or
+                    if disks[d]["diskUUID"] == "" or \
+                        not disks[d]["conditions"] or \
+                        disks[d]["conditions"]["Ready"]["status"] != "True" or \
                         disks[d]["conditions"]["Schedulable"]["status"] != "True":
                         all_updated = False
                         break
