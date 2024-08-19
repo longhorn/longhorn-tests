@@ -14,7 +14,7 @@ from common import find_backup, Gi, volume_name, csi_pv, pod_make  # NOQA
 from common import wait_for_volume_creation, DATA_SIZE_IN_MB_3
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL
-from common import wait_delete_pod, wait_for_pod_remount
+from common import wait_for_pod_remount
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
 from common import core_api, statefulset, pvc, pod, client  # NOQA
@@ -348,7 +348,8 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     2. Wait for StatefulSet to come up healthy.
     3. Write data and compute md5sum.
     4. Delete the share manager pod.
-    5. Wait for a new pod to be created and volume getting attached.
+    5. The workload pod should still be functioning
+       and the volume should remain attached.
     6. Check the data md5sum in statefulSet.
     7. Write more data to it and compute md5sum.
     8. Check the data md5sum in share manager volume.
@@ -382,9 +383,6 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     delete_and_wait_pod(core_api, share_manager_name,
                         namespace=LONGHORN_NAMESPACE)
 
-    target_pod = core_api.read_namespaced_pod(name=pod_name,
-                                              namespace='default')
-    wait_delete_pod(core_api, target_pod.metadata.uid)
     wait_for_pod_remount(core_api, pod_name)
 
     test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
