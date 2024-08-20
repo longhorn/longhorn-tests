@@ -5,6 +5,7 @@ Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/deployment_keywords.py
 Library    ../libs/keywords/node_keywords.py
+Library    ../libs/keywords/workload_keywords.py
 
 *** Keywords ***
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
@@ -39,3 +40,13 @@ Check deployment ${deployment_id} works
 Wait for deployment ${deployment_id} pods stable
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     wait_for_workload_pods_stable   ${deployment_name}
+
+Get deployment ${deployment_id} pod name
+    ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
+    ${pod_name} =    get_workload_pod_name    ${deployment_name}
+    Set Test Variable    ${pod_name}
+
+Check deployment ${deployment_id} pod not restarted
+    ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
+    ${current_pod_name} =    get_workload_pod_name    ${deployment_name}
+    Should Be Equal    ${pod_name}    ${current_pod_name}
