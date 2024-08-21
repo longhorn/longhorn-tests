@@ -1,16 +1,20 @@
-from robot.libraries.BuiltIn import BuiltIn
+import asyncio
+
 from node import Node
 from node_exec import NodeExec
-from workload.pod import create_pod
-from workload.pod import delete_pod
-from workload.pod import new_pod_manifest
-from workload.pod import IMAGE_BUSYBOX
+
+from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+from utility.utility import logging
+from utility.utility import pod_exec
 
-import time
-import asyncio
+from workload.pod import create_pod
+from workload.pod import delete_pod
+from workload.pod import new_pod_manifest
+from workload.pod import wait_for_pod_status
+from workload.pod import IMAGE_BUSYBOX
 
 
 def get_control_plane_node_network_latency_in_ms():
@@ -67,3 +71,21 @@ def disconnect_node_network_without_waiting_completion(node_name, disconnection_
     create_pod(manifest, is_wait_for_pod_running=True)
 
     return pod_name
+
+# For now, drop_pod_egress_traffic only works in "suse-like" container images. It relies on iptables userspace 
+# utilities, which must generally be installed before execution.
+def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
+    wait_for_pod_status(pod_name, "Running", namespace='longhorn-system')
+    
+    # Install iptables and execute the drop rule in the foreground.
+    # Then, sleep and execute the undrop rule in the background.
+    # Redirect stdout and stderr for the background commands so exec returns without waiting.
+    # We MUST allow egress traffic from 3260, as this is the port used for communication between the iSCSI initiator and
+    # tgt. If the connection between these two components is broken, the initiator will stop sending I/O to tgt and
+    # tgt will stop sending I/O to the engine. Replicas cannot time out if I/O isn't flowing.
+    install_cmd = 'zypper install -y iptables;'
+    drop_rule = 'iptables -A OUTPUT -p tcp --sport 3260 -j ACCEPT; iptables -A OUTPUT -p tcp -j DROP;'
+    undrop_rule = 'iptables -D OUTPUT -p tcp --sport 3260 -j ACCEPT; iptables -D OUTPUT -p tcp -j DROP;'
+    full_cmd = f"{install_cmd} {drop_rule} {{ sleep {drop_time_in_sec}; {undrop_rule} }} > /dev/null 2> /dev/null &"
+    
+    pod_exec(pod_name, 'longhorn-system', full_cmd)
