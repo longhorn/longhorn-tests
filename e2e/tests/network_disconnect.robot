@@ -20,7 +20,12 @@ Disconnect Volume Node Network While Workload Heavy Writing
     Given Create statefulset 0 using RWO volume
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
+<<<<<<< HEAD
         When Disconnect volume node network of statefulset 0 for 10 seconds
+=======
+        And Keep writing data to pod of statefulset 1
+        When Disconnect volume nodes network for 20 seconds    statefulset 0    statefulset 1
+>>>>>>> bdce3880 (fix: adjust disconnect time for negative test)
         And Wait for volume of statefulset 0 healthy
         And Wait for statefulset 0 pods stable
         Then Check statefulset 0 works
