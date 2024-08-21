@@ -311,3 +311,6 @@ class volume_keywords:
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         self.volume.wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
+
+    def get_volume_checksum(self, volume_name):
+        return self.volume.get_checksum(volume_name)

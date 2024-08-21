@@ -266,3 +266,18 @@ Upgrade volume ${volume_id} engine to compatible engine image
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     upgrade_engine_image    ${volume_name}    ${compatible_engine_image_name}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${compatible_engine_image_name}
+Check volume ${volume_id} data is backup ${backup_id} created in another cluster
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${current_checksum} =    get_volume_checksum    ${volume_name}
+    ${backup_data} =    get_backup_data_from_backup_list    ${backups_before_uninstall}    ${backup_id}
+    Should Be Equal    ${current_checksum}    ${backup_data}
+
+Create DR volume ${volume_id} from backup ${backup_id} in another cluster
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url_from_backup_list    ${backups_before_uninstall}    ${backup_id}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}
+
+Wait for volume ${volume_id} restoration from backup ${backup_id} in another cluster completed
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_name} =    get_backup_name_from_backup_list    ${backups_before_uninstall}    ${backup_id}
+    wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}

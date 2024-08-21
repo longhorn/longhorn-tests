@@ -4,6 +4,7 @@ NFS_BACKUP_STORE='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
 run_longhorn_e2e_test(){
 
   LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-e2e-test:master-head"}
+  LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD:-"manifest"}
 
   LONGHORN_TESTS_MANIFEST_FILE_PATH="e2e/deploy/test.yaml"
 
@@ -32,6 +33,15 @@ run_longhorn_e2e_test(){
   fi
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="'${LONGHORN_TEST_CLOUDPROVIDER}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_URI", "value": "'${LONGHORN_REPO_URI}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_BRANCH", "value": "'${LONGHORN_REPO_BRANCH}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_ENGINE_IMAGE", "value": "'${CUSTOM_LONGHORN_ENGINE_IMAGE}'"}' "${CUSTOM_LONGHORN_ENGINE_IMAGE}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_INSTALL_METHOD", "value": "'${LONGHORN_INSTALL_METHOD}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
 
@@ -88,6 +98,14 @@ run_longhorn_e2e_test_out_of_cluster(){
              -e LAB_ACCESS_KEY="${TF_VAR_lab_access_key}" \
              -e LAB_SECRET_KEY="${TF_VAR_lab_secret_key}" \
              -e LAB_CLUSTER_ID="$(cat /tmp/cluster_id)" \
+             -e LONGHORN_REPO_URI="${LONGHORN_REPO_URI}"\
+             -e LONGHORN_REPO_BRANCH="${LONGHORN_REPO_BRANCH}"\
+             -e CUSTOM_LONGHORN_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE}"\
+             -e CUSTOM_LONGHORN_ENGINE_IMAGE="${CUSTOM_LONGHORN_ENGINE_IMAGE}"\
+             -e CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}"\
+             -e CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}"\
+             -e CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}"\
+             -e LONGHORN_INSTALL_METHOD="${LONGHORN_INSTALL_METHOD}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
   docker stop "${CONTAINER_NAME}"

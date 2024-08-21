@@ -4,6 +4,8 @@ Documentation       Longhorn Keywords
 Library             ../libs/keywords/instancemanager_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
+Library             ../libs/keywords/longhorn_deploy_keywords.py
+Library             ../libs/keywords/backup_keywords.py
 
 *** Variables ***
 @{longhorn_workloads}
@@ -53,3 +55,14 @@ Check instance-manager pod is running on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${pod} =     get_instance_manager_on_node    ${node_name}
     Should Not Be Equal    ${pod}    ${None}
+
+Uninstall Longhorn
+    ${backups_before_uninstall} =     list_all_backups
+    uninstall_longhorn_system
+    Set Test Variable    ${backups_before_uninstall}
+
+Check all Longhorn CRD removed
+    check_longhorn_crd_removed
+
+Install Longhorn
+    install_longhorn_system

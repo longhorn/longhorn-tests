@@ -26,6 +26,14 @@ RUN curl -sO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_
     curl -L https://github.com/jonelo/jacksum/releases/download/v3.4.0/jacksum-3.4.0.jar --output /jacksum.jar
 
 ADD e2e /e2e
+ADD pipelines/utilities/longhorn_ui.sh ./pipelines/utilities/longhorn_ui.sh
+ADD pipelines/utilities/create_longhorn_namespace.sh ./pipelines/utilities/create_longhorn_namespace.sh
+ADD pipelines/utilities/install_backupstores.sh ./pipelines/utilities/install_backupstores.sh
+ADD pipelines/utilities/longhorn_status.sh  ./pipelines/utilities/longhorn_status.sh
+ADD pipelines/utilities/longhorn_helm_chart.sh ./pipelines/utilities/longhorn_helm_chart.sh
+ADD pipelines/utilities/create_aws_secret.sh ./pipelines/utilities/create_aws_secret.sh
+ADD pipelines/utilities/longhorn_manifest.sh ./pipelines/utilities/longhorn_manifest.sh
+
 WORKDIR /e2e
 
 RUN pip install -r requirements.txt

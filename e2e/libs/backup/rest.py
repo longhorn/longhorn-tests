@@ -2,6 +2,7 @@ from backup.base import Base
 from utility.utility import logging
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+from utility.utility import get_all_crs
 from volume import Rest as RestVolume
 from snapshot import Snapshot as RestSnapshot
 import time
@@ -47,6 +48,12 @@ class Rest(Base):
         backups = self.list(volume_name)
         for backup in backups:
             if self.get_backup_id(backup.name) == backup_id:
+                return backup
+        return None
+
+    def get_from_list(self, backup_list, backup_id):
+        for backup in backup_list["items"]:
+            if backup['metadata']['annotations']['test.longhorn.io/backup-id'] == backup_id:
                 return backup
         return None
 
@@ -107,6 +114,35 @@ class Rest(Base):
         else:
             backup_volume = self.get_backup_volume(volume_name)
             return backup_volume.backupList().data
+
+    def list_all(self):
+        return get_all_crs(group="longhorn.io",
+                      version="v1beta2",
+                      namespace="longhorn-system",
+                      plural="backups",
+                      )
+
+    def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
+        for i in range(self.retry_count):
+            time.sleep(self.retry_interval)
+            try:
+                current_backups = self.list_all()
+                assert len(current_backups["items"]) == len(backups_before_uninstall["items"])
+                break
+            except Exception as e:
+                logging(f"{e}")
+                continue
+
+        target_backup_names = {(item["metadata"]["name"]) for item in backups_before_uninstall["items"]}
+        for item in current_backups["items"]:
+            backup_name = item["metadata"]["name"]
+            assert backup_name in target_backup_names, f"Error: Backup {backup_name} not found in {target_backup_names}"
+
+            for i in range(self.retry_count):
+                time.sleep(self.retry_interval)
+                volume_name = item["status"]["volumeName"]
+                if self.get_backup_volume(volume_name) != None:
+                    break
 
     def delete(self, volume_name, backup_id):
         return NotImplemented

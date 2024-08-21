@@ -3,6 +3,7 @@ import subprocess
 import asyncio
 import os
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
@@ -94,3 +95,78 @@ def check_instance_manager_pdb_not_exist(instance_manager):
     exec_cmd = ["kubectl", "get", "pdb", "-n", "longhorn-system"]
     res = subprocess_exec_cmd(exec_cmd)
     assert instance_manager not in res.decode('utf-8')
+def wait_namespaced_job_complete(job_label, namespace):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    api = client.BatchV1Api()
+    for i in range(retry_count):
+        target_job = api.list_namespaced_job(namespace=namespace, label_selector=job_label)
+        if len(target_job.items) > 0:
+            running_jobs = []
+            for job in target_job.items:
+                conditions = job.status.conditions
+                if conditions:
+                    for condition in conditions:
+                        logging(f"{condition.type}  {condition.status}")
+                        if condition.type == "Complete" and condition.status == "True":
+                            print(f"Job {job.metadata.name} is complete.")
+                            running_jobs.append(job)
+                            break
+            if len(running_jobs) == len(target_job.items):
+                return
+
+        logging(f"Waiting for job with label {job_label} complete, retry ({i}) ...")
+        time.sleep(retry_interval)
+
+    assert False, 'Job not complete'
+
+def wait_namespace_terminated(namespace):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    api = client.CoreV1Api()
+    for i in range(retry_count):
+        try:
+            target_namespace = api.read_namespace(name=namespace)
+            target_namespace_status = target_namespace.status.phase
+            logging(f"Waiting for namespace {target_namespace.metadata.name} terminated, current status is {target_namespace_status} retry ({i}) ...")
+        except ApiException as e:
+            if e.status == 404:
+                logging(f"Namespace {namespace} successfully terminated.")
+                return
+            else:
+                logging(f"Error while fetching namespace {namespace} status: {e}")
+
+        time.sleep(retry_interval)
+
+    assert False, f'namespace {target_namespace.metadata.name} not terminated'
+
+def get_all_custom_resources():
+    api = client.ApiextensionsV1Api()
+    crds = api.list_custom_resource_definition()
+
+    return crds
+
+def get_pod_logs(namespace, pod_label):
+    api = client.CoreV1Api()
+    logs= ""
+    try:
+        pods = api.list_namespaced_pod(namespace, label_selector=pod_label)
+        for pod in pods.items:
+            pod_name = pod.metadata.name
+            logs = logs + api.read_namespaced_pod_log(name=pod_name, namespace=namespace)
+    except client.exceptions.ApiException as e:
+        logging(f"Exception when calling CoreV1Api: {e}")
+
+    logging(f'{logs}')
+    return logs
+
+def list_namespace_pods(namespace):
+    v1 = client.CoreV1Api()
+    pods = v1.list_namespaced_pod(namespace=namespace)
+
+    return pods
+
+def delete_namespace(namespace):
+    api = client.CoreV1Api()
+    try:
+        api.delete_namespace(name=namespace)
+    except ApiException as e:
+        assert e.status == 404

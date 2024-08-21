@@ -21,11 +21,20 @@ class Backup(Base):
     def get(self, backup_id, volume_name):
         return self.backup.get(backup_id, volume_name)
 
+    def get_from_list(self, backup_list, backup_id):
+        return self.backup.get_from_list(backup_list, backup_id)
+
     def get_backup_volume(self, volume_name):
         return self.backup.get_backup_volume(volume_name)
 
     def list(self, volume_name):
         return self.backup.list(volume_name)
+
+    def list_all(self):
+        return self.backup.list_all()
+
+    def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
+        return self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)
 
     def verify_no_error(self, volume_name):
         backup_volume = self.get_backup_volume(volume_name)

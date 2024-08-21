@@ -72,6 +72,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def list_all(self):
+        return NotImplemented
+
+    @abstractmethod
     def delete(self, volume_name, backup_id):
         return NotImplemented
 
