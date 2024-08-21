@@ -20,6 +20,18 @@ class backup_keywords:
     def get_backup_url(self, backup_id, volume_name=None):
         return self.backup.get(backup_id, volume_name).url
 
+    def get_backup_url_from_backup_list(self, backup_list, backup_id):
+        backup = self.backup.get_from_list(backup_list, backup_id)
+        return backup["status"]["url"]
+
+    def get_backup_data_from_backup_list(self, backup_list, backup_id):
+        backup = self.backup.get_from_list(backup_list, backup_id)
+        return backup['metadata']['annotations']["test.longhorn.io/data-checksum"]
+
+    def get_backup_name_from_backup_list(self, backup_list, backup_id):
+        backup = self.backup.get_from_list(backup_list, backup_id)
+        return backup['metadata']['name']
+
     def delete_backup_volume(self, volume_name):
         return self.backup.delete_backup_volume(volume_name)
 
@@ -31,3 +43,10 @@ class backup_keywords:
         if get_backupstore():
             self.backup.cleanup_system_backups()
             self.backup.cleanup_backup_volumes()
+
+    def list_all_backups(self):
+        all_backups = self.backup.list_all()
+        return all_backups
+
+    def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
+        self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)

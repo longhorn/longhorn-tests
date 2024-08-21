@@ -164,6 +164,16 @@ def get_cr(group, version, namespace, plural, name):
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
 
+def get_all_crs(group, version, namespace, plural):
+    api = client.CustomObjectsApi()
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for _ in range(retry_count):
+        try:
+            resp = api.list_namespaced_custom_object(group, version, namespace, plural)
+            return resp
+        except ApiException as e:
+            logging(f"Getting namespaced custom object error: {e}")
+        time.sleep(retry_interval)
 
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
     api = client.CustomObjectsApi()

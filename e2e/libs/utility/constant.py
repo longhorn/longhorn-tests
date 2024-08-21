@@ -18,3 +18,7 @@ LONGHORN_NAMESPACE = 'longhorn-system'
 
 DISK_BEING_SYNCING = "being syncing and please retry later"
 NODE_UPDATE_RETRY_INTERVAL = 6
+
+LONGHORN_UNINSTALL_JOB_LABEL="job-name=longhorn-uninstall"
+LONGHORN_INSTALL_SCRIPT_PATH="utilities/longhorn-install.sh"
+LONGHORN_INSTALL_TIMEOUT = 600
