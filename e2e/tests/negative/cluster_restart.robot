@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    negative
+Test Tags    negative    cluster
 
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource

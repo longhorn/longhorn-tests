@@ -69,7 +69,7 @@ Reboot Node One By One While Workload Heavy Writing
         And Check statefulset 2 works
     END
 
-Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Heavy Writing
+Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
@@ -254,6 +254,142 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
         And Check volume 1 works
         And Check volume 2 works
     END
+
+Physical Node Reboot With Attached Deployment
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using ${VOLUME_TYPE} volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Write 100 MB data to file data in deployment 0
+
+    And Reboot volume node of deployment 0
+    And Wait for deployment 0 pods stable
+    Then Check deployment 0 data in file data is intact
+
+Physical Node Reboot With Attached Statefulset
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using ${VOLUME_TYPE} volume with longhorn-test storageclass
+    And Write 100 MB data to file data in statefulset 0
+
+    And Reboot volume node of statefulset 0
+    And Wait for statefulset 0 pods stable
+    Then Check statefulset 0 data in file data is intact
+
+Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Replica Node
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to do-nothing
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data in deployment 0
+
+    # Delete replicas to have the volume with its only replica located on different nodes.
+    And Update volume of deployment 0 replica count to 1
+    And Delete replica of deployment 0 volume on replica node
+    And Delete replica of deployment 0 volume on volume node
+    And Power off volume node of deployment 0
+    Then Wait for volume of deployment 0 stuck in state attaching
+    And Wait for deployment 0 pod stuck in Terminating on the original node
+
+    When Power on off node
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 pod is Running on another node
+    Then Check deployment 0 data in file data is intact
+
+Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Volume Node
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to do-nothing
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data in deployment 0
+
+    # Delete replicas to have the volume with its only replica located on the same node.
+    And Update volume of deployment 0 replica count to 1
+    And Delete replica of deployment 0 volume on all replica node
+    And Power off volume node of deployment 0
+    Then Wait for volume of deployment 0 faulted
+    And Wait for deployment 0 pod stuck in Terminating on the original node
+
+    When Power on off node
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 pod is Running on the original node
+    Then Check deployment 0 data in file data is intact
+
+Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Replica Node
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-deployment-pod
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data in deployment 0
+
+    # Delete replicas to have the volume with its only replica located on different nodes.
+    And Update volume of deployment 0 replica count to 1
+    And Delete replica of deployment 0 volume on replica node
+    And Delete replica of deployment 0 volume on volume node
+    And Power off volume node of deployment 0
+    Then Wait for volume of deployment 0 attaching
+
+    And Wait for deployment 0 pods stable
+    Then Check deployment 0 data in file data is intact
+    And Power on off node
+
+Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Volume Node
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-deployment-pod
+    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data in deployment 0
+
+    # Delete replicas to have the volume with its only replica located on the same node
+    And Update volume of deployment 0 replica count to 1
+    And Delete replica of deployment 0 volume on all replica node
+    And Power off volume node of deployment 0
+    Then Wait for volume of deployment 0 faulted
+    And Wait for deployment 0 pod stuck in ContainerCreating on another node
+
+    When Power on off node
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 pod is Running on the original node
+    Then Check deployment 0 data in file data is intact
+
+Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Replica Node
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
+    When Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Wait for volume of statefulset 0 healthy
+    And Write 100 MB data to file data in statefulset 0
+
+    # Delete replicas to have the volume with its only replica located on different nodes.
+    And Update volume of statefulset 0 replica count to 1
+    And Delete replica of statefulset 0 volume on replica node
+    And Delete replica of statefulset 0 volume on volume node
+    And Power off volume node of statefulset 0
+    Then Wait for volume of statefulset 0 attaching
+
+    And Wait for statefulset 0 pods stable
+    Then Check statefulset 0 data in file data is intact
+    And Power on off node
+
+Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Volume Node
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
+    When Create statefulset 0 using RWO volume with longhorn-test storageclass
+    And Wait for volume of statefulset 0 healthy
+    And Write 100 MB data to file data in statefulset 0
+
+    # Delete replicas to have the volume with its only replica located on the same.
+    And Update volume of statefulset 0 replica count to 1
+    And Delete replica of statefulset 0 volume on all replica node
+    And Power off volume node of statefulset 0
+    Then Wait for volume of statefulset 0 faulted
+    And Wait for statefulset 0 pod stuck in ContainerCreating on another node
+
+    When Power on off node
+    And Wait for statefulset 0 pods stable
+    And Check statefulset 0 pod is Running on the original node
+    Then Check statefulset 0 data in file data is intact
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
     [Tags]    recurring_job
