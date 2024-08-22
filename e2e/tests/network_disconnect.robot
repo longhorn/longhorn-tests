@@ -31,7 +31,7 @@ Disconnect Volume Node Network While Workload Heavy Writing
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
         And Keep writing data to pod of statefulset 1
-        When Disconnect volume nodes network for 10 seconds    statefulset 0    statefulset 1
+        When Disconnect volume nodes network for 20 seconds    statefulset 0    statefulset 1
         And Wait for volume of statefulset 0 healthy
         And Wait for volume of statefulset 1 healthy
         And Wait for workloads pods stable    statefulset 0    statefulset 1

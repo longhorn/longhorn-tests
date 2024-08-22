@@ -37,7 +37,7 @@ export KUBECONFIG=/path/to/your/kubeconfig.yaml
 ```
 # for example, if it's exposed by nodeport:
 export LONGHORN_CLIENT_URL=http://node-public-ip:30000
-# or exposed by port-foraword:
+# or exposed by port-forward:
 export LONGHORN_CLIENT_URL=http://localhost:8080
 ```
 
