@@ -19,6 +19,7 @@ from workload.workload import get_workload_volume_name
 from workload.workload import is_workload_pods_has_annotations
 from workload.workload import keep_writing_pod_data
 from workload.workload import write_pod_random_data
+from workload.workload import write_pod_large_data
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
@@ -81,6 +82,17 @@ class workload_keywords:
 
         logging(f'Writing {size_in_mb} MB random data to pod {pod_name} file {file_name}')
         checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
+
+        logging(f"Storing pod {pod_name} file {file_name} checksum = {checksum}")
+
+        volume_name = get_volume_name_by_pod(pod_name)
+        self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
+
+    def write_workload_pod_large_data(self, workload_name, size_in_gb, file_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Writing {size_in_gb} GB large data to pod {pod_name} file {file_name}')
+        checksum = write_pod_large_data(pod_name, size_in_gb, file_name)
 
         logging(f"Storing pod {pod_name} file {file_name} checksum = {checksum}")
 
