@@ -40,6 +40,7 @@ node {
         string(credentialsId: 'AZURE_CRT_PASSWORD', variable: 'AZURE_CRT_PASSWORD'),
         string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID'),
         string(credentialsId: 'AZURE_SUBSCRIPTION_ID', variable: 'AZURE_SUBSCRIPTION_ID'),
+        string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -93,6 +94,7 @@ node {
 
                 sh "test_framework/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
                                        --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
@@ -142,6 +144,8 @@ node {
                                        --env TF_VAR_azure_subscription_id=${AZURE_SUBSCRIPTION_ID} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
                                        --env TF_VAR_custom_ssh_public_key="${CUSTOM_SSH_PUBLIC_KEY}" \
+                                       --env QASE_TOKEN=${QASE_TOKEN} \
+                                       --env QASE_PROJECT=LH \
                                        ${imageName}
                 """
 
@@ -173,6 +177,10 @@ node {
                 }
                 else {
                     summary = junit 'longhorn-test-junit-report.xml'
+                }
+
+                if(JOB_BASE_NAME != "longhorn-tests-regression") {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py ${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
                 }
 
                 if(LONGHORN_INSTALL_METHOD == "custom") {
