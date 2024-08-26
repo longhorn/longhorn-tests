@@ -1,4 +1,3 @@
-import os
 import pytest
 import subprocess
 import time
@@ -101,6 +100,11 @@ def flux_helm_chart_version(request):
 
 
 @pytest.fixture
+def upgrade_longhorn_transient_version(request):
+    return request.config.getoption("--upgrade-lh-transient-version")
+
+
+@pytest.fixture
 def upgrade_longhorn_repo_url(request):
     return request.config.getoption("--upgrade-lh-repo-url")
 
@@ -133,17 +137,6 @@ def upgrade_longhorn_share_manager_image(request):
 @pytest.fixture
 def upgrade_longhorn_backing_image_manager_image(request):
     return request.config.getoption("--upgrade-lh-backing-image-manager-image")
-
-
-def get_longhorn_upgrade_type():
-    return [os.environ.get('LONGHORN_UPGRADE_TYPE', '')]
-
-
-@pytest.fixture(params=get_longhorn_upgrade_type())
-def longhorn_upgrade_type():
-    # add parameter "from_stable" or "from_transient" to test_upgrade test case
-    # to distinguish them in the junit report.
-    pass
 
 
 def longhorn_upgrade(longhorn_install_method,
@@ -223,8 +216,7 @@ def longhorn_upgrade(longhorn_install_method,
 
 
 @pytest.mark.upgrade  # NOQA
-def test_upgrade(longhorn_upgrade_type,
-                 longhorn_install_method,
+def test_upgrade(longhorn_install_method,
                  rancher_hostname,
                  rancher_access_key,
                  rancher_secret_key,
@@ -232,6 +224,7 @@ def test_upgrade(longhorn_upgrade_type,
                  longhorn_repo,
                  flux_helm_chart_url,
                  flux_helm_chart_version,
+                 upgrade_longhorn_transient_version,
                  upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
@@ -277,6 +270,7 @@ def test_upgrade(longhorn_upgrade_type,
     18. Verify the vol_rebuild is still healthy
     """
     longhorn_install_method = longhorn_install_method
+    longhorn_transient_version = upgrade_longhorn_transient_version
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
     longhorn_manager_image = upgrade_longhorn_manager_image
@@ -401,6 +395,27 @@ def test_upgrade(longhorn_upgrade_type,
     rwx_test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, rwx_statefulset_pod_name,
                           rwx_test_data, filename='test1')
+
+    if longhorn_transient_version and len(longhorn_transient_version) > 0:
+        # upgrade Longhorn manager to transient version
+        assert longhorn_upgrade(longhorn_install_method,
+                                rancher_hostname,
+                                rancher_access_key,
+                                rancher_secret_key,
+                                longhorn_transient_version,
+                                longhorn_repo,
+                                flux_helm_chart_url,
+                                longhorn_transient_version,
+                                longhorn_repo_url,
+                                longhorn_transient_version,
+                                "",
+                                "",
+                                "",
+                                "",
+                                "")
+
+        # wait for 1 minute before checking pod restarts
+        time.sleep(60)
 
     # upgrade Longhorn manager
     assert longhorn_upgrade(longhorn_install_method,

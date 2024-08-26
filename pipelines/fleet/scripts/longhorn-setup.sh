@@ -37,16 +37,8 @@ main(){
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     create_fleet_git_repo "${FLEET_REPO_STABLE_VERSION}"
-    LONGHORN_UPGRADE_TYPE="from_stable"
-    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
-    if [[ -n "${FLEET_REPO_TRANSIENT_VERSION}" ]]; then
-      UPGRADE_LH_REPO_URL="${FLEET_REPO_URI}"
-      UPGRADE_LH_REPO_BRANCH="${FLEET_REPO_TRANSIENT_VERSION}"
-      UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${FLEET_REPO_TRANSIENT_VERSION}"
-      run_longhorn_upgrade_test
-      LONGHORN_UPGRADE_TYPE="from_transient"
-      LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-transient"
-    fi
+    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
+    UPGRADE_LH_TRANSIENT_VERSION="${FLEET_REPO_TRANSIENT_VERSION}"
     UPGRADE_LH_REPO_URL="${FLEET_REPO_URI}"
     UPGRADE_LH_REPO_BRANCH="${FLEET_REPO_VERSION}"
     UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${FLEET_REPO_VERSION}"

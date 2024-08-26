@@ -43,22 +43,10 @@ main(){
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_rancher_chart "${LONGHORN_STABLE_VERSION}"
-    LONGHORN_UPGRADE_TYPE="from_stable"
-    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
-    if [[ -n "${LONGHORN_TRANSIENT_VERSION}" ]]; then
-      RANCHER_CHART_INSTALL_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-      # extract 1.4.2 from 102.2.1+up1.4.2
-      RAW_VERSION=(${LONGHORN_TRANSIENT_VERSION/up/ })
-      if [[ "${LONGHORN_REPO}" == "rancher" ]]; then
-        UPGRADE_LH_ENGINE_IMAGE="rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"
-      else
-        UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:v${RAW_VERSION[1]}"
-      fi
-      run_longhorn_upgrade_test
-      LONGHORN_UPGRADE_TYPE="from_transient"
-      LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-transient"
-    fi
+    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
+    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
     RANCHER_CHART_INSTALL_VERSION="${LONGHORN_INSTALL_VERSION}"
+    # extract 1.4.2 from 102.2.1+up1.4.2
     RAW_VERSION=(${LONGHORN_INSTALL_VERSION/up/ })
     if [[ "${LONGHORN_REPO}" == "rancher" ]]; then
         UPGRADE_LH_ENGINE_IMAGE="rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"

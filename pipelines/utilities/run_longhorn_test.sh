@@ -86,6 +86,7 @@ run_longhorn_upgrade_test(){
                                  "--rancher-secret-key", "'${RANCHER_SECRET_KEY}'",
                                  "--rancher-chart-install-version", "'${RANCHER_CHART_INSTALL_VERSION}'",
                                  "--longhorn-repo", "'${LONGHORN_REPO}'",
+                                 "--upgrade-lh-transient-version", "'${UPGRADE_LH_TRANSIENT_VERSION}'",
                                  "--upgrade-lh-repo-url", "'${UPGRADE_LH_REPO_URL}'",
                                  "--upgrade-lh-repo-branch", "'${UPGRADE_LH_REPO_BRANCH}'",
                                  "--upgrade-lh-manager-image", "'${UPGRADE_LH_MANAGER_IMAGE}'",
