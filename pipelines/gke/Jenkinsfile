@@ -63,8 +63,8 @@ node {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
 
                 if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-stable-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
                 }
                 else {
                     summary = junit 'longhorn-test-junit-report.xml'
