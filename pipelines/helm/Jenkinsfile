@@ -136,14 +136,9 @@ node {
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
 
-                if(params.LONGHORN_UPGRADE_TEST && params.LONGHORN_TRANSIENT_VERSION) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-stable-junit-report.xml ."
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-transient-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-upgrade-from-transient-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-stable-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
+                if(params.LONGHORN_UPGRADE_TEST) {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
                 }
                 else {
                     summary = junit 'longhorn-test-junit-report.xml'

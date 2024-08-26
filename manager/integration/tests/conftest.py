@@ -24,6 +24,7 @@ RANCHER_CHART_INSTALL_VERSION = "--rancher-chart-install-version"
 LONGHORN_REPO = "--longhorn-repo"
 FLUX_HELM_CHART_URL = "--flux-helm-chart-url"
 FLUX_HELM_CHART_VERSION = "--flux-helm-chart-version"
+UPGRADE_LH_TRANSIENT_VERSION = "--upgrade-lh-transient-version"
 UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
 UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
 UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
@@ -102,6 +103,14 @@ def pytest_addoption(parser):
                      default="",
                      help='''if longhorn install method is flux, specify the
                      chart version when create flux helm release resource''')
+
+    parser.addoption(UPGRADE_LH_TRANSIENT_VERSION, action="store",
+                     default="",
+                     help='''set longhorn transient version, if provided,
+                     longhorn will first install the stable version,
+                     and then upgrade to this transient version,
+                     and finally upgrade to the version to be tested.
+                     (default:"")''')
 
     longhorn_repo_url =\
         "https://github.com/longhorn/longhorn.git"

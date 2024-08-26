@@ -9,12 +9,9 @@ def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
 
-// parameters for air gap installation
-def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
+def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
+def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
-def REGISTRY_URL
-def REGISTRY_USERNAME
-def REGISTRY_PASSWORD
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -39,17 +36,20 @@ node {
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration code: $REGISTRATION_CODE_ID"
 
-                sh "pipelines/fleet/scripts/build.sh"
+                sh "pipelines/storage_network/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                       --env REGISTRY_URL=${REGISTRY_URL} \
-                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
-                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
-                                       --env FLEET_REPO_URI=${FLEET_REPO_URI} \
-                                       --env FLEET_REPO_VERSION=${FLEET_REPO_VERSION} \
+                                       --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
+                                       --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                       --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                        --env DISTRO=${DISTRO} \
-                                       --env FLEET_REPO_STABLE_VERSION=${FLEET_REPO_STABLE_VERSION} \
-                                       --env FLEET_REPO_TRANSIENT_VERSION=${FLEET_REPO_TRANSIENT_VERSION} \
+                                       --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
+                                       --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
+                                       --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
@@ -61,31 +61,37 @@ node {
                                        --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                                        --env TF_VAR_aws_region=${AWS_REGION} \
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
-                                       --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                        --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
-                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
+                                       --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
+                                       --env AWS_DEFAULT_REGION=${AWS_REGION} \
                                        --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       --env TF_VAR_mtu=${MTU_SIZE} \
+                                       --env TF_VAR_multus_version=${MULTUS_VERSION} \
+                                       --env TF_VAR_thick_plugin=${THICK_PLUGIN} \
                                        ${imageName}
                 """
             }
 
             timeout(60) {
                 stage ('terraform') {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/terraform_setup.sh"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/terraform-setup.sh"
                 }
 			}
 
             stage ('longhorn setup & tests') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/fleet/scripts/longhorn-setup.sh"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/longhorn-setup.sh"
             }
 
             stage ('download support bundle') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/download_support_bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
 				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
 			}
@@ -107,9 +113,8 @@ node {
             throw e
         } finally {
             stage ('releasing resources') {
-
                 if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/cleanup.sh"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/cleanup.sh"
                     sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                     sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                     sh "docker rmi ${imageName}"
