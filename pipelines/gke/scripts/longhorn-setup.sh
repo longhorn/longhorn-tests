@@ -295,8 +295,8 @@ main(){
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
     install_longhorn_stable
-    LONGHORN_UPGRADE_TYPE="from_stable"
-    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
+    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
+    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
     UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
     UPGRADE_LH_REPO_BRANCH="${LONGHORN_REPO_BRANCH}"
     UPGRADE_LH_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE}"
