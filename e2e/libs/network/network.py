@@ -1,7 +1,9 @@
 import asyncio
+import os
 
 from node import Node
 from node_exec import NodeExec
+from node_exec.constant import HOST_ROOTFS
 
 from robot.libraries.BuiltIn import BuiltIn
 
@@ -46,9 +48,11 @@ def cleanup_control_plane_network_latency():
             assert res, "cleanup control plane network failed"
 
 async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
+    ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+    ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
-        command=["nsenter", "--mount=/rootfs/proc/1/ns/mnt", "--net=/rootfs/proc/1/ns/net", "--", "sh"],
+        command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
         args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
         node_name=node_name
     )
@@ -60,9 +64,11 @@ async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     delete_pod(pod_name)
 
 def disconnect_node_network_without_waiting_completion(node_name, disconnection_time_in_sec=10):
+    ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+    ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
-        command=["nsenter", "--mount=/rootfs/proc/1/ns/mnt", "--net=/rootfs/proc/1/ns/net", "--", "sh"],
+        command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
         args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
         node_name=node_name,
         labels = {LABEL_TEST: LABEL_TEST_VALUE}
@@ -76,7 +82,7 @@ def disconnect_node_network_without_waiting_completion(node_name, disconnection_
 # utilities, which must generally be installed before execution.
 def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
     wait_for_pod_status(pod_name, "Running", namespace='longhorn-system')
-    
+
     # Install iptables and execute the drop rule in the foreground.
     # Then, sleep and execute the undrop rule in the background.
     # Redirect stdout and stderr for the background commands so exec returns without waiting.
@@ -87,5 +93,5 @@ def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
     drop_rule = 'iptables -A OUTPUT -p tcp --sport 3260 -j ACCEPT; iptables -A OUTPUT -p tcp -j DROP;'
     undrop_rule = 'iptables -D OUTPUT -p tcp --sport 3260 -j ACCEPT; iptables -D OUTPUT -p tcp -j DROP;'
     full_cmd = f"{install_cmd} {drop_rule} {{ sleep {drop_time_in_sec}; {undrop_rule} }} > /dev/null 2> /dev/null &"
-    
+
     pod_exec(pod_name, 'longhorn-system', full_cmd)
