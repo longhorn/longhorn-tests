@@ -19,8 +19,10 @@ from common import wait_for_backup_count
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
+from common import wait_for_backup_restore_completed
 
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
+from common import SIZE
 
 from backupstore import set_random_backupstore  # NOQA
 
@@ -173,6 +175,8 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     Given a volume is created.
     And volume has backup count (1).
+    And create a DR volume from backup
+    And wait for DR volume to restore from backup
 
     When system backup (system-backup) has volume backup policy (always).
     And system backup (system-backup) created.
@@ -191,7 +195,14 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
-    create_backup(client, volume_name)
+    _, backup, _, _ = create_backup(client, volume_name)
+
+    # System backup should skip creating DR volume backup.
+    dr_volume_name = volume_name + "-dr"
+    client.create_volume(name=dr_volume_name, size=SIZE,
+                         numberOfReplicas=1, fromBackup=backup.url,
+                         frontend="", standby=True)
+    wait_for_backup_restore_completed(client, dr_volume_name, backup.name)
 
     system_backup_name = system_backup_random_name()
     client.create_system_backup(Name=system_backup_name,
