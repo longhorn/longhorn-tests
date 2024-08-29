@@ -117,7 +117,9 @@ Then system backups should exists (aaa, aaaa)</p></div>
 create volume backup, regardless of their existing backups.</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5011">https://github.com/longhorn/longhorn/issues/5011</a></p>
 <p>Given a volume is created.
-And volume has backup count (1).</p>
+And volume has backup count (1).
+And create a DR volume from backup
+And wait for DR volume to restore from backup</p>
 <p>When system backup (system-backup) has volume backup policy (always).
 And system backup (system-backup) created.
 Then system backup is in state (Ready).
