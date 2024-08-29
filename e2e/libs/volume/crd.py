@@ -49,7 +49,9 @@ class CRD(Base):
                 "dataEngine": dataEngine,
                 "backingImage": backingImage,
                 "Standby": Standby,
-                "fromBackup": fromBackup
+                "fromBackup": fromBackup,
+                # disable revision counter by default from v1.7.0
+                "revisionCounterDisabled": True
             }
         }
         try:
@@ -480,3 +482,9 @@ class CRD(Base):
 
     def create_persistentvolumeclaim(self, volume_name, retry):
         return Rest(self.node_exec).create_persistentvolumeclaim(volume_name, retry)
+
+    def upgrade_engine_image(self, volume_name, engine_image_name):
+        return Rest(self.node_exec).upgrade_engine_image(volume_name, engine_image_name)
+
+    def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
+        return Rest(self.node_exec).wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)

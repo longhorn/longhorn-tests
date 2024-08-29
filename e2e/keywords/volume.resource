@@ -254,3 +254,8 @@ Record volume ${volume_id} replica names
 Check volume ${volume_id} replica names are as recorded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_volume_replica_names_recorded    ${volume_name}
+
+Upgrade volume ${volume_id} engine to compatible engine image
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    upgrade_engine_image    ${volume_name}    ${compatible_engine_image_name}
+    wait_for_engine_image_upgrade_completed    ${volume_name}    ${compatible_engine_image_name}
