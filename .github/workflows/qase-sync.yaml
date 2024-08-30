@@ -1,0 +1,16 @@
+name: Qase Sync
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  qase-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Qase Sync
+        uses: longhorn/bot/qase-sync-action@master
+        with:
+          project-code: LH
+          token: ${{ secrets.QASE_TOKEN }}
