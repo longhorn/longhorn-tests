@@ -45,12 +45,6 @@ hljs.highlightAll();
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="tests.test_upgrade.get_longhorn_upgrade_type"><code class="name flex">
-<span>def <span class="ident">get_longhorn_upgrade_type</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="tests.test_upgrade.longhorn_install_method"><code class="name flex">
 <span>def <span class="ident">longhorn_install_method</span></span>(<span>request)</span>
 </code></dt>
@@ -65,12 +59,6 @@ hljs.highlightAll();
 </dd>
 <dt id="tests.test_upgrade.longhorn_upgrade"><code class="name flex">
 <span>def <span class="ident">longhorn_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, longhorn_repo_url, longhorn_repo_branch, longhorn_manager_image, longhorn_engine_image, longhorn_instance_manager_image, longhorn_share_manager_image, longhorn_backing_image_manager_image)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.longhorn_upgrade_type"><code class="name flex">
-<span>def <span class="ident">longhorn_upgrade_type</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -100,7 +88,7 @@ hljs.highlightAll();
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_upgrade.test_upgrade"><code class="name flex">
-<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_upgrade_type, longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class)</span>
+<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, upgrade_longhorn_transient_version, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test Longhorn upgrade</p>
@@ -200,6 +188,12 @@ still starting</li>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.test_upgrade.upgrade_longhorn_transient_version"><code class="name flex">
+<span>def <span class="ident">upgrade_longhorn_transient_version</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 </dl>
 </section>
 <section>
@@ -219,11 +213,9 @@ still starting</li>
 <ul class="">
 <li><code><a title="tests.test_upgrade.flux_helm_chart_url" href="#tests.test_upgrade.flux_helm_chart_url">flux_helm_chart_url</a></code></li>
 <li><code><a title="tests.test_upgrade.flux_helm_chart_version" href="#tests.test_upgrade.flux_helm_chart_version">flux_helm_chart_version</a></code></li>
-<li><code><a title="tests.test_upgrade.get_longhorn_upgrade_type" href="#tests.test_upgrade.get_longhorn_upgrade_type">get_longhorn_upgrade_type</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_install_method" href="#tests.test_upgrade.longhorn_install_method">longhorn_install_method</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_repo" href="#tests.test_upgrade.longhorn_repo">longhorn_repo</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_upgrade" href="#tests.test_upgrade.longhorn_upgrade">longhorn_upgrade</a></code></li>
-<li><code><a title="tests.test_upgrade.longhorn_upgrade_type" href="#tests.test_upgrade.longhorn_upgrade_type">longhorn_upgrade_type</a></code></li>
 <li><code><a title="tests.test_upgrade.rancher_access_key" href="#tests.test_upgrade.rancher_access_key">rancher_access_key</a></code></li>
 <li><code><a title="tests.test_upgrade.rancher_chart_install_version" href="#tests.test_upgrade.rancher_chart_install_version">rancher_chart_install_version</a></code></li>
 <li><code><a title="tests.test_upgrade.rancher_hostname" href="#tests.test_upgrade.rancher_hostname">rancher_hostname</a></code></li>
@@ -237,6 +229,7 @@ still starting</li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_repo_branch" href="#tests.test_upgrade.upgrade_longhorn_repo_branch">upgrade_longhorn_repo_branch</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_repo_url" href="#tests.test_upgrade.upgrade_longhorn_repo_url">upgrade_longhorn_repo_url</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_share_manager_image" href="#tests.test_upgrade.upgrade_longhorn_share_manager_image">upgrade_longhorn_share_manager_image</a></code></li>
+<li><code><a title="tests.test_upgrade.upgrade_longhorn_transient_version" href="#tests.test_upgrade.upgrade_longhorn_transient_version">upgrade_longhorn_transient_version</a></code></li>
 </ul>
 </li>
 </ul>
