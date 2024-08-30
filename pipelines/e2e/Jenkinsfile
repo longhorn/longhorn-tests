@@ -159,6 +159,7 @@ node {
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/log.html ."
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/output.xml ."
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/junit.html ."
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
 
                 if(params.LONGHORN_UPGRADE_TEST && params.LONGHORN_TRANSIENT_VERSION) {
