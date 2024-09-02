@@ -24,3 +24,6 @@ class Replica(Base):
 
     def wait_for_rebuilding_complete(self, volume_name, node_name):
         return self.replica.wait_for_rebuilding_complete(volume_name,node_name)
+
+    def validate_replica_setting(self, volume_name, setting_name, value):
+        return self.replica.validate_replica_setting(volume_name, setting_name, value)
