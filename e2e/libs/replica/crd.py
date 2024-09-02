@@ -10,11 +10,11 @@ class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
 
-    def get(self, volume_name, node_name):
+    def get(self, volume_name, node_name=None):
         label_selector = []
         if volume_name != "":
             label_selector.append(f"longhornvolume={volume_name}")
-        if node_name != "":
+        if node_name:
             label_selector.append(f"longhornnode={node_name}")
 
         replicas = self.obj_api.list_namespaced_custom_object(
@@ -24,7 +24,7 @@ class CRD(Base):
             plural="replicas",
             label_selector=",".join(label_selector)
         )
-        return replicas
+        return replicas["items"]
 
     def delete(self, volume_name, node_name):
         if volume_name == "" or node_name == "":
@@ -33,10 +33,7 @@ class CRD(Base):
             logging(
                 f"Deleting volume {volume_name} on node {node_name} replicas")
 
-        resp = self.get(volume_name, node_name)
-        assert resp != "", f"failed to get replicas"
-
-        replicas = resp['items']
+        replicas = self.get(volume_name, node_name)
         if len(replicas) == 0:
             return
 
@@ -56,3 +53,9 @@ class CRD(Base):
 
     def wait_for_rebuilding_complete(self, volume_name, node_name):
         Rest().wait_for_rebuilding_complete(volume_name, node_name)
+
+    def validate_replica_setting(self, volume_name, setting_name, value):
+        replicas = self.get(volume_name)
+        for replica in replicas:
+            assert str(replica["spec"][setting_name]) == value, \
+            f"Expected volume {volume_name} replica setting {setting_name} is {value}, but it's {str(replica['spec'][setting_name])}"

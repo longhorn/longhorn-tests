@@ -60,3 +60,48 @@ class Setting:
 
     def get_secret(self):
         return self.get_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    def reset_settings(self):
+        client = get_longhorn_client()
+        for setting in client.list_setting():
+            setting_name = setting.name
+            setting_default_value = setting.definition.default
+            setting_readonly = setting.definition.readOnly
+
+            # We don't provide the setup for the storage network, hence there is no
+            # default value. We need to skip here to avoid test failure when
+            # resetting this to an empty default value.
+            if setting_name == "storage-network":
+                continue
+            # The test CI deploys Longhorn with the setting value longhorn-critical
+            # for the setting priority-class. Don't reset it to empty (which is
+            # the default value defined in longhorn-manager code) because this will
+            # restart Longhorn managed components and fail the test cases.
+            # https://github.com/longhorn/longhorn/issues/7413#issuecomment-1881707958
+            if setting.name == "priority-class":
+                continue
+
+            # The version of the support bundle kit will be specified by a command
+            # option when starting the manager. And setting requires a value.
+            #
+            # Longhorn has a default version for each release provided to the
+            # manager when starting. Meaning this setting doesn't have a default
+            # value.
+            #
+            # The design grants the ability to update later by cases for
+            # troubleshooting purposes. Meaning this setting is editable.
+            #
+            # So we need to skip here to avoid test failure when resetting this to
+            # an empty default value.
+            if setting_name == "support-bundle-manager-image":
+                continue
+
+            if setting_name == "registry-secret":
+                continue
+
+            s = client.by_id_setting(setting_name)
+            if s.value != setting_default_value and not setting_readonly:
+                try:
+                    client.update(s, value=setting_default_value)
+                except Exception as e:
+                    logging(f"Failed to reset {setting_name} to {setting_default_value}: {e}")
