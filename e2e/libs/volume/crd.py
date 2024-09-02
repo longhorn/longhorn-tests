@@ -344,7 +344,7 @@ class CRD(Base):
         engine_expected_size = int(expected_size)
         engine_operation = Engine()
         for i in range(self.retry_count):
-            engine = engine_operation.get_engine_by_volume(self.get(volume_name))
+            engine = engine_operation.get_engine(volume_name)
             engine_current_size = int(engine['status']['currentSize'])
             if engine_current_size == engine_expected_size:
                 break
@@ -418,7 +418,11 @@ class CRD(Base):
         expected_checksum = self.get_data_checksum(volume_name, data_id)
         actual_checksum = self.get_checksum(volume_name)
         logging(f"Checked volume {volume_name} data {data_id}. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}")
-        assert actual_checksum == expected_checksum
+        if actual_checksum != expected_checksum:
+            message = f"Checked volume {volume_name} data {data_id} failed. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}"
+            logging(message)
+            time.sleep(self.retry_count)
+            assert False, message
 
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name)["spec"]["nodeID"]

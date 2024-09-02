@@ -5,12 +5,14 @@ apt-get install -y nfs-common cryptsetup dmsetup linux-modules-extra-`uname -r`
 
 modprobe uio
 modprobe uio_pci_generic
+modprobe vfio_pci
 modprobe nvme-tcp
 modprobe dm_crypt
 touch /etc/modules-load.d/modules.conf
 cat > /etc/modules-load.d/modules.conf <<EOF
 uio
 uio_pci_generic
+vfio_pci
 nvme-tcp
 dm_crypt
 EOF

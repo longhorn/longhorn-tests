@@ -71,6 +71,7 @@ run_longhorn_e2e_test(){
 
   kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/log.html "log.html" -c longhorn-test-report
   kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/output.xml "output.xml" -c longhorn-test-report
+  kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/junit.xml "junit.xml" -c longhorn-test-report
   kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/report.html "report.html" -c longhorn-test-report
 }
 
@@ -110,5 +111,6 @@ run_longhorn_e2e_test_out_of_cluster(){
 
   cp /tmp/test-report/log.html "${WORKSPACE}/log.html"
   cp /tmp/test-report/output.xml "${WORKSPACE}/output.xml"
+  cp /tmp/test-report/junit.xml "${WORKSPACE}/junit.xml"
   cp /tmp/test-report/report.html "${WORKSPACE}/report.html"
 }

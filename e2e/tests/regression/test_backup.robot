@@ -68,11 +68,11 @@ Test Incremental Restore
     And Write data 0 to volume 0
     And Create backup 0 for volume 0
 
-    When Create DR volume 1 from backup 0
+    When Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
     And Wait for volume 1 restoration from backup 0 completed
-    And Create DR volume 2 from backup 0
+    And Create DR volume 2 from backup 0    dataEngine=${DATA_ENGINE}
     And Wait for volume 2 restoration from backup 0 completed
-    And Create DR volume 3 from backup 0
+    And Create DR volume 3 from backup 0    dataEngine=${DATA_ENGINE}
     And Wait for volume 3 restoration from backup 0 completed
 
     Then Snapshot PV PVC could not be created on DR volume 1

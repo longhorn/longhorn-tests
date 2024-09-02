@@ -1,22 +1,22 @@
 #!/bin/bash
 
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
-
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup device-mapper nc
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
+sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 modprobe uio
 modprobe uio_pci_generic
+modprobe vfio_pci
 modprobe nvme-tcp
 modprobe dm_crypt
 touch /etc/modules-load.d/modules.conf
 cat > /etc/modules-load.d/modules.conf <<EOF
 uio
 uio_pci_generic
+vfio_pci
 nvme-tcp
 dm_crypt
 EOF

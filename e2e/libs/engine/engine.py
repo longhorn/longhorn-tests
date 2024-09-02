@@ -17,12 +17,16 @@ class Engine(Base):
     def get_engines(self, volume_name, node_name=None):
         return self.engine.get_engines(volume_name, node_name)
 
-    def get_engine_by_volume(self, volume):
-        engines = self.get_engines(volume["metadata"]["name"])
+    def get_engine(self, volume_name):
+        engines = self.get_engines(volume_name)
         assert len(engines) == 1, \
             f"Expected exactly one engine but found {len(engines)}"
 
         return engines[0]
+        
+    def get_engine_instance_manager_name(self, volume_name):
+        engine = self.get_engine(volume_name)
+        return engine['status']['instanceManagerName']
 
     # delete engines, if input parameters are empty then will delete all
     def delete_engine(self, volume_name="", node_name=""):

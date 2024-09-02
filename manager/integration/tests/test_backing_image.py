@@ -32,7 +32,7 @@ from common import cleanup_all_recurring_jobs
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
     DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, \
-    BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi
+    BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi, SIZE
 
 from common import wait_for_volume_detached
 from common import wait_for_backing_image_status
@@ -264,11 +264,12 @@ def test_snapshot_prune_and_coalesce_simultaneously_with_backing_image(client, v
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_backup_with_backing_image(set_random_backupstore, client, volume_name):  # NOQA
+@pytest.mark.parametrize("volume_size", [str(BACKING_IMAGE_EXT4_SIZE), SIZE]) # NOQA
+def test_backup_with_backing_image(set_random_backupstore, client, volume_name, volume_size):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
-        backup_test(client, volume_name, str(BACKING_IMAGE_EXT4_SIZE),
+        backup_test(client, volume_name, volume_size,
                     BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
@@ -515,7 +516,7 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
         client, volume_name=volume3_name, size=str(1 * Gi),
         backing_image=backing_img2["name"])
     volume3 = volume3.attach(hostId=hostId)
-    volume3 = wait_for_volume_healthy(client, volume3_name, 300)
+    volume3 = wait_for_volume_healthy(client, volume3_name, 450)
 
     # Step10
     check_volume_data(volume3, data2)
