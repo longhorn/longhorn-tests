@@ -112,6 +112,7 @@ class Node:
         control_plane_labels = {
             "node-role.kubernetes.io/master": "true",
             "node-role.kubernetes.io/control-plane": "true",
+            "node-role.kubernetes.io/control-plane": "",
             "talos.dev/owned-labels": "[\"node-role.kubernetes.io/control-plane\"]"
         }
         condition = lambda node: any(label in node.metadata.labels.keys() and node.metadata.labels[label] == value for label, value in control_plane_labels.items())
