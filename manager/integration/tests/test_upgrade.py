@@ -250,6 +250,7 @@ def test_upgrade(longhorn_install_method,
         2. Create vol_revision_disabled with revision counter disabled case.
         3. Create vol_rebuild for replica rebuilding after system upgrade
            & engine live upgrade
+        4. Create strict local volume strict_local_vol
     3. Create a Pod using a volume, generate and write data
     4. Create a StatefulSet with 2 replicas
        generate and write data to their volumes
@@ -328,6 +329,19 @@ def test_upgrade(longhorn_install_method,
         write_pod_volume_data(core_api,
                               sspod_info['pod_name'],
                               sspod_info['data'])
+
+    # Create strict-local volume
+    strict_local_vol_name = 'vol-strict-local'
+    strict_local_vol = client.create_volume(
+        name=strict_local_vol_name,
+        size=str(2 * Gi),
+        numberOfReplicas=1,
+        dataLocality="strict-local")
+    strict_local_vol = wait_for_volume_detached(client, strict_local_vol_name)
+    strict_local_vol.attach(hostId=host_id)
+    strict_local_vol = wait_for_volume_healthy(client, strict_local_vol_name)
+    strict_local_vol_data_before_sys_upgrade = \
+        write_volume_random_data(strict_local_vol)
 
     # create custom resources
     # orphan
@@ -451,7 +465,11 @@ def test_upgrade(longhorn_install_method,
 
     # read rwx volume data
     assert rwx_test_data == \
-        read_volume_data(core_api, rwx_statefulset_pod_name, filename='test1')
+        read_volume_data(
+            core_api,
+            rwx_statefulset_pod_name,
+            filename='test1'), \
+        f"assert rwx statefulset {rwx_statefulset_pod_name} data intact"
 
     # delete orphan
     delete_orphans(client)
@@ -463,13 +481,14 @@ def test_upgrade(longhorn_install_method,
     # Check Pod and StatefulSet didn't restart after upgrade
     pod = core_api.read_namespaced_pod(name=pod_name,
                                        namespace='default')
-    assert pod.status.container_statuses[0].restart_count == 0
+    assert pod.status.container_statuses[0].restart_count == 0, \
+        f"assert pod {pod_name} didn't restart after upgrade"
 
     for sspod_info in statefulset_pod_info:
         sspod = core_api.read_namespaced_pod(name=sspod_info['pod_name'],
                                              namespace='default')
-        assert \
-            sspod.status.container_statuses[0].restart_count == 0
+        assert sspod.status.container_statuses[0].restart_count == 0, \
+            f"assert pod {sspod_info['pod_name']} didn't restart after upgrade"
 
     # Check all volumes data after system upgrade
     check_volume_data(vol_revision_enabled,
@@ -478,13 +497,17 @@ def test_upgrade(longhorn_install_method,
                       vol_revision_disabled_data_before_sys_upgrade)
     check_volume_data(vol_rebuild,
                       vol_rebuild_data_before_sys_upgrade)
+    check_volume_data(strict_local_vol,
+                      strict_local_vol_data_before_sys_upgrade)
 
     for sspod_info in statefulset_pod_info:
         resp = read_volume_data(core_api, sspod_info['pod_name'])
-        assert resp == sspod_info['data']
+        assert resp == sspod_info['data'], \
+            f"assert pod {sspod_info['pod_name']} data intact after upgrade"
 
     res_pod_md5sum = get_pod_data_md5sum(core_api, pod_name, pod_data_path)
-    assert res_pod_md5sum == pod_md5sum
+    assert res_pod_md5sum == pod_md5sum, \
+        f"assert pod {pod_name} data intact after upgrade"
 
     # Write data to all volumes after system upgrade
     for sspod_info in statefulset_pod_info:
@@ -499,11 +522,15 @@ def test_upgrade(longhorn_install_method,
         write_volume_random_data(vol_revision_disabled)
     vol_rebuild_data_after_sys_upgrade = \
         write_volume_random_data(vol_rebuild)
+    strict_local_vol_data_after_sys_upgrade = \
+        write_volume_random_data(strict_local_vol)
 
     # Check data written to all volumes
     for sspod_info in statefulset_pod_info:
         resp = read_volume_data(core_api, sspod_info['pod_name'])
-        assert resp == sspod_info['data']
+        assert resp == sspod_info['data'], \
+            f"assert data can be written to {sspod_info['pod_name']} \
+              after upgrade"
 
     check_volume_data(vol_revision_enabled,
                       vol_revision_enabled_data_after_sys_upgrade)
@@ -511,6 +538,9 @@ def test_upgrade(longhorn_install_method,
                       vol_revision_disabled_data_after_sys_upgrade)
     check_volume_data(vol_rebuild,
                       vol_rebuild_data_after_sys_upgrade)
+    # Check data written to strict-local volume
+    check_volume_data(strict_local_vol,
+                      strict_local_vol_data_after_sys_upgrade)
 
     # Detach the vol_revision_enabled & vol_revision_disabled,
     # and Delete Pod, and StatefulSet to detach theirvolumes
@@ -535,6 +565,7 @@ def test_upgrade(longhorn_install_method,
         if v.name != vol_rebuild_name and \
            v.name != backup_vol_name and \
            v.name != rwx_pv_name:
+            print(f"Detaching volume {v.name}")
             volume = client.by_id_volume(v.name)
             volume.detach()
             # when upgrading from v1.4.x to v1.5.x, attached volumes without
@@ -543,6 +574,7 @@ def test_upgrade(longhorn_install_method,
             # ticket ID for detach call here
             volume.detach(attachmentID="longhorn-ui")
             wait_for_volume_detached(client, v.name)
+            print(f"Detached volume {v.name}")
 
     engineimages = client.list_engine_image()
     for ei in engineimages:
@@ -553,6 +585,7 @@ def test_upgrade(longhorn_install_method,
         if v.name != restore_vol_name:
             volume = client.by_id_volume(v.name)
             volume.engineUpgrade(image=new_ei.image)
+            print(f"Upgrading volume {v.name} engine image")
 
     # Recreate Pod, and StatefulSet
     statefulset['spec']['replicas'] = replicas = 2
@@ -576,7 +609,8 @@ def test_upgrade(longhorn_install_method,
     # Attach the volume
     for v in volumes:
         if v.name == vol_revision_enabled_name or \
-                v.name == vol_revision_disabled_name:
+                v.name == vol_revision_disabled_name or \
+                v.name == strict_local_vol_name:
             volume = client.by_id_volume(v.name)
             volume.attach(hostId=host_id)
             wait_for_volume_healthy(client, v.name)
@@ -587,12 +621,20 @@ def test_upgrade(longhorn_install_method,
             volume = client.by_id_volume(v.name)
             engine = get_volume_engine(volume)
             if hasattr(engine, 'engineImage'):
-                print("Checking engineImage...")
-                assert engine.engineImage == new_ei.image
+                print(f"Checking {v.name} engine image upgraded to \
+                    {new_ei.image}")
+                assert engine.engineImage == new_ei.image, \
+                    f"assert volume {v.name} engine image upgraded to \
+                      {new_ei.image}, but it's {engine.engineImage}"
             else:
-                print("Checking image...")
-                assert engine.image == new_ei.image
-            assert engine.currentImage == new_ei.image
+                print(f"Checking {v.name} engine image upgraded to \
+                    {new_ei.image}")
+                assert engine.image == new_ei.image, \
+                    f"assert volume {v.name} engine image upgraded to \
+                      {new_ei.image}, but it's {engine.image}"
+            assert engine.currentImage == new_ei.image, \
+                f"assert volume {v.name} engine current image upgraded to \
+                  {new_ei.image}, but it's {engine.currentImage}"
 
     # Check All volumes data
     for sspod_info in statefulset_pod_info:
@@ -600,7 +642,8 @@ def test_upgrade(longhorn_install_method,
         assert resp == sspod_info['data']
 
     res_pod_md5sum = get_pod_data_md5sum(core_api, pod_name, pod_data_path)
-    assert res_pod_md5sum == pod_md5sum
+    assert res_pod_md5sum == pod_md5sum, \
+        f"assert pod {pod_name} data intact after engine upgrade"
 
     check_volume_data(vol_revision_enabled,
                       vol_revision_enabled_data_after_sys_upgrade)
@@ -608,6 +651,8 @@ def test_upgrade(longhorn_install_method,
                       vol_revision_disabled_data_after_sys_upgrade)
     check_volume_data(vol_rebuild,
                       vol_rebuild_data_after_sys_upgrade)
+    check_volume_data(strict_local_vol,
+                      strict_local_vol_data_after_sys_upgrade)
 
     # Delete one healthy replica for vol_rebuild to trigger the rebuilding
     delete_replica_on_test_node(client, vol_rebuild_name)
@@ -619,10 +664,13 @@ def test_upgrade(longhorn_install_method,
     # Wait for replica rebuilding to complete
     # Verify the vol_rebuild is still healthy
     vol_rebuild = wait_for_volume_degraded(client, vol_rebuild_name)
-    assert vol_rebuild.robustness == "degraded"
+    assert vol_rebuild.robustness == "degraded", \
+        f"assert volume {vol_rebuild_name} degraded after replica deleted"
     vol_rebuild = wait_for_volume_healthy(client, vol_rebuild_name)
-    assert vol_rebuild.robustness == "healthy"
-    assert len(vol_rebuild.replicas) == 3
+    assert vol_rebuild.robustness == "healthy", \
+        f"assert volume {vol_rebuild_name} rebuilt and recovered to healthy"
+    assert len(vol_rebuild.replicas) == 3, \
+        f"assert volume {vol_rebuild_name} replica count = 3"
 
 
 # Need add this test case into test_upgrade()
