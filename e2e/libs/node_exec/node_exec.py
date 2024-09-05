@@ -1,3 +1,4 @@
+import os
 import time
 
 from kubernetes import client
@@ -6,6 +7,7 @@ from kubernetes.stream import stream
 
 from node_exec.constant import DEFAULT_POD_INTERVAL
 from node_exec.constant import DEFAULT_POD_TIMEOUT
+from node_exec.constant import HOST_ROOTFS
 
 from utility.utility import logging
 from utility.utility import wait_delete_ns
@@ -66,19 +68,18 @@ class NodeExec:
 
 
     def issue_cmd(self, node_name, cmd):
-        logging(f"Issuing command: {cmd} on {node_name}")
+        logging(f"Issuing command on {node_name}: {cmd}")
         pod = self.launch_pod(node_name)
         if isinstance(cmd, list):
             exec_command = cmd
         else:
+            ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+            ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
             exec_command = [
                 'nsenter',
-                '--mount=/rootfs/proc/1/ns/mnt',
-                '--net=/rootfs/proc/1/ns/net',
-                '--',
-                'sh',
-                '-c',
-                cmd
+                f'--mount={ns_mnt}',
+                f'--net={ns_net}',
+                '--', 'sh', '-c', cmd
             ]
         res = stream(
             self.core_api.connect_get_namespaced_pod_exec,
@@ -167,7 +168,7 @@ class NodeExec:
                         ],
                         "volumeMounts": [{
                             'name': 'rootfs',
-                            'mountPath': '/rootfs'
+                            'mountPath': HOST_ROOTFS
                         }, {
                             'name': 'bus',
                             'mountPath': '/var/run'

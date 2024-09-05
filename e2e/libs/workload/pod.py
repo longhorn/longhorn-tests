@@ -4,6 +4,8 @@ import yaml
 from kubernetes import client
 from kubernetes.client import rest
 
+from node_exec.constant import HOST_ROOTFS
+
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
@@ -54,7 +56,7 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
                     'mountPath': '/var/lib/rancher'
                 }, {
                     'name': 'rootfs',
-                    'mountPath': '/rootfs'
+                    'mountPath': HOST_ROOTFS
                 }]
             }],
             'volumes': [{
