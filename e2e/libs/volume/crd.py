@@ -1,9 +1,12 @@
 import time
+import os
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from engine import Engine
+
+from node_exec.constant import HOST_ROOTFS
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
@@ -19,6 +22,7 @@ from volume.rest import Rest
 class CRD(Base):
 
     def __init__(self, node_exec):
+        self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
         self.node_exec = node_exec
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
@@ -363,20 +367,23 @@ class CRD(Base):
 
     def write_random_data(self, volume_name, size, data_id):
         node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = self.get_endpoint(volume_name)
+        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
 
-        checksum = self.node_exec.issue_cmd(
-            node_name,
-            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none;\
-              sync;\
-              md5sum {endpoint} | awk \'{{print $1}}\'")
+        cmd = [
+            "sh", "-c",
+            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; "
+            "sync; "
+            f"md5sum {endpoint} | awk \'{{print $1}}\'"
+        ]
+        checksum = self.node_exec.issue_cmd(node_name, cmd)
+
         logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
         self.set_data_checksum(volume_name, data_id, checksum)
         self.set_last_data_checksum(volume_name, checksum)
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = self.get_endpoint(volume_name)
+        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
         logging(f"Keeping writing data to volume {volume_name}")
         res = self.node_exec.issue_cmd(
             node_name,
@@ -428,10 +435,10 @@ class CRD(Base):
 
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = self.get_endpoint(volume_name)
+        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
         checksum = self.node_exec.issue_cmd(
             node_name,
-            f"md5sum {endpoint} | awk \'{{print $1}}\'")
+            ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 

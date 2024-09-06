@@ -318,7 +318,7 @@ install_longhorn_stable(){
 
 create_longhorn_namespace(){
   kubectl create ns ${LONGHORN_NAMESPACE}
-  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+  if [[ "${TF_VAR_cis_hardening}" == true ]] || [[ "${DISTRO}" == "talos" ]]; then
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce=privileged
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce-version=latest
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit=privileged
@@ -352,7 +352,7 @@ create_aws_secret(){
 
 
 longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.7.0-rc2/longhornctl-linux-amd64 -o longhornctl
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.1-rc2/longhornctl-linux-amd64 -o longhornctl
   chmod +x longhornctl
   ./longhornctl install preflight
   ./longhornctl check preflight
@@ -374,6 +374,7 @@ run_longhorn_upgrade_test(){
                                  "--junitxml='${LONGHORN_JUNIT_REPORT_PATH}'",
                                  "--include-upgrade-test",
                                  "-k", "test_upgrade",
+                                 "--upgrade-lh-transient-version", "'${UPGRADE_LH_TRANSIENT_VERSION}'",
                                  "--upgrade-lh-repo-url", "'${UPGRADE_LH_REPO_URL}'",
                                  "--upgrade-lh-repo-branch", "'${UPGRADE_LH_REPO_BRANCH}'",
                                  "--upgrade-lh-manager-image", "'${UPGRADE_LH_MANAGER_IMAGE}'",
@@ -522,7 +523,7 @@ main(){
 
   # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "sle-micro" ]]; then
+    [[ "${DISTRO}" != "sle-micro" ]] && [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 
@@ -545,16 +546,8 @@ main(){
   elif [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
     install_longhorn_stable
-    LONGHORN_UPGRADE_TYPE="from_stable"
-    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
-    if [[ -n "${LONGHORN_TRANSIENT_VERSION}" ]]; then
-      UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
-      UPGRADE_LH_REPO_BRANCH="${LONGHORN_TRANSIENT_VERSION}"
-      UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_TRANSIENT_VERSION}"
-      run_longhorn_upgrade_test
-      LONGHORN_UPGRADE_TYPE="from_transient"
-      LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-transient"
-    fi
+    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
+    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
     UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
     UPGRADE_LH_REPO_BRANCH="${LONGHORN_REPO_BRANCH}"
     UPGRADE_LH_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE}"

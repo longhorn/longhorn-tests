@@ -1,3 +1,3 @@
 #!/bin/bash
 
-robot -P ./libs -d /tmp/test-report "$@" ./tests
+robot -x junit.xml -P ./libs -d /tmp/test-report "$@" ./tests

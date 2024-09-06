@@ -12,6 +12,7 @@ def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGIS
 // parameters for air gap installation
 def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
+def CUSTOM_SSH_PUBLIC_KEY = params.CUSTOM_SSH_PUBLIC_KEY ? params.CUSTOM_SSH_PUBLIC_KEY : ""
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
@@ -35,6 +36,7 @@ node {
         file(credentialsId: 'login.conf', variable: 'LOGIN_CONFIG'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
+        string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -85,6 +87,7 @@ node {
                 sh "pipelines/e2e/scripts/build.sh"
                 sh """ docker run -itd --cap-add=NET_ADMIN \
                                        --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
                                        --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
@@ -124,11 +127,14 @@ node {
                                        --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       --env TF_VAR_custom_ssh_public_key="${CUSTOM_SSH_PUBLIC_KEY}" \
                                        --env TF_VAR_resources_owner=longhorn-long-running \
                                        --env TF_VAR_extra_block_device=${RUN_V2_TEST} \
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
+                                       --env QASE_TOKEN=${QASE_TOKEN} \
+                                       --env QASE_PROJECT=LH \
                                        --env OUT_OF_CLUSTER=${OUT_OF_CLUSTER} \
                                        --env IMAGE_NAME=${imageName} \
                                        -v /var/run/docker.sock:/var/run/docker.sock \
@@ -159,19 +165,13 @@ node {
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/log.html ."
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/output.xml ."
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/junit.xml ."
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
 
-                if(params.LONGHORN_UPGRADE_TEST && params.LONGHORN_TRANSIENT_VERSION) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-stable-junit-report.xml ."
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-transient-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-upgrade-from-transient-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-stable-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else {
-                    summary = robot outputPath: '.'
+                summary = robot outputPath: '.'
+
+                if(JOB_BASE_NAME != "longhorn-e2e-test") {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py junit.xml"
                 }
             }
 
