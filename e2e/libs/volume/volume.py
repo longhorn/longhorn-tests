@@ -145,3 +145,9 @@ class Volume(Base):
 
     def create_persistentvolumeclaim(self, volume_name, retry):
         return self.volume.create_persistentvolumeclaim(volume_name, retry)
+
+    def upgrade_engine_image(self, volume_name, engine_image_name):
+        return self.volume.upgrade_engine_image(volume_name, engine_image_name)
+
+    def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
+        return self.volume.wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
