@@ -497,6 +497,8 @@ run_longhorn_tests(){
 main(){
   set_kubeconfig
 
+  create_longhorn_namespace
+
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
@@ -512,7 +514,6 @@ main(){
     install_iscsi
     install_cluster_autoscaler
   fi
-  create_longhorn_namespace
   if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi
