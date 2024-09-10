@@ -176,6 +176,10 @@ node {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
 
+                if(JOB_BASE_NAME != "longhorn-tests-regression") {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py ${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ${BUILD_URL}"
+                }
+
                 if(LONGHORN_INSTALL_METHOD == "custom") {
                     sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
                     LONGHORN_MANAGER_VERSION = sh (
