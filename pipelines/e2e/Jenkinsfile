@@ -171,7 +171,7 @@ node {
                 summary = robot outputPath: '.'
 
                 if(JOB_BASE_NAME != "longhorn-e2e-test") {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py junit.xml"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py junit.xml ${BUILD_URL}"
                 }
             }
 
