@@ -100,3 +100,8 @@ variable "resources_owner" {
   type        = string
   default     = "longhorn-infra"
 }
+
+variable "extra_block_device" {
+  type = bool
+  default = true
+}

@@ -137,6 +137,20 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   }
 }
 
+resource "aws_ebs_volume" "lh_aws_ssd_volume" {
+
+  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
+
+  availability_zone = var.aws_availability_zone
+  size              = var.lh_aws_instance_root_block_device_size_worker
+  type              = "gp2"
+
+  tags = {
+    Name = "lh-aws-ssd-volume-${count.index}-${random_string.random_suffix.id}"
+    Owner = var.resources_owner
+  }
+}
+
 resource "aws_instance" "lh_aws_instance_worker" {
   count = var.lh_aws_instance_count_worker
 
@@ -157,6 +171,16 @@ resource "aws_instance" "lh_aws_instance_worker" {
     DoNotDelete = "true"
     Owner = var.resources_owner
   }
+}
+
+resource "aws_volume_attachment" "lh_aws_ssd_volume_att_k3s" {
+
+  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
+
+  device_name  = "/dev/xvdh"
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker[count.index].id
+  force_detach = true
 }
 
 resource "talos_machine_secrets" "machine_secrets" {}
