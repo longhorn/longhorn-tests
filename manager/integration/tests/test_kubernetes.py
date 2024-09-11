@@ -359,10 +359,10 @@ def test_pvc_creation_with_default_sc_set(
     created.
 
     1. Create a StorageClass and set it to be the default StorageClass
-    2. Update static StorageClass to `longhorn-static-test`
+    2. Update static StorageClass to `longhorn-test`
     3. Create volume then PV/PVC.
     4. Make sure the newly created PV/PVC using StorageClass
-    `longhorn-static-test`
+    `longhorn-test`
     5. Create pod with PVC.
     6. Verify volume's Kubernetes Status
     7. Remove PVC and Pod.
@@ -376,12 +376,8 @@ def test_pvc_creation_with_default_sc_set(
     15. Create PV/PVC for the volume.
     16. Make sure the PV's StorageClass is static StorageClass
     """
-    # set default storage class
-    storage_class['metadata']['annotations'] = \
-        {"storageclass.kubernetes.io/is-default-class": "true"}
     create_storage_class(storage_class)
-
-    static_sc_name = "longhorn-static-test"
+    static_sc_name = storage_class['metadata']['name']
     setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
     setting = client.update(setting, value=static_sc_name)
     assert setting.value == static_sc_name
@@ -503,13 +499,13 @@ def test_pvc_creation_with_default_sc_set(
 
 
 @pytest.mark.csi  # NOQA
-def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
+def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod, storage_class):  # NOQA
     """
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
 
     1. Setup a random backupstore
-    2. Set settings Longhorn Static StorageClass to `longhorn-static-test`
+    2. Set settings Longhorn Static StorageClass to `longhorn-test`
     3. Create a volume and PV/PVC. Verify the StorageClass of PVC
     4. Create a Pod using the PVC.
     5. Check volume's Kubernetes status to reflect PV/PVC/Pod correctly.
@@ -532,7 +528,8 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     update_setting(client, SETTING_DEGRADED_AVAILABILITY, "false")
 
     host_id = get_self_host_id()
-    static_sc_name = "longhorn-static-test"
+    create_storage_class(storage_class)
+    static_sc_name = storage_class['metadata']['name']
     setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
     setting = client.update(setting, value=static_sc_name)
     assert setting.value == static_sc_name
