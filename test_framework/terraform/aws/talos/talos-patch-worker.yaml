@@ -8,3 +8,10 @@ machine:
           - bind
           - rshared
           - rw
+  sysctls:
+    vm.nr_hugepages: "1024"
+  kernel:
+    modules:
+      - name: nvme_tcp
+      - name: vfio_pci
+      - name: uio_pci_generic
