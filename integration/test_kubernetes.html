@@ -54,14 +54,14 @@ Volume.</p>
 :return: The Persistent Volume that was provisioned.</p></div>
 </dd>
 <dt id="tests.test_kubernetes.test_backup_kubernetes_status"><code class="name flex">
-<span>def <span class="ident">test_backup_kubernetes_status</span></span>(<span>set_random_backupstore, client, core_api, pod)</span>
+<span>def <span class="ident">test_backup_kubernetes_status</span></span>(<span>set_random_backupstore, client, core_api, pod, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test that Backups have KubernetesStatus stored properly when there is an
 associated PersistentVolumeClaim and Pod.</p>
 <ol>
 <li>Setup a random backupstore</li>
-<li>Set settings Longhorn Static StorageClass to <code>longhorn-static-test</code></li>
+<li>Set settings Longhorn Static StorageClass to <code>longhorn-test</code></li>
 <li>Create a volume and PV/PVC. Verify the StorageClass of PVC</li>
 <li>Create a Pod using the PVC.</li>
 <li>Check volume's Kubernetes status to reflect PV/PVC/Pod correctly.</li>
@@ -227,10 +227,10 @@ StorageClass, and if there is no default StorageClass, PV/PVC can still be
 created.</p>
 <ol>
 <li>Create a StorageClass and set it to be the default StorageClass</li>
-<li>Update static StorageClass to <code>longhorn-static-test</code></li>
+<li>Update static StorageClass to <code>longhorn-test</code></li>
 <li>Create volume then PV/PVC.</li>
 <li>Make sure the newly created PV/PVC using StorageClass
-<code>longhorn-static-test</code></li>
+<code>longhorn-test</code></li>
 <li>Create pod with PVC.</li>
 <li>Verify volume's Kubernetes Status</li>
 <li>Remove PVC and Pod.</li>
