@@ -4,6 +4,7 @@ set -x
 
 source test_framework/scripts/kubeconfig.sh
 source pipelines/utilities/longhorn_manifest.sh
+source pipelines/utilities/longhorn_ui.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -543,6 +544,8 @@ main(){
       get_rancher_api_key
       install_longhorn_by_rancher
     fi
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_tests
   elif [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
@@ -556,6 +559,8 @@ main(){
     UPGRADE_LH_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}"
     UPGRADE_LH_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}"
     UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}"
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_upgrade_test
     run_longhorn_tests
   else
@@ -566,6 +571,8 @@ main(){
       generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
       install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
     fi
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_tests
   fi
 }
