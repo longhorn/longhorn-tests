@@ -184,17 +184,17 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
           1 from `volume-head`)
 
     When wait until backups complete.
-    Then `backup1` completed 2 backups.
-         `backup2` completed 3 backups.
+    Then `backup1` completed 1 backups.
+         `backup2` completed 2 backups.
     """
 
     '''
     The timeline looks like this:
     0   1   2   3   4   5   6   7   8   9   10     (minute)
-    |W  |   | W |   |   |W  |   | W |   |   |      (write data)
+    | W |   | W |   |   |W  |   |W  |   |   |      (write data)
     |   S   |   S   |   |   S   |   S   |   |      (snapshot1)
-    |   |   B   |   B   |   |   |   |   |   |      (backup1)
-    |   |   |   |   |   |   B   B   B   |   |      (backup2)
+    |   |   B   |   B   |   B   |   B   |   B      (backup1)
+    |   |   |   |   |   |   B   B   B   B   B      (backup2)
     '''
 
     snap1 = SNAPSHOT + "1"
@@ -241,15 +241,16 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
                                          groups=[DEFAULT])
 
     wait_until_begin_of_an_even_minute()
-    # wait until the 20th second of an even minute
+    # wait until the 30th second of an even minute
     # make sure that snapshot job happens before the backup job
-    time.sleep(20)
+    time.sleep(30)
 
     write_volume_random_data(volume)
     time.sleep(60 * 2)
     write_volume_random_data(volume)
     time.sleep(60 * 2)
 
+    # 2 from job_snap, 1 from job_backup, 1 volume-head
     wait_for_snapshot_count(volume, 4)
 
     volume.recurringJobAdd(name=back2, isGroup=False)
