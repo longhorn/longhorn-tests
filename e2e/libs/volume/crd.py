@@ -367,7 +367,7 @@ class CRD(Base):
 
     def write_random_data(self, volume_name, size, data_id):
         node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
+        endpoint = self.get_endpoint(volume_name)
 
         cmd = [
             "sh", "-c",
@@ -383,7 +383,7 @@ class CRD(Base):
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
+        endpoint = self.get_endpoint(volume_name)
         logging(f"Keeping writing data to volume {volume_name}")
         res = self.node_exec.issue_cmd(
             node_name,
@@ -435,7 +435,7 @@ class CRD(Base):
 
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
+        endpoint = self.get_endpoint(volume_name)
         checksum = self.node_exec.issue_cmd(
             node_name,
             ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])

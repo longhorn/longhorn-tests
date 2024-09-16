@@ -245,7 +245,7 @@ class Rest(Base):
 
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name).controllers[0].hostId
-        endpoint = f"{HOST_ROOTFS}{self.get_endpoint(volume_name)}"
+        endpoint = self.get_endpoint(volume_name)
         checksum = self.node_exec.issue_cmd(
             node_name,
             ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
