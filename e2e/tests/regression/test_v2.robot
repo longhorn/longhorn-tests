@@ -11,6 +11,8 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/host.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -49,4 +51,24 @@ Degraded Volume Replica Rebuilding
         And Wait for volume of deployment 0 attached and degraded
         And Wait for deployment 0 pods stable
         Then Check deployment 0 data in file data.txt is intact
+    END
+
+V2 Volume Should Block Trim When Volume Is Degraded
+    Given Set setting auto-salvage to true
+    And Create storageclass longhorn-test with    dataEngine=v2
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create deployment 0 with persistentvolumeclaim 0
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        And Keep writing data to pod of deployment 0
+
+        When Restart cluster
+        And Wait for longhorn ready
+        And Wait for volume of deployment 0 attached and degraded
+        Then Trim deployment 0 volume should fail
+
+        When Wait for workloads pods stable
+        ...    deployment 0
+        And Check deployment 0 works
+        Then Trim deployment 0 volume should pass
     END
