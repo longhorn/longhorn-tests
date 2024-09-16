@@ -511,3 +511,6 @@ class CRD(Base):
         volume = self.get(volume_name)
         assert str(volume["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
