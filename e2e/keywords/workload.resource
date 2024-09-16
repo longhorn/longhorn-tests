@@ -189,3 +189,14 @@ Check ${workload_kind} ${workload_id} pod is ${expect_state} on another node
 Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
+
+Trim ${workload_kind} ${workload_id} volume should ${condition}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+
+    IF    $condition == "fail"
+        trim_workload_volume_filesystem    ${workload_name}    is_expect_fail=True
+    ELSE IF    $condition == "pass"
+        trim_workload_volume_filesystem    ${workload_name}    is_expect_fail=False
+    ELSE
+        Fail    "Invalid condition value: ${condition}"
+    END
