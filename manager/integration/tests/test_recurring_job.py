@@ -268,8 +268,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
 
     complete_backup_1_count = 0
     complete_backup_2_count = 0
-    volume = client.by_id_volume(volume_name)
-    wait_for_backup_completion(client, volume_name)
+    volume = wait_for_backup_completion(client, volume_name)
     for b in volume.backupStatus:
         if "backup1-" in b.snapshot:
             complete_backup_1_count += 1
