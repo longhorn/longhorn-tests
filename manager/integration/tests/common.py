@@ -6494,3 +6494,14 @@ def check_backing_image_eviction_failed(name): # NOQA
         time.sleep(RETRY_INTERVAL)
 
     assert check
+
+
+def wait_for_replica_count(client, volume_name, replica_count):
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if len(volume.replicas) == replica_count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    volume = client.by_id_volume(volume_name)
+    assert len(volume.replicas) == replica_count
