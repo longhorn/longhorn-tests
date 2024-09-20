@@ -5,8 +5,12 @@ from k8s.k8s import delete_node
 from k8s.k8s import drain_node, force_drain_node
 from k8s.k8s import cordon_node, uncordon_node
 from k8s.k8s import wait_all_pods_evicted
+from k8s.k8s import get_all_pods_on_node
+from k8s.k8s import check_node_cordoned
+from k8s.k8s import get_instance_manager_on_node
+from k8s.k8s import check_instance_manager_pdb_not_exist
 from utility.utility import logging
-
+from node import Node
 
 class k8s_keywords:
 
@@ -45,10 +49,32 @@ class k8s_keywords:
         drain_node(node_name)
 
     def force_drain_node(self, node_name):
-        force_drain_node(node_name)
+        timeout = int(BuiltIn().get_variable_value("${DRAIN_TIMEOUT}", default="90"))
+        force_drain_node(node_name, timeout)
 
     def uncordon_node(self, node_name):
         uncordon_node(node_name)
 
+    def cordon_node(self, node_name):
+        cordon_node(node_name)
+
     def wait_for_all_pods_evicted(self, node_name):
         wait_all_pods_evicted(node_name)
+
+    def uncordon_all_nodes(self):
+        nodes = Node.list_node_names_by_role("worker")
+
+        for node_name in nodes:
+            uncordon_node(node_name)
+
+    def get_all_pods_on_node(self, node_name):
+        return get_all_pods_on_node(node_name)
+
+    def check_node_cordoned(self, node_name):
+        check_node_cordoned(node_name)
+
+    def get_instance_manager_on_node(self, node_name):
+        return get_instance_manager_on_node(node_name)
+
+    def check_instance_manager_pdb_not_exist(self, instance_manager):
+        return check_instance_manager_pdb_not_exist(instance_manager)

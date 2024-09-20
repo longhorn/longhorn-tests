@@ -10,6 +10,8 @@ from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
+from k8s.k8s import uncordon_node
+
 class Node:
 
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
@@ -159,3 +161,11 @@ class Node:
             if disk.path == self.DEFAULT_DISK_PATH:
                 disk.allowScheduling = allowScheduling
         self.update_disks(node_name, node.disks)
+
+    def check_node_schedulable(self, node_name, schedulable):
+        node = get_longhorn_client().by_id_node(node_name)
+        for _ in range(self.retry_count):
+            if node["conditions"]["Schedulable"]["status"] == schedulable:
+                break
+            time.sleep(self.retry_interval)
+        assert node["conditions"]["Schedulable"]["status"] == schedulable

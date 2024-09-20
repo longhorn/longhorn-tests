@@ -40,5 +40,9 @@ class node_keywords:
 
     def reset_node_schedule(self):
         nodes = self.node.list_node_names_by_role("worker")
+
         for node_name in nodes:
             self.enable_node_scheduling(node_name)
+
+    def check_node_is_not_schedulable(self, node_name):
+        self.node.check_node_schedulable(node_name, schedulable="False")

@@ -19,6 +19,7 @@ Library             ../libs/keywords/setting_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
+Library             ../libs/keywords/k8s_keywords.py
 
 *** Keywords ***
 Set test environment
@@ -35,6 +36,7 @@ Set test environment
     END
 
 Cleanup test resources
+    uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule
     cleanup_node_exec
