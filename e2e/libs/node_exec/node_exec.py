@@ -2,7 +2,6 @@ import os
 import time
 
 from kubernetes import client
-from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 
 from node_exec.constant import DEFAULT_POD_INTERVAL
@@ -10,66 +9,25 @@ from node_exec.constant import DEFAULT_POD_TIMEOUT
 from node_exec.constant import HOST_ROOTFS
 
 from utility.utility import logging
-from utility.utility import wait_delete_ns
-
-from workload.pod import wait_delete_pod
+from utility.utility import delete_pod, get_pod
 
 
 class NodeExec:
 
-    _instance = None
-
-    @staticmethod
-    def get_instance():
-        if NodeExec._instance is None:
-            NodeExec()
-        return NodeExec._instance
-
-    def __init__(self):
-        if NodeExec._instance is not None:
-            raise Exception('only one NodeExec instance can exist')
-        else:
-            self.node_exec_pod = {}
-            NodeExec._instance = self
-
-    def set_namespace(self, namespace):
+    def __init__(self, node_name):
+        self.node_name = node_name
         self.core_api = client.CoreV1Api()
-        self.namespace = namespace
-        self.node_exec_pod = {}
-        namespace_manifest = {
-            'apiVersion': 'v1',
-            'kind': 'Namespace',
-            'metadata': {
-                'name': self.namespace
-            }
-        }
-        self.core_api.create_namespace(
-            body=namespace_manifest
-        )
-        logging(f"Created namespace {namespace}")
+        self.cleanup()
+        self.pod = self.launch_pod()
 
     def cleanup(self):
-        for pod in self.node_exec_pod.values():
-            logging(f"Cleaning up pod {pod.metadata.name} {pod.metadata.uid}")
-            try:
-                res = self.core_api.delete_namespaced_pod(
-                    name=pod.metadata.name,
-                    namespace=self.namespace,
-                    body=client.V1DeleteOptions()
-                )
-                wait_delete_pod(pod.metadata.uid)
-            except Exception as e:
-                assert e.status == 404
-        self.core_api.delete_namespace(
-            name=self.namespace
-        )
-        wait_delete_ns(self.namespace)
-        self.node_exec_pod.clear()
+        if get_pod(self.node_name):
+            logging(f"Cleaning up pod {self.node_name}")
+            delete_pod(self.node_name)
 
+    def issue_cmd(self, cmd):
+        logging(f"Issuing command on {self.node_name}: {cmd}")
 
-    def issue_cmd(self, node_name, cmd):
-        logging(f"Issuing command on {node_name}: {cmd}")
-        pod = self.launch_pod(node_name)
         if isinstance(cmd, list):
             exec_command = cmd
         else:
@@ -83,129 +41,113 @@ class NodeExec:
             ]
         res = stream(
             self.core_api.connect_get_namespaced_pod_exec,
-            pod.metadata.name,
-            self.namespace,
+            self.pod.metadata.name,
+            'default',
             command=exec_command,
             stderr=True,
             stdin=False,
             stdout=True,
             tty=False
         )
-        logging(f"Issued command: {cmd} on {node_name} with result {res}")
+        logging(f"Issued command: {cmd} on {self.node_name} with result {res}")
         return res
 
-    def launch_pod(self, node_name):
-        if node_name in self.node_exec_pod:
-            for _ in range(DEFAULT_POD_TIMEOUT):
-                try:
-                    pod = self.core_api.read_namespaced_pod(
-                            name=node_name,
-                            namespace=self.namespace
-                          )
-                    if pod is not None and pod.status.phase == 'Running':
-                        break
-                except ApiException as e:
-                    assert e.status == 404
-
-                time.sleep(DEFAULT_POD_INTERVAL)
-            return pod
-        else:
-            pod_manifest = {
-                'apiVersion': 'v1',
-                'kind': 'Pod',
-                'metadata': {
-                    'name': node_name
-                },
-                'spec': {
-                    'affinity': {
-                        'nodeAffinity': {
-                            'requiredDuringSchedulingIgnoredDuringExecution': {
-                                'nodeSelectorTerms': [{
-                                    'matchExpressions': [{
-                                        'key': 'kubernetes.io/hostname',
-                                        'operator': 'In',
-                                        'values': [
-                                            node_name
-                                        ]
-                                    }]
+    def launch_pod(self):
+        pod_manifest = {
+            'apiVersion': 'v1',
+            'kind': 'Pod',
+            'metadata': {
+                'name': self.node_name
+            },
+            'spec': {
+                'affinity': {
+                    'nodeAffinity': {
+                        'requiredDuringSchedulingIgnoredDuringExecution': {
+                            'nodeSelectorTerms': [{
+                                'matchExpressions': [{
+                                    'key': 'kubernetes.io/hostname',
+                                    'operator': 'In',
+                                    'values': [
+                                        self.node_name
+                                    ]
                                 }]
-                            }
+                            }]
                         }
+                    }
+                },
+                "tolerations": [{
+                    "key": "node-role.kubernetes.io/master",
+                    "operator": "Equal",
+                    "value": "true",
+                    "effect": "NoSchedule"
+                },
+                {
+                    "key": "node-role.kubernetes.io/master",
+                    "operator": "Equal",
+                    "value": "true",
+                    "effect": "NoExecute"
+                },
+                {
+                    "key": "node-role.kubernetes.io/control-plane",
+                    "operator": "Equal",
+                    "value": "true",
+                    "effect": "NoSchedule"
+                },
+                {
+                    "key": "node-role.kubernetes.io/control-plane",
+                    "operator": "Equal",
+                    "value": "true",
+                    "effect": "NoExecute"
+                }],
+                'containers': [{
+                    'image': 'ubuntu:16.04',
+                    'imagePullPolicy': 'IfNotPresent',
+                    'securityContext': {
+                        'privileged': True
                     },
-                    "tolerations": [{
-                        "key": "node-role.kubernetes.io/master",
-                        "operator": "Equal",
-                        "value": "true",
-                        "effect": "NoSchedule"
-                    },
-                    {
-                        "key": "node-role.kubernetes.io/master",
-                        "operator": "Equal",
-                        "value": "true",
-                        "effect": "NoExecute"
-                    },
-                    {
-                        "key": "node-role.kubernetes.io/control-plane",
-                        "operator": "Equal",
-                        "value": "true",
-                        "effect": "NoSchedule"
-                    },
-                    {
-                        "key": "node-role.kubernetes.io/control-plane",
-                        "operator": "Equal",
-                        "value": "true",
-                        "effect": "NoExecute"
-                    }],
-                    'containers': [{
-                        'image': 'ubuntu:16.04',
-                        'imagePullPolicy': 'IfNotPresent',
-                        'securityContext': {
-                            'privileged': True
-                        },
-                        'name': 'node-exec',
-                        "args": [
-                            "tail", "-f", "/dev/null"
-                        ],
-                        "volumeMounts": [{
-                            'name': 'rootfs',
-                            'mountPath': HOST_ROOTFS
-                        }, {
-                            'name': 'bus',
-                            'mountPath': '/var/run'
-                        }, {
-                            'name': 'rancher',
-                            'mountPath': '/var/lib/rancher'
-                        }],
-                    }],
-                    'volumes': [{
+                    'name': 'node-exec',
+                    "args": [
+                        "tail", "-f", "/dev/null"
+                    ],
+                    "volumeMounts": [{
                         'name': 'rootfs',
-                        'hostPath': {
-                            'path': '/'
-                        }
+                        'mountPath': HOST_ROOTFS
                     }, {
                         'name': 'bus',
-                        'hostPath': {
-                            'path': '/var/run'
-                        }
+                        'mountPath': '/var/run'
                     }, {
                         'name': 'rancher',
-                        'hostPath': {
-                            'path': '/var/lib/rancher'
-                        }
-                    }]
-                }
+                        'mountPath': '/var/lib/rancher'
+                    }],
+                }],
+                'volumes': [{
+                    'name': 'rootfs',
+                    'hostPath': {
+                        'path': '/'
+                    }
+                }, {
+                    'name': 'bus',
+                    'hostPath': {
+                        'path': '/var/run'
+                    }
+                }, {
+                    'name': 'rancher',
+                    'hostPath': {
+                        'path': '/var/lib/rancher'
+                    }
+                }]
             }
-            pod = self.core_api.create_namespaced_pod(
-                body=pod_manifest,
-                namespace=self.namespace
-            )
-            for i in range(DEFAULT_POD_TIMEOUT):
-                pod = self.core_api.read_namespaced_pod(
-                        name=node_name,
-                        namespace=self.namespace
-                      )
-                if pod is not None and pod.status.phase == 'Running':
-                    break
-                time.sleep(DEFAULT_POD_INTERVAL)
-            self.node_exec_pod[node_name] = pod
-            return pod
+        }
+        pod = self.core_api.create_namespaced_pod(
+            body=pod_manifest,
+            namespace='default'
+        )
+        for i in range(DEFAULT_POD_TIMEOUT):
+            pod = self.core_api.read_namespaced_pod(
+                    name=self.node_name,
+                    namespace='default'
+                  )
+            if pod is not None and pod.status.phase == 'Running':
+                break
+            time.sleep(DEFAULT_POD_INTERVAL)
+        return pod

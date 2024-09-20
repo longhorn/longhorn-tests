@@ -6,7 +6,7 @@ from kubernetes.client.rest import ApiException
 
 from engine import Engine
 
-from node_exec.constant import HOST_ROOTFS
+from node_exec import NodeExec
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
@@ -21,10 +21,9 @@ from volume.rest import Rest
 
 class CRD(Base):
 
-    def __init__(self, node_exec):
+    def __init__(self):
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
-        self.node_exec = node_exec
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
@@ -246,10 +245,10 @@ class CRD(Base):
         assert volume["status"]["state"] == desired_state
 
     def is_replica_running(self, volume_name, node_name, is_running):
-        return Rest(self.node_exec).is_replica_running(volume_name, node_name, is_running)
+        return Rest().is_replica_running(volume_name, node_name, is_running)
 
     def get_replica_name_on_node(self, volume_name, node_name):
-        return Rest(self.node_exec).get_replica_name_on_node(volume_name, node_name)
+        return Rest().get_replica_name_on_node(volume_name, node_name)
 
     def wait_for_volume_keep_in_state(self, volume_name, desired_state):
         self.wait_for_volume_state(volume_name, desired_state)
@@ -363,7 +362,7 @@ class CRD(Base):
         assert engine_current_size == engine_expected_size
 
     def get_endpoint(self, volume_name):
-        return Rest(self.node_exec).get_endpoint(volume_name)
+        return Rest().get_endpoint(volume_name)
 
     def write_random_data(self, volume_name, size, data_id):
         node_name = self.get(volume_name)["spec"]["nodeID"]
@@ -375,7 +374,7 @@ class CRD(Base):
             "sync; "
             f"md5sum {endpoint} | awk \'{{print $1}}\'"
         ]
-        checksum = self.node_exec.issue_cmd(node_name, cmd)
+        checksum = NodeExec(node_name).issue_cmd(cmd)
 
         logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
         self.set_data_checksum(volume_name, data_id, checksum)
@@ -385,8 +384,7 @@ class CRD(Base):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         logging(f"Keeping writing data to volume {volume_name}")
-        res = self.node_exec.issue_cmd(
-            node_name,
+        res = NodeExec(node_name).issue_cmd(
             f"while true; do dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; done > /dev/null 2> /dev/null &")
         logging(f"Created process to keep writing data to volume {volume_name}")
 
@@ -409,19 +407,19 @@ class CRD(Base):
         )
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
-        return Rest(self.node_exec).wait_for_replica_rebuilding_start(volume_name, node_name)
+        return Rest().wait_for_replica_rebuilding_start(volume_name, node_name)
 
     def is_replica_rebuilding_in_progress(self, volume_name, node_name):
-        return Rest(self.node_exec).is_replica_rebuilding_in_progress(volume_name, node_name)
+        return Rest().is_replica_rebuilding_in_progress(volume_name, node_name)
 
     def crash_replica_processes(self, volume_name):
-        return Rest(self.node_exec).crash_replica_processes(volume_name)
+        return Rest().crash_replica_processes(volume_name)
 
     def crash_node_replica_process(self, volume_name, node_name):
-        return Rest(self.node_exec).crash_node_replica_process(volume_name, node_name)
+        return Rest().crash_node_replica_process(volume_name, node_name)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
-        return Rest(self.node_exec).wait_for_replica_rebuilding_complete(volume_name, node_name)
+        return Rest().wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
         expected_checksum = self.get_data_checksum(volume_name, data_id)
@@ -436,8 +434,7 @@ class CRD(Base):
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
-        checksum = self.node_exec.issue_cmd(
-            node_name,
+        checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
@@ -482,16 +479,16 @@ class CRD(Base):
             time.sleep(self.retry_interval)
 
     def activate(self, volume_name):
-        return Rest(self.node_exec).activate(volume_name)
+        return Rest().activate(volume_name)
 
     def create_persistentvolume(self, volume_name, retry):
-        return Rest(self.node_exec).create_persistentvolume(volume_name, retry)
+        return Rest().create_persistentvolume(volume_name, retry)
 
     def create_persistentvolumeclaim(self, volume_name, retry):
-        return Rest(self.node_exec).create_persistentvolumeclaim(volume_name, retry)
+        return Rest().create_persistentvolumeclaim(volume_name, retry)
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
-        return Rest(self.node_exec).upgrade_engine_image(volume_name, engine_image_name)
+        return Rest().upgrade_engine_image(volume_name, engine_image_name)
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
-        return Rest(self.node_exec).wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
+        return Rest().wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)

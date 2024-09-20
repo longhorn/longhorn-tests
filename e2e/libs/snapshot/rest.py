@@ -10,7 +10,7 @@ import time
 class Rest(Base):
 
     def __init__(self):
-        self.volume = RestVolume(NodeExec.get_instance())
+        self.volume = RestVolume()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, volume_name, snapshot_id, waiting):

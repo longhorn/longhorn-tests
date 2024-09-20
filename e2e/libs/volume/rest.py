@@ -2,7 +2,7 @@ import os
 import time
 import asyncio
 
-from node_exec.constant import HOST_ROOTFS
+from node_exec import NodeExec
 
 from persistentvolumeclaim.persistentvolumeclaim import PersistentVolumeClaim
 from persistentvolume.persistentvolume import PersistentVolume
@@ -21,8 +21,7 @@ from utility.utility import pod_exec
 
 class Rest(Base):
 
-    def __init__(self, node_exec):
-        self.node_exec = node_exec
+    def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.pv = PersistentVolume()
         self.pvc = PersistentVolumeClaim()
@@ -246,8 +245,7 @@ class Rest(Base):
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name).controllers[0].hostId
         endpoint = self.get_endpoint(volume_name)
-        checksum = self.node_exec.issue_cmd(
-            node_name,
+        checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
@@ -274,7 +272,7 @@ class Rest(Base):
                 break
             except Exception as e:
                 assert "hasn't finished incremental restored" in str(e.error.message)
-                time.sleep(RETRY_INTERVAL)
+                time.sleep(self.retry_interval)
             if activated:
                 break
         volume = self.get(volume_name)

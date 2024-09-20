@@ -2,7 +2,6 @@ from backup.base import Base
 from utility.utility import logging
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
-from node_exec import NodeExec
 from volume import Rest as RestVolume
 from snapshot import Snapshot as RestSnapshot
 import time
@@ -11,7 +10,7 @@ import time
 class Rest(Base):
 
     def __init__(self):
-        self.volume = RestVolume(NodeExec.get_instance())
+        self.volume = RestVolume()
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
