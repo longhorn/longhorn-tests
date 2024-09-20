@@ -206,6 +206,12 @@ Wait volume ${volume_id} replica on node ${node_id} stopped
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_stopped    ${volume_name}    ${node_name}
 
+Check volume ${volume_id} replica on node ${node_id} exist
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_name}    get_replica_name_on_node    ${volume_name}    ${node_name}
+    Should Not Be Equal    ${replica_name}    ${None}
+
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_data_checksum    ${volume_name}

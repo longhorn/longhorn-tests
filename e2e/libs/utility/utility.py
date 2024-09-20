@@ -86,6 +86,10 @@ def subprocess_exec_cmd(cmd):
     logging(f"Executed command {cmd} with result {res}")
     return res
 
+def subprocess_exec_cmd_with_timeout(cmd, timeout):
+    res = subprocess.check_output(cmd, timeout=timeout)
+    logging(f"Executed command {cmd} with timeout {timeout}s, result {res}")
+    return res
 
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
