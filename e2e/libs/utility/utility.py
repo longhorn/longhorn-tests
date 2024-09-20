@@ -236,6 +236,41 @@ def wait_delete_ns(name):
     assert not found
 
 
+def delete_pod(name, namespace='default'):
+    core_api = client.CoreV1Api()
+    try:
+        core_api.delete_namespaced_pod(name=name, namespace=namespace)
+        wait_delete_pod(name)
+    except ApiException as e:
+        assert e.status == 404
+
+
+def wait_delete_pod(name, namespace='default'):
+    api = client.CoreV1Api()
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        ret = api.list_namespaced_pod(namespace=namespace)
+        found = False
+        for item in ret.items:
+            if item.metadata.name == name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(retry_interval)
+    assert not found
+
+
+def get_pod(name, namespace='default'):
+    try:
+        core_api = client.CoreV1Api()
+        return core_api.read_namespaced_pod(name=name, namespace=namespace)
+    except Exception as e:
+        if e.reason == 'Not Found':
+            return None
+        raise e
+
+
 def get_mgr_ips():
     ret = client.CoreV1Api().list_pod_for_all_namespaces(
         label_selector="app=longhorn-manager",

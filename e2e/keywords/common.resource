@@ -24,7 +24,6 @@ Library             ../libs/keywords/k8s_keywords.py
 *** Keywords ***
 Set test environment
     init_k8s_api_client
-    init_node_exec    ${SUITE NAME.rsplit('.')[1]}
 
     setup_control_plane_network_latency
     set_backupstore
@@ -36,10 +35,13 @@ Set test environment
     END
 
 Cleanup test resources
+    ${variables}=     Get Variables
+    IF    "\${powered_off_node}" in "$variables"
+        power_on_node_by_name    ${powered_off_node}
+    END
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule
-    cleanup_node_exec
     cleanup_stress_helper
     cleanup_recurringjobs
     cleanup_deployments
@@ -53,7 +55,3 @@ Cleanup test resources
     cleanup_backing_images
     cleanup_engine_images
     reset_backupstore
-
-Cleanup test resources include off nodes
-    Power on off node
-    Cleanup test resources

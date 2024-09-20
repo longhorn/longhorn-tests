@@ -9,7 +9,6 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
-from utility.utility import logging
 from utility.utility import pod_exec
 
 from workload.pod import create_pod
@@ -30,9 +29,9 @@ def setup_control_plane_network_latency():
         control_plane_nodes = Node.list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             cmd = f"tc qdisc replace dev eth0 root netem delay {latency_in_ms}ms"
-            res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)
+            res = NodeExec(control_plane_node).issue_cmd(cmd)
             cmd = f"tc qdisc show dev eth0 | grep delay"
-            res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)
+            res = NodeExec(control_plane_node).issue_cmd(cmd)
             assert res, "setup control plane network latency failed"
 
 
@@ -42,9 +41,9 @@ def cleanup_control_plane_network_latency():
         control_plane_nodes = Node.list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             cmd = "tc qdisc del dev eth0 root"
-            res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)
+            res = NodeExec(control_plane_node).issue_cmd(cmd)
             cmd = f"tc qdisc show dev eth0 | grep -v delay"
-            res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)
+            res = NodeExec(control_plane_node).issue_cmd(cmd)
             assert res, "cleanup control plane network failed"
 
 async def disconnect_node_network(node_name, disconnection_time_in_sec=10):

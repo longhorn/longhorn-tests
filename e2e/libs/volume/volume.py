@@ -1,5 +1,3 @@
-from node_exec import NodeExec
-
 from strategy import LonghornOperationStrategy
 
 from volume.base import Base
@@ -12,11 +10,10 @@ class Volume(Base):
     _strategy = LonghornOperationStrategy.CRD
 
     def __init__(self):
-        node_exec = NodeExec.get_instance()
         if self._strategy == LonghornOperationStrategy.CRD:
-            self.volume = CRD(node_exec)
+            self.volume = CRD()
         else:
-            self.volume = Rest(node_exec)
+            self.volume = Rest()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
         return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup)

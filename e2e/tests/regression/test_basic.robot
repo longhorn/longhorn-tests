@@ -10,6 +10,7 @@ Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/snapshot.resource
+Resource    ../keywords/node.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
