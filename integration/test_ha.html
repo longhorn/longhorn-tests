@@ -338,6 +338,8 @@ prepare_engine_not_fully_deployed_evnironment to have
 tainted node and not fully deployed engine.</p>
 <ol>
 <li>Create 2 volumes vol-1 and vol-2 with 2 replicas</li>
+<li>Attach both volumes to make sure they are healthy and have 2 replicas</li>
+<li>Detach both volumes</li>
 <li>Deploy a new engine image, new-ei</li>
 <li>Upgrade vol-1 and vol-2 to the new-ei</li>
 <li>Attach vol-2 to current-node</li>
