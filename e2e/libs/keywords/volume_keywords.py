@@ -305,3 +305,9 @@ class volume_keywords:
             f"Volume {volume_name} replica names mismatched:\n" \
             f"Want: {expected_replica_names}\n" \
             f"Got: {actual_replica_names}"
+
+    def upgrade_engine_image(self, volume_name, engine_image_name):
+        self.volume.upgrade_engine_image(volume_name, engine_image_name)
+
+    def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
+        self.volume.wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)

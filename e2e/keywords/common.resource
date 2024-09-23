@@ -14,6 +14,7 @@ Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/storageclass_keywords.py
 Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/backing_image_keywords.py
+Library             ../libs/keywords/engine_image_keywords.py
 Library             ../libs/keywords/setting_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/backup_keywords.py
@@ -48,6 +49,7 @@ Cleanup test resources
     cleanup_backups
     cleanup_disks
     cleanup_backing_images
+    cleanup_engine_images
     reset_backupstore
 
 Cleanup test resources include off nodes
