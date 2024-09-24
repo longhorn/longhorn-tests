@@ -25,7 +25,15 @@ metadata:
   labels:
     longhorn-test: test-job
 spec:
-  nodeName: control-plane-node-name
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: In
+                values:
+                  - "true"
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
@@ -72,6 +80,8 @@ spec:
           fieldPath: spec.nodeName
     - name: MANAGED_K8S_CLUSTER
       value: "false"
+    - name: HOST_PROVIDER
+      value: "aws"
     volumeMounts:
     - name: dev
       mountPath: /dev
