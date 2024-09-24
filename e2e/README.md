@@ -6,8 +6,8 @@
    - And control node(s) with following taints:
       - `node-role.kubernetes.io/master=true:NoExecute`
       - `node-role.kubernetes.io/master=true:NoSchedule` 
-2. Longhorn system has already been successfully deployed in the cluster.
-3. Run the environment check script to check if each node in the cluster fulfills the requirements:
+1. Longhorn system has already been successfully deployed in the cluster.
+1. Run the environment check script to check if each node in the cluster fulfills the requirements:
 ```
 curl -sSfL https://raw.githubusercontent.com/longhorn/longhorn/master/scripts/environment_check.sh | bash
 ```
@@ -20,7 +20,7 @@ kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/dep
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml
 ```
 
-2. Expose Longhorn API:
+1. Expose Longhorn API:
 ```
 # for example, using nodeport:
 kubectl expose --type=NodePort deployment longhorn-ui -n longhorn-system --port 8000 --name longhorn-ui-nodeport --overrides '{ "apiVersion": "v1","spec":{"ports": [{"port":8000,"protocol":"TCP","targetPort":8000,"nodePort":30000}]}}'
@@ -28,12 +28,12 @@ kubectl expose --type=NodePort deployment longhorn-ui -n longhorn-system --port 
 kubectl port-forward services/longhorn-frontend 8080:http -n longhorn-system
 ```
 
-3. Export environment variable `KUBECONFIG`:
+1. Export environment variable `KUBECONFIG`:
 ```
 export KUBECONFIG=/path/to/your/kubeconfig.yaml
 ```
 
-4. Export environment variable `LONGHORN_CLIENT_URL`:
+1. Export environment variable `LONGHORN_CLIENT_URL`:
 ```
 # for example, if it's exposed by nodeport:
 export LONGHORN_CLIENT_URL=http://node-public-ip:30000
@@ -41,16 +41,28 @@ export LONGHORN_CLIENT_URL=http://node-public-ip:30000
 export LONGHORN_CLIENT_URL=http://localhost:8080
 ```
 
-4. For running backup related test cases, export the related environment variable:
-
-(Currently only s3 backup target is supported)
+1. To run backup related test cases, export `LONGHORN_BACKUPSTORE` and `LONGHORN_BACKUPSTORE_POLL_INTERVAL` environment variables:
 
 ```
 export LONGHORN_BACKUPSTORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
 export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30
 ```
 
-5. Prepare test environment and run the test:
+1. To run node shutdown/reboot related test cases, export `HOST_PROVIDER` environment variable and generate :
+
+```
+export HOST_PROVIDER=aws
+terraform output -raw instance_mapping | jq 'map({(.name | split(".")[0]): .id}) | add' | jq -s add > /tmp/instance_mapping
+# cat /tmp/instance_mapping
+# {
+#   "ip-10-0-1-30": "i-03f2d24bbb973f52d",
+#   "ip-10-0-1-190": "i-08338a75afa61dbba",
+#   "ip-10-0-1-183": "i-002c2b23fb08cc00b",
+#   "ip-10-0-1-37": "i-09c6c65c9602193c4"
+# }
+```
+
+1. Prepare test environment and run the test:
 ```
 cd e2e
 python -m venv .

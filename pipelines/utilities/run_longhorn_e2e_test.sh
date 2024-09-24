@@ -14,9 +14,6 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${ROBOT_COMMAND_ARR}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
-  NODE_NAME=$(kubectl get nodes --no-headers --selector=node-role.kubernetes.io/control-plane | awk '{print $1}')
-  yq e -i 'select(.spec.containers[0] != null).spec.nodeName="'${NODE_NAME}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
-
   if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
     BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $1}' | sed 's/ *//'`
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
@@ -33,7 +30,7 @@ run_longhorn_e2e_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
-  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "HOST_PROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${LONGHORN_TEST_CLOUDPROVIDER}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   set +x
   if [[ "${LONGHORN_TEST_CLOUDPROVIDER}" == "aws" ]]; then
