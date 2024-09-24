@@ -4,6 +4,7 @@ set -x
 
 source test_framework/scripts/kubeconfig.sh
 source pipelines/utilities/longhorn_manifest.sh
+source pipelines/utilities/longhorn_ui.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -318,7 +319,7 @@ install_longhorn_stable(){
 
 create_longhorn_namespace(){
   kubectl create ns ${LONGHORN_NAMESPACE}
-  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+  if [[ "${TF_VAR_cis_hardening}" == true ]] || [[ "${DISTRO}" == "talos" ]]; then
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce=privileged
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce-version=latest
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit=privileged
@@ -352,7 +353,7 @@ create_aws_secret(){
 
 
 longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.7.0-rc2/longhornctl-linux-amd64 -o longhornctl
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.1-rc2/longhornctl-linux-amd64 -o longhornctl
   chmod +x longhornctl
   ./longhornctl install preflight
   ./longhornctl check preflight
@@ -497,6 +498,8 @@ run_longhorn_tests(){
 main(){
   set_kubeconfig
 
+  create_longhorn_namespace
+
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
@@ -512,7 +515,6 @@ main(){
     install_iscsi
     install_cluster_autoscaler
   fi
-  create_longhorn_namespace
   if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi
@@ -523,7 +525,7 @@ main(){
 
   # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "sle-micro" ]]; then
+    [[ "${DISTRO}" != "sle-micro" ]] && [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 
@@ -542,6 +544,8 @@ main(){
       get_rancher_api_key
       install_longhorn_by_rancher
     fi
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_tests
   elif [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
@@ -555,6 +559,8 @@ main(){
     UPGRADE_LH_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}"
     UPGRADE_LH_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}"
     UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}"
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_upgrade_test
     run_longhorn_tests
   else
@@ -565,6 +571,8 @@ main(){
       generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
       install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
     fi
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_tests
   fi
 }

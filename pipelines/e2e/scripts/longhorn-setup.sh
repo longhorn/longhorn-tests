@@ -25,6 +25,16 @@ create_instance_mapping_configmap(){
   kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
 }
 
+longhornctl_check(){
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.1-rc2/longhornctl-linux-amd64 -o longhornctl
+  chmod +x longhornctl
+  ./longhornctl install preflight
+  ./longhornctl check preflight
+  if [[ -n $(./longhornctl check preflight 2>&1 | grep error) ]]; then
+    exit 1
+  fi
+}
+
 main(){
   set_kubeconfig
 
@@ -44,8 +54,11 @@ main(){
   install_backupstores
   install_csi_snapshotter
 
-  install_litmus
-  install_experiments
+  # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
+  if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
+    [[ "${DISTRO}" != "sle-micro" ]] && [[ "${DISTRO}" != "talos" ]]; then
+    longhornctl_check
+  fi
 
   generate_longhorn_yaml_manifest
   install_longhorn_by_manifest
