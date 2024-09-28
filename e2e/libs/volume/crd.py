@@ -495,3 +495,6 @@ class CRD(Base):
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         return Rest(self.node_exec).wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
