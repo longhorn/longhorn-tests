@@ -22,6 +22,13 @@ Create DR volume ${volume_id} from backup ${backup_id}
     ${backup_url} =    get_backup_url    ${backup_id}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
+Create volume ${volume_id} from ${workload_kind} ${workload_id} volume backup ${backup_id}
+    ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${workload_volume_name}=    get_workload_volume_name    ${workload_name}
+    ${volume_name}=    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url}=    get_backup_url    ${backup_id}    ${workload_volume_name}
+    create_volume   ${volume_name}    size=3Gi    numberOfReplicas=3    fromBackup=${backup_url}
+
 No volume created
     ${volumes} =    list_volumes
     Should Be True    len(${volumes}) == 0

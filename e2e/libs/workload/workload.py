@@ -102,6 +102,33 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
             time.sleep(retry_interval)
 
 
+def write_pod_large_data(pod_name, size_in_gb, file_name,
+                          data_directory="/data", ):
+
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for _ in range(retry_count):
+        try:
+            data_path = f"{data_directory}/{file_name}"
+            api = client.CoreV1Api()
+            write_data_cmd = [
+                '/bin/sh',
+                '-c',
+                f"fallocate -l {size_in_gb}G {data_path};\
+                sync;\
+                md5sum {data_path} | awk \'{{print $1}}\'"
+            ]
+            return stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=write_data_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+        except Exception as e:
+            logging(f"Writing random data to pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
+
+
 def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data"):
 
     wait_for_pod_status(pod_name, "Running")
@@ -128,6 +155,19 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
             logging(f"Writing data to pod {pod_name} failed with error: {e}")
             time.sleep(retry_interval)
 
+def get_pod_data_checksum(pod_name, file_name, data_directory="/data"):
+    file_path = f"{data_directory}/{file_name}"
+    api = client.CoreV1Api()
+    cmd_get_file_checksum = [
+        '/bin/sh',
+        '-c',
+        f"md5sum {file_path} | awk '{{print $1}}'"
+    ]
+    actual_checksum = stream(
+        api.connect_get_namespaced_pod_exec, pod_name, 'default',
+        command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
+        tty=False)
+    return actual_checksum
 
 def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directory="/data"):
 

@@ -140,6 +140,11 @@ class Rest(Base):
         logging(f"Checked volume {volume_name}. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}")
         assert actual_checksum == expected_checksum
 
+    def get_restored_checksum(self, backup_name):
+        expected_checksum = self.get_data_checksum(backup_name)
+        logging(f"Expected checksum = {expected_checksum}")
+        return expected_checksum
+
     def cleanup_backup_volumes(self):
         backup_volumes = get_longhorn_client().list_backup_volume()
 
