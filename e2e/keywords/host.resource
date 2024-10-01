@@ -37,3 +37,8 @@ Restart cluster
 Power on off node
     Run keyword And Continue On Failure
     ...    power_on_node_by_name    ${powered_off_node}
+
+Power off node ${node_id}
+    ${powered_off_node} =     get_node_by_index    ${node_id}
+    power_off_node_by_name    ${powered_off_node}
+    Set Test Variable    ${powered_off_node}
