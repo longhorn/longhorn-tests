@@ -81,6 +81,7 @@ from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 from common import wait_for_tainted_node_engine_image_undeployed
+from common import wait_for_replica_count
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2916,11 +2917,13 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
     tainted node and not fully deployed engine.
 
     1. Create 2 volumes vol-1 and vol-2 with 2 replicas
-    2. Deploy a new engine image, new-ei
-    3. Upgrade vol-1 and vol-2 to the new-ei
-    4. Attach vol-2 to current-node
-    5. Set `Concurrent Automatic Engine Upgrade Per Node Limit` setting to 3
-    6. In a 2-min retry, verify that Longhorn upgrades the engine image of
+    2. Attach both volumes to make sure they are healthy and have 2 replicas
+    4. Detach both volumes
+    5. Deploy a new engine image, new-ei
+    6. Upgrade vol-1 and vol-2 to the new-ei
+    7. Attach vol-2 to current-node
+    8. Set `Concurrent Automatic Engine Upgrade Per Node Limit` setting to 3
+    9. In a 2-min retry, verify that Longhorn upgrades the engine image of
        vol-1 and vol-2.
     """
     tainted_node_id = \
@@ -2933,6 +2936,18 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
     volume2 = create_and_check_volume(client, "vol-2",
                                       num_of_replicas=2,
                                       size=str(3 * Gi))
+
+    volume1.attach(hostId=get_self_host_id())
+    volume2.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    volume2 = wait_for_volume_healthy(client, volume2.name)
+    wait_for_replica_count(client, volume1.name, 2)
+    wait_for_replica_count(client, volume2.name, 2)
+
+    volume1.detach()
+    volume2.detach()
+    volume1 = wait_for_volume_detached(client, volume1.name)
+    volume2 = wait_for_volume_detached(client, volume2.name)
 
     default_img = common.get_default_engine_image(client)
     # engine reference =
