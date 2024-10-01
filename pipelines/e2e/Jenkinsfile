@@ -35,6 +35,7 @@ node {
         file(credentialsId: 'login.conf', variable: 'LOGIN_CONFIG'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
+        string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -85,6 +86,7 @@ node {
                 sh "pipelines/e2e/scripts/build.sh"
                 sh """ docker run -itd --cap-add=NET_ADMIN \
                                        --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
                                        --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
@@ -129,6 +131,8 @@ node {
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
+                                       --env QASE_TOKEN=${QASE_TOKEN} \
+                                       --env QASE_PROJECT=LH \
                                        --env OUT_OF_CLUSTER=${OUT_OF_CLUSTER} \
                                        --env IMAGE_NAME=${imageName} \
                                        -v /var/run/docker.sock:/var/run/docker.sock \
@@ -161,13 +165,7 @@ node {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/output.xml ."
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
 
-                else if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else {
-                    summary = robot outputPath: '.'
-                }
+                summary = robot outputPath: '.'
             }
 
         } catch (e) {
