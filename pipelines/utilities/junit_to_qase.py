@@ -145,7 +145,7 @@ def get_test_cases_id_and_add_missing_test_cases(test_results):
             result["case_id"] = add_missing_case(result["case"], result["suite_id"])
 
 
-def create_test_run(job_name, test_results):
+def create_test_run(job_name, test_results, build_url):
 
     test_cases_id = []
     for result in test_results:
@@ -153,7 +153,8 @@ def create_test_run(job_name, test_results):
 
     payload = {
         "cases": test_cases_id,
-        "title": job_name
+        "title": job_name,
+        "description": build_url
     }
     headers = {
         "accept": "application/json",
@@ -230,6 +231,7 @@ if __name__ == "__main__":
         raise Exception("Report filename not provided")
     else:
         report_filename = sys.argv[1]
+        build_url = sys.argv[2]
 
     with open(report_filename, 'r') as f:
         file = f.read()
@@ -264,7 +266,7 @@ if __name__ == "__main__":
     # create test run
     today = date.today()
     job_name = f"{os.getenv('JOB_NAME', 'longhorn-regression-test')}-{today}"
-    test_run_id = create_test_run(job_name, test_results)
+    test_run_id = create_test_run(job_name, test_results, build_url)
     print(f"test_run_id = {test_run_id}")
 
     # update test results to test run
