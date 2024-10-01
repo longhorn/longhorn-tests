@@ -3,15 +3,18 @@ import requests
 import time
 
 from collections import defaultdict
+from kubernetes.stream import stream
 from prometheus_client.parser import text_string_to_metric_families
 
-from common import client, core_api, volume_name  # NOQA
+from common import client, core_api, pod, volume_name  # NOQA
 
+from common import crash_engine_process_with_sigkill
 from common import delete_replica_processes
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_snapshot
 from common import create_and_check_volume
+from common import create_and_wait_pod
 from common import generate_random_data
 from common import get_self_host_id
 from common import wait_for_volume_degraded
@@ -20,6 +23,7 @@ from common import wait_for_volume_detached_unknown
 from common import wait_for_volume_expansion
 from common import wait_for_volume_faulted
 from common import wait_for_volume_healthy
+from common import write_pod_volume_data
 from common import write_volume_data
 from common import set_node_scheduling
 from common import set_node_cordon
@@ -54,9 +58,9 @@ longhorn_volume_robustness = {
 def get_metrics(core_api, metric_node_id): # NOQA
     pods = core_api.list_namespaced_pod(namespace=LONGHORN_NAMESPACE,
                                         label_selector="app=longhorn-manager")
-    for pod in pods.items:
-        if pod.spec.node_name == metric_node_id:
-            manager_ip = pod.status.pod_ip
+    for po in pods.items:
+        if po.spec.node_name == metric_node_id:
+            manager_ip = po.status.pod_ip
             break
 
     metrics = requests.get("http://{}:9500/metrics".format(manager_ip)).content
@@ -195,6 +199,21 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
         assert total_metrics["value"] >= 0.0
 
 
+def wait_for_metric(core_api, metric_name, metric_labels, expected_value): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric(core_api, metric_name,
+                         metric_labels, expected_value)
+            return
+        except AssertionError:
+            continue
+
+    check_metric(core_api, metric_name,
+                 metric_labels, expected_value)
+
+
 def wait_for_metric_volume_actual_size(client, core_api, metric_name, metric_labels, volume_name): # NOQA
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL)
@@ -260,7 +279,6 @@ def check_metric_count_all_nodes(client, core_api, metric_name, metric_labels, e
         )
 
     assert len(filtered_metrics) == expected_count
-
 
 
 @pytest.mark.parametrize("pvc_namespace", [LONGHORN_NAMESPACE, "default"])  # NOQA
@@ -357,6 +375,59 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     volume = wait_for_volume_detached(client, volume_name)
     check_metric(core_api, "longhorn_volume_state",
                  metric_labels, longhorn_volume_state["detached"])
+
+
+def test_metric_longhorn_volume_file_system_read_only(client, core_api, volume_name, pod): # NOQA
+    """
+    Scenario: test metric longhorn_volume_file_system_read_only
+
+    Issue: https://github.com/longhorn/longhorn/issues/8508
+
+    Given a volume is created and attached to a pod
+    And the volume is healthy
+
+    When crash the volume engine process
+    And wait for the volume to become healthy
+    And write the data to the pod
+    And flush data to persistent storage in the pod with sync command
+
+    Then has 1 metrics longhorn_volume_file_system_read_only with labels
+        ... "pvc": pvc_name
+        ... "volume": volume_name
+    """
+    pv_name = "pv-" + volume_name
+    pvc_name = "pvc-" + volume_name
+    pod_name = "pod-" + volume_name
+
+    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['metadata']['name'] = pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+
+    crash_engine_process_with_sigkill(client, core_api, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    write_pod_volume_data(core_api, pod_name, 'longhorn-integration-test',
+                          filename='test')
+    stream(core_api.connect_get_namespaced_pod_exec,
+           pod_name, 'default', command=["sync"],
+           stderr=True, stdin=False, stdout=True, tty=False)
+
+    metric_labels = {
+        "pvc": pvc_name,
+        "volume": volume_name,
+    }
+
+    wait_for_metric(core_api, "longhorn_volume_file_system_read_only",
+                    metric_labels, 1.0)
 
 
 def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA

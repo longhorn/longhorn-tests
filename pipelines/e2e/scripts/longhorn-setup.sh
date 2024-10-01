@@ -6,11 +6,11 @@ source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
+source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
-source pipelines/utilities/install_litmus.sh
 source pipelines/utilities/run_longhorn_e2e_test.sh
 
 # create and clean tmpdir
@@ -46,7 +46,7 @@ main(){
   # DON'T REMOVE!
   set +x
   create_aws_secret
-  create_cloud_secret
+  create_harvester_secret
   set -x
   create_instance_mapping_configmap
 

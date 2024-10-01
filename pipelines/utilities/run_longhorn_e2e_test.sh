@@ -14,9 +14,6 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${ROBOT_COMMAND_ARR}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
-  NODE_NAME=$(kubectl get nodes --no-headers --selector=node-role.kubernetes.io/control-plane | awk '{print $1}')
-  yq e -i 'select(.spec.containers[0] != null).spec.nodeName="'${NODE_NAME}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
-
   if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
     BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $1}' | sed 's/ *//'`
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
@@ -30,24 +27,10 @@ run_longhorn_e2e_test(){
   fi
 
   if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
-    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[5].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
-  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "HOST_PROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-
-  set +x
-  if [[ "${LONGHORN_TEST_CLOUDPROVIDER}" == "aws" ]]; then
-    ## inject aws cloudprovider and credentials env variables from created secret
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_ACCESS_KEY_ID"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_DEFAULT_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-  elif [[ "${LONGHORN_TEST_CLOUDPROVIDER}" == "harvester" ]]; then
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "LAB_URL", "value": "'${TF_VAR_lab_url}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "LAB_ACCESS_KEY", "value": "'${TF_VAR_lab_access_key}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "LAB_SECRET_KEY", "value": "'${TF_VAR_lab_secret_key}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-    yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "LAB_CLUSTER_ID", "value": "'$(cat /tmp/cluster_id)'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-  fi
-  set -x
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="'${LONGHORN_TEST_CLOUDPROVIDER}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
 
