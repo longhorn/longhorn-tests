@@ -1,3 +1,6 @@
+S3_BACKUP_STORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
+NFS_BACKUP_STORE='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
+
 run_longhorn_e2e_test(){
 
   LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-e2e-test:master-head"}
@@ -14,12 +17,10 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${ROBOT_COMMAND_ARR}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
-  if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
-    BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $1}' | sed 's/ *//'`
-    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
-  elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
-    BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $2}' | sed 's/ *//'`
-    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  if [[ $BACKUP_STORE_TYPE = "s3" ]]; then    
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${S3_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then    
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${NFS_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
   if [[ "${TF_VAR_use_hdd}" == true ]]; then
@@ -61,9 +62,9 @@ run_longhorn_e2e_test(){
 run_longhorn_e2e_test_out_of_cluster(){
 
   if [[ ${BACKUP_STORE_TYPE} == "s3" ]]; then
-    LONGHORN_BACKUPSTORES='s3://backupbucket@us-east-1/backupstore$minio-secret'
+    LONGHORN_BACKUPSTORES=${S3_BACKUP_STORE}
   elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
-    LONGHORN_BACKUPSTORES='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
+    LONGHORN_BACKUPSTORES=${NFS_BACKUP_STORE}
   fi
   LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
 
