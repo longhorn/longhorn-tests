@@ -20,3 +20,13 @@ Check sharemanager ${condition} using headless service
 
 Wait for all sharemanager to be deleted
     wait_for_sharemanagers_deleted
+
+Delete sharemanager of deployment ${deployment_id} and wait for recreation
+    ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    delete_sharemanager_and_wait_for_recreation    ${volume_name}
+
+Wait for sharemanager of deployment ${deployment_id} running
+    ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    wait_for_share_manager_running    ${volume_name}
