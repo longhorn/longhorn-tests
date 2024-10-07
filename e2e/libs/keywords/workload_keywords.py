@@ -46,9 +46,9 @@ class workload_keywords:
         logging(f'Creating pod {pod_name} using pvc {claim_name}')
         create_pod(new_busybox_manifest(pod_name, claim_name))
 
-    def delete_pod(self, pod_name):
+    def delete_pod(self, pod_name, namespace='default'):
         logging(f'Deleting pod {pod_name}')
-        delete_pod(pod_name)
+        delete_pod(pod_name, namespace)
 
     def cleanup_pods(self):
         cleanup_pods()
@@ -61,15 +61,15 @@ class workload_keywords:
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
 
-    def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default"):
-        pods = get_workload_pods(workload_name, namespace=namespace)
+    def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default", label_selector=""):
+        pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
         for pod in pods:
             if pod.spec.node_name == node_name:
                 logging(f'Deleting pod {pod.metadata.name} on node {node_name}')
                 delete_pod(pod.metadata.name, namespace=namespace)
 
-    def get_workload_pod_name(self, workload_name):
-        return get_workload_pod_names(workload_name)[0]
+    def get_workload_pod_name(self, workload_name, namespace="default"):
+        return get_workload_pod_names(workload_name, namespace)[0]
 
     def get_workload_persistent_volume_claim_name(self, workload_name):
         return get_workload_persistent_volume_claim_name(workload_name)

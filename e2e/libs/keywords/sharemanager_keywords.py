@@ -47,3 +47,15 @@ class sharemanager_keywords:
                 time.sleep(retry_interval)
 
         assert AssertionError, f"Failed to wait for all sharemanagers to be deleted"
+
+    def delete_sharemanager(self, name):
+        return self.sharemanager.delete(name)
+
+    def delete_sharemanager_and_wait_for_recreation(self, name):        
+        sharemanager = self.sharemanager.get(name)
+        last_creation_time = sharemanager["metadata"]["creationTimestamp"]        
+        self.sharemanager.delete(name)
+        self.sharemanager.wait_for_restart(name, last_creation_time)
+
+    def wait_for_share_manager_running(self, name):
+        return self.sharemanager.wait_for_running(name)

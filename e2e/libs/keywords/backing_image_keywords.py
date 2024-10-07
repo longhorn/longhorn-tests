@@ -20,3 +20,23 @@ class backing_image_keywords:
 
     def cleanup_backing_images(self):
         self.backing_image.cleanup_backing_images()
+
+    def delete_backing_image_manager(self, name):
+        self.backing_image.delete_backing_image_manager(name)
+    
+    def wait_all_backing_image_managers_running(self):
+        self.backing_image.wait_all_backing_image_managers_running()
+
+    def wait_backing_image_manager_restart(self, name, last_creation_time):
+        self.backing_image.wait_backing_image_manager_restart(name, last_creation_time)
+
+    def list_backing_image_manager(self):
+        return self.backing_image.list_backing_image_manager()
+
+    def delete_all_backing_image_managers_and_wait_for_recreation(self):
+        backing_image_managers = self.backing_image.list_backing_image_manager()
+        for backing_image in backing_image_managers["items"]:
+            name = backing_image["metadata"]["name"]
+            last_creation_time = backing_image["metadata"]["creationTimestamp"]
+            self.backing_image.delete_backing_image_manager(name)
+            self.backing_image.wait_backing_image_manager_restart(name, last_creation_time)

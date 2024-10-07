@@ -110,3 +110,15 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert len(get_longhorn_client().list_backing_image()) == 0
+    
+    def delete_backing_image_manager(self, name):
+        return NotImplemented
+    
+    def wait_all_backing_image_managers_running(self):
+        return NotImplemented
+
+    def wait_backing_image_manager_restart(self, name, last_creation_time):
+        return NotImplemented
+
+    def list_backing_image_manager(self):
+        return NotImplemented
