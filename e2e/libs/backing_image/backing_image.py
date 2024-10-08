@@ -29,4 +29,4 @@ class BackingImage(Base):
         return self.backing_image.delete(bi_name)
 
     def cleanup_backing_images(self):
-        return self.backing_image.cleanup_backing_images
+        return self.backing_image.cleanup_backing_images()
