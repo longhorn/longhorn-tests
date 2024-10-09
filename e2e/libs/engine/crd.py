@@ -9,7 +9,7 @@ class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
 
-    def get_engines(self, volume_name, node_name):
+    def get_engines(self, volume_name, node_name=None):
         if volume_name == "" or node_name == "":
             logging.info("getting all engines")
         else:
@@ -56,3 +56,9 @@ class CRD(Base):
                 name=engine_name
             )
         logging.info("finished delete engines")
+
+    def validate_engine_setting(self, volume_name, setting_name, value):
+        engines = self.get_engines(volume_name)
+        for engine in engines:
+            assert str(engine["spec"][setting_name]) == value, \
+            f"Expected volume {volume_name} engine setting {setting_name} is {value}, but it's {str(engine['spec'][setting_name])}"

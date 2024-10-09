@@ -52,3 +52,4 @@ Cleanup test resources
     cleanup_backing_images
     cleanup_engine_images
     reset_backupstore
+    reset_settings

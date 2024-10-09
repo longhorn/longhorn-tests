@@ -13,3 +13,6 @@ class setting_keywords:
 
     def reset_backupstore(self):
         self.setting.reset_backupstore()
+
+    def reset_settings(self):
+        self.setting.reset_settings()
