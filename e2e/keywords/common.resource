@@ -35,10 +35,7 @@ Set test environment
     END
 
 Cleanup test resources
-    ${variables}=     Get Variables
-    IF    "\${powered_off_node}" in "$variables"
-        power_on_node_by_name    ${powered_off_node}
-    END
+    Power on off node
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule

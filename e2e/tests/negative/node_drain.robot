@@ -176,7 +176,6 @@ Stopped replicas on deleted nodes should not be counted as healthy replicas when
     ...    And All pods on Node_2 are evicted except the replica instance manager pod.
     ...        kubectl get pods --field-selector spec.nodeName=<Node_2 name> -o wide -n longhorn-system
     ...    And The last healthy replica exists on the Node_2.
-    [Teardown]    Cleanup test resources include off nodes
     Given Disable node 0 scheduling
     And Set setting node-drain-policy to block-if-contains-last-replica
     And Given Create volume 0 with    size=5Gi    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
@@ -209,7 +208,6 @@ Setting Allow Node Drain with the Last Healthy Replica protects the last healthy
     ...        kubectl get pods --field-selector spec.nodeName=<Node_2 name> -o wide -n longhorn-system
     ...    And The PDB will be deleted and can be verified with the following command:
     ...        kubectl get pdb <replica name, e.g., instance-manager-r-xxxxxxxx> -n longhorn-system
-    [Teardown]    Cleanup test resources include off nodes
     Given Disable node 0 scheduling
     And Set setting node-drain-policy to block-if-contains-last-replica
     And Given Create volume 0 with    size=5Gi    numberOfReplicas=2        dataEngine=${DATA_ENGINE}
