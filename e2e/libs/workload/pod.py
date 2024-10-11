@@ -122,7 +122,7 @@ def create_pod(manifest, is_wait_for_pod_running=False):
 def delete_pod(name, namespace='default'):
     core_api = client.CoreV1Api()
     try:
-        core_api.delete_namespaced_pod(name=name, namespace=namespace)
+        core_api.delete_namespaced_pod(name=name, namespace=namespace, delete_namespaced_pod=0)
         wait_delete_pod(name)
     except rest.ApiException as e:
         assert e.status == 404

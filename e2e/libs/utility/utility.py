@@ -249,7 +249,7 @@ def wait_delete_ns(name):
 def delete_pod(name, namespace='default'):
     core_api = client.CoreV1Api()
     try:
-        core_api.delete_namespaced_pod(name=name, namespace=namespace)
+        core_api.delete_namespaced_pod(name=name, namespace=namespace, grace_period_seconds=0)
         wait_delete_pod(name)
     except ApiException as e:
         assert e.status == 404
