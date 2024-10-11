@@ -35,7 +35,7 @@ Set test environment
     END
 
 Cleanup test resources
-    Power on off node
+    Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule
