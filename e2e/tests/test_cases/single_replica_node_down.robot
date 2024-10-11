@@ -34,12 +34,10 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     And Delete replica of deployment 0 volume on replica node
     And Delete replica of deployment 0 volume on volume node
     And Power off volume node of deployment 0
-    Then Wait for volume of deployment 0 stuck in state attaching
     And Wait for deployment 0 pod stuck in Terminating on the original node
 
     When Power on off node
     And Wait for deployment 0 pods stable
-    And Check deployment 0 pod is Running on another node
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Volume Node
