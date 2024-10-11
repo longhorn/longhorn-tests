@@ -35,7 +35,7 @@ Restart cluster
     setup_control_plane_network_latency
 
 Power on off node
-    Run keyword And Continue On Failure
+    Run keyword And Ignore Error
     ...    power_on_node_by_name    ${powered_off_node}
 
 Power off node ${node_id}
