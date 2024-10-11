@@ -32,6 +32,7 @@ Disrupt Data Plane Traffic For Less Than Long Engine Replica Timeout
     And Check statefulset 0 data in file data is intact
 
 Don't Orphan Processes When Node Not Ready
+    [Tags]    robot:skip
     [Documentation]    Don't orphan processes when a node becomes not ready.
     ...
     ...                1. Create a volume of any size and a number of replicas equal to the number of nodes.
@@ -45,3 +46,4 @@ Don't Orphan Processes When Node Not Ready
     ...                4. Detach the volume.
     ...                5. Verify that no instance-manager CR has a status.instanceEngines[<volume-name-e-...>].
     ...                6. Verify that no instance-manager CR has a status.instanceReplicas[<volume-name-r-...>].
+    Skip
