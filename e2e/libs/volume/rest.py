@@ -217,6 +217,7 @@ class Rest(Base):
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         completed = False
         for i in range(self.retry_count):
+            logging(f"wait for {volume_name} replica rebuilding completed on {node_name} ... ({i})")
             try:
                 v = get_longhorn_client().by_id_volume(volume_name)
                 for replica in v.replicas:
@@ -237,7 +238,7 @@ class Rest(Base):
                 logging(f"Failed to get volume {volume_name} with error: {e}")
             time.sleep(self.retry_interval)
         logging(f"Completed volume {volume_name} replica rebuilding on {node_name}")
-        assert completed, f"Expect volume {volume_name} replica rebuilding completed"
+        assert completed, f"Expect volume {volume_name} replica rebuilding completed on {node_name}"
 
     def check_data_checksum(self, volume_name, data_id):
         return NotImplemented

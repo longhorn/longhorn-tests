@@ -55,7 +55,7 @@ Test Setting Concurrent Rebuild Limit
     When Delete volume 0 replica on replica node
     And Wait until volume 0 replica rebuilding started on replica node
     And Delete volume 1 replica on replica node
-    And Crash volume 0 replica processes
+    And Delete volume 0 replica on replica node
     And Wait until volume 0 replica rebuilding stopped on replica node
     Then Only one replica rebuilding on replica node will start at a time, either for volume 0 or volume 1
     And Wait until volume 0 replica rebuilding completed on replica node
