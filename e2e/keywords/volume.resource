@@ -273,6 +273,7 @@ Upgrade volume ${volume_id} engine to compatible engine image
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     upgrade_engine_image    ${volume_name}    ${compatible_engine_image_name}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${compatible_engine_image_name}
+
 Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${current_checksum} =    get_volume_checksum    ${volume_name}
@@ -288,3 +289,7 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} in another clu
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_name} =    get_backup_name_from_backup_list    ${backups_before_uninstall}    ${backup_id}
     wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
+
+Volume ${volume_id} setting ${setting_name} should be ${setting_value}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    validate_volume_setting    ${volume_name}    ${setting_name}    ${setting_value}
