@@ -14,8 +14,8 @@ from workload.pod import is_pod_terminated_by_kubelet
 from workload.pod import wait_for_pod_status
 
 
-def get_workload_pod_names(workload_name):
-    pod_list = get_workload_pods(workload_name)
+def get_workload_pod_names(workload_name, namespace="default"):
+    pod_list = get_workload_pods(workload_name, namespace)
     pod_names = []
     for pod in pod_list:
         pod_names.append(pod.metadata.name)

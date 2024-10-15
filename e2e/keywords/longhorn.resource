@@ -66,3 +66,19 @@ Check all Longhorn CRD removed
 
 Install Longhorn
     install_longhorn_system
+
+Delete instance-manager of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${pod_name} =     get_instance_manager_on_node    ${node_name}
+    delete_pod    ${pod_name}    longhorn-system
+
+Delete instance-manager of deployment ${deployment_id} volume
+    ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${pod_name} =     get_instance_manager_on_node    ${node_name}
+    delete_pod    ${pod_name}    longhorn-system
+
+Wait for Longhorn components all running
+    wait_for_namespace_pods_running    longhorn-system

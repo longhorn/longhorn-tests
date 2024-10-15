@@ -30,3 +30,19 @@ class Base(ABC):
     @abstractmethod
     def cleanup_backing_images(self):
         return NotImplemented
+
+    @abstractmethod
+    def wait_all_backing_image_managers_running(self):
+        return NotImplemented
+
+    @abstractmethod
+    def list_backing_image_manager(self):
+        return NotImplemented
+
+    @abstractmethod
+    def delete_backing_image_manager(self, name):
+        return NotImplemented
+
+    @abstractmethod
+    def wait_backing_image_manager_restart(self, name, last_creation_time):
+        return NotImplemented

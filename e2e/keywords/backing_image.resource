@@ -22,3 +22,9 @@ Clean up backing image ${backing_image_name} from a disk
 
 Delete backing image ${backing_image_name}
     delete_backing_image    ${backing_image_name}
+
+Delete backing image managers and wait for recreation
+    delete_all_backing_image_managers_and_wait_for_recreation
+
+Wait backing image managers running
+    wait_all_backing_image_managers_running
