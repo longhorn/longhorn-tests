@@ -21,15 +21,17 @@ ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Disrupt Data Plane Traffic For Less Than Long Engine Replica Timeout
-    Given Set setting engine-replica-timeout to 8
+    Given Set setting engine-replica-timeout to 15
     And Set setting auto-salvage to false
     And Create storageclass longhorn-test with    dataEngine=v1
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
-    And Drop instance-manager egress traffic of statefulset 0 for 10 seconds without waiting for completion
-    Then Write 1024 MB data to file data in statefulset 0
-    And Wait for volume of statefulset 0 attached and degraded
-    And Wait for volume of statefulset 0 healthy
-    And Check statefulset 0 data in file data is intact
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        And Drop instance-manager egress traffic of statefulset 0 for 25 seconds without waiting for completion
+        Then Write 1024 MB data to file data in statefulset 0
+        And Wait for volume of statefulset 0 attached and degraded
+        And Wait for volume of statefulset 0 healthy
+        And Check statefulset 0 data in file data is intact
+    END
 
 Don't Orphan Processes When Node Not Ready
     [Tags]    robot:skip
