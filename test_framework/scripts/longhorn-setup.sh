@@ -353,7 +353,7 @@ create_aws_secret(){
 
 
 longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.7.1-rc2/longhornctl-linux-amd64 -o longhornctl
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.2/longhornctl-linux-amd64 -o longhornctl
   chmod +x longhornctl
   ./longhornctl install preflight
   ./longhornctl check preflight
