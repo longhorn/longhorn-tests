@@ -57,18 +57,27 @@ class Harvester(Base):
         vm_id = self.mapping[node_name]
 
         url = f"{self.url}/{vm_id}"
-        resp = requests.post(f"{url}?action=stop", cookies=self.cookies, verify=False)
-        logging(f"resp = {resp}")
-        assert resp.status_code == 204, f"Failed to stop vm {vm_id} response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+        for i in range(self.retry_count):
+            logging(f"Trying to stop vm {vm_id} ... ({i})")
+            try:
+                resp = requests.post(f"{url}?action=stop", cookies=self.cookies, verify=False)
+                logging(f"resp = {resp}")
+                assert resp.status_code == 204, f"Failed to stop vm {vm_id} response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+                break
+            except Exception as e:
+                logging(f"Stopping vm failed with error {e}")
         logging(f"Stopping vm {vm_id}")
 
         stopped = False
         for i in range(self.retry_count):
             logging(f"Waiting for vm {vm_id} stopped ... ({i})")
-            resp = requests.get(url, cookies=self.cookies, verify=False)
-            if "Stopped" in resp.json()['metadata']['fields']:
-                stopped = True
-                break
+            try:
+                resp = requests.get(url, cookies=self.cookies, verify=False)
+                if "Stopped" in resp.json()['metadata']['fields']:
+                    stopped = True
+                    break
+            except Exception as e:
+                logging(f"Getting vm status failed with error {e}")
             time.sleep(self.retry_interval)
         assert stopped, f"Expected vm {vm_id} to be stopped but it's not"
 
@@ -76,17 +85,26 @@ class Harvester(Base):
         vm_id = self.mapping[node_name]
 
         url = f"{self.url}/{vm_id}"
-        resp = requests.post(f"{url}?action=start", cookies=self.cookies, verify=False)
-        logging(f"resp = {resp}")
-        assert resp.status_code == 204, f"Failed to start vm {vm_id} response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+        for i in range(self.retry_count):
+            logging(f"Trying to start vm {vm_id} ... ({i})")
+            try:
+                resp = requests.post(f"{url}?action=start", cookies=self.cookies, verify=False)
+                logging(f"resp = {resp}")
+                assert resp.status_code == 204, f"Failed to start vm {vm_id} response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+                break
+            except Exception as e:
+                logging(f"Starting vm failed with error {e}")
         logging(f"Starting vm {vm_id}")
 
         started = False
         for i in range(self.retry_count):
             logging(f"Waiting for vm {vm_id} started ... ({i})")
-            resp = requests.get(url, cookies=self.cookies, verify=False)
-            if "Running" in resp.json()['metadata']['fields']:
-                started = True
-                break
+            try:
+                resp = requests.get(url, cookies=self.cookies, verify=False)
+                if "Running" in resp.json()['metadata']['fields']:
+                    started = True
+                    break
+            except Exception as e:
+                logging(f"Getting vm status failed with error {e}")
             time.sleep(self.retry_interval)
         assert started, f"Expected vm {vm_id} to be started but it's not"
