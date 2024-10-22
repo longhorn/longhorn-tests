@@ -9,6 +9,7 @@ from k8s.k8s import get_all_pods_on_node
 from k8s.k8s import check_node_cordoned
 from k8s.k8s import get_instance_manager_on_node
 from k8s.k8s import check_instance_manager_pdb_not_exist
+from k8s.k8s import wait_for_namespace_pods_running
 from utility.utility import logging
 from node import Node
 
@@ -78,3 +79,6 @@ class k8s_keywords:
 
     def check_instance_manager_pdb_not_exist(self, instance_manager):
         return check_instance_manager_pdb_not_exist(instance_manager)
+
+    def wait_for_namespace_pods_running(self, namespace):
+        return wait_for_namespace_pods_running(namespace)

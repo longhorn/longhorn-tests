@@ -187,5 +187,19 @@ Check ${workload_kind} ${workload_id} pod is ${expect_state} on another node
     Should Not Be Equal    ${node_name}    ${last_volume_node}
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
+    
     ${node_name} =    get_node_by_index    ${node_id}
-    delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
+    
+    IF    '${workload_name}' == 'engine-image'
+        ${label_selector} =    Set Variable    longhorn.io/component=engine-image       
+    ELSE IF    '${workload_name}' == 'instance-manager'
+        ${label_selector} =    Set Variable    longhorn.io/component=instance-manager
+    ELSE
+        ${label_selector} =    Set Variable    ${EMPTY}
+    END
+    delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    ${label_selector}
+
+Delete Longhorn ${workload_kind} ${workload_name} pod
+    ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
+    Log    ${pod_name}
+    delete_pod    ${pod_name}     longhorn-system

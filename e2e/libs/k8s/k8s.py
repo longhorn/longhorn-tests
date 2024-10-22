@@ -1,12 +1,12 @@
 import time
-import subprocess
 import asyncio
-import os
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
+from workload.pod import wait_for_pod_status
+from workload.pod import get_pod
 from workload.constant import IMAGE_UBUNTU
 from utility.utility import subprocess_exec_cmd
 from utility.utility import logging
@@ -95,6 +95,7 @@ def check_instance_manager_pdb_not_exist(instance_manager):
     exec_cmd = ["kubectl", "get", "pdb", "-n", "longhorn-system"]
     res = subprocess_exec_cmd(exec_cmd)
     assert instance_manager not in res.decode('utf-8')
+
 def wait_namespaced_job_complete(job_label, namespace):
     retry_count, retry_interval = get_retry_count_and_interval()
     api = client.BatchV1Api()
@@ -170,3 +171,25 @@ def delete_namespace(namespace):
         api.delete_namespace(name=namespace)
     except ApiException as e:
         assert e.status == 404
+
+def wait_for_namespace_pods_running(namespace):    
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for i in range(retry_count):        
+        time.sleep(retry_interval)
+        pod_list = list_namespace_pods(namespace)        
+        all_running = True
+
+        for pod in pod_list.items:
+            pod_name = pod.metadata.name
+            pod_status = pod.status.phase
+
+            if pod_status != "Running":
+                logging(f"Pod {pod_name} is in {pod_status} state, waiting...")
+                all_running = False
+
+        if all_running:
+            logging(f"All pods in namespace {namespace} are in Running state!")
+            return
+
+    assert False, f"wait all pod in namespace {namespace} running failed"
