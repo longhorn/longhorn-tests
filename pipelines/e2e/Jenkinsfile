@@ -7,7 +7,20 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
 
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
-def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
+def REGISTRATION_CODE_ID = "REGISTRATION_CODE"
+if (params.DISTRO == "sles") {
+    if (params.ARCH == "amd64") {
+        REGISTRATION_CODE_ID = "SLES_REGISTRATION_CODE"
+    } else {
+        REGISTRATION_CODE_ID = "SLES_REGISTRATION_CODE_ARM64"
+    }
+} else if (params.DISTRO == "sle-micro") {
+    if (params.ARCH == "amd64") {
+        REGISTRATION_CODE_ID = "REGISTRATION_CODE"
+    } else {
+        REGISTRATION_CODE_ID = "REGISTRATION_CODE_ARM64"
+    }
+}
 
 // parameters for air gap installation
 def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
