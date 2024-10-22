@@ -48,9 +48,14 @@ resource "rancher2_machine_config_v2" "e2e-machine-config" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-nbv7f",
+            "imageName": "longhorn-qa/image-kkkjv",
             "size": 100,
             "bootOrder": 1
+        },
+        {
+            "storageClassName": "harvester-longhorn",
+            "size": 100,
+            "bootOrder": 2
         }]
     }
     EOF
@@ -74,11 +79,32 @@ package_update: true
 packages:
   - qemu-guest-agent
   - iptables
+  - cryptsetup
+  - dmsetup
 runcmd:
   - - systemctl
     - enable
     - '--now'
     - qemu-guest-agent.service
+  - apt-get update
+  - apt-get install -y linux-modules-extra-`uname -r`
+  - systemctl stop multipathd.service
+  - systemctl stop multipathd.socket
+  - systemctl disable multipathd.service
+  - systemctl disable multipathd.socket
+  - modprobe uio
+  - modprobe uio_pci_generic
+  - modprobe vfio_pci
+  - modprobe nvme-tcp
+  - modprobe dm_crypt
+  - touch /etc/modules-load.d/modules.conf
+  - echo uio >> /etc/modules-load.d/modules.conf
+  - echo uio_pci_generic >> /etc/modules-load.d/modules.conf
+  - echo vfio_pci >> /etc/modules-load.d/modules.conf
+  - echo nvme-tcp >> /etc/modules-load.d/modules.conf
+  - echo dm_crypt >> /etc/modules-load.d/modules.conf
+  - echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+  - echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
 EOF
   }
 }
