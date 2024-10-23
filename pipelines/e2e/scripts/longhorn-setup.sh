@@ -54,9 +54,9 @@ main(){
   install_backupstores
   install_csi_snapshotter
 
-  # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
+  # msg="failed to get package manager" error="operating systems amzn are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "sle-micro" ]] && [[ "${DISTRO}" != "talos" ]]; then
+    [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 
