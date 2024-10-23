@@ -42,6 +42,7 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_INSTALL_METHOD", "value": "'${LONGHORN_INSTALL_METHOD}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_STABLE_VERSION", "value": "'${LONGHORN_STABLE_VERSION}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
 
@@ -106,6 +107,7 @@ run_longhorn_e2e_test_out_of_cluster(){
              -e CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}"\
              -e CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}"\
              -e LONGHORN_INSTALL_METHOD="${LONGHORN_INSTALL_METHOD}"\
+             -e LONGHORN_STABLE_VERSION="${LONGHORN_STABLE_VERSION}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
   docker stop "${CONTAINER_NAME}"

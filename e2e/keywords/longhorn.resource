@@ -82,3 +82,11 @@ Delete instance-manager of deployment ${deployment_id} volume
 
 Wait for Longhorn components all running
     wait_for_namespace_pods_running    longhorn-system
+
+Install Longhorn stable version
+    install_longhorn_system    is_stable_version=True
+
+Uninstall Longhorn stable version
+    ${backups_before_uninstall} =     list_all_backups    
+    uninstall_longhorn_system    is_stable_version=True
+    Set Test Variable    ${backups_before_uninstall}
