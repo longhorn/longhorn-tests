@@ -9,8 +9,11 @@ import os
 
 class LonghornKubectl(Base):
 
-    def uninstall(self):
-        longhorn_branch = os.getenv("LONGHORN_REPO_BRANCH")
+    def uninstall(self, is_stable_version=False):
+        env_var = "LONGHORN_STABLE_VERSION" if is_stable_version else "LONGHORN_REPO_BRANCH"
+        longhorn_branch = os.getenv(env_var)
+        if not longhorn_branch:
+           raise ValueError(f"Required environment variable {env_var} is not set")
 
         control_plane_nodes = Node.list_node_names_by_role(self, role="control-plane")
         control_plane_node = control_plane_nodes[0]
@@ -30,5 +33,5 @@ class LonghornKubectl(Base):
         assert res, "delete uninstallation components failed"
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
-    def install(self):
-        self.install_longhorn()
+    def install(self, is_stable_version=False):
+        self.install_longhorn(is_stable_version)

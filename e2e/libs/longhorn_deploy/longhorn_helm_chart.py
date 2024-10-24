@@ -8,7 +8,7 @@ import os
 
 class LonghornHelmChart(Base):
 
-    def uninstall(self):
+    def uninstall(self, is_stable_version=False):
         control_plane_nodes = Node.list_node_names_by_role(self, role="control-plane")
         control_plane_node = control_plane_nodes[0]
 
@@ -19,5 +19,5 @@ class LonghornHelmChart(Base):
         k8s.delete_namespace(namespace=LONGHORN_NAMESPACE)
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
-    def install(self):
-        self.install_longhorn()
+    def install(self, is_stable_version=False):
+        self.install_longhorn(is_stable_version)

@@ -14,11 +14,11 @@ class LonghornDeploy(Base):
         elif self._method == "helm":
             self.longhorn = LonghornHelmChart()
 
-    def uninstall(self):
-        return self.longhorn.uninstall()
+    def uninstall(self, is_stable_version=False):
+        return self.longhorn.uninstall(is_stable_version)
 
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
 
-    def install(self):
-        return self.longhorn.install()
+    def install(self, is_stable_version=False):
+        return self.longhorn.install(is_stable_version)

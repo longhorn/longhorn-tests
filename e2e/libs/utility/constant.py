@@ -22,3 +22,4 @@ NODE_UPDATE_RETRY_INTERVAL = 6
 LONGHORN_UNINSTALL_JOB_LABEL="job-name=longhorn-uninstall"
 LONGHORN_INSTALL_SCRIPT_PATH="utilities/longhorn-install.sh"
 LONGHORN_INSTALL_TIMEOUT = 600
+LONGHORN_INSTALL_STABLE_SHELL_FUNCTION = "install_longhorn_stable_version"

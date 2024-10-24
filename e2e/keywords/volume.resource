@@ -91,6 +91,10 @@ Write data ${data_id} to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     write_volume_random_data   ${volume_name}    2048    ${data_id}
 
+Write data ${data_id} ${size} MB to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    ${size}    ${data_id}
+
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     keep_writing_data    ${volume_name}
@@ -279,6 +283,11 @@ Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${current_checksum} =    get_volume_checksum    ${volume_name}
     ${backup_data} =    get_backup_data_from_backup_list    ${backups_before_uninstall}    ${backup_id}
     Should Be Equal    ${current_checksum}    ${backup_data}
+
+Create volume ${volume_id} from backup ${backup_id} in another cluster
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url_from_backup_list    ${backups_before_uninstall}    ${backup_id}
+    create_volume   ${volume_name}    fromBackup=${backup_url}
 
 Create DR volume ${volume_id} from backup ${backup_id} in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

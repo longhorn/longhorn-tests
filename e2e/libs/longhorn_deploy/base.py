@@ -4,6 +4,7 @@ from utility.constant import LONGHORN_NAMESPACE
 from utility.constant import LONGHORN_UNINSTALL_JOB_LABEL
 from utility.constant import LONGHORN_INSTALL_SCRIPT_PATH
 from utility.constant import LONGHORN_INSTALL_TIMEOUT
+from utility.constant import LONGHORN_INSTALL_STABLE_SHELL_FUNCTION
 import subprocess
 import os
 from utility.utility import get_retry_count_and_interval
@@ -19,7 +20,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def uninstall(self, longhorn_branch=None):
+    def uninstall(self, is_stable_version=False):
         return NotImplemented
 
     def check_longhorn_crd_removed(self):
@@ -29,17 +30,27 @@ class Base(ABC):
 
     def check_longhorn_uninstall_pod_log(self):
         logs = k8s.get_pod_logs(LONGHORN_NAMESPACE, LONGHORN_UNINSTALL_JOB_LABEL)
-        assert "error" not in logs
-        assert "level=fatal" not in logs
+        assert "level=error" not in logs, f"find string 'level=error' in uninstall log {logs}"
+        assert "level=fatal" not in logs, f"find string 'level=fatal' in uninstall log {logs}"
 
-    def install_longhorn(self):
+    def install_longhorn(self, is_stable_version=False):
         current_path=os.getcwd()
         full_path = os.path.join(current_path, LONGHORN_INSTALL_SCRIPT_PATH)
 
+        if is_stable_version is True:
+            cmd = ['bash', full_path, LONGHORN_INSTALL_STABLE_SHELL_FUNCTION]
+        else:
+            cmd = ['bash', full_path]
+
         try:
-            output = subprocess.check_output(['bash', full_path], timeout=LONGHORN_INSTALL_TIMEOUT)
+            output = subprocess.check_output(cmd, timeout=LONGHORN_INSTALL_TIMEOUT)
             logging(output)
         except subprocess.CalledProcessError as e:
-            logging(f"Error: {e.stderr}")
+            logging(f"Command failed with exit code {e.returncode}")
+            logging(f"stdout: {e.output}")
+            logging(f"stderr: {e.stderr}")
+            raise
         except subprocess.TimeoutExpired as e:
             logging(f"Command timed out after {e.timeout} seconds")
+            logging(f"stdout: {e.output}")
+            raise

@@ -66,3 +66,11 @@ Check all Longhorn CRD removed
 
 Install Longhorn
     install_longhorn_system
+
+Install Longhorn stable version
+    install_longhorn_system    is_stable_version=True
+
+Uninstall Longhorn stable version
+    ${backups_before_uninstall} =     list_all_backups    
+    uninstall_longhorn_system    is_stable_version=True
+    Set Test Variable    ${backups_before_uninstall}
