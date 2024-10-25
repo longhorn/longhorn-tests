@@ -41,3 +41,6 @@ class Engine(Base):
             engine_state = engine['status']['currentState']
             engines_states[engine_name] = engine_state
         return engines_states
+
+    def validate_engine_setting(self, volume_name, setting_name, value):
+        return self.engine.validate_engine_setting(volume_name, setting_name, value)
