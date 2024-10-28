@@ -19,7 +19,8 @@ Run the test:
 1. Deploy all backupstore servers(including `NFS` server and `Minio` as s3 server) for test purposes.
 ```
 kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml \
-               -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml
+               -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml \
+               -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml
 ```
 2. Deploy the test script to the Kubernetes cluster.
 ```
