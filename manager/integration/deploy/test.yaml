@@ -42,7 +42,7 @@ spec:
     - name: LONGHORN_JUNIT_REPORT_PATH
       value: /tmp/test-report/longhorn-test-junit-report.xml
     - name: LONGHORN_BACKUPSTORES
-      value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
+      value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore, cifs://longhorn-test-cifs-svc.default/backupstore$cifs-secret"
     - name: LONGHORN_BACKUPSTORE_POLL_INTERVAL
       value: "30"
     - name: LONGHORN_DISK_TYPE

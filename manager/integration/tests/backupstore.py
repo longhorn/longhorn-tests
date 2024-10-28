@@ -17,6 +17,7 @@ from common import LONGHORN_NAMESPACE
 from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
+from common import is_backupTarget_cifs
 from common import get_longhorn_api_client
 from common import delete_backup_volume
 from common import delete_backup_backing_image
@@ -64,6 +65,8 @@ def set_random_backupstore(request, client):
     elif request.param == "nfs":
         set_backupstore_nfs(client)
         mount_nfs_backupstore(client)
+    elif request.param == "cifs":
+        set_backupstore_cifs(client)
 
     yield
     cleanup_all_volumes(client)
@@ -112,6 +115,18 @@ def set_backupstore_nfs(client):
         if is_backupTarget_nfs(backupstore):
             set_backupstore_url(client, backupstore)
             set_backupstore_credential_secret(client, "")
+            set_backupstore_poll_interval(client, poll_interval)
+            break
+
+
+def set_backupstore_cifs(client):
+    backupstores = get_backupstore_url()
+    poll_interval = get_backupstore_poll_interval()
+    for backupstore in backupstores:
+        if is_backupTarget_cifs(backupstore):
+            backupsettings = backupstore.split("$")
+            set_backupstore_url(client, backupsettings[0])
+            set_backupstore_credential_secret(client, backupsettings[1])
             set_backupstore_poll_interval(client, poll_interval)
             break
 
