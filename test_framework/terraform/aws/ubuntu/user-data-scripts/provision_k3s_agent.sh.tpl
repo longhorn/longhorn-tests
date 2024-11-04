@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt-get update
-apt-get install -y nfs-common cryptsetup dmsetup linux-modules-extra-`uname -r`
+apt-get install -y nfs-common cryptsetup dmsetup samba linux-modules-extra-`uname -r`
 
 modprobe uio
 modprobe uio_pci_generic

@@ -1,6 +1,7 @@
 S3_BACKUP_STORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
 NFS_BACKUP_STORE='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
 CIFS_BACKUP_STORE='cifs://longhorn-test-cifs-svc.default/backupstore$cifs-secret'
+AZURITE_BACKUP_STORE='azblob://longhorn-test-azurite@core.windows.net/$azblob-secret'
 
 run_longhorn_e2e_test(){
 
@@ -25,6 +26,8 @@ run_longhorn_e2e_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${NFS_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   elif [[ $BACKUP_STORE_TYPE = "cifs" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${CIFS_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  elif [[ $BACKUP_STORE_TYPE = "azurite" ]]; then
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${AZURITE_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
   if [[ "${TF_VAR_use_hdd}" == true ]]; then
@@ -81,6 +84,8 @@ run_longhorn_e2e_test_out_of_cluster(){
     LONGHORN_BACKUPSTORES=${NFS_BACKUP_STORE}
   elif [[ $BACKUP_STORE_TYPE = "cifs" ]]; then
     LONGHORN_BACKUPSTORES=${CIFS_BACKUP_STORE}
+  elif [[ $BACKUP_STORE_TYPE = "azurite" ]]; then
+    LONGHORN_BACKUPSTORES=${AZURITE_BACKUP_STORE}
   fi
   LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
 

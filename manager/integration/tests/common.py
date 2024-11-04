@@ -3904,6 +3904,10 @@ def is_backupTarget_cifs(s):
     return s.startswith("cifs://")
 
 
+def is_backupTarget_azurite(s):
+    return s.startswith("azblob://")
+
+
 def wait_for_backup_volume(client, vol_name, backing_image=""):
     for _ in range(RETRY_BACKUP_COUNTS):
         bv = client.by_id_backupVolume(vol_name)
