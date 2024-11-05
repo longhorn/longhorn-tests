@@ -42,6 +42,7 @@ Cleanup test resources
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule
+    cleanup_node_exec
     cleanup_stress_helper
     cleanup_recurringjobs
     cleanup_deployments
