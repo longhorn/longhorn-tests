@@ -17,8 +17,6 @@ class NodeExec:
     def __init__(self, node_name):
         self.node_name = node_name
         self.core_api = client.CoreV1Api()
-        self.cleanup()
-        self.pod = self.launch_pod()
 
     def cleanup(self):
         if get_pod(self.node_name):
@@ -26,6 +24,10 @@ class NodeExec:
             delete_pod(self.node_name)
 
     def issue_cmd(self, cmd):
+
+        self.cleanup()
+        self.pod = self.launch_pod()
+
         logging(f"Issuing command on {self.node_name}: {cmd}")
 
         if isinstance(cmd, list):
