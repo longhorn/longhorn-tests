@@ -118,22 +118,26 @@ class Rest(Base):
     def delete_replica(self, volume_name, node_name):
         return NotImplemented
 
-    async def wait_for_replica_rebuilding_start(self, volume_name, node_name):
+    async def wait_for_replica_rebuilding_start(self, volume_name, node_name=None):
         rebuilding_replica_name = None
         for i in range(self.retry_count):
             try:
                 v = get_longhorn_client().by_id_volume(volume_name)
                 logging(f"Trying to get volume {volume_name} rebuilding replicas ... ({i})")
                 for replica in v.replicas:
-                    if replica.hostId == node_name:
+                    if node_name and replica.hostId == node_name and replica.mode == "WO":
                         rebuilding_replica_name = replica.name
+                        break
+                    elif replica.mode == "WO":
+                        rebuilding_replica_name = replica.name
+                        node_name = replica.hostId
                         break
                 if rebuilding_replica_name:
                     break
             except Exception as e:
                 logging(f"Failed to get volume {volume_name} with error: {e}")
             await asyncio.sleep(self.retry_interval)
-        assert rebuilding_replica_name != None
+        assert rebuilding_replica_name != None, f"Waiting for replica rebuilding start for volume {volume_name} on node {node_name} failed: replicas = {v.replicas}"
         logging(f"Got volume {volume_name} rebuilding replica = {rebuilding_replica_name} on node {node_name}")
 
         started = False
@@ -141,6 +145,15 @@ class Rest(Base):
             try:
                 v = get_longhorn_client().by_id_volume(volume_name)
                 logging(f"Got volume {volume_name} rebuild status = {v.rebuildStatus}")
+
+                # During monitoring replica rebuilding
+                # at the same time monitoring if there are unexpected concurrent replica rebuilding
+                rebuilding_count = 0
+                for replica in v.replicas:
+                    if replica.mode == "WO":
+                        rebuilding_count +=1
+                assert rebuilding_count <= 1, f"Unexpected concurrent replica rebuilding = {rebuilding_count}, replicas = {v.replicas}"
+
                 for status in v.rebuildStatus:
                     for replica in v.replicas:
                         if status.replica == replica.name and \
@@ -156,7 +169,7 @@ class Rest(Base):
             await asyncio.sleep(self.retry_interval)
         assert started, f"wait for replica on node {node_name} rebuilding timeout: {v}"
 
-    def is_replica_rebuilding_in_progress(self, volume_name, node_name):
+    def is_replica_rebuilding_in_progress(self, volume_name, node_name=None):
         in_progress = False
         for i in range(self.retry_count):
             try:
@@ -165,8 +178,9 @@ class Rest(Base):
                 for status in v.rebuildStatus:
                     for replica in v.replicas:
                         if status.replica == replica.name and \
-                           replica.hostId == node_name and \
+                           (node_name is None or replica.hostId == node_name) and \
                            status.state == "in_progress":
+                            node_name = replica.hostId if not node_name else node_name
                             logging(f"Volume {volume_name} replica rebuilding {replica.name} in progress on {node_name}")
                             in_progress = True
                 break
@@ -217,31 +231,48 @@ class Rest(Base):
                 if r.hostId == node_name:
                     return r.name
 
-    def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
+    def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         completed = False
         for i in range(self.retry_count):
-            logging(f"wait for {volume_name} replica rebuilding completed on {node_name} ... ({i})")
+            logging(f"wait for {volume_name} replica rebuilding completed on {'all nodes' if not node_name else node_name} ... ({i})")
             try:
                 v = get_longhorn_client().by_id_volume(volume_name)
+
+                # During monitoring replica rebuilding
+                # at the same time monitoring if there are unexpected concurrent replica rebuilding
+                rebuilding_count = 0
                 for replica in v.replicas:
-                    # use replica.mode is RW or RO to check if this replica
-                    # has been rebuilt or not
-                    # because rebuildStatus is not reliable
-                    # when the rebuild progress reaches 100%
-                    # it will be removed from rebuildStatus immediately
-                    # and you will just get an empty rebuildStatus []
-                    # so it's no way to distinguish "rebuilding not started yet"
-                    # or "rebuilding already completed" using rebuildStatus
-                    if replica.hostId == node_name and replica.mode == "RW":
+                    if replica.mode == "WO":
+                        rebuilding_count +=1
+                assert rebuilding_count <= 1, f"Unexpected concurrent replica rebuilding = {rebuilding_count}, replicas = {v.replicas}"
+
+                if node_name:
+                    for replica in v.replicas:
+                        # use replica.mode is RW or RO to check if this replica
+                        # has been rebuilt or not
+                        # because rebuildStatus is not reliable
+                        # when the rebuild progress reaches 100%
+                        # it will be removed from rebuildStatus immediately
+                        # and you will just get an empty rebuildStatus []
+                        # so it's no way to distinguish "rebuilding not started yet"
+                        # or "rebuilding already completed" using rebuildStatus
+                        if replica.hostId == node_name and replica.mode == "RW":
+                            completed = True
+                            break
+                else:
+                    rw_replica_count = 0
+                    for replica in v.replicas:
+                        if replica.mode == "RW":
+                            rw_replica_count += 1
+                    if rw_replica_count == v.numberOfReplicas:
                         completed = True
-                        break
                 if completed:
                     break
             except Exception as e:
                 logging(f"Failed to get volume {volume_name} with error: {e}")
             time.sleep(self.retry_interval)
-        logging(f"Completed volume {volume_name} replica rebuilding on {node_name}")
-        assert completed, f"Expect volume {volume_name} replica rebuilding completed on {node_name}"
+        logging(f"Completed volume {volume_name} replica rebuilding on {'all nodes' if not node_name else node_name}")
+        assert completed, f"Expect volume {volume_name} replica rebuilding completed on {'all nodes' if not node_name else node_name}"
 
     def check_data_checksum(self, volume_name, data_id):
         return NotImplemented
