@@ -99,6 +99,10 @@ Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
 
+Delete ${count} replicas of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_replicas    ${volume_name}    ${count}
+
 Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
@@ -178,6 +182,10 @@ Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
 
+Monitor only one replica rebuilding will start at a time for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_replica_rebuilding_to_complete   ${volume_name}
+
 Wait until volume ${volume_id} replica rebuilding stopped on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_stop_on_node    ${volume_name}    ${replica_locality}
@@ -191,6 +199,10 @@ Both volume ${volume_id_0} and volume ${volume_id_1} replica rebuilding on ${rep
     ${volume_name_0} =    generate_name_with_suffix    volume    ${volume_id_0}
     ${volume_name_1} =    generate_name_with_suffix    volume    ${volume_id_1}
     both_replica_rebuildings_will_start_at_the_same_time_on_node    ${volume_name_0}    ${volume_name_1}    ${replica_locality}
+
+Only one replica rebuilding will start at a time for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    only_one_replica_rebuilding_will_start_at_a_time    ${volume_name}
 
 Crash volume ${volume_id} replica processes
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

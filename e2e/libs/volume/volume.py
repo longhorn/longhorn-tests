@@ -101,10 +101,13 @@ class Volume(Base):
     def delete_replica(self, volume_name, node_name):
         return self.volume.delete_replica(volume_name, node_name)
 
-    def wait_for_replica_rebuilding_start(self, volume_name, node_name):
+    def delete_replica_by_name(self, volume_name, replica_name):
+        return self.volume.delete_replica_by_name(volume_name, replica_name)
+
+    def wait_for_replica_rebuilding_start(self, volume_name, node_name=None):
         return self.volume.wait_for_replica_rebuilding_start(volume_name, node_name)
 
-    def is_replica_rebuilding_in_progress(self, volume_name, node_name):
+    def is_replica_rebuilding_in_progress(self, volume_name, node_name=None):
         return self.volume.is_replica_rebuilding_in_progress(volume_name, node_name)
 
     def crash_replica_processes(self, volume_name):
@@ -122,7 +125,7 @@ class Volume(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
-    def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
+    def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
