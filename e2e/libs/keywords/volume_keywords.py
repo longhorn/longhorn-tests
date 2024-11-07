@@ -153,6 +153,8 @@ class volume_keywords:
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
         for node_name in self.node.list_node_names_by_role("worker"):
+            if self.node.is_node_schedulable(node_name) == "False":
+                continue
             logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
             self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
