@@ -69,6 +69,11 @@ Drain volume of ${workload_kind} ${workload_id} volume node
 Uncordon the drained node
     uncordon_node    ${drained_node}
 
+Cordon node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    cordon_node    ${node_name}
+    check_node_is_not_schedulable    ${node_name}
+
 Cordon ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}

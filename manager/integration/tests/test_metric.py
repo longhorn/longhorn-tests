@@ -6,7 +6,7 @@ from collections import defaultdict
 from kubernetes.stream import stream
 from prometheus_client.parser import text_string_to_metric_families
 
-from common import client, core_api, pod, volume_name  # NOQA
+from common import client, core_api, pod, volume_name, batch_v1_api  # NOQA
 
 from common import crash_engine_process_with_sigkill
 from common import delete_replica_processes
@@ -34,6 +34,25 @@ from common import RETRY_COUNTS
 from common import RETRY_INTERVAL
 from common import DEFAULT_DISK_PATH
 from common import Gi
+
+from backupstore import set_random_backupstore  # NOQA
+from common import create_recurring_jobs
+from common import check_recurring_jobs
+from common import wait_for_cron_job_count
+from common import create_backup
+from common import wait_for_backup_count
+from common import delete_backup_volume
+
+RECURRING_JOB_NAME = "recurring-test"
+TASK = "task"
+GROUPS = "groups"
+CRON = "cron"
+RETAIN = "retain"
+BACKUP = "backup"
+CONCURRENCY = "concurrency"
+LABELS = "labels"
+DEFAULT = "default"
+SCHEDULE_1MIN = "* * * * *"
 
 # The dictionaries use float type of value because the value obtained from
 # prometheus_client is in float type.
@@ -136,6 +155,21 @@ def examine_metric_value(found_metric, metric_labels, expected_value=None):
         assert found_metric.value == expected_value
     else:
         assert found_metric.value >= 0.0
+
+
+def wait_for_metric_sum_on_all_nodes(client, core_api, metric_name, metric_labels, expected_value): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric_sum_on_all_nodes(client, core_api, metric_name,
+                                          metric_labels, expected_value)
+            return
+        except AssertionError:
+            continue
+
+    check_metric_sum_on_all_nodes(client, core_api, metric_name,
+                                  metric_labels, expected_value)
 
 
 def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels, expected_value=None): # NOQA
@@ -440,12 +474,12 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
 
     When 1 snapshot is created by user
     And 1 snapshot is created by system
-    Then has a metric longhorn_snapshot_actual_size_bytes value equals to the
-         size of the user created snapshot,
+    Then has a metric longhorn_snapshot_actual_size_bytes value
+         equals to the size of the user created snapshot,
          and volume label is the volume name
          and user_created label is true
-    And has a metric longhorn_snapshot_actual_size_bytes value equals to the
-        size of the system created snapshot,
+    And has a metric longhorn_snapshot_actual_size_bytes value
+        equals to the size of the system created snapshot,
         and volume label is the volume name
         and user_created label is false
 
@@ -615,3 +649,126 @@ def test_node_metrics(client, core_api): # NOQA
     wait_for_node_update(client, lht_hostId, "allowScheduling", False)
     check_metric_with_condition(core_api, "longhorn_node_status",
                                 metric_labels, 0.0)
+
+
+def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_v1_api, volume_name): # NOQA
+    """
+    Scenario: test metric longhorn_backup_actual_size_bytes and
+                          longhorn_backup_state
+
+    Issue: https://github.com/longhorn/longhorn/issues/9429
+
+    Given a volume
+
+    When a backup is created by user
+    Then has a metric longhorn_backup_actual_size_bytes value
+         equals to the size of the backup,
+         and volume label is the volume name
+         and recurring_job label is empty
+    And has a metric longhorn_backup_state value equals to 3 (Completed),
+        and volume label is the volume name
+        and recurring_job label is empty
+
+    When a recurring backup job is created
+    Then should have a metric longhorn_backup_actual_size_bytes value
+         equals to the size of the backup,
+         and volume label is the volume name
+         and recurring_job label is the job name
+    And should have a metric longhorn_backup_state
+        value equals to 3 (Completed),
+        and volume label is the volume name
+        and recurring_job label is the job name
+    """
+    self_hostId = get_self_host_id()
+
+    # create a volume and attach it to a node.
+    volume_size = 50 * Mi
+    client.create_volume(name=volume_name,
+                         numberOfReplicas=1,
+                         size=str(volume_size))
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=self_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # create the user backup.
+    data_size = 10 * Mi
+    backup_data = {'pos': 0,
+                   'len': data_size,
+                   'content': generate_random_data(data_size)}
+    write_volume_data(volume, backup_data)
+    create_backup(client, volume_name)
+    bv = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(bv, 1)
+
+    # get the backup size.
+    backup_size = 0
+    backups = bv.backupList().data
+    for backup in backups:
+        if backup['snapshotName'] == "volume-head":
+            continue
+
+        backup_size = int(backup['size'])
+    assert backup_size > 0
+
+    # assert the metric values for the user backup.
+    user_backup_metric_labels = {
+        "volume": volume_name,
+        "recurring_job": "",
+    }
+    wait_for_metric_sum_on_all_nodes(client, core_api,
+                                     "longhorn_backup_actual_size_bytes",
+                                     user_backup_metric_labels,
+                                     backup_size)
+
+    wait_for_metric_sum_on_all_nodes(client, core_api,
+                                     "longhorn_backup_state",
+                                     user_backup_metric_labels,
+                                     3)
+
+    # delete the existing backup before creating a recurring backup job.
+    delete_backup_volume(client, volume_name)
+
+    # create a recurring backup job.
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: BACKUP,
+            GROUPS: [DEFAULT],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    # wait for the recurring backup job to run.
+    time.sleep(60)
+    bv = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(bv, 1)
+
+    # get the recurring backup size.
+    recurring_backup_size = 0
+    backups = bv.backupList().data
+    for backup in backups:
+        if backup['snapshotName'] == "volume-head":
+            continue
+
+        recurring_backup_size = int(backup['size'])
+    assert recurring_backup_size > 0
+
+    # assert the metric values for the recurring backup.
+    recurring_backup_metric_labels = {
+        "volume": volume_name,
+        "recurring_job": RECURRING_JOB_NAME,
+    }
+    wait_for_metric_sum_on_all_nodes(client, core_api,
+                                     "longhorn_backup_actual_size_bytes",
+                                     recurring_backup_metric_labels,
+                                     recurring_backup_size)
+
+    wait_for_metric_sum_on_all_nodes(client, core_api,
+                                     "longhorn_backup_state",
+                                     recurring_backup_metric_labels,
+                                     3)

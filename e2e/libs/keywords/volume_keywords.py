@@ -128,6 +128,13 @@ class volume_keywords:
             logging(f"Deleting volume {volume_name}'s replica on node {node_id}")
             self.volume.delete_replica(volume_name, node_id)
 
+    def delete_replicas(self, volume_name, count):
+        replica_list = self.replica.get(volume_name, node_name="")
+        replica_names = [replica['metadata']['name'] for replica in replica_list]
+        for i in range(int(count)):
+            logging(f"Deleting volume {volume_name} replica volume {replica_names[i]}")
+            self.volume.delete_replica_by_name(volume_name, replica_names[i])
+
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         self.volume.set_annotation(volume_name, annotation_key, annotation_value)
 
@@ -152,9 +159,7 @@ class volume_keywords:
         self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
-        for node_name in self.node.list_node_names_by_role("worker"):
-            logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
-            self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
+        self.volume.wait_for_replica_rebuilding_complete(volume_name)
 
     async def only_one_replica_rebuilding_will_start_at_a_time_on_node(self, volume_name_0, volume_name_1, replica_locality):
 
@@ -200,6 +205,21 @@ class volume_keywords:
 
         assert self.volume.is_replica_rebuilding_in_progress(volume_name_0, node_id) and self.volume.is_replica_rebuilding_in_progress(volume_name_1, node_id), \
             f"Expect {volume_name_0} and {volume_name_1} replica rebuilding at the same time"
+
+    async def only_one_replica_rebuilding_will_start_at_a_time(self, volume_name):
+
+        async def wait_for_replica_rebuilding():
+            tasks = [
+                asyncio.create_task(self.volume.wait_for_replica_rebuilding_start(volume_name), name=volume_name),
+            ]
+
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            logging(f"Observed {done.pop().get_name()} started replica rebuilding")
+
+        await wait_for_replica_rebuilding()
+
+        assert self.volume.is_replica_rebuilding_in_progress(volume_name), \
+            f"Expect {volume_name} replica rebuilding in progress"
 
     def crash_replica_processes(self, volume_name):
         self.volume.crash_replica_processes(volume_name)

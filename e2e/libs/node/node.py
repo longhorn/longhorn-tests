@@ -169,3 +169,7 @@ class Node:
                 break
             time.sleep(self.retry_interval)
         assert node["conditions"]["Schedulable"]["status"] == schedulable
+
+    def is_node_schedulable(self, node_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        return node["conditions"]["Schedulable"]["status"]

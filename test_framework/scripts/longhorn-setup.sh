@@ -353,7 +353,7 @@ create_aws_secret(){
 
 
 longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.7.1-rc2/longhornctl-linux-amd64 -o longhornctl
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.2/longhornctl-linux-amd64 -o longhornctl
   chmod +x longhornctl
   ./longhornctl install preflight
   ./longhornctl check preflight
@@ -523,9 +523,9 @@ main(){
     enable_mtls
   fi
 
-  # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
+  # msg="failed to get package manager" error="operating systems amzn are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "sle-micro" ]] && [[ "${DISTRO}" != "talos" ]]; then
+    [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 
