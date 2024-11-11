@@ -181,6 +181,11 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} completed
     ${backup_name} =    get_backup_name    ${backup_id}
     wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
 
+Wait for volume ${volume_id} restoration from backup ${backup_id} start
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}
+    wait_for_volume_restoration_start    ${volume_name}    ${backup_name}
+
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_start_on_node    ${volume_name}    ${replica_locality}

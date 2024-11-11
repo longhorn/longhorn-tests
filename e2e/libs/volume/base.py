@@ -93,6 +93,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def wait_for_volume_restoration_start(self, volume_name, backup_name):
+        return NotImplemented
+
+    @abstractmethod
     def get_endpoint(self, volume_name):
         return NotImplemented
 
