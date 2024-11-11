@@ -4,11 +4,15 @@ Documentation    Basic Test Cases
 Test Tags    regression
 
 Resource    ../keywords/common.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/setting.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
+Resource    ../keywords/engine.resource
+Resource    ../keywords/replica.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/node.resource
 
@@ -96,6 +100,19 @@ Test Snapshot
     And Validate snapshot 2 is not in volume 0 snapshot list
 
     And Check volume 0 data is data 1
+
+Test Strict Local Volume Disabled Revision Counter By Default
+    [Tags]    coretest
+    [Documentation]
+    ...    1. Set the global setting disable-revision-counter to false
+    ...    2. Create a volume with 1 replica and strict-local data locality
+    ...    3. See that the revisionCounterDisabled: true for volume/engine/replica CRs
+    Given Set setting disable-revision-counter to false
+    When Create volume 0 with    numberOfReplicas=1    dataLocality=strict-local
+    And Wait for volume 0 detached
+    Then Volume 0 setting revisionCounterDisabled should be True
+    And Volume 0 engine revisionCounterDisabled should be True
+    And Volume 0 replica revisionCounterDisabled should be True
 
 Replica Rebuilding
     [Documentation]    -- Manual test plan --

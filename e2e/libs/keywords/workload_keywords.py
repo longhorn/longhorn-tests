@@ -192,3 +192,7 @@ class workload_keywords:
             if not is_workload_pods_has_annotations(workload_name, annotation_key, namespace=namespace, label_selector=label_selector):
                 return False
         return True
+
+    def trim_workload_volume_filesystem(self, workload_name, is_expect_fail=False):
+        volume_name = get_workload_volume_name(workload_name)
+        self.volume.trim_filesystem(volume_name, is_expect_fail=is_expect_fail)

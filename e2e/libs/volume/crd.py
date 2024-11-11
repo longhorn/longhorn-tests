@@ -27,7 +27,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup):
         size_suffix = size[-2:]
         size_number = size[:-2]
         size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
@@ -48,6 +48,7 @@ class CRD(Base):
                 "size": size,
                 "numberOfReplicas": int(numberOfReplicas),
                 "migratable": migratable,
+                "dataLocality": dataLocality,
                 "accessMode": accessMode,
                 "dataEngine": dataEngine,
                 "backingImage": backingImage,
@@ -76,6 +77,7 @@ class CRD(Base):
             assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
             assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
+            assert volume['spec']['dataLocality'] == dataLocality, f"expect volume dataLocality is {dataLocality}, but it's {volume['spec']['dataLocality']}"
             assert volume['spec']['accessMode'] == accessMode, f"expect volume accessMode is {accessMode}, but it's {volume['spec']['accessMode']}"
             assert volume['spec']['backingImage'] == backingImage, f"expect volume backingImage is {backingImage}, but it's {volume['spec']['backingImage']}"
             assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
@@ -504,3 +506,11 @@ class CRD(Base):
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         return Rest().wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
+
+    def validate_volume_setting(self, volume_name, setting_name, value):
+        volume = self.get(volume_name)
+        assert str(volume["spec"][setting_name]) == value, \
+            f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)

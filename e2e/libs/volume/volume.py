@@ -15,8 +15,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -151,3 +151,9 @@ class Volume(Base):
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         return self.volume.wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
+
+    def validate_volume_setting(self, volume_name, setting_name, value):
+        return self.volume.validate_volume_setting(volume_name, setting_name, value)
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        return self.volume.trim_filesystem(volume_name, is_expect_fail=is_expect_fail)

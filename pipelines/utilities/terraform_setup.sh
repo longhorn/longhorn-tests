@@ -32,6 +32,10 @@ if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "aws" ]]; then
 elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kube_config > test_framework/kube_config.yaml
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw cluster_id > /tmp/cluster_id
+  until [ "$(KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true)" -eq 4 ]; do
+    echo "waiting for harvester cluster nodes to be running"
+    sleep 2
+  done
   KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes --no-headers --selector=node-role.kubernetes.io/control-plane -owide | awk '{print $6}' > /tmp/controlplane_public_ip
   KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes --no-headers -ojson | jq '.items[].metadata.name' | tr -d '"' > /tmp/instance_mapping
   jq -Rn 'reduce inputs as $line ({}; .[$line] = $line)' /tmp/instance_mapping | sponge /tmp/instance_mapping

@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       Common keywords
 
+Library             OperatingSystem
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/deployment_keywords.py
 Library             ../libs/keywords/network_keywords.py
@@ -30,8 +31,10 @@ Set test environment
 
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
+    ${host_provider}=    Get Environment Variable    HOST_PROVIDER
+    ${disk_path}=    Set Variable If    "${host_provider}" == "harvester"    /dev/vdc    /dev/xvdh
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${worker_node}    block    /dev/xvdh
+        add_disk    ${worker_node}    block    ${disk_path}
     END
 
 Cleanup test resources
@@ -39,6 +42,7 @@ Cleanup test resources
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule
+    cleanup_node_exec
     cleanup_stress_helper
     cleanup_recurringjobs
     cleanup_deployments
@@ -52,3 +56,4 @@ Cleanup test resources
     cleanup_backing_images
     cleanup_engine_images
     reset_backupstore
+    reset_settings

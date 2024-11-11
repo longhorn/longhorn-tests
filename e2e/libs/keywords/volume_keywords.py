@@ -29,9 +29,9 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup=""):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup=""):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
@@ -153,6 +153,8 @@ class volume_keywords:
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
         for node_name in self.node.list_node_names_by_role("worker"):
+            if self.node.is_node_schedulable(node_name) == "False":
+                continue
             logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
             self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
@@ -283,9 +285,7 @@ class volume_keywords:
 
     def record_volume_replica_names(self, volume_name):
         replica_list = self.replica.get(volume_name, node_name="")
-        assert replica_list != "", f"failed to get replicas"
-
-        replica_names = [replica['metadata']['name'] for replica in replica_list['items']]
+        replica_names = [replica['metadata']['name'] for replica in replica_list]
         logging(f"Found volume {volume_name} replicas: {replica_names}")
 
         replica_names_str = ",".join(replica_names)
@@ -296,9 +296,7 @@ class volume_keywords:
         expected_replica_names = sorted(replica_names_str.split(","))
 
         replica_list = self.replica.get(volume_name, node_name="")
-        assert replica_list != "", f"failed to get replicas"
-
-        actual_replica_names = [replica['metadata']['name'] for replica in replica_list['items']]
+        actual_replica_names = [replica['metadata']['name'] for replica in replica_list]
         actual_replica_names = sorted(actual_replica_names)
 
         assert actual_replica_names == expected_replica_names, \
@@ -314,3 +312,6 @@ class volume_keywords:
 
     def get_volume_checksum(self, volume_name):
         return self.volume.get_checksum(volume_name)
+
+    def validate_volume_setting(self, volume_name, setting_name, value):
+        return self.volume.validate_volume_setting(volume_name, setting_name, value)
