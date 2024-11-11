@@ -450,6 +450,9 @@ run_longhorn_upgrade_test(){
   RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${TF_VAR_extra_block_device}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
   # wait upgrade test pod to start running
@@ -520,6 +523,9 @@ run_longhorn_tests(){
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_DEFAULT_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   set -x
+
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${TF_VAR_extra_block_device}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
 

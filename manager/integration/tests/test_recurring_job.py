@@ -81,6 +81,7 @@ from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 from common import SIZE, Mi, Gi
 from common import SETTING_RESTORE_RECURRING_JOBS
 from common import VOLUME_HEAD_NAME
+from common import DATA_ENGINE
 
 
 RECURRING_JOB_LABEL = "RecurringJob"
@@ -154,6 +155,7 @@ def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_s
     return snapshot_name
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     """
@@ -230,7 +232,8 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     check_recurring_jobs(client, recurring_jobs)
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2,
+                                  dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume = volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
@@ -284,6 +287,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
         f"backupStatus = {client.by_id_volume(volume_name).backupStatus}"
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
     """
@@ -322,7 +326,8 @@ def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
     check_recurring_jobs(client, recurring_jobs)
 
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2)
+                         numberOfReplicas=2,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
@@ -346,6 +351,7 @@ def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
     wait_for_snapshot_count(volume, 4)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_duplicated(client):  # NOQA
     """
@@ -373,6 +379,7 @@ def test_recurring_job_duplicated(client):  # NOQA
     assert "already exists" in str(e.value)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_in_storageclass(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     """
@@ -447,6 +454,7 @@ def test_recurring_job_in_storageclass(set_random_backupstore, client, core_api,
         wait_for_snapshot_count(volume, 4)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_labels(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     """
@@ -483,7 +491,8 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     check_recurring_jobs(client, recurring_jobs)
 
     client.create_volume(name=volume_name, size=size,
-                         numberOfReplicas=2, backingImage=backing_image)
+                         numberOfReplicas=2, backingImage=backing_image,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
@@ -517,6 +526,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     wait_for_backup_volume(client, volume_name, backing_image)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 @pytest.mark.recurring_job
 def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_api, volume_name):  # NOQA
@@ -535,7 +545,8 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
          volume have 1 backup.
     And backup have the Kubernetes Status labels.
     """
-    client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=2)
+    client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=2,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     pv_name = "pv-" + volume_name
@@ -595,6 +606,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     assert len(b.labels) == 3
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     """
     Scenario: test recurring jobs' maximum retain
@@ -640,6 +652,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     assert validator_error.upper() in str(e.value).upper()
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_detached_volume(client, batch_v1_api, volume_name):  # NOQA
     """
@@ -661,7 +674,8 @@ def test_recurring_job_detached_volume(client, batch_v1_api, volume_name):  # NO
     When wait for 2 minute.
     Then then volume should have only 2 snapshots.
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     self_host = get_self_host_id()
@@ -694,6 +708,7 @@ def test_recurring_job_detached_volume(client, batch_v1_api, volume_name):  # NO
     wait_for_snapshot_count(volume, 2)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     """
     Scenario: test recurring jobs for detached volume with
@@ -824,6 +839,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
     common.wait_for_pod_phase(core_api, pod_names[0], pod_phase="Running")
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     """
     Scenario: test recurring jobs when volume detached unexpectedly
@@ -973,6 +989,7 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
     pass
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
@@ -1003,8 +1020,10 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # 
     """
     volume1_name = "test-job-1"
     volume2_name = "test-job-2"
-    client.create_volume(name=volume1_name, size=SIZE)
-    client.create_volume(name=volume2_name, size=SIZE)
+    client.create_volume(name=volume1_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
+    client.create_volume(name=volume2_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume1 = wait_for_volume_detached(client, volume1_name)
     volume2 = wait_for_volume_detached(client, volume2_name)
 
@@ -1061,6 +1080,7 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # 
     assert not backup_created
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_default(client, batch_v1_api, volume_name):  # NOQA
     """
@@ -1083,7 +1103,8 @@ def test_recurring_job_default(client, batch_v1_api, volume_name):  # NOQA
     Then volume should not have `snapshot`  job   in job label.
          volume should     have `default`   group in job label.
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
@@ -1104,6 +1125,7 @@ def test_recurring_job_default(client, batch_v1_api, volume_name):  # NOQA
                                          jobs=[], groups=[DEFAULT])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
     """
@@ -1144,7 +1166,8 @@ def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
          default `backup2`   cron job should not exist.
                  `backup3`   cron job should not exist.
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
@@ -1250,6 +1273,7 @@ def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
     wait_for_cron_job_delete(batch_v1_api, JOB_LABEL+"="+back3)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_api, volume_name):  # NOQA
     """
@@ -1296,7 +1320,8 @@ def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_api, v
     When delete `back2` recurring job.
     Then should not remove `default` job-group in volume.
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     snap1 = SNAPSHOT + "1"
@@ -1396,6 +1421,7 @@ def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_api, v
                                          jobs=[], groups=[DEFAULT])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_volume_label_when_job_and_group_use_same_name(client, volume_name):  # NOQA
     """
@@ -1426,9 +1452,12 @@ def test_recurring_job_volume_label_when_job_and_group_use_same_name(client, vol
     volume1_name = volume_name + "-1"
     volume2_name = volume_name + "-2"
     volume3_name = volume_name + "-3"
-    client.create_volume(name=volume1_name, size=SIZE)
-    client.create_volume(name=volume2_name, size=SIZE)
-    client.create_volume(name=volume3_name, size=SIZE)
+    client.create_volume(name=volume1_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
+    client.create_volume(name=volume2_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
+    client.create_volume(name=volume3_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume1 = wait_for_volume_detached(client, volume1_name)
     volume2 = wait_for_volume_detached(client, volume2_name)
     volume3 = wait_for_volume_detached(client, volume3_name)
@@ -1477,6 +1506,7 @@ def test_recurring_job_volume_label_when_job_and_group_use_same_name(client, vol
                                          jobs=[], groups=[DEFAULT])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
@@ -1510,7 +1540,8 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
         1 backup exist in `test-job-1` volume.
     """
     volume1_name = "test-job-1"
-    client.create_volume(name=volume1_name, size=SIZE)
+    client.create_volume(name=volume1_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume1 = wait_for_volume_detached(client, volume1_name)
     volume1.attach(hostId=get_self_host_id())
     volume1 = wait_for_volume_healthy(client, volume1_name)
@@ -1547,7 +1578,8 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
 
     volume2_name = "test-job-2"
-    client.create_volume(name=volume2_name, size=SIZE)
+    client.create_volume(name=volume2_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume2 = wait_for_volume_detached(client, volume2_name)
     volume2.attach(hostId=get_self_host_id())
     volume2 = wait_for_volume_healthy(client, volume2_name)
@@ -1570,6 +1602,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_snapshot(client, batch_v1_api):  # NOQA
     """
@@ -1597,8 +1630,10 @@ def test_recurring_job_snapshot(client, batch_v1_api):  # NOQA
     """
     volume1_name = "test-job-1"
     volume2_name = "test-job-2"
-    client.create_volume(name=volume1_name, size=SIZE)
-    client.create_volume(name=volume2_name, size=SIZE)
+    client.create_volume(name=volume1_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
+    client.create_volume(name=volume2_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume1 = wait_for_volume_detached(client, volume1_name)
     volume2 = wait_for_volume_detached(client, volume2_name)
 
@@ -1643,6 +1678,7 @@ def test_recurring_job_snapshot(client, batch_v1_api):  # NOQA
     wait_for_snapshot_count(volume2, 3)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_snapshot_delete(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
     """
@@ -1678,7 +1714,8 @@ def test_recurring_job_snapshot_delete(set_random_backupstore, client, batch_v1_
          - 3 snapshots retained
          - 1 volume-head
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     self_host = get_self_host_id()
@@ -1771,7 +1808,8 @@ def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, 
          - 0 snapshot retained
          - 1 volume-head
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     self_host = get_self_host_id()
@@ -1839,7 +1877,8 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
          - 1 user-created
          - 1 volume-head
     """
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     self_host = get_self_host_id()
@@ -1901,6 +1940,7 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
     assert system_created_count == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
@@ -1926,8 +1966,10 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
     """
     volume1_name = "test-job-1"
     volume2_name = "test-job-2"
-    client.create_volume(name=volume1_name, size=SIZE)
-    client.create_volume(name=volume2_name, size=SIZE)
+    client.create_volume(name=volume1_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
+    client.create_volume(name=volume2_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume1 = wait_for_volume_detached(client, volume1_name)
     volume2 = wait_for_volume_detached(client, volume2_name)
 
@@ -1966,6 +2008,7 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_restored_from_backup_target(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
@@ -2035,7 +2078,8 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     check_recurring_jobs(client, recurring_jobs)
 
     volume = client.create_volume(name=volume_name1, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2,
+                                  dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name1)
     volume = volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name1)
@@ -2069,7 +2113,8 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     _, backup = find_backup(client, volume_name1, restore_snapshot_name)
     client.create_volume(name=rvolume_name1,
                          size=SIZE,
-                         fromBackup=backup.url)
+                         fromBackup=backup.url,
+                         dataEngine=DATA_ENGINE)
     rvolume1 = wait_for_volume_detached(client, rvolume_name1)
     wait_for_volume_recurring_job_update(rvolume1,
                                          jobs=[snap1, back1],
@@ -2079,13 +2124,15 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     cleanup_all_recurring_jobs(client)
     client.create_volume(name=rvolume_name2,
                          size=SIZE,
-                         fromBackup=backup.url)
+                         fromBackup=backup.url,
+                         dataEngine=DATA_ENGINE)
     rvolume2 = wait_for_volume_detached(client, rvolume_name2)
     wait_for_volume_recurring_job_update(rvolume2,
                                          jobs=[snap1, back1],
                                          groups=[DEFAULT, group1])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 @pytest.mark.parametrize("access_mode", [ACCESS_MODE_RWO, ACCESS_MODE_RWX])  # NOQA
 def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_name, csi_pv, pvc, pod_make, access_mode):  # NOQA
@@ -2163,6 +2210,7 @@ def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_na
     assert size_trimmed == test_size
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job
 def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
     """
@@ -2273,6 +2321,7 @@ def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
     assert unexpected_count == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job
 def test_recurring_job_source_label(client, core_api, volume_name):  # NOQA
     """
