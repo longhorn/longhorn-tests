@@ -90,6 +90,32 @@ Use this function to get specific condition of a mertic</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.test_metric.test_metric_longhorn_backup"><code class="name flex">
+<span>def <span class="ident">test_metric_longhorn_backup</span></span>(<span>set_random_backupstore, client, core_api, batch_v1_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test metric longhorn_backup_actual_size_bytes and
+longhorn_backup_state</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/9429">https://github.com/longhorn/longhorn/issues/9429</a></p>
+<p>Given a volume</p>
+<p>When a backup is created by user
+Then has a metric longhorn_backup_actual_size_bytes value
+equals to the size of the backup,
+and volume label is the volume name
+and recurring_job label is empty
+And has a metric longhorn_backup_state value equals to 3 (Completed),
+and volume label is the volume name
+and recurring_job label is empty</p>
+<p>When a recurring backup job is created
+Then should have a metric longhorn_backup_actual_size_bytes value
+equals to the size of the backup,
+and volume label is the volume name
+and recurring_job label is the job name
+And should have a metric longhorn_backup_state
+value equals to 3 (Completed),
+and volume label is the volume name
+and recurring_job label is the job name</p></div>
+</dd>
 <dt id="tests.test_metric.test_metric_longhorn_snapshot_actual_size_bytes"><code class="name flex">
 <span>def <span class="ident">test_metric_longhorn_snapshot_actual_size_bytes</span></span>(<span>client, core_api, volume_name)</span>
 </code></dt>
@@ -99,12 +125,12 @@ Use this function to get specific condition of a mertic</p></div>
 <p>Given a volume</p>
 <p>When 1 snapshot is created by user
 And 1 snapshot is created by system
-Then has a metric longhorn_snapshot_actual_size_bytes value equals to the
-size of the user created snapshot,
+Then has a metric longhorn_snapshot_actual_size_bytes value
+equals to the size of the user created snapshot,
 and volume label is the volume name
 and user_created label is true
-And has a metric longhorn_snapshot_actual_size_bytes value equals to the
-size of the system created snapshot,
+And has a metric longhorn_snapshot_actual_size_bytes value
+equals to the size of the system created snapshot,
 and volume label is the volume name
 and user_created label is false</p>
 <p>When 3 snapshot is created by user
@@ -159,6 +185,12 @@ prometheus_client to validate the return value.</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.test_metric.wait_for_metric_sum_on_all_nodes"><code class="name flex">
+<span>def <span class="ident">wait_for_metric_sum_on_all_nodes</span></span>(<span>client, core_api, metric_name, metric_labels, expected_value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.test_metric.wait_for_metric_volume_actual_size"><code class="name flex">
 <span>def <span class="ident">wait_for_metric_volume_actual_size</span></span>(<span>client, core_api, metric_name, metric_labels, volume_name)</span>
 </code></dt>
@@ -190,12 +222,14 @@ prometheus_client to validate the return value.</p></div>
 <li><code><a title="tests.test_metric.find_metric" href="#tests.test_metric.find_metric">find_metric</a></code></li>
 <li><code><a title="tests.test_metric.find_metrics" href="#tests.test_metric.find_metrics">find_metrics</a></code></li>
 <li><code><a title="tests.test_metric.get_metrics" href="#tests.test_metric.get_metrics">get_metrics</a></code></li>
+<li><code><a title="tests.test_metric.test_metric_longhorn_backup" href="#tests.test_metric.test_metric_longhorn_backup">test_metric_longhorn_backup</a></code></li>
 <li><code><a title="tests.test_metric.test_metric_longhorn_snapshot_actual_size_bytes" href="#tests.test_metric.test_metric_longhorn_snapshot_actual_size_bytes">test_metric_longhorn_snapshot_actual_size_bytes</a></code></li>
 <li><code><a title="tests.test_metric.test_metric_longhorn_volume_file_system_read_only" href="#tests.test_metric.test_metric_longhorn_volume_file_system_read_only">test_metric_longhorn_volume_file_system_read_only</a></code></li>
 <li><code><a title="tests.test_metric.test_node_metrics" href="#tests.test_metric.test_node_metrics">test_node_metrics</a></code></li>
 <li><code><a title="tests.test_metric.test_volume_metrics" href="#tests.test_metric.test_volume_metrics">test_volume_metrics</a></code></li>
 <li><code><a title="tests.test_metric.wait_for_metric" href="#tests.test_metric.wait_for_metric">wait_for_metric</a></code></li>
 <li><code><a title="tests.test_metric.wait_for_metric_count_all_nodes" href="#tests.test_metric.wait_for_metric_count_all_nodes">wait_for_metric_count_all_nodes</a></code></li>
+<li><code><a title="tests.test_metric.wait_for_metric_sum_on_all_nodes" href="#tests.test_metric.wait_for_metric_sum_on_all_nodes">wait_for_metric_sum_on_all_nodes</a></code></li>
 <li><code><a title="tests.test_metric.wait_for_metric_volume_actual_size" href="#tests.test_metric.wait_for_metric_volume_actual_size">wait_for_metric_volume_actual_size</a></code></li>
 </ul>
 </li>
