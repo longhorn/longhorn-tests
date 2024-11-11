@@ -401,3 +401,20 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert ready, f"Failed to get volume {volume_name} replicas ready: {replicas}"
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        is_unexpected_pass = False
+        try:
+            self.get(volume_name).trimFilesystem(name=volume_name)
+
+            if is_expect_fail:
+                is_unexpected_pass = True
+
+        except Exception as e:
+            if is_expect_fail:
+                logging(f"Failed to trim filesystem: {e}")
+            else:
+                raise e
+
+        if is_unexpected_pass:
+            raise Exception(f"Expected volume {volume_name} trim filesystem to fail")

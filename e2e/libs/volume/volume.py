@@ -157,3 +157,6 @@ class Volume(Base):
 
     def validate_volume_setting(self, volume_name, setting_name, value):
         return self.volume.validate_volume_setting(volume_name, setting_name, value)
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        return self.volume.trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
