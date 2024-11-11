@@ -236,6 +236,9 @@ class volume_keywords:
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
+    def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None):
+        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count)
+
     def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
         retry_count, retry_interval = get_retry_count_and_interval()
