@@ -148,9 +148,10 @@ And volume has backup count (0).</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Scenario: system backup with volume backup policy (if-not-present) should
-only create volume backup when there is no existing backup in
-the volume.</p>
-<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5011">https://github.com/longhorn/longhorn/issues/5011</a></p>
+create volume backup when no backup exists for the volume or when
+the last backup is outdated.</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5011">https://github.com/longhorn/longhorn/issues/5011</a>
+<a href="https://github.com/longhorn/longhorn/issues/6027">https://github.com/longhorn/longhorn/issues/6027</a></p>
 <p>Given a volume is created.</p>
 <p>When system backup (system-backup-1) has no volume backup policy.
 And system backup (system-backup-1) created.
@@ -161,7 +162,13 @@ And volume has backup count (1).</p>
 (if-not-present).
 And system backup (system-backup-2) created.
 Then system backup is in state (Ready).
-And volume has backup count (1).</p></div>
+And volume has backup count (1).</p>
+<p>When system backup (system-backup-3) has volume backup policy
+(if-not-present).
+And write data to volume.
+And system backup (system-backup-3) created.
+Then system backup is in state (Ready).
+And volume has backup count (2).</p></div>
 </dd>
 </dl>
 </section>
