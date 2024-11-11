@@ -280,6 +280,10 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} restoration from {backup_name} completed')
         self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
 
+    def wait_for_volume_restoration_start(self, volume_name, backup_name):
+        logging(f'Waiting for volume {volume_name} restoration from {backup_name} start')
+        self.volume.wait_for_volume_restoration_start(volume_name, backup_name)
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)
 

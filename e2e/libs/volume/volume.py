@@ -78,6 +78,9 @@ class Volume(Base):
     def wait_for_volume_restoration_completed(self, volume_name, backup_name):
         self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
 
+    def wait_for_volume_restoration_start(self, volume_name, backup_name):
+        self.volume.wait_for_volume_restoration_start(volume_name, backup_name)
+
     def wait_for_volume_expand_to_size(self, volume_name, size):
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
