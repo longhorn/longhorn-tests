@@ -15,10 +15,13 @@ from common import client, core_api, storage_class, pvc_name # NOQA
 from common import get_self_host_id, create_and_check_volume, create_backup
 from common import create_storage_class, get_volume_engine
 from common import create_rwx_volume_with_storageclass
+from common import DATA_ENGINE
 from backupstore import set_random_backupstore # NOQA
 
 REPLICA_COUNT = 2
 
+
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
 def test_migration_confirm(clients, volume_name):  # NOQA
@@ -68,6 +71,7 @@ def migration_confirm_test(clients, volume_name, backing_image=""):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
 def test_migration_rollback(clients, volume_name):  # NOQA
@@ -117,6 +121,7 @@ def migration_rollback_test(clients, volume_name, backing_image=""):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
 def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
@@ -157,7 +162,8 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=3,
                                   backingImage="",
-                                  accessMode="rwx", migratable=True)
+                                  accessMode="rwx", migratable=True,
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_detached(client, volume_name)
     attachment_id = common.generate_attachment_ticket_id()
     volume.attach(attachmentID=attachment_id, hostId=local_node)
@@ -199,15 +205,20 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
         if r.name not in old_replicas:
             new_replicas.append(r.name)
 
-    assert len(old_replicas) == len(new_replicas)
+    if DATA_ENGINE == "v1":
+        assert len(old_replicas) == len(new_replicas)
 
     # Step 9
     volume.detach(attachmentID=attachment_id_1)
 
     # Step 10
+    if DATA_ENGINE == "v1":
+        replica_cnt = len(new_replicas)
+    elif DATA_ENGINE == "v2":
+        replica_cnt = len(old_replicas)
     volume = common.wait_for_volume_migration_node(
         client, volume_name, local_node,
-        expected_replica_count=len(new_replicas)
+        expected_replica_count=replica_cnt
     )
 
     # Step 11
@@ -295,6 +306,7 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
     check_detached_volume_data(client, volume_name, data)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
 def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
@@ -326,7 +338,8 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     volume = client.create_volume(name=volume_name, size=str(2 * Gi),
                                   numberOfReplicas=3,
                                   backingImage="",
-                                  accessMode="rwx", migratable=True)
+                                  accessMode="rwx", migratable=True,
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_detached(client, volume_name)
     attachment_id_1 = common.generate_attachment_ticket_id()
     volume.attach(attachmentID=attachment_id_1, hostId=current_host,
@@ -357,7 +370,8 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     # Step 5
     volume = common.wait_for_volume_migration_ready(client, volume_name)
     new_replicas = volume.replicas
-    assert len(old_replicas) == (len(new_replicas) - len(old_replicas))
+    if DATA_ENGINE == "v1":
+        assert len(old_replicas) == (len(new_replicas) - len(old_replicas))
 
     # Step 6
     volume.detach(attachmentID=attachment_id_1)
@@ -508,7 +522,8 @@ def setup_migration_test(clients, volume_name, backing_image="", replica_cnt=REP
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=replica_cnt,
                                   backingImage=backing_image,
-                                  accessMode="rwx", migratable=True)
+                                  accessMode="rwx", migratable=True,
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_detached(client, volume_name)
     attachment_id = common.generate_attachment_ticket_id()
     volume.attach(attachmentID=attachment_id, hostId=common.get_self_host_id())
