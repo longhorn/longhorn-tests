@@ -31,6 +31,7 @@ from common import check_pvc_existence
 from common import check_pv_existence
 from common import check_backing_image_disk_map_status
 from common import wait_for_backup_restore_completed
+from common import write_volume_random_data
 
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import SIZE
@@ -207,10 +208,11 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
 def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_name, set_random_backupstore):  # NOQA
     """
     Scenario: system backup with volume backup policy (if-not-present) should
-              only create volume backup when there is no existing backup in
-              the volume.
+              create volume backup when no backup exists for the volume or when
+              the last backup is outdated.
 
     Issue: https://github.com/longhorn/longhorn/issues/5011
+           https://github.com/longhorn/longhorn/issues/6027
 
     Given a volume is created.
 
@@ -225,6 +227,13 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
     And system backup (system-backup-2) created.
     Then system backup is in state (Ready).
     And volume has backup count (1).
+
+    When system backup (system-backup-3) has volume backup policy
+         (if-not-present).
+    And write data to volume.
+    And system backup (system-backup-3) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (2).
     """
     host_id = get_self_host_id()
 
@@ -232,25 +241,23 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
-    system_backup_name_1 = system_backup_random_name()
-    client.create_system_backup(Name=system_backup_name_1)
+    def create_system_backup_and_assert_volume_backup_count(count):
+        system_backup_name = system_backup_random_name()
+        client.create_system_backup(Name=system_backup_name,
+                                    VolumeBackupPolicy=IF_NOT_PRESENT)
 
-    system_backup = client.by_id_system_backup(system_backup_name_1)
-    assert system_backup.volumeBackupPolicy == IF_NOT_PRESENT
+        system_backup = client.by_id_system_backup(system_backup_name)
+        assert system_backup.volumeBackupPolicy == IF_NOT_PRESENT
 
-    system_backup_wait_for_state("Ready", system_backup_name_1, client)
+        system_backup_wait_for_state("Ready", system_backup_name, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
-    wait_for_backup_count(backup_volume, 1)
+        backup_volume = client.by_id_backupVolume(volume_name)
+        wait_for_backup_count(backup_volume, count)
 
-    system_backup_name_2 = system_backup_random_name()
-    client.create_system_backup(Name=system_backup_name_2,
-                                VolumeBackupPolicy=IF_NOT_PRESENT)
-
-    system_backup_wait_for_state("Ready", system_backup_name_2, client)
-
-    backup_volume = client.by_id_backupVolume(volume_name)
-    wait_for_backup_count(backup_volume, 1)
+    create_system_backup_and_assert_volume_backup_count(1)
+    create_system_backup_and_assert_volume_backup_count(1)
+    write_volume_random_data(volume)
+    create_system_backup_and_assert_volume_backup_count(2)
 
 
 @pytest.mark.system_backup_restore   # NOQA

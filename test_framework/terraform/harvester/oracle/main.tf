@@ -2,7 +2,7 @@ terraform {
   required_providers {
     rancher2 = {
       source  = "rancher/rancher2"
-      version = "~> 4.4.0"
+      version = "~> 5.1.0"
     }
   }
 }
@@ -34,9 +34,9 @@ resource "rancher2_cloud_credential" "e2e-credential" {
   }
 }
 
-resource "rancher2_machine_config_v2" "e2e-machine-config" {
+resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 
-  generate_name = "e2e-machine-config-${random_string.random_suffix.id}"
+  generate_name = "e2e-machine-config-controlplane-${random_string.random_suffix.id}"
 
   harvester_config {
 
@@ -48,7 +48,54 @@ resource "rancher2_machine_config_v2" "e2e-machine-config" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-kkkjv",
+            "imageName": "longhorn-qa/image-6tx8s",
+            "size": 100,
+            "bootOrder": 1
+        }]
+    }
+    EOF
+
+    network_info = <<EOF
+    {
+        "interfaces": [{
+            "networkName": "longhorn-qa/vlan104"
+        }]
+    }
+    EOF
+
+    ssh_user = "cloud-user"
+
+    user_data = <<EOF
+#cloud-config
+ssh_authorized_keys:
+  - >-
+    ${file(var.ssh_public_key_file_path)}
+runcmd:
+  - - systemctl
+    - enable
+    - '--now'
+    - qemu-guest-agent.service
+  - systemctl stop firewalld.service
+  - systemctl disable firewalld.service
+EOF
+  }
+}
+
+resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
+
+  generate_name = "e2e-machine-config-worker-${random_string.random_suffix.id}"
+
+  harvester_config {
+
+    vm_namespace = "longhorn-qa"
+
+    cpu_count = "4"
+    memory_size = "8"
+
+    disk_info = <<EOF
+    {
+        "disks": [{
+            "imageName": "longhorn-qa/image-6tx8s",
             "size": 100,
             "bootOrder": 1
         },
@@ -68,7 +115,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config" {
     }
     EOF
 
-    ssh_user = "ubuntu"
+    ssh_user = "cloud-user"
 
     user_data = <<EOF
 #cloud-config
@@ -79,19 +126,18 @@ package_update: true
 packages:
   - qemu-guest-agent
   - iptables
+  - iscsi-initiator-utils
+  - nfs-utils
+  - nfs4-acl-tools
   - cryptsetup
-  - dmsetup
+  - device-mapper
 runcmd:
   - - systemctl
     - enable
     - '--now'
     - qemu-guest-agent.service
-  - apt-get update
-  - apt-get install -y linux-modules-extra-`uname -r`
-  - systemctl stop multipathd.service
-  - systemctl stop multipathd.socket
-  - systemctl disable multipathd.service
-  - systemctl disable multipathd.socket
+  - systemctl stop firewalld.service
+  - systemctl disable firewalld.service
   - modprobe uio
   - modprobe uio_pci_generic
   - modprobe vfio_pci
@@ -124,8 +170,8 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
       worker_role = false
       quantity = 1
       machine_config {
-        kind = rancher2_machine_config_v2.e2e-machine-config.kind
-        name = rancher2_machine_config_v2.e2e-machine-config.name
+        kind = rancher2_machine_config_v2.e2e-machine-config-controlplane.kind
+        name = rancher2_machine_config_v2.e2e-machine-config-controlplane.name
       }
     }
     machine_pools {
@@ -136,8 +182,8 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
       worker_role = true
       quantity = 3
       machine_config {
-        kind = rancher2_machine_config_v2.e2e-machine-config.kind
-        name = rancher2_machine_config_v2.e2e-machine-config.name
+        kind = rancher2_machine_config_v2.e2e-machine-config-worker.kind
+        name = rancher2_machine_config_v2.e2e-machine-config-worker.name
       }
     }
     machine_selector_config {
@@ -164,7 +210,7 @@ EOF
 
 output "kube_config" {
   value = rancher2_cluster_v2.e2e-cluster.kube_config
-  sensitive = "true"
+  sensitive = true
 }
 
 output "cluster_id" {

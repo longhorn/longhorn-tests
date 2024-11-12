@@ -420,6 +420,23 @@ class CRD(Base):
             name=replica_list['items'][0]['metadata']['name']
         )
 
+    def delete_replica_by_name(self, volume_name, replica_name):
+        replica = self.obj_api.get_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="replicas",
+            name=replica_name
+        )
+        logging(f"Deleting replica {replica['metadata']['name']}")
+        self.obj_api.delete_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="replicas",
+            name=replica['metadata']['name']
+        )
+
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
         return Rest().wait_for_replica_rebuilding_start(volume_name, node_name)
 
@@ -432,7 +449,7 @@ class CRD(Base):
     def crash_node_replica_process(self, volume_name, node_name):
         return Rest().crash_node_replica_process(volume_name, node_name)
 
-    def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
+    def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return Rest().wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
@@ -511,3 +528,6 @@ class CRD(Base):
         volume = self.get(volume_name)
         assert str(volume["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
+
+    def trim_filesystem(self, volume_name, is_expect_fail=False):
+        return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
