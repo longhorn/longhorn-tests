@@ -12,7 +12,7 @@ class Rest(Base):
     def __init__(self):
         pass
 
-    def get(self, volume_name, node_name):
+    def get(self, volume_name, node_name, disk_uuid):
         return NotImplemented
 
     def delete(self, volume_name, node_name):

@@ -10,7 +10,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 
-def create_statefulset(statefulset_name, volume_type, sc_name):
+def create_statefulset(statefulset_name, volume_type, sc_name, size):
     filepath = "./templates/workload/statefulset.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -29,6 +29,10 @@ def create_statefulset(statefulset_name, volume_type, sc_name):
         # correct access mode`
         if volume_type == 'RWX':
             manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['accessModes'][0] = 'ReadWriteMany'
+
+        # correct request storage size
+        if size:
+            manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['resources']['requests']['storage'] = size
 
         api = client.AppsV1Api()
         statefulset = api.create_namespaced_stateful_set(

@@ -11,10 +11,14 @@ class node_keywords:
     def list_node_names_by_role(self, role):
         return self.node.list_node_names_by_role(role)
 
-    def add_disk(self, node_name, type, path):
-        logging(f"Adding {type} type disk {path} to node {node_name}")
+    def mount_disk(self, disk_name, node_name):
+        logging(f"Mount device /dev/longhorn/{disk_name} on node {node_name}")
+        return self.node.mount_disk(disk_name, node_name)
+
+    def add_disk(self, disk_name, node_name, type, path):
+        logging(f"Adding {type} type disk {disk_name} {path} to node {node_name}")
         disk = {
-            f"{type}-disk": {
+            f"{disk_name}": {
                 "diskType": type,
                 "path": path,
                 "allowScheduling": True
@@ -38,6 +42,13 @@ class node_keywords:
         logging(f"Setting node {node_name}; scheduling={allowScheduling}; evictionRequested={evictionRequested}")
         self.node.set_node(node_name, allowScheduling, evictionRequested)
 
+    def disable_disk(self, node_name, disk_name):
+        self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False)
+
+    def enable_disk(self, node_name, disk_name):
+        self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=True)
+
+
     def disable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=False)
 
@@ -52,3 +63,15 @@ class node_keywords:
 
     def check_node_is_not_schedulable(self, node_name):
         self.node.check_node_schedulable(node_name, schedulable="False")
+
+    def is_disk_in_pressure(self, node_name, disk_name):
+        return self.node.is_disk_in_pressure(node_name, disk_name)
+
+    def wait_for_disk_in_pressure(self, node_name, disk_name):
+        self.node.wait_for_disk_in_pressure(node_name, disk_name)
+
+    def wait_for_disk_not_in_pressure(self, node_name, disk_name):
+        self.node.wait_for_disk_not_in_pressure(node_name, disk_name)
+
+    def get_disk_uuid(self, node_name, disk_name):
+        return self.node.get_disk_uuid(node_name, disk_name)

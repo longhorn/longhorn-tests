@@ -28,9 +28,9 @@ class statefulset_keywords:
         for statefulset in statefulsets.items:
             self.delete_statefulset(statefulset.metadata.name)
 
-    def create_statefulset(self, name, volume_type="RWO", sc_name="longhorn"):
-        logging(f'Creating {volume_type} statefulset {name} with {sc_name} storageclass')
-        create_statefulset(name, volume_type, sc_name)
+    def create_statefulset(self, name, volume_type="RWO", sc_name="longhorn", size=None):
+        logging(f'Creating {volume_type} statefulset {name} with {sc_name} storageclass and size = {size}')
+        create_statefulset(name, volume_type, sc_name, size)
 
     def delete_statefulset(self, name):
         logging(f'Deleting statefulset {name}')
