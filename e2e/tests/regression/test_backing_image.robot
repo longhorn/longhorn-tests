@@ -30,6 +30,7 @@ Test Backing Image Basic Operation
     And Verify clean up backing image bi from a disk will fail
     And Verify delete backing image bi will fail
     And Detach volume 0
+    And Wait for volume 0 detached
     And Delete volume 0
     And Clean up backing image bi from a disk
     And Delete backing image bi

@@ -41,6 +41,7 @@ Stress Volume Node CPU When Volume Is Detaching and Attaching
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Stress CPU of node with volume 0
         And Detach volume 0
+        And Wait for volume 0 detached
         And Attach volume 0
         And Wait for volume 0 healthy
         Then Check volume 0 data is intact
