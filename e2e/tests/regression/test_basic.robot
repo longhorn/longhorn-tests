@@ -53,6 +53,7 @@ Test Volume Basic
     Then Check volume 0 data is intact
 
     And Detach volume 0
+    And Wait for volume 0 detached
     And Delete volume 0
 
 Test Snapshot
@@ -80,11 +81,13 @@ Test Snapshot
     And Check volume 0 data is data 2
 
     When Detach volume 0
+    And Wait for volume 0 detached
     And Attach volume 0 in maintenance mode
     And Wait for volume 0 healthy
 
     And Revert volume 0 to snapshot 1
     And Detach volume 0
+    And Wait for volume 0 detached
     And Attach volume 0
     And Wait for volume 0 healthy
     Then Check volume 0 data is data 1

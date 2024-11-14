@@ -164,4 +164,5 @@ Node Disconnect With Statefulset
     And Wait for volume 0 healthy
 
     And Detach volume 0 from attached node
+    And Wait for volume 0 detached
     Then Wait for volume 0 detached
