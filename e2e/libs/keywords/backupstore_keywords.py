@@ -1,7 +1,8 @@
 from backupstore import Nfs, S3
-from utility.utility import get_backupstore
-from utility.utility import logging
+
 import os
+
+from utility.utility import get_backupstore
 
 
 class backupstore_keywords:
