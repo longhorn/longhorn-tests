@@ -128,6 +128,28 @@ class Node:
         elif role == "worker":
             return worker_nodes
 
+    def set_node(self, node_name: str, allowScheduling: bool, evictionRequested: bool) -> object:
+        for _ in range(self.retry_count):
+            try:
+                node = get_longhorn_client().by_id_node(node_name)
+
+                get_longhorn_client().update(
+                    node,
+                    allowScheduling=allowScheduling,
+                    evictionRequested=evictionRequested
+                )
+
+                node = get_longhorn_client().by_id_node(node_name)
+                assert node.allowScheduling == allowScheduling
+                assert node.evictionRequested == evictionRequested
+                return node
+            except Exception as e:
+                logging(f"Updating node {node_name} error: {e}")
+
+            time.sleep(self.retry_interval)
+
+        raise AssertionError(f"Updating node {node_name} failed")
+
     def set_node_scheduling(self, node_name, allowScheduling=True, retry=False):
         node = get_longhorn_client().by_id_node(node_name)
 
