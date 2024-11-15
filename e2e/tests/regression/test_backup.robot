@@ -102,6 +102,7 @@ Test Incremental Restore
     And Wait for volume 3 healthy
     And Check volume 3 data is backup 2
     And Detach volume 3
+    And Wait for volume 3 detached
 
     When Create persistentvolume for volume 3
     And Create persistentvolumeclaim for volume 3

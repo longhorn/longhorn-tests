@@ -1,5 +1,7 @@
-import asyncio
 from robot.libraries.BuiltIn import BuiltIn
+
+import asyncio
+
 from k8s.k8s import restart_kubelet
 from k8s.k8s import delete_node
 from k8s.k8s import drain_node, force_drain_node
@@ -10,8 +12,11 @@ from k8s.k8s import check_node_cordoned
 from k8s.k8s import get_instance_manager_on_node
 from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
-from utility.utility import logging
+
 from node import Node
+
+from utility.utility import logging
+
 
 class k8s_keywords:
 

@@ -29,7 +29,6 @@ from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
 from utility.utility import logging
-from node.node import Node
 
 from volume import Volume
 from volume.constant import MEBIBYTE

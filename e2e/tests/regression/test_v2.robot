@@ -32,6 +32,7 @@ Test V2 Volume Basic
     And Write data to volume 0
     Then Check volume 0 data is intact
     And Detach volume 0
+    And Wait for volume 0 detached
     And Delete volume 0
 
 Degraded Volume Replica Rebuilding

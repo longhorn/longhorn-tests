@@ -1,5 +1,5 @@
 from engine_image import EngineImage
-from utility.utility import logging
+
 
 class engine_image_keywords:
 

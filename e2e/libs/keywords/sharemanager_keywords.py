@@ -51,9 +51,9 @@ class sharemanager_keywords:
     def delete_sharemanager(self, name):
         return self.sharemanager.delete(name)
 
-    def delete_sharemanager_and_wait_for_recreation(self, name):        
+    def delete_sharemanager_and_wait_for_recreation(self, name):
         sharemanager = self.sharemanager.get(name)
-        last_creation_time = sharemanager["metadata"]["creationTimestamp"]        
+        last_creation_time = sharemanager["metadata"]["creationTimestamp"]
         self.sharemanager.delete(name)
         self.sharemanager.wait_for_restart(name, last_creation_time)
 

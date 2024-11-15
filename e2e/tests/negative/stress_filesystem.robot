@@ -42,6 +42,7 @@ Stress Volume Node Filesystem When Volume Is Detaching and Attaching
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Detach volume 0
+        And Wait for volume 0 detached
         And Attach volume 0
         And Wait for volume 0 healthy
         And Check volume 0 data is intact
