@@ -30,8 +30,16 @@ ${DATA_ENGINE}    v1
 *** Test Cases ***
 DR Volume Node Reboot During Initial Restoration
     [Tags]  manual  longhorn-8425
-    [Documentation]    Test DR volume node reboot
-    ...                during initial restoration
+    [Documentation]    Test DR volume node reboot during initial restoration
+    ...                Create a pod with Longhorn volume.
+    ...                Write data to the volume and get the md5sum.
+    ...                Create the 1st backup for the volume.
+    ...                Create a DR volume from the backup.
+    ...                Wait for the DR volume starting the initial restore.
+    ...                Then reboot the DR volume attached node immediately.
+    ...                Wait for the DR volume detached then reattached.
+    ...                Wait for the DR volume restore complete after the reattachment.
+    ...                Activate the DR volume and check the data md5sum.
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -52,8 +60,19 @@ DR Volume Node Reboot During Initial Restoration
 
 DR Volume Node Reboot During Incremental Restoration
     [Tags]  manual  longhorn-8425
-    [Documentation]    Test DR volume node reboot
-    ...                During Incremental Restoration
+    [Documentation]    Test DR volume node reboot During Incremental Restoration
+    ...                Create a pod with Longhorn volume.
+    ...                Write data to the volume and get the md5sum.
+    ...                Create the 1st backup for the volume.
+    ...                Create a DR volume from the backup.
+    ...                Wait for the DR volume to complete the initial restore.
+    ...                Write more data to the original volume and get the md5sum.
+    ...                Create the 2nd backup for the volume.
+    ...                Wait for the DR volume incremental restore getting triggered.
+    ...                Then reboot the DR volume attached node immediately.
+    ...                Wait for the DR volume detached then reattached.
+    ...                Wait for the DR volume restore complete after the reattachment.
+    ...                Activate the DR volume and check the data md5sum.
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
