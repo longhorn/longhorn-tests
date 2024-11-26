@@ -174,8 +174,8 @@ Test Longhorn dynamic provisioned RWX volume recovery
         And Wait until volume of deployment 0 replica rebuilding started on replica node
         Then Delete instance-manager of deployment 0 volume and wait for recover
 
-        When Delete sharemanager of deployment 0 and wait for recreation
-        And Wait for sharemanager of deployment 0 running
+        When Delete sharemanager pod of deployment 0 and wait for recreation
+        And Wait for sharemanager pod of deployment 0 running
         And Wait for deployment 0 pods stable
         And Check deployment 0 data in file data.txt is intact
     END

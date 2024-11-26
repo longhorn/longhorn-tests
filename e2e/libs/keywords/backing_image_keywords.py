@@ -23,7 +23,7 @@ class backing_image_keywords:
 
     def delete_backing_image_manager(self, name):
         self.backing_image.delete_backing_image_manager(name)
-    
+
     def wait_all_backing_image_managers_running(self):
         self.backing_image.wait_all_backing_image_managers_running()
 

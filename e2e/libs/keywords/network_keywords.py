@@ -44,6 +44,6 @@ class network_keywords:
 
     def drop_pod_egress_traffic(self, pod_name, drop_time_in_sec):
         drop_pod_egress_traffic(pod_name, drop_time_in_sec)
-    
+
     def wait_for_block_network_pod_completed(self, pod_name, status, namespace='default'):
         wait_for_pod_status(pod_name, status, namespace)

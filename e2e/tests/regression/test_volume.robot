@@ -9,6 +9,8 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/volume.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -42,3 +44,19 @@ Test RWX volume data integrity after CSI plugin pod restart
         ...    longhorn-csi-plugin
 
     Then Check deployment 0 data in file data.txt is intact
+
+Test detached volume should not reattach after node eviction
+    [Tags]    volume    node-eviction
+    [Documentation]    Test detached volume should not reattach after node eviction.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/9781
+
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+
+    When Detach volume 0
+    And Set node 1 with    allowScheduling=false    evictionRequested=true
+
+    Then Wait for volume 0 detached
+    And Assert volume 0 remains detached for at least 60 seconds

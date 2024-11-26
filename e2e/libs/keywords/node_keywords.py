@@ -1,5 +1,7 @@
 from node import Node
+
 from utility.utility import logging
+
 
 class node_keywords:
 
@@ -31,6 +33,10 @@ class node_keywords:
 
     def enable_default_disk(self, node_name):
         self.node.set_default_disk_scheduling(node_name, allowScheduling=True)
+
+    def set_node(self, node_name, allowScheduling=True, evictionRequested=False):
+        logging(f"Setting node {node_name}; scheduling={allowScheduling}; evictionRequested={evictionRequested}")
+        self.node.set_node(node_name, allowScheduling, evictionRequested)
 
     def disable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=False)

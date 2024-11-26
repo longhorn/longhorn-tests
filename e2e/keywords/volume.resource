@@ -123,6 +123,13 @@ Wait for volume ${volume_id} detached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_detached    ${volume_name}
 
+Assert volume ${volume_id} remains detached for at least ${period} seconds
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${period}
+        wait_for_volume_detached    ${volume_name}
+        Sleep    1
+    END
+
 Wait for volume ${volume_id} faulted
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_faulted    ${volume_name}

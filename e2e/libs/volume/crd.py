@@ -162,8 +162,6 @@ class CRD(Base):
             # https://github.com/longhorn/longhorn/issues/3715
             if e.reason != "Not Found":
                 Exception(f'exception for patching volumeattachments:', e)
-        if len(body['spec']['attachmentTickets']) == 0:
-            self.wait_for_volume_state(volume_name, "detached")
 
     def get(self, volume_name):
         return self.obj_api.get_namespaced_custom_object(
