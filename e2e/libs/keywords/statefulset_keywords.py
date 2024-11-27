@@ -15,7 +15,6 @@ from workload.statefulset import wait_for_statefulset_replicas_ready
 from workload.workload import get_workload_volume_name
 
 
-
 class statefulset_keywords:
 
     def __init__(self):

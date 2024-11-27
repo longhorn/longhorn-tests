@@ -64,6 +64,7 @@ Test Setting Concurrent Rebuild Limit
     # Test the setting won't intervene normal attachment.
     Given Set setting concurrent-replica-rebuild-per-node-limit to 1
     When Detach volume 1
+    And Wait for volume 1 detached
     And Delete volume 0 replica on replica node
     And Wait until volume 0 replica rebuilding started on replica node
     And Attach volume 1

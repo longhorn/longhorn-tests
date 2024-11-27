@@ -7,7 +7,7 @@ from sharemanager.constant import LABEL_SHAREMANAGER
 
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-
+from utility.utility import get_pod, delete_pod
 
 class sharemanager_keywords:
 
@@ -48,14 +48,32 @@ class sharemanager_keywords:
 
         assert AssertionError, f"Failed to wait for all sharemanagers to be deleted"
 
-    def delete_sharemanager(self, name):
-        return self.sharemanager.delete(name)
 
-    def delete_sharemanager_and_wait_for_recreation(self, name):        
-        sharemanager = self.sharemanager.get(name)
-        last_creation_time = sharemanager["metadata"]["creationTimestamp"]        
-        self.sharemanager.delete(name)
-        self.sharemanager.wait_for_restart(name, last_creation_time)
+    def delete_sharemanager_pod_and_wait_for_recreation(self, name):
+        sharemanager_pod_name = "share-manager-" + name
+        sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+        last_creation_time = sharemanager_pod.metadata.creation_timestamp
+        delete_pod(sharemanager_pod_name, "longhorn-system")
 
-    def wait_for_share_manager_running(self, name):
-        return self.sharemanager.wait_for_running(name)
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            time.sleep(retry_interval)
+            sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            if sharemanager_pod == None:
+                continue
+            creation_time = sharemanager_pod.metadata.creation_timestamp
+            if creation_time > last_creation_time:
+                return
+
+        assert False, f"sharemanager pod {sharemanager_pod_name} not recreated"
+
+
+    def wait_for_share_manager_pod_running(self, name):
+        sharemanager_pod_name = "share-manager-" + name
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            if sharemanager_pod.status.phase == "Running":
+                return
+
+        assert False, f"sharemanager pod {sharemanager_pod_name} not running"

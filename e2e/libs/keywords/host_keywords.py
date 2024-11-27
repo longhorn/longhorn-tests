@@ -1,5 +1,6 @@
-import os
 from robot.libraries.BuiltIn import BuiltIn
+
+import os
 
 from host import Harvester, Aws
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND

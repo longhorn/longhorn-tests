@@ -43,6 +43,7 @@ Stress Volume Node Memory When Volume Is Detaching and Attaching
         When Stress memory of node with volume 0
 
         And Detach volume 0
+        And Wait for volume 0 detached
         And Attach volume 0
         And Wait for volume 0 healthy
         Then Check volume 0 data is intact
