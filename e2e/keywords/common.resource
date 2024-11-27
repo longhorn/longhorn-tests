@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       Common keywords
 
+Library             Collections
 Library             OperatingSystem
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/deployment_keywords.py
@@ -38,7 +39,10 @@ Set test environment
     END
 
 Cleanup test resources
-    Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
+    FOR    ${powered_off_node}    IN    @{powered_off_nodes}
+        Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
+        Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
+    END
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule

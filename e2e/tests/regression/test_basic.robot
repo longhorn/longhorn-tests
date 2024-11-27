@@ -3,6 +3,7 @@ Documentation    Basic Test Cases
 
 Test Tags    regression
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/setting.resource
@@ -18,12 +19,6 @@ Resource    ../keywords/node.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${DATA_ENGINE}    v1
 
 *** Keywords ***
 Create volume with invalid name should fail

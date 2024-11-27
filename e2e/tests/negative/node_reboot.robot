@@ -3,6 +3,8 @@ Documentation    Negative Test Cases
 
 Test Tags    negative
 
+Resource    ../keywords/variables.resource
+Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/longhorn.resource
@@ -18,16 +20,41 @@ Resource    ../keywords/setting.resource
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
 
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${VOLUME_TYPE}    RWO
-${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
-${RWX_VOLUME_FAST_FAILOVER}    false
-${DATA_ENGINE}    v1
-
 *** Test Cases ***
+Shutdown Volume Node And Test Auto Reattach To A New Node
+    Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
+
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Create deployment 1 with persistentvolumeclaim 1
+
+    And Wait for volume of deployment 0 healthy
+    And Wait for volume of deployment 1 healthy
+
+    And Write 100 MB data to file data.bin in deployment 0
+    And Write 100 MB data to file data.bin in deployment 1
+
+    When Power off volume node of deployment 0 without waiting
+    And Power off volume node of deployment 1 without waiting
+
+    Then Wait for sharemanager pod of deployment 1 restart
+    And Wait for sharemanager pod of deployment 1 running
+
+    And Wait for volume of deployment 0 attached and degraded
+    And Wait for volume of deployment 1 attached and degraded
+
+    And Wait for workloads pods stable
+        ...    deployment 0    deployment 1
+
+    And Check deployment 0 data in file data.bin is intact
+    And Check deployment 1 data in file data.bin is intact
+    And Check deployment 0 works
+    And Check deployment 1 works
+
+    And Power on off nodes
+
 Reboot Node One By One While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
@@ -289,7 +316,7 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     And Power off volume node of deployment 0
     And Wait for deployment 0 pod stuck in Terminating on the original node
 
-    When Power on off node
+    When Power on off nodes
     And Wait for deployment 0 pods stable
     Then Check deployment 0 data in file data is intact
 
@@ -307,7 +334,7 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     And Power off volume node of deployment 0
     And Wait for deployment 0 pod stuck in Terminating on the original node
 
-    When Power on off node
+    When Power on off nodes
     And Wait for deployment 0 pods stable
     Then Check deployment 0 data in file data is intact
 
@@ -328,7 +355,7 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
 
     And Wait for deployment 0 pods stable
     Then Check deployment 0 data in file data is intact
-    And Power on off node
+    And Power on off nodes
 
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Volume Node
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -345,7 +372,7 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
     Then Wait for volume of deployment 0 faulted
     And Wait for deployment 0 pod stuck in ContainerCreating on another node
 
-    When Power on off node
+    When Power on off nodes
     And Wait for deployment 0 pods stable
     And Check deployment 0 pod is Running on the original node
     Then Check deployment 0 data in file data is intact
@@ -366,7 +393,7 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
 
     And Wait for statefulset 0 pods stable
     Then Check statefulset 0 data in file data is intact
-    And Power on off node
+    And Power on off nodes
 
 Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Volume Node
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -382,7 +409,7 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
     Then Wait for volume of statefulset 0 faulted
     And Wait for statefulset 0 pod stuck in ContainerCreating on another node
 
-    When Power on off node
+    When Power on off nodes
     And Wait for statefulset 0 pods stable
     And Check statefulset 0 pod is Running on the original node
     Then Check statefulset 0 data in file data is intact

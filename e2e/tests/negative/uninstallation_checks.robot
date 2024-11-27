@@ -3,6 +3,7 @@ Documentation    Uninstallation Checks
 
 Test Tags    negative
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/volume.resource
@@ -17,11 +18,6 @@ Library     ../libs/keywords/setting_keywords.py
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Uninstallation Checks

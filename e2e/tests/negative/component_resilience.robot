@@ -3,6 +3,7 @@ Documentation    Negative Test Cases
 
 Test Tags    negative
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backing_image.resource
@@ -17,13 +18,6 @@ Resource    ../keywords/sharemanager.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${RWX_VOLUME_FAST_FAILOVER}    false
-${DATA_ENGINE}    v1
 
 *** Keywords ***
 Delete instance-manager of volume ${volume_id} and wait for recover

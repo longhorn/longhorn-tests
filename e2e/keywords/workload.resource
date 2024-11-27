@@ -46,9 +46,18 @@ Power off volume node of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${powered_off_node} =    get_volume_node    ${volume_name}
+    Append to list      ${powered_off_nodes}     ${powered_off_node}
     ${last_volume_node} =    get_volume_node    ${volume_name}
     power_off_volume_node    ${volume_name}
-    Set Test Variable    ${powered_off_node}
+    Set Test Variable    ${last_volume_node}
+
+Power off volume node of ${workload_kind} ${workload_id} without waiting
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${powered_off_node} =    get_volume_node    ${volume_name}
+    Append to list      ${powered_off_nodes}     ${powered_off_node}
+    ${last_volume_node} =    get_volume_node    ${volume_name}
+    power_off_volume_node    ${volume_name}    waiting=False
     Set Test Variable    ${last_volume_node}
 
 Reboot volume node of ${workload_kind} ${workload_id}

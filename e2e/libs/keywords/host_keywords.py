@@ -46,10 +46,10 @@ class host_keywords:
         logging(f'Rebooting node {node_name} with downtime {reboot_down_time_sec} seconds')
         self.host.reboot_node(node_name, reboot_down_time_sec)
 
-    def power_off_volume_node(self, volume_name):
+    def power_off_volume_node(self, volume_name, waiting=True):
         node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-        logging(f'Power off volume {volume_name} node {node_id}')
-        self.host.power_off_node(node_id)
+        logging(f'Power off volume {volume_name} node {node_id} with waiting = {waiting}')
+        self.host.power_off_node(node_id, waiting)
 
     def power_on_node_by_name(self, node_name):
         self.host.power_on_node(node_name)
