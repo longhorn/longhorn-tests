@@ -3,6 +3,7 @@ Documentation    v2 Data Engine Test Cases
 
 Test Tags    regression    v2
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
@@ -16,11 +17,6 @@ Resource    ../keywords/longhorn.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Test V2 Volume Basic

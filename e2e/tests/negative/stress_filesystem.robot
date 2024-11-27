@@ -3,6 +3,7 @@ Documentation    Negative Test Cases
 
 Test Tags    negative
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
@@ -13,13 +14,7 @@ Resource    ../keywords/workload.resource
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
 
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-
 *** Test Cases ***
-
 Stress Volume Node Filesystem When Replica Is Rebuilding
     Given Create volume 0 with    size=5Gi    numberOfReplicas=3
     And Attach volume 0

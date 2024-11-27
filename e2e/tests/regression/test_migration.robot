@@ -3,6 +3,7 @@ Documentation    Migration Test Cases
 
 Test Tags    regression
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
@@ -12,12 +13,6 @@ Resource    ../keywords/volume.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Test Migration Confirm

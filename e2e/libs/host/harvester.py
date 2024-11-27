@@ -53,7 +53,7 @@ class Harvester(Base):
         for node_name in node_names:
             self.power_on_node(node_name)
 
-    def power_off_node(self, node_name):
+    def power_off_node(self, node_name, waiting=True):
         vm_id = self.mapping[node_name]
 
         url = f"{self.url}/{vm_id}"
@@ -67,6 +67,9 @@ class Harvester(Base):
             except Exception as e:
                 logging(f"Stopping vm failed with error {e}")
         logging(f"Stopping vm {vm_id}")
+
+        if not waiting:
+            return
 
         stopped = False
         for i in range(self.retry_count):

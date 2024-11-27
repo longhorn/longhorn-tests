@@ -3,18 +3,13 @@ Documentation    Engine Image Test Cases
 
 Test Tags    regression    engine_image
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/engine_image.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Test Replica Rebuilding After Engine Upgrade

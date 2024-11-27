@@ -3,6 +3,7 @@ Documentation    Negative Test Cases
 
 Test Tags    negative    cluster
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/longhorn.resource
@@ -15,15 +16,6 @@ Resource    ../keywords/setting.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
-${RWX_VOLUME_FAST_FAILOVER}    false
-${DATA_ENGINE}    v1
-
 
 *** Test Cases ***
 Restart Cluster While Workload Heavy Writing
