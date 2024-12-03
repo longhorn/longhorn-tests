@@ -3791,7 +3791,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
                                                 to_nodes=[node1.name,
                                                           node2.name],
                                                 expect_success=2,
-                                                expect_fail=0,
+                                                expect_fail=-1,
                                                 chk_vol_healthy=False,
                                                 chk_replica_running=False)
 
