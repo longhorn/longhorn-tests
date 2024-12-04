@@ -5,6 +5,7 @@ set -x
 source test_framework/scripts/kubeconfig.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
+source pipelines/utilities/install_metrics_server.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -527,6 +528,10 @@ main(){
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
     [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
+  fi
+
+  if [[ "${DISTRO}" == "talos" ]]; then
+    install_metrics_server
   fi
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
