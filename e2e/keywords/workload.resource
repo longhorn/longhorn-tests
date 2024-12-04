@@ -238,3 +238,22 @@ Expand ${workload_kind} ${workload_id} volume by ${size}
     ${new_size} =    convert_size_to_bytes    ${size}
 
     expand_workload_claim_size    ${workload_name}    ${new_size}
+
+Expand ${workload_kind} ${workload_id} volume more than storage maximum size should fail
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${max_size} =    get_volume_node_disk_storage_maximum    ${volume_name}    ${node_name}
+    ${new_size} =    evaluate    ${max_size} + 1
+
+    Run Keyword And Expect Error    Failed to expand*    expand_workload_claim_size    ${workload_name}    ${new_size}    skip_retry=True
+
+Assert volume size of ${workload_kind} ${workload_id} remains ${size} for at least ${period} seconds
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    FOR    ${i}    IN RANGE    ${period}
+        ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+        ${current_size_byte} =    get_volume_size    ${volume_name}
+        Should Be Equal    ${current_size_byte}    ${expected_size_byte}
+        Sleep    1
+    END
