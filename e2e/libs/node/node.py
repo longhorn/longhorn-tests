@@ -6,6 +6,7 @@ from kubernetes import client
 from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import DISK_BEING_SYNCING
+from utility.constant import LONGHORN_NAMESPACE
 from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
@@ -99,7 +100,10 @@ class Node:
         nodes = self.list_node_names_by_role(role)
         return nodes[int(index)]
 
-    def get_node_by_name(self, node_name):
+    def get_node_by_name(self, node_name, namespace="kube-system"):
+        if namespace == LONGHORN_NAMESPACE:
+            return get_longhorn_client().by_id_node(node_name)
+
         core_api = client.CoreV1Api()
         return core_api.read_node(node_name)
 

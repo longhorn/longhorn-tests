@@ -34,3 +34,7 @@ class persistentvolumeclaim_keywords:
 
         logging(f'Expanding persistentvolumeclaim {claim_name} by {size_in_mib} MiB')
         self.claim.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
+
+    def get_claim_requested_size(self, claim_name):
+        claim = self.claim.get(claim_name)
+        return claim.spec.resources.requests['storage']
