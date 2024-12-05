@@ -1,5 +1,4 @@
 import time
-import os
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException

@@ -1,9 +1,12 @@
 import boto3
 import time
+
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
+from host.base import Base
+
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
-from host.base import Base
+
 
 class Aws(Base):
 

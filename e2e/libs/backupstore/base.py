@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-import time
-import os
 import hashlib
+import os
+
 from kubernetes import client
-from utility.utility import get_retry_count_and_interval
-from utility.utility import get_longhorn_client
+
 
 class Base(ABC):
 

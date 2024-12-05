@@ -208,10 +208,10 @@ Trim ${workload_kind} ${workload_id} volume should ${condition}
     END
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
-    ${node_name} =    get_node_by_index    ${node_id}    
+    ${node_name} =    get_node_by_index    ${node_id}
 
     IF    '${workload_name}' == 'engine-image'
-        ${label_selector} =    Set Variable    longhorn.io/component=engine-image       
+        ${label_selector} =    Set Variable    longhorn.io/component=engine-image
     ELSE IF    '${workload_name}' == 'instance-manager'
         ${label_selector} =    Set Variable    longhorn.io/component=instance-manager
     ELSE
