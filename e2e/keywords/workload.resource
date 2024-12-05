@@ -232,3 +232,9 @@ Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk 
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
     Should Be True    len(${replicas}) > 0
+
+Expand ${workload_kind} ${workload_id} volume by ${size}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${new_size} =    convert_size_to_bytes    ${size}
+
+    expand_workload_claim_size    ${workload_name}    ${new_size}
