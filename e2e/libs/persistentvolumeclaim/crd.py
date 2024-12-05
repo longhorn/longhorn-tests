@@ -84,8 +84,9 @@ class CRD():
         claim = self.get(claim_name, claim_namespace)
         return claim.spec.volume_name
 
-    def expand(self, claim_name, size, namespace="default"):
-        for i in range(self.retry_count):
+    def expand(self, claim_name, size, namespace="default", skip_retry=False):
+        retry_count = 1 if skip_retry else self.retry_count
+        for i in range(retry_count):
             logging(f"Trying to expand pvc {claim_name} to size {size} ... ({i})")
             try:
                 self.core_v1_api.patch_namespaced_persistent_volume_claim(

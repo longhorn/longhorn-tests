@@ -101,11 +101,11 @@ class PersistentVolumeClaim():
     def get_volume_name(self, claim_name):
         return self.claim.get_volume_name(claim_name)
 
-    def expand(self, claim_name, size_in_byte):
+    def expand(self, claim_name, size_in_byte, skip_retry=False):
         pvc = self.claim.get(claim_name)
         current_size = int(pvc.spec.resources.requests['storage'])
 
         target_size = current_size + size_in_byte
         logging(f"Expanding PVC {claim_name} from {current_size} to {target_size}")
-        expanded_size = self.claim.expand(claim_name, target_size)
+        expanded_size = self.claim.expand(claim_name, target_size, skip_retry=skip_retry)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))

@@ -158,13 +158,13 @@ class workload_keywords:
         logging(f'Waiting for {workload_name} volume {volume_name} to be detached')
         self.volume.wait_for_volume_detached(volume_name)
 
-    def expand_workload_claim_size(self, workload_name, size_in_byte, claim_index=0):
+    def expand_workload_claim_size(self, workload_name, size_in_byte, claim_index=0, skip_retry=False):
         claim_name = get_workload_persistent_volume_claim_name(workload_name, index=claim_index)
         current_size = self.persistentvolumeclaim.get(claim_name).spec.resources.requests['storage']
         current_size_byte = convert_size_to_bytes(current_size)
 
         logging(f'Expanding {workload_name} persistentvolumeclaim {claim_name} from {current_size_byte} to {size_in_byte}')
-        self.persistentvolumeclaim.expand(claim_name, size_in_byte)
+        self.persistentvolumeclaim.expand(claim_name, size_in_byte, skip_retry=skip_retry)
 
     def wait_for_workload_claim_size_expanded(self, workload_name, claim_index=0):
         claim_name = get_workload_persistent_volume_claim_name(workload_name, index=claim_index)
