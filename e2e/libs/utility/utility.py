@@ -338,3 +338,18 @@ def get_name_suffix(*args):
         if arg:
             suffix += f"-{arg}"
     return suffix
+
+
+def convert_size_to_bytes(size):
+    size = size.replace(" ", "")
+
+    if size.endswith("GiB"):
+        return int(size[:-3]) * 1024 * 1024 * 1024
+
+    if size.endswith("MiB"):
+        return int(size[:-3]) * 1024 * 1024
+
+    if size.isdigit():
+        return int(size)
+
+    raise ValueError(f"Invalid size format: {size}")
