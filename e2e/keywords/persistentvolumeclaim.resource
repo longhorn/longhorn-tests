@@ -20,5 +20,5 @@ Delete persistentvolumeclaim ${claim_id}
     delete_persistentvolumeclaim    ${claim_name}
 
 Delete persistentvolumeclaim for volume ${volume_id}
-    ${pvc_name} =    generate_name_with_suffix    volume    ${volume_id}
-    delete_persistentvolumeclaim    ${pvc_name}
+    ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_persistentvolumeclaim    ${claim_name}

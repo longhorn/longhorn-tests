@@ -164,6 +164,7 @@ def get_cr(group, version, namespace, plural, name):
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
 
+
 def get_all_crs(group, version, namespace, plural):
     api = client.CustomObjectsApi()
     retry_count, retry_interval = get_retry_count_and_interval()
@@ -175,6 +176,7 @@ def get_all_crs(group, version, namespace, plural):
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
 
+
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
     api = client.CustomObjectsApi()
     try:
@@ -182,6 +184,7 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
         return resp
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
+
 
 def list_namespaced_pod(namespace, label_selector=""):
     api = client.CoreV1Api()
@@ -196,6 +199,7 @@ def list_namespaced_pod(namespace, label_selector=""):
             logging(f"Failed to list namespaced {namespace} pods with error: {e}")
         time.sleep(retry_interval)
     assert False, f"Failed to list namespaced {namespace} pods"
+
 
 def set_annotation(group, version, namespace, plural, name, annotation_key, annotation_value):
     api = client.CustomObjectsApi()
