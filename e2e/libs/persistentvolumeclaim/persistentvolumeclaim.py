@@ -11,6 +11,7 @@ from kubernetes.client.rest import ApiException
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+from utility.utility import convert_size_to_bytes
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
@@ -23,7 +24,9 @@ class PersistentVolumeClaim():
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type, sc_name):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB"):
+        storage_size_bytes = convert_size_to_bytes(storage_size)
+
         filepath = "./templates/workload/pvc.yaml"
         with open(filepath, 'r') as f:
             namespace = 'default'
@@ -37,6 +40,9 @@ class PersistentVolumeClaim():
 
             # correct storageclass name
             manifest_dict['spec']['storageClassName'] = sc_name
+
+            # correct storage request
+            manifest_dict['spec']['resources']['requests']['storage'] = storage_size_bytes
 
             # correct access mode`
             if volume_type == 'RWX':
