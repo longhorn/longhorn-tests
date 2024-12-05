@@ -81,11 +81,15 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def wait_for_volume_migration_ready(self, volume_name):
+    def wait_for_volume_migration_to_be_ready(self, volume_name):
         return NotImplemented
 
     @abstractmethod
-    def wait_for_volume_migration_completed(self, volume_name, node_name):
+    def wait_for_volume_migration_complete(self, volume_name, node_name):
+        return NotImplemented
+
+    @abstractmethod
+    def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
         return NotImplemented
 
     @abstractmethod

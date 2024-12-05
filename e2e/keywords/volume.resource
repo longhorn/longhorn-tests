@@ -167,14 +167,19 @@ Check all replicas of volume ${volume_id} kept in error
         Sleep    ${RETRY_INTERVAL}
     END
 
-Wait for volume ${volume_id} migration ready
+Wait for volume ${volume_id} migration to be ready
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_volume_migration_ready    ${volume_name}
+    wait_for_volume_migration_to_be_ready    ${volume_name}
 
-Wait for volume ${volume_id} migrated to node ${node_id}
+Wait for volume ${volume_id} to migrate to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    wait_for_volume_migration_completed    ${volume_name}    ${node_name}
+    wait_for_volume_migration_complete    ${volume_name}    ${node_name}
+
+Wait for volume ${volume_id} to stay on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_migration_to_rollback    ${volume_name}    ${node_name}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
