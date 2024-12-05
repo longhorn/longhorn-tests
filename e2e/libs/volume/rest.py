@@ -71,10 +71,13 @@ class Rest(Base):
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return NotImplemented
 
-    def wait_for_volume_migration_ready(self, volume_name):
+    def wait_for_volume_migration_to_be_ready(self, volume_name):
         return NotImplemented
 
-    def wait_for_volume_migration_completed(self, volume_name, node_name):
+    def wait_for_volume_migration_complete(self, volume_name, node_name):
+        return NotImplemented
+
+    def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
         return NotImplemented
 
     def wait_for_volume_restoration_completed(self, volume_name):
