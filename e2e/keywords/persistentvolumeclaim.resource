@@ -8,8 +8,9 @@ Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create persistentvolumeclaim ${claim_id} using ${volume_type} volume
+    [Arguments]    &{config}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_persistentvolumeclaim    ${claim_name}    ${volume_type}
+    create_persistentvolumeclaim    ${claim_name}    ${volume_type}    &{config}
 
 Create persistentvolumeclaim ${claim_id} using ${volume_type} volume with ${sc_name} storageclass
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
