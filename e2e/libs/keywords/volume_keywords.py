@@ -236,6 +236,9 @@ class volume_keywords:
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
+    def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None):
+        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count)
+
     def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
         retry_count, retry_interval = get_retry_count_and_interval()
@@ -268,13 +271,17 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be in faulted')
         self.volume.wait_for_volume_faulted(volume_name)
 
-    def wait_for_volume_migration_ready(self, volume_name):
+    def wait_for_volume_migration_to_be_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
-        self.volume.wait_for_volume_migration_ready(volume_name)
+        self.volume.wait_for_volume_migration_to_be_ready(volume_name)
 
-    def wait_for_volume_migration_completed(self, volume_name, node_name):
-        logging(f'Waiting for volume {volume_name} migration to node {node_name} completed')
-        self.volume.wait_for_volume_migration_completed(volume_name, node_name)
+    def wait_for_volume_migration_complete(self, volume_name, node_name):
+        logging(f'Waiting for volume {volume_name} migration to node {node_name} complete')
+        self.volume.wait_for_volume_migration_complete(volume_name, node_name)
+
+    def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
+        logging(f'Waiting for volume {volume_name} migration to rollback to node {node_name}')
+        self.volume.wait_for_volume_migration_to_rollback(volume_name, node_name)
 
     def wait_for_volume_restoration_completed(self, volume_name, backup_name):
         logging(f'Waiting for volume {volume_name} restoration from {backup_name} completed')

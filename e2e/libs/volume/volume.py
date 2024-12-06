@@ -69,11 +69,14 @@ class Volume(Base):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "healthy")
 
-    def wait_for_volume_migration_ready(self, volume_name):
-        self.volume.wait_for_volume_migration_ready(volume_name)
+    def wait_for_volume_migration_to_be_ready(self, volume_name):
+        self.volume.wait_for_volume_migration_to_be_ready(volume_name)
 
-    def wait_for_volume_migration_completed(self, volume_name, node_name):
-        self.volume.wait_for_volume_migration_completed(volume_name, node_name)
+    def wait_for_volume_migration_complete(self, volume_name, node_name):
+        self.volume.wait_for_volume_migration_complete(volume_name, node_name)
+
+    def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
+        self.volume.wait_for_volume_migration_to_rollback(volume_name, node_name)
 
     def wait_for_volume_restoration_completed(self, volume_name, backup_name):
         self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
@@ -127,6 +130,9 @@ class Volume(Base):
 
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
+
+    def wait_for_replica_count(self, volume_name, node_name, replica_count):
+        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)

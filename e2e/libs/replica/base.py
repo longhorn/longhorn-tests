@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class Base(ABC):
 
     @abstractmethod
-    def get(self, volume_name, node_name):
+    def get(self, volume_name, node_name, disk_uuid):
         return NotImplemented
 
     @abstractmethod

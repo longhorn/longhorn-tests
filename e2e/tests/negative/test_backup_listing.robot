@@ -2,8 +2,9 @@
 Documentation    Test backup listing
 ...              https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/
 
-Test Tags    manual
+Test Tags    manual    negative
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
@@ -22,9 +23,6 @@ Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${LOOP_COUNT}    1001
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${DATA_ENGINE}    v1
 
 *** Keywords ***
 Verify backup ${backup_id} count for ${workload_kind} ${workload_id} volume 
@@ -142,7 +140,7 @@ Backup listing with more than 1000 backups
     And Volume 1 data should same as deployment 0 volume
 
 Backup listing of volume bigger than 200 Gi
-    [Tags]  manual  longhorn-8355
+    [Tags]  manual  longhorn-8355  large-size
     [Documentation]    Test backup bigger than 200 Gi
     Given Create persistentvolumeclaim 0 using RWO volume
     And Create deployment 0 with persistentvolumeclaim 0
@@ -152,7 +150,8 @@ Backup listing of volume bigger than 200 Gi
     And Create deployment 1 with volume 1
     Then Get deployment 1 volume data in file data
     And Volume 1 data should same as deployment 0 volume
-    Then Create pod 2 mount 250 GB volume 2
+    Then Create volume 2 from deployment 0 volume random backup
+    And Create pod 2 mount 250 GB volume 2
     And Write 210 GB large data to file 0 in pod 2
     Then Volume 2 backup 0 should be able to create
     Then Delete pod 2 and volume 2

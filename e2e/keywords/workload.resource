@@ -8,6 +8,7 @@ Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/host_keywords.py
 Library    ../libs/keywords/k8s_keywords.py
+Library    ../libs/keywords/replica_keywords.py
 
 *** Keywords ***
 Create pod ${pod_id} using volume ${volume_id}
@@ -45,9 +46,18 @@ Power off volume node of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${powered_off_node} =    get_volume_node    ${volume_name}
+    Append to list      ${powered_off_nodes}     ${powered_off_node}
     ${last_volume_node} =    get_volume_node    ${volume_name}
     power_off_volume_node    ${volume_name}
-    Set Test Variable    ${powered_off_node}
+    Set Test Variable    ${last_volume_node}
+
+Power off volume node of ${workload_kind} ${workload_id} without waiting
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${powered_off_node} =    get_volume_node    ${volume_name}
+    Append to list      ${powered_off_nodes}     ${powered_off_node}
+    ${last_volume_node} =    get_volume_node    ${volume_name}
+    power_off_volume_node    ${volume_name}    waiting=False
     Set Test Variable    ${last_volume_node}
 
 Reboot volume node of ${workload_kind} ${workload_id}
@@ -213,3 +223,12 @@ Delete Longhorn ${workload_kind} ${workload_name} pod
     ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
     Log    ${pod_name}
     delete_pod    ${pod_name}     longhorn-system
+
+Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk ${disk_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
+    Should Be True    len(${replicas}) > 0

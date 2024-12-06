@@ -68,14 +68,15 @@ class Aws(Base):
         waiter.wait(InstanceIds=instance_ids)
         logging(f"Started instances")
 
-    def power_off_node(self, power_off_node_name):
+    def power_off_node(self, power_off_node_name, waiting=True):
         instance_ids = [self.mapping[power_off_node_name]]
         resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         assert resp['ResponseMetadata']['HTTPStatusCode'] == 200, f"Failed to stop instances {instance_ids} response: {resp}"
         logging(f"Stopping instances {instance_ids}")
-        waiter = self.aws_client.get_waiter('instance_stopped')
-        waiter.wait(InstanceIds=instance_ids)
-        logging(f"Stopped instances")
+        if waiting:
+            waiter = self.aws_client.get_waiter('instance_stopped')
+            waiter.wait(InstanceIds=instance_ids)
+            logging(f"Stopped instances")
 
     def power_on_node(self, power_on_node_name):
         instance_ids = [self.mapping[power_on_node_name]]

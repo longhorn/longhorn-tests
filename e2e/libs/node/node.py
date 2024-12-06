@@ -1,5 +1,6 @@
 import time
 import re
+import os
 
 from kubernetes import client
 from robot.libraries.BuiltIn import BuiltIn
@@ -9,14 +10,26 @@ from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-
+from node_exec import NodeExec
 
 class Node:
 
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
+    DEFAULT_VOLUME_PATH = "/dev/longhorn/"
 
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    def mount_disk(self, disk_name, node_name):
+        mount_path = os.path.join(self.DEFAULT_DISK_PATH, disk_name)
+        device_path = os.path.join(self.DEFAULT_VOLUME_PATH, disk_name)
+        cmd = f"mkdir -p {mount_path}"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        cmd = f"mkfs.ext4 {device_path}"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        cmd = f"mount {device_path} {mount_path}"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return mount_path
 
     def update_disks(self, node_name, disks):
         node = get_longhorn_client().by_id_node(node_name)
@@ -37,9 +50,9 @@ class Node:
                 disks = node.disks
                 for d in disks:
                     if disks[d]["diskUUID"] == "" or \
-                        not disks[d]["conditions"] or \
-                        disks[d]["conditions"]["Ready"]["status"] != "True" or \
-                        disks[d]["conditions"]["Schedulable"]["status"] != "True":
+                        (disks[d]["allowScheduling"] and
+                        (not disks[d]["conditions"] or
+                        disks[d]["conditions"]["Ready"]["status"] != "True")):
                         all_updated = False
                         break
                 if all_updated:
@@ -59,6 +72,10 @@ class Node:
         for disk_name, disk in iter(node.disks.items()):
             if disk.path != self.DEFAULT_DISK_PATH:
                 disk.allowScheduling = False
+                logging(f"Disabling scheduling disk {disk_name} on node {node_name}")
+            else:
+                disk.allowScheduling = True
+                logging(f"Enabling scheduling disk {disk_name} on node {node_name}")
         self.update_disks(node_name, node.disks)
 
         disks = {}
@@ -66,8 +83,9 @@ class Node:
             if disk.path == self.DEFAULT_DISK_PATH:
                 disks[disk_name] = disk
                 disk.allowScheduling = True
+                logging(f"Keeping disk {disk_name} on node {node_name}")
             else:
-                logging(f"Try to remove disk {disk_name} from node {node_name}")
+                logging(f"Removing disk {disk_name} from node {node_name}")
         self.update_disks(node_name, disks)
 
     def is_accessing_node_by_index(self, node):
@@ -183,6 +201,14 @@ class Node:
                 disk.allowScheduling = allowScheduling
         self.update_disks(node_name, node.disks)
 
+    def set_disk_scheduling(self, node_name, disk_name, allowScheduling):
+        node = get_longhorn_client().by_id_node(node_name)
+
+        for name, disk in iter(node.disks.items()):
+            if name == disk_name:
+                disk.allowScheduling = allowScheduling
+        self.update_disks(node_name, node.disks)
+
     def check_node_schedulable(self, node_name, schedulable):
         node = get_longhorn_client().by_id_node(node_name)
         for _ in range(self.retry_count):
@@ -194,3 +220,29 @@ class Node:
     def is_node_schedulable(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
         return node["conditions"]["Schedulable"]["status"]
+
+    def is_disk_in_pressure(self, node_name, disk_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        return node["disks"][disk_name]["conditions"]["Schedulable"]["reason"] == "DiskPressure"
+
+    def wait_for_disk_in_pressure(self, node_name, disk_name):
+        for i in range(self.retry_count):
+            is_in_pressure = self.is_disk_in_pressure(node_name, disk_name)
+            logging(f"Waiting for disk {disk_name} on node {node_name} in pressure ... ({i})")
+            if is_in_pressure:
+                break
+            time.sleep(self.retry_interval)
+        assert self.is_disk_in_pressure(node_name, disk_name), f"Waiting for node {node_name} disk {disk_name} in pressure failed: {get_longhorn_client().by_id_node(node_name)}"
+
+    def wait_for_disk_not_in_pressure(self, node_name, disk_name):
+        for i in range(self.retry_count):
+            is_in_pressure = self.is_disk_in_pressure(node_name, disk_name)
+            logging(f"Waiting for disk {disk_name} on node {node_name} not in pressure ... ({i})")
+            if not is_in_pressure:
+                break
+            time.sleep(self.retry_interval)
+        assert not self.is_disk_in_pressure(node_name, disk_name), f"Waiting for node {node_name} disk {disk_name} not in pressure failed: {get_longhorn_client().by_id_node(node_name)}"
+
+    def get_disk_uuid(self, node_name, disk_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        return node["disks"][disk_name]["diskUUID"]

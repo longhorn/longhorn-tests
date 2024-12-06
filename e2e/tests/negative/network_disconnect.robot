@@ -3,6 +3,7 @@ Documentation    Negative Test Cases
 
 Test Tags    negative
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/statefulset.resource
@@ -13,14 +14,6 @@ Resource    ../keywords/setting.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
-
-*** Variables ***
-${LOOP_COUNT}    1
-${LATENCY_IN_MS}    0
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
-${RWX_VOLUME_FAST_FAILOVER}    false
-${DATA_ENGINE}    v1
 
 *** Test Cases ***
 Disconnect Volume Node Network While Workload Heavy Writing

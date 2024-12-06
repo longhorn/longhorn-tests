@@ -67,12 +67,32 @@ class sharemanager_keywords:
 
         assert False, f"sharemanager pod {sharemanager_pod_name} not recreated"
 
+    def wait_for_sharemanager_pod_restart(self, name):
+        sharemanager_pod_name = "share-manager-" + name
+        sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+        last_creation_time = sharemanager_pod.metadata.creation_timestamp
+
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for sharemanager for volume {name} restart ... ({i})")
+            time.sleep(retry_interval)
+            sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            if sharemanager_pod == None:
+                continue
+            creation_time = sharemanager_pod.metadata.creation_timestamp
+            logging(f"Getting new sharemanager which is created at {creation_time}, and old one is created at {last_creation_time}")
+            if creation_time > last_creation_time:
+                return
+
+        assert False, f"sharemanager pod {sharemanager_pod_name} isn't restarted"
+
 
     def wait_for_share_manager_pod_running(self, name):
         sharemanager_pod_name = "share-manager-" + name
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
             sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
             if sharemanager_pod.status.phase == "Running":
                 return
 

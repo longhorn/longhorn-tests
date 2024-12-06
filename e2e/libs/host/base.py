@@ -23,7 +23,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def power_off_node(self, node_name):
+    def power_off_node(self, node_name, waiting):
         return NotImplemented
 
     @abstractmethod

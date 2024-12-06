@@ -167,14 +167,19 @@ Check all replicas of volume ${volume_id} kept in error
         Sleep    ${RETRY_INTERVAL}
     END
 
-Wait for volume ${volume_id} migration ready
+Wait for volume ${volume_id} migration to be ready
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_volume_migration_ready    ${volume_name}
+    wait_for_volume_migration_to_be_ready    ${volume_name}
 
-Wait for volume ${volume_id} migrated to node ${node_id}
+Wait for volume ${volume_id} to migrate to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    wait_for_volume_migration_completed    ${volume_name}    ${node_name}
+    wait_for_volume_migration_complete    ${volume_name}    ${node_name}
+
+Wait for volume ${volume_id} to stay on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_migration_to_rollback    ${volume_name}    ${node_name}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -246,6 +251,44 @@ Check volume ${volume_id} replica on node ${node_id} exist
     ${node_name} =    get_node_by_index    ${node_id}
     ${replica_name}    get_replica_name_on_node    ${volume_name}    ${node_name}
     Should Not Be Equal    ${replica_name}    ${None}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${node_name}
+    Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have replicas running on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${node_name}
+    Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+    FOR    ${i}    IN RANGE    3
+        Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
+        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        Sleep    5
+    END
+
+Volume ${volume_id} should have replicas running on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have replicas running on node ${node_id}
+    FOR    ${i}    IN RANGE    3
+        Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        Sleep    5
+    END
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

@@ -262,6 +262,9 @@ class CRD(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return Rest().get_replica_name_on_node(volume_name, node_name)
 
+    def wait_for_replica_count(self, volume_name, node_name, replica_count):
+        return Rest().wait_for_replica_count(volume_name, node_name, replica_count)
+
     def wait_for_volume_keep_in_state(self, volume_name, desired_state):
         self.wait_for_volume_state(volume_name, desired_state)
 
@@ -298,10 +301,10 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert volume["status"]["robustness"] != not_desired_state
 
-    def wait_for_volume_migration_ready(self, volume_name):
+    def wait_for_volume_migration_to_be_ready(self, volume_name):
         ready = False
         for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} migration ready ({i}) ...")
+            logging(f"Waiting for volume {volume_name} migration to be ready ({i}) ...")
             try:
                 engines = self.engine.get_engines(volume_name)
                 ready = len(engines) == 2
@@ -314,19 +317,33 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert ready
 
-    def wait_for_volume_migration_completed(self, volume_name, node_name):
-        completed = False
+    def wait_for_volume_migration_complete(self, volume_name, node_name):
+        complete = False
         for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} migration to node {node_name} completed ({i}) ...")
+            logging(f"Waiting for volume {volume_name} migration to node {node_name} complete ({i}) ...")
             try:
-                engines = self.engine.get_engines(volume_name, node_name)
-                completed = len(engines) == 1 and engines[0]['status']['endpoint']
-                if completed:
+                engines = self.engine.get_engines(volume_name)
+                complete = len(engines) == 1 and engines[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+                if complete:
                     break
             except Exception as e:
                 logging(f"Getting volume {volume_name} engines error: {e}")
             time.sleep(self.retry_interval)
-        assert completed
+        assert complete
+
+    def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
+        rollback = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} migration to rollback to node {node_name} ({i}) ...")
+            try:
+                engines = self.engine.get_engines(volume_name)
+                rollback = len(engines) == 1 and engines[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+                if rollback:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} engines error: {e}")
+            time.sleep(self.retry_interval)
+        assert rollback
 
     def wait_for_volume_restoration_completed(self, volume_name, backup_name):
         completed = False

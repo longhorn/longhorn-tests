@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       Physical Node Keywords
 
+Library             Collections
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/network_keywords.py
@@ -34,11 +35,13 @@ Restart cluster
     reboot_all_nodes
     setup_control_plane_network_latency
 
-Power on off node
-    Run keyword And Ignore Error
-    ...    power_on_node_by_name    ${powered_off_node}
+Power on off nodes
+    FOR    ${powered_off_node}    IN    @{powered_off_nodes}
+        Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
+        Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
+    END
 
 Power off node ${node_id}
     ${powered_off_node} =     get_node_by_index    ${node_id}
+    Append to list      ${powered_off_nodes}     ${powered_off_node}
     power_off_node_by_name    ${powered_off_node}
-    Set Test Variable    ${powered_off_node}

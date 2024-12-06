@@ -10,12 +10,14 @@ class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
 
-    def get(self, volume_name, node_name=None):
+    def get(self, volume_name=None, node_name=None, disk_uuid=None):
         label_selector = []
-        if volume_name != "":
+        if volume_name:
             label_selector.append(f"longhornvolume={volume_name}")
         if node_name:
             label_selector.append(f"longhornnode={node_name}")
+        if disk_uuid:
+            label_selector.append(f"longhorndiskuuid={disk_uuid}")
 
         replicas = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
