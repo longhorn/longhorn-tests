@@ -6,6 +6,7 @@ source test_framework/scripts/kubeconfig.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/install_metrics_server.sh
+source pipelines/utilities/coredns.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -562,6 +563,8 @@ main(){
   if [[ "${TF_VAR_enable_mtls}" == true ]]; then
     enable_mtls
   fi
+
+  scale_up_coredns
 
   # msg="failed to get package manager" error="operating systems amzn are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
