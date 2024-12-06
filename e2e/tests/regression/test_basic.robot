@@ -147,7 +147,7 @@ Replica Rebuilding
 
     And Enable node 1 default disk
     Then Check volume 0 replica on node 1 kept in stopped
-    And Check for volume 0 kept in degraded
+    And Check volume 0 kept in degraded
 
     And Enable node 1 scheduling
     Then Wait until volume 0 replica rebuilding started on node 1

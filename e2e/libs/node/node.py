@@ -175,6 +175,8 @@ class Node:
     def set_node_scheduling(self, node_name, allowScheduling=True, retry=False):
         node = get_longhorn_client().by_id_node(node_name)
 
+        logging(f"Setting node {node_name} allowScheduling to {allowScheduling}")
+
         if node.tags is None:
            node.tags = []
 
@@ -250,3 +252,29 @@ class Node:
     def get_disk_uuid(self, node_name, disk_name):
         node = get_longhorn_client().by_id_node(node_name)
         return node["disks"][disk_name]["diskUUID"]
+
+    def wait_for_node_down(self, node_name):
+        down = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for k8s node {node_name} down ... ({i})")
+            node = self.get_node_by_name(node_name)
+            for condition in node.status.conditions:
+                if condition.type == "Ready" and condition.status != "True":
+                    down = True
+            if down:
+                break
+            time.sleep(self.retry_interval)
+        assert down, f"Waiting for node {node_name} down failed: {node.status.conditions}"
+
+    def wait_for_node_up(self, node_name):
+        up = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for k8s node {node_name} up ... ({i})")
+            node = self.get_node_by_name(node_name)
+            for condition in node.status.conditions:
+                if condition.type == "Ready" and condition.status == "True":
+                    up = True
+            if up:
+                break
+            time.sleep(self.retry_interval)
+        assert up, f"Waiting for node {node_name} up failed: {node.status.conditions}"
