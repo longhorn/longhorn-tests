@@ -5,7 +5,7 @@ set -e
 sudo systemctl restart guestregister # Sometimes registration fails on first boot.
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
-sudo zypper install -y open-iscsi nfs-client jq
+sudo zypper install -y open-iscsi nfs-client jq azure-cli
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 

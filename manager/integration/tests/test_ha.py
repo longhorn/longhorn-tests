@@ -1409,6 +1409,10 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     15. Verify the faulted volume cannot be attached to a node.
     16. Verify this faulted volume can be deleted.
     """
+    backup_store_type = set_random_backupstore
+    if backup_store_type not in ["nfs", "s3"]:
+        pytest.skip("Skip test case because the backup store type is not supported") # NOQA
+
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == "true"
