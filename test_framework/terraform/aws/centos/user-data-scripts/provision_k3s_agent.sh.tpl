@@ -14,7 +14,7 @@ sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /
 
 sudo yum update -y
 sudo yum group install -y "Development Tools"
-sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
+sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools samba
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 

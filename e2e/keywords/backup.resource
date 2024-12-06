@@ -47,3 +47,8 @@ Check volume ${volume_id} data is backup ${backup_id}
 
 Check backup synced from backupstore
     assert_all_backups_before_uninstall_exist    ${backups_before_uninstall}
+
+Volume ${volume_id} backup ${backup_id} should be able to create
+    Create backup ${backup_id} for volume ${volume_id}
+    Verify backup list contains no error for volume ${volume_id}
+    Verify backup list contains backup ${backup_id} of volume ${volume_id}

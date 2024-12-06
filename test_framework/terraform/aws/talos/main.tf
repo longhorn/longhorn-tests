@@ -189,14 +189,10 @@ data "talos_machine_configuration" "controlplane" {
 
   depends_on = [ aws_instance.lh_aws_instance_controlplane ]
 
-  count = var.lh_aws_instance_count_controlplane
-
   cluster_name       = "lh-tests-cluster"
   cluster_endpoint   = "https://${aws_instance.lh_aws_instance_controlplane[0].public_ip}:6443"
   machine_type       = "controlplane"
   machine_secrets    = talos_machine_secrets.machine_secrets.machine_secrets
-  kubernetes_version = var.k8s_distro_version
-  talos_version      = "v${var.os_distro_version}"
   docs               = false
   examples           = false
   config_patches = [
@@ -208,18 +204,14 @@ data "talos_machine_configuration" "worker" {
 
   depends_on = [ aws_instance.lh_aws_instance_controlplane ]
 
-  count = var.lh_aws_instance_count_worker
-
   cluster_name       = "lh-tests-cluster"
   cluster_endpoint   = "https://${aws_instance.lh_aws_instance_controlplane[0].public_ip}:6443"
   machine_type       = "worker"
   machine_secrets    = talos_machine_secrets.machine_secrets.machine_secrets
-  kubernetes_version = var.k8s_distro_version
-  talos_version      = "v${var.os_distro_version}"
   docs               = false
   examples           = false
   config_patches = [
-    file("${path.module}/talos-patch.yaml")
+    file("${path.module}/talos-patch-worker.yaml")
   ]
 }
 
@@ -227,7 +219,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
   count = var.lh_aws_instance_count_controlplane
 
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
-  machine_configuration_input = data.talos_machine_configuration.controlplane[count.index].machine_configuration
+  machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
   endpoint                    = aws_instance.lh_aws_instance_controlplane[count.index].public_ip
   node                        = aws_instance.lh_aws_instance_controlplane[count.index].private_ip
 }
@@ -236,7 +228,7 @@ resource "talos_machine_configuration_apply" "worker" {
   count = var.lh_aws_instance_count_worker
 
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
-  machine_configuration_input = data.talos_machine_configuration.worker[count.index].machine_configuration
+  machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
   endpoint                    = aws_instance.lh_aws_instance_worker[count.index].public_ip
   node                        = aws_instance.lh_aws_instance_worker[count.index].private_ip
 }
@@ -260,15 +252,28 @@ resource "local_file" "talosconfig" {
   filename = "talos_k8s_config"
 }
 
-data "talos_cluster_kubeconfig" "this" {
+resource "talos_cluster_kubeconfig" "this" {
   depends_on = [talos_machine_bootstrap.this]
 
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
-  endpoint             = aws_instance.lh_aws_instance_controlplane[0].public_ip
+  endpoint             = aws_instance.lh_aws_instance_controlplane.0.public_ip
   node                 = aws_instance.lh_aws_instance_controlplane.0.private_ip
 }
 
 resource "local_file" "kubeconfig" {
-  content  = nonsensitive(data.talos_cluster_kubeconfig.this.kubeconfig_raw)
+  content  = nonsensitive(talos_cluster_kubeconfig.this.kubeconfig_raw)
   filename = "kubeconfig"
+}
+
+data "talos_cluster_health" "this" {
+  depends_on = [
+    talos_machine_configuration_apply.controlplane,
+    talos_machine_configuration_apply.worker,
+    talos_cluster_kubeconfig.this
+  ]
+
+  client_configuration = talos_machine_secrets.machine_secrets.client_configuration
+  endpoints            = aws_instance.lh_aws_instance_controlplane.*.public_ip
+  control_plane_nodes  = aws_instance.lh_aws_instance_controlplane.*.private_ip
+  worker_nodes         = aws_instance.lh_aws_instance_worker.*.private_ip
 }

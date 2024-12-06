@@ -101,11 +101,6 @@ Create pod ${pod_id} mount ${size} GB volume ${volume_id}
     Create pod ${pod_id} using volume ${volume_id}
     Wait for pod ${pod_id} running
 
-Volume ${volume_id} backup ${backup_id} should be able to create
-    Create backup ${backup_id} for volume ${volume_id}
-    Verify backup list contains no error for volume ${volume_id}
-    Verify backup list contains backup ${backup_id} of volume ${volume_id}
-
 Write data to file in deployment 0
     Write 100 MB data to file data in deployment 0
 
