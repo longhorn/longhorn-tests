@@ -42,6 +42,7 @@ from common import wait_for_cron_job_count
 from common import create_backup
 from common import wait_for_backup_count
 from common import delete_backup_volume
+from common import get_longhorn_api_client
 
 RECURRING_JOB_NAME = "recurring-test"
 TASK = "task"
@@ -132,7 +133,16 @@ def check_metric_with_condition(core_api, metric_name, metric_labels, expected_v
 
 
 def check_metric(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
-    metric_data = get_metrics(core_api, metric_node_id)
+    if metric_node_id is None:
+        # Populate metric data from all nodes.
+        client = get_longhorn_api_client()
+        nodes = client.list_node()
+        metric_data = []
+        for node in nodes:
+            metric_data.extend(get_metrics(core_api, node.id))
+    else:
+        # Populate metric data for the specified node.
+        metric_data = get_metrics(core_api, metric_node_id)
 
     found_metric = None
     for family in metric_data:
@@ -233,19 +243,21 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
         assert total_metrics["value"] >= 0.0
 
 
-def wait_for_metric(core_api, metric_name, metric_labels, expected_value): # NOQA
+def wait_for_metric(core_api, metric_name, metric_labels, expected_value, metric_node_id=get_self_host_id()): # NOQA
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL)
 
         try:
             check_metric(core_api, metric_name,
-                         metric_labels, expected_value)
+                         metric_labels, expected_value,
+                         metric_node_id=metric_node_id)
             return
         except AssertionError:
             continue
 
     check_metric(core_api, metric_name,
-                 metric_labels, expected_value)
+                 metric_labels, expected_value,
+                 metric_node_id=metric_node_id)
 
 
 def wait_for_metric_volume_actual_size(client, core_api, metric_name, metric_labels, volume_name): # NOQA
@@ -459,9 +471,8 @@ def test_metric_longhorn_volume_file_system_read_only(client, core_api, volume_n
         "pvc": pvc_name,
         "volume": volume_name,
     }
-
     wait_for_metric(core_api, "longhorn_volume_file_system_read_only",
-                    metric_labels, 1.0)
+                    metric_labels, 1.0, metric_node_id=None)
 
 
 def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
