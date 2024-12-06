@@ -55,6 +55,8 @@ main(){
   install_backupstores
   install_csi_snapshotter
 
+  scale_up_coredns
+
   # msg="failed to get package manager" error="operating systems amzn are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
     [[ "${DISTRO}" != "talos" ]]; then
