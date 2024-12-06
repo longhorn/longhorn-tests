@@ -262,6 +262,9 @@ class CRD(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return Rest().get_replica_name_on_node(volume_name, node_name)
 
+    def wait_for_replica_count(self, volume_name, node_name, replica_count):
+        return Rest().wait_for_replica_count(volume_name, node_name, replica_count)
+
     def wait_for_volume_keep_in_state(self, volume_name, desired_state):
         self.wait_for_volume_state(volume_name, desired_state)
 
@@ -354,6 +357,30 @@ class CRD(Base):
                 logging(f"Getting volume {volume_name} error: {e}")
             time.sleep(self.retry_interval)
         assert updated
+
+    def wait_for_volume_restoration_start(self, volume_name, backup_name,
+                                          progress=0):
+        started = False
+        for i in range(self.retry_count):
+            try:
+                engines = self.engine.get_engines(volume_name)
+                for engine in engines:
+                    for status in engine['status']['restoreStatus'].values():
+                        if status['state'] == "in_progress" and status['progress'] > progress:
+                            started = True
+                            break
+                    #  Sometime the restore time is pretty short
+                    #  and the test may not be able to catch the intermediate status.
+                    if engine['status']['lastRestoredBackup'] == backup_name:
+                        started = True
+                    if started:
+                        break
+                if started:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} engines error: {e}")
+            time.sleep(self.retry_interval)
+        assert started
 
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None

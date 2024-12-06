@@ -91,6 +91,10 @@ Write data ${data_id} to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     write_volume_random_data   ${volume_name}    2048    ${data_id}
 
+Write data ${data_id} ${size} MB to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    ${size}    ${data_id}
+
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     keep_writing_data    ${volume_name}
@@ -177,6 +181,11 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} completed
     ${backup_name} =    get_backup_name    ${backup_id}
     wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
 
+Wait for volume ${volume_id} restoration from backup ${backup_id} start
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}
+    wait_for_volume_restoration_start    ${volume_name}    ${backup_name}
+
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_start_on_node    ${volume_name}    ${replica_locality}
@@ -238,6 +247,44 @@ Check volume ${volume_id} replica on node ${node_id} exist
     ${replica_name}    get_replica_name_on_node    ${volume_name}    ${node_name}
     Should Not Be Equal    ${replica_name}    ${None}
 
+Volume ${volume_id} should have ${expected_replica_count} replicas running
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${node_name}
+    Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have replicas running on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${node_name}
+    Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+    FOR    ${i}    IN RANGE    3
+        Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
+        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        Sleep    5
+    END
+
+Volume ${volume_id} should have replicas running on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have replicas running on node ${node_id}
+    FOR    ${i}    IN RANGE    3
+        Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        Sleep    5
+    END
+
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_data_checksum    ${volume_name}
@@ -298,6 +345,11 @@ Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${current_checksum} =    get_volume_checksum    ${volume_name}
     ${backup_data} =    get_backup_data_from_backup_list    ${backups_before_uninstall}    ${backup_id}
     Should Be Equal    ${current_checksum}    ${backup_data}
+
+Create volume ${volume_id} from backup ${backup_id} in another cluster
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url_from_backup_list    ${backups_before_uninstall}    ${backup_id}
+    create_volume   ${volume_name}    fromBackup=${backup_url}
 
 Create DR volume ${volume_id} from backup ${backup_id} in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

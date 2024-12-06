@@ -53,8 +53,13 @@ class Rest(Base):
 
     def get_from_list(self, backup_list, backup_id):
         for backup in backup_list["items"]:
-            if backup['metadata']['annotations']['test.longhorn.io/backup-id'] == backup_id:
-                return backup
+            try:
+                if backup['metadata']['annotations']['test.longhorn.io/backup-id'] == backup_id:
+                    return backup
+            except KeyError as e:
+                logging(f"Missing key in backup metadata: {str(e)} for backup {backup['metadata']['name']}")
+            except Exception as e:
+                logging(f"Unexpected error accessing backup {backup['metadata']['name']}: {str(e)}")
         return None
 
     def get_by_snapshot(self, volume_name, snapshot_name):

@@ -8,6 +8,7 @@ source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/install_backupstores.sh
+source pipelines/utilities/install_metrics_server.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
@@ -58,6 +59,10 @@ main(){
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
     [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
+  fi
+
+  if [[ "${DISTRO}" == "talos" ]]; then
+    install_metrics_server
   fi
 
   generate_longhorn_yaml_manifest

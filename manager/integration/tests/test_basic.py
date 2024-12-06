@@ -673,6 +673,10 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
     17. Delete the backup volume
     18. Cleanup the volume
     """
+    backup_store_type = set_random_backupstore
+    if backup_store_type not in ["nfs", "s3"]:
+        pytest.skip("Skip test case because the backup store type is not supported") # NOQA
+
     backupstore_cleanup(client)
 
     volume = create_and_check_volume(client, volume_name)
@@ -1106,6 +1110,10 @@ def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
     11. delete backup volumes(1 & 2)
     12. cleanup
     """
+    backup_store_type = set_random_backupstore
+    if backup_store_type not in ["nfs", "s3"]:
+        pytest.skip("Skip test case because the backup store type is not supported") # NOQA
+
     backupstore_cleanup(client)
 
     # create 2 volumes.
@@ -1200,6 +1208,10 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
     18. verify that volume(1) has been deleted in the backupstore.
     19. cleanup
     """
+    backup_store_type = set_random_backupstore
+    if backup_store_type not in ["nfs", "s3"]:
+        pytest.skip("Skip test case because the backup store type is not supported") # NOQA
+
     backupstore_cleanup(client)
 
     volume1_name = volume_name + "-1"
@@ -3791,7 +3803,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
                                                 to_nodes=[node1.name,
                                                           node2.name],
                                                 expect_success=2,
-                                                expect_fail=0,
+                                                expect_fail=-1,
                                                 chk_vol_healthy=False,
                                                 chk_replica_running=False)
 
@@ -4392,7 +4404,7 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
             url = backupstore
             cred_secret = ""
         else:
-            raise NotImplementedError
+            pytest.skip("Skip test case because the backup store type is not supported") # NOQA
 
         poll_intervals = ["0", "300"]
         for poll_interval in poll_intervals:

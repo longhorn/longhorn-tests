@@ -42,7 +42,7 @@ resource "google_container_cluster" "cluster" {
   network            = google_compute_network.vpc_network.id
   subnetwork         = google_compute_subnetwork.subnetwork.id
   location           = data.google_compute_zones.available.names[0]
-  min_master_version = "1.30.2-gke.1587003"
+  min_master_version = "1.31.1-gke.2105000"
   remove_default_node_pool = true
   deletion_protection = false
   initial_node_count       = 1

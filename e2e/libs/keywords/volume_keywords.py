@@ -236,6 +236,9 @@ class volume_keywords:
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
+    def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None):
+        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count)
+
     def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
         retry_count, retry_interval = get_retry_count_and_interval()
@@ -279,6 +282,10 @@ class volume_keywords:
     def wait_for_volume_restoration_completed(self, volume_name, backup_name):
         logging(f'Waiting for volume {volume_name} restoration from {backup_name} completed')
         self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
+
+    def wait_for_volume_restoration_start(self, volume_name, backup_name):
+        logging(f'Waiting for volume {volume_name} restoration from {backup_name} start')
+        self.volume.wait_for_volume_restoration_start(volume_name, backup_name)
 
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)

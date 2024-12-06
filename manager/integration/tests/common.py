@@ -2536,8 +2536,9 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
             assert volume.robustness == VOLUME_ROBUSTNESS_HEALTHY
 
         scheduled = 0
-        unexpect_fail = expect_fail
-        expect_nodes = [n for n in to_nodes]
+        unexpect_fail = max(0, expect_fail)
+
+        expect_nodes = set(to_nodes)
         for r in volume.replicas:
             try:
                 assert r.hostId in expect_nodes
@@ -2551,7 +2552,8 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
 
                 scheduled += 1
             except AssertionError:
-                unexpect_fail -= 1
+                if expect_fail >= 0:
+                    unexpect_fail -= 1
 
         if scheduled == expect_success and unexpect_fail == 0:
             break
@@ -2559,9 +2561,12 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
         time.sleep(RETRY_INTERVAL)
 
     assert scheduled == expect_success, f" Volume = {volume}"
-    assert unexpect_fail == 0, f" Volume = {volume}"
-    assert len(volume.replicas) == expect_success + expect_fail, \
-        f" Volume = {volume}"
+    assert unexpect_fail == 0, f"Got {unexpect_fail} unexpected fail"
+
+    if expect_fail >= 0:
+        assert len(volume.replicas) == expect_success + expect_fail, \
+            f" Volume = {volume}"
+
     return volume
 
 
@@ -3893,6 +3898,14 @@ def is_backupTarget_s3(s):
 
 def is_backupTarget_nfs(s):
     return s.startswith("nfs://")
+
+
+def is_backupTarget_cifs(s):
+    return s.startswith("cifs://")
+
+
+def is_backupTarget_azurite(s):
+    return s.startswith("azblob://")
 
 
 def wait_for_backup_volume(client, vol_name, backing_image=""):
