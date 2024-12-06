@@ -5,6 +5,7 @@ set -x
 source test_framework/scripts/kubeconfig.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
+source pipelines/utilities/install_metrics_server.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -333,10 +334,37 @@ create_longhorn_namespace(){
 install_backupstores(){
   MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml"
   NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
+  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml"
+  AZURITE_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml"
   kubectl create -f ${MINIO_BACKUPSTORE_URL} \
-               -f ${NFS_BACKUPSTORE_URL}
+               -f ${NFS_BACKUPSTORE_URL} \
+               -f ${CIFS_BACKUPSTORE_URL} \
+               -f ${AZURITE_BACKUPSTORE_URL}
+  setup_azuitize_backup_store
 }
 
+setup_azuitize_backup_store(){
+  RETRY=0
+  MAX_RETRY=60
+  until (kubectl get pods | grep 'longhorn-test-azblob' | grep 'Running'); do
+    echo 'Waiting azurite pod running'
+    sleep 5
+    if [ $RETRY -eq $MAX_RETRY ]; then
+      break
+    fi
+    RETRY=$((RETRY+1))
+  done
+
+  AZBLOB_ENDPOINT=$(echo -n "http://$(kubectl get svc azblob-service -o jsonpath='{.spec.clusterIP}'):10000/" | base64)
+  kubectl -n longhorn-system patch secret azblob-secret \
+    --type=json \
+    -p="[{'op': 'replace', 'path': '/data/AZBLOB_ENDPOINT', 'value': \"${AZBLOB_ENDPOINT}\"}]"
+
+  CONTROL_PLANE_PUBLIC_IP=$(cat /tmp/controlplane_public_ip)  
+  # port forward and az container create need to be run on control node
+  ssh ec2-user@${CONTROL_PLANE_PUBLIC_IP} "nohup kubectl port-forward --address 0.0.0.0 service/azblob-service 20001:10000 > /dev/null 2>&1 &"  
+  ssh ec2-user@${CONTROL_PLANE_PUBLIC_IP} "az storage container create -n longhorn-test-azurite --connection-string 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://0.0.0.0:20001/devstoreaccount1;'"
+}
 
 create_aws_secret(){
   AWS_ACCESS_KEY_ID_BASE64=`echo -n "${TF_VAR_lh_aws_access_key}" | base64`
@@ -396,6 +424,12 @@ run_longhorn_upgrade_test(){
   elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
     BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $2}' | sed 's/ *//'`
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+  elif [[ $BACKUP_STORE_TYPE = "cifs" ]]; then
+    BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $3}' | sed 's/ *//'`
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+  elif [[ $BACKUP_STORE_TYPE = "azurite" ]]; then
+    BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $4}' | sed 's/ *//'`
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
   fi
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[4].value="'${LONGHORN_UPGRADE_TYPE}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
@@ -449,6 +483,12 @@ run_longhorn_tests(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
     BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $2}' | sed 's/ *//'`
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  elif [[ $BACKUP_STORE_TYPE = "cifs" ]]; then
+    BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $3}' | sed 's/ *//'`
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  elif [[ $BACKUP_STORE_TYPE = "azurite" ]]; then
+    BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $4}' | sed 's/ *//'`
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
@@ -527,6 +567,10 @@ main(){
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
     [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
+  fi
+
+  if [[ "${DISTRO}" == "talos" ]]; then
+    install_metrics_server
   fi
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then

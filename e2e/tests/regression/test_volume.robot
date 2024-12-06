@@ -19,6 +19,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${DATA_ENGINE}    v1
 
 *** Keywords ***
 Create volume with invalid name should fail

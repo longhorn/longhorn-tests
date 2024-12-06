@@ -10,7 +10,7 @@ fi
 
 # Do not arbitrarily run "dnf update", as this will effectively move us up to the latest minor release.
 sudo dnf group install -y "Development Tools"
-sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup device-mapper jq nmap-ncat
+sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup device-mapper jq nmap-ncat samba
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 

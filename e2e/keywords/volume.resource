@@ -252,6 +252,44 @@ Check volume ${volume_id} replica on node ${node_id} exist
     ${replica_name}    get_replica_name_on_node    ${volume_name}    ${node_name}
     Should Not Be Equal    ${replica_name}    ${None}
 
+Volume ${volume_id} should have ${expected_replica_count} replicas running
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${node_name}
+    Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have replicas running on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${node_name}
+    Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+    FOR    ${i}    IN RANGE    3
+        Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
+        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        Sleep    5
+    END
+
+Volume ${volume_id} should have replicas running on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have replicas running on node ${node_id}
+    FOR    ${i}    IN RANGE    3
+        Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        Sleep    5
+    END
+
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_data_checksum    ${volume_name}

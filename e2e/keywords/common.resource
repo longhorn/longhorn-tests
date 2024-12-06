@@ -34,7 +34,7 @@ Set test environment
     ${host_provider}=    Get Environment Variable    HOST_PROVIDER
     ${disk_path}=    Set Variable If    "${host_provider}" == "harvester"    /dev/vdc    /dev/xvdh
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${worker_node}    block    ${disk_path}
+        add_disk    block-disk    ${worker_node}    block    ${disk_path}
     END
 
 Cleanup test resources
