@@ -89,6 +89,7 @@ from common import SIZE, CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY
 from common import SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME
+from common import DATA_ENGINE
 
 from time import sleep
 
@@ -146,6 +147,7 @@ def wait_new_replica_ready(client, volume_name, replica_names):  # NOQA
     assert new_replica_ready
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
     """
     Test that volumes with Soft Anti-Affinity work as expected.
@@ -185,6 +187,7 @@ def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     """
     Test that volumes with Soft Anti-Affinity can detach and reattach to a
@@ -230,6 +233,7 @@ def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     """
     Test that volumes with Hard Anti-Affinity work as expected.
@@ -279,6 +283,7 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     """
     Test that volumes with Hard Anti-Affinity are still able to detach and
@@ -332,6 +337,7 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     """
     Test that volumes with Hard Anti-Affinity can build new replicas live once
@@ -380,6 +386,7 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     """
     Test that volumes with Hard Anti-Affinity can build new replicas during
@@ -430,6 +437,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_rebuild_per_volume_limit(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     Test the volume always only have one replica scheduled for rebuild
@@ -477,6 +485,7 @@ def test_replica_rebuild_per_volume_limit(client, core_api, storage_class, sts_n
     assert md5sum == common.get_pod_data_md5sum(core_api, pod_name, data_path)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_node_least_effort(client, volume_name):  # NOQA
     """
     Scenario: replica auto-balance nodes with `least_effort`.
@@ -608,6 +617,7 @@ def test_replica_auto_balance_node_least_effort(client, volume_name):  # NOQA
     check_volume_data(volume, data)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     """
     Scenario: replica auto-balance nodes with `best_effort`.
@@ -1094,7 +1104,8 @@ def replica_auto_balance_with_data_locality_test(client, volume_name):  # NOQA
     volume = client.create_volume(name=volume_name,
                                   size=str(200 * Mi),
                                   numberOfReplicas=number_of_replicas,
-                                  dataLocality="best-effort")
+                                  dataLocality="best-effort",
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=self_node)
@@ -1278,6 +1289,7 @@ def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):
     check_volume_data(v2, d2)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset):  # NOQA
     """
     Test data locality basic feature
@@ -1512,7 +1524,8 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
                                    size=volume2_size,
                                    numberOfReplicas=3,
                                    nodeSelector=["AVAIL"],
-                                   dataLocality="best-effort")
+                                   dataLocality="best-effort",
+                                   dataEngine=DATA_ENGINE)
 
     volume2 = wait_for_volume_detached(client, volume2_name)
     volume2 = client.by_id_volume(volume2_name)
@@ -1584,7 +1597,8 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     volume3 = client.create_volume(name=volume3_name,
                                    size=volume3_size,
-                                   numberOfReplicas=1)
+                                   numberOfReplicas=1,
+                                   dataEngine=DATA_ENGINE)
 
     volume3 = wait_for_volume_detached(client, volume3_name)
     volume3 = client.by_id_volume(volume3_name)
@@ -1670,7 +1684,8 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     volume4 = client.create_volume(name=volume4_name,
                                    size=volume4_size,
                                    numberOfReplicas=1,
-                                   dataLocality="best-effort")
+                                   dataLocality="best-effort",
+                                   dataEngine=DATA_ENGINE)
 
     volume4 = wait_for_volume_detached(client, volume4_name)
     volume4 = client.by_id_volume(volume4_name)
@@ -1785,6 +1800,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     assert v4_node2_replica_count == 1
     assert v4_node3_replica_count == 0
 
+
 def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, request):  # NOQA
     """
     Scenario : test replica schedule to disk with the most usable storage
@@ -1885,7 +1901,8 @@ def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQ
                          backingImage="",
                          frontend=VOLUME_FRONTEND_BLOCKDEV,
                          snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
-                         replicaSoftAntiAffinity="enabled")
+                         replicaSoftAntiAffinity="enabled",
+                         dataEngine=DATA_ENGINE)
 
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=host_id)
@@ -1937,7 +1954,8 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
                          backingImage="",
                          frontend=VOLUME_FRONTEND_BLOCKDEV,
                          snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
-                         replicaSoftAntiAffinity="disabled")
+                         replicaSoftAntiAffinity="disabled",
+                         dataEngine=DATA_ENGINE)
 
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=host_id)
@@ -1967,6 +1985,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
     check_volume_data(volume, data)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, storage_class, statefulset, request):  # NOQA
     """
     Scenario: data-locality (strict-local) should schedule Pod to the same node
@@ -2037,6 +2056,7 @@ def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, st
     wait_for_statefulset_pods_healthy(statefulset)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_allow_empty_node_selector_volume_setting(client, volume_name): # NOQA
     """
     Test the global setting allow-empty-node-selector-volume
@@ -2075,7 +2095,8 @@ def test_allow_empty_node_selector_volume_setting(client, volume_name): # NOQA
     update_setting(client, SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME, "false")
 
     # Check volume can not be scehduled
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     volume = client.by_id_volume(volume.name)
@@ -2148,6 +2169,7 @@ def prepare_for_affinity_tests(client, volume_name, request): # NOQA
     return disk_path1, disk_path2
 
 
+
 def test_global_disk_soft_anti_affinity(client, volume_name, request): # NOQA
     """
     1. When Replica Disk Soft Anti-Affinity is false, it should be impossible
@@ -2205,7 +2227,8 @@ def test_global_disk_soft_anti_affinity(client, volume_name, request): # NOQA
     update_setting(client, SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY, "false")
 
     lht_hostId = get_self_host_id()
-    client.create_volume(name=volume_name, size=str(500*Mi))
+    client.create_volume(name=volume_name, size=str(500*Mi),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_degraded(client, volume_name)
@@ -2252,7 +2275,7 @@ def test_global_disk_soft_anti_affinity(client, volume_name, request): # NOQA
         assert replica.diskID not in disk_id
         disk_id.append(replica.diskID)
 
-
+@pytest.mark.v2_volume_test  # NOQA
 def test_allow_empty_disk_selector_volume_setting(client, volume_name): # NOQA
     """
     Test the global setting allow-empty-disk-selector-volume
@@ -2292,7 +2315,8 @@ def test_allow_empty_disk_selector_volume_setting(client, volume_name): # NOQA
     update_setting(client, SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME, "false")
 
     # Check volume can not be scehduled
-    client.create_volume(name=volume_name, size=SIZE)
+    client.create_volume(name=volume_name, size=SIZE,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     volume = client.by_id_volume(volume.name)
@@ -2374,7 +2398,8 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
 
     lht_hostId = get_self_host_id()
     client.create_volume(name=volume_name, size=str(500*Mi),
-                         replicaDiskSoftAntiAffinity="disabled")
+                         replicaDiskSoftAntiAffinity="disabled",
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.replicaDiskSoftAntiAffinity == "disabled"
 
