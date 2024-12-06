@@ -11,6 +11,7 @@ from kubernetes.client.rest import ApiException
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+from utility.utility import convert_size_to_bytes
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
@@ -23,7 +24,9 @@ class PersistentVolumeClaim():
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type, sc_name):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB"):
+        storage_size_bytes = convert_size_to_bytes(storage_size)
+
         filepath = "./templates/workload/pvc.yaml"
         with open(filepath, 'r') as f:
             namespace = 'default'
@@ -37,6 +40,9 @@ class PersistentVolumeClaim():
 
             # correct storageclass name
             manifest_dict['spec']['storageClassName'] = sc_name
+
+            # correct storage request
+            manifest_dict['spec']['resources']['requests']['storage'] = storage_size_bytes
 
             # correct access mode`
             if volume_type == 'RWX':
@@ -95,11 +101,11 @@ class PersistentVolumeClaim():
     def get_volume_name(self, claim_name):
         return self.claim.get_volume_name(claim_name)
 
-    def expand(self, claim_name, size_in_byte):
+    def expand(self, claim_name, size_in_byte, skip_retry=False):
         pvc = self.claim.get(claim_name)
         current_size = int(pvc.spec.resources.requests['storage'])
 
         target_size = current_size + size_in_byte
         logging(f"Expanding PVC {claim_name} from {current_size} to {target_size}")
-        expanded_size = self.claim.expand(claim_name, target_size)
+        expanded_size = self.claim.expand(claim_name, target_size, skip_retry=skip_retry)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))

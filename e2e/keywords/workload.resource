@@ -208,10 +208,10 @@ Trim ${workload_kind} ${workload_id} volume should ${condition}
     END
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
-    ${node_name} =    get_node_by_index    ${node_id}    
+    ${node_name} =    get_node_by_index    ${node_id}
 
     IF    '${workload_name}' == 'engine-image'
-        ${label_selector} =    Set Variable    longhorn.io/component=engine-image       
+        ${label_selector} =    Set Variable    longhorn.io/component=engine-image
     ELSE IF    '${workload_name}' == 'instance-manager'
         ${label_selector} =    Set Variable    longhorn.io/component=instance-manager
     ELSE
@@ -232,3 +232,28 @@ Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk 
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
     Should Be True    len(${replicas}) > 0
+
+Expand ${workload_kind} ${workload_id} volume by ${size}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${new_size} =    convert_size_to_bytes    ${size}
+
+    expand_workload_claim_size    ${workload_name}    ${new_size}
+
+Expand ${workload_kind} ${workload_id} volume more than storage maximum size should fail
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${max_size} =    get_volume_node_disk_storage_maximum    ${volume_name}    ${node_name}
+    ${new_size} =    evaluate    ${max_size} + 1
+
+    Run Keyword And Expect Error    Failed to expand*    expand_workload_claim_size    ${workload_name}    ${new_size}    skip_retry=True
+
+Assert volume size of ${workload_kind} ${workload_id} remains ${size} for at least ${period} seconds
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    FOR    ${i}    IN RANGE    ${period}
+        ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+        ${current_size_byte} =    get_volume_size    ${volume_name}
+        Should Be Equal    ${current_size_byte}    ${expected_size_byte}
+        Sleep    1
+    END

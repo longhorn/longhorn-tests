@@ -1,11 +1,14 @@
-from backupstore.base import Base
 import os
 import base64
 import json
 import tempfile
 import subprocess
+
 from minio import Minio
 from minio.error import ResponseError
+
+from backupstore.base import Base
+
 from urllib.parse import urlparse
 from utility.utility import logging
 

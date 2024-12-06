@@ -1,18 +1,21 @@
 import time
 import asyncio
+
 from kubernetes import client
 from kubernetes.client.rest import ApiException
+
+from robot.libraries.BuiltIn import BuiltIn
+
+from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
+from utility.utility import subprocess_exec_cmd
+from utility.utility import subprocess_exec_cmd_with_timeout
+
+from workload.constant import IMAGE_UBUNTU
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
-from workload.pod import wait_for_pod_status
-from workload.pod import get_pod
-from workload.constant import IMAGE_UBUNTU
-from utility.utility import subprocess_exec_cmd
-from utility.utility import logging
-from utility.utility import get_retry_count_and_interval
-from utility.utility import subprocess_exec_cmd_with_timeout
-from robot.libraries.BuiltIn import BuiltIn
+
 
 async def restart_kubelet(node_name, downtime_in_sec=10):
     manifest = new_pod_manifest(

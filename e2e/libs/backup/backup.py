@@ -1,8 +1,8 @@
 from backup.base import Base
 from backup.crd import CRD
 from backup.rest import Rest
+
 from strategy import LonghornOperationStrategy
-from utility.utility import logging
 
 
 class Backup(Base):

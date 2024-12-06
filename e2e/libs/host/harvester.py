@@ -1,13 +1,17 @@
-import requests
 import os
+import requests
 import time
+import urllib3
+
+from host.base import Base
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
+
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
 from utility.utility import get_retry_count_and_interval
-from host.base import Base
-import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 class Harvester(Base):
 

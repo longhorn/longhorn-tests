@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+
 from utility.utility import set_annotation
 from utility.utility import get_annotation_value
+
 
 class Base(ABC):
 

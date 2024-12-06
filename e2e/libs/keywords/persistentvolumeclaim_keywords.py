@@ -20,9 +20,9 @@ class persistentvolumeclaim_keywords:
         for claim in claims.items:
             self.delete_persistentvolumeclaim(claim.metadata.name)
 
-    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn"):
+    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3Gi"):
         logging(f'Creating {volume_type} persistentvolumeclaim {name} with {sc_name} storageclass')
-        return self.claim.create(name, volume_type, sc_name)
+        return self.claim.create(name, volume_type, sc_name, storage_size)
 
     def delete_persistentvolumeclaim(self, name):
         logging(f'Deleting persistentvolumeclaim {name}')
@@ -34,3 +34,7 @@ class persistentvolumeclaim_keywords:
 
         logging(f'Expanding persistentvolumeclaim {claim_name} by {size_in_mib} MiB')
         self.claim.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
+
+    def get_claim_requested_size(self, claim_name):
+        claim = self.claim.get(claim_name)
+        return claim.spec.resources.requests['storage']
