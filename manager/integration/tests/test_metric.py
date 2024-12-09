@@ -8,7 +8,6 @@ from prometheus_client.parser import text_string_to_metric_families
 
 from common import client, core_api, pod, volume_name, batch_v1_api  # NOQA
 
-from common import crash_engine_process_with_sigkill
 from common import delete_replica_processes
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
@@ -43,6 +42,7 @@ from common import create_backup
 from common import wait_for_backup_count
 from common import delete_backup_volume
 from common import get_longhorn_api_client
+from common import remount_volume_read_only
 
 RECURRING_JOB_NAME = "recurring-test"
 TASK = "task"
@@ -135,7 +135,7 @@ def check_metric_with_condition(core_api, metric_name, metric_labels, expected_v
 def check_metric(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
     if metric_node_id is None:
         # Populate metric data from all nodes.
-        client = get_longhorn_api_client()
+        client = get_longhorn_api_client()  # NOQA
         nodes = client.list_node()
         metric_data = []
         for node in nodes:
@@ -432,7 +432,7 @@ def test_metric_longhorn_volume_file_system_read_only(client, core_api, volume_n
     Given a volume is created and attached to a pod
     And the volume is healthy
 
-    When crash the volume engine process
+    When mount the volume as read-only
     And wait for the volume to become healthy
     And write the data to the pod
     And flush data to persistent storage in the pod with sync command
@@ -458,21 +458,31 @@ def test_metric_longhorn_volume_file_system_read_only(client, core_api, volume_n
     create_and_wait_pod(core_api, pod)
     wait_for_volume_healthy(client, volume_name)
 
-    crash_engine_process_with_sigkill(client, core_api, volume_name)
-    wait_for_volume_healthy(client, volume_name)
-
-    write_pod_volume_data(core_api, pod_name, 'longhorn-integration-test',
-                          filename='test')
-    stream(core_api.connect_get_namespaced_pod_exec,
-           pod_name, 'default', command=["sync"],
-           stderr=True, stdin=False, stdout=True, tty=False)
-
     metric_labels = {
         "pvc": pvc_name,
         "volume": volume_name,
     }
-    wait_for_metric(core_api, "longhorn_volume_file_system_read_only",
-                    metric_labels, 1.0, metric_node_id=None)
+
+    for _ in range(RETRY_COUNTS):
+        remount_volume_read_only(client, core_api, volume_name)
+        wait_for_volume_healthy(client, volume_name)
+
+        write_pod_volume_data(core_api, pod_name, 'longhorn-integration-test',
+                              filename='test')
+        stream(core_api.connect_get_namespaced_pod_exec,
+               pod_name, 'default', command=["sync"],
+               stderr=True, stdin=False, stdout=True, tty=False)
+
+        try:
+            check_metric(core_api, "longhorn_volume_file_system_read_only",
+                         metric_labels, 1.0,
+                         metric_node_id=None)
+            return
+        except AssertionError:
+            print("Retrying to remount volume as read-only...")
+            continue
+
+    raise AssertionError("Failed to verify 'longhorn_volume_file_system_read_only' metric after all retries")   # NOQA
 
 
 def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
