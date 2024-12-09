@@ -149,7 +149,7 @@ and user_created label is false</p></div>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/8508">https://github.com/longhorn/longhorn/issues/8508</a></p>
 <p>Given a volume is created and attached to a pod
 And the volume is healthy</p>
-<p>When crash the volume engine process
+<p>When mount the volume as read-only
 And wait for the volume to become healthy
 And write the data to the pod
 And flush data to persistent storage in the pod with sync command</p>
@@ -174,7 +174,7 @@ of volume metrics by sending HTTP requests to
 prometheus_client to validate the return value.</p></div>
 </dd>
 <dt id="tests.test_metric.wait_for_metric"><code class="name flex">
-<span>def <span class="ident">wait_for_metric</span></span>(<span>core_api, metric_name, metric_labels, expected_value)</span>
+<span>def <span class="ident">wait_for_metric</span></span>(<span>core_api, metric_name, metric_labels, expected_value, metric_node_id=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
