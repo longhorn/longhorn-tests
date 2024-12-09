@@ -5256,6 +5256,26 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
                stderr=True, stdin=False, stdout=True, tty=False)
 
 
+def remount_volume_read_only(client, core_api, volume_name):
+    volume_name_hash = hashlib.sha256(volume_name.encode()).hexdigest()
+
+    volume = client.by_id_volume(volume_name)
+    instance_manager_name = volume.controllers[0].instanceManagerName
+
+    print(f"Remounting volume {volume_name} as read-only: {volume_name_hash}")
+
+    command = [
+            '/bin/sh', '-c',
+            f"mount -o remount,ro /host/var/lib/kubelet/plugins/kubernetes.io/csi/driver.longhorn.io/{volume_name_hash}/globalmount"    # NOQA
+    ]
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream read'):
+        stream(core_api.connect_get_namespaced_pod_exec,
+               instance_manager_name, LONGHORN_NAMESPACE, command=command,
+               stderr=True, stdin=False, stdout=True, tty=False)
+
+
 def wait_for_pod_restart(core_api, pod_name, namespace="default"):
     pod = core_api.read_namespaced_pod(name=pod_name,
                                        namespace=namespace)
