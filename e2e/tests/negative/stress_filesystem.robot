@@ -49,7 +49,7 @@ Stress Volume Node Filesystem When Volume Is Online Expanding
     And Stress filesystem of statefulset 0 volume node
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Expand statefulset 0 volume by 100 MiB
+        When Expand statefulset 0 volume with additional 100 MiB
         Then Wait for statefulset 0 volume size expanded
 
         And Check statefulset 0 data in file data.txt is intact
@@ -63,7 +63,7 @@ Stress Volume Node Filesystem When Volume Is Offline Expanding
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Scale down statefulset 0 to detach volume
 
-        When Expand statefulset 0 volume by 100 MiB
+        When Expand statefulset 0 volume with additional 100 MiB
         Then Wait for statefulset 0 volume size expanded
         And Wait for statefulset 0 volume detached
         And Scale up statefulset 0 to attach volume

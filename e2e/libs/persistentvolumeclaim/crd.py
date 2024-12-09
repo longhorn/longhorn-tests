@@ -87,7 +87,7 @@ class CRD():
     def expand(self, claim_name, size, namespace="default", skip_retry=False):
         retry_count = 1 if skip_retry else self.retry_count
         for i in range(retry_count):
-            logging(f"Trying to expand pvc {claim_name} to size {size} ... ({i})")
+            logging(f"Trying to expand PVC {claim_name} to size {size} ... ({i})")
             try:
                 self.core_v1_api.patch_namespaced_persistent_volume_claim(
                     name=claim_name,
