@@ -51,7 +51,7 @@ Stress Volume Node Memory When Volume Is Online Expanding
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Stress memory of volume nodes
 
-        When Expand statefulset 0 volume by 100 MiB
+        When Expand statefulset 0 volume with additional 100 MiB
 
         Then Wait for statefulset 0 volume size expanded
         And Check statefulset 0 data in file 0.txt is intact
@@ -65,7 +65,7 @@ Stress Volume Node Memory When Volume Is Offline Expanding
         And Scale down statefulset 0 to detach volume
         And Stress memory of all worker nodes
 
-        When Expand statefulset 0 volume by 100 MiB
+        When Expand statefulset 0 volume with additional 100 MiB
 
         Then Wait for statefulset 0 volume size expanded
         And Wait for statefulset 0 volume detached

@@ -233,11 +233,17 @@ Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk 
     ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
     Should Be True    len(${replicas}) > 0
 
-Expand ${workload_kind} ${workload_id} volume by ${size}
+Expand ${workload_kind} ${workload_id} volume to ${size}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${new_size} =    convert_size_to_bytes    ${size}
 
     expand_workload_claim_size    ${workload_name}    ${new_size}
+
+Expand ${workload_kind} ${workload_id} volume with additional ${size}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${new_size} =    convert_size_to_bytes    ${size}
+
+    expand_workload_claim_size_with_additional_bytes    ${workload_name}    ${new_size}
 
 Expand ${workload_kind} ${workload_id} volume more than storage maximum size should fail
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

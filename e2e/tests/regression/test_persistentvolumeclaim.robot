@@ -38,7 +38,7 @@ Test persistentvolumeclaim expand more than storage maximum size should fail
         And Assert persistentvolumeclaim 0 requested size remains 2GiB for at least 5 seconds
         And Check deployment 0 data in file data.txt is intact
 
-        When Expand deployment 0 volume by 1 GiB
+        When Expand deployment 0 volume to 3 GiB
         Then Assert persistentvolumeclaim 0 requested size remains 3GiB for at least 5 seconds
         And Assert volume size of deployment 0 remains 3GiB for at least 5 seconds
         And Check deployment 0 data in file data.txt is intact
