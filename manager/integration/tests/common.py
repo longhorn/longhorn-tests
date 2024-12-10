@@ -86,6 +86,8 @@ UPGRADE_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:upgrade-test"
 ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
+BLOCK_DEV_PATH = "/dev/xvdh"
+
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
 VOLUME_STATE_DETACHED = "detached"
@@ -216,6 +218,7 @@ SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
 SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
+SETTING_V2_DATA_ENGINE = "v2-data-engine"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -319,6 +322,13 @@ BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
 FAILED_DELETING_REASONE = "FailedDeleting"
 BACKINGIMAGE_FAILED_EVICT_MSG = \
     "since there is no other healthy backing image copy"
+
+# set default data engine for test
+enable_v2 = os.environ.get('RUN_V2_TEST')
+if enable_v2 == "true":
+    DATA_ENGINE = "v2"
+else:
+    DATA_ENGINE = "v1"
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -428,7 +438,8 @@ def cleanup_all_volumes(client):
 def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
     client.create_volume(name=vol_name,
                          numberOfReplicas=1,
-                         size=str(vol_size))
+                         size=str(vol_size),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, vol_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, vol_name)
@@ -547,7 +558,7 @@ def create_and_check_volume(client, volume_name,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
                          snapshotDataIntegrity=snapshot_data_integrity,
-                         accessMode=access_mode)
+                         accessMode=access_mode, dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -1566,6 +1577,9 @@ def storage_class(request):
         },
         'reclaimPolicy': 'Delete'
     }
+    if DATA_ENGINE == 'v2':
+        sc_manifest['parameters']['dataEngine'] = 'v2'
+        sc_manifest['parameters']['fsType'] = 'ext4'
 
     def finalizer():
         api = get_storage_api_client()
@@ -1788,6 +1802,10 @@ def cleanup_client():
     scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
+
+    enable_v2 = os.environ.get('RUN_V2_TEST')
+    if enable_v2 == "true":
+        return
 
     # check replica subdirectory of default disk path
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
@@ -3594,6 +3612,14 @@ def cleanup_test_disks(client):
 
 
 def reset_disks_for_all_nodes(client):  # NOQA
+    enable_v2 = os.environ.get('RUN_V2_TEST')
+    if enable_v2 == "true":
+        default_disk_path = BLOCK_DEV_PATH
+        disk_type = "block"
+    else:
+        default_disk_path = DEFAULT_DISK_PATH
+        disk_type = "filesystem"
+
     nodes = client.list_node()
     for node in nodes:
         # Reset default disk if there are more than 1 disk
@@ -3603,7 +3629,7 @@ def reset_disks_for_all_nodes(client):  # NOQA
             cleanup_required = True
         if len(node.disks) == 1:
             for _, disk in iter(node.disks.items()):
-                if disk.path != DEFAULT_DISK_PATH:
+                if disk.path != default_disk_path:
                     cleanup_required = True
         if cleanup_required:
             update_disks = get_update_disks(node.disks)
@@ -3618,7 +3644,8 @@ def reset_disks_for_all_nodes(client):  # NOQA
             node = wait_for_disk_update(client, node.name, 0)
         if len(node.disks) == 0:
             default_disk = {"default-disk":
-                            {"path": DEFAULT_DISK_PATH,
+                            {"path": default_disk_path,
+                             "diskType": disk_type,
                              "allowScheduling": True}}
             node = update_node_disks(client, node.name, disks=default_disk,
                                      retry=True)
@@ -3630,8 +3657,11 @@ def reset_disks_for_all_nodes(client):  # NOQA
         for name, disk in iter(disks.items()):
             update_disk = disk
             update_disk.allowScheduling = True
-            update_disk.storageReserved = \
-                int(update_disk.storageMaximum * 30 / 100)
+            if disk_type == "filesystem":
+                reserved_storage = int(update_disk.storageMaximum * 30 / 100)
+            else:
+                reserved_storage = 0
+            update_disk.storageReserved = reserved_storage
             update_disk.tags = []
             update_disks[name] = update_disk
         node = update_node_disks(client, node.name, disks=update_disks,
@@ -3644,7 +3674,7 @@ def reset_disks_for_all_nodes(client):  # NOQA
                                  "storageScheduled", 0)
             wait_for_disk_status(client, node.name, name,
                                  "storageReserved",
-                                 int(update_disk.storageMaximum * 30 / 100))
+                                 reserved_storage)
 
 
 def reset_settings(client):
@@ -3683,6 +3713,20 @@ def reset_settings(client):
             continue
 
         if setting_name == "registry-secret":
+            continue
+
+        enable_v2 = os.environ.get('RUN_V2_TEST') == "true"
+        v1_setting_value = "false" if enable_v2 else "true"
+        v2_setting_value = "true" if enable_v2 else "false"
+
+        if setting_name == "v1-data-engine":
+            setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+            client.update(setting, value=v1_setting_value)
+            continue
+
+        if setting_name == "v2-data-engine":
+            setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
+            client.update(setting, value=v2_setting_value)
             continue
 
         s = client.by_id_setting(setting_name)
@@ -5827,7 +5871,8 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
     data_checksum = {}
 
     client.create_volume(name=restore_volume_name, size=str(1 * Gi),
-                         fromBackup=backup.url)
+                         fromBackup=backup.url,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, restore_volume_name)
     create_pv_for_volume(client, core_api, volume, restore_pv_name)
     create_pvc_for_volume(client, core_api, volume, restore_pvc_name)
@@ -6099,7 +6144,8 @@ def create_rwx_volume_with_storageclass(client,
 
 def create_volume(client, vol_name, size, node_id, r_num):
     volume = client.create_volume(name=vol_name, size=size,
-                                  numberOfReplicas=r_num)
+                                  numberOfReplicas=r_num,
+                                  dataEngine=DATA_ENGINE)
     assert volume.numberOfReplicas == r_num
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
@@ -6367,7 +6413,8 @@ def create_deployment_and_write_data(client, # NOQA
     apps_api = get_apps_api_client()
     volume = client.create_volume(name=volume_name,
                                   size=size,
-                                  numberOfReplicas=replica_count)
+                                  numberOfReplicas=replica_count,
+                                  dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     pvc_name = volume_name + "-pvc"
