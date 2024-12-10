@@ -4,15 +4,14 @@ run_longhorn_e2e_test(){
 
   LONGHORN_TESTS_MANIFEST_FILE_PATH="e2e/deploy/test.yaml"
 
-  if [[ -n ${PYTEST_CUSTOM_OPTIONS} ]]; then
-    PYTEST_CUSTOM_OPTIONS=(${PYTEST_CUSTOM_OPTIONS})
-    for OPT in "${PYTEST_CUSTOM_OPTIONS[@]}"; do
-      PYTEST_COMMAND_ARGS='"'${OPT}'"'
-    done
-  fi
+  eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
+  for OPT in "${ROBOT_COMMAND_ARGS[@]}"; do
+    ROBOT_COMMAND_ARR="${ROBOT_COMMAND_ARR}\"${OPT}\", "
+  done
+  ROBOT_COMMAND_ARR=$(echo ${ROBOT_COMMAND_ARR} | sed 's/,$//g')
 
   ## generate test pod manifest
-  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${PYTEST_COMMAND_ARGS}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${ROBOT_COMMAND_ARR}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
@@ -70,7 +69,7 @@ run_longhorn_e2e_test_out_of_cluster(){
   source bin/activate
   pip install -r requirements.txt
 
-  eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"
+  eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
 
   ./run.sh "${ROBOT_COMMAND_ARGS[@]}"
 
