@@ -4,7 +4,7 @@ run_longhorn_e2e_test(){
 
   LONGHORN_TESTS_MANIFEST_FILE_PATH="e2e/deploy/test.yaml"
 
-  eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"
+  eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
   for OPT in "${ROBOT_COMMAND_ARGS[@]}"; do
     ROBOT_COMMAND_ARR="${ROBOT_COMMAND_ARR}\"${OPT}\", "
   done
@@ -83,7 +83,7 @@ run_longhorn_e2e_test_out_of_cluster(){
   fi
   LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
 
-  eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"
+  eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
 
   cat /tmp/instance_mapping
   cp "${KUBECONFIG}" /tmp/kubeconfig
