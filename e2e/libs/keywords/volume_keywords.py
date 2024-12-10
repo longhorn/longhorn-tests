@@ -26,8 +26,8 @@ class volume_keywords:
     def cleanup_volumes(self):
         volumes = self.volume.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
 
-        logging(f'Cleaning up {len(volumes["items"])} volumes')
-        for volume in volumes['items']:
+        logging(f'Cleaning up {len(volumes)} volumes')
+        for volume in volumes:
             self.delete_volume(volume['metadata']['name'])
 
     def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup=""):
