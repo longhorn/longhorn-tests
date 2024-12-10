@@ -178,7 +178,7 @@ class CRD(Base):
             namespace="longhorn-system",
             plural="volumes",
             label_selector=label_selector
-        )
+        )["items"]
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         # retry conflict error
