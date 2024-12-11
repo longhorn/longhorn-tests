@@ -80,6 +80,7 @@ class Aws(Base):
             waiter = self.aws_client.get_waiter('instance_stopped')
             waiter.wait(InstanceIds=instance_ids)
             logging(f"Stopped instances")
+            self.node.wait_for_node_down(power_off_node_name)
 
     def power_on_node(self, power_on_node_name):
         instance_ids = [self.mapping[power_on_node_name]]
@@ -89,3 +90,4 @@ class Aws(Base):
         waiter = self.aws_client.get_waiter('instance_running')
         waiter.wait(InstanceIds=instance_ids)
         logging(f"Started instances")
+        self.node.wait_for_node_up(power_on_node_name)

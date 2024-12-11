@@ -28,6 +28,14 @@ class CRD(Base):
         )
         return replicas["items"]
 
+    def get_replica_names(self, volume_name, numberOfReplicas):
+        logging(f"Getting volume {volume_name} replica names")
+        replicas = self.get(volume_name)
+        assert len(replicas) == numberOfReplicas, f"Expect volume {volume_name} has {numberOfReplicas} replicas, but there are {replicas}"
+        replica_names = [ replica['metadata']['name'] for replica in replicas ]
+        logging(f"Got volume {volume_name} replica names {replica_names}")
+        return replica_names
+
     def delete(self, volume_name, node_name):
         if volume_name == "" or node_name == "":
             logging(f"Deleting all replicas")

@@ -141,15 +141,22 @@ Wait for volume ${volume_id} degraded
 Check volume ${volume_id} replica on node ${node_id} kept in stopped
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
         wait_for_replica_stopped    ${volume_name}    ${node_name}
         Sleep    ${RETRY_INTERVAL}
     END
 
-Check for volume ${volume_id} kept in degraded
+Check volume ${volume_id} kept in degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
         wait_for_volume_degraded    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check volume ${volume_id} kept in attaching
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_attaching    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
 

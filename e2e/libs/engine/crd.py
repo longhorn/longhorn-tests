@@ -1,5 +1,3 @@
-import logging
-
 from kubernetes import client
 
 from engine.base import Base
@@ -61,3 +59,11 @@ class CRD(Base):
         for engine in engines:
             assert str(engine["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} engine setting {setting_name} is {value}, but it's {str(engine['spec'][setting_name])}"
+
+    def get_engine_name(self, volume_name):
+        logging(f"Getting volume {volume_name} engine name")
+        engines = self.get_engines(volume_name)
+        assert len(engines) == 1, f"Expect volume {volume_name} only has one engine, but there are {engines}"
+        engine_name = engines[0]["metadata"]["name"]
+        logging(f"Got volume {volume_name} engine name {engine_name}")
+        return engine_name
