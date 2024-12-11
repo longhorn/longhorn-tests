@@ -22,7 +22,7 @@ class CRD():
         return self.core_v1_api.list_namespaced_persistent_volume_claim(
             namespace=claim_namespace,
             label_selector=label_selector
-        )
+        ).items
 
     def set_label(self, claim_name, label_key, label_value, claim_namespace="default"):
         for i in range(self.retry_count):

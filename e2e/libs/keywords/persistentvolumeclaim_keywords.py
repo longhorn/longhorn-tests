@@ -16,8 +16,8 @@ class persistentvolumeclaim_keywords:
     def cleanup_persistentvolumeclaims(self):
         claims = self.claim.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
 
-        logging(f'Cleaning up {len(claims.items)} persistentvolumeclaims')
-        for claim in claims.items:
+        logging(f'Cleaning up {len(claims)} persistentvolumeclaims')
+        for claim in claims:
             self.delete_persistentvolumeclaim(claim.metadata.name)
 
     def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB"):

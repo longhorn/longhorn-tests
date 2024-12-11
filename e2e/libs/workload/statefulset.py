@@ -4,6 +4,9 @@ import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from persistentvolumeclaim import PersistentVolumeClaim
+from volume import Volume
+
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
@@ -79,7 +82,9 @@ def delete_statefulset(name, namespace='default'):
         assert e.status == 404
 
     retry_count, retry_interval = get_retry_count_and_interval()
-    for _ in range(retry_count):
+    for i in range(retry_count):
+        time.sleep(retry_interval)
+        logging(f"Waiting for statefulset {name} deleted ... ({i})")
         resp = api.list_namespaced_stateful_set(namespace=namespace)
         deleted = True
         for item in resp.items:
@@ -88,8 +93,33 @@ def delete_statefulset(name, namespace='default'):
                 break
         if deleted:
             break
-        time.sleep(retry_interval)
     assert deleted
+
+    claim = PersistentVolumeClaim()
+    volume_name = None
+    for i in range(retry_count):
+        time.sleep(retry_interval)
+        logging(f"Waiting for pvc of statefulset {name} deleted ... ({i})")
+        claims = claim.list(label_selector=f"app={name}")
+        deleted = False
+        if len(claims) == 0:
+            deleted = True
+            break
+        else:
+            volume_name = claims[0].spec.volume_name
+    assert deleted
+
+    if volume_name:
+        volume = Volume()
+        for i in range(retry_count):
+            time.sleep(retry_interval)
+            logging(f"Waiting for volume {volume_name} deleted ... ({i})")
+            volumes = volume.list(label_selector=f"longhornvolume={volume_name}")
+            deleted = False
+            if len(volumes) == 0:
+                deleted = True
+                break
+        assert deleted
 
 
 def get_statefulset(name, namespace='default'):
