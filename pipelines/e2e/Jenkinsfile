@@ -22,16 +22,11 @@ if (params.DISTRO == "sles") {
     }
 }
 
-// parameters for air gap installation
-def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def CUSTOM_SSH_PUBLIC_KEY = params.CUSTOM_SSH_PUBLIC_KEY ? params.CUSTOM_SSH_PUBLIC_KEY : ""
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
-
-// parameter for hdd test
-def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
 // parameter for v2 test
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : true
@@ -60,38 +55,6 @@ node {
 
         try {
 
-            if (params.AIR_GAP_INSTALLATION) {
-
-                stage('airgap build') {
-                    sh "airgap/scripts/build.sh"
-                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                           --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
-                                           --env TF_VAR_do_token=${DO_TOKEN} \
-                                           --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
-                                           --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
-                                           airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
-                    """
-                }
-
-                stage ('airgap setup') {
-                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
-                    REGISTRY_URL = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
-                        returnStdout: true
-                    )
-                    println REGISTRY_URL
-                    REGISTRY_USERNAME = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
-                        returnStdout: true
-                    )
-                    REGISTRY_PASSWORD = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
-                        returnStdout: true
-                    )
-                }
-
-            }
-
             stage('build') {
 
                 echo "Using credentials: $CREDS_ID"
@@ -101,7 +64,6 @@ node {
                 sh """ docker run -itd --cap-add=NET_ADMIN \
                                        --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                       --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
                                        --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
                                        --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
@@ -115,12 +77,9 @@ node {
                                        --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
                                        --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
                                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
-                                       --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
-                                       --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
-                                       --env TF_VAR_use_hdd=${USE_HDD} \
                                        --env TF_VAR_arch=${ARCH} \
                                        --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                        --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
