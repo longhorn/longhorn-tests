@@ -56,7 +56,7 @@ class Volume(Base):
         self.volume.wait_for_volume_state(volume_name, "detached")
 
     def wait_for_volume_attaching(self, volume_name):
-        self.volume.wait_for_volume_state(volume_name, "attaching")
+        self.volume.wait_for_volume_attaching(volume_name)
 
     def wait_for_volume_stuck_attaching(self, volume_name):
         self.volume.wait_for_volume_keep_in_state(volume_name, "attaching")

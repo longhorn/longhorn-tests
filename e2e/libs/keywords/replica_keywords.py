@@ -11,3 +11,6 @@ class replica_keywords:
 
     def get_replicas(self, volume_name=None, node_name=None, disk_uuid=None):
         return self.replica.get(volume_name, node_name, disk_uuid)
+
+    def get_replica_names(self, volume_name, numberOfReplicas=3):
+        return self.replica.get_replica_names(volume_name, numberOfReplicas)
