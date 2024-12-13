@@ -341,7 +341,7 @@ install_backupstores(){
                -f ${NFS_BACKUPSTORE_URL} \
                -f ${CIFS_BACKUPSTORE_URL} \
                -f ${AZURITE_BACKUPSTORE_URL}
-  setup_azuitize_backup_store
+  setup_azurite_backup_store
 }
 
 install_backupstores_from_lh_repo(){
@@ -353,10 +353,10 @@ install_backupstores_from_lh_repo(){
                  -f ${NFS_BACKUPSTORE_URL} \
                  -f ${CIFS_BACKUPSTORE_URL} \
                  -f ${AZURITE_BACKUPSTORE_URL}
-  setup_azuitize_backup_store
+  setup_azurite_backup_store
 }
 
-setup_azuitize_backup_store(){
+setup_azurite_backup_store(){
   RETRY=0
   MAX_RETRY=60
   until (kubectl get pods | grep 'longhorn-test-azblob' | grep 'Running'); do
