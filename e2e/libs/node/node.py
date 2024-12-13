@@ -62,10 +62,19 @@ class Node:
         assert len(node.disks) == disk_num, f"Waiting for node {node_name} disk updated to {disk_num} failed: {disks}"
 
     def add_disk(self, node_name, disk):
-        node = get_longhorn_client().by_id_node(node_name)
-        disks = node.disks
-        disks.update(disk)
-        self.update_disks(node_name, disks)
+        added = False
+        for i in range(self.retry_count):
+            try:
+                node = get_longhorn_client().by_id_node(node_name)
+                disks = node.disks
+                disks.update(disk)
+                self.update_disks(node_name, disks)
+                added = True
+                break
+            except Exception as e:
+                logging(f"Adding disk {disk} to node {node_name} error: {e}")
+            time.sleep(self.retry_interval)
+        assert added, f"Adding disk {disk} to node {node_name} failed"
 
     def reset_disks(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
