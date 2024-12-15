@@ -238,6 +238,7 @@ class Rest(Base):
                     return r.name
 
     def wait_for_replica_count(self, volume_name, node_name, replica_count):
+        condition_met = False
         for i in range(self.retry_count):
             running_replica_count = 0
             volume = get_longhorn_client().by_id_volume(volume_name)
@@ -248,10 +249,13 @@ class Rest(Base):
                     running_replica_count += 1
             logging(f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running on {node_name if node_name else 'nodes'}, currently it's {running_replica_count} ... ({i})")
             if replica_count and running_replica_count == int(replica_count):
+                condition_met = True
                 break
             elif not replica_count and running_replica_count:
+                condition_met = True
                 break
             time.sleep(self.retry_interval)
+        assert condition_met, f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running on {node_name if node_name else 'nodes'} failed. There are only {running_replica_count} running replicas"
         return running_replica_count
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):

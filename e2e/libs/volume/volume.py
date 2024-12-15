@@ -34,7 +34,7 @@ class Volume(Base):
         return self.volume.list(label_selector=label_selector)
 
     def list_names(self, label_selector=None):
-        return [item['metadata']['name'] for item in self.list(label_selector)['items']]
+        return [item['metadata']['name'] for item in self.list(label_selector)]
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         return self.volume.set_annotation(volume_name, annotation_key, annotation_value)
@@ -56,7 +56,7 @@ class Volume(Base):
         self.volume.wait_for_volume_state(volume_name, "detached")
 
     def wait_for_volume_attaching(self, volume_name):
-        self.volume.wait_for_volume_state(volume_name, "attaching")
+        self.volume.wait_for_volume_attaching(volume_name)
 
     def wait_for_volume_stuck_attaching(self, volume_name):
         self.volume.wait_for_volume_keep_in_state(volume_name, "attaching")
