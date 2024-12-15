@@ -21,6 +21,9 @@ class Volume(Base):
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
 
+    def wait_for_volume_deleted(self, volume_name):
+        return self.volume.wait_for_volume_deleted(volume_name)
+
     def attach(self, volume_name, node_name, disable_frontend):
         return self.volume.attach(volume_name, node_name, disable_frontend)
 
