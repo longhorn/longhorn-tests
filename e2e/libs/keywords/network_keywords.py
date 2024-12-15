@@ -35,6 +35,9 @@ class network_keywords:
                 )
 
             done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            for task in done:
+                if task.exception():
+                    assert False, task.exception()
             logging(f"All networks on nodes {node_list} are recovered after disconnection time {disconnection_time_in_sec} seconds")
 
         await disconnect_network_tasks()

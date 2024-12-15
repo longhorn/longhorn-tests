@@ -93,7 +93,7 @@ class CRD(Base):
                 plural="volumes",
                 name=volume_name
             )
-            self.wait_for_volume_delete(volume_name)
+            self.wait_for_volume_deleted(volume_name)
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
@@ -208,8 +208,9 @@ class CRD(Base):
         volume = self.get(volume_name)
         return volume['metadata']['annotations'].get(annotation_key)
 
-    def wait_for_volume_delete(self, volume_name):
+    def wait_for_volume_deleted(self, volume_name):
         for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} deleted ... ({i})")
             try:
                 self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",

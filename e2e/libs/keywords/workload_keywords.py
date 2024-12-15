@@ -138,6 +138,9 @@ class workload_keywords:
                 )
 
             done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            for task in done:
+                if task.exception():
+                    assert False, task.exception()
             logging(f"All workloads {workloads} pods are stably running now")
 
         await wait_for_workloads_tasks()

@@ -35,6 +35,9 @@ class k8s_keywords:
                 )
 
             done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            for task in done:
+                if task.exception():
+                    assert False, task.exception()
             logging(f"All kubelets on nodes {node_list} are restarted after downtime {downtime_in_sec} seconds")
 
         await restart_kubelet_tasks()

@@ -200,6 +200,9 @@ class volume_keywords:
             ]
 
             done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            for task in done:
+                if task.exception():
+                    assert False, task.exception()
             logging(f"Observed {done.pop().get_name()} and {done.pop().get_name()} started replica rebuilding first")
 
         await wait_for_both_replica_rebuildings()
@@ -215,6 +218,9 @@ class volume_keywords:
             ]
 
             done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            for task in done:
+                if task.exception():
+                    assert False, task.exception()
             logging(f"Observed {done.pop().get_name()} started replica rebuilding")
 
         await wait_for_replica_rebuilding()
