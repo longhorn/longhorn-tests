@@ -100,6 +100,12 @@ class NodeExec:
                     "operator": "Equal",
                     "value": "true",
                     "effect": "NoExecute"
+                },
+                # Allow to schedule on cordoned node to execute command on its host.
+                {
+                    "key": "node.kubernetes.io/unschedulable",
+                    "operator": "Exists",
+                    "effect": "NoSchedule"
                 }],
                 'containers': [{
                     'image': 'ubuntu:16.04',
