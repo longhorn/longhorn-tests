@@ -376,3 +376,27 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} in another clu
 Volume ${volume_id} setting ${setting_name} should be ${setting_value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_volume_setting    ${volume_name}    ${setting_name}    ${setting_value}
+
+Assert DM device for volume ${volume_id} ${condition} exist on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${dm_devices} =   list_dm_devices_on_node    ${node_name}
+    IF   '${condition}' == 'does'
+        Should Contain    ${dm_devices}    ${volume_name}
+    ELSE IF   '${condition}' == 'not'
+        Should Not Contain    ${dm_devices}    ${volume_name}
+    ELSE
+        Fail    Invalid condition: ${condition}
+    END
+
+Assert device for volume ${volume_id} ${condition} exist on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${devices} =   list_volume_devices_on_node    ${node_name}
+    IF   '${condition}' == 'does'
+        Should Contain    ${devices}    ${volume_name}
+    ELSE IF   '${condition}' == 'not'
+        Should Not Contain    ${devices}    ${volume_name}
+    ELSE
+        Fail    Invalid condition: ${condition}
+    END
