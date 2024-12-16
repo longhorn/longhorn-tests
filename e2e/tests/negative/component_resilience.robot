@@ -29,12 +29,12 @@ Delete instance-manager of volume ${volume_id} and wait for recover
 Delete instance-manager of deployment ${deployment_id} volume and wait for recover
     When Delete instance-manager of deployment ${deployment_id} volume
     And Wait for volume of deployment ${deployment_id} attached and degraded
-    And Wait for volume of deployment ${deployment_id} healthy    
+    And Wait for volume of deployment ${deployment_id} healthy
     And Wait for deployment ${deployment_id} pods stable
     And Check deployment ${deployment_id} data in file data.txt is intact
 
 *** Test Cases ***
-Test Longhorn components recovery
+Test Longhorn Components Recovery
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -64,19 +64,19 @@ Test Longhorn components recovery
         And Attach volume 1
         And Wait for volume 1 healthy
         And Write data to volume 1
-    
+
         When Create storageclass longhorn-test-1 with    dataEngine=${DATA_ENGINE}
         And Create persistentvolumeclaim 1 using RWX volume with longhorn-test-1 storageclass
         And Create deployment 1 with persistentvolumeclaim 1
         And Write 100 MB data to file data.txt in deployment 1
     END
 
-    When Delete Longhorn DaemonSet longhorn-csi-plugin pod on node 1    
+    When Delete Longhorn DaemonSet longhorn-csi-plugin pod on node 1
     And Delete Longhorn Deployment csi-attacher pod on node 1
     And Delete Longhorn Deployment csi-provisioner pod on node 1
     And Delete Longhorn Deployment csi-resizer pod on node 1
     And Delete Longhorn Deployment csi-snapshotter pod on node 1
-    And Delete Longhorn DaemonSet longhorn-manager pod on node 1    
+    And Delete Longhorn DaemonSet longhorn-manager pod on node 1
     And Delete Longhorn DaemonSet engine-image pod on node 1
     And Delete Longhorn component instance-manager pod on node 1
     And Delete Longhorn Deployment longhorn-ui pod
@@ -93,7 +93,7 @@ Test Longhorn components recovery
         And Check deployment 1 data in file data.txt is intact
     END
 
-Test Longhorn volume recovery
+Test Longhorn Volume Recovery
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -115,7 +115,7 @@ Test Longhorn volume recovery
     And Wait until volume 0 replica rebuilding started on replica node
     Then Delete instance-manager of volume 0 and wait for recover
 
-Test Longhorn backing image volume recovery
+Test Longhorn Backing Image Volume Recovery
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -127,7 +127,7 @@ Test Longhorn backing image volume recovery
     ...                Test steps:
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.    
-    ...                    Delete the backing image manager pod and verify the pod gets recreated.    
+    ...                    Delete the backing image manager pod and verify the pod gets recreated.
     IF    '${DATA_ENGINE}' == 'v1'
         When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
         And Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
@@ -135,7 +135,7 @@ Test Longhorn backing image volume recovery
         And Wait for volume 0 healthy
         And Write data to volume 0
         Then Delete instance-manager of volume 0 and wait for recover
-    
+
         When Delete volume 0 replica on replica node
         And Wait until volume 0 replica rebuilding started on replica node
         Then Delete instance-manager of volume 0 and wait for recover
@@ -144,7 +144,7 @@ Test Longhorn backing image volume recovery
         Then Wait backing image managers running
     END
 
-Test Longhorn dynamic provisioned RWX volume recovery
+Test Longhorn Dynamic Provisioned RWX Volume Recovery
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -174,7 +174,7 @@ Test Longhorn dynamic provisioned RWX volume recovery
         And Check deployment 0 data in file data.txt is intact
     END
 
-Test Longhorn dynamic provisioned RWO volume recovery
+Test Longhorn Dynamic Provisioned RWO Volume Recovery
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -191,7 +191,7 @@ Test Longhorn dynamic provisioned RWO volume recovery
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 500 MB data to file data.txt in deployment 0
     Then Delete instance-manager of deployment 0 volume and wait for recover
-    
+
     When Delete replica of deployment 0 volume on replica node
     And Wait until volume of deployment 0 replica rebuilding started on replica node
     Then Delete instance-manager of deployment 0 volume and wait for recover

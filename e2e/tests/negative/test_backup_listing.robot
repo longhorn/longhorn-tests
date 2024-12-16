@@ -127,7 +127,7 @@ Pod ${pod_id} data should same as volume ${source_volume_id} backup ${backup_id}
     ...  msg="expected ${expected_checksum}, got ${current_checksum}!"
 
 *** Test Cases ***
-Backup listing with more than 1000 backups
+Backup Listing With More Than 1000 Backups
     [Tags]  manual  longhorn-8355
     [Documentation]    Test backup listing
     Given Create persistentvolumeclaim 0 using RWO volume
@@ -139,7 +139,7 @@ Backup listing with more than 1000 backups
     Then Get deployment 1 volume data in file data
     And Volume 1 data should same as deployment 0 volume
 
-Backup listing of volume bigger than 200 Gi
+Backup Listing Of Volume Bigger Than 200 Gi
     [Tags]  manual  longhorn-8355  large-size
     [Documentation]    Test backup bigger than 200 Gi
     Given Create persistentvolumeclaim 0 using RWO volume
