@@ -124,7 +124,7 @@ class volume_keywords:
     def delete_replica_on_nodes(self, volume_name, replica_locality):
         check_replica_locality(replica_locality)
 
-        node_ids = self.get_node_ids_by_replica_locality(volume_name, replica_locality)        
+        node_ids = self.get_node_ids_by_replica_locality(volume_name, replica_locality)
         for node_id in node_ids:
             logging(f"Deleting volume {volume_name}'s replica on node {node_id}")
             self.volume.delete_replica(volume_name, node_id)
