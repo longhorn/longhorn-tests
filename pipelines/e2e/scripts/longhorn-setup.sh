@@ -13,6 +13,7 @@ source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/run_longhorn_e2e_test.sh
+source pipelines/utilities/coredns.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
