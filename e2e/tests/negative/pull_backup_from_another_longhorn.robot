@@ -59,6 +59,7 @@ Pull Backup Created By Another Longhorn System
     Then Install Longhorn
     And Set setting deleting-confirmation-flag to true
     And Set backupstore
+    And Set up v2 environment
     And Check backup synced from backupstore
     And Create volume 1 from backup 0 in another cluster
     And Wait for volume 1 detached
@@ -72,6 +73,7 @@ Pull Backup Created By Another Longhorn System
     Then Install Longhorn stable version
     And Set setting deleting-confirmation-flag to true
     And Set backupstore
+    And Set up v2 environment
     And Create volume 2 with    dataEngine=${DATA_ENGINE}
     And Attach volume 2
     And Wait for volume 2 healthy
@@ -85,6 +87,7 @@ Pull Backup Created By Another Longhorn System
      # Install current version then pull backup and verify data
     Then Install Longhorn
     And Set backupstore
+    And Set up v2 environment
     And Check backup synced from backupstore
     And Create volume 3 from backup 1 in another cluster
     And Wait for volume 3 detached
