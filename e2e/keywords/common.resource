@@ -24,12 +24,7 @@ Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 
 *** Keywords ***
-Set test environment
-    init_k8s_api_client
-
-    setup_control_plane_network_latency
-    set_backupstore
-
+Set up v2 environment
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     ${host_provider}=    Get Environment Variable    HOST_PROVIDER
@@ -37,6 +32,12 @@ Set test environment
     FOR    ${worker_node}    IN    @{worker_nodes}
         add_disk    block-disk    ${worker_node}    block    ${disk_path}
     END
+
+Set test environment
+    init_k8s_api_client
+    setup_control_plane_network_latency
+    set_backupstore
+    set_up_v2_environment
 
 Cleanup test resources
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}

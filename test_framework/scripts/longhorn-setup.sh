@@ -52,7 +52,7 @@ install_cluster_autoscaler(){
   yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_ACCESS_KEY_ID"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
   yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
   yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-unneeded-time=1m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-unneeded-time=3m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
   yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-delay-after-add=1m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
   kubectl apply -f "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
 }
@@ -341,10 +341,22 @@ install_backupstores(){
                -f ${NFS_BACKUPSTORE_URL} \
                -f ${CIFS_BACKUPSTORE_URL} \
                -f ${AZURITE_BACKUPSTORE_URL}
-  setup_azuitize_backup_store
+  setup_azurite_backup_store
 }
 
-setup_azuitize_backup_store(){
+install_backupstores_from_lh_repo(){
+  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
+  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
+  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml"
+  AZURITE_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml"
+  kubectl create -f ${MINIO_BACKUPSTORE_URL} \
+                 -f ${NFS_BACKUPSTORE_URL} \
+                 -f ${CIFS_BACKUPSTORE_URL} \
+                 -f ${AZURITE_BACKUPSTORE_URL}
+  setup_azurite_backup_store
+}
+
+setup_azurite_backup_store(){
   RETRY=0
   MAX_RETRY=60
   until (kubectl get pods | grep 'longhorn-test-azblob' | grep 'Running'); do
@@ -557,7 +569,11 @@ main(){
     install_cluster_autoscaler
   fi
   if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
-    install_backupstores
+      if [[ "${TF_VAR_k8s_distro_name}" == "eks" || "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
+          install_backupstores_from_lh_repo
+      else
+          install_backupstores
+      fi
   fi
   install_csi_snapshotter_crds
   if [[ "${TF_VAR_enable_mtls}" == true ]]; then
