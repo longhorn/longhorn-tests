@@ -14,6 +14,7 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -69,4 +70,49 @@ V2 Volume Should Block Trim When Volume Is Degraded
         ...    deployment 0
         And Check deployment 0 works
         Then Trim deployment 0 volume should pass
+    END
+
+V2 Volume Should Cleanup Resources When Instance Manager Is Deleted
+    [Tags]    coretest
+    [Documentation]    Verify that v2 volumes cleanup resources when their instance manager
+    ...                is deleted. And ensure this process does not impact v1 volumes.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/9959
+
+    When Create volume 0 with    dataEngine=v2
+    And Create volume 1 with    dataEngine=v2
+    And Create volume 2 with    dataEngine=v1
+    And Attach volume 0 to node 0
+    And Attach volume 1 to node 0
+    And Attach volume 2 to node 0
+    And Wait for volume 0 healthy
+    And Wait for volume 1 healthy
+    And Wait for volume 2 healthy
+    And Write data to volume 0
+    And Write data to volume 1
+    And Write data to volume 2
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Cordon node 0
+        And Delete instance-manager of volume 0
+
+        Then Assert DM device for volume 0 not exist on node 0
+        And Assert DM device for volume 1 not exist on node 0
+        And Assert device for volume 0 not exist on node 0
+        And Assert device for volume 1 not exist on node 0
+        And Assert device for volume 2 does exist on node 0
+
+        When Uncordon node 0
+        And Wait for volume 0 healthy
+        And Wait for volume 1 healthy
+        And Wait for volume 2 healthy
+
+        Then Assert DM device for volume 0 does exist on node 0
+        And Assert DM device for volume 1 does exist on node 0
+        And Assert device for volume 0 does exist on node 0
+        And Assert device for volume 1 does exist on node 0
+        And Assert device for volume 2 does exist on node 0
+        And Check volume 0 data is intact
+        And Check volume 1 data is intact
+        And Check volume 2 data is intact
     END
