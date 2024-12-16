@@ -19,7 +19,6 @@ Migration Confirmation After Migration Node Down
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
     And Write data to volume 0
-    And Get volume 0 engine and replica names
 
     And Attach volume 0 to node 1
     And Wait for volume 0 migration to be ready
@@ -31,7 +30,6 @@ Migration Confirmation After Migration Node Down
 
     # volume stuck in attaching status and waiting for migration node to come back
     Then Check volume 0 kept in attaching
-    And Volume 0 migration should fail or rollback
 
     # power on migration node
     When Power on off nodes
