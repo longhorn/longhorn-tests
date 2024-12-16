@@ -20,7 +20,7 @@ Test Setup    Set test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
-Pull backup created by another Longhorn system
+Pull Backup Created By Another Longhorn System
     [Documentation]    Pull backup created by another Longhorn system
     ...    1. Install test version of Longhorn.
     ...    2. Create volume, write data, and take backup.
@@ -32,7 +32,7 @@ Pull backup created by another Longhorn system
     ...    8. Create volume, write data, and take backup.
     ...    9. Uninstall Longhorn.
     ...    10. Install test version of Longhorn.
-    ...    11. Restore the backup create in step 8 and verify the data.        
+    ...    11. Restore the backup create in step 8 and verify the data.
     ...
     ...    Important
     ...    - This test case need have set environment variable manually first if not run on Jenkins
@@ -49,7 +49,7 @@ Pull backup created by another Longhorn system
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 300 MB to volume 0
-    When Create backup 0 for volume 0    
+    When Create backup 0 for volume 0
     Then Verify backup list contains no error for volume 0
     And Verify backup list contains backup 0 of volume 0
     Then Uninstall Longhorn
@@ -59,6 +59,7 @@ Pull backup created by another Longhorn system
     Then Install Longhorn
     And Set setting deleting-confirmation-flag to true
     And Set backupstore
+    And Set up v2 environment
     And Check backup synced from backupstore
     And Create volume 1 from backup 0 in another cluster
     And Wait for volume 1 detached
@@ -72,6 +73,7 @@ Pull backup created by another Longhorn system
     Then Install Longhorn stable version
     And Set setting deleting-confirmation-flag to true
     And Set backupstore
+    And Set up v2 environment
     And Create volume 2 with    dataEngine=${DATA_ENGINE}
     And Attach volume 2
     And Wait for volume 2 healthy
@@ -85,6 +87,7 @@ Pull backup created by another Longhorn system
      # Install current version then pull backup and verify data
     Then Install Longhorn
     And Set backupstore
+    And Set up v2 environment
     And Check backup synced from backupstore
     And Create volume 3 from backup 1 in another cluster
     And Wait for volume 3 detached

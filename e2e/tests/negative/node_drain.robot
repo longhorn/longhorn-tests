@@ -88,7 +88,7 @@ Force Drain Replica Node While Replica Rebuilding
         And Check deployment 1 data in file data.txt is intact
     END
 
-Drain node with force
+Drain Node With Force
     [Documentation]    Drain node with force
     ...    1. Deploy a cluster contains 3 worker nodes N1, N2, N3.
     ...    2. Deploy Longhorn.
@@ -117,7 +117,7 @@ Drain node with force
     And Check instance-manager pod is not running on drained node
     Then Check deployment 0 data in file data.txt is intact
 
-Drain node without force
+Drain Node Without Force
     [Documentation]    Drain node without force
     ...    1. Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.
     ...    2. Evict all the replicas from the node.
@@ -139,7 +139,7 @@ Drain node without force
     And Check instance-manager pod is not running on drained node
     Then Check deployment 0 data in file data.txt is intact
 
-Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn API
+Test Kubectl Drain Nodes For PVC/PV/LHV Is Created Through Longhorn API
     [Documentation]    Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn API
     ...    Given 1 PVC/PV/LHV created through Longhorn API And LHV is not yet attached/replicated.
     ...    When kubectl drain nodes.
@@ -153,7 +153,7 @@ Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn API
     And Create persistentvolumeclaim for volume 0
     And Force drain all nodes
 
-Stopped replicas on deleted nodes should not be counted as healthy replicas when draining nodes
+Stopped Replicas On Deleted Nodes Should Not Be Counted As Healthy Replicas When Draining Nodes
     [Documentation]    Stopped replicas on deleted nodes should not be counted as healthy replicas when draining nodes
     ...    When draining a node, the node will be set as unscheduled and all pods should be evicted.
     ...    By Longhorn’s default settings, the replica will only be evicted if there is another healthy replica on the running node.

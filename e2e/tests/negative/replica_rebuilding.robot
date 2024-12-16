@@ -66,7 +66,7 @@ Reboot Replica Node While Replica Rebuilding
         And Check volume 0 data is intact
     END
 
-Delete replicas one by one after the volume is healthy
+Delete Replicas One By One After The Volume Is Healthy
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create deployment 0 with persistentvolumeclaim 0
@@ -90,7 +90,7 @@ Delete replicas one by one after the volume is healthy
         Then Check deployment 0 data in file data.txt is intact
     END
 
-Delete replicas one by one regardless of the volume health
+Delete Replicas One By One Regardless Of The Volume Health
     [Documentation]    Currently v2 data engine have a chance to hit
     ...                https://github.com/longhorn/longhorn/issues/9216 and will be fixed
     ...                in v1.9.0
