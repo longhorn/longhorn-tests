@@ -24,7 +24,7 @@ Create volume with invalid name should fail
 
 *** Test Cases ***
 
-Test RWX volume data integrity after CSI plugin pod restart
+Test RWX Volume Data Integrity After CSI Plugin Pod Restart
     [Tags]    volume    rwx    storage-network
     [Documentation]    Test RWX volume data directory is accessible after Longhorn CSI plugin pod restart.
     ...
@@ -41,7 +41,7 @@ Test RWX volume data integrity after CSI plugin pod restart
 
     Then Check deployment 0 data in file data.txt is intact
 
-Test detached volume should not reattach after node eviction
+Test Detached Volume Should Not Reattach After Node Eviction
     [Tags]    volume    node-eviction
     [Documentation]    Test detached volume should not reattach after node eviction.
     ...
