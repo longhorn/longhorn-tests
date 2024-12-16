@@ -117,6 +117,6 @@ The drain process completed
     check_drain_process_completed    ${drain_process}
 
 Check PDB not exist
-    [Arguments]    ${instance_manger}
-    check_instance_manager_pdb_not_exist    ${instance_manger}
+    [Arguments]    ${instance_manager}
+    check_instance_manager_pdb_not_exist    ${instance_manager}
 
