@@ -217,4 +217,4 @@ Setting Allow Node Drain with the Last Healthy Replica protects the last healthy
 
     When Set setting node-drain-policy to always-allow
     And Force drain node 2 and expect success
-    And Check PDB not exist    instance_manger=${instance_manager_name}
+    And Check PDB not exist    instance_manager=${instance_manager_name}
