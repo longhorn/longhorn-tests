@@ -75,3 +75,9 @@ class node_keywords:
 
     def get_disk_uuid(self, node_name, disk_name):
         return self.node.get_disk_uuid(node_name, disk_name)
+
+    def list_dm_devices_on_node(self, node_name):
+        return self.node.list_dm_devices(node_name)
+
+    def list_volume_devices_on_node(self, node_name):
+        return self.node.list_volume_devices(node_name)
