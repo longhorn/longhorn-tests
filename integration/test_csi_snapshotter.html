@@ -74,7 +74,7 @@ Create Longhorn volume test-vol
 - Setup backup store</p></div>
 </dd>
 <dt id="tests.test_csi_snapshotter.restore_csi_volume_snapshot"><code class="name flex">
-<span>def <span class="ident">restore_csi_volume_snapshot</span></span>(<span>core_api, client, csivolsnap, pvc_name, pvc_request_storage_size, wait_for_restore=True)</span>
+<span>def <span class="ident">restore_csi_volume_snapshot</span></span>(<span>core_api, client, csivolsnap, pvc_name, pvc_request_storage_size, storage_class, wait_for_restore=True)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -247,7 +247,7 @@ the field VolumeSnapshotContent.snapshotHandle</li>
 </ol></div>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param"><code class="name flex">
-<span>def <span class="ident">test_csi_snapshot_with_bak_param</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted)</span>
+<span>def <span class="ident">test_csi_snapshot_with_bak_param</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Context:</p>
@@ -437,7 +437,7 @@ diskSelector:
 - The BackingImage is deleted as well</p></div>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic"><code class="name flex">
-<span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, csi_snapshot_type=None)</span>
+<span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, storage_class, csi_snapshot_type=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test creation / restoration / deletion of a backup via the csi snapshotter</p>
@@ -491,7 +491,7 @@ and backup on backupstore</p>
 </ol></div>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup"><code class="name flex">
-<span>def <span class="ident">test_csi_volumesnapshot_restore_existing_backup</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make, volumesnapshotclass, volumesnapshotcontent, volumesnapshot, volsnapshotclass_delete_policy, backup_is_deleted)</span>
+<span>def <span class="ident">test_csi_volumesnapshot_restore_existing_backup</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make, volumesnapshotclass, volumesnapshotcontent, volumesnapshot, volsnapshotclass_delete_policy, storage_class, backup_is_deleted)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test retention of a backup while deleting the associated <code>VolumeSnapshot</code>
