@@ -46,7 +46,7 @@ class workload_keywords:
         create_pod(new_busybox_manifest(pod_name, claim_name))
 
     def delete_pod(self, pod_name, namespace='default'):
-        logging(f'Deleting pod {pod_name}')
+        logging(f'Deleting pod {pod_name} in namespace {namespace}')
         delete_pod(pod_name, namespace)
 
     def cleanup_pods(self):
