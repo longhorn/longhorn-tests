@@ -24,6 +24,7 @@ from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import wait_deployment_replica_ready, wait_for_volume_healthy
 from common import crypto_secret, storage_class  # NOQA
 from common import create_crypto_secret, create_storage_class
+from common import DATA_ENGINE
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
@@ -38,7 +39,8 @@ def write_data_into_pod(pod_name_and_data_path):
                                  DATA_SIZE_IN_MB_3)
 
 
-def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_with_statefulset_multi_pods(core_api, statefulset, storage_class):  # NOQA
     """
     Test creation of share manager pod and rwx volumes from 2 pods.
 
@@ -51,7 +53,7 @@ def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
     4. Write data in both pods and compute md5sum.
     5. Compare md5sum of the data with the data written the share manager.
     """
-
+    create_storage_class(storage_class)
     statefulset_name = 'statefulset-rwx-multi-pods-test'
     share_manager_name = []
     volumes_name = []
@@ -62,7 +64,7 @@ def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
         statefulset['spec']['template']['metadata']['labels']['app'] = \
         statefulset_name
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
-        = 'longhorn'
+        = storage_class['metadata']['name']
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['accessModes'] \
         = ['ReadWriteMany']
 
@@ -104,7 +106,8 @@ def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
         assert pod_data == md5sum_pod[i]
 
 
-def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod, storage_class):  # NOQA
     """
     Test writing of data into a volume from multiple pods using same PVC
 
@@ -118,12 +121,13 @@ def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod):  
     7. Write data all three pods and compute md5sum.
     8. Check the data md5sum in the share manager pod.
     """
+    create_storage_class(storage_class)
     pvc_name = 'pvc-multi-pods-test'
     statefulset_name = 'statefulset-rwx-same-pvc-test'
     pod_name = 'pod-rwx-same-pvc-test'
 
     pvc['metadata']['name'] = pvc_name
-    pvc['spec']['storageClassName'] = 'longhorn'
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
     pvc['spec']['accessModes'] = ['ReadWriteMany']
 
     core_api.create_namespaced_persistent_volume_claim(
@@ -167,7 +171,8 @@ def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod):  
         core_api, command2, share_manager_name, LONGHORN_NAMESPACE)
 
 
-def test_rwx_parallel_writing(core_api, statefulset, pod):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_parallel_writing(core_api, statefulset, pod, storage_class):  # NOQA
     """
     Test parallel writing of data
 
@@ -182,7 +187,7 @@ def test_rwx_parallel_writing(core_api, statefulset, pod):  # NOQA
     6. Compute md5sum.
     7. Check the data md5sum in share manager pod volume
     """
-
+    create_storage_class(storage_class)
     statefulset_name = 'statefulset-rwx-parallel-writing-test'
 
     statefulset['metadata']['name'] = \
@@ -192,7 +197,7 @@ def test_rwx_parallel_writing(core_api, statefulset, pod):  # NOQA
         statefulset_name
     statefulset['spec']['replicas'] = 1
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
-        = 'longhorn'
+        = storage_class['metadata']['name']
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['accessModes'] \
         = ['ReadWriteMany']
 
@@ -232,7 +237,8 @@ def test_rwx_parallel_writing(core_api, statefulset, pod):  # NOQA
     assert md5sum2 == share_manager_data2
 
 
-def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_statefulset_scale_down_up(core_api, statefulset, storage_class):  # NOQA
     """
     Test Scaling up and down of pods attached to rwx volume.
 
@@ -248,7 +254,7 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
     7. Wait for new pods to come up.
     8. Check the data md5sum in new pods.
     """
-
+    create_storage_class(storage_class)
     statefulset_name = 'statefulset-rwx-scale-down-up-test'
     share_manager_name = []
 
@@ -258,7 +264,7 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
         statefulset['spec']['template']['metadata']['labels']['app'] = \
         statefulset_name
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
-        = 'longhorn'
+        = storage_class['metadata']['name']
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['accessModes'] \
         = ['ReadWriteMany']
 
@@ -339,7 +345,8 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
         assert pod_data == md5sum_pod[i]
 
 
-def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_delete_share_manager_pod(core_api, statefulset, storage_class):  # NOQA
     """
     Test moving of Share manager pod from one node to another.
 
@@ -354,7 +361,7 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     7. Write more data to it and compute md5sum.
     8. Check the data md5sum in share manager volume.
     """
-
+    create_storage_class(storage_class)
     statefulset_name = 'statefulset-delete-share-manager-pods-test'
 
     statefulset['metadata']['name'] = \
@@ -364,7 +371,7 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
         statefulset_name
     statefulset['spec']['replicas'] = 1
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
-        = 'longhorn'
+        = storage_class['metadata']['name']
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['accessModes'] \
         = ['ReadWriteMany']
 
@@ -399,7 +406,8 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     assert test_data_2 == share_manager_data_2
 
 
-def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc, storage_class):  # NOQA
     """
     Test deployment of 2 pods with same PVC.
 
@@ -411,10 +419,10 @@ def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc)
     5. Write data in both pods and compute md5sum.
     6. Check the data md5sum in the share manager pod.
     """
-
+    create_storage_class(storage_class)
     pvc_name = 'pvc-deployment-multi-pods-test'
     pvc['metadata']['name'] = pvc_name
-    pvc['spec']['storageClassName'] = 'longhorn'
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
     pvc['spec']['accessModes'] = ['ReadWriteMany']
 
     core_api.create_namespaced_persistent_volume_claim(
@@ -461,6 +469,7 @@ def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc)
     assert test_data_2 == share_manager_data_2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc):  # NOQA
     """
     Test restoring a rwo to a rwx volume.
@@ -496,7 +505,8 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 
     client.create_volume(name=restore_volume_name, size=str(1 * Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
-                         accessMode='rwx')
+                         accessMode='rwx',
+                         dataEngine=DATA_ENGINE)
     wait_for_volume_creation(client, restore_volume_name)
     restore_volume = wait_for_volume_detached(client, restore_volume_name)
     create_pv_for_volume(client, core_api, restore_volume, restore_pv_name)
@@ -551,7 +561,7 @@ def test_rwx_online_expansion(): # NOQA
     pass
 
 
-def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc): # NOQA
+def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, storage_class): # NOQA
     """
     Related issue :
     https://github.com/longhorn/longhorn/issues/2181
@@ -579,9 +589,10 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
     And
     - 1.5 Gi of data is successfully written to the expanded volume
     """
+    create_storage_class(storage_class)
     pvc_name = 'pvc-deployment-rwx-expand-test'
     pvc['metadata']['name'] = pvc_name
-    pvc['spec']['storageClassName'] = 'longhorn'
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
     pvc['spec']['accessModes'] = ['ReadWriteMany']
     pvc['spec']['resources']['requests']['storage'] = str(1 * Gi)
 
@@ -641,6 +652,7 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
     assert int(data_size_in_pod)/1024/1024 == data_size_in_mb
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
     """
     Test creating encrypted rwx volume and use the secret in
@@ -686,6 +698,7 @@ def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secre
     delete_and_wait_pvc(core_api, pvc_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_rwx_volume_mount_options(core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
     """
     Test creating rwx volume with custom mount options
