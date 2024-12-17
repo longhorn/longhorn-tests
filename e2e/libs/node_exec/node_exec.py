@@ -51,7 +51,7 @@ class NodeExec:
             stdout=True,
             tty=False
         )
-        logging(f"Issued command: {cmd} on {self.node_name} with result {res}")
+        logging(f"Issued command: {cmd} on {self.node_name} with result:\n{res}")
         return res
 
     def launch_pod(self):
