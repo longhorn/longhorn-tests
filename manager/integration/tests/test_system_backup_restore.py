@@ -35,6 +35,7 @@ from common import write_volume_random_data
 
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import SIZE
+from common import DATA_ENGINE
 
 from backupstore import set_random_backupstore  # NOQA
 
@@ -44,6 +45,7 @@ DISABLED = "disabled"
 IF_NOT_PRESENT = "if-not-present"
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.system_backup_restore   # NOQA
 def test_system_backup_and_restore(client, set_random_backupstore):  # NOQA
     """
@@ -71,6 +73,7 @@ def test_system_backup_and_restore(client, set_random_backupstore):  # NOQA
     system_restore_wait_for_state("Completed", system_restore_name, client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.system_backup_restore   # NOQA
 def test_system_backup_and_restore_volume_with_data(client, volume_name, set_random_backupstore):  # NOQA
     """
@@ -204,6 +207,7 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
     restored_volume = wait_for_volume_healthy(client, volume_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.system_backup_restore   # NOQA
 def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_name, set_random_backupstore):  # NOQA
     """
@@ -260,6 +264,7 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
     create_system_backup_and_assert_volume_backup_count(2)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.system_backup_restore   # NOQA
 def test_system_backup_with_volume_backup_policy_always(client, volume_name, set_random_backupstore):  # NOQA
     """
@@ -296,7 +301,8 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
     dr_volume_name = volume_name + "-dr"
     client.create_volume(name=dr_volume_name, size=SIZE,
                          numberOfReplicas=1, fromBackup=backup.url,
-                         frontend="", standby=True)
+                         frontend="", standby=True,
+                         dataEngine=DATA_ENGINE)
     wait_for_backup_restore_completed(client, dr_volume_name, backup.name)
 
     system_backup_name = system_backup_random_name()
@@ -319,6 +325,7 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
     wait_for_backup_count(backup_volume, 3)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.system_backup_restore   # NOQA
 def test_system_backup_with_volume_backup_policy_disabled(client, volume_name, set_random_backupstore):  # NOQA
     """
@@ -350,6 +357,7 @@ def test_system_backup_with_volume_backup_policy_disabled(client, volume_name, s
     wait_for_backup_count(backup_volume, 0)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.system_backup_restore   # NOQA
 def test_system_backup_delete_when_other_system_backup_using_name_as_prefix(client, set_random_backupstore):  # NOQA
     """

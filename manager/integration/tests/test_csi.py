@@ -37,6 +37,7 @@ from common import wait_for_volume_healthy
 from common import fail_replica_expansion
 from common import get_volume_name, get_volume_dev_mb_data_md5sum # NOQA
 from common import exec_command_in_pod
+from common import DATA_ENGINE
 from backupstore import set_random_backupstore  # NOQA
 from kubernetes.stream import stream
 from kubernetes import client as k8sclient
@@ -55,7 +56,8 @@ def create_pv_storage(api, cli, pv, claim, backing_image, from_backup):
         name=pv['metadata']['name'], size=pv['spec']['capacity']['storage'],
         numberOfReplicas=int(pv['spec']['csi']['volumeAttributes']
                              ['numberOfReplicas']),
-        backingImage=backing_image, fromBackup=from_backup)
+        backingImage=backing_image, fromBackup=from_backup,
+        dataEngine=DATA_ENGINE)
     if from_backup:
         common.wait_for_volume_restoration_completed(cli,
                                                      pv['metadata']['name'])
@@ -101,6 +103,7 @@ def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv
     create_and_wait_pod(core_api, pod)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
@@ -141,6 +144,7 @@ def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
     delete_and_wait_pv(core_api, csi_pv['metadata']['name'])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_io(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     """
@@ -192,6 +196,7 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod_make, backing_image=""):  # N
     delete_and_wait_pv(core_api, pv_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_backup(set_random_backupstore, client, core_api, csi_pv, pvc, pod_make):  # NOQA
     """
@@ -246,6 +251,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name
     client.delete(volume2)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
     """
@@ -636,6 +642,7 @@ def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc,
     assert md5_after_expanding == md5_before_expanding
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
     """
     Test create PV with new XFS filesystem
@@ -674,6 +681,7 @@ def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
     assert resp == test_data
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     """
     Test create PV with existing XFS filesystem
@@ -791,6 +799,7 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     assert resp == test_data
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_allow_volume_creation_with_degraded_availability_csi(
         client, core_api, apps_api, make_deployment_with_pvc):  # NOQA
@@ -913,6 +922,7 @@ def test_allow_volume_creation_with_degraded_availability_csi(
                                                  data_path)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_minimal_volume_size(
     client, core_api, csi_pv, pvc, pod_make): # NOQA
