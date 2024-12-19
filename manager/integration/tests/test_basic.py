@@ -625,7 +625,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
                                 "allowScheduling", True)
 
     # delete the old backup
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv, b.name)
     volume = wait_for_volume_status(client, volume_name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
@@ -634,7 +634,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     bv, b, _, _ = create_backup(client, volume_name)
 
     # delete the new backup
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv, b.name)
     volume = wait_for_volume_status(client, volume_name, "lastBackup", "")
     assert volume.lastBackupAt == ""
 
@@ -694,19 +694,19 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
              'len': 2 * BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
 
-    bv0, backup0, _, _ = create_backup(client, volume_name, data0)
+    _, backup0, _, _ = create_backup(client, volume_name, data0)
 
     data1 = {'pos': 0,
              'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
 
-    bv1, backup1, _, _ = create_backup(client, volume_name, data1)
+    _, backup1, _, _ = create_backup(client, volume_name, data1)
 
     data2 = {'pos': 0,
              'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
 
-    bv2, backup2, _, _ = create_backup(client, volume_name, data2)
+    backup_volume, backup2, _, _ = create_backup(client, volume_name, data2)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
                                                                core_api,
@@ -716,29 +716,29 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
     bvs = client.list_backupVolume()
 
     for bv in bvs:
-        if bv['name'] == volume_name:
+        if bv['name'] == backup_volume.name:
             assert bv['dataStored'] == \
                 str(backup_blocks_count * BACKUP_BLOCK_SIZE)
 
     backupstore_create_dummy_in_progress_backup(client, core_api, volume_name)
-    delete_backup(client, volume_name, backup1.name)
+    delete_backup(client, backup_volume, backup1.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 4
 
     backupstore_delete_dummy_in_progress_backup(client, core_api, volume_name)
 
-    delete_backup(client, volume_name, backup0.name)
+    delete_backup(client, backup_volume, backup0.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 2
 
-    delete_backup(client, volume_name, backup2.name)
+    delete_backup(client, backup_volume, backup2.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 0
 
-    delete_backup_volume(client, volume_name)
+    delete_backup_volume(client, backup_volume.name)
 
 
 def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client, core_api, volume_name):  # NOQA
@@ -858,7 +858,7 @@ def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, co
 
     data1 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
-    _, backup1, _, data1 = create_backup(
+    backup_volume, backup1, _, data1 = create_backup(
         client, volume_name, data1)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
@@ -874,7 +874,7 @@ def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, co
     check_volume_last_backup(client, dr_vol_name, backup1.name)
     wait_for_backup_restore_completed(client, dr_vol_name, backup1.name)
 
-    delete_backup(client, volume_name, backup1.name)
+    delete_backup(client, backup_volume, backup1.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 2
@@ -958,7 +958,7 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(se
 
     data1 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
-    _, backup1, _, data1 = create_backup(
+    bv, backup1, _, data1 = create_backup(
         client, volume_name, data1)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
@@ -975,7 +975,7 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(se
     wait_for_backup_restore_completed(client, dr_vol_name, backup1.name)
 
     backupstore_create_dummy_in_progress_backup(client, core_api, volume_name)
-    delete_backup(client, volume_name, backup1.name)
+    delete_backup(client, bv, backup1.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 3
@@ -1047,7 +1047,7 @@ def test_dr_volume_with_backup_and_backup_volume_deleted(set_random_backupstore,
         client, volume_name, data0)
     data1 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
-    _, backup1, _, data1 = create_backup(
+    bv, backup1, _, data1 = create_backup(
         client, volume_name, data1)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
@@ -1070,7 +1070,7 @@ def test_dr_volume_with_backup_and_backup_volume_deleted(set_random_backupstore,
     check_volume_last_backup(client, dr_vol_name2, backup1.name)
     wait_for_backup_restore_completed(client, dr_vol_name2, backup1.name)
 
-    delete_backup(client, volume_name, backup1.name)
+    delete_backup(client, bv, backup1.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 2
@@ -1085,13 +1085,13 @@ def test_dr_volume_with_backup_and_backup_volume_deleted(set_random_backupstore,
     dr_vol1 = common.wait_for_volume_healthy(client, dr_vol_name1)
     check_volume_data(dr_vol1, data0, False)
 
-    delete_backup(client, volume_name, backup0.name)
+    delete_backup(client, bv, backup0.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 0
     check_volume_last_backup(client, dr_vol_name2, "")
 
-    delete_backup_volume(client, volume_name)
+    delete_backup_volume(client, bv.name)
 
     activate_standby_volume(client, dr_vol_name2)
     dr_vol2 = client.by_id_volume(dr_vol_name2)
@@ -1156,12 +1156,12 @@ def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
             verified_bvs = set()
             backup_volume_list = client.list_backupVolume()
             for bv in backup_volume_list:
-                if bv.name in (volume1_name, volume2_name):
+                if bv.name in (bv1.name, bv2.name):
                     assert not bv['messages']
                     for b in bv.backupList().data:
-                        if bv.name == volume1_name \
+                        if bv.name == bv1.name \
                                 and b.name == backup1.name \
-                                or bv.name == volume2_name \
+                                or bv.name == bv2.name \
                                 and b.name == backup2.name:
                             verified_bvs.add(bv.name)
             if len(verified_bvs) == 2:
@@ -1278,8 +1278,8 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
     v2b2_new = v2bv.backupGet(name=v2b2.name)
     assert_backup_state(v2b2, v2b2_new)
 
-    delete_backup(client, volume1_name, v1b1.name)
-    delete_backup(client, volume2_name, v2b1.name)
+    delete_backup(client, v1bv, v1b1.name)
+    delete_backup(client, v2bv, v2b1.name)
 
     for i in range(RETRY_COUNTS):
         found1 = found2 = found3 = found4 = False
@@ -1308,7 +1308,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
 
     backupstore_delete_volume_cfg_file(client, core_api, volume2_name)
 
-    delete_backup(client, volume2_name, v2b2.name)
+    delete_backup(client, v2bv, v2b2.name)
     assert len(v2bv.backupList()) == 0
 
     delete_backup_volume(client, v2bv.name)
@@ -1346,7 +1346,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
     assert_backup_state(v1b2, v1b2_new)
     assert v1b2_new.messages == v1b2.messages is None
 
-    delete_backup(client, volume1_name, v1b2.name)
+    delete_backup(client, v1bv, v1b2.name)
     for i in range(RETRY_COUNTS):
         if backupstore_count_backup_block_files(client,
                                                 core_api,
@@ -1440,7 +1440,7 @@ def backupstore_test(client, host_id, volname, size, compression_method):  # NOQ
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restore_name)
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv, b.name)
     volume = wait_for_volume_status(client, volume.name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
@@ -1483,7 +1483,7 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
     assert len(backup.labels) == len(random_labels) + 1
     assert random_labels["key"] == backup.labels["key"]
     assert "longhorn.io/volume-access-mode" in backup.labels.keys()
-    wait_for_backup_volume(client, volume_name, backing_image)
+    wait_for_backup_volume(client, bv.name, backing_image)
 
 
 @pytest.mark.coretest   # NOQA
@@ -1736,9 +1736,9 @@ def test_deleting_backup_volume(set_random_backupstore, client, volume_name):  #
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     create_backup(client, volume_name)
-    create_backup(client, volume_name)
+    bv, _, _, _ = create_backup(client, volume_name)
 
-    delete_backup_volume(client, volume_name)
+    delete_backup_volume(client, bv.name)
     cleanup_volume(client, volume)
 
 
@@ -1844,14 +1844,14 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
     subprocess.check_output(cmd)
     subprocess.check_output(["sync"])
 
-    bv1, b1 = common.find_backup(client, volume1_name, snap1.name)
-    common.delete_backup(client, volume1_name, b1.name)
+    bv1, b1 = find_backup(client, volume1_name, snap1.name)
+    delete_backup(client, bv1, b1.name)
 
-    bv2, b2 = common.find_backup(client, volume2_name, snap2.name)
-    common.delete_backup(client, volume2_name, b2.name)
+    bv2, b2 = find_backup(client, volume2_name, snap2.name)
+    delete_backup(client, bv2, b2.name)
 
     # corrupt backup for snap4
-    bv4, b4 = common.find_backup(client, volume3_name, snap4.name)
+    bv4, b4 = find_backup(client, volume3_name, snap4.name)
     b4_cfg_name = "backup_" + b4["name"] + ".cfg"
     cmd = ["find", "/mnt/nfs", "-type", "d", "-name", volume3_name]
     v3_backup_path = subprocess.check_output(cmd).strip().decode('utf-8')
@@ -1880,15 +1880,15 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
     os.rename(b4_tmp_cfg_path, b4_cfg_path)
     subprocess.check_output(["sync"])
 
-    bv3, b3 = common.find_backup(client, volume3_name, snap3.name)
-    common.delete_backup(client, volume3_name, b3.name)
-    bv4, b4 = common.find_backup(client, volume3_name, snap4.name)
-    common.delete_backup(client, volume3_name, b4.name)
-    bv5, b5 = common.find_backup(client, volume3_name, snap5.name)
-    common.delete_backup(client, volume3_name, b5.name)
+    bv3, b3 = find_backup(client, volume3_name, snap3.name)
+    delete_backup(client, bv3, b3.name)
+    bv4, b4 = find_backup(client, volume3_name, snap4.name)
+    delete_backup(client, bv3, b4.name)
+    bv5, b5 = find_backup(client, volume3_name, snap5.name)
+    delete_backup(client, bv3, b5.name)
 
-    common.delete_backup_volume(client, volume3_name)
-    common.wait_for_backup_volume_delete(client, volume3_name)
+    delete_backup_volume(client, bv3.name)
+    common.wait_for_backup_volume_delete(client, bv3.name)
 
     volume1.detach()
     volume1 = common.wait_for_volume_detached(client, volume1_name)
@@ -3238,13 +3238,13 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
 
-    _, b = common.find_backup(client, std_volume_name, snap1.name)
+    bv, b = find_backup(client, std_volume_name, snap1.name)
     client.create_volume(name=restore_volume_name, fromBackup=b.url,
                          numberOfReplicas=3,
                          dataEngine=DATA_ENGINE)
     wait_for_volume_restoration_start(client, restore_volume_name, b.name)
 
-    backup_volume = client.by_id_backupVolume(std_volume_name)
+    backup_volume = client.by_id_backupVolume(bv.name)
     backup_volume.backupDelete(name=b.name)
 
     wait_for_volume_restoration_completed(client, restore_volume_name)
@@ -3311,7 +3311,7 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name, "/data/test",
                                  common.DATA_SIZE_IN_MB_4)
@@ -3321,18 +3321,18 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     std_volume.snapshotBackup(name=snap2.name)
     wait_for_backup_to_start(client, std_volume_name, snapshot_name=snap2.name)
 
-    backup_volume = client.by_id_backupVolume(std_volume_name)
+    backup_volume = client.by_id_backupVolume(bv.name)
     backup_volume.backupDelete(name=b1.name)
 
     wait_for_backup_completion(client, std_volume_name, snap2.name,
                                retry_count=600)
     wait_for_backup_delete(client, std_volume_name, b1.name)
 
-    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    _, b2 = find_backup(client, std_volume_name, snap2.name)
     assert b2 is not None
 
     try:
-        _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+        _, b1 = find_backup(client, std_volume_name, snap1.name)
     except AssertionError:
         b1 = None
     assert b1 is None
@@ -3395,13 +3395,13 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    bv, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     # create second snapshot
     snap2 = create_snapshot(client, std_volume_name)
 
     # delete first backup
-    backup_volume = client.by_id_backupVolume(std_volume_name)
+    backup_volume = client.by_id_backupVolume(bv.name)
     backup_volume.backupDelete(name=b1.name)
 
     # create second backup immediately
@@ -3455,8 +3455,7 @@ def test_backup_lock_restoration_during_deletion(set_random_backupstore, client,
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
     std_volume.snapshotBackup(name=snap1.name)
-    backup_volume = client.by_id_backupVolume(std_volume_name)
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    backup_volume, b1 = find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name,
                                  "/data/test2", 1500)
@@ -3464,7 +3463,7 @@ def test_backup_lock_restoration_during_deletion(set_random_backupstore, client,
     std_volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, std_volume_name, snap2.name,
                                retry_count=1200)
-    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    _, b2 = find_backup(client, std_volume_name, snap2.name)
 
     backup_volume.backupDelete(name=b2.name)
 
@@ -3476,11 +3475,11 @@ def test_backup_lock_restoration_during_deletion(set_random_backupstore, client,
 
     wait_for_backup_delete(client, volume_name, b2.name)
 
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    _, b1 = find_backup(client, std_volume_name, snap1.name)
     assert b1 is not None
 
     try:
-        _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+        _, b2 = find_backup(client, std_volume_name, snap2.name)
     except AssertionError:
         b2 = None
     assert b2 is None
@@ -4660,7 +4659,7 @@ def test_restore_basic(set_random_backupstore, client, core_api, volume_name, po
     delete_and_wait_pod(core_api, restore_pod_name)
 
     # Delete the 2nd backup
-    delete_backup(client, backup_volume.name, backup2.name)
+    delete_backup(client, backup_volume, backup2.name)
 
     # restore 3rd backup again
     restored_data_checksum3, output, restore_pod_name = \
@@ -5420,7 +5419,7 @@ def test_delete_backup_during_restoring_volume(set_random_backupstore, client): 
                          fromBackup=b.url,
                          dataEngine=DATA_ENGINE)
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv, b.name)
     volume = wait_for_volume_status(client, vol_v1_name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
