@@ -339,7 +339,7 @@ properly.
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.create_and_check_volume"><code class="name flex">
-<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored', access_mode='rwo')</span>
+<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='33554432', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored', access_mode='rwo')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new volume with the specified parameters. Assert that the new
@@ -525,7 +525,7 @@ created using a storage class).</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.create_volume_and_write_data"><code class="name flex">
-<span>def <span class="ident">create_volume_and_write_data</span></span>(<span>client, volume_name, volume_size='16777216')</span>
+<span>def <span class="ident">create_volume_and_write_data</span></span>(<span>client, volume_name, volume_size='33554432')</span>
 </code></dt>
 <dd>
 <div class="desc"><ol>
@@ -1240,7 +1240,7 @@ provide a base set of Tags to work with in the tests.
 :return: A dictionary mapping a Node's ID to the Tags it has.</p></div>
 </dd>
 <dt id="tests.common.offline_expand_attached_volume"><code class="name flex">
-<span>def <span class="ident">offline_expand_attached_volume</span></span>(<span>client, volume_name, size='33554432')</span>
+<span>def <span class="ident">offline_expand_attached_volume</span></span>(<span>client, volume_name, size='67108864')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
