@@ -609,7 +609,7 @@ if a nonexistent Pod is specified.</p>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.delete_backup"><code class="name flex">
-<span>def <span class="ident">delete_backup</span></span>(<span>client, volume_name, backup_name)</span>
+<span>def <span class="ident">delete_backup</span></span>(<span>client, bv, backup_name)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -621,7 +621,7 @@ if a nonexistent Pod is specified.</p>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.delete_backup_volume"><code class="name flex">
-<span>def <span class="ident">delete_backup_volume</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">delete_backup_volume</span></span>(<span>client, backup_volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -757,7 +757,7 @@ since the backup.cfg will only be written once a backup operation has
 been completed successfully</p></div>
 </dd>
 <dt id="tests.common.find_backup_volume"><code class="name flex">
-<span>def <span class="ident">find_backup_volume</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">find_backup_volume</span></span>(<span>client, volume_name, retry=1)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1769,7 +1769,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_backup_volume"><code class="name flex">
-<span>def <span class="ident">wait_for_backup_volume</span></span>(<span>client, vol_name, backing_image='')</span>
+<span>def <span class="ident">wait_for_backup_volume</span></span>(<span>client, bv_name, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
