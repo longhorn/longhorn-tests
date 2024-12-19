@@ -1080,7 +1080,8 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # 
         wait_for_backup_count(find_backup_volume(client, volume2_name),
                               1,
                               retry_counts=60)
-    # AttributeError: BackupVolume is 'NoneType' object has no attribute 'backupList'
+    # AttributeError:
+    # BackupVolume is 'NoneType' object has no attribute 'backupList'
     except (AssertionError, AttributeError):
         backup_created = False
     assert not backup_created
