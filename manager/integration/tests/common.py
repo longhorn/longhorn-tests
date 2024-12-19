@@ -31,10 +31,10 @@ Ki = 1024
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
-SIZE = str(16 * Mi)
+SIZE = str(32 * Mi)
 # See https://github.com/longhorn/longhorn/issues/8488.
 XFS_MIN_SIZE = str(300 * Mi)
-EXPAND_SIZE = str(32 * Mi)
+EXPAND_SIZE = str(64 * Mi)
 VOLUME_NAME = "longhorn-testvol"
 ATTACHMENT_TICKET_ID_PREFIX = "test-attachment-ticket"
 STATEFULSET_NAME = "longhorn-teststs"

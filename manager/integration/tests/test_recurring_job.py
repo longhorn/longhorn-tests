@@ -1899,14 +1899,14 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
 
     volume = wait_for_volume_healthy(client, volume_name)
 
-    expand_size = str(32 * Mi)
+    expand_size = str(64 * Mi)
     volume.expand(size=expand_size)
     wait_for_volume_expansion(client, volume_name)
     # - 1 new system-created snapshot
     # - 1 volume-head
     wait_for_snapshot_count(volume, 2)
 
-    expand_size = str(64 * Mi)
+    expand_size = str(128 * Mi)
     volume.expand(size=expand_size)
     wait_for_volume_expansion(client, volume_name)
     # - 1 new system-created snapshot
