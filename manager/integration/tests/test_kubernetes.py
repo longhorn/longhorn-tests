@@ -585,13 +585,13 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod,
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
     wait_for_backup_completion(client, volume_name, snap.name)
-    _, b = find_backup(client, volume_name, snap.name)
+    volbv, b = find_backup(client, volume_name, snap.name)
     # Check backup label
     status = loads(b.labels.get(KUBERNETES_STATUS_LABEL))
     assert status == ks
     # Check backup volume label
     for _ in range(RETRY_COUNTS):
-        bv = client.by_id_backupVolume(volume_name)
+        bv = client.by_id_backupVolume(volbv.name)
         if bv is not None and bv.labels is not None:
             break
         time.sleep(RETRY_INTERVAL)
@@ -629,7 +629,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod,
     assert restore.kubernetesStatus.lastPodRefAt == ks["lastPodRefAt"]
     assert restore.kubernetesStatus.lastPVCRefAt == ks["lastPVCRefAt"]
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv, b.name)
     client.delete(restore)
     wait_for_volume_delete(client, restore_name)
     delete_and_wait_pod(core_api, pod_name)

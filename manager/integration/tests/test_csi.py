@@ -246,7 +246,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv, b.name)
     delete_and_wait_pod(core_api, pod2_name)
     client.delete(volume2)
 

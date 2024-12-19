@@ -57,7 +57,7 @@ def create_and_test_backups(api, cli, pod_info):
         for i in range(DEFAULT_BACKUP_TIMEOUT):
             backup_volumes = cli.list_backupVolume()
             for bv in backup_volumes:
-                if bv.name == pod['pv_name']:
+                if bv.volumeName == pod['pv_name']:
                     found = True
                     break
             if found:

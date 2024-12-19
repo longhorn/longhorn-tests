@@ -40,6 +40,7 @@ from common import check_recurring_jobs
 from common import wait_for_cron_job_count
 from common import create_backup
 from common import wait_for_backup_count
+from common import find_backup_volume
 from common import delete_backup_volume
 from common import get_longhorn_api_client
 from common import remount_volume_read_only
@@ -717,8 +718,7 @@ def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_
                    'len': data_size,
                    'content': generate_random_data(data_size)}
     write_volume_data(volume, backup_data)
-    create_backup(client, volume_name)
-    bv = client.by_id_backupVolume(volume_name)
+    bv, _, _, _ = create_backup(client, volume_name)
     wait_for_backup_count(bv, 1)
 
     # get the backup size.
@@ -747,7 +747,7 @@ def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_
                                      3)
 
     # delete the existing backup before creating a recurring backup job.
-    delete_backup_volume(client, volume_name)
+    delete_backup_volume(client, bv.name)
 
     # create a recurring backup job.
     recurring_jobs = {
@@ -765,8 +765,8 @@ def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_
     wait_for_cron_job_count(batch_v1_api, 1)
 
     # wait for the recurring backup job to run.
-    time.sleep(60)
-    bv = client.by_id_backupVolume(volume_name)
+    time.sleep(90)
+    bv = find_backup_volume(client, volume_name)
     wait_for_backup_count(bv, 1)
 
     # get the recurring backup size.

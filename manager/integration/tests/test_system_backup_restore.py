@@ -9,6 +9,7 @@ from common import check_volume_data
 from common import cleanup_volume
 from common import create_and_check_volume
 from common import create_backup
+from common import find_backup_volume
 from common import get_self_host_id
 from common import system_backups_cleanup
 from common import system_backup_random_name
@@ -255,7 +256,7 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
 
         system_backup_wait_for_state("Ready", system_backup_name, client)
 
-        backup_volume = client.by_id_backupVolume(volume_name)
+        backup_volume = find_backup_volume(client, volume_name)
         wait_for_backup_count(backup_volume, count)
 
     create_system_backup_and_assert_volume_backup_count(1)
@@ -311,7 +312,7 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     system_backup_wait_for_state("Ready", system_backup_name, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    backup_volume = find_backup_volume(client, volume_name)
     wait_for_backup_count(backup_volume, 2)
 
     system_backups_cleanup(client)
@@ -321,7 +322,7 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     system_backup_wait_for_state("Ready", system_backup_name, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    backup_volume = find_backup_volume(client, volume_name)
     wait_for_backup_count(backup_volume, 3)
 
 
