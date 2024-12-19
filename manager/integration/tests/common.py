@@ -516,16 +516,15 @@ def wait_for_backup_count(backup_volume, number, retry_counts=120):
     assert ok
 
 
-def delete_backup(client, volume_name, backup_name):
-    backup_volume = client.by_id_backupVolume(volume_name)
-    backup_volume.backupDelete(name=backup_name)
-    wait_for_backup_delete(client, volume_name, backup_name)
+def delete_backup(client, bv, backup_name):
+    bv.backupDelete(name=backup_name)
+    wait_for_backup_delete(client, bv.volumeName, backup_name)
 
 
-def delete_backup_volume(client, volume_name):
-    bv = client.by_id_backupVolume(volume_name)
+def delete_backup_volume(client, backup_volume_name):
+    bv = client.by_id_backupVolume(backup_volume_name)
     client.delete(bv)
-    wait_for_backup_volume_delete(client, volume_name)
+    wait_for_backup_volume_delete(client, backup_volume_name)
 
 
 def delete_backup_backing_image(client, backing_image_name):
@@ -3219,11 +3218,13 @@ def check_volume_endpoint(v):
     return endpoint
 
 
-def find_backup_volume(client, volume_name):
-    bvs = client.list_backupVolume()
-    for bv in bvs:
-        if bv.name == volume_name and bv.created != "":
-            return bv
+def find_backup_volume(client, volume_name, retry=1):
+    for _ in range(retry):
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv.volumeName == volume_name and bv.created != "":
+                return bv
+        time.sleep(RETRY_BACKUP_INTERVAL)
     return None
 
 
@@ -3952,9 +3953,9 @@ def is_backupTarget_azurite(s):
     return s.startswith("azblob://")
 
 
-def wait_for_backup_volume(client, vol_name, backing_image=""):
+def wait_for_backup_volume(client, bv_name, backing_image=""):
     for _ in range(RETRY_BACKUP_COUNTS):
-        bv = client.by_id_backupVolume(vol_name)
+        bv = client.by_id_backupVolume(bv_name)
         if bv is not None:
             if backing_image == "":
                 break
@@ -3962,7 +3963,7 @@ def wait_for_backup_volume(client, vol_name, backing_image=""):
                     and bv.backingImageChecksum != "":
                 break
         time.sleep(RETRY_BACKUP_INTERVAL)
-    assert bv is not None, "failed to find backup volume " + vol_name
+    assert bv is not None, "failed to find backup volume " + bv_name
 
 
 def wait_for_backup_target_available(client, available):
@@ -4877,7 +4878,7 @@ def wait_for_volume_restoration_start(client, volume_name, backup_name,
             started = True
         if started:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert started
     return status.replica
 
