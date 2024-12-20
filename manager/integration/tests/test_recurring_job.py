@@ -783,7 +783,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
 
     wait_for_backup_completion(client, volume.name)
     for _ in range(4):
-        bv = find_backup_volume(client, volume.name)
+        bv = find_backup_volume(client, volume.name, retry=RETRY_COUNTS_SHORT)
         wait_for_backup_count(bv, 1)
         time.sleep(30)
 
