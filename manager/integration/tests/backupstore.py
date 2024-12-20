@@ -80,6 +80,7 @@ def set_random_backupstore(request, client):
     cleanup_all_volumes(client)
     backupstore_cleanup(client)
     system_backups_cleanup(client)
+    backup_cleanup()
     reset_backupstore_setting(client)
 
     if request.param == "nfs":
