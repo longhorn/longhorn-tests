@@ -3222,7 +3222,8 @@ def find_backup_volume(client, volume_name, retry=1):
     for _ in range(retry):
         bvs = client.list_backupVolume()
         for bv in bvs:
-            if bv.volumeName == volume_name and bv.created != "":
+            volumeName = getattr(bv, 'volumeName', bv.name)
+            if volumeName == volume_name and bv.created != "":
                 return bv
         time.sleep(RETRY_BACKUP_INTERVAL)
     return None
