@@ -40,9 +40,10 @@ Delete backup volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_backup_volume    ${volume_name}
 
-Check volume ${volume_id} data is backup ${backup_id}
+Check volume ${volume_id} data is backup ${backup_id} of volume ${source_volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${backup_name} =    get_backup_name    ${backup_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
     check_restored_volume_checksum    ${volume_name}    ${backup_name}
 
 Check backup synced from backupstore
