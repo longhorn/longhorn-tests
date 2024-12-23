@@ -53,6 +53,7 @@ from common import prepare_pod_with_data_in_mb
 from common import crash_engine_process_with_sigkill
 
 from common import find_backup
+from common import find_backup_volume
 from common import wait_for_backup_volume
 from common import wait_for_backup_completion
 from common import wait_for_backup_count
@@ -75,6 +76,7 @@ from common import ACCESS_MODE_RWX
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
 from common import LONGHORN_NAMESPACE
+from common import RETRY_COUNTS_SHORT
 from common import RETRY_BACKUP_COUNTS
 from common import RETRY_BACKUP_INTERVAL
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
@@ -511,7 +513,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     wait_for_snapshot_count(volume, 2)
 
     # Verify the Labels on the actual Backup.
-    bv = client.by_id_backupVolume(volume_name)
+    bv = find_backup_volume(client, volume_name)
     wait_for_backup_count(bv, 1)
 
     backups = bv.backupList().data
@@ -523,7 +525,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     # Longhorn will automatically add a label `longhorn.io/volume-access-mode`
     # to a newly created backup
     assert len(b.labels) == len(labels) + 2
-    wait_for_backup_volume(client, volume_name, backing_image)
+    wait_for_backup_volume(client, bv.name, backing_image)
 
 
 @pytest.mark.v2_volume_test  # NOQA
@@ -584,7 +586,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     wait_for_snapshot_count(volume, 2)
 
     # Verify the Labels on the actual Backup.
-    bv = client.by_id_backupVolume(volume_name)
+    bv = find_backup_volume(client, volume_name)
     backups = bv.backupList().data
     wait_for_backup_count(bv, 1)
 
@@ -781,7 +783,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
 
     wait_for_backup_completion(client, volume.name)
     for _ in range(4):
-        bv = client.by_id_backupVolume(volume.name)
+        bv = find_backup_volume(client, volume.name)
         wait_for_backup_count(bv, 1)
         time.sleep(30)
 
@@ -1070,12 +1072,17 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # 
     wait_for_snapshot_count(volume1, 3)  # volume-head,snapshot,backup-snapshot
     wait_for_snapshot_count(volume2, 2)  # volume-head,snapshot
 
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
+    wait_for_backup_count(find_backup_volume(client,
+                                             volume1_name,
+                                             retry=RETRY_COUNTS_SHORT), 1)
     backup_created = True
     try:
-        wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1,
+        wait_for_backup_count(find_backup_volume(client, volume2_name),
+                              1,
                               retry_counts=60)
-    except AssertionError:
+    # AttributeError:
+    # BackupVolume is 'NoneType' object has no attribute 'backupList'
+    except (AssertionError, AttributeError):
         backup_created = False
     assert not backup_created
 
@@ -1575,7 +1582,10 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume1)
     wait_for_snapshot_count(volume1, 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
+    wait_for_backup_count(find_backup_volume(client,
+                                             volume1_name,
+                                             retry=RETRY_COUNTS_SHORT),
+                          1)
 
     volume2_name = "test-job-2"
     client.create_volume(name=volume2_name, size=SIZE,
@@ -1587,7 +1597,10 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume2)
     wait_for_snapshot_count(volume2, 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
+    wait_for_backup_count(find_backup_volume(client,
+                                             volume2_name,
+                                             retry=RETRY_COUNTS_SHORT),
+                          1)
 
     volume2.recurringJobAdd(name=back2, isGroup=False)
     wait_for_volume_recurring_job_update(volume1,
@@ -1598,8 +1611,8 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(70 - WRITE_DATA_INTERVAL)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
+    wait_for_backup_count(find_backup_volume(client, volume2_name), 2)
+    wait_for_backup_count(find_backup_volume(client, volume1_name), 1)
 
 
 @pytest.mark.v2_volume_test  # NOQA
@@ -1886,14 +1899,14 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
 
     volume = wait_for_volume_healthy(client, volume_name)
 
-    expand_size = str(32 * Mi)
+    expand_size = str(64 * Mi)
     volume.expand(size=expand_size)
     wait_for_volume_expansion(client, volume_name)
     # - 1 new system-created snapshot
     # - 1 volume-head
     wait_for_snapshot_count(volume, 2)
 
-    expand_size = str(64 * Mi)
+    expand_size = str(128 * Mi)
     volume.expand(size=expand_size)
     wait_for_volume_expansion(client, volume_name)
     # - 1 new system-created snapshot
@@ -1997,15 +2010,19 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60 - WRITE_DATA_INTERVAL)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
+    wait_for_backup_count(
+        find_backup_volume(client, volume1_name, retry=RETRY_COUNTS_SHORT), 1)
+    wait_for_backup_count(
+        find_backup_volume(client, volume2_name, retry=RETRY_COUNTS_SHORT), 1)
 
     # 2nd job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60 - WRITE_DATA_INTERVAL)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
+    wait_for_backup_count(
+        find_backup_volume(client, volume1_name, retry=RETRY_COUNTS_SHORT), 2)
+    wait_for_backup_count(
+        find_backup_volume(client, volume2_name, retry=RETRY_COUNTS_SHORT), 2)
 
 
 @pytest.mark.v2_volume_test  # NOQA

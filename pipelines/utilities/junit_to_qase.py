@@ -246,11 +246,9 @@ if __name__ == "__main__":
         parent_suite_id = 58 # e2e-pytest
     else:
         test_type = "robot"
-        # TODO
-        # the folder structure of robot test hasn't been
-        # well-defined in qase
-        parent_suite_id = None
-        raise Exception(f"Unsupported test_type = {test_type}")
+        # if it's a robot report, missing suites will be added under
+        # parent suite e2e-robot (id=89)
+        parent_suite_id = 89 # e2e-robot
     print(f"test_type = {test_type}")
 
     # collect test results dict from test cases xml
