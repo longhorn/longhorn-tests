@@ -87,11 +87,14 @@ class Rest(Base):
         assert False, f"Failed to find backup from volume {volume_name} snapshot {snapshot_name}"
 
     def get_backup_volume(self, volume_name):
-        logging(f"Trying to get backup volume {volume_name} ...")
-        backup_volumes = get_longhorn_client().list_backupVolume().data
-        for backup_volume in backup_volumes:
-            if backup_volume.name == volume_name and backup_volume.created != "":
-                return backup_volume
+        for i in range(self.retry_count):
+            logging(f"Trying to get backup volume {volume_name} ... ({i})")
+            backup_volumes = get_longhorn_client().list_backupVolume().data
+            for backup_volume in backup_volumes:
+                volumeName = getattr(backup_volume, 'volumeName', backup_volume.name)
+                if volumeName == volume_name and backup_volume.created != "":
+                    return backup_volume
+            time.sleep(self.retry_interval)
         return None
 
     def wait_for_backup_completed(self, volume_name, snapshot_name):
@@ -157,9 +160,16 @@ class Rest(Base):
         return NotImplemented
 
     def delete_backup_volume(self, volume_name):
-        bv = get_longhorn_client().by_id_backupVolume(volume_name)
-        get_longhorn_client().delete(bv)
-        self.wait_for_backup_volume_delete(volume_name)
+        bvs = get_longhorn_client().list_backupVolume()
+        backup_volume_name = None
+        for bv in bvs:
+            volumeName = getattr(bv, 'volumeName', bv.name)
+            if volumeName == volume_name:
+                backup_volume_name = bv.name
+                get_longhorn_client().delete(bv)
+                break
+        if backup_volume_name is not None:
+            self.wait_for_backup_volume_delete(backup_volume_name)
 
     def wait_for_backup_volume_delete(self, name):
         retry_count, retry_interval = get_retry_count_and_interval()
@@ -194,7 +204,8 @@ class Rest(Base):
 
         # we delete the whole backup volume, which skips block gc
         for backup_volume in backup_volumes:
-            self.delete_backup_volume(backup_volume.name)
+            get_longhorn_client().delete(backup_volume)
+            self.wait_for_backup_volume_delete(backup_volume.name)
 
         backup_volumes = get_longhorn_client().list_backup_volume()
         assert backup_volumes.data == []
