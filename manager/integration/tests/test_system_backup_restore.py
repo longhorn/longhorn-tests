@@ -8,6 +8,7 @@ from common import core_api # NOQA
 from common import check_volume_data
 from common import cleanup_volume
 from common import create_and_check_volume
+from common import wait_for_volume_creation
 from common import create_backup
 from common import find_backup_volume
 from common import get_self_host_id
@@ -199,7 +200,7 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 3, "ready")
 
     restored_volume = client.by_id_volume(volume_name)
-    wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_creation(client, volume_name)
     wait_for_volume_detached(client, volume_name)
     assert check_pvc_existence(core_api, pvc_name)
     assert check_pv_existence(core_api, pv_name)
