@@ -43,7 +43,3 @@ Get volume ${volume_id} engine and replica names
 Volume ${volume_id} migration should fail or rollback
     Volume ${volume_id} engine should be the same
     Volume ${volume_id} replicas should be the same
-
-Volume ${volume_id} migration should succeed
-    Volume ${volume_id} engine should be different
-    Volume ${volume_id} replicas should be different

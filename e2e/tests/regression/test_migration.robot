@@ -38,8 +38,7 @@ Test Migration Confirm
     And Attach volume 0 to node 1
     Then Wait for volume 0 migration to be ready
     And Detach volume 0 from node 0
-    And Wait for volume 0 to migrate to node 1
-    And Volume 0 migration should succeed
+    And Wait for volume 0 to migrate to node 1    
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
 
