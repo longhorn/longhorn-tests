@@ -16,10 +16,11 @@ Create volume ${volume_id} with
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    &{config}
 
-Create DR volume ${volume_id} from backup ${backup_id}
+Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${backup_url} =    get_backup_url    ${backup_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
 Create volume ${volume_id} from ${workload_kind} ${workload_id} volume backup ${backup_id}
@@ -188,14 +189,16 @@ Wait for volume ${volume_id} to stay on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_volume_migration_to_rollback    ${volume_name}    ${node_name}
 
-Wait for volume ${volume_id} restoration from backup ${backup_id} completed
+Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${backup_name} =    get_backup_name    ${backup_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
     wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
 
-Wait for volume ${volume_id} restoration from backup ${backup_id} start
+Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} start
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${backup_name} =    get_backup_name    ${backup_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
     wait_for_volume_restoration_start    ${volume_name}    ${backup_name}
 
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
@@ -376,3 +379,27 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} in another clu
 Volume ${volume_id} setting ${setting_name} should be ${setting_value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_volume_setting    ${volume_name}    ${setting_name}    ${setting_value}
+
+Assert DM device for volume ${volume_id} ${condition} exist on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${dm_devices} =   list_dm_devices_on_node    ${node_name}
+    IF   '${condition}' == 'does'
+        Should Contain    ${dm_devices}    ${volume_name}
+    ELSE IF   '${condition}' == 'not'
+        Should Not Contain    ${dm_devices}    ${volume_name}
+    ELSE
+        Fail    Invalid condition: ${condition}
+    END
+
+Assert device for volume ${volume_id} ${condition} exist on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${devices} =   list_volume_devices_on_node    ${node_name}
+    IF   '${condition}' == 'does'
+        Should Contain    ${devices}    ${volume_name}
+    ELSE IF   '${condition}' == 'not'
+        Should Not Contain    ${devices}    ${volume_name}
+    ELSE
+        Fail    Invalid condition: ${condition}
+    END

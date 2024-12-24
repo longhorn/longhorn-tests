@@ -16,6 +16,7 @@ from common import update_statefulset_manifests, create_storage_class
 from common import create_snapshot
 from common import create_recurring_jobs
 from common import check_recurring_jobs
+from common import DATA_ENGINE
 
 from backupstore import set_random_backupstore # NOQA
 
@@ -57,7 +58,7 @@ def create_and_test_backups(api, cli, pod_info):
         for i in range(DEFAULT_BACKUP_TIMEOUT):
             backup_volumes = cli.list_backupVolume()
             for bv in backup_volumes:
-                if bv.name == pod['pv_name']:
+                if bv.volumeName == pod['pv_name']:
                     found = True
                     break
             if found:
@@ -93,6 +94,7 @@ def create_and_test_backups(api, cli, pod_info):
         pod['backup_snapshot'] = b
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQA
     """
     Tests that volumes provisioned for a StatefulSet can be properly created,
@@ -131,6 +133,7 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
     assert len(pod_info) == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # NOQA
     """
@@ -209,6 +212,7 @@ def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # N
     assert len(pod_info) == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     """
@@ -244,6 +248,7 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     assert resp == test_data
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_statefulset_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that backups on StatefulSet volumes work properly.
@@ -272,6 +277,7 @@ def test_statefulset_backup(set_random_backupstore, client, core_api, storage_cl
     create_and_test_backups(core_api, client, pod_info)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_statefulset_recurring_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     """
@@ -335,6 +341,7 @@ def test_statefulset_recurring_backup(set_random_backupstore, client, core_api, 
         assert count == 2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_statefulset_restore(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that data can be restored into volumes usable by a StatefulSet.
@@ -431,7 +438,8 @@ def test_statefulset_restore(set_random_backupstore, client, core_api, storage_c
             size=size_to_string(DEFAULT_VOLUME_SIZE * Gi),
             numberOfReplicas=int(
                 storage_class['parameters']['numberOfReplicas']),
-            fromBackup=pod['backup_snapshot']['url'])
+            fromBackup=pod['backup_snapshot']['url'],
+            dataEngine=DATA_ENGINE)
         wait_for_volume_detached(client, pod['pvc_name'])
 
         pv['spec']['csi']['volumeHandle'] = pod['pvc_name']

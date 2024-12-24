@@ -63,12 +63,12 @@ Test Incremental Restore
     And Write data 0 to volume 0
     And Create backup 0 for volume 0
 
-    When Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
-    And Wait for volume 1 restoration from backup 0 completed
-    And Create DR volume 2 from backup 0    dataEngine=${DATA_ENGINE}
-    And Wait for volume 2 restoration from backup 0 completed
-    And Create DR volume 3 from backup 0    dataEngine=${DATA_ENGINE}
-    And Wait for volume 3 restoration from backup 0 completed
+    When Create DR volume 1 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 restoration from backup 0 of volume 0 completed
+    And Create DR volume 2 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
+    And Wait for volume 2 restoration from backup 0 of volume 0 completed
+    And Create DR volume 3 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
+    And Wait for volume 3 restoration from backup 0 of volume 0 completed
 
     Then Snapshot PV PVC could not be created on DR volume 1
     And Backup target could not be changed when DR volume exist
@@ -76,26 +76,26 @@ Test Incremental Restore
     When Activate DR volume 1
     And Attach volume 1
     And Wait for volume 1 healthy
-    Then Check volume 1 data is backup 0
+    Then Check volume 1 data is backup 0 of volume 0
 
 
     When Write data 1 to volume 0
     And Create backup 1 for volume 0
     # Wait for DR volume 2 incremental restoration completed
-    Then Wait for volume 2 restoration from backup 1 completed
+    Then Wait for volume 2 restoration from backup 1 of volume 0 completed
     And Activate DR volume 2
     And Attach volume 2
     And Wait for volume 2 healthy
-    And Check volume 2 data is backup 1
+    And Check volume 2 data is backup 1 of volume 0
 
     When Write data 2 to volume 0
     And Create backup 2 for volume 0
     # Wait for DR volume 3 incremental restoration completed
-    Then Wait for volume 3 restoration from backup 2 completed
+    Then Wait for volume 3 restoration from backup 2 of volume 0 completed
     And Activate DR volume 3
     And Attach volume 3
     And Wait for volume 3 healthy
-    And Check volume 3 data is backup 2
+    And Check volume 3 data is backup 2 of volume 0
     And Detach volume 3
     And Wait for volume 3 detached
 

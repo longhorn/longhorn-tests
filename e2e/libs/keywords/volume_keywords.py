@@ -14,6 +14,7 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 
 from volume import Volume
+from volume.rest import Rest as VolumeRest
 
 
 class volume_keywords:
@@ -70,6 +71,11 @@ class volume_keywords:
     def get_volume_node(self, volume_name):
         return self.get_node_id_by_replica_locality(volume_name, "volume node")
 
+    def get_volume_instance_manager(self, volume_name):
+        volume = VolumeRest().get(volume_name)
+        assert len(volume['controllers']) == 1, f"Expect only one controller for volume {volume_name}; Got controllers: {volume['controllers']}"
+        return volume['controllers'][0]['instanceManagerName']
+
     def get_node_id_by_replica_locality(self, volume_name, replica_locality):
         return self.get_node_ids_by_replica_locality(volume_name, replica_locality)[0]
 
@@ -124,7 +130,7 @@ class volume_keywords:
     def delete_replica_on_nodes(self, volume_name, replica_locality):
         check_replica_locality(replica_locality)
 
-        node_ids = self.get_node_ids_by_replica_locality(volume_name, replica_locality)        
+        node_ids = self.get_node_ids_by_replica_locality(volume_name, replica_locality)
         for node_id in node_ids:
             logging(f"Deleting volume {volume_name}'s replica on node {node_id}")
             self.volume.delete_replica(volume_name, node_id)

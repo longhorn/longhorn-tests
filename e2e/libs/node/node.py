@@ -287,3 +287,13 @@ class Node:
                 break
             time.sleep(self.retry_interval)
         assert up, f"Waiting for node {node_name} up failed: {node.status.conditions}"
+
+    def list_dm_devices(self, node_name):
+        cmd = "dmsetup ls | awk '{print $1}'"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
+
+    def list_volume_devices(self, node_name):
+        cmd = "ls /dev/longhorn/"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res

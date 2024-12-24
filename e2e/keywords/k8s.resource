@@ -72,6 +72,10 @@ Drain volume of ${workload_kind} ${workload_id} volume node
 Uncordon the drained node
     uncordon_node    ${drained_node}
 
+Uncordon node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    uncordon_node    ${node_name}
+
 Cordon node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     cordon_node    ${node_name}
@@ -117,6 +121,6 @@ The drain process completed
     check_drain_process_completed    ${drain_process}
 
 Check PDB not exist
-    [Arguments]    ${instance_manger}
-    check_instance_manager_pdb_not_exist    ${instance_manger}
+    [Arguments]    ${instance_manager}
+    check_instance_manager_pdb_not_exist    ${instance_manager}
 

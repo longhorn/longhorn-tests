@@ -46,14 +46,14 @@ DR Volume Node Reboot During Initial Restoration
     And Write data 0 to volume 0
     Then Volume 0 backup 0 should be able to create
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Then Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
-        And Wait for volume 1 restoration from backup 0 start
+        Then Create DR volume 1 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
+        And Wait for volume 1 restoration from backup 0 of volume 0 start
         Then Reboot volume 1 volume node
-        And Wait for volume 1 restoration from backup 0 completed
+        And Wait for volume 1 restoration from backup 0 of volume 0 completed
         When Activate DR volume 1
         And Attach volume 1
         And Wait for volume 1 healthy
-        Then Check volume 1 data is backup 0
+        Then Check volume 1 data is backup 0 of volume 0
         Then Detach volume 1
         And Delete volume 1
     END
@@ -78,14 +78,14 @@ DR Volume Node Reboot During Incremental Restoration
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
     Then Volume 0 backup 0 should be able to create
-    Then Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
-    And Wait for volume 1 restoration from backup 0 completed
+    Then Create DR volume 1 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 restoration from backup 0 of volume 0 completed
     Then Write data 1 to volume 0
     And Volume 0 backup 1 should be able to create
-    And Wait for volume 1 restoration from backup 1 start
+    And Wait for volume 1 restoration from backup 1 of volume 0 start
     Then Reboot volume 1 volume node
-    Then Wait for volume 1 restoration from backup 1 completed
+    Then Wait for volume 1 restoration from backup 1 of volume 0 completed
     And Activate DR volume 1
     And Attach volume 1
     And Wait for volume 1 healthy
-    And Check volume 1 data is backup 1
+    And Check volume 1 data is backup 1 of volume 0

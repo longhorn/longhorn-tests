@@ -14,6 +14,8 @@ from common import SETTING_BACKUP_TARGET
 from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
+from common import NODE_UPDATE_RETRY_COUNT
+from common import NODE_UPDATE_RETRY_INTERVAL
 from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
@@ -31,6 +33,9 @@ from common import wait_for_backup_delete
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
+DEFAULT_BACKUPTARGET = "default"
+object_has_been_modified = "the object has been modified; " + \
+    "please apply your changes to the latest version and try again"
 
 TEMP_FILE_PATH = "/tmp/temp_file"
 
@@ -75,6 +80,7 @@ def set_random_backupstore(request, client):
     cleanup_all_volumes(client)
     backupstore_cleanup(client)
     system_backups_cleanup(client)
+    backup_cleanup()
     reset_backupstore_setting(client)
 
     if request.param == "nfs":
@@ -90,6 +96,13 @@ def reset_backupstore_setting(client):
     backup_store_poll_interval = client.by_id_setting(
         SETTING_BACKUPSTORE_POLL_INTERVAL)
     client.update(backup_store_poll_interval, value="300")
+
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+        if bt.backupTargetURL == "" and \
+                bt.credentialSecret == "" and bt.pollInterval == "5m0s":
+            break
+        time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
 
 def set_backupstore_invalid(client):
@@ -148,24 +161,54 @@ def set_backupstore_azurite(client):
 
 def set_backupstore_url(client, url):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backup_target_setting = client.update(backup_target_setting,
-                                          value=url)
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=url)
+        except Exception as e:
+            if object_has_been_modified in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
     assert backup_target_setting.value == url
 
 
 def set_backupstore_credential_secret(client, credential_secret):
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-    backup_target_credential_setting = client.update(
-        backup_target_credential_setting, value=credential_secret)
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            backup_target_credential_setting = client.update(
+                backup_target_credential_setting, value=credential_secret)
+        except Exception as e:
+            if object_has_been_modified in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
     assert backup_target_credential_setting.value == credential_secret
 
 
 def set_backupstore_poll_interval(client, poll_interval):
     backup_store_poll_interval_setting = client.by_id_setting(
         SETTING_BACKUPSTORE_POLL_INTERVAL)
-    backup_target_poll_interal_setting = client.update(
-        backup_store_poll_interval_setting, value=poll_interval)
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            backup_target_poll_interal_setting = client.update(
+                backup_store_poll_interval_setting, value=poll_interval)
+        except Exception as e:
+            if object_has_been_modified in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
     assert backup_target_poll_interal_setting.value == poll_interval
 
 
