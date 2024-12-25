@@ -819,24 +819,57 @@
   
 </aside>
 
+
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>v2 volume</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Delete Backup Asynchronously</h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/v2-volume/sanity-check/">v2 volume sanity check</a></li>
-  
-
+    <article id="content">
+       <h2 id="related-issues">Related issues</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/8746">https://github.com/longhorn/longhorn/issues/8746</a></li>
 </ul>
+<h2 id="lep">LEP</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/pull/9152">https://github.com/longhorn/longhorn/pull/9152</a></li>
+</ul>
+<h2 id="test-normal-case-use-nfs">Test Normal Case (use nfs)</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Create a volume and attach it.</p>
+<p><strong>And</strong> Write large data to the volume.</p>
+<p><strong>And</strong> Create the first backup from the volume.</p>
+<p><strong>And</strong> Write small data to the volume.</p>
+<p><strong>And</strong> Create a snapshot.</p>
+<p><strong>Then</strong> Delete the first backup and create second backup from the snapshot at the same time.</p>
+<p><strong>Verify</strong> The second backup will be in <code>Pending</code> state with message including <code>waiting for backup to be deleted</code>.</p>
+<p><strong>Verify</strong> After the first backup is deleted, second backup should be in progress and complete in the end.</p>
+<h2 id="test-backup-delete-error-case-use-nfs">Test Backup Delete Error Case (use nfs)</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Create a volume and attach it.</p>
+<p><strong>And</strong> Write large data to the volume.</p>
+<p><strong>And</strong> Create the first backup from the volume.</p>
+<p><strong>And</strong> Write small data to the volume.</p>
+<p><strong>And</strong> Create a snapshot.</p>
+<p><strong>And</strong> Connect to the backupstore pod and make the backup.cfg file immutable by running the command <code>$ chattr +i backups/backup_backup-*.cfg</code>.</p>
+<p><strong>Then</strong> Delete the first backup and create second backup from the snapshot at the same time.</p>
+<p><strong>Verify</strong> The first backup will repeatedly enter the <code>Deleting</code> and <code>Error</code> states as it attempts to retry the deletion. When in the Error state, an error message related to permissions will be displayed.</p>
+<p><strong>Verify</strong> The second backup will be <code>InProgress</code> when the first backup is in <code>Error</code> state. The second backup should be complete after awhile.</p>
+<p><strong>Verify</strong> After make the config mutable by running the command <code>$ chattr -i backups/backup_backup-*.cfg</code>, after a while, the second backup should be in <code>Deleting</code> again and should be deleted successfully.</p>
+<h2 id="test-controller-crashes-case-use-nfs">Test Controller Crashes Case (use nfs)</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Create a volume and attach it.</p>
+<p><strong>And</strong> Write large data to the volume.</p>
+<p><strong>And</strong> Create the first backup from the volume.</p>
+<p><strong>And</strong> Connect to the backupstore pod and make the backup.cfg file immutable by running the command <code>$ chattr +i backups/backup_backup-*.cfg</code>.</p>
+<p><strong>Then</strong> Delete the first backup.</p>
+<p><strong>Verify</strong> The first backup will repeatedly enter the <code>Deleting</code> and <code>Error</code> states as it attempts to retry the deletion. When in the Error state, an error message related to permissions will be displayed.</p>
+<p><strong>Then</strong> When the backup is in <code>Deleting</code> state, delete the longhorn-manager pod which is the owner of the backup. (by checking <code>Backup.Status.OwnerID</code>)</p>
+<p><strong>Verify</strong> After the longhorn manager pod is recreated, the backup should turn into <code>Error</code> state with message <code>No deletion in progress record, retry the deletion command</code>.</p>
+<p><strong>Then</strong> Make the config mutable by running the command <code>$ chattr -i backups/backup_backup-*.cfg</code>.</p>
+<p><strong>Verify</strong> The backup should be in <code>Deleting</code> again and should be deleted successfully.</p>
 
+    </article>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.8.0/test-delete-backup-asynchronously.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 
     
     
