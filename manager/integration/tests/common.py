@@ -165,6 +165,7 @@ SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 SETTING_BACKUPSTORE_POLL_INTERVAL = "backupstore-poll-interval"
 SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
+SETTING_CURRENT_LONGHORN_VERSION = "current-longhorn-version"
 SETTING_DEFAULT_DATA_LOCALITY = "default-data-locality"
 SETTING_DEFAULT_DATA_PATH = "default-data-path"
 SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
@@ -5920,11 +5921,11 @@ def cleanup_all_support_bundles(client):
     Clean up all support bundles
     :param client: The Longhorn client to use in the request.
     """
-    longhorn_version = client.by_id_setting('current-longhorn-version').value
+    lh_version = client.by_id_setting(SETTING_CURRENT_LONGHORN_VERSION).value
     version_doesnt_have_support_bundle_manager = ['v1.1', 'v1.2', 'v1.3']
-    if any(_version in longhorn_version for
+    if any(_version in lh_version for
            _version in version_doesnt_have_support_bundle_manager):
-        print(f'{longhorn_version} doesn\'t have support bundle manager')
+        print(f'{lh_version} doesn\'t have support bundle manager')
         return
 
     support_bundles = client.list_support_bundle()

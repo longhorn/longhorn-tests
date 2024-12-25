@@ -8,7 +8,7 @@ from backupstore import set_random_backupstore  # NOQA
 
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
-    get_core_api_client, get_apps_api_client,
+    get_core_api_client, get_apps_api_client, get_custom_object_api_client,
     create_and_check_volume, cleanup_volume,
     wait_for_volume_healthy, wait_for_volume_detached,
     write_volume_random_data, check_volume_data,
@@ -33,6 +33,7 @@ from common import (  # NOQA
     SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     SETTING_V1_DATA_ENGINE,
+    SETTING_CURRENT_LONGHORN_VERSION,
     RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -1283,3 +1284,93 @@ def test_setting_v1_data_engine(client, request): # NOQA
     # Step 6
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
+
+
+def test_setting_update_readonly():  # NOQA
+    """
+    Test update read-only setting
+
+    1. Update read-only setting `current-longhorn-version`
+    2. An exception is returned with substring `read-only`
+    3. Update non-read-only setting `backup-target` and
+       it should be updated successfully
+    """
+    custom_obj_api = get_custom_object_api_client()
+
+    # Define the resource details
+    group = "longhorn.io"
+    version = "v1beta2"
+    plural = "settings"
+
+    # Get the Setting content
+    setting = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=SETTING_CURRENT_LONGHORN_VERSION
+    )
+    assert setting["value"] != ""
+    setting_value = setting["value"]
+
+    # Update a Read-Only Setting with the modified value
+    setting["value"] = "v1.10.0-failed"
+    with pytest.raises(Exception) as e:
+        custom_obj_api.patch_namespaced_custom_object(
+            group=group,
+            version=version,
+            namespace=LONGHORN_NAMESPACE,
+            plural=plural,
+            name=SETTING_CURRENT_LONGHORN_VERSION,
+            body=setting
+        )
+    assert 'read-only' in str(e.value)
+
+    setting = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=SETTING_CURRENT_LONGHORN_VERSION
+    )
+    assert setting["value"] != "" and setting["value"] == setting_value
+
+    # Update a common Setting with the modified value
+    bt_setting = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=SETTING_BACKUP_TARGET
+    )
+
+    bt_fake_url = "nfs://invalid/faked"
+    bt_setting["value"] = bt_fake_url
+    # Update the Setting with the modified value
+    custom_obj_api.patch_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=SETTING_BACKUP_TARGET,
+        body=bt_setting
+    )
+
+    bt_setting = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=SETTING_BACKUP_TARGET
+    )
+    assert bt_setting["value"] == bt_fake_url
+
+    bt_setting["value"] = ""
+    custom_obj_api.patch_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=SETTING_BACKUP_TARGET,
+        body=bt_setting
+    )
