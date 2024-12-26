@@ -43,16 +43,8 @@ main(){
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     create_flux_helm_repo "${HELM_CHART_DEFAULT_URL}"
     create_flux_helm_release "${LONGHORN_STABLE_VERSION}"
-    LONGHORN_UPGRADE_TYPE="from_stable"
-    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
-    if [[ -n "${LONGHORN_TRANSIENT_VERSION}" ]]; then
-      FLUX_HELM_CHART_URL="${HELM_CHART_DEFAULT_URL}"
-      FLUX_HELM_CHART_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-      UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_TRANSIENT_VERSION}"
-      run_longhorn_upgrade_test
-      LONGHORN_UPGRADE_TYPE="from_transient"
-      LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-transient"
-    fi
+    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
+    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
     FLUX_HELM_CHART_URL="${HELM_CHART_URL}"
     FLUX_HELM_CHART_VERSION="${LONGHORN_INSTALL_VERSION}"
     UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_INSTALL_VERSION}"

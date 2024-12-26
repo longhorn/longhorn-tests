@@ -122,6 +122,7 @@ node {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
 
                 summary = robot outputPath: '.'
+
             }
 
         } catch (e) {

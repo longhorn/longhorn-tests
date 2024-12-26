@@ -39,16 +39,8 @@ main(){
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     create_argocd_app "${LONGHORN_STABLE_VERSION}"
     sync_argocd_app
-    LONGHORN_UPGRADE_TYPE="from_stable"
-    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
-    if [[ -n "${LONGHORN_TRANSIENT_VERSION}" ]]; then
-      UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
-      UPGRADE_LH_REPO_BRANCH="${LONGHORN_TRANSIENT_VERSION}"
-      UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_TRANSIENT_VERSION}"
-      run_longhorn_upgrade_test
-      LONGHORN_UPGRADE_TYPE="from_transient"
-      LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-transient"
-    fi
+    LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
+    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
     UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
     UPGRADE_LH_REPO_BRANCH="${LONGHORN_INSTALL_VERSION}"
     UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_INSTALL_VERSION}"
