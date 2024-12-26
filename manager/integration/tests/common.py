@@ -1595,6 +1595,8 @@ def storage_class(request):
 
 @pytest.fixture
 def crypto_secret(request):
+    core_api = get_core_api_client()
+
     def get_crypto_secret(namespace=LONGHORN_NAMESPACE):
         crypto_secret.manifest = {
             'apiVersion': 'v1',
@@ -1608,12 +1610,18 @@ def crypto_secret(request):
                 'CRYPTO_KEY_PROVIDER': 'secret'
             }
         }
+
+        if is_k8s_node_gke_cos(core_api):
+            # GKE COS's cryptsetup does not natively support "argon2i" and
+            # "argon2id".
+            # https://github.com/longhorn/longhorn/issues/10049
+            crypto_secret.manifest['stringData']['CRYPTO_PBKDF'] = 'pbkdf2'
+
         return crypto_secret.manifest
 
     def finalizer():
-        api = get_core_api_client()
         try:
-            api.delete_namespaced_secret(
+            core_api.delete_namespaced_secret(
                 name=crypto_secret.manifest['metadata']['name'],
                 namespace=crypto_secret.manifest['metadata']['namespace'])
         except ApiException as e:
