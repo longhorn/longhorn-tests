@@ -6226,3 +6226,45 @@ def create_deployment_and_write_data(client, # NOQA
 
     volume = client.by_id_volume(volume_name)
     return volume, deployment_pod_names[0], checksum, deployment
+
+
+def wait_delete_dm_device(api, name):
+    path = os.path.join("/dev/mapper", name)
+    for i in range(RETRY_COUNTS):
+        found = os.path.exists(path)
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+
+def wait_for_volume_replica_rebuilt_on_same_node_different_disk(client, node_name, volume_name, old_disk_name):  # NOQA
+    new_disk_name = ""
+    for _ in range(RETRY_COUNTS_SHORT):
+        time.sleep(RETRY_INTERVAL_LONG)
+
+        node = client.by_id_node(node_name)
+        disks = node.disks
+        new_disk_name = ""
+        for name, disk in disks.items():
+            # if scheduledReplica has prefix of volume-name
+            for scheduledReplica, _ in disk.scheduledReplica.items():
+                if scheduledReplica.startswith(volume_name):
+                    new_disk_name = name
+                    break
+        if new_disk_name != old_disk_name:
+            break
+
+    assert new_disk_name != old_disk_name, \
+        "Failed to rebuild replica disk to another disk"
+
+
+def wait_for_replica_count(client, volume_name, replica_count):
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if len(volume.replicas) == replica_count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    volume = client.by_id_volume(volume_name)
+    assert len(volume.replicas) == replica_count
