@@ -3446,6 +3446,12 @@ def reset_node(client, core_api):
 def reset_longhorn_node_zone(client):
     core_api = get_core_api_client()
 
+    # No need to reset zone label for GKE COS node as the node zone label is
+    # periodically updated with the actual GCP zone.
+    # https://github.com/longhorn/longhorn-tests/pull/1819
+    if is_k8s_node_gke_cos(core_api):
+        return
+
     nodes = client.list_node()
     for n in nodes:
         set_k8s_node_zone_label(core_api, n.name, None)
