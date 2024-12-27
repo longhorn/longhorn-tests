@@ -105,6 +105,7 @@ from common import BACKUP_TARGET_MESSAGE_EMPTY_URL
 from common import BACKUP_TARGET_MESSAGES_INVALID
 from common import wait_scheduling_failure
 from common import DATA_ENGINE
+from common import SETTING_BACKUP_TARGET
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -115,10 +116,15 @@ from backupstore import backupstore_create_file
 from backupstore import backupstore_delete_file
 from backupstore import set_random_backupstore  # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
-from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
+from backupstore import set_backupstore_url
+from backupstore import backupstore_get_backup_target
+from backupstore import set_backupstore_credential_secret
+from backupstore import set_backupstore_poll_interval
 from backupstore import reset_backupstore_setting  # NOQA
 from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
 from backupstore import backupstore_invalid # NOQA
+from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
+
 
 from kubernetes import client as k8sclient
 
@@ -157,9 +163,7 @@ def test_settings(client):  # NOQA
     Check input for settings
     """
 
-    setting_names = [common.SETTING_BACKUP_TARGET,
-                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
-                     common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
+    setting_names = [common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
                      common.SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE,
                      common.SETTING_DEFAULT_REPLICA_COUNT]
     settings = client.list_setting()
@@ -208,20 +212,6 @@ def test_settings(client):  # NOQA
             assert setting.value == "30"
             setting = client.by_id_setting(name)
             assert setting.value == "30"
-        elif name == common.SETTING_BACKUP_TARGET:
-            with pytest.raises(Exception) as e:
-                client.update(setting, value="testvalue$test")
-            assert name+" with invalid value " in \
-                   str(e.value)
-            setting = client.update(setting, value="nfs://test")
-            assert setting.value == "nfs://test"
-            setting = client.by_id_setting(name)
-            assert setting.value == "nfs://test"
-        elif name == common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET:
-            setting = client.update(setting, value="testvalue")
-            assert setting.value == "testvalue"
-            setting = client.by_id_setting(name)
-            assert setting.value == "testvalue"
         elif name == common.SETTING_DEFAULT_REPLICA_COUNT:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="-1")
@@ -1624,9 +1614,18 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     with pytest.raises(Exception) as e:
         sb_volume0.pvcCreate(pvcName=sb_volume0_name)
         assert "cannot create PVC for standby volume" in str(e.value)
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    setting_flag = False
+    try:
+        setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+        setting_flag = True
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED not in e.error.message:
+            raise e
     with pytest.raises(Exception) as e:
-        client.update(setting, value="random.backup.target")
+        if setting_flag:
+            client.update(setting, value="random.backup.target")
+        else:
+            set_backupstore_url(client, "random.backup.target")
         assert "cannot modify BackupTarget " \
                "since there are existing standby volumes" in str(e.value)
     with pytest.raises(Exception) as e:
@@ -1783,19 +1782,32 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
 
     # we only test NFS here.
     # Since it is difficult to directly remove volume.cfg from s3 buckets
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    setting_flag = False
+    try:
+        setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+        setting_flag = True
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED not in e.error.message:
+            raise e
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
         if common.is_backupTarget_nfs(backupstore):
             updated = False
-            for i in range(RETRY_COMMAND_COUNT):
+            bt_url = ""
+            for _ in range(RETRY_COMMAND_COUNT):
                 nfs_url = backupstore.strip("nfs://")
-                setting = client.update(setting, value=backupstore)
-                assert setting.value == backupstore
-                setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-                if "nfs" in setting.value:
+                if setting_flag:
+                    setting = client.update(setting, value=backupstore)
+                    assert setting.value == backupstore
+                    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+                    bt_url = setting.value
+                else:
+                    set_backupstore_url(client, backupstore)
+                    bt_url = backupstore_get_backup_target(client)
+                if "nfs" in bt_url:
                     updated = True
                     break
+                time.sleep(RETRY_INTERVAL)
             assert updated
 
     _, _, snap1, _ = create_backup(client, volume1_name)
