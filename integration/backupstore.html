@@ -173,6 +173,12 @@ we can switch to removing the locks directly</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.backupstore.from_k8s_duration_to_seconds"><code class="name flex">
+<span>def <span class="ident">from_k8s_duration_to_seconds</span></span>(<span>duration_s)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.backupstore.get_nfs_mount_point"><code class="name flex">
 <span>def <span class="ident">get_nfs_mount_point</span></span>(<span>client)</span>
 </code></dt>
@@ -341,6 +347,12 @@ we can switch to removing the locks directly</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.backupstore.reset_backupstore_setting_by_setting"><code class="name flex">
+<span>def <span class="ident">reset_backupstore_setting_by_setting</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.backupstore.set_backupstore_azurite"><code class="name flex">
 <span>def <span class="ident">set_backupstore_azurite</span></span>(<span>client)</span>
 </code></dt>
@@ -355,6 +367,12 @@ we can switch to removing the locks directly</p></div>
 </dd>
 <dt id="tests.backupstore.set_backupstore_credential_secret"><code class="name flex">
 <span>def <span class="ident">set_backupstore_credential_secret</span></span>(<span>client, credential_secret)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.backupstore.set_backupstore_credential_secret_by_setting"><code class="name flex">
+<span>def <span class="ident">set_backupstore_credential_secret_by_setting</span></span>(<span>client, credential_secret)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -377,14 +395,32 @@ we can switch to removing the locks directly</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.backupstore.set_backupstore_poll_interval_by_setting"><code class="name flex">
+<span>def <span class="ident">set_backupstore_poll_interval_by_setting</span></span>(<span>client, poll_interval)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.backupstore.set_backupstore_s3"><code class="name flex">
 <span>def <span class="ident">set_backupstore_s3</span></span>(<span>client)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.backupstore.set_backupstore_setting_by_api"><code class="name flex">
+<span>def <span class="ident">set_backupstore_setting_by_api</span></span>(<span>client, url='', credential_secret='', poll_interval=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.backupstore.set_backupstore_url"><code class="name flex">
 <span>def <span class="ident">set_backupstore_url</span></span>(<span>client, url)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="tests.backupstore.set_backupstore_url_by_setting"><code class="name flex">
+<span>def <span class="ident">set_backupstore_url_by_setting</span></span>(<span>client, url)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -441,6 +477,7 @@ we can switch to removing the locks directly</p></div>
 <li><code><a title="tests.backupstore.backupstore_s3" href="#tests.backupstore.backupstore_s3">backupstore_s3</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_wait_for_lock_expiration" href="#tests.backupstore.backupstore_wait_for_lock_expiration">backupstore_wait_for_lock_expiration</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_write_backup_cfg_file" href="#tests.backupstore.backupstore_write_backup_cfg_file">backupstore_write_backup_cfg_file</a></code></li>
+<li><code><a title="tests.backupstore.from_k8s_duration_to_seconds" href="#tests.backupstore.from_k8s_duration_to_seconds">from_k8s_duration_to_seconds</a></code></li>
 <li><code><a title="tests.backupstore.get_nfs_mount_point" href="#tests.backupstore.get_nfs_mount_point">get_nfs_mount_point</a></code></li>
 <li><code><a title="tests.backupstore.minio_count_backup_block_files" href="#tests.backupstore.minio_count_backup_block_files">minio_count_backup_block_files</a></code></li>
 <li><code><a title="tests.backupstore.minio_delete_backup_cfg_file" href="#tests.backupstore.minio_delete_backup_cfg_file">minio_delete_backup_cfg_file</a></code></li>
@@ -469,14 +506,19 @@ we can switch to removing the locks directly</p></div>
 <li><code><a title="tests.backupstore.nfs_get_volume_cfg_file_path" href="#tests.backupstore.nfs_get_volume_cfg_file_path">nfs_get_volume_cfg_file_path</a></code></li>
 <li><code><a title="tests.backupstore.nfs_write_backup_cfg_file" href="#tests.backupstore.nfs_write_backup_cfg_file">nfs_write_backup_cfg_file</a></code></li>
 <li><code><a title="tests.backupstore.reset_backupstore_setting" href="#tests.backupstore.reset_backupstore_setting">reset_backupstore_setting</a></code></li>
+<li><code><a title="tests.backupstore.reset_backupstore_setting_by_setting" href="#tests.backupstore.reset_backupstore_setting_by_setting">reset_backupstore_setting_by_setting</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_azurite" href="#tests.backupstore.set_backupstore_azurite">set_backupstore_azurite</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_cifs" href="#tests.backupstore.set_backupstore_cifs">set_backupstore_cifs</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_credential_secret" href="#tests.backupstore.set_backupstore_credential_secret">set_backupstore_credential_secret</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_credential_secret_by_setting" href="#tests.backupstore.set_backupstore_credential_secret_by_setting">set_backupstore_credential_secret_by_setting</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_invalid" href="#tests.backupstore.set_backupstore_invalid">set_backupstore_invalid</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_nfs" href="#tests.backupstore.set_backupstore_nfs">set_backupstore_nfs</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_poll_interval" href="#tests.backupstore.set_backupstore_poll_interval">set_backupstore_poll_interval</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_poll_interval_by_setting" href="#tests.backupstore.set_backupstore_poll_interval_by_setting">set_backupstore_poll_interval_by_setting</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_s3" href="#tests.backupstore.set_backupstore_s3">set_backupstore_s3</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_setting_by_api" href="#tests.backupstore.set_backupstore_setting_by_api">set_backupstore_setting_by_api</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_url" href="#tests.backupstore.set_backupstore_url">set_backupstore_url</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_url_by_setting" href="#tests.backupstore.set_backupstore_url_by_setting">set_backupstore_url_by_setting</a></code></li>
 <li><code><a title="tests.backupstore.set_random_backupstore" href="#tests.backupstore.set_random_backupstore">set_random_backupstore</a></code></li>
 <li><code><a title="tests.backupstore.umount_nfs_backupstore" href="#tests.backupstore.umount_nfs_backupstore">umount_nfs_backupstore</a></code></li>
 </ul>
