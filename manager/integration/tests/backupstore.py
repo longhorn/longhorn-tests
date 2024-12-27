@@ -1,9 +1,10 @@
 import os
+import re
+import json
 import time
 import pytest
 import base64
 import hashlib
-import json
 import subprocess
 
 from minio import Minio
@@ -14,15 +15,14 @@ from common import SETTING_BACKUP_TARGET
 from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
-from common import NODE_UPDATE_RETRY_COUNT
-from common import NODE_UPDATE_RETRY_INTERVAL
+from common import RETRY_COUNTS_SHORT
+from common import RETRY_INTERVAL
 from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import is_backupTarget_cifs
 from common import is_backupTarget_azurite
 from common import get_longhorn_api_client
-from common import delete_backup_volume
 from common import delete_backup_backing_image
 from common import get_backupstore_url
 from common import get_backupstore_poll_interval
@@ -30,6 +30,7 @@ from common import get_backupstores
 from common import system_backups_cleanup
 from common import get_custom_object_api_client
 from common import wait_for_backup_delete
+from common import wait_for_backup_volume_delete
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
@@ -37,9 +38,41 @@ DEFAULT_BACKUPTARGET = "default"
 object_has_been_modified = "the object has been modified; " + \
     "please apply your changes to the latest version and try again"
 
+SETTING_BACKUP_TARGET_NOT_SUPPORTED = \
+    f"setting {SETTING_BACKUP_TARGET} is not supported"
+SETTING_BACKUP_TARGET_CREDENTIAL_SECRET_NOT_SUPPORTED = \
+    f"setting {SETTING_BACKUP_TARGET_CREDENTIAL_SECRET} is not supported"
+SETTING_SETTING_BACKUPSTORE_POLL_INTERVAL_NOT_SUPPORTED = \
+    f"setting {SETTING_BACKUPSTORE_POLL_INTERVAL} is not supported"
+
 TEMP_FILE_PATH = "/tmp/temp_file"
 
 BACKUPSTORE = get_backupstores()
+
+SECOND = 1
+MINUTE = 60 * SECOND
+HOUR = 60 * MINUTE
+
+duration_u = {
+    "s":  SECOND,
+    "m":  MINUTE,
+    "h":  HOUR,
+}
+
+
+def from_k8s_duration_to_seconds(duration_s):
+    # k8s duration string format such as "3h5m30s"
+    total = 0
+    pattern_str = r'([0-9]+)([smh]+)'
+    pattern = re.compile(pattern_str)
+    matches = pattern.findall(duration_s)
+    if not len(matches):
+        raise Exception("Invalid duration {}".format(duration_s))
+
+    for v, u in matches:
+        total += int(v) * duration_u[u]
+
+    return total
 
 
 @pytest.fixture
@@ -88,6 +121,16 @@ def set_random_backupstore(request, client):
 
 
 def reset_backupstore_setting(client):
+    try:
+        reset_backupstore_setting_by_setting(client)
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+            set_backupstore_setting_by_api(client)
+        else:
+            raise e
+
+
+def reset_backupstore_setting_by_setting(client):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     client.update(backup_target_setting, value="")
     backup_target_credential_setting = client.by_id_setting(
@@ -97,12 +140,26 @@ def reset_backupstore_setting(client):
         SETTING_BACKUPSTORE_POLL_INTERVAL)
     client.update(backup_store_poll_interval, value="300")
 
-    for _ in range(NODE_UPDATE_RETRY_COUNT):
+
+def set_backupstore_setting_by_api(client,
+                                   url="",
+                                   credential_secret="",
+                                   poll_interval=300):
+    bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+    bt.backupTargetUpdate(name=DEFAULT_BACKUPTARGET,
+                          backupTargetURL=url,
+                          credentialSecret=credential_secret,
+                          pollInterval=str(poll_interval))
+
+    for _ in range(RETRY_COUNTS_SHORT):
         bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
-        if bt.backupTargetURL == "" and \
-                bt.credentialSecret == "" and bt.pollInterval == "5m0s":
+        p_interval = from_k8s_duration_to_seconds(str(bt.pollInterval))
+        bt_url = str(bt.backupTargetURL)
+        bt_secret = str(bt.credentialSecret)
+        if bt_url == url and bt_secret == credential_secret and \
+                p_interval == int(poll_interval):
             break
-        time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL)
 
 
 def set_backupstore_invalid(client):
@@ -160,32 +217,65 @@ def set_backupstore_azurite(client):
 
 
 def set_backupstore_url(client, url):
+    try:
+        set_backupstore_url_by_setting(client, url)
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+            bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+            poll_interval = from_k8s_duration_to_seconds(bt.pollInterval)
+            set_backupstore_setting_by_api(
+                client,
+                url=url,
+                credential_secret=bt.credentialSecret,
+                poll_interval=poll_interval)
+        else:
+            raise e
+
+
+def set_backupstore_url_by_setting(client, url):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    for _ in range(NODE_UPDATE_RETRY_COUNT):
+    for _ in range(RETRY_COUNTS_SHORT):
         try:
             backup_target_setting = client.update(backup_target_setting,
                                                   value=url)
         except Exception as e:
             if object_has_been_modified in str(e.error.message):
-                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                time.sleep(RETRY_INTERVAL)
                 continue
             print(e)
-            raise
+            raise e
         else:
             break
     assert backup_target_setting.value == url
 
 
 def set_backupstore_credential_secret(client, credential_secret):
+    try:
+        set_backupstore_credential_secret_by_setting(client, credential_secret)
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_CREDENTIAL_SECRET_NOT_SUPPORTED \
+                in e.error.message:
+            bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+            poll_interval = from_k8s_duration_to_seconds(bt.pollInterval)
+            set_backupstore_setting_by_api(
+                client,
+                url=bt.backupTargetURL,
+                credential_secret=credential_secret,
+                poll_interval=poll_interval)
+        else:
+            raise e
+
+
+def set_backupstore_credential_secret_by_setting(client, credential_secret):
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-    for _ in range(NODE_UPDATE_RETRY_COUNT):
+    for _ in range(RETRY_COUNTS_SHORT):
         try:
             backup_target_credential_setting = client.update(
                 backup_target_credential_setting, value=credential_secret)
         except Exception as e:
             if object_has_been_modified in str(e.error.message):
-                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                time.sleep(RETRY_INTERVAL)
                 continue
             print(e)
             raise
@@ -195,15 +285,31 @@ def set_backupstore_credential_secret(client, credential_secret):
 
 
 def set_backupstore_poll_interval(client, poll_interval):
+    try:
+        set_backupstore_poll_interval_by_setting(client, poll_interval)
+    except Exception as e:
+        if SETTING_SETTING_BACKUPSTORE_POLL_INTERVAL_NOT_SUPPORTED \
+                in e.error.message:
+            bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+            set_backupstore_setting_by_api(
+                client,
+                url=bt.backupTargetURL,
+                credential_secret=bt.credentialSecret,
+                poll_interval=poll_interval)
+        else:
+            raise e
+
+
+def set_backupstore_poll_interval_by_setting(client, poll_interval):
     backup_store_poll_interval_setting = client.by_id_setting(
         SETTING_BACKUPSTORE_POLL_INTERVAL)
-    for _ in range(NODE_UPDATE_RETRY_COUNT):
+    for _ in range(RETRY_COUNTS_SHORT):
         try:
             backup_target_poll_interal_setting = client.update(
                 backup_store_poll_interval_setting, value=poll_interval)
         except Exception as e:
             if object_has_been_modified in str(e.error.message):
-                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                time.sleep(RETRY_INTERVAL)
                 continue
             print(e)
             raise
@@ -215,7 +321,7 @@ def set_backupstore_poll_interval(client, poll_interval):
 def mount_nfs_backupstore(client, mount_path="/mnt/nfs"):
     cmd = ["mkdir", "-p", mount_path]
     subprocess.check_output(cmd)
-    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_backuptarget = backupstore_get_backup_target(client)
     nfs_url = urlparse(nfs_backuptarget).netloc + \
         urlparse(nfs_backuptarget).path
     cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
@@ -249,17 +355,19 @@ def backupstore_cleanup(client):
     backup_volumes = client.list_backup_volume()
     # we delete the whole backup volume, which skips block gc
     for backup_volume in backup_volumes:
-        delete_backup_volume(client, backup_volume.name)
+        client.delete(backup_volume)
+        wait_for_backup_volume_delete(client, backup_volume.name)
 
     backup_volumes = client.list_backup_volume()
-    assert backup_volumes.data == []
+    assert backup_volumes.data == [], f"backup_volumes: {backup_volumes.data}"
 
     backup_backing_images = client.list_backup_backing_image()
     for backup_backing_image in backup_backing_images:
         delete_backup_backing_image(client, backup_backing_image.name)
 
     backup_backing_images = client.list_backup_backing_image()
-    assert backup_backing_images.data == []
+    assert backup_backing_images.data == [], \
+        f"backup_backing_images: {backup_backing_images.data}"
 
 
 def minio_get_api_client(client, core_api, minio_secret_name):
@@ -310,7 +418,14 @@ def minio_get_backupstore_path(client):
 
 
 def get_nfs_mount_point(client):
-    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    try:
+        nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+            bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+            nfs_backuptarget = bt.backupTargetURL
+        else:
+            raise e
     nfs_url = urlparse(nfs_backuptarget).netloc + \
         urlparse(nfs_backuptarget).path
 
@@ -363,15 +478,29 @@ def nfs_get_backup_volume_prefix(client, volume_name):
 
 
 def backupstore_get_backup_target(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    return backup_target_setting.value
+    try:
+        backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+        return backup_target_setting.value
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+            bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+            return bt.backupTargetURL
+        else:
+            raise e
 
 
 def backupstore_get_secret(client):
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    return backup_target_credential_setting.value
+    try:
+        backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+        return backup_target_credential_setting.value
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_CREDENTIAL_SECRET_NOT_SUPPORTED \
+                in e.error.message:
+            bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+            return bt.credentialSecret
+        else:
+            raise e
 
 
 def backupstore_get_backup_cfg_file_path(client, volume_name, backup_name):
@@ -444,8 +573,7 @@ def nfs_get_backup_blocks_dir(client, volume_name):
 
 
 def backupstore_create_file(client, core_api, file_path, data={}):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstore = backup_target_setting.value
+    backupstore = backupstore_get_backup_target(client)
 
     if is_backupTarget_s3(backupstore):
         return mino_create_file_in_backupstore(client,
@@ -460,10 +588,7 @@ def backupstore_create_file(client, core_api, file_path, data={}):
 
 
 def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQA
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    secret_name = backup_target_credential_setting.value
+    secret_name = backupstore_get_secret(client)
 
     minio_api = minio_get_api_client(client, core_api, secret_name)
     bucket_name = minio_get_backupstore_bucket_name(client)
@@ -542,8 +667,7 @@ def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, back
 
 
 def backupstore_delete_file(client, core_api, file_path):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstore = backup_target_setting.value
+    backupstore = backupstore_get_backup_target(client)
 
     if is_backupTarget_s3(backupstore):
         return mino_delete_file_in_backupstore(client,
@@ -558,10 +682,8 @@ def backupstore_delete_file(client, core_api, file_path):
 
 
 def mino_delete_file_in_backupstore(client, core_api, file_path):
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    secret_name = backup_target_credential_setting.value
+    secret_name = backupstore_get_secret(client)
+    assert secret_name != ''
 
     minio_api = minio_get_api_client(client, core_api, secret_name)
     bucket_name = minio_get_backupstore_bucket_name(client)

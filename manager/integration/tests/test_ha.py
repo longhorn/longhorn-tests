@@ -90,6 +90,8 @@ from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
 from backupstore import backupstore_wait_for_lock_expiration
 from backupstore import backupstore_s3  # NOQA
+from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
+from backupstore import set_backupstore_url
 
 from test_node import create_host_disk
 from test_scheduling import get_host_replica
@@ -1364,9 +1366,15 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     invalid_backup_target_url = \
         "s3://backupbucket-invalid@us-east-1/backupstore-invalid"
 
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backup_target_setting = client.update(backup_target_setting,
-                                          value=invalid_backup_target_url)
+    try:
+        backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+        backup_target_setting = client.update(backup_target_setting,
+                                              value=invalid_backup_target_url)
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+            set_backupstore_url(client, invalid_backup_target_url)
+        else:
+            raise e
 
     # make fromBackup URL consistent to the the invalid target URL
     url = invalid_backup_target_url + b.url.split("?")[1]
