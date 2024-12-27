@@ -1,11 +1,41 @@
 from abc import ABC, abstractmethod
 import hashlib
 import os
+import re
 
 from kubernetes import client
 
+from utility.utility import get_longhorn_client
+
+SECOND = 1
+MINUTE = 60 * SECOND
+HOUR = 60 * MINUTE
+
+duration_u = {
+    "s":  SECOND,
+    "m":  MINUTE,
+    "h":  HOUR,
+}
+
+
+def from_k8s_duration_to_seconds(duration_s):
+    # k8s duration string format such as "3h5m30s"
+    total = 0
+    pattern_str = r'([0-9]+)([smh]+)'
+    pattern = re.compile(pattern_str)
+    matches = pattern.findall(duration_s)
+    if not len(matches):
+        raise Exception("Invalid duration {}".format(duration_s))
+
+    for v, u in matches:
+        total += int(v) * duration_u[u]
+
+    return total
+
 
 class Base(ABC):
+
+    DEFAULT_BACKUPTARGET = "default"
 
     def __init__(self):
         self.core_api = client.CoreV1Api()
@@ -33,6 +63,54 @@ class Base(ABC):
             volume_name
 
         return backupstore_bv_path
+
+    def get_backupstore_url(self):
+        return get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET).backupTargetURL
+
+    def get_backupstore_secret(self):
+        return get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET).credentialSecret
+
+    def get_backupstore_poll_interval(self):
+        k8s_duration = get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET).pollInterval
+        return from_k8s_duration_to_seconds(k8s_duration)
+
+    def set_backupstore_url(self, url):
+        bt = get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET)
+        p_interval = from_k8s_duration_to_seconds(bt.pollInterval)
+        self.update_backupstore(url=url,
+                                credential_secret=bt.credentialSecret,
+                                poll_interval=p_interval)
+
+    def set_backupstore_secret(self, secret):
+        bt = get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET)
+        p_interval = from_k8s_duration_to_seconds(bt.pollInterval)
+        self.update_backupstore(url=bt.backupTargetURL,
+                                credential_secret=secret,
+                                poll_interval=p_interval)
+
+    def set_backupstore_poll_interval(self, poll_interval):
+        bt = get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET)
+        self.update_backupstore(url=bt.backupTargetURL,
+                                credential_secret=bt.credentialSecret,
+                                poll_interval=poll_interval)
+
+    def reset_backupstore(self):
+        self.update_backupstore()
+
+    def update_backupstore(self,
+                           url="", credential_secret="", poll_interval=300):
+        backup_target = get_longhorn_client().by_id_backupTarget(
+                            self.DEFAULT_BACKUPTARGET)
+        backup_target.backupTargetUpdate(name=self.DEFAULT_BACKUPTARGET,
+                                         backupTargetURL=url,
+                                         credentialSecret=credential_secret,
+                                         pollInterval=str(poll_interval))
 
     @abstractmethod
     def get_backup_volume_prefix(self, volume_name):
@@ -75,5 +153,44 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def count_backup_block_files(self):
+        return NotImplemented
+
+
+class BackupStore(Base):
+
+    def __init__(self):
+        super().__init__()
+
+    def get_backup_volume_prefix(self, volume_name):
+        return NotImplemented
+
+    def get_backup_cfg_file_path(self, volume_name, backup_name):
+        return NotImplemented
+
+    def get_volume_cfg_file_path(self, volume_name):
+        return NotImplemented
+
+    def get_backup_blocks_dir(self, volume_name):
+        return NotImplemented
+
+    def create_file_in_backupstore(self):
+        return NotImplemented
+
+    def write_backup_cfg_file(self, volume_name, backup_name, data):
+        return NotImplemented
+
+    def delete_file_in_backupstore(self):
+        return NotImplemented
+
+    def delete_backup_cfg_file(self):
+        return NotImplemented
+
+    def delete_volume_cfg_file(self):
+        return NotImplemented
+
+    def delete_random_backup_block(self):
+        return NotImplemented
+
     def count_backup_block_files(self):
         return NotImplemented
