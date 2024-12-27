@@ -5,14 +5,25 @@ from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
+from backupstore.base import BackupStore
+
+
 class Setting:
 
     SETTING_BACKUP_TARGET = "backup-target"
     SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
     SETTING_BACKUPSTORE_POLL_INTERVAL = "backupstore-poll-interval"
 
+    SETTING_BACKUP_TARGET_NOT_SUPPORTED = \
+        f"setting {SETTING_BACKUP_TARGET} is not supported"
+    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET_NOT_SUPPORTED = \
+        f"setting {SETTING_BACKUP_TARGET_CREDENTIAL_SECRET} is not supported"
+    SETTING_SETTING_BACKUPSTORE_POLL_INTERVAL_NOT_SUPPORTED = \
+        f"setting {SETTING_BACKUPSTORE_POLL_INTERVAL} is not supported"
+
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+        self.backupstore = BackupStore()
 
     def update_setting(self, key, value, retry=True):
         if retry:
@@ -43,23 +54,65 @@ class Setting:
         backupstore = self.get_backupstore_url()
         if backupstore:
             backupsettings = backupstore.split("$")
-            self.update_setting(self.SETTING_BACKUP_TARGET, backupsettings[0])
-            if len(backupsettings) > 1:
-                self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET, backupsettings[1])
-
             poll_interval = self.get_backupstore_poll_interval()
-            self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL, poll_interval)
+            try:
+                self.update_setting(self.SETTING_BACKUP_TARGET,
+                                    backupsettings[0],
+                                    retry=False)
+                if len(backupsettings) > 1:
+                    self.update_setting(
+                        self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+                        backupsettings[1],
+                        retry=False)
+
+                self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL,
+                                    poll_interval,
+                                    retry=False)
+            except Exception as e:
+                if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+                    self.backupstore.set_backupstore_url(backupsettings[0])
+                    if len(backupsettings) > 1:
+                        self.backupstore.set_backupstore_secret(
+                            backupsettings[1])
+                    self.backupstore.set_backupstore_poll_interval(
+                        poll_interval)
+                else:
+                    logging(e)
 
     def reset_backupstore(self):
-        self.update_setting(self.SETTING_BACKUP_TARGET, "")
-        self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET, "")
-        self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL, "300")
+        try:
+            self.update_setting(self.SETTING_BACKUP_TARGET, "", retry=False)
+            self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+                                "",
+                                retry=False)
+            self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL,
+                                "300",
+                                retry=False)
+        except Exception as e:
+            if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+                self.backupstore.reset_backupstore()
+            else:
+                logging(e)
 
     def get_backup_target(self):
-        return self.get_setting(self.SETTING_BACKUP_TARGET)
+        try:
+            return self.get_setting(self.SETTING_BACKUP_TARGET)
+        except Exception as e:
+            if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
+                return self.backupstore.get_backupstore_url()
+            else:
+                logging(e)
 
     def get_secret(self):
-        return self.get_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+        try:
+            return self.get_setting(
+                self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+        except Exception as e:
+            if (self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET_NOT_SUPPORTED
+                    in e.error.message):
+                return self.backupstore.get_backupstore_secret()
+            else:
+                logging(e)
 
     def reset_settings(self):
         client = get_longhorn_client()
