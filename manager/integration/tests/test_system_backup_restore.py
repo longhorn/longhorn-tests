@@ -16,7 +16,6 @@ from common import system_backup_random_name
 from common import system_backup_wait_for_state
 from common import system_restore_random_name
 from common import system_restore_wait_for_state
-from common import update_setting
 from common import wait_for_backup_count
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
@@ -34,11 +33,11 @@ from common import check_backing_image_disk_map_status
 from common import wait_for_backup_restore_completed
 from common import write_volume_random_data
 
-from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import SIZE
 from common import DATA_ENGINE
 
 from backupstore import set_random_backupstore  # NOQA
+from backupstore import set_backupstore_poll_interval  # NOQA
 
 
 ALWAYS = "always"
@@ -376,7 +375,7 @@ def test_system_backup_delete_when_other_system_backup_using_name_as_prefix(clie
     And wait 60 seconds
     Then system backups should exists (aaa, aaaa)
     """
-    update_setting(client, SETTING_BACKUPSTORE_POLL_INTERVAL, "10")
+    set_backupstore_poll_interval(client, "10")
 
     system_backup_names = ["aa", "aaa", "aaaa"]
     for name in system_backup_names:

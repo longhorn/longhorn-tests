@@ -33,7 +33,7 @@ from common import (  # NOQA
     SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     SETTING_V1_DATA_ENGINE,
-    RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
+    RETRY_COUNTS_SHORT, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
     check_backing_image_disk_map_status, wait_for_volume_delete,
@@ -46,6 +46,9 @@ from common import (  # NOQA
     SETTING_DEGRADED_AVAILABILITY,
     delete_replica_on_test_node
 )
+
+from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
+from backupstore import backupstore_get_backup_target
 
 from test_infra import wait_for_node_up_longhorn
 
@@ -1175,10 +1178,27 @@ def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
                                   [target],
                                   request)
     # Step 3
-    validate_settings(core_api,
-                      client,
-                      [SETTING_BACKUP_TARGET],
-                      [target])
+    try:
+        validate_settings(core_api,
+                          client,
+                          [SETTING_BACKUP_TARGET],
+                          [target])
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in str(e):
+            wait_backup_target_url_updated(client, target)
+        else:
+            raise e
+
+
+def wait_backup_target_url_updated(client, target): # NOQA
+    updated = False
+    for _ in range(RETRY_COUNTS_SHORT):
+        backup_target_url = backupstore_get_backup_target(client)
+        if backup_target_url == target:
+            updated = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert updated
 
 
 def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
@@ -1218,10 +1238,18 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     # Step 4
     validate_settings(core_api,
                       client,
-                      [SETTING_BACKUP_TARGET,
-                       SETTING_TAINT_TOLERATION],
-                      [target,
-                       "key1=value1:NoSchedule"])
+                      [SETTING_TAINT_TOLERATION],
+                      ["key1=value1:NoSchedule"])
+    try:
+        validate_settings(core_api,
+                          client,
+                          [SETTING_BACKUP_TARGET],
+                          [target])
+    except Exception as e:
+        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in str(e):
+            wait_backup_target_url_updated(client, target)
+        else:
+            raise e
 
     cleanup_volume_by_name(client, vol_name)
 
