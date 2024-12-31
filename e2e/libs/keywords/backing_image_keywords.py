@@ -6,8 +6,8 @@ class backing_image_keywords:
     def __init__(self):
         self.backing_image = BackingImage()
 
-    def create_backing_image(self, bi_name, url, expected_checksum=""):
-        self.backing_image.create(bi_name, url, expected_checksum)
+    def create_backing_image(self, bi_name, url, expected_checksum="", data_engine="v1", min_copies=1):
+        self.backing_image.create(bi_name, url, expected_checksum, data_engine, min_copies)
 
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)
