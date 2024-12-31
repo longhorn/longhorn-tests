@@ -31,6 +31,8 @@ from common import (  # NOQA
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
+    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+    SETTING_BACKUPSTORE_POLL_INTERVAL,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     SETTING_V1_DATA_ENGINE,
     RETRY_COUNTS_SHORT, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
@@ -54,6 +56,11 @@ from test_infra import wait_for_node_up_longhorn
 
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = "50"
+
+DEFAULT_SETTING_CONFIGMAP_NAME = "longhorn-default-setting"
+DEFAULT_RESOURCE_CONFIGMAP_NAME = "longhorn-default-resource" # NOQA
+DEFAULT_SETTING_YAML_NAME = "default-setting.yaml"
+DEFAULT_RESOURCE_YAML_NAME = "default-resource.yaml"
 
 
 def check_workload_update(core_api, apps_api, count):  # NOQA
@@ -1035,7 +1042,7 @@ def test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_vol
     )
 
 
-def config_map_with_value(configmap_name, setting_names, setting_values):
+def config_map_with_value(configmap_name, setting_names, setting_values, data_yaml_name="default-setting.yaml"): # NOQA
     setting = {}
     num_settings = len(setting_names)
     if num_settings > 0:
@@ -1048,7 +1055,7 @@ def config_map_with_value(configmap_name, setting_names, setting_values):
             "name": configmap_name,
         },
         "data": {
-            "default-setting.yaml": yaml.dump(setting),
+            data_yaml_name: yaml.dump(setting),
         }
     }
 
@@ -1076,32 +1083,47 @@ def retry_setting_update(client, setting_name, setting_value):  # NOQA
             break
 
 
-def init_longhorn_default_setting_configmap(core_api, client): # NOQA
-    core_api.delete_namespaced_config_map(name="longhorn-default-setting",
+def init_longhorn_default_setting_configmap(core_api, client, # NOQA
+                                            configmap_name=DEFAULT_SETTING_CONFIGMAP_NAME, # NOQA
+                                            data_yaml_name=DEFAULT_SETTING_YAML_NAME): # NOQA
+    core_api.delete_namespaced_config_map(name=configmap_name,
                                           namespace='longhorn-system')
 
-    configmap_body = config_map_with_value("longhorn-default-setting", [], [])
+    configmap_body = config_map_with_value(configmap_name,
+                                           [],
+                                           [],
+                                           data_yaml_name)
     core_api.create_namespaced_config_map(body=configmap_body,
                                           namespace='longhorn-system')
 
 
-def update_settings_via_configmap(core_api, client, setting_names, setting_values, request):  # NOQA
-    configmap_body = config_map_with_value("longhorn-default-setting",
+def update_settings_via_configmap(core_api, client, setting_names, setting_values, request, # NOQA
+                                  configmap_name=DEFAULT_SETTING_CONFIGMAP_NAME, # NOQA
+                                  data_yaml_name=DEFAULT_SETTING_YAML_NAME):  # NOQA
+    configmap_body = config_map_with_value(configmap_name,
                                            setting_names,
-                                           setting_values)
-    core_api.patch_namespaced_config_map(name="longhorn-default-setting",
+                                           setting_values,
+                                           data_yaml_name)
+    core_api.patch_namespaced_config_map(name=configmap_name,
                                          namespace='longhorn-system',
                                          body=configmap_body)
 
     def reset_default_settings():
-        configmap_body = config_map_with_value("longhorn-default-setting",
-                                               [SETTING_DEFAULT_REPLICA_COUNT,
-                                                SETTING_BACKUP_TARGET,
-                                                SETTING_TAINT_TOLERATION],
-                                               ["3",
-                                                "",
-                                                ""])
-        core_api.patch_namespaced_config_map(name="longhorn-default-setting",
+        if configmap_name == DEFAULT_SETTING_CONFIGMAP_NAME:
+            setting_names = [SETTING_DEFAULT_REPLICA_COUNT,
+                             SETTING_BACKUP_TARGET,
+                             SETTING_TAINT_TOLERATION]
+            setting_values = ["3", "", ""]
+        elif configmap_name == DEFAULT_RESOURCE_CONFIGMAP_NAME:
+            setting_names = [SETTING_BACKUP_TARGET,
+                             SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+                             SETTING_BACKUPSTORE_POLL_INTERVAL]
+            setting_values = ["", "", "300"]
+        configmap_body = config_map_with_value(configmap_name,
+                                               setting_names,
+                                               setting_values,
+                                               data_yaml_name)
+        core_api.patch_namespaced_config_map(name=configmap_name,
                                              namespace='longhorn-system',
                                              body=configmap_body)
     request.addfinalizer(reset_default_settings)
@@ -1165,10 +1187,22 @@ def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
        value
     3. Verify the updated settings
     """
+    # Check whether the config map `longhorn-default-resource` is created
+    lh_cms = core_api.list_namespaced_config_map(namespace='longhorn-system')
+    cm_names = [config_map.metadata.name for config_map in lh_cms.items]
+    if DEFAULT_RESOURCE_CONFIGMAP_NAME in cm_names:
+        config_map_name = DEFAULT_RESOURCE_CONFIGMAP_NAME
+        data_yaml_name = DEFAULT_RESOURCE_YAML_NAME
+    else:
+        config_map_name = DEFAULT_SETTING_CONFIGMAP_NAME
+        data_yaml_name = DEFAULT_SETTING_YAML_NAME
 
     # Step 1
     client = get_longhorn_api_client()  # NOQA
-    init_longhorn_default_setting_configmap(core_api, client)
+    init_longhorn_default_setting_configmap(core_api,
+                                            client,
+                                            configmap_name=config_map_name,
+                                            data_yaml_name=data_yaml_name)
 
     # Step 2
     target = "s3://backupbucket-invalid@us-east-1/backupstore"
@@ -1176,7 +1210,9 @@ def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
                                   client,
                                   [SETTING_BACKUP_TARGET],
                                   [target],
-                                  request)
+                                  request,
+                                  configmap_name=config_map_name,
+                                  data_yaml_name=data_yaml_name)
     # Step 3
     try:
         validate_settings(core_api,
@@ -1212,6 +1248,14 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
        when there is an attached volume.
     4. Validate the default settings values.
     """
+    # Check whether the config map `longhorn-default-resource` is created
+    backup_cm_created = False
+    lh_cms = core_api.list_namespaced_config_map(namespace='longhorn-system')
+    cm_names = [config_map.metadata.name for config_map in lh_cms.items]
+    if DEFAULT_RESOURCE_CONFIGMAP_NAME in cm_names:
+        backup_cm_created = True
+        bt_config_map_name = DEFAULT_RESOURCE_CONFIGMAP_NAME
+        bt_data_yaml_name = DEFAULT_RESOURCE_YAML_NAME
 
     # Step 1
     client = get_longhorn_api_client() # NOQA
@@ -1230,26 +1274,29 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     target = "s3://backupbucket-invalid@us-east-1/backupstore"
     update_settings_via_configmap(core_api,
                                   client,
-                                  [SETTING_BACKUP_TARGET,
-                                   SETTING_TAINT_TOLERATION],
-                                  [target,
-                                   "key1=value1:NoSchedule"],
+                                  [SETTING_TAINT_TOLERATION],
+                                  ["key1=value1:NoSchedule"],
                                   request)
     # Step 4
     validate_settings(core_api,
                       client,
                       [SETTING_TAINT_TOLERATION],
                       ["key1=value1:NoSchedule"])
-    try:
-        validate_settings(core_api,
-                          client,
-                          [SETTING_BACKUP_TARGET],
-                          [target])
-    except Exception as e:
-        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in str(e):
-            wait_backup_target_url_updated(client, target)
-        else:
-            raise e
+
+    if backup_cm_created:
+        init_longhorn_default_setting_configmap(
+            core_api,
+            client,
+            configmap_name=bt_config_map_name,
+            data_yaml_name=bt_data_yaml_name)
+        update_settings_via_configmap(core_api,
+                                      client,
+                                      [SETTING_BACKUP_TARGET],
+                                      [target],
+                                      request,
+                                      configmap_name=bt_config_map_name,
+                                      data_yaml_name=bt_data_yaml_name)
+        wait_backup_target_url_updated(client, target)
 
     cleanup_volume_by_name(client, vol_name)
 
