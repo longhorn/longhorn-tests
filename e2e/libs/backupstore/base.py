@@ -40,6 +40,10 @@ class Base(ABC):
     def __init__(self):
         self.core_api = client.CoreV1Api()
         backupstore = os.environ.get('LONGHORN_BACKUPSTORE')
+
+        if not backupstore:
+            return
+
         backupsettings = backupstore.split("$")
         self.backup_target = backupsettings[0]
         self.secret = backupsettings[1] if len(backupsettings) > 1 else ""
