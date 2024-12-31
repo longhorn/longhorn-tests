@@ -7,6 +7,8 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backing_image.resource
+Resource    ../keywords/setting.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -29,3 +31,23 @@ Test Backing Image Basic Operation
     And Delete volume 0
     And Clean up backing image bi from a disk
     And Delete backing image bi
+
+Test Uninstall When Backing Image Exists
+    [Tags]    uninstall    backing image
+    [Documentation]    Validates the uninstallation of Longhorn when backing
+    ...                image exists.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/10044
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        Given Create backing image v1-bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v1    min_copies=3
+        And Create backing image v1-bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v1    min_copies=3
+        And Create backing image v2-bi-qcow2-1 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v2    min_copies=3
+        And Create backing image v2-bi-raw-1 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v2    min_copies=3
+        And Set setting deleting-confirmation-flag to true
+
+        When Uninstall Longhorn
+
+        Then Check all Longhorn CRD removed
+        And Install Longhorn
+    END
