@@ -1,6 +1,7 @@
 import time
 
 from backing_image.base import Base
+
 from utility.utility import logging
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
@@ -110,10 +111,10 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert len(get_longhorn_client().list_backing_image()) == 0
-    
+
     def delete_backing_image_manager(self, name):
         return NotImplemented
-    
+
     def wait_all_backing_image_managers_running(self):
         return NotImplemented
 
