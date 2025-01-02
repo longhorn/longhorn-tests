@@ -14,7 +14,7 @@ class CRD(Base):
         self.obj_api = client.CustomObjectsApi()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, bi_name, source_type, url, expected_checksum):
+    def create(self, bi_name, source_type, url, expected_checksum, data_engine, min_copies):
         return NotImplemented
 
     def get(self, bi_name):
