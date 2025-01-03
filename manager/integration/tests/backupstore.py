@@ -17,6 +17,7 @@ from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
 from common import RETRY_COUNTS_SHORT
 from common import RETRY_INTERVAL
+from common import EXCEPTION_ERROR_REASON_NOT_FOUND
 from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
@@ -344,11 +345,19 @@ def backup_cleanup():
                                                 "longhorn-system",
                                                 "backups")
     for backup in backups['items']:
-        api.delete_namespaced_custom_object("longhorn.io",
-                                            "v1beta2",
-                                            "longhorn-system",
-                                            "backups",
-                                            backup['metadata']['name'])
+        try:
+            api.delete_namespaced_custom_object("longhorn.io",
+                                                "v1beta2",
+                                                "longhorn-system",
+                                                "backups",
+                                                backup['metadata']['name'])
+        except Exception as e:
+            # Continue with backup deleted case
+            if e.reason == EXCEPTION_ERROR_REASON_NOT_FOUND:
+                continue
+            # Report any other error
+            else:
+                assert (not e)
 
 
 def backupstore_cleanup(client):

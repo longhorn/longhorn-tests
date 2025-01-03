@@ -160,6 +160,8 @@ DISK_CONDITION_READY = "Ready"
 
 STREAM_EXEC_TIMEOUT = 60
 
+EXCEPTION_ERROR_REASON_NOT_FOUND = "Not Found"
+
 SETTING_AUTO_SALVAGE = "auto-salvage"
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
@@ -5408,7 +5410,7 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
                                                namespace=LONGHORN_NAMESPACE)
         except Exception as e:
             # Continue with pod restarted case
-            if e.reason == "Not Found":
+            if e.reason == EXCEPTION_ERROR_REASON_NOT_FOUND:
                 time.sleep(RETRY_INTERVAL)
                 continue
             # Report any other error
