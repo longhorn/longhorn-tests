@@ -58,7 +58,7 @@ Shutdown Volume Node And Test Auto Reattach To A New Node
 Reboot Node One By One While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
@@ -99,7 +99,7 @@ Reboot Node One By One While Workload Heavy Writing
 Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
@@ -140,7 +140,7 @@ Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heav
 Reboot All Worker Nodes While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
@@ -179,7 +179,7 @@ Reboot All Worker Nodes While Workload Heavy Writing
 Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing
     [Tags]    reboot
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
     And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
