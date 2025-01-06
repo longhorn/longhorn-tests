@@ -1208,9 +1208,9 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     2. Initialize longhorn-default-setting configmap containing
        valid and invalid settings
     3. Update longhorn-default-setting configmap with invalid settings.
-       The invalid settings SETTING_TAINT_TOLERATION will be ignored
-       when there is an attached volume.
-    4. Validate the default settings values.
+       The invalid settings SETTING_TAINT_TOLERATION will be updated
+    4. The changes will be applied once the volumes are detached. (To Do)
+    5. Validate the default settings values.
     """
 
     # Step 1
