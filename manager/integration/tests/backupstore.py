@@ -361,13 +361,18 @@ def backup_cleanup():
 
 
 def backupstore_cleanup(client):
-    backup_volumes = client.list_backup_volume()
+    backup_volumes = client.list_backupVolume()
     # we delete the whole backup volume, which skips block gc
     for backup_volume in backup_volumes:
         client.delete(backup_volume)
         wait_for_backup_volume_delete(client, backup_volume.name)
 
-    backup_volumes = client.list_backup_volume()
+    backup_volumes = client.list_backupVolume()
+    for _ in range(RETRY_COUNTS_SHORT):
+        if backup_volumes.data == []:
+            break
+        time.sleep(RETRY_INTERVAL)
+        backup_volumes = client.list_backupVolume()
     assert backup_volumes.data == [], f"backup_volumes: {backup_volumes.data}"
 
     backup_backing_images = client.list_backup_backing_image()
@@ -375,6 +380,11 @@ def backupstore_cleanup(client):
         delete_backup_backing_image(client, backup_backing_image.name)
 
     backup_backing_images = client.list_backup_backing_image()
+    for _ in range(RETRY_COUNTS_SHORT):
+        if backup_backing_images.data == []:
+            break
+        time.sleep(RETRY_INTERVAL)
+        backup_backing_images = client.list_backup_backing_image()
     assert backup_backing_images.data == [], \
         f"backup_backing_images: {backup_backing_images.data}"
 
