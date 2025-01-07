@@ -52,7 +52,7 @@ hljs.highlightAll();
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_settings.config_map_with_value"><code class="name flex">
-<span>def <span class="ident">config_map_with_value</span></span>(<span>configmap_name, setting_names, setting_values)</span>
+<span>def <span class="ident">config_map_with_value</span></span>(<span>configmap_name, setting_names, setting_values, data_yaml_name='default-setting.yaml')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -69,7 +69,7 @@ Otherwise, we are looking for the state to be different.
 e.g. 'Pending', 'OutofCPU', 'Terminating' they are all 'Not Running'.</p></div>
 </dd>
 <dt id="tests.test_settings.init_longhorn_default_setting_configmap"><code class="name flex">
-<span>def <span class="ident">init_longhorn_default_setting_configmap</span></span>(<span>core_api, client)</span>
+<span>def <span class="ident">init_longhorn_default_setting_configmap</span></span>(<span>core_api, client, configmap_name='longhorn-default-setting', data_yaml_name='default-setting.yaml')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -356,7 +356,7 @@ accepted. Then, attach the volume. The volume is unable to attach.
 6. Attach the volume.</p></div>
 </dd>
 <dt id="tests.test_settings.update_settings_via_configmap"><code class="name flex">
-<span>def <span class="ident">update_settings_via_configmap</span></span>(<span>core_api, client, setting_names, setting_values, request)</span>
+<span>def <span class="ident">update_settings_via_configmap</span></span>(<span>core_api, client, setting_names, setting_values, request, configmap_name='longhorn-default-setting', data_yaml_name='default-setting.yaml')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
