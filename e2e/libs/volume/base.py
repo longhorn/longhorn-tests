@@ -69,6 +69,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def is_attached_to(self, volume_name, node_name):
+        return NotImplemented
+
+    @abstractmethod
     def detach(self, volume_name, node_name):
         return NotImplemented
 

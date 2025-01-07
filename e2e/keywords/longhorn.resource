@@ -67,6 +67,13 @@ Check all Longhorn CRD removed
 Install Longhorn
     install_longhorn_system
 
+Delete instance-manager on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pods} =    list_pods    longhorn-system    longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE},longhorn.io/node=${NODE_NAME}
+    FOR    ${pod}    IN    @{pods}
+        delete_pod    ${pod}    longhorn-system    wait=False
+    END
+
 Delete instance-manager of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${instance_manager} =     get_volume_instance_manager    ${volume_name}
