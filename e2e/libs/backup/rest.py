@@ -200,14 +200,14 @@ class Rest(Base):
         return expected_checksum
 
     def cleanup_backup_volumes(self):
-        backup_volumes = get_longhorn_client().list_backup_volume()
+        backup_volumes = get_longhorn_client().list_backupVolume()
 
         # we delete the whole backup volume, which skips block gc
         for backup_volume in backup_volumes:
             get_longhorn_client().delete(backup_volume)
             self.wait_for_backup_volume_delete(backup_volume.name)
 
-        backup_volumes = get_longhorn_client().list_backup_volume()
+        backup_volumes = get_longhorn_client().list_backupVolume()
         assert backup_volumes.data == []
 
     def cleanup_system_backups(self):
