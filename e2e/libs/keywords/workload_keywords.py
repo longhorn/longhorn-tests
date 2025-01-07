@@ -9,6 +9,7 @@ from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
 from workload.pod import create_pod
 from workload.pod import delete_pod
+from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.workload import get_pod_data_checksum
 from workload.workload import check_pod_data_checksum
@@ -45,9 +46,14 @@ class workload_keywords:
         logging(f'Creating pod {pod_name} using pvc {claim_name}')
         create_pod(new_busybox_manifest(pod_name, claim_name))
 
-    def delete_pod(self, pod_name, namespace='default'):
+    def delete_pod(self, pod_name, namespace='default', wait=True):
         logging(f'Deleting pod {pod_name} in namespace {namespace}')
-        delete_pod(pod_name, namespace)
+        delete_pod(pod_name, namespace, wait)
+
+    def list_pods(self, namespace, label_selector):
+        logging(f'Listing pods with label {label_selector} in namespace {namespace}')
+        pods = list_pods(namespace, label_selector)
+        return [pod.metadata.name for pod in pods]
 
     def cleanup_pods(self):
         cleanup_pods()
