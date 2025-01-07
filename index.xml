@@ -574,6 +574,20 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
     </item>
     
     <item>
+      <title>Multiple Backup Stores</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.8.0/test-multiple-backup-stores/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.8.0/test-multiple-backup-stores/</guid>
+      <description>Related issues  https://github.com/longhorn/longhorn/issues/5411  LEP  https://github.com/longhorn/longhorn/pull/6630  Test Update Default Backup Target Given Longhorn cluster with 3 worker nodes installed with Helm.
+Verify The ConfigMap longhorn-default-backupstore is created.
+Then Update the setting defaultBackupStore.backupTarget in the file values.yaml.
+Verify The default backup target URL is updated as the value of the setting defaultBackupStore.backupTarget.
+Then Update the setting defaultBackupStore.backupTargetCredentialSecret in the file values.yaml.
+Verify The default backup target secret is updated as the value of the setting defaultBackupStore.</description>
+    </item>
+    
+    <item>
       <title>New Node with Custom Data Directory</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

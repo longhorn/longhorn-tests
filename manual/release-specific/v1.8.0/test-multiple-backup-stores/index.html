@@ -824,79 +824,148 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Recurring backup job interruptions</h1>
+  <h1 id="title">Multiple Backup Stores</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related Issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/1882">https://github.com/longhorn/longhorn/issues/1882</a></p>
-<h2 id="scenario-1--allow-recurring-job-while-volume-is-detached-disabled-attached-pod-scaled-down-while-the-recurring-backup-was-in-progress">Scenario 1- <code>Allow Recurring Job While Volume Is Detached</code> disabled, attached pod scaled down while the recurring backup was in progress.</h2>
-<ol>
-<li>Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it.</li>
-<li>Set a recurring job.</li>
-<li>While the recurring job is in progress, scale down the pod to 0 of the statefulSet.</li>
-<li>Volume first detached and cron job gets finished saying unable to complete the backup.</li>
-<li>Verify the volume again gets auto attached to another node and cron job gets recreated.</li>
-<li>Verify after backup completion, the volume gets detached.</li>
-</ol>
-<h2 id="scenario-2--allow-recurring-job-while-volume-is-detached-enabled-attached-pod-scaled-down-while-the-recurring-backup-was-in-progress">Scenario 2- <code>Allow Recurring Job While Volume Is Detached</code> enabled, attached pod scaled down while the recurring backup was in progress.</h2>
-<ol>
-<li>Enable <code>Allow Recurring Job While Volume Is Detached</code></li>
-<li>Create a volume, attach to a pod, and write 800 Mi data into it.</li>
-<li>Set a recurring job.</li>
-<li>While the recurring job is in progress, scale down the pod to 0.</li>
-<li>Volume first detached and cron job gets completed saying unable to complete the backup.</li>
-<li>Verify volume again gets auto attached to another node and cron job gets recreated.</li>
-<li>Verify after backup completion, the volume gets detached.</li>
-</ol>
-<h2 id="scenario-3--cron-job-and-volume-attached-to-the-same-node-node-is-powered-down-and-volume-detached-manually">Scenario 3- Cron job and volume attached to the same node, Node is powered down and volume detached manually.</h2>
-<ol>
-<li>Enable <code>Allow Recurring Job While Volume Is Detached</code></li>
-<li>Attach a volume to pod of a statefulSet, write data into it and set a recurring backup.</li>
-<li>Detach from the pod by scaling down the statefulSet.</li>
-<li>The attached node to volume is power down when the recurring job backup was in progress.</li>
-<li>The volume is manually detached while the cron job remains in unknown state.</li>
-<li>The cron job remains in unknown state for about 7 mins and then another pod gets created.</li>
-<li>Verify the volume get attached to another node and once the job is completed, volume gets detached.</li>
-</ol>
-<h2 id="scenario-4--cron-job-and-volume-attached-to-different-node-node-is-powered-down">Scenario 4- Cron job and volume attached to different node, Node is powered down.</h2>
-<ol>
-<li>Enable <code>Allow Recurring Job While Volume Is Detached</code></li>
-<li>Attach a volume to pod of a statefulSet, write data into it and set a recurring backup.</li>
-<li>Detach from the pod by scaling down the statefulSet.</li>
-<li>The attached node to volume is power down when the recurring job backup was in progress.</li>
-<li>Another cron job pod gets created with logs in the previous pod as below.
-<pre tabindex="0"><code>time=&quot;2020-11-09T07:39:10Z&quot; level=info msg=&quot;Automatically attach volume volume-test-2 to node node-1&quot;
-time=&quot;2020-11-09T07:39:12Z&quot; level=info msg=&quot;Volume volume-test-2 is in state attached&quot;
-time=&quot;2020-11-09T07:39:12Z&quot; level=info msg=&quot;Running recurring backup for volume volume-test-2&quot;
-time=&quot;2020-11-09T07:39:22Z&quot; level=debug msg=&quot;Creating backup , current progress 0&quot;
-time=&quot;2020-11-09T07:39:27Z&quot; level=debug msg=&quot;Creating backup , current progress 4&quot;
-time=&quot;2020-11-09T07:40:42Z&quot; level=info msg=&quot;Automatically detach the volume volume-test-2&quot;
-</code></pre></li>
-<li>Verify the volume get attached to another node and once the job is completed, volume gets detached.</li>
-</ol>
-<h2 id="scenario-5--cron-job-and-volume-attached-to-the-same-node-node-is-restarted">Scenario 5- Cron job and volume attached to the same node, Node is restarted.</h2>
-<ol>
-<li>Enable <code>Allow Recurring Job While Volume Is Detached</code></li>
-<li>Attach a volume to pod of a statefulSet, write data into it and set a recurring backup.</li>
-<li>Detach from the pod by scaling down the statefulSet.</li>
-<li>The attached node to volume is power down when the recurring job backup was in progress.</li>
-<li>The volume is manually detached while the cron job remains in unknown state.</li>
-<li>Power on the node.</li>
-<li>The cron job which was stuck in unknown state get removed and new cron job get recreated.</li>
-<li>Verify the volume get attached to another node and the backup job is completed.</li>
-</ol>
-<h2 id="scenario-6--cron-job-and-volume-attached-to-the-samedifferent-node-node-is-powered-down-and-pod-deletion-policy-when-node-is-downis-set-as-delete-both-statefulset-and-deployment-pod">Scenario 6- Cron job and volume attached to the same/different node, Node is powered down and <code>Pod Deletion Policy When Node is Down</code>is set as <code>delete-both-statefulset-and-deployment-pod</code></h2>
-<ol>
-<li>Enable <code>Allow Recurring Job While Volume Is Detached</code></li>
-<li>Attach a volume to pod of a statefulSet, write data into it and set a recurring backup.</li>
-<li>The attached node to volume is power down when the recurring job backup was in progress.</li>
-<li>The cron job (if on the same node) and the pod remains in unknown state for about 7 mins and then another pod gets created for the cron job (if on the same node) and statefulSet. If cron job is on another node, it fails to complete the backup and tries to create new job to complete backup which fails with error <code>level=fatal msg=&quot;Error taking snapshot: failed to complete backupAndCleanup for pvc-4feb233e-9503-4d4b-8cda-a5bdf005b146: could not get volume-head for volume pvc-4feb233e-9503-4d4b-8cda-a5bdf005b146: Bad response statusCode [500]. Status [500 Internal Server Error]. Body: [message=fail to get snapshot: cannot get client for volume pvc-4feb233e-9503-4d4b-8cda-a5bdf005b146: engine is not running, code=Server Error, detail=] from [http://longhorn-backend:9500/v1/volumes/pvc-4feb233e-9503-4d4b-8cda-a5bdf005b146?action=snapshotGet]&quot;</code></li>
-<li>After 7 min the cron job takes over the creation of another pod of stateful set and the volume gets auto attached to another node, completes the backup and gets detached.</li>
-<li>Verify the statefulSet pod successfully reattaches to the volume after sometime.</li>
-</ol>
+       <h2 id="related-issues">Related issues</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/5411">https://github.com/longhorn/longhorn/issues/5411</a></li>
+</ul>
+<h2 id="lep">LEP</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/pull/6630">https://github.com/longhorn/longhorn/pull/6630</a></li>
+</ul>
+<h2 id="test-update-default-backup-target">Test Update Default Backup Target</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes installed with Helm.</p>
+<p><strong>Verify</strong> The <code>ConfigMap</code> <code>longhorn-default-backupstore</code> is created.</p>
+<p><strong>Then</strong> Update the setting <code>defaultBackupStore.backupTarget</code> in the file <code>values.yaml</code>.</p>
+<p><strong>Verify</strong> The default backup target URL is updated as the value of the setting <code>defaultBackupStore.backupTarget</code>.</p>
+<p><strong>Then</strong> Update the setting <code>defaultBackupStore.backupTargetCredentialSecret</code> in the file <code>values.yaml</code>.</p>
+<p><strong>Verify</strong> The default backup target secret is updated as the value of the setting <code>defaultBackupStore.backupTargetCredentialSecret</code>.</p>
+<p><strong>Then</strong> Update the setting <code>defaultBackupStore.pollInterval</code> in the file <code>values.yaml</code>.</p>
+<p><strong>Verify</strong> The default backup target poll interval is updated as the value of the setting <code>defaultBackupStore.pollInterval</code>.</p>
+<h2 id="test-create-a-volume-by-a-storage-class-for-the-parameter-backuptargetname">Test Create A Volume By A Storage Class For The Parameter <code>backupTargetName</code></h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Create a Storage Class A without the parameter <code>backupTargetName</code>.</p>
+<p><strong>And</strong> Create a Storage Class B with the parameter <code>backupTargetName: backupTargetB</code> (the backup target <code>backupTargetB</code> is created.)</p>
+<p><strong>And</strong> Create a Storage Class C with the parameter <code>backupTargetName: backupTargetC</code> (the backup target <code>backupTargetC</code> is not created.)</p>
+<p><strong>Then</strong> Create a volume A with the Storage Class A.</p>
+<p><strong>Verify</strong> The field <code>spec.backupTargetName</code> of volume A is <code>default</code>.</p>
+<p><strong>Then</strong> Create a volume B with the Storage Class B.</p>
+<p><strong>Verify</strong> The field <code>spec.backupTargetName</code> of volume B is <code>backupTargetB</code>.</p>
+<p><strong>Then</strong> Create a volume C with the Storage Class C.</p>
+<p><strong>Verify</strong> The volume C can not be created.</p>
+<h2 id="test-create-and-restore-a-backup-with-multiple-backup-targets">Test Create And Restore A Backup With Multiple Backup Targets</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Set up the default backup target.</p>
+<p><strong>And</strong> Create a volume and attach it.</p>
+<p><strong>And</strong> Write data to the volume.</p>
+<p><strong>Then</strong> Create an extra backup target A which has existing backups.</p>
+<p><strong>Verify</strong> Existing backups on the extra backup target A can be synchronized back to the cluster.</p>
+<p><strong>Then</strong> Create a backup D to the default backup target.</p>
+<p><strong>Verify</strong> The backup D is completed and backups of the default backup target will not be deleted.</p>
+<p><strong>Then</strong> Create a backup A to extra backup target A (by setting the <code>Spec.BackupTargetName</code> field in the volume first.)</p>
+<p><strong>Verify</strong> The backup A is completed and existing backups of backup target A will not be deleted.</p>
+<p><strong>Then</strong> Restore the backup D from the default backup target.</p>
+<p><strong>Then</strong> Restore the backup A from the extra backup target A.</p>
+<p><strong>Verify</strong> Restoring the backup D is completed and data is correct.</p>
+<p><strong>Verify</strong> Restoring the backup A is completed and data is correct.</p>
+<h2 id="test-modify-the-backup-target-url">Test Modify The Backup Target URL</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes</p>
+<p><strong>And</strong> Set up the default backup target</p>
+<p><strong>Then</strong> Set up an extra backup target A which has existing backups</p>
+<p><strong>Verify</strong> Existing backups on the extra backup target A can be synchronized back to the cluster</p>
+<p><strong>Then</strong> Modify the extra backup target A URL to another valid URL of backup target B</p>
+<p><strong>Verify</strong> Related backup volume and backup custom resources will be synchronized correctly from the remote backup target B.</p>
+<p><strong>Then</strong> Modify the extra backup target A URL to an invalid URL.</p>
+<p><strong>Verify</strong> The extra backup target A become unavailable and synchronization will be skipped.</p>
+<p><strong>Verify</strong> Related backup volume and backup custom resources of the backup target B will not be cleaned up.</p>
+<p><strong>Then</strong> Empty the extra backup target A URL</p>
+<p><strong>Verify</strong> related backup volume and backup custom resources of the backup target B will be cleaned up.</p>
+<p><strong>Verify</strong> Backup volume and backup custom resources of the default backup target will not be affected.</p>
+<h2 id="test-create-and-restore-a-backing-image">Test Create And Restore A Backing Image</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Create a backing image.</p>
+<p><strong>And</strong> Set up the default backup target</p>
+<p><strong>And</strong> Create a valid backup target A.</p>
+<p><strong>Then</strong> Create a backup D of the backing image to the default backup target.</p>
+<p><strong>Verify</strong> The backup D of the backing image is completed.</p>
+<p><strong>Then</strong> Create a backup A of the backing image to the backup target A.</p>
+<p><strong>Verify</strong> The backup A of the backing image is completed.</p>
+<p><strong>Then</strong> Restore the backup D of the backing image from the default backup target.</p>
+<p><strong>Verify</strong> The restoration succeeds and data is correct.</p>
+<p><strong>Then</strong> Restore the backup A of the backing image from the backup target A.</p>
+<p><strong>Verify</strong> The restoration succeeds and data is correct.</p>
+<h2 id="test-create-a-dr-volume">Test Create A DR Volume</h2>
+<p><strong>Given</strong> Longhorn cluster A with 3 worker nodes and Longhorn cluster B with 3 worker nodes.</p>
+<p><strong>And</strong> Set up the default backup target with the same remote backup store D for two clusters.</p>
+<p><strong>And</strong> Set up the backup target <code>E</code> with the same remote backup store S for two clusters.</p>
+<p><strong>And</strong> Create a volume A with the default backup target in cluster A and attach it.</p>
+<p><strong>And</strong> Create a volume B with the backup target <code>E</code> in cluster B and attach it.</p>
+<p><strong>And</strong> Write data to the volume A and B.</p>
+<p><strong>Then</strong> Create a backup A-01 of the volume A in the cluster A.</p>
+<p><strong>Then</strong> Create a DR volume B-DR after the backup A is synchronized in cluster B.</p>
+<p><strong>Verify</strong> DR volume B-DR is created and stand-by to synchronize data from cluster A.</p>
+<p><strong>Verify</strong> Modifying/Deleting the backup target URL is not allowed in cluster B.</p>
+<p><strong>Then</strong> Write data to the volume A and create a new backup A-02 in the cluster A.</p>
+<p><strong>Verify</strong> The DR volume will synchronize the data from the backup A-02 in the cluster B.</p>
+<p><strong>Then</strong> Activate the volume B-DR.</p>
+<p><strong>Verify</strong> data of the volume B-DR is the same to the volume A.</p>
+<p><strong>Then</strong> Create a backup B-01 of the volume B in the cluster B.</p>
+<p><strong>Then</strong> Create a DR volume A-DR after the backup B-01 is synchronized in the cluster A.</p>
+<p><strong>Then</strong> Write data to the volume B and create a new backup B-02 in the cluster B.</p>
+<p><strong>Verify</strong> Modifying/Deleting the backup target URL is not allowed in cluster A.</p>
+<p><strong>Verify</strong> The DR volume A-DR will synchronize the data in the cluster A.</p>
+<h2 id="test-create-and-restore-a-system-backup">Test Create And Restore A System Backup</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Set up the default backup target and an extra backup target A.</p>
+<p><strong>And</strong> Create a volume A with the default backup target and attach it.</p>
+<p><strong>And</strong> Create a volume B with the backup target <code>A</code> and attach it.</p>
+<p><strong>And</strong> Write data to the volume A and B.</p>
+<p><strong>Then</strong> Create a system backup.</p>
+<p>**Verify The system backup is completed, and the system backup and the volume A is stored on the default backup target, and the volume B is stored on the backup target A.</p>
+<p><strong>Then</strong> Delete the backup target A and volume A and B.</p>
+<p><strong>Then</strong> Restore the system backup.</p>
+<p><strong>Verify</strong> Restoration is completed, and backup target A, volume A and B is restored.</p>
+<h2 id="test-delete-a-backup-target">Test Delete A Backup Target</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Set up the default backup target and an extra backup target A which has existing backups.</p>
+<p><strong>Verify</strong> Deleting the default backup target is not allowed.</p>
+<p><strong>Verify</strong> Existing backups on the extra backup target A can be synchronized back to the cluster.</p>
+<p><strong>Then</strong> Create a backup D to the default backup target.</p>
+<p><strong>Verify</strong> The backup D is completed.</p>
+<p><strong>Then</strong> Create a backup A to extra backup target A.</p>
+<p><strong>Verify</strong> The backup A is completed.</p>
+<p><strong>Then</strong> Delete the backup target A.</p>
+<p><strong>Verify</strong> Related backup volume and backup custom resources of the backup target A will be cleaned up.</p>
+<p><strong>Verify</strong> Backup volume and backup custom resources of the default backup target will not be affected.</p>
+<p><strong>Then</strong> Add the backup target A back.</p>
+<p><strong>Verify</strong> Related backup volume and backup custom resources of the backup target A will be synchronized correctly.</p>
+<h2 id="test-uninstall">Test Uninstall</h2>
+<p><strong>Given</strong> Longhorn cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Set up the default backup target and a backup target A.</p>
+<p><strong>And</strong> Create a volume A with the default backup target name</p>
+<p><strong>And</strong> Create a volume B with the backup target A name.</p>
+<p><strong>Then</strong> Create backups for the volume A and B, and wait for backups completion.</p>
+<p><strong>Then</strong> Uninstall Longhorn.</p>
+<p><strong>Verify</strong> URLs of backup targets are empty first.</p>
+<p><strong>Verify</strong> Backup targets are deleted successfully.</p>
+<p><strong>Verify</strong> Uninstall successfully.</p>
+<h2 id="test-upgrade">Test Upgrade</h2>
+<p><strong>Given</strong> Longhorn v1.7.x cluster with 3 worker nodes.</p>
+<p><strong>And</strong> Set up the default backup target.</p>
+<p><strong>And</strong> Create a volume and attach it, and create a backup A of the volume A, and wait for the backup completed.</p>
+<p><strong>And</strong> Create a backing image BI, and create a backup BBI of the backing image BI, and wait for the backup completed.</p>
+<p><strong>Then</strong> Upgrade Longhorn to v1.8.0</p>
+<p><strong>Verify</strong> The <code>default</code> backup target will not be deleted.</p>
+<p><strong>Verify</strong> The settings <code>backup-target</code>, <code>backup-target-credential-secret</code>, and <code>backupstore-poll-interval</code> are removed from global settings.</p>
+<p><strong>Verify</strong> The fields <code>Spec.BackupTargetName</code> of the volume A is the default backup target name <code>default</code>.</p>
+<p><strong>Verify</strong> The field <code>Status.BackupTarget</code> and labels <code>backup-target</code> of the backup A is the default backup target name <code>default</code>.</p>
+<p><strong>Verify</strong> The fields <code>Spec.BackupTargetName</code> and labels <code>backup-target</code> of the backup volume A is the default backup target name <code>default</code>, and <code>Spec.VolumeName</code> of the backup volume A is the name of the volume A.</p>
+<p><strong>Verify</strong> The fields <code>Spec.BackupTargetName</code> and labels of the backing image BI is the default backup target name <code>default</code>, and <code>Spec.BackingImage</code> of the backup BBI is the name of the backing image BI.</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.0/recurring-backup-job-interruptions.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.8.0/test-multiple-backup-stores.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

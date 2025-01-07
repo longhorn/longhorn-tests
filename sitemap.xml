@@ -126,6 +126,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.8.0/test-multiple-backup-stores/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/</loc>
