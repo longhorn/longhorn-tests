@@ -531,6 +531,7 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, volume_name):    # NOQA
     """
     Test backup status for unavailable replicas
@@ -1476,6 +1477,7 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
     wait_for_backup_volume(client, bv.name, backing_image)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_restore_inc(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     """
