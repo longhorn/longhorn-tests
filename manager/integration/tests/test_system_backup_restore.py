@@ -6,6 +6,7 @@ from common import volume_name # NOQA
 from common import core_api # NOQA
 
 from common import check_volume_data
+from common import check_volume_last_backup
 from common import cleanup_volume
 from common import create_and_check_volume
 from common import create_backup
@@ -257,6 +258,9 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
 
         backup_volume = find_backup_volume(client, volume_name)
         wait_for_backup_count(backup_volume, count)
+        check_volume_last_backup(client,
+                                 volume_name,
+                                 backup_volume.lastBackupName)
 
     create_system_backup_and_assert_volume_backup_count(1)
     create_system_backup_and_assert_volume_backup_count(1)
