@@ -4578,7 +4578,7 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
 
 def create_snapshot(longhorn_api_client, volume_name):
     volume = longhorn_api_client.by_id_volume(volume_name)
-    snap = volume.snapshotCreate()
+    snap = volume.snapshotCRCreate()
     snap_name = snap.name
 
     snapshot_created = False
@@ -4588,6 +4588,7 @@ def create_snapshot(longhorn_api_client, volume_name):
         for vs in snapshots.data:
             if vs.name == snap_name:
                 snapshot_created = True
+                snap = vs
                 break
         if snapshot_created is True:
             break
