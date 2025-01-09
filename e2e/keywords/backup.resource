@@ -9,6 +9,10 @@ Create backup ${backup_id} for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_backup    ${volume_name}    ${backup_id}
 
+Create backup ${backup_id} for volume ${volume_id} without waiting for completion
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_backup    ${volume_name}    ${backup_id}    wait=False
+
 Create backup ${backup_id} for ${workload_kind} ${workload_id} volume
     ${backup_id}=  Convert To String  ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
