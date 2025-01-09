@@ -989,7 +989,7 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     vol = client.by_id_volume(vol.name)
     # create new snapshot to avoid the case the volume only has 1
     # snapshot so the snapshot can not deleted
-    vol.snapshotCreate()
+    vol.snapshotCRCreate()
     snapshot_content = get_volumesnapshotcontent(csivolsnap["metadata"]["uid"])
     snap_name = snapshot_content["status"]["snapshotHandle"]
 
