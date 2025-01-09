@@ -1230,19 +1230,19 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     write_pod_volume_random_data(core_api, pod_name,
                                  data_path1, DATA_SIZE_IN_MB_1)
     data_md5sum1 = get_pod_data_md5sum(core_api, pod_name, data_path1)
-    snap1 = volume.snapshotCreate()
+    snap1 = create_snapshot(client, volume_name)
 
     data_path2 = "/data/file2"
     write_pod_volume_random_data(core_api, pod_name,
                                  data_path2, DATA_SIZE_IN_MB_1)
     data_md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
-    snap2 = volume.snapshotCreate()
+    snap2 = create_snapshot(client, volume_name)
 
     data_path3 = "/data/file3"
     write_pod_volume_random_data(core_api, pod_name,
                                  data_path3, DATA_SIZE_IN_MB_1)
     data_md5sum3 = get_pod_data_md5sum(core_api, pod_name, data_path3)
-    snap3 = volume.snapshotCreate()
+    snap3 = create_snapshot(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
     host_id = get_self_host_id()
@@ -1288,7 +1288,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     res_data_md5sum4 = get_pod_data_md5sum(core_api, pod_name, data_path4)
     assert data_md5sum4 == res_data_md5sum4
 
-    snap4 = volume.snapshotCreate()
+    snap4 = create_snapshot(client, volume_name)
 
     snapshots = volume.snapshotList()
     for snap in snapshots:

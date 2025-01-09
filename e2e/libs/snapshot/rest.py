@@ -16,7 +16,7 @@ class Rest(Base):
     def create(self, volume_name, snapshot_id, waiting):
         logging(f"Creating volume {volume_name} snapshot {snapshot_id}")
         volume = self.volume.get(volume_name)
-        snapshot = volume.snapshotCreate()
+        snapshot = volume.snapshotCRCreate()
         snap_name = snapshot.name
 
         if not waiting:
@@ -28,6 +28,7 @@ class Rest(Base):
             for vs in snapshots:
                 if vs.name == snap_name:
                     snapshot_created = True
+                    snapshot = vs 
                     break
             if snapshot_created is True:
                 break
