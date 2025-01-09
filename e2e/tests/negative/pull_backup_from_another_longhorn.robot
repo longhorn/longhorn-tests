@@ -21,6 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Pull Backup Created By Another Longhorn System
+    [Tags]    uninstall
     [Documentation]    Pull backup created by another Longhorn system
     ...    1. Install test version of Longhorn.
     ...    2. Create volume, write data, and take backup.
@@ -44,15 +45,15 @@ Pull Backup Created By Another Longhorn System
     ...       - CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE (if not using master-head)
     ...       - CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE (if not using master-head)
     ...       - LONGHORN_STABLE_VERSION (ex:v1.6.3)
-    Given Set setting deleting-confirmation-flag to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 300 MB to volume 0
     When Create backup 0 for volume 0
     Then Verify backup list contains no error for volume 0
     And Verify backup list contains backup 0 of volume 0
-    Then Uninstall Longhorn
+    Then Set setting deleting-confirmation-flag to true
+    And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     # Install current version then pull backup and verify data
@@ -66,12 +67,12 @@ Pull Backup Created By Another Longhorn System
     And Attach volume 1
     And Wait for volume 1 healthy
     Then Check volume 1 data is backup 0 created in another cluster
-    Then Uninstall Longhorn
+    And Set setting deleting-confirmation-flag to true
+    And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     # Install previous version and create backup
     Then Install Longhorn stable version
-    And Set setting deleting-confirmation-flag to true
     And Set backupstore
     And Set up v2 environment
     And Create volume 2 with    dataEngine=${DATA_ENGINE}
@@ -81,7 +82,8 @@ Pull Backup Created By Another Longhorn System
     When Create backup 1 for volume 2
     Then Verify backup list contains no error for volume 2
     And Verify backup list contains backup 1 of volume 2
-    Then Uninstall Longhorn stable version
+    Then Set setting deleting-confirmation-flag to true
+    And Uninstall Longhorn stable version
     And Check Longhorn CRD removed
 
      # Install current version then pull backup and verify data

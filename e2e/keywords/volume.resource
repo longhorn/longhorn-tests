@@ -95,19 +95,23 @@ Delete volume ${volume_id}
 
 Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    write_volume_random_data   ${volume_name}    2048
+    ${checksum} =    write_volume_random_data   ${volume_name}    2048
+    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write ${size} GB data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    write_volume_random_data   ${volume_name}    ${${size} * 1024}
+    ${checksum} =    write_volume_random_data   ${volume_name}    ${${size} * 1024}
+    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write data ${data_id} to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    write_volume_random_data   ${volume_name}    2048    ${data_id}
+    ${checksum} =    write_volume_random_data   ${volume_name}    2048    ${data_id}
+    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write data ${data_id} ${size} MB to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    write_volume_random_data   ${volume_name}    ${size}    ${data_id}
+    ${checksum} =    write_volume_random_data   ${volume_name}    ${size}    ${data_id}
+    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -120,6 +124,10 @@ Delete volume ${volume_id} replica on ${replica_locality}
 Delete ${count} replicas of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replicas    ${volume_name}    ${count}
+
+Wait for volume ${volume_id} to be created
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_to_be_created    ${volume_name}
 
 Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -136,6 +144,10 @@ Wait for volume ${volume_id} attached and unknown
 Wait for volume ${volume_id} detached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_detached    ${volume_name}
+
+Wait for volume ${volume_id} deleted
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_deleted    ${volume_name}
 
 Assert volume ${volume_id} remains detached for at least ${period} seconds
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -202,11 +214,15 @@ Wait for volume ${volume_id} to stay on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_volume_migration_to_rollback    ${volume_name}    ${node_name}
 
+Wait for volume ${volume_id} restoration to complete
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_restoration_to_complete    ${volume_name}
+
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
     ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
-    wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
+    wait_for_volume_restoration_to_complete    ${volume_name}    ${backup_name}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} start
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -323,7 +339,9 @@ Volume ${volume_id} should have replicas running on node ${node_id} and no addit
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    check_data_checksum    ${volume_name}
+    ${actual_checksum} =    get_volume_checksum    ${volume_name}
+    ${expected_checksum} =    Get From List    ${volume_checksums}    ${volume_id}
+    Should Be Equal    ${actual_checksum}    ${expected_checksum}
 
 Check volume ${volume_id} data is data ${data_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -395,7 +413,7 @@ Create DR volume ${volume_id} from backup ${backup_id} in another cluster
 Wait for volume ${volume_id} restoration from backup ${backup_id} in another cluster completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_name} =    get_backup_name_from_backup_list    ${backups_before_uninstall}    ${backup_id}
-    wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
+    wait_for_volume_restoration_to_complete    ${volume_name}    ${backup_name}
 
 Volume ${volume_id} setting ${setting_name} should be ${setting_value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

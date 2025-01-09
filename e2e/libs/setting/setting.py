@@ -32,7 +32,9 @@ class Setting:
                     logging(f"Trying to update setting {key} to {value} ... ({i})")
                     setting = get_longhorn_client().by_id_setting(key)
                     get_longhorn_client().update(setting, value=value)
-                    break
+                    if self.get_setting(key) == value:
+                        logging(f"Updated setting {key} to {value}")
+                        return
                 except Exception as e:
                     logging(e)
                 time.sleep(self.retry_interval)
@@ -40,6 +42,9 @@ class Setting:
             logging(f"Trying to update setting {key} to {value} ...")
             setting = get_longhorn_client().by_id_setting(key)
             get_longhorn_client().update(setting, value=value)
+            return
+
+        assert False, f"Failed to update setting {key} to {value} ... {setting}"
 
     def get_setting(self, key):
         return get_longhorn_client().by_id_setting(key).value
