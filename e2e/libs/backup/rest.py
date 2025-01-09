@@ -1,6 +1,7 @@
 import time
 
 from backup.base import Base
+from backup.crd import CRD
 
 from snapshot import Snapshot as RestSnapshot
 
@@ -19,21 +20,26 @@ class Rest(Base):
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, backup_id):
+    def create(self, volume_name, backup_id, wait):
         # create snapshot
         snapshot = self.snapshot.create(volume_name, backup_id)
 
         volume = self.volume.get(volume_name)
         volume.snapshotBackup(name=snapshot.name)
+
+        if str(wait) == "False":
+            return
+
         # after backup request we need to wait for completion of the backup
         # since the backup.cfg will only be available once the backup operation
         # has been completed
         self.wait_for_backup_completed(volume_name, snapshot.name)
 
         backup = self.get_by_snapshot(volume_name, snapshot.name)
+        logging(f"Created backup {backup.name} from snapshot {snapshot.name}")
 
         for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} lastBackup updated ... ({i})")
+            logging(f"Waiting for volume {volume_name} lastBackup updated to {backup.name} ... ({i})")
             volume = self.volume.get(volume_name)
             if volume.lastBackup == backup.name:
                 break
@@ -173,7 +179,8 @@ class Rest(Base):
 
     def wait_for_backup_volume_delete(self, name):
         retry_count, retry_interval = get_retry_count_and_interval()
-        for _ in range(retry_count):
+        for i in range(retry_count):
+            logging(f"Waiting for backup volume {name} to be deleted ... ({i})")
             bvs = get_longhorn_client().list_backupVolume()
             found = False
             for bv in bvs:
@@ -204,11 +211,15 @@ class Rest(Base):
 
         # we delete the whole backup volume, which skips block gc
         for backup_volume in backup_volumes:
+            logging(f"Deleting backup volume {backup_volume.name}")
             get_longhorn_client().delete(backup_volume)
             self.wait_for_backup_volume_delete(backup_volume.name)
 
         backup_volumes = get_longhorn_client().list_backupVolume()
         assert backup_volumes.data == []
+
+    def cleanup_backups(self):
+        return CRD().cleanup_backups()
 
     def cleanup_system_backups(self):
 

@@ -54,6 +54,9 @@ class Volume(Base):
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return self.volume.wait_for_restore_required_status(volume_name, restore_required_state)
 
+    def wait_for_volume_to_be_created(self, volume_name):
+        self.volume.wait_for_volume_to_be_created(volume_name)
+
     def wait_for_volume_attached(self, volume_name):
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
         self.volume.wait_for_volume_state(volume_name, "attached")
@@ -84,8 +87,11 @@ class Volume(Base):
     def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
         self.volume.wait_for_volume_migration_to_rollback(volume_name, node_name)
 
-    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
-        self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
+    def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
+        if backup_name:
+            self.volume.wait_for_volume_restoration_to_complete(volume_name, backup_name)
+        else:
+            self.volume.wait_for_restore_required_status(volume_name, False)
 
     def wait_for_volume_restoration_start(self, volume_name, backup_name):
         self.volume.wait_for_volume_restoration_start(volume_name, backup_name)

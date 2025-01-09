@@ -2,10 +2,13 @@ from abc import ABC, abstractmethod
 import hashlib
 import os
 import re
+import time
 
 from kubernetes import client
 
 from utility.utility import get_longhorn_client
+from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -38,6 +41,7 @@ class Base(ABC):
     DEFAULT_BACKUPTARGET = "default"
 
     def __init__(self):
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.core_api = client.CoreV1Api()
         backupstore = os.environ.get('LONGHORN_BACKUPSTORE')
 
@@ -111,10 +115,18 @@ class Base(ABC):
                            url="", credential_secret="", poll_interval=300):
         backup_target = get_longhorn_client().by_id_backupTarget(
                             self.DEFAULT_BACKUPTARGET)
-        backup_target.backupTargetUpdate(name=self.DEFAULT_BACKUPTARGET,
-                                         backupTargetURL=url,
-                                         credentialSecret=credential_secret,
-                                         pollInterval=str(poll_interval))
+        for i in range(self.retry_count):
+            logging(f"Updating backupstore to {url}${credential_secret} ... ({i})")
+            try:
+                backup_target.backupTargetUpdate(name=self.DEFAULT_BACKUPTARGET,
+                                                 backupTargetURL=url,
+                                                 credentialSecret=credential_secret,
+                                                 pollInterval=str(poll_interval))
+                return
+            except Exception as e:
+                logging(f"Failed to update backupstore to {url}${credential_secret}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to update backupstore to {url}${credential_secret}"
 
     @abstractmethod
     def get_backup_volume_prefix(self, volume_name):

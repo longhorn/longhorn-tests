@@ -68,6 +68,9 @@ class Rest(Base):
     def delete(self, volume_name):
         return NotImplemented
 
+    def wait_for_volume_to_be_created(self, volume_name):
+        return NotImplemented
+
     def wait_for_volume_state(self, volume_name, desired_state):
         for i in range(self.retry_count):
             volume = self.get(volume_name)
@@ -88,7 +91,7 @@ class Rest(Base):
     def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
         return NotImplemented
 
-    def wait_for_volume_restoration_completed(self, volume_name):
+    def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         return NotImplemented
 
     def wait_for_volume_restoration_start(self, volume_name):
