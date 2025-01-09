@@ -73,6 +73,20 @@ export HOST_PROVIDER=aws
 export ARCH=amd64
 ```
 
+1. To run uninstallation related test cases, export the following environment variables so the test code knows how to re-install Longhorn after the test cases are completed:
+
+```
+export LONGHORN_INSTALL_METHOD=manifest
+export LONGHORN_REPO_BRANCH=master
+export CUSTOM_LONGHORN_MANAGER_IMAGE=master-head
+export CUSTOM_LONGHORN_ENGINE_IMAGE=master-head
+export CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=master-head
+export CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=master-head
+export CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=master-head
+export LONGHORN_STABLE_VERSION=master-head
+export IS_INSTALL_STABLE_VERSION=true
+```
+
 1. Prepare test environment and run the test:
 ```
 cd e2e

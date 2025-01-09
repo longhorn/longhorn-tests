@@ -20,6 +20,7 @@ Library             ../libs/keywords/engine_image_keywords.py
 Library             ../libs/keywords/setting_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/backup_keywords.py
+Library             ../libs/keywords/system_backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 
@@ -69,6 +70,8 @@ Cleanup test resources
     cleanup_volumes
     cleanup_storageclasses
     cleanup_backups
+    cleanup_system_backups
+    cleanup_system_restores
     cleanup_disks
     cleanup_backing_images
     cleanup_engine_images

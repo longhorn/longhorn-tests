@@ -185,7 +185,7 @@ class Node:
 
         raise AssertionError(f"Updating node {node_name} failed")
 
-    def set_node_scheduling(self, node_name, allowScheduling=True, retry=False):
+    def set_node_scheduling(self, node_name, allowScheduling=True, retry=True):
         node = get_longhorn_client().by_id_node(node_name)
 
         if node.tags is None:

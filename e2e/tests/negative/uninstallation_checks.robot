@@ -21,6 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Uninstallation Checks
+    [Tags]    uninstall
     [Documentation]    Uninstallation Checks
     ...    Prerequisites
     ...    - Have a setup of Longhorn installed on a kubernetes cluster.
@@ -45,8 +46,7 @@ Uninstallation Checks
     ...       - CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE (if not using master-head)
     ...       - CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE (if not using master-head)
 
-    Given Set setting deleting-confirmation-flag to true
-    And Create volume 0 with    dataEngine=v1
+    Given Create volume 0 with    dataEngine=v1
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
@@ -61,7 +61,8 @@ Uninstallation Checks
     And Verify backup list contains backup 0 of volume 0
     And Verify backup list contains backup 1 of volume 1
 
-    Then Uninstall Longhorn
+    Then Set setting deleting-confirmation-flag to true
+    And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     # Assume this is another Longhorn cluster

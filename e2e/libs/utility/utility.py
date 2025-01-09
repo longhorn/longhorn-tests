@@ -230,8 +230,12 @@ def set_annotation(group, version, namespace, plural, name, annotation_key, anno
 
 
 def get_annotation_value(group, version, namespace, plural, name, annotation_key):
-    cr = get_cr(group, version, namespace, plural, name)
-    return cr['metadata']['annotations'].get(annotation_key)
+    try:
+        cr = get_cr(group, version, namespace, plural, name)
+        return cr['metadata']['annotations'].get(annotation_key)
+    except Exception as e:
+        logging(f"Failed to get annotation {annotation_key} from {plural} {name} in {namespace}: {e}")
+        return ""
 
 
 def wait_delete_ns(name):

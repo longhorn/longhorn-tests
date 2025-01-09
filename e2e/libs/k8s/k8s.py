@@ -10,6 +10,7 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
 from utility.utility import subprocess_exec_cmd_with_timeout
+from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
 
 from workload.constant import IMAGE_UBUNTU
 from workload.pod import create_pod
@@ -102,7 +103,7 @@ def check_instance_manager_pdb_not_exist(instance_manager):
 def wait_namespaced_job_complete(job_label, namespace):
     retry_count, retry_interval = get_retry_count_and_interval()
     api = client.BatchV1Api()
-    for i in range(retry_count):
+    for i in range(LONGHORN_UNINSTALL_TIMEOUT):
         target_job = api.list_namespaced_job(namespace=namespace, label_selector=job_label)
         if len(target_job.items) > 0:
             running_jobs = []
@@ -112,16 +113,17 @@ def wait_namespaced_job_complete(job_label, namespace):
                     for condition in conditions:
                         logging(f"{condition.type}  {condition.status}")
                         if condition.type == "Complete" and condition.status == "True":
-                            print(f"Job {job.metadata.name} is complete.")
+                            logging(f"Job {job.metadata.name} is complete.")
                             running_jobs.append(job)
                             break
             if len(running_jobs) == len(target_job.items):
+                logging(f"Job is complete: {get_pod_logs(namespace, job_label)}")
                 return
 
         logging(f"Waiting for job with label {job_label} complete, retry ({i}) ...")
         time.sleep(retry_interval)
 
-    assert False, 'Job not complete'
+    assert False, f"Job not complete: {get_pod_logs(namespace, job_label)}"
 
 def wait_namespace_terminated(namespace):
     retry_count, retry_interval = get_retry_count_and_interval()
@@ -159,7 +161,6 @@ def get_pod_logs(namespace, pod_label):
     except client.exceptions.ApiException as e:
         logging(f"Exception when calling CoreV1Api: {e}")
 
-    logging(f'{logs}')
     return logs
 
 def list_namespace_pods(namespace):
