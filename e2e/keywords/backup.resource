@@ -6,14 +6,19 @@ Library    ../libs/keywords/backup_keywords.py
 
 *** Keywords ***
 Create backup ${backup_id} for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_backup    ${volume_name}    ${backup_id}
+    create_backup    ${volume_name}    ${backup_id}    &{config}
 
 Create backup ${backup_id} for ${workload_kind} ${workload_id} volume
     ${backup_id}=  Convert To String  ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name}=    get_workload_volume_name    ${workload_name}
     create_backup  ${volume_name}  ${backup_id}
+
+Verify backup list contains errors for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    verify_errors    ${volume_name}
 
 Verify backup list contains no error for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
