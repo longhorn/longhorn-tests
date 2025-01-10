@@ -46,7 +46,8 @@ from common import (  # NOQA
     wait_for_volume_degraded, write_volume_dev_random_mb_data,
     get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
     SETTING_DEGRADED_AVAILABILITY,
-    delete_replica_on_test_node
+    delete_replica_on_test_node,
+    DATA_ENGINE, SETTING_V2_DATA_ENGINE
 )
 
 from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
@@ -108,7 +109,8 @@ def wait_for_longhorn_node_ready():
     return client, node
 
 
-def test_setting_toleration():
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_toleration(client):  # NOQA
     """
     Test toleration setting
 
@@ -204,7 +206,8 @@ def test_setting_toleration():
     cleanup_volume(client, volume)
 
 
-def test_setting_toleration_extra(core_api, apps_api):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_toleration_extra(client, core_api, apps_api):  # NOQA
     """
     Steps:
     1. Set Kubernetes Taint Toleration to:
@@ -485,7 +488,8 @@ def guaranteed_instance_manager_cpu_setting_check(  # NOQA
                 assert (not pod.spec.containers[0].resources.requests)
 
 
-def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_class, volume_name):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_priority_class(client, core_api, apps_api, scheduling_api, priority_class, volume_name):  # NOQA
     """
     Test that the Priority Class setting is validated and utilized correctly.
 
@@ -943,7 +947,8 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
         restore_volume_names.append(name)
 
         client.create_volume(name=name, numberOfReplicas=1,
-                             fromBackup=backup.url, standby=is_DR_volumes)
+                             fromBackup=backup.url, standby=is_DR_volumes,
+                             dataEngine=DATA_ENGINE)
 
     is_case_tested = False
     for i in range(RETRY_COUNTS):
@@ -1006,6 +1011,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
         wait_for_volume_restoration_completed(client, restore_volume_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_setting_concurrent_volume_backup_restore_limit(set_random_backupstore, client, volume_name):  # NOQA
     """
 
@@ -1024,6 +1030,7 @@ def test_setting_concurrent_volume_backup_restore_limit(set_random_backupstore, 
     )
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_volumes(set_random_backupstore, client, volume_name):  # NOQA
     """
 
@@ -1137,7 +1144,8 @@ def validate_settings(core_api, client, setting_names, setting_values):  # NOQA
         assert wait_for_setting_updated(client, name, value)
 
 
-def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_replica_count_update_via_configmap(client, core_api, request):  # NOQA
     """
     Test the default-replica-count setting via configmap
     1. Get default-replica-count value
@@ -1179,7 +1187,8 @@ def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
                          old_setting.definition.default)
 
 
-def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_backup_target_update_via_configmap(client, core_api, request):  # NOQA
     """
     Test the backup target setting via configmap
     1. Initialize longhorn-default-setting configmap
@@ -1237,7 +1246,8 @@ def wait_backup_target_url_updated(client, target): # NOQA
     assert updated
 
 
-def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_update_with_invalid_value_via_configmap(client, core_api, request):  # NOQA
     """
     Test the default settings update with invalid value via configmap
     1. Create an attached volume
@@ -1301,7 +1311,8 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     cleanup_volume_by_name(client, vol_name)
 
 
-def test_setting_v1_data_engine(client, request): # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_data_engine(client, request): # NOQA
     """
     Test that the v1 data engine setting works correctly.
     1. Create a volume and attach it.
@@ -1312,16 +1323,19 @@ def test_setting_v1_data_engine(client, request): # NOQA
     5. set v1 data engine setting to true. The setting should be accepted.
     6. Attach the volume.
     """
-
-    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+    if DATA_ENGINE == "v1":
+        setting_data_engine = SETTING_V1_DATA_ENGINE
+    elif DATA_ENGINE == "v2":
+        setting_data_engine = SETTING_V2_DATA_ENGINE
+    setting = client.by_id_setting(setting_data_engine)
 
     # Step 1
-    volume_name = "test-v1-vol"  # NOQA
+    volume_name = "test-{0}-vol".format(DATA_ENGINE)  # NOQA
     volume = create_and_check_volume(client, volume_name)
 
     def finalizer():
         cleanup_volume(client, volume)
-        update_setting(client, SETTING_V1_DATA_ENGINE, "true")
+        update_setting(client, setting_data_engine, "true")
 
     request.addfinalizer(finalizer)
 
@@ -1331,15 +1345,15 @@ def test_setting_v1_data_engine(client, request): # NOQA
     # Step 2
     with pytest.raises(Exception) as e:
         client.update(setting, value="false")
-    assert 'cannot apply v1-data-engine setting to Longhorn workloads when ' \
-        'there are attached v1 volumes' in str(e.value)
+    assert 'cannot apply {0}-data-engine setting to Longhorn workloads when ' \
+        'there are attached {0} volumes'.format(DATA_ENGINE) in str(e.value)
 
     # Step 3
     volume.detach()
     wait_for_volume_detached(client, volume_name)
 
     # Step 4
-    update_setting(client, SETTING_V1_DATA_ENGINE, "false")
+    update_setting(client, setting_data_engine, "false")
 
     count = wait_for_instance_manager_count(client, 0)
     assert count == 0
@@ -1350,7 +1364,7 @@ def test_setting_v1_data_engine(client, request): # NOQA
     assert 'volume[key]=detached' in str(e.value)
 
     # Step 5
-    update_setting(client, SETTING_V1_DATA_ENGINE, "true")
+    update_setting(client, setting_data_engine, "true")
     nodes = client.list_node()
     count = wait_for_instance_manager_count(client, len(nodes))
     assert count == len(nodes)
