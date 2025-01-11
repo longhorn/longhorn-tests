@@ -34,7 +34,7 @@ hljs.highlightAll();
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="tests.test_rwx.test_encrypted_rwx_volume"><code class="name flex">
-<span>def <span class="ident">test_encrypted_rwx_volume</span></span>(<span>core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc)</span>
+<span>def <span class="ident">test_encrypted_rwx_volume</span></span>(<span>client, core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test creating encrypted rwx volume and use the secret in
@@ -63,7 +63,7 @@ volume.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_delete_share_manager_pod"><code class="name flex">
-<span>def <span class="ident">test_rwx_delete_share_manager_pod</span></span>(<span>core_api, statefulset, storage_class)</span>
+<span>def <span class="ident">test_rwx_delete_share_manager_pod</span></span>(<span>client, core_api, statefulset, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test moving of Share manager pod from one node to another.</p>
@@ -81,7 +81,7 @@ and the volume should remain attached.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_deployment_with_multi_pods"><code class="name flex">
-<span>def <span class="ident">test_rwx_deployment_with_multi_pods</span></span>(<span>core_api, pvc, make_deployment_with_pvc, storage_class)</span>
+<span>def <span class="ident">test_rwx_deployment_with_multi_pods</span></span>(<span>client, core_api, pvc, make_deployment_with_pvc, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test deployment of 2 pods with same PVC.</p>
@@ -96,7 +96,7 @@ volume.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc"><code class="name flex">
-<span>def <span class="ident">test_rwx_multi_statefulset_with_same_pvc</span></span>(<span>core_api, pvc, statefulset, pod, storage_class)</span>
+<span>def <span class="ident">test_rwx_multi_statefulset_with_same_pvc</span></span>(<span>client, core_api, pvc, statefulset, pod, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test writing of data into a volume from multiple pods using same PVC</p>
@@ -158,7 +158,7 @@ test steps."</p>
 - 1.5 Gi of data is successfully written to the expanded volume.</p></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_parallel_writing"><code class="name flex">
-<span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>core_api, statefulset, pod, storage_class)</span>
+<span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>client, core_api, statefulset, pod, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test parallel writing of data</p>
@@ -176,7 +176,7 @@ writing 500 MB data in second statefulSet <code>file 2</code>.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_statefulset_scale_down_up"><code class="name flex">
-<span>def <span class="ident">test_rwx_statefulset_scale_down_up</span></span>(<span>core_api, statefulset, storage_class)</span>
+<span>def <span class="ident">test_rwx_statefulset_scale_down_up</span></span>(<span>client, core_api, statefulset, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test Scaling up and down of pods attached to rwx volume.</p>
@@ -195,7 +195,7 @@ detached.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_volume_mount_options"><code class="name flex">
-<span>def <span class="ident">test_rwx_volume_mount_options</span></span>(<span>core_api, storage_class, pvc, make_deployment_with_pvc)</span>
+<span>def <span class="ident">test_rwx_volume_mount_options</span></span>(<span>client, core_api, storage_class, pvc, make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test creating rwx volume with custom mount options
@@ -207,7 +207,7 @@ non longhorn-system namespace.</p>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_rwx_with_statefulset_multi_pods"><code class="name flex">
-<span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>core_api, statefulset, storage_class)</span>
+<span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>client, core_api, statefulset, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test creation of share manager pod and rwx volumes from 2 pods.</p>
