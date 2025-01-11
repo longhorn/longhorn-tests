@@ -160,7 +160,7 @@ backing image disk map</li>
 </ol></div>
 </dd>
 <dt id="tests.test_settings.test_setting_backup_target_update_via_configmap"><code class="name flex">
-<span>def <span class="ident">test_setting_backup_target_update_via_configmap</span></span>(<span>core_api, request)</span>
+<span>def <span class="ident">test_setting_backup_target_update_via_configmap</span></span>(<span>client, core_api, request)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the backup target setting via configmap
@@ -227,8 +227,21 @@ should not effect DR volumes</p>
 setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test</p>
 <p>Then Number of restoring volumes can exceed the setting value.</p></div>
 </dd>
+<dt id="tests.test_settings.test_setting_data_engine"><code class="name flex">
+<span>def <span class="ident">test_setting_data_engine</span></span>(<span>client, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that the v1 data engine setting works correctly.
+1. Create a volume and attach it.
+2. Set v1 data engine setting to false. The setting should be rejected.
+3. Detach the volume.
+4. Set v1 data engine setting to false again. The setting should be
+accepted. Then, attach the volume. The volume is unable to attach.
+5. set v1 data engine setting to true. The setting should be accepted.
+6. Attach the volume.</p></div>
+</dd>
 <dt id="tests.test_settings.test_setting_priority_class"><code class="name flex">
-<span>def <span class="ident">test_setting_priority_class</span></span>(<span>core_api, apps_api, scheduling_api, priority_class, volume_name)</span>
+<span>def <span class="ident">test_setting_priority_class</span></span>(<span>client, core_api, apps_api, scheduling_api, priority_class, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test that the Priority Class setting is validated and utilized correctly.</p>
@@ -258,7 +271,7 @@ Priority Class.</li>
 deployer</p></div>
 </dd>
 <dt id="tests.test_settings.test_setting_replica_count_update_via_configmap"><code class="name flex">
-<span>def <span class="ident">test_setting_replica_count_update_via_configmap</span></span>(<span>core_api, request)</span>
+<span>def <span class="ident">test_setting_replica_count_update_via_configmap</span></span>(<span>client, core_api, request)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the default-replica-count setting via configmap
@@ -271,7 +284,7 @@ default-replica-count value
 6. Update default-replica-count setting CR with the old value</p></div>
 </dd>
 <dt id="tests.test_settings.test_setting_toleration"><code class="name flex">
-<span>def <span class="ident">test_setting_toleration</span></span>(<span>)</span>
+<span>def <span class="ident">test_setting_toleration</span></span>(<span>client)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test toleration setting</p>
@@ -299,7 +312,7 @@ toleration.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_settings.test_setting_toleration_extra"><code class="name flex">
-<span>def <span class="ident">test_setting_toleration_extra</span></span>(<span>core_api, apps_api)</span>
+<span>def <span class="ident">test_setting_toleration_extra</span></span>(<span>client, core_api, apps_api)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Steps:
@@ -330,7 +343,7 @@ don't have toleration.
 deployer</p></div>
 </dd>
 <dt id="tests.test_settings.test_setting_update_with_invalid_value_via_configmap"><code class="name flex">
-<span>def <span class="ident">test_setting_update_with_invalid_value_via_configmap</span></span>(<span>core_api, request)</span>
+<span>def <span class="ident">test_setting_update_with_invalid_value_via_configmap</span></span>(<span>client, core_api, request)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the default settings update with invalid value via configmap
@@ -341,19 +354,6 @@ valid and invalid settings
 The invalid settings SETTING_TAINT_TOLERATION will be updated
 4. The changes will be applied once the volumes are detached. (To Do)
 5. Validate the default settings values.</p></div>
-</dd>
-<dt id="tests.test_settings.test_setting_v1_data_engine"><code class="name flex">
-<span>def <span class="ident">test_setting_v1_data_engine</span></span>(<span>client, request)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Test that the v1 data engine setting works correctly.
-1. Create a volume and attach it.
-2. Set v1 data engine setting to false. The setting should be rejected.
-3. Detach the volume.
-4. Set v1 data engine setting to false again. The setting should be
-accepted. Then, attach the volume. The volume is unable to attach.
-5. set v1 data engine setting to true. The setting should be accepted.
-6. Attach the volume.</p></div>
 </dd>
 <dt id="tests.test_settings.update_settings_via_configmap"><code class="name flex">
 <span>def <span class="ident">update_settings_via_configmap</span></span>(<span>core_api, client, setting_names, setting_values, request, configmap_name='longhorn-default-setting', data_yaml_name='default-setting.yaml')</span>
@@ -428,12 +428,12 @@ accepted. Then, attach the volume. The volume is unable to attach.
 <li><code><a title="tests.test_settings.test_setting_concurrent_rebuild_limit" href="#tests.test_settings.test_setting_concurrent_rebuild_limit">test_setting_concurrent_rebuild_limit</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_concurrent_volume_backup_restore_limit" href="#tests.test_settings.test_setting_concurrent_volume_backup_restore_limit">test_setting_concurrent_volume_backup_restore_limit</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_volumes" href="#tests.test_settings.test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_volumes">test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_volumes</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_data_engine" href="#tests.test_settings.test_setting_data_engine">test_setting_data_engine</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_priority_class" href="#tests.test_settings.test_setting_priority_class">test_setting_priority_class</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_replica_count_update_via_configmap" href="#tests.test_settings.test_setting_replica_count_update_via_configmap">test_setting_replica_count_update_via_configmap</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration" href="#tests.test_settings.test_setting_toleration">test_setting_toleration</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration_extra" href="#tests.test_settings.test_setting_toleration_extra">test_setting_toleration_extra</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_update_with_invalid_value_via_configmap" href="#tests.test_settings.test_setting_update_with_invalid_value_via_configmap">test_setting_update_with_invalid_value_via_configmap</a></code></li>
-<li><code><a title="tests.test_settings.test_setting_v1_data_engine" href="#tests.test_settings.test_setting_v1_data_engine">test_setting_v1_data_engine</a></code></li>
 <li><code><a title="tests.test_settings.update_settings_via_configmap" href="#tests.test_settings.update_settings_via_configmap">update_settings_via_configmap</a></code></li>
 <li><code><a title="tests.test_settings.validate_settings" href="#tests.test_settings.validate_settings">validate_settings</a></code></li>
 <li><code><a title="tests.test_settings.wait_backup_target_url_updated" href="#tests.test_settings.wait_backup_target_url_updated">wait_backup_target_url_updated</a></code></li>
