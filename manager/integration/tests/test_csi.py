@@ -273,6 +273,7 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
                                    pod_manifest, False)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secret, pvc, pod_manifest):  # NOQA
     """
@@ -298,12 +299,14 @@ def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secr
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = 'longhorn-crypto'  # NOQA
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
     storage_class['parameters']['encrypted'] = 'true'
+    storage_class['parameters']['dataEngine'] = DATA_ENGINE
     create_storage_class(storage_class)
 
     create_and_verify_block_volume(client, core_api, storage_class, pvc,
                                    pod_manifest, False)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_encrypted_migratable_block_volume(client, core_api, storage_class, crypto_secret, pvc, pod_manifest):  # NOQA
     """
@@ -332,6 +335,7 @@ def test_csi_encrypted_migratable_block_volume(client, core_api, storage_class, 
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
     storage_class['parameters']['migratable'] = 'true'
     storage_class['parameters']['encrypted'] = 'true'
+    storage_class['parameters']['dataEngine'] = DATA_ENGINE
     create_storage_class(storage_class)
 
     create_and_verify_block_volume(client, core_api, storage_class, pvc,
