@@ -54,6 +54,14 @@ class Rest(Base):
     def attach(self, volume_name, node_name, disable_frontend):
         return NotImplemented
 
+    def is_attached_to(self, volume_name, node_name):
+        logging(f"Checking volume {volume_name} is attached to node {node_name}")
+        v = self.get(volume_name)
+        for attachment in v.volumeAttachment.attachments.values():
+            if attachment.nodeID == node_name:
+                return True
+        return False
+
     def detach(self, volume_name, node_name):
         return NotImplemented
 

@@ -27,6 +27,9 @@ class Volume(Base):
     def attach(self, volume_name, node_name, disable_frontend):
         return self.volume.attach(volume_name, node_name, disable_frontend)
 
+    def is_attached_to(self, volume_name, node_name):
+        return self.volume.is_attached_to(volume_name, node_name)
+
     def detach(self, volume_name, node_name):
         return self.volume.detach(volume_name, node_name)
 

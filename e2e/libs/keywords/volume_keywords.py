@@ -45,6 +45,9 @@ class volume_keywords:
         logging(f'Attaching volume {volume_name} to node {node_name}')
         self.volume.attach(volume_name, node_name, disable_frontend=False)
 
+    def is_attached_to(self, volume_name, node_name):
+        return self.volume.is_attached_to(volume_name, node_name)
+
     def attach_volume_in_maintenance_mode(self, volume_name, node_name=None):
         if not node_name:
             node_name = self.node.get_node_by_index(0)

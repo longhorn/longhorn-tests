@@ -40,7 +40,7 @@ def write_data_into_pod(pod_name_and_data_path):
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_with_statefulset_multi_pods(core_api, statefulset, storage_class):  # NOQA
+def test_rwx_with_statefulset_multi_pods(client, core_api, statefulset, storage_class):  # NOQA
     """
     Test creation of share manager pod and rwx volumes from 2 pods.
 
@@ -107,7 +107,7 @@ def test_rwx_with_statefulset_multi_pods(core_api, statefulset, storage_class): 
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod, storage_class):  # NOQA
+def test_rwx_multi_statefulset_with_same_pvc(client, core_api, pvc, statefulset, pod, storage_class):  # NOQA
     """
     Test writing of data into a volume from multiple pods using same PVC
 
@@ -172,7 +172,7 @@ def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod, st
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_parallel_writing(core_api, statefulset, pod, storage_class):  # NOQA
+def test_rwx_parallel_writing(client, core_api, statefulset, pod, storage_class):  # NOQA
     """
     Test parallel writing of data
 
@@ -238,7 +238,7 @@ def test_rwx_parallel_writing(core_api, statefulset, pod, storage_class):  # NOQ
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_statefulset_scale_down_up(core_api, statefulset, storage_class):  # NOQA
+def test_rwx_statefulset_scale_down_up(client, core_api, statefulset, storage_class):  # NOQA
     """
     Test Scaling up and down of pods attached to rwx volume.
 
@@ -346,7 +346,7 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset, storage_class):  #
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_delete_share_manager_pod(core_api, statefulset, storage_class):  # NOQA
+def test_rwx_delete_share_manager_pod(client, core_api, statefulset, storage_class):  # NOQA
     """
     Test moving of Share manager pod from one node to another.
 
@@ -407,7 +407,7 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset, storage_class):  # 
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc, storage_class):  # NOQA
+def test_rwx_deployment_with_multi_pods(client, core_api, pvc, make_deployment_with_pvc, storage_class):  # NOQA
     """
     Test deployment of 2 pods with same PVC.
 
@@ -653,7 +653,7 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, 
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
+def test_encrypted_rwx_volume(client, core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
     """
     Test creating encrypted rwx volume and use the secret in
     non longhorn-system namespace.
@@ -699,7 +699,7 @@ def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secre
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_rwx_volume_mount_options(core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
+def test_rwx_volume_mount_options(client, core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
     """
     Test creating rwx volume with custom mount options
     non longhorn-system namespace.
