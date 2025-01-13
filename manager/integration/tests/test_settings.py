@@ -31,6 +31,8 @@ from common import (  # NOQA
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
+    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+    SETTING_BACKUPSTORE_POLL_INTERVAL,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     SETTING_V1_DATA_ENGINE,
     RETRY_COUNTS_SHORT, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
@@ -44,7 +46,8 @@ from common import (  # NOQA
     wait_for_volume_degraded, write_volume_dev_random_mb_data,
     get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
     SETTING_DEGRADED_AVAILABILITY,
-    delete_replica_on_test_node
+    delete_replica_on_test_node,
+    DATA_ENGINE, SETTING_V2_DATA_ENGINE
 )
 
 from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
@@ -54,6 +57,11 @@ from test_infra import wait_for_node_up_longhorn
 
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = "50"
+
+DEFAULT_SETTING_CONFIGMAP_NAME = "longhorn-default-setting"
+DEFAULT_RESOURCE_CONFIGMAP_NAME = "longhorn-default-resource" # NOQA
+DEFAULT_SETTING_YAML_NAME = "default-setting.yaml"
+DEFAULT_RESOURCE_YAML_NAME = "default-resource.yaml"
 
 
 def check_workload_update(core_api, apps_api, count):  # NOQA
@@ -101,7 +109,8 @@ def wait_for_longhorn_node_ready():
     return client, node
 
 
-def test_setting_toleration():
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_toleration(client):  # NOQA
     """
     Test toleration setting
 
@@ -197,7 +206,8 @@ def test_setting_toleration():
     cleanup_volume(client, volume)
 
 
-def test_setting_toleration_extra(core_api, apps_api):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_toleration_extra(client, core_api, apps_api):  # NOQA
     """
     Steps:
     1. Set Kubernetes Taint Toleration to:
@@ -478,7 +488,8 @@ def guaranteed_instance_manager_cpu_setting_check(  # NOQA
                 assert (not pod.spec.containers[0].resources.requests)
 
 
-def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_class, volume_name):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_priority_class(client, core_api, apps_api, scheduling_api, priority_class, volume_name):  # NOQA
     """
     Test that the Priority Class setting is validated and utilized correctly.
 
@@ -936,7 +947,8 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
         restore_volume_names.append(name)
 
         client.create_volume(name=name, numberOfReplicas=1,
-                             fromBackup=backup.url, standby=is_DR_volumes)
+                             fromBackup=backup.url, standby=is_DR_volumes,
+                             dataEngine=DATA_ENGINE)
 
     is_case_tested = False
     for i in range(RETRY_COUNTS):
@@ -999,6 +1011,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
         wait_for_volume_restoration_completed(client, restore_volume_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_setting_concurrent_volume_backup_restore_limit(set_random_backupstore, client, volume_name):  # NOQA
     """
 
@@ -1017,6 +1030,7 @@ def test_setting_concurrent_volume_backup_restore_limit(set_random_backupstore, 
     )
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_volumes(set_random_backupstore, client, volume_name):  # NOQA
     """
 
@@ -1035,7 +1049,7 @@ def test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_vol
     )
 
 
-def config_map_with_value(configmap_name, setting_names, setting_values):
+def config_map_with_value(configmap_name, setting_names, setting_values, data_yaml_name="default-setting.yaml"): # NOQA
     setting = {}
     num_settings = len(setting_names)
     if num_settings > 0:
@@ -1048,7 +1062,7 @@ def config_map_with_value(configmap_name, setting_names, setting_values):
             "name": configmap_name,
         },
         "data": {
-            "default-setting.yaml": yaml.dump(setting),
+            data_yaml_name: yaml.dump(setting),
         }
     }
 
@@ -1076,32 +1090,47 @@ def retry_setting_update(client, setting_name, setting_value):  # NOQA
             break
 
 
-def init_longhorn_default_setting_configmap(core_api, client): # NOQA
-    core_api.delete_namespaced_config_map(name="longhorn-default-setting",
+def init_longhorn_default_setting_configmap(core_api, client, # NOQA
+                                            configmap_name=DEFAULT_SETTING_CONFIGMAP_NAME, # NOQA
+                                            data_yaml_name=DEFAULT_SETTING_YAML_NAME): # NOQA
+    core_api.delete_namespaced_config_map(name=configmap_name,
                                           namespace='longhorn-system')
 
-    configmap_body = config_map_with_value("longhorn-default-setting", [], [])
+    configmap_body = config_map_with_value(configmap_name,
+                                           [],
+                                           [],
+                                           data_yaml_name)
     core_api.create_namespaced_config_map(body=configmap_body,
                                           namespace='longhorn-system')
 
 
-def update_settings_via_configmap(core_api, client, setting_names, setting_values, request):  # NOQA
-    configmap_body = config_map_with_value("longhorn-default-setting",
+def update_settings_via_configmap(core_api, client, setting_names, setting_values, request, # NOQA
+                                  configmap_name=DEFAULT_SETTING_CONFIGMAP_NAME, # NOQA
+                                  data_yaml_name=DEFAULT_SETTING_YAML_NAME):  # NOQA
+    configmap_body = config_map_with_value(configmap_name,
                                            setting_names,
-                                           setting_values)
-    core_api.patch_namespaced_config_map(name="longhorn-default-setting",
+                                           setting_values,
+                                           data_yaml_name)
+    core_api.patch_namespaced_config_map(name=configmap_name,
                                          namespace='longhorn-system',
                                          body=configmap_body)
 
     def reset_default_settings():
-        configmap_body = config_map_with_value("longhorn-default-setting",
-                                               [SETTING_DEFAULT_REPLICA_COUNT,
-                                                SETTING_BACKUP_TARGET,
-                                                SETTING_TAINT_TOLERATION],
-                                               ["3",
-                                                "",
-                                                ""])
-        core_api.patch_namespaced_config_map(name="longhorn-default-setting",
+        if configmap_name == DEFAULT_SETTING_CONFIGMAP_NAME:
+            setting_names = [SETTING_DEFAULT_REPLICA_COUNT,
+                             SETTING_BACKUP_TARGET,
+                             SETTING_TAINT_TOLERATION]
+            setting_values = ["3", "", ""]
+        elif configmap_name == DEFAULT_RESOURCE_CONFIGMAP_NAME:
+            setting_names = [SETTING_BACKUP_TARGET,
+                             SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+                             SETTING_BACKUPSTORE_POLL_INTERVAL]
+            setting_values = ["", "", "300"]
+        configmap_body = config_map_with_value(configmap_name,
+                                               setting_names,
+                                               setting_values,
+                                               data_yaml_name)
+        core_api.patch_namespaced_config_map(name=configmap_name,
                                              namespace='longhorn-system',
                                              body=configmap_body)
     request.addfinalizer(reset_default_settings)
@@ -1115,7 +1144,8 @@ def validate_settings(core_api, client, setting_names, setting_values):  # NOQA
         assert wait_for_setting_updated(client, name, value)
 
 
-def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_replica_count_update_via_configmap(client, core_api, request):  # NOQA
     """
     Test the default-replica-count setting via configmap
     1. Get default-replica-count value
@@ -1157,7 +1187,8 @@ def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
                          old_setting.definition.default)
 
 
-def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_backup_target_update_via_configmap(client, core_api, request):  # NOQA
     """
     Test the backup target setting via configmap
     1. Initialize longhorn-default-setting configmap
@@ -1165,10 +1196,22 @@ def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
        value
     3. Verify the updated settings
     """
+    # Check whether the config map `longhorn-default-resource` is created
+    lh_cms = core_api.list_namespaced_config_map(namespace='longhorn-system')
+    cm_names = [config_map.metadata.name for config_map in lh_cms.items]
+    if DEFAULT_RESOURCE_CONFIGMAP_NAME in cm_names:
+        config_map_name = DEFAULT_RESOURCE_CONFIGMAP_NAME
+        data_yaml_name = DEFAULT_RESOURCE_YAML_NAME
+    else:
+        config_map_name = DEFAULT_SETTING_CONFIGMAP_NAME
+        data_yaml_name = DEFAULT_SETTING_YAML_NAME
 
     # Step 1
     client = get_longhorn_api_client()  # NOQA
-    init_longhorn_default_setting_configmap(core_api, client)
+    init_longhorn_default_setting_configmap(core_api,
+                                            client,
+                                            configmap_name=config_map_name,
+                                            data_yaml_name=data_yaml_name)
 
     # Step 2
     target = "s3://backupbucket-invalid@us-east-1/backupstore"
@@ -1176,7 +1219,9 @@ def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
                                   client,
                                   [SETTING_BACKUP_TARGET],
                                   [target],
-                                  request)
+                                  request,
+                                  configmap_name=config_map_name,
+                                  data_yaml_name=data_yaml_name)
     # Step 3
     try:
         validate_settings(core_api,
@@ -1201,17 +1246,26 @@ def wait_backup_target_url_updated(client, target): # NOQA
     assert updated
 
 
-def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_update_with_invalid_value_via_configmap(client, core_api, request):  # NOQA
     """
     Test the default settings update with invalid value via configmap
     1. Create an attached volume
     2. Initialize longhorn-default-setting configmap containing
        valid and invalid settings
     3. Update longhorn-default-setting configmap with invalid settings.
-       The invalid settings SETTING_TAINT_TOLERATION will be ignored
-       when there is an attached volume.
-    4. Validate the default settings values.
+       The invalid settings SETTING_TAINT_TOLERATION will be updated
+    4. The changes will be applied once the volumes are detached. (To Do)
+    5. Validate the default settings values.
     """
+    # Check whether the config map `longhorn-default-resource` is created
+    backup_cm_created = False
+    lh_cms = core_api.list_namespaced_config_map(namespace='longhorn-system')
+    cm_names = [config_map.metadata.name for config_map in lh_cms.items]
+    if DEFAULT_RESOURCE_CONFIGMAP_NAME in cm_names:
+        backup_cm_created = True
+        bt_config_map_name = DEFAULT_RESOURCE_CONFIGMAP_NAME
+        bt_data_yaml_name = DEFAULT_RESOURCE_YAML_NAME
 
     # Step 1
     client = get_longhorn_api_client() # NOQA
@@ -1230,31 +1284,35 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     target = "s3://backupbucket-invalid@us-east-1/backupstore"
     update_settings_via_configmap(core_api,
                                   client,
-                                  [SETTING_BACKUP_TARGET,
-                                   SETTING_TAINT_TOLERATION],
-                                  [target,
-                                   "key1=value1:NoSchedule"],
+                                  [SETTING_TAINT_TOLERATION],
+                                  ["key1=value1:NoSchedule"],
                                   request)
     # Step 4
     validate_settings(core_api,
                       client,
                       [SETTING_TAINT_TOLERATION],
                       ["key1=value1:NoSchedule"])
-    try:
-        validate_settings(core_api,
-                          client,
-                          [SETTING_BACKUP_TARGET],
-                          [target])
-    except Exception as e:
-        if SETTING_BACKUP_TARGET_NOT_SUPPORTED in str(e):
-            wait_backup_target_url_updated(client, target)
-        else:
-            raise e
+
+    if backup_cm_created:
+        init_longhorn_default_setting_configmap(
+            core_api,
+            client,
+            configmap_name=bt_config_map_name,
+            data_yaml_name=bt_data_yaml_name)
+        update_settings_via_configmap(core_api,
+                                      client,
+                                      [SETTING_BACKUP_TARGET],
+                                      [target],
+                                      request,
+                                      configmap_name=bt_config_map_name,
+                                      data_yaml_name=bt_data_yaml_name)
+        wait_backup_target_url_updated(client, target)
 
     cleanup_volume_by_name(client, vol_name)
 
 
-def test_setting_v1_data_engine(client, request): # NOQA
+@pytest.mark.v2_volume_test  # NOQA
+def test_setting_data_engine(client, request): # NOQA
     """
     Test that the v1 data engine setting works correctly.
     1. Create a volume and attach it.
@@ -1265,16 +1323,19 @@ def test_setting_v1_data_engine(client, request): # NOQA
     5. set v1 data engine setting to true. The setting should be accepted.
     6. Attach the volume.
     """
-
-    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+    if DATA_ENGINE == "v1":
+        setting_data_engine = SETTING_V1_DATA_ENGINE
+    elif DATA_ENGINE == "v2":
+        setting_data_engine = SETTING_V2_DATA_ENGINE
+    setting = client.by_id_setting(setting_data_engine)
 
     # Step 1
-    volume_name = "test-v1-vol"  # NOQA
+    volume_name = "test-{0}-vol".format(DATA_ENGINE)  # NOQA
     volume = create_and_check_volume(client, volume_name)
 
     def finalizer():
         cleanup_volume(client, volume)
-        update_setting(client, SETTING_V1_DATA_ENGINE, "true")
+        update_setting(client, setting_data_engine, "true")
 
     request.addfinalizer(finalizer)
 
@@ -1284,15 +1345,15 @@ def test_setting_v1_data_engine(client, request): # NOQA
     # Step 2
     with pytest.raises(Exception) as e:
         client.update(setting, value="false")
-    assert 'cannot apply v1-data-engine setting to Longhorn workloads when ' \
-        'there are attached v1 volumes' in str(e.value)
+    assert 'cannot apply {0}-data-engine setting to Longhorn workloads when ' \
+        'there are attached {0} volumes'.format(DATA_ENGINE) in str(e.value)
 
     # Step 3
     volume.detach()
     wait_for_volume_detached(client, volume_name)
 
     # Step 4
-    update_setting(client, SETTING_V1_DATA_ENGINE, "false")
+    update_setting(client, setting_data_engine, "false")
 
     count = wait_for_instance_manager_count(client, 0)
     assert count == 0
@@ -1303,7 +1364,7 @@ def test_setting_v1_data_engine(client, request): # NOQA
     assert 'volume[key]=detached' in str(e.value)
 
     # Step 5
-    update_setting(client, SETTING_V1_DATA_ENGINE, "true")
+    update_setting(client, setting_data_engine, "true")
     nodes = client.list_node()
     count = wait_for_instance_manager_count(client, len(nodes))
     assert count == len(nodes)
