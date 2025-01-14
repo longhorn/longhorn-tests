@@ -438,7 +438,15 @@ class CRD(Base):
         return Rest().get_endpoint(volume_name)
 
     def write_random_data(self, volume_name, size, data_id):
-        node_name = self.get(volume_name)["spec"]["nodeID"]
+
+        self.wait_for_volume_state(volume_name, "attached")
+
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+
         endpoint = self.get_endpoint(volume_name)
 
         cmd = [
@@ -454,7 +462,15 @@ class CRD(Base):
         self.set_last_data_checksum(volume_name, checksum)
 
     def keep_writing_data(self, volume_name, size):
-        node_name = self.get(volume_name)["spec"]["nodeID"]
+
+        self.wait_for_volume_state(volume_name, "attached")
+
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+
         endpoint = self.get_endpoint(volume_name)
         logging(f"Keeping writing data to volume {volume_name}")
         res = NodeExec(node_name).issue_cmd(
