@@ -359,6 +359,22 @@ def backup_cleanup():
             else:
                 assert (not e)
 
+    backups = api.list_namespaced_custom_object("longhorn.io",
+                                                "v1beta2",
+                                                "longhorn-system",
+                                                "backups")
+    ok = False
+    for _ in range(RETRY_COUNTS_SHORT):
+        if backups['items'] == []:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+        backups = api.list_namespaced_custom_object("longhorn.io",
+                                                    "v1beta2",
+                                                    "longhorn-system",
+                                                    "backups")
+    assert ok, f"backups: {backups['items']}"
+
 
 def backupstore_cleanup(client):
     backup_volumes = client.list_backupVolume()
