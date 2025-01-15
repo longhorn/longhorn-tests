@@ -4,8 +4,6 @@ import os
 import subprocess
 import yaml
 
-from backupstore import set_random_backupstore  # NOQA
-
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
     get_core_api_client, get_apps_api_client,
@@ -50,8 +48,13 @@ from common import (  # NOQA
     DATA_ENGINE, SETTING_V2_DATA_ENGINE
 )
 
-from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
-from backupstore import backupstore_get_backup_target
+from backupstore import (  # NOQA
+    backupstore_get_backup_target,
+    reset_backupstore_setting,
+    set_random_backupstore,  # NOQA
+
+    SETTING_BACKUP_TARGET_NOT_SUPPORTED
+)
 
 from test_infra import wait_for_node_up_longhorn
 
@@ -1121,18 +1124,24 @@ def update_settings_via_configmap(core_api, client, setting_names, setting_value
                              SETTING_BACKUP_TARGET,
                              SETTING_TAINT_TOLERATION]
             setting_values = ["3", "", ""]
+            configmap_body = config_map_with_value(configmap_name,
+                                                   setting_names,
+                                                   setting_values,
+                                                   data_yaml_name)
+            core_api.patch_namespaced_config_map(name=configmap_name,
+                                                 namespace='longhorn-system',
+                                                 body=configmap_body)
         elif configmap_name == DEFAULT_RESOURCE_CONFIGMAP_NAME:
-            setting_names = [SETTING_BACKUP_TARGET,
-                             SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
-                             SETTING_BACKUPSTORE_POLL_INTERVAL]
-            setting_values = ["", "", "300"]
-        configmap_body = config_map_with_value(configmap_name,
-                                               setting_names,
-                                               setting_values,
-                                               data_yaml_name)
-        core_api.patch_namespaced_config_map(name=configmap_name,
-                                             namespace='longhorn-system',
-                                             body=configmap_body)
+            # Directly cleanup data of ConfigMap `longhorn-default-resource`
+            # It will reset the default backup target settings
+            # if the ConfigMap contains the data 'backup-target': "", ... .
+            init_longhorn_default_setting_configmap(
+                core_api,
+                client,
+                configmap_name=DEFAULT_RESOURCE_CONFIGMAP_NAME,
+                data_yaml_name=DEFAULT_RESOURCE_YAML_NAME)
+            reset_backupstore_setting(client)
+
     request.addfinalizer(reset_default_settings)
 
 
