@@ -58,6 +58,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.8.0/test-backups-and-system-backups-removed-during-uninstalling/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</loc>
