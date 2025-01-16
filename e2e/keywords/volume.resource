@@ -47,6 +47,19 @@ Attach volume ${volume_id} to node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     attach_volume    ${volume_name}    ${node_name}
 
+Volume ${volume_id} should be attached to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${res} =    is_attached_to    ${volume_name}    ${node_name}
+    Should Be True    ${res}
+
+Volume ${volume_id} should not be attached to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${res} =    is_attached_to    ${volume_name}    ${node_name}
+    ${res} =  Convert To String  ${res}
+    Should Be Equal    ${res}    False
+
 Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}

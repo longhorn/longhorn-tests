@@ -137,6 +137,9 @@ class CRD(Base):
         volume = self.get(volume_name)
         assert volume['status']['frontendDisabled'] == disable_frontend, f"expect volume frontendDisabled is {disable_frontend}, but it's {volume['status']['frontendDisabled']}"
 
+    def is_attached_to(self, volume_name, node_name):
+        return Rest().is_attached_to(volume_name, node_name)
+
     def detach(self, volume_name, node_name):
         try:
             body = get_cr(
