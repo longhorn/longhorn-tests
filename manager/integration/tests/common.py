@@ -86,7 +86,10 @@ UPGRADE_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:upgrade-test"
 ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
-BLOCK_DEV_PATH = "/dev/xvdh"
+if os.uname().machine == "x86_64":
+    BLOCK_DEV_PATH = "/dev/xvdh"
+else:
+    BLOCK_DEV_PATH = "/dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
