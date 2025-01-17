@@ -396,6 +396,7 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     assert data == get_device_checksum(volume_endpoint)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
 def test_migration_with_restore_volume(core_api, # NOQA
