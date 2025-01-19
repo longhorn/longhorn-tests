@@ -56,3 +56,12 @@ Test Detached Volume Should Not Reattach After Node Eviction
 
     Then Wait for volume 0 detached
     And Assert volume 0 remains detached for at least 60 seconds
+
+Test RWX Volume Without Migratable Should Be Incompatible With Strict-Local
+    [Tags]    volume    rwx
+    [Documentation]    Test RWX volume is incompatible in strict-local mode without migratable
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/6735
+
+    When Create volume 0 with    numberOfReplicas=1    migratable=False    accessMode=RWX    dataLocality=strict-local
+    Then No volume created
