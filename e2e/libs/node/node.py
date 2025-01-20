@@ -120,6 +120,18 @@ class Node:
         node = self.get_node_by_name(node_name)
         return node.status.capacity['cpu']
 
+    def get_node_total_memory(self, node_name):
+        node = self.get_node_by_name(node_name)
+        return node.status.capacity['memory']
+
+    def get_node_condition(self, node_name, condition_type):
+        node = self.get_node_by_name(node_name)
+        for condition in node.status.conditions:
+            if condition.type == condition_type:
+                logging(f"Got node {node_name} condition {condition_type}: {condition}")
+                return condition.status
+        assert False, f"Failed to get node {node_name} condition {condition_type}: {node}"
+
     def list_node_names_by_volumes(self, volume_names):
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')
         volume_nodes = {}
