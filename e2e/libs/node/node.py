@@ -34,14 +34,16 @@ class Node:
 
     def update_disks(self, node_name, disks):
         node = get_longhorn_client().by_id_node(node_name)
+        logging(f"Updating node {node_name} disks {disks}")
         for _ in range(self.retry_count):
             try:
                 node.diskUpdate(disks=disks)
                 self.wait_for_disk_update(node_name, len(disks))
-                break
+                return
             except Exception as e:
-                logging(f"Updating node {node_name} disk error: {e}")
+                logging(f"Failed to update node {node_name} disk: {e}")
             time.sleep(self.retry_interval)
+        assert False, f"Failed to update node {node_name} disk {disks}"
 
     def wait_for_disk_update(self, node_name, disk_num):
         for i in range(self.retry_count):
@@ -54,16 +56,18 @@ class Node:
                         (disks[d]["allowScheduling"] and
                         (not disks[d]["conditions"] or
                         disks[d]["conditions"]["Ready"]["status"] != "True")):
+                        logging(f"Waiting for node {node_name} disk {d} updated ... ({i})")
                         all_updated = False
                         break
                 if all_updated:
                     break
             time.sleep(self.retry_interval)
-        assert len(node.disks) == disk_num, f"Waiting for node {node_name} disk updated to {disk_num} failed: {disks}"
+        assert len(node.disks) == disk_num and all_updated, f"Waiting for node {node_name} disk updated to {disk_num} failed: {disks}"
 
     def add_disk(self, node_name, disk):
         added = False
         for i in range(self.retry_count):
+            logging(f"Adding disk {disk} to node {node_name} ... ({i})")
             try:
                 node = get_longhorn_client().by_id_node(node_name)
                 disks = node.disks
@@ -184,8 +188,6 @@ class Node:
     def set_node_scheduling(self, node_name, allowScheduling=True, retry=False):
         node = get_longhorn_client().by_id_node(node_name)
 
-        logging(f"Setting node {node_name} allowScheduling to {allowScheduling}")
-
         if node.tags is None:
            node.tags = []
 
@@ -193,15 +195,16 @@ class Node:
             get_longhorn_client().update(node, allowScheduling=allowScheduling)
 
         # Retry if "too many retries error" happened.
-        for _ in range(self.retry_count):
+        for i in range(self.retry_count):
+            logging(f"Setting node {node_name} allowScheduling to {allowScheduling} ... ({i})")
             try:
                 node = get_longhorn_client().update(node, allowScheduling=allowScheduling,
                                  tags=node.tags)
             except Exception as e:
+                logging(f"Setting node {node_name} allowScheduling to {allowScheduling} failed: {e}")
                 if DISK_BEING_SYNCING in str(e.error.message):
                     time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                     continue
-                print(e)
                 raise
             else:
                 break
