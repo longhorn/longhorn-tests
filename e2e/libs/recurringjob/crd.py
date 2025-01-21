@@ -19,7 +19,7 @@ class CRD(Base):
         self.batch_v1_api = client.BatchV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, name, task, groups, cron, retain, concurrency, label):
+    def create(self, name, task, groups, cron, retain, concurrency, label, parameters):
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "RecurringJob",
@@ -36,7 +36,8 @@ class CRD(Base):
                 "cron": cron,
                 "retain": retain,
                 "concurrency": concurrency,
-                "labels": label
+                "labels": label,
+                "parameters": parameters
             }
         }
         self.obj_api.create_namespaced_custom_object(
@@ -101,3 +102,11 @@ class CRD(Base):
                 break
             time.sleep(RETRY_INTERVAL)
         assert is_created
+
+    def wait_for_systembackup_state(self, job_name, expected_state):
+        logging("Delegating the wait_for_systembackup_state call to API because there is no CRD implementation")
+        return self.rest.wait_for_systembackup_state(job_name, expected_state)
+
+    def assert_volume_backup_created(self, volume_name, retry_count=-1):
+        logging("Delegating the assert_volume_backup_created call to API because there is no CRD implementation")
+        return self.rest.assert_volume_backup_created(volume_name, retry_count=retry_count)

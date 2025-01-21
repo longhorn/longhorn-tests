@@ -36,3 +36,15 @@ class recurringjob_keywords:
     def check_recurringjobs_work(self, volume_name):
         logging(f'Checking recurringjobs work for volume {volume_name}')
         self.recurringjob.check_jobs_work(volume_name)
+
+    def create_system_backup_recurringjob(self, job_name, parameters={'volume-backup-policy': 'if-not-present'}):
+        logging(f'Creating system-backup recurringjob {job_name} with parameters {parameters}')
+        self.recurringjob.create(job_name, task="system-backup", parameters=parameters)
+
+    def wait_for_recurringjob_created_systembackup_state(self, job_name, expected_state):
+        logging(f'Waiting for recurringjob {job_name} created systembackup to reach state {expected_state}')
+        self.recurringjob.wait_for_systembackup_state(job_name, expected_state)
+
+    def assert_recurringjob_created_backup_for_volume(self, volume_name, retry_count=-1):
+        logging(f'Checking recurringjob created backup for volume {volume_name}')
+        self.recurringjob.assert_recurringjob_created_backup_for_volume(volume_name, retry_count=retry_count)
