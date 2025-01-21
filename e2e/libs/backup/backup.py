@@ -15,8 +15,8 @@ class Backup(Base):
         else:
             self.backup = Rest()
 
-    def create(self, volume_name, backup_id):
-        return self.backup.create(volume_name, backup_id)
+    def create(self, volume_name, backup_id, wait):
+        return self.backup.create(volume_name, backup_id, wait)
 
     def get(self, backup_id, volume_name):
         return self.backup.get(backup_id, volume_name)
@@ -66,3 +66,6 @@ class Backup(Base):
 
     def cleanup_system_backups(self):
         return self.backup.cleanup_system_backups()
+
+    def cleanup_backups(self):
+        return self.backup.cleanup_backups()

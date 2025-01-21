@@ -103,7 +103,7 @@ class volume_keywords:
 
     def write_volume_random_data(self, volume_name, size_in_mb, data_id=0):
         logging(f'Writing {size_in_mb} MB random data to volume {volume_name}')
-        checksum = self.volume.write_random_data(volume_name, size_in_mb, data_id)
+        return self.volume.write_random_data(volume_name, size_in_mb, data_id)
 
     def keep_writing_data(self, volume_name):
         logging(f'Keep writing data to volume {volume_name}')
@@ -111,7 +111,7 @@ class volume_keywords:
 
     def check_data_checksum(self, volume_name, data_id=0):
         logging(f"Checking volume {volume_name} data {data_id} checksum")
-        self.volume.check_data_checksum(volume_name, data_id)
+        return self.volume.check_data_checksum(volume_name, data_id)
 
     def delete_replica_on_node(self, volume_name, replica_locality):
         node_name = None
@@ -263,6 +263,10 @@ class volume_keywords:
                 break
             time.sleep(retry_interval)
 
+    def wait_for_volume_to_be_created(self, volume_name):
+        logging(f'Waiting for volume {volume_name} to be created')
+        self.volume.wait_for_volume_to_be_created(volume_name)
+
     def wait_for_volume_attached(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be attached')
         self.volume.wait_for_volume_attached(volume_name)
@@ -299,9 +303,9 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} migration to rollback to node {node_name}')
         self.volume.wait_for_volume_migration_to_rollback(volume_name, node_name)
 
-    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
-        logging(f'Waiting for volume {volume_name} restoration from {backup_name} completed')
-        self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
+    def wait_for_volume_restoration_to_complete(self, volume_name, backup_name=None):
+        logging(f'Waiting for volume {volume_name} restoration to complete')
+        self.volume.wait_for_volume_restoration_to_complete(volume_name, backup_name)
 
     def wait_for_volume_restoration_start(self, volume_name, backup_name):
         logging(f'Waiting for volume {volume_name} restoration from {backup_name} start')
@@ -315,6 +319,9 @@ class volume_keywords:
 
     def wait_for_volume_unknown(self, volume_name):
         self.volume.wait_for_volume_unknown(volume_name)
+
+    def wait_for_volume_deleted(self, volume_name):
+        self.volume.wait_for_volume_deleted(volume_name)
 
     def update_volume_spec(self, volume_name, key, value):
         self.volume.update_volume_spec(volume_name, key, value)

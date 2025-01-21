@@ -81,6 +81,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def wait_for_volume_to_be_created(self, volume_name):
+        return NotImplemented
+
+    @abstractmethod
     def wait_for_volume_state(self, volume_name, desired_state):
         return NotImplemented
 
@@ -97,7 +101,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
+    def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         return NotImplemented
 
     @abstractmethod
