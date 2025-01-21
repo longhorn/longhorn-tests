@@ -31,9 +31,7 @@ Delete volume of ${workload_kind} ${workload_id} replica node
 
 Add deleted node back
     reboot_node_by_name    ${deleted_node}
-    ${host_provider}=    Get Environment Variable    HOST_PROVIDER
-    ${disk_path}=    Set Variable If    "${host_provider}" == "harvester"    /dev/vdc    /dev/xvdh
-    add_disk    block-disk    ${deleted_node}    block    ${disk_path}
+    add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
 
 Force drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
