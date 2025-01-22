@@ -119,8 +119,10 @@ Test Replica Auto Balance Node Least Effort
     # loop 3 times with 5-second wait and compare the replica count to:
     # ensure no additional scheduling occurs
     # the replica count remains unchanged
-    And Volume 0 should have 5 replicas running on node 0 and no additional scheduling occurs
-    And Volume 0 should have 1 replicas running on node 1 and no additional scheduling occurs
+    And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
+    And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
+    # 1 or 2 replicas, but not 3 replicas, on node 0 could be reschduled to node 1
+    And Number of volume 0 replicas on node 1 should be less than on node 0
     And Volume 0 should have 0 replicas running on node 2 and no additional scheduling occurs
 
     When Enable node 2 scheduling
@@ -130,9 +132,10 @@ Test Replica Auto Balance Node Least Effort
     # loop 3 times with 5-second wait and compare the replica count to:
     # ensure no additional scheduling occurs
     # the replica count remains unchanged
-    And Volume 0 should have 4 replicas running on node 0 and no additional scheduling occurs
-    And Volume 0 should have 1 replicas running on node 1 and no additional scheduling occurs
-    And Volume 0 should have 1 replicas running on node 2 and no additional scheduling occurs
+    And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
+    And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
+    And Volume 0 should have replicas running on node 2 and no additional scheduling occurs
+    And Number of volume 0 replicas on node 2 should be less than on node 0
 
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
