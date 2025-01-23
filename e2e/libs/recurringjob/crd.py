@@ -9,6 +9,8 @@ from recurringjob.rest import Rest
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+from utility.utility import filter_cr
+from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 
@@ -18,6 +20,7 @@ class CRD(Base):
         self.rest = Rest()
         self.batch_v1_api = client.BatchV1Api()
         self.obj_api = client.CustomObjectsApi()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, name, task, groups, cron, retain, concurrency, label, parameters):
         body = {
@@ -104,8 +107,21 @@ class CRD(Base):
         assert is_created
 
     def wait_for_systembackup_state(self, job_name, expected_state):
-        logging("Delegating the wait_for_systembackup_state call to API because there is no CRD implementation")
-        return self.rest.wait_for_systembackup_state(job_name, expected_state)
+        for i in range(self.retry_count):
+            system_backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "systembackups",
+                                           label_selector=f"recurring-job.longhorn.io/system-backup={job_name}")
+            try:
+                if len(system_backup_list['items']) == 0:
+                    continue
+
+                for item in system_backup_list['items']:
+                    state = item['status']['state']
+                    assert state == expected_state
+
+                return
+            except AssertionError:
+                logging(f"Waiting for systembackup in state '{state}' to reach state '{expected_state}' ({i}) ...")
+                time.sleep(self.retry_interval)
 
     def assert_volume_backup_created(self, volume_name, retry_count=-1):
         logging("Delegating the assert_volume_backup_created call to API because there is no CRD implementation")
