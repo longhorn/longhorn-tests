@@ -4048,39 +4048,47 @@ def check_longhorn(core_api):
 
     pod_running = True
 
-    try:
-        longhorn_pod_list = core_api.list_namespaced_pod('longhorn-system')
-        for item in longhorn_pod_list.items:
-            labels = item.metadata.labels
+    for i in range(RETRY_COUNTS):
+        print(f"wait for Longhorn components ready ... ({i})")
+        try:
+            longhorn_pod_list = core_api.list_namespaced_pod('longhorn-system')
+            for item in longhorn_pod_list.items:
+                labels = item.metadata.labels
 
-            if not labels:
-                pass
-            elif labels.get('longhorn.io/component', '') == 'engine-image' \
-                    and item.status.phase == "Running":
-                has_engine_image = True
-            elif labels.get('app', '') == 'longhorn-driver-deployer' \
-                    and item.status.phase == "Running":
-                has_driver_deployer = True
-            elif labels.get('app', '') == 'longhorn-manager' \
-                    and item.status.phase == "Running":
-                has_manager = True
-            elif labels.get('app', '') == 'longhorn-ui' \
-                    and item.status.phase == "Running":
-                has_ui = True
-            elif labels.get('longhorn.io/component', '') == \
-                    'instance-manager' \
-                    and item.status.phase == "Running":
-                has_instance_manager = True
+                if not labels:
+                    pass
+                elif labels.get('longhorn.io/component', '') == 'engine-image'\
+                        and item.status.phase == "Running":
+                    has_engine_image = True
+                elif labels.get('app', '') == 'longhorn-driver-deployer' \
+                        and item.status.phase == "Running":
+                    has_driver_deployer = True
+                elif labels.get('app', '') == 'longhorn-manager' \
+                        and item.status.phase == "Running":
+                    has_manager = True
+                elif labels.get('app', '') == 'longhorn-ui' \
+                        and item.status.phase == "Running":
+                    has_ui = True
+                elif labels.get('longhorn.io/component', '') == \
+                        'instance-manager' \
+                        and item.status.phase == "Running":
+                    has_instance_manager = True
 
-        if has_engine_image and has_driver_deployer and has_manager and \
-                has_ui and has_instance_manager and pod_running:
-            ready = True
+            if has_engine_image and has_driver_deployer and has_manager and \
+                    has_ui and has_instance_manager and pod_running:
+                ready = True
+                break
+            else:
+                for item in longhorn_pod_list.items:
+                    print(f"{item.metadata.name}    {item.status.phase}")
 
-    except ApiException as e:
-        if (e.status == 404):
-            ready = False
+        except ApiException as e:
+            if (e.status == 404):
+                ready = False
 
-    assert ready
+        time.sleep(RETRY_INTERVAL)
+
+    assert ready, "Failed to wait for Longhorn components ready"
 
 
 def check_csi(core_api):
