@@ -187,26 +187,7 @@ class Rest(Base):
                 self.delete(job, volume_name)
 
     def wait_for_systembackup_state(self, job_name, expected_state):
-        for i in range(self.retry_count):
-            system_backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "systembackups",
-                                           label_selector=f"recurring-job.longhorn.io/system-backup={job_name}")
-            try:
-                if len(system_backup_list['items']) == 0:
-                    continue
-
-                for item in system_backup_list['items']:
-                    state = item['status']['state']
-                    assert state == expected_state
-
-                return
-            except AssertionError:
-                logging(f"Waiting for systembackup in state '{state}' to reach state '{expected_state}' ({i}) ...")
-                time.sleep(self.retry_interval)
-
-        raise AssertionError(
-            f"Timeout waiting for recurringjob created systembackup to reach state '{expected_state}'\n \
-            Current systembackup list: {system_backup_list}"
-        )
+        return NotImplemented
 
     def assert_volume_backup_created(self, volume_name, retry_count=-1):
         self._check_backup_created(volume_name, retry_count=retry_count)
