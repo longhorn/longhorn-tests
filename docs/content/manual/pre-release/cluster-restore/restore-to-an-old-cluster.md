@@ -11,7 +11,7 @@ This test may need to be validated for both kind of cluster.
 2. Deploy some workloads using Longhorn volumes then write some data.
 3. Create a cluster snapshot via Rancher.
 4. Add a new worker node for this cluster. Deploy workloads on this node.
-5. Restore the cluster. 
+5. Restore the cluster.
 6. Follow the doc after the restore. Verify:
     1. The new node is still in the Longhorn system. All necessary longhorn workloads will be on the node.
     2. The workloads and the volumes created in step 2 work fine after restarting.
@@ -48,7 +48,7 @@ This test may need to be validated for both kind of cluster.
     2. Volume B can be reattached or keep attached with correct data. The backup info of volume B is resynced when the volume is reattahed. The pod can use the volume after restart.
     3. All old removed replicas are back and all newly rebuilt replicas in step4-3 disappear for volume C. There is no data in volume C. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.
     4. The old removed replicas are back and the newly rebuilt replicas in step4-4 disappear for volume D. The restored replicas will become failed then get rebuilt with correct data. The data directories of the disappeared replicas are still on the node.
-    5. Volume E re-uses the default engine image, and gets stuck in shrinking the expanded size to the original size. By re-scaling down the workload, re-upgrade and re-expand the volume. The volume can work fine then.
+    5. Volume E reuses the default engine image, and gets stuck in shrinking the expanded size to the original size. By re-scaling down the workload, re-upgrade and re-expand the volume. The volume can work fine then.
     6. Volume F will disappear. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.
 
 ## Longhorn system upgrade

@@ -25,8 +25,9 @@ class RecurringJob(Base):
                cron="*/2 * * * *",
                retain=1,
                concurrency=1,
-               labels={}):
-        return self.recurringjob.create(job_name, task, groups, cron, retain, concurrency, labels)
+               labels={},
+               parameters=None):
+        return self.recurringjob.create(job_name, task, groups, cron, retain, concurrency, labels, parameters)
 
     def delete(self, job_name):
         return self.recurringjob.delete(job_name)
@@ -44,3 +45,9 @@ class RecurringJob(Base):
 
     def check_jobs_work(self, volume_name):
         return self.recurringjob.check_jobs_work(volume_name)
+
+    def wait_for_systembackup_state(self, job_name, expected_state):
+        return self.recurringjob.wait_for_systembackup_state(job_name, expected_state)
+
+    def assert_recurringjob_created_backup_for_volume(self, volume_name, retry_count=-1):
+        return self.recurringjob.assert_volume_backup_created(volume_name, retry_count=retry_count)
