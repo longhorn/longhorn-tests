@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "9.4"
+  default     = "9.5"
 }
 
 variable "aws_ami_rockylinux_account_number" {
