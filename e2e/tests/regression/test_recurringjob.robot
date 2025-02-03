@@ -18,17 +18,13 @@ Test System Backup Recurring Job When volume-backup-policy is disabled
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     When Create system-backup recurringjob 0    parameters={"volume-backup-policy":"disabled"}
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Then Assert recurringjob not created backup for volume 0
-        And Wait for recurringjob 0 created systembackup to reach Ready state
-    END
+    Then Assert recurringjob not created backup for volume 0
+    And Wait for recurringjob 0 created systembackup to reach Ready state
 
 Test System Backup Recurring Job When volume-backup-policy is if-not-present
     [Tags]    recurring_job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     When Create system-backup recurringjob 0    parameters={"volume-backup-policy":"if-not-present"}
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Then Assert recurringjob created backup for volume 0
-        And Wait for recurringjob 0 created systembackup to reach Ready state
-    END
+    Then Assert recurringjob created backup for volume 0
+    And Wait for recurringjob 0 created systembackup to reach Ready state

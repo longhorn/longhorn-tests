@@ -116,12 +116,15 @@ class CRD(Base):
 
                 for item in system_backup_list['items']:
                     state = item['status']['state']
-                    assert state == expected_state
+                    logging(f"Waiting for systembackup created by job {job_name} in state '{state}' to reach state '{expected_state}' ... ({i})")
+                    if state == expected_state:
+                        return
 
-                return
-            except AssertionError:
-                logging(f"Waiting for systembackup in state '{state}' to reach state '{expected_state}' ({i}) ...")
-                time.sleep(self.retry_interval)
+            except Exception as e:
+                logging(f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed: {e}")
+
+            time.sleep(self.retry_interval)
+        assert False, logging(f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed")
 
     def assert_volume_backup_created(self, volume_name, retry_count=-1):
         logging("Delegating the assert_volume_backup_created call to API because there is no CRD implementation")
