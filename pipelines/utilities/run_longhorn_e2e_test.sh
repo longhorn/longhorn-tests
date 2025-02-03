@@ -39,6 +39,7 @@ run_longhorn_e2e_test(){
   fi
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="'${LONGHORN_TEST_CLOUDPROVIDER}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${TF_VAR_arch}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_URI", "value": "'${LONGHORN_REPO_URI}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_BRANCH", "value": "'${LONGHORN_REPO_BRANCH}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -105,6 +106,7 @@ run_longhorn_e2e_test_out_of_cluster(){
              -e LONGHORN_CLIENT_URL="${LONGHORN_CLIENT_URL}" \
              -e KUBECONFIG="/tmp/kubeconfig" \
              -e HOST_PROVIDER="${LONGHORN_TEST_CLOUDPROVIDER}" \
+             -e ARCH="${TF_VAR_arch}" \
              -e LAB_URL="${TF_VAR_lab_url}" \
              -e LAB_ACCESS_KEY="${TF_VAR_lab_access_key}" \
              -e LAB_SECRET_KEY="${TF_VAR_lab_secret_key}" \

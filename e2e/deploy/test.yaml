@@ -78,6 +78,8 @@ spec:
       value: "false"
     - name: HOST_PROVIDER
       value: "aws"
+    - name: ARCH
+      value: "amd64"
     - name: AWS_ACCESS_KEY_ID
       valueFrom:
         secretKeyRef:
