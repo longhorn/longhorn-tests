@@ -246,6 +246,17 @@ class CRD(Base):
             f"Expected volume {volume_name} restoreRequired={restore_required_state},\n" \
             f"but got {volume['status']['restoreRequired']}\n"
 
+    def wait_for_volume_to_be_created(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} to be created ... ({i})")
+            try:
+                self.get(volume_name)
+                return
+            except Exception as e:
+                logging(f"Failed to wait for volume {volume_name} to be created: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} to be created"
+
     def wait_for_volume_state(self, volume_name, desired_state):
         volume = None
         for i in range(self.retry_count):
@@ -365,32 +376,35 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert rollback, f"Waiting for volume {volume_name} migration rollback failed: engines = {engines}, volume = {volume}"
 
-    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
-        completed = False
-        for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} completed ({i}) ...")
-            try:
-                engines = self.engine.get_engines(volume_name)
-                completed = len(engines) == 1 and engines[0]['status']['lastRestoredBackup'] == backup_name
-                if completed:
-                    break
-            except Exception as e:
-                logging(f"Getting volume {volume_name} engines error: {e}")
-            time.sleep(self.retry_interval)
-        assert completed
+    def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
+        if backup_name:
+            complete = False
+            for i in range(self.retry_count):
+                logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} to complete ({i}) ...")
+                try:
+                    engines = self.engine.get_engines(volume_name)
+                    complete = len(engines) == 1 and engines[0]['status']['lastRestoredBackup'] == backup_name
+                    if complete:
+                        break
+                except Exception as e:
+                    logging(f"Getting volume {volume_name} engines error: {e}")
+                time.sleep(self.retry_interval)
+            assert complete
 
-        updated = False
-        for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} lastBackup updated to {backup_name} ({i}) ...")
-            try:
-                volume = self.get(volume_name)
-                if volume['status']['lastBackup'] == backup_name:
-                    updated = True
-                    break
-            except Exception as e:
-                logging(f"Getting volume {volume_name} error: {e}")
-            time.sleep(self.retry_interval)
-        assert updated
+            updated = False
+            for i in range(self.retry_count):
+                logging(f"Waiting for volume {volume_name} lastBackup updated to {backup_name} ({i}) ...")
+                try:
+                    volume = self.get(volume_name)
+                    if volume['status']['lastBackup'] == backup_name:
+                        updated = True
+                        break
+                except Exception as e:
+                    logging(f"Getting volume {volume_name} error: {e}")
+                time.sleep(self.retry_interval)
+            assert updated
+        if not volume['status']['isStandby']:
+            self.wait_for_restore_required_status(volume_name, False)
 
     def wait_for_volume_restoration_start(self, volume_name, backup_name,
                                           progress=0):
@@ -438,6 +452,9 @@ class CRD(Base):
         return Rest().get_endpoint(volume_name)
 
     def write_random_data(self, volume_name, size, data_id):
+
+        self.wait_for_volume_state(volume_name, "attached")
+
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
 
@@ -452,8 +469,12 @@ class CRD(Base):
         logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
         self.set_data_checksum(volume_name, data_id, checksum)
         self.set_last_data_checksum(volume_name, checksum)
+        return checksum
 
     def keep_writing_data(self, volume_name, size):
+
+        self.wait_for_volume_state(volume_name, "attached")
+
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         logging(f"Keeping writing data to volume {volume_name}")

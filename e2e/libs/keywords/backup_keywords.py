@@ -9,8 +9,8 @@ class backup_keywords:
     def __init__(self):
         self.backup = Backup()
 
-    def create_backup(self, volume_name, backup_id):
-        self.backup.create(volume_name, backup_id)
+    def create_backup(self, volume_name, backup_id, wait=True):
+        self.backup.create(volume_name, backup_id, wait)
 
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
@@ -50,6 +50,7 @@ class backup_keywords:
         if get_backupstore():
             self.backup.cleanup_system_backups()
             self.backup.cleanup_backup_volumes()
+            self.backup.cleanup_backups()
 
     def list_all_backups(self):
         all_backups = self.backup.list_all()
