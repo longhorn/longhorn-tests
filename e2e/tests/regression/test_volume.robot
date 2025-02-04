@@ -63,5 +63,5 @@ Test RWX Volume Without Migratable Should Be Incompatible With Strict-Local
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/6735
 
-    When Create volume 0 with    numberOfReplicas=1    migratable=False    accessMode=RWX    dataLocality=strict-local
+    When Create volume 0 with    numberOfReplicas=1    migratable=False    accessMode=RWX    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     Then No volume created
