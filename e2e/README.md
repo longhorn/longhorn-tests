@@ -66,6 +66,13 @@ terraform output -raw instance_mapping | jq 'map({(.name | split(".")[0]): .id})
 # }
 ```
 
+1. To determine the block device path for v2 volumes, export `HOST_PROVIDER` and `ARCH` environment variables:
+
+```
+export HOST_PROVIDER=aws
+export ARCH=amd64
+```
+
 1. Prepare test environment and run the test:
 ```
 cd e2e

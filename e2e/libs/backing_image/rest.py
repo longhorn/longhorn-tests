@@ -1,6 +1,7 @@
 import time
 
 from backing_image.base import Base
+
 from utility.utility import logging
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
@@ -11,7 +12,7 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, bi_name, source_type, url, expected_checksum):
+    def create(self, bi_name, source_type, url, expected_checksum, data_engine, min_copies):
         logging(f"Creating backing image {bi_name}")
         get_longhorn_client().create_backing_image(
             name=bi_name,
@@ -20,7 +21,8 @@ class Rest(Base):
                 "url": url
             },
             expectedChecksum=expected_checksum,
-            minNumberOfCopies=1
+            minNumberOfCopies=min_copies,
+            dataEngine=data_engine
         )
 
         ready = False
@@ -110,10 +112,10 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert len(get_longhorn_client().list_backing_image()) == 0
-    
+
     def delete_backing_image_manager(self, name):
         return NotImplemented
-    
+
     def wait_all_backing_image_managers_running(self):
         return NotImplemented
 

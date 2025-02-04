@@ -17,6 +17,7 @@ from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
 from common import RETRY_COUNTS_SHORT
 from common import RETRY_INTERVAL
+from common import EXCEPTION_ERROR_REASON_NOT_FOUND
 from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
@@ -344,21 +345,50 @@ def backup_cleanup():
                                                 "longhorn-system",
                                                 "backups")
     for backup in backups['items']:
-        api.delete_namespaced_custom_object("longhorn.io",
-                                            "v1beta2",
-                                            "longhorn-system",
-                                            "backups",
-                                            backup['metadata']['name'])
+        try:
+            api.delete_namespaced_custom_object("longhorn.io",
+                                                "v1beta2",
+                                                "longhorn-system",
+                                                "backups",
+                                                backup['metadata']['name'])
+        except Exception as e:
+            # Continue with backup deleted case
+            if e.reason == EXCEPTION_ERROR_REASON_NOT_FOUND:
+                continue
+            # Report any other error
+            else:
+                assert (not e)
+
+    backups = api.list_namespaced_custom_object("longhorn.io",
+                                                "v1beta2",
+                                                "longhorn-system",
+                                                "backups")
+    ok = False
+    for _ in range(RETRY_COUNTS_SHORT):
+        if backups['items'] == []:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+        backups = api.list_namespaced_custom_object("longhorn.io",
+                                                    "v1beta2",
+                                                    "longhorn-system",
+                                                    "backups")
+    assert ok, f"backups: {backups['items']}"
 
 
 def backupstore_cleanup(client):
-    backup_volumes = client.list_backup_volume()
+    backup_volumes = client.list_backupVolume()
     # we delete the whole backup volume, which skips block gc
     for backup_volume in backup_volumes:
         client.delete(backup_volume)
         wait_for_backup_volume_delete(client, backup_volume.name)
 
-    backup_volumes = client.list_backup_volume()
+    backup_volumes = client.list_backupVolume()
+    for _ in range(RETRY_COUNTS_SHORT):
+        if backup_volumes.data == []:
+            break
+        time.sleep(RETRY_INTERVAL)
+        backup_volumes = client.list_backupVolume()
     assert backup_volumes.data == [], f"backup_volumes: {backup_volumes.data}"
 
     backup_backing_images = client.list_backup_backing_image()
@@ -366,6 +396,11 @@ def backupstore_cleanup(client):
         delete_backup_backing_image(client, backup_backing_image.name)
 
     backup_backing_images = client.list_backup_backing_image()
+    for _ in range(RETRY_COUNTS_SHORT):
+        if backup_backing_images.data == []:
+            break
+        time.sleep(RETRY_INTERVAL)
+        backup_backing_images = client.list_backup_backing_image()
     assert backup_backing_images.data == [], \
         f"backup_backing_images: {backup_backing_images.data}"
 

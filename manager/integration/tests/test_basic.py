@@ -531,6 +531,7 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, volume_name):    # NOQA
     """
     Test backup status for unavailable replicas
@@ -1476,6 +1477,7 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
     wait_for_backup_volume(client, bv.name, backing_image)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_restore_inc(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     """
@@ -2035,7 +2037,7 @@ def test_pvc_storage_class_name_from_backup_volume(set_random_backupstore, # NOQ
 
     volume_name = pv.spec.csi.volume_handle
     volume_id = client.by_id_volume(volume_name)
-    snapshot = volume_id.snapshotCreate()
+    snapshot = volume_id.snapshotCRCreate()
 
     volume_id.snapshotBackup(name=snapshot.name)
     wait_for_backup_completion(client, volume_name, snapshot.name)
@@ -2316,7 +2318,7 @@ def test_storage_class_from_backup(set_random_backupstore, volume_name, pvc_name
     write_pod_volume_data(core_api, pod_name, test_data)
 
     volume_id = client.by_id_volume(volume_name)
-    snapshot = volume_id.snapshotCreate()
+    snapshot = volume_id.snapshotCRCreate()
 
     volume_id.snapshotBackup(name=snapshot.name)
     wait_for_backup_completion(client, volume_name, snapshot.name)

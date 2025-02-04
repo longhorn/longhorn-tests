@@ -18,7 +18,7 @@ class Rest(Base):
         self.batch_v1_api = client.BatchV1Api()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, task, groups, cron, retain, concurrency, labels):
+    def create(self, name, task, groups, cron, retain, concurrency, labels, parameters):
         get_longhorn_client().create_recurring_job(
             Name=name,
             Task=task,
@@ -26,7 +26,8 @@ class Rest(Base):
             Cron=cron,
             Retain=retain,
             Concurrency=concurrency,
-            Labels=labels)
+            Labels=labels,
+            Parameters=parameters)
         self._wait_for_cron_job_create(name)
 
     def delete(self, job_name, volume_name):
@@ -146,13 +147,16 @@ class Rest(Base):
                         there's no new snapshot created by recurringjob \
                         {snapshot_list}"
 
-    def _check_backup_created(self, volume_name):
+    def _check_backup_created(self, volume_name, retry_count=-1):
+        if retry_count == -1:
+            retry_count = self.retry_count
+
         # check backup can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
         label_selector=f"backup-volume={volume_name}"
         backup_timestamp = 0
-        for i in range(self.retry_count):
+        for i in range(retry_count):
             logging(f"Waiting for {volume_name} new backup created ({i}) ...")
             backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "backups", label_selector=label_selector)
             try:
@@ -181,3 +185,9 @@ class Rest(Base):
             for job in jobs:
                 logging(f"Deleting recurringjob {job}")
                 self.delete(job, volume_name)
+
+    def wait_for_systembackup_state(self, job_name, expected_state):
+        return NotImplemented
+
+    def assert_volume_backup_created(self, volume_name, retry_count=-1):
+        self._check_backup_created(volume_name, retry_count=retry_count)

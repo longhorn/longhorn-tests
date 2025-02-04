@@ -119,11 +119,13 @@ def create_pod(manifest, is_wait_for_pod_running=False):
     return get_pod(name, namespace=namespace)
 
 
-def delete_pod(name, namespace='default'):
+def delete_pod(name, namespace='default', wait=True):
+    logging(f"Deleting pod {name} in namespace {namespace}")
     core_api = client.CoreV1Api()
     try:
         core_api.delete_namespaced_pod(name=name, namespace=namespace, grace_period_seconds=0)
-        wait_delete_pod(name)
+        if wait:
+            wait_delete_pod(name)
     except rest.ApiException as e:
         assert e.status == 404
 
@@ -133,7 +135,7 @@ def list_pods(namespace='default', label_selector=None):
     return core_api.list_namespaced_pod(
         namespace=namespace,
         label_selector=label_selector
-    )
+    ).items
 
 
 def wait_delete_pod(name, namespace='default'):
@@ -157,8 +159,8 @@ def cleanup_pods():
         label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}"
     )
 
-    logging(f'Cleaning up {len(pods.items)} pods')
-    for pod in pods.items:
+    logging(f'Cleaning up {len(pods)} pods')
+    for pod in pods:
         delete_pod(pod.metadata.name)
 
 
