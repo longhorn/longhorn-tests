@@ -55,9 +55,11 @@ from common import BACKING_IMAGE_STATE_READY
 from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
 from common import BACKING_IMAGE_STATE_IN_PROGRESS
 from common import RETRY_COUNTS_LONG
+from common import DATA_ENGINE
 import time
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_basic_operation(client, volume_name):  # NOQA
@@ -123,6 +125,7 @@ def backing_image_basic_operation_test(client, volume_name, bi_name, bi_url):  #
     client.delete(backing_image)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_content(client, volume_name):  # NOQA
@@ -206,6 +209,7 @@ def backing_image_content_test(client, volume_name_prefix, bi_name, bi_url):  # 
     cleanup_host_disk(volume_name2)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_volume_basic_with_backing_image(client, volume_name):  # NOQA
@@ -262,6 +266,7 @@ def test_snapshot_prune_and_coalesce_simultaneously_with_backing_image(client, v
         cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.parametrize("volume_size", [str(BACKING_IMAGE_EXT4_SIZE), SIZE]) # NOQA
@@ -276,6 +281,7 @@ def test_backup_with_backing_image(set_random_backupstore, client, volume_name, 
         backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backup_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
@@ -289,6 +295,7 @@ def test_backup_labels_with_backing_image(set_random_backupstore, client, random
         backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_ha_simple_recovery_with_backing_image(client, volume_name):  # NOQA
@@ -359,6 +366,7 @@ def test_engine_live_upgrade_rollback_with_backing_image(client, core_api, volum
         cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_mount_with_backing_image(client, core_api, csi_pv_backingimage, pvc_backingimage, pod_make):  # NOQA
@@ -372,6 +380,7 @@ def test_csi_mount_with_backing_image(client, core_api, csi_pv_backingimage, pvc
         cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
@@ -385,6 +394,7 @@ def test_csi_io_with_backing_image(client, core_api, csi_pv_backingimage, pvc_ba
         cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
@@ -399,6 +409,7 @@ def test_csi_backup_with_backing_image(set_random_backupstore, client, core_api,
         backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
@@ -486,7 +497,8 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
             name=backing_img1_name,
             sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
             parameters={"export-type": "qcow2", "volume-name": volume1_name},
-            expectedChecksum="")
+            expectedChecksum="",
+            dataEngine=DATA_ENGINE)
 
     # Step4
     volume2_name = "vol2"
@@ -508,7 +520,8 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
             name="bi-test2",
             sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
             parameters={"export-type": "qcow2", "volume-name": volume2_name},
-            expectedChecksum="")
+            expectedChecksum="",
+            dataEngine=DATA_ENGINE)
 
     # Step9
     volume3_name = "vol3"
@@ -520,6 +533,7 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
 
     # Step10
     check_volume_data(volume3, data2)
+
 
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.parametrize("bi_url", [BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL]) # NOQA
@@ -567,6 +581,7 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     assert volume.size == str(BACKING_IMAGE_EXT4_SIZE)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_cleanup(core_api, client):  # NOQA
     """
@@ -630,6 +645,7 @@ def backing_image_cleanup(core_api, client): # NOQA
     assert exist is False
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.parametrize("bi_url", [BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL]) # NOQA
 def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
@@ -640,7 +656,8 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
     client.create_backing_image(name=BACKING_IMAGE_NAME,
                                 sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
                                 parameters={"url": bi_url},
-                                expectedChecksum=backing_image_wrong_checksum)
+                                expectedChecksum=backing_image_wrong_checksum,
+                                dataEngine=DATA_ENGINE)
 
     wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
                                   BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
@@ -680,7 +697,8 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
             name=backing_img_name,
             sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
             parameters={"export-type": "qcow2", "volume-name": volume1_name},
-            expectedChecksum="")
+            expectedChecksum="",
+            dataEngine=DATA_ENGINE)
 
     # Create volume with that backing image
     volume2_name = "vol2"
@@ -707,6 +725,7 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
     assert vol1_cksum == vol2_cksum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_min_number_of_replicas(client): # NOQA
     """
@@ -750,6 +769,7 @@ def test_backing_image_min_number_of_replicas(client): # NOQA
     cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_selector_setting(client, volume_name): # NOQA
     """
@@ -792,7 +812,8 @@ def test_backing_image_selector_setting(client, volume_name): # NOQA
                          numberOfReplicas=1,
                          diskSelector=volume_disk_selector,
                          nodeSelector=volume_node_selector,
-                         backingImage=BACKING_IMAGE_NAME)
+                         backingImage=BACKING_IMAGE_NAME,
+                         dataEngine=DATA_ENGINE)
     vol = wait_for_volume_detached(client, volume_name)
     assert vol.diskSelector == volume_disk_selector
     assert vol.nodeSelector == volume_node_selector
@@ -802,6 +823,7 @@ def test_backing_image_selector_setting(client, volume_name): # NOQA
     cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_node_eviction(client): # NOQA
     """
@@ -834,6 +856,7 @@ def test_backing_image_node_eviction(client): # NOQA
     cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_disk_eviction(client): # NOQA
     """
@@ -877,6 +900,7 @@ def test_backing_image_disk_eviction(client): # NOQA
     cleanup_all_backing_images(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_unable_eviction(client): # NOQA
     """
