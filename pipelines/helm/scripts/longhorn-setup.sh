@@ -8,6 +8,7 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_helm_chart.sh
+source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/run_longhorn_test.sh
 
 # create and clean tmpdir
@@ -50,6 +51,8 @@ main(){
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
     install_longhorn
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
     UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
@@ -63,7 +66,12 @@ main(){
     run_longhorn_test
   else
     get_longhorn_chart
+    if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
+      customize_longhorn_chart_registry
+    fi
     install_longhorn
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_test
   fi
 
