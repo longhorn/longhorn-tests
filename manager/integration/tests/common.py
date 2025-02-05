@@ -5492,12 +5492,16 @@ def create_backing_image_with_matching_url(client, name, url,
         if url == BACKING_IMAGE_RAW_URL:
             expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
         elif url == BACKING_IMAGE_QCOW2_URL:
-            expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
+            if DATA_ENGINE == "v2":
+                expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
+            else:
+                expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
         bi = client.create_backing_image(
             name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
             parameters={"url": url}, expectedChecksum=expected_checksum,
             minNumberOfCopies=minNumberOfCopies,
-            nodeSelector=nodeSelector, diskSelector=diskSelector)
+            nodeSelector=nodeSelector, diskSelector=diskSelector,
+            dataEngine=DATA_ENGINE)
     assert bi
 
     is_ready = False
