@@ -14,3 +14,25 @@ Create snapshot and backup recurringjob for volume ${volume_id}
 Check recurringjobs for volume ${volume_id} work
     ${volume_name} =   generate_name_with_suffix    volume    ${volume_id}
     check_recurringjobs_work    ${volume_name}
+
+Create system-backup recurringjob ${job_id}
+    [Arguments]    &{config}
+
+    ${job_name} =   generate_name_with_suffix    system-backup    ${job_id}
+    create_system_backup_recurringjob    ${job_name}    &{config}
+
+Wait for recurringjob ${job_id} created systembackup to reach ${expected_state} state
+    ${job_name} =   generate_name_with_suffix    system-backup    ${job_id}
+    wait_for_recurringjob_created_systembackup_state    ${job_name}    ${expected_state}
+
+Assert recurringjob ${created_condition} backup for volume ${volume_id}
+    [Arguments]    &{args}
+
+    ${volume_name} =   generate_name_with_suffix    volume    ${volume_id}
+    IF    "${created_condition}" == "created"
+        assert_recurringjob_created_backup_for_volume    ${volume_name}
+    ELSE IF    "${created_condition}" == "not created"
+        Run Keyword And Expect Error    *    assert_recurringjob_created_backup_for_volume    ${volume_name}    retry_count=60
+    ELSE
+        Fail    Invalid created_condition: ${created_condition}
+    END

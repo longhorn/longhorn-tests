@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class Base(ABC):
 
     @abstractmethod
-    def create(self, name, task, groups, cron, retain, concurrency, label):
+    def create(self, name, task, groups, cron, retain, concurrency, label, parameters):
         return NotImplemented
 
     @abstractmethod

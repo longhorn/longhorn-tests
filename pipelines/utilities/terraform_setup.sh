@@ -2,11 +2,6 @@
 
 set -x
 
-if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
-  source pipelines/utilities/vpn.sh
-  connect_to_vpn
-fi
-
 if [[ ${TF_VAR_arch} == "amd64" ]]; then
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} init
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color
