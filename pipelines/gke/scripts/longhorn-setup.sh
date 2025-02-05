@@ -26,6 +26,32 @@ set_kubeconfig_envvar(){
     gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_zone` --project ${TF_VAR_gcp_project}
 }
 
+print_out_cluster_info(){
+  gcloud container clusters describe `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_zone` --format="value(currentNodeVersion)"
+  kubectl create -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: print-os-release
+spec:
+  containers:
+  - name: print-os-release
+    image: alpine
+    args: ["/bin/sh", "-c", "while true;do date;sleep 5; done"]
+    volumeMounts:
+    - name: host
+      mountPath: /mnt/host
+  volumes:
+  - name: host
+    hostPath:
+      path: /
+      type: Directory
+EOF
+  kubectl wait --for=condition=Ready pod/print-os-release --timeout=60s
+  kubectl exec -it print-os-release -- cat /mnt/host/etc/os-release
+  kubectl delete pod/print-os-release
+}
+
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
@@ -260,6 +286,7 @@ run_longhorn_tests(){
 
 main(){
   set_kubeconfig_envvar
+  print_out_cluster_info
 
   create_longhorn_namespace
 
