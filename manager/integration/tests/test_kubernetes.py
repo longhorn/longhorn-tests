@@ -30,6 +30,7 @@ from common import volume_name # NOQA
 from common import update_setting
 from common import SETTING_DEGRADED_AVAILABILITY
 from common import wait_statefulset, crash_engine_process_with_sigkill
+from common import DATA_ENGINE
 
 from backupstore import backupstore_cleanup
 
@@ -108,6 +109,7 @@ def provision_and_wait_pv(client, core_api, storage_class, pvc): # NOQA
     return pv
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_kubernetes_status(client, core_api, storage_class,  # NOQA
                            statefulset, csi_pv, pvc, pod):  # NOQA
@@ -311,6 +313,7 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
         wait_delete_pv(core_api, p['pv_name'])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_pv_creation(client, core_api):  # NOQA
     """
@@ -323,7 +326,8 @@ def test_pv_creation(client, core_api):  # NOQA
     """
     volume_name = "test-pv-creation" # NOQA
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2)
+                         numberOfReplicas=2,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     pv_name = "pv-" + volume_name
@@ -348,6 +352,7 @@ def test_pv_creation(client, core_api):  # NOQA
     delete_and_wait_pv(core_api, pv_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_pvc_creation_with_default_sc_set(
         client, core_api, storage_class, pod):  # NOQA
@@ -385,7 +390,8 @@ def test_pvc_creation_with_default_sc_set(
     volume_name = "test-pvc-creation-with-sc" # NOQA
     pod_name = "pod-" + volume_name
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2)
+                         numberOfReplicas=2,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     pv_name = "pv-" + volume_name
@@ -498,6 +504,7 @@ def test_pvc_creation_with_default_sc_set(
     delete_and_wait_pv(core_api, pv_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod, storage_class):  # NOQA
     """
@@ -536,7 +543,8 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod,
 
     volume_name = "test-backup-kubernetes-status-pod" # NOQA
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2)
+                         numberOfReplicas=2,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     pod_name = "pod-" + volume_name
@@ -602,7 +610,8 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod,
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
                          numberOfReplicas=2,
-                         fromBackup=b.url)
+                         fromBackup=b.url,
+                         dataEngine=DATA_ENGINE)
     wait_for_volume_restoration_completed(client, restore_name)
     wait_for_volume_detached(client, restore_name)
 
@@ -671,7 +680,8 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod,
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
                          numberOfReplicas=2,
-                         fromBackup=b.url)
+                         fromBackup=b.url,
+                         dataEngine=DATA_ENGINE)
     wait_for_volume_restoration_completed(client, restore_name)
     wait_for_volume_detached(client, restore_name)
 
@@ -694,6 +704,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod,
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     """
@@ -731,6 +742,7 @@ def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     wait_delete_pvc(core_api, pvc_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
     """
@@ -757,6 +769,7 @@ def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQ
     wait_delete_pvc(core_api, pvc['metadata']['name'])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     """
@@ -781,6 +794,7 @@ def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly(client, core_api, statefulset, storage_class):  # NOQA
     """
