@@ -46,6 +46,7 @@ from common import SETTING_DEFAULT_DATA_LOCALITY
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_AUTO_BALANCE
+from common import DATA_ENGINE
 
 from test_scheduling import wait_new_replica_ready
 
@@ -127,6 +128,7 @@ def get_zone_replica_count(client, volume_name, zone_name, chk_running=False): #
     return zone_replica_count
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
     """
     Test anti affinity zone feature
@@ -238,6 +240,7 @@ def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
         assert lh_node_names == []
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
     """
@@ -304,6 +307,7 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
                                         CONDITION_STATUS_TRUE)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name):  # NOQA
     """
     Scenario: replica auto-balance zones with least-effort.
@@ -425,6 +429,7 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
     assert z3_r_count != 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  # NOQA
     """
     Scenario: replica auto-balance zones with best-effort.
@@ -545,6 +550,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     assert z3_r_count == 2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core_api, volume_name):  # NOQA
     """
     Scenario: replica auto-balance when disk scheduling is disabled on nodes
@@ -593,7 +599,8 @@ def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core
     # Create a volume with 3 replicas
     num_of_replicas = 3
     volume = client.create_volume(name=volume_name,
-                                  numberOfReplicas=num_of_replicas)
+                                  numberOfReplicas=num_of_replicas,
+                                  dataEngine=DATA_ENGINE)
 
     # Wait for the volume to detach and attach it to the test pod node
     volume = wait_for_volume_detached(client, volume_name)
@@ -647,6 +654,7 @@ def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core
     assert_replica_count(is_stable=True)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api, volume_name):  # NOQA
     """
     Scenario: replica auto-balance when there is no storage available on nodes
@@ -699,7 +707,8 @@ def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api
     # Create a volume with 3 replicas
     num_of_replicas = 3
     volume = client.create_volume(name=volume_name,
-                                  numberOfReplicas=num_of_replicas)
+                                  numberOfReplicas=num_of_replicas,
+                                  dataEngine=DATA_ENGINE)
 
     # Wait for the volume to detach and attach it to the test pod node
     volume = wait_for_volume_detached(client, volume_name)
@@ -753,6 +762,7 @@ def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api
     assert_replica_count(is_stable=True)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_api, volume_name, request):  # NOQA
     """
     Scenario: replica auto-balance when replica already running on
@@ -806,7 +816,8 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
     volume = client.create_volume(name=volume_name,
                                   numberOfReplicas=n_replicas,
                                   nodeSelector=["AVAIL"],
-                                  dataLocality="best-effort")
+                                  dataLocality="best-effort",
+                                  dataEngine=DATA_ENGINE)
 
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
@@ -865,6 +876,7 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
         time.sleep(RETRY_INTERVAL)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_api, volume_name, pod):  # NOQA
     """
     Background:
@@ -1021,6 +1033,7 @@ def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_a
         delete_and_wait_pod(core_api, pod['metadata']['name'])
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api, volume_name):  # NOQA
     """
     Scenario: replica auto-balance to nodes with duplicated replicas in the
@@ -1293,6 +1306,7 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
     assert z2_r_count == 2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_should_respect_node_selector(client, core_api, volume_name, pod):  # NOQA
     """
     Background:
@@ -1346,7 +1360,8 @@ def test_replica_auto_balance_should_respect_node_selector(client, core_api, vol
     n_replicas = 3
     client.create_volume(name=volume_name,
                          numberOfReplicas=n_replicas,
-                         nodeSelector=[node_tag])
+                         nodeSelector=[node_tag],
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=selected_nodes[0].name)
 
