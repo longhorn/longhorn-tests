@@ -4,7 +4,7 @@ output "registry_url" {
     null_resource.post_setup
   ]
 
-  value = digitalocean_record.lh_registry.fqdn
+  value = aws_route53_record.lh_registry.fqdn
 }
 
 output "registry_username" {

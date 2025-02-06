@@ -3633,25 +3633,51 @@ def cleanup_test_disks(client):
 
 
 def reset_disks_for_all_nodes(client):  # NOQA
+    default_disks = {
+        "v1": {
+            "path": DEFAULT_DISK_PATH,
+            "type": "filesystem",
+            "default": True,
+        }
+    }
+
     enable_v2 = os.environ.get('RUN_V2_TEST')
+
     if enable_v2 == "true":
-        default_disk_path = BLOCK_DEV_PATH
-        disk_type = "block"
-    else:
-        default_disk_path = DEFAULT_DISK_PATH
-        disk_type = "filesystem"
+        default_disks["v2"] = {
+            "path": BLOCK_DEV_PATH,
+            "type": "block",
+            "default": True,
+        }
+        default_disks["v1"]["default"] = False
 
     nodes = client.list_node()
-    for node in nodes:
-        # Reset default disk if there are more than 1 disk
+    for n in nodes:
+        node = n  # Captures the correct value of n in the closure.
+
+        # Reset default disk if default disks are not the only disks
         # on the node.
         cleanup_required = False
-        if len(node.disks) > 1:
+        if len(node.disks) != len(default_disks):
             cleanup_required = True
-        if len(node.disks) == 1:
-            for _, disk in iter(node.disks.items()):
-                if disk.path != default_disk_path:
-                    cleanup_required = True
+
+        for name, disk in iter(node.disks.items()):
+            if cleanup_required:
+                break
+
+            if disk.path not in [v["path"] for v in default_disks.values()]:
+                cleanup_required = True
+                break
+
+            if name == "default-disk":
+                for data_engine, disk in default_disks.items():
+                    if not disk["default"]:
+                        continue
+
+                    if disk["path"] != node.disks[name].path:
+                        cleanup_required = True
+                    break
+
         if cleanup_required:
             update_disks = get_update_disks(node.disks)
             for disk_name, disk in iter(update_disks.items()):
@@ -3663,22 +3689,31 @@ def reset_disks_for_all_nodes(client):  # NOQA
             node = update_node_disks(client, node.name, disks=update_disks,
                                      retry=True)
             node = wait_for_disk_update(client, node.name, 0)
-        if len(node.disks) == 0:
-            default_disk = {"default-disk":
-                            {"path": default_disk_path,
-                             "diskType": disk_type,
-                             "allowScheduling": True}}
-            node = update_node_disks(client, node.name, disks=default_disk,
+
+        if len(node.disks) != len(default_disks):
+            update_disks = {}
+            for data_engine, disk in default_disks.items():
+                disk_name = data_engine
+                if disk["default"]:
+                    disk_name = "default-disk"
+
+                update_disks[disk_name] = {
+                    "path": disk["path"],
+                    "diskType": disk["type"],
+                    "allowScheduling": True
+                }
+
+            node = update_node_disks(client, node.name, disks=update_disks,
                                      retry=True)
-            node = wait_for_disk_update(client, node.name, 1)
-            assert len(node.disks) == 1
+            node = wait_for_disk_update(client, node.name, len(default_disks))
+            assert len(node.disks) == len(default_disks)
         # wait for node controller to update disk status
         disks = node.disks
         update_disks = {}
         for name, disk in iter(disks.items()):
             update_disk = disk
             update_disk.allowScheduling = True
-            if disk_type == "filesystem":
+            if disk.diskType == "filesystem":
                 reserved_storage = int(update_disk.storageMaximum * 30 / 100)
             else:
                 reserved_storage = 0
@@ -3693,9 +3728,13 @@ def reset_disks_for_all_nodes(client):  # NOQA
                                  "allowScheduling", True)
             wait_for_disk_status(client, node.name, name,
                                  "storageScheduled", 0)
+
+            expected_reserved_storage = 0
+            if disk.diskType == "filesystem":
+                expected_reserved_storage = reserved_storage
             wait_for_disk_status(client, node.name, name,
                                  "storageReserved",
-                                 reserved_storage)
+                                 expected_reserved_storage)
 
 
 def reset_settings(client):
