@@ -9,6 +9,7 @@ from common import get_volume_name, read_volume_data, size_to_string
 from common import write_pod_volume_data, check_volume_replicas
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import get_self_host_id
+from common import DATA_ENGINE
 import subprocess
 
 DEFAULT_STORAGECLASS_NAME = "longhorn-provisioner"
@@ -26,6 +27,8 @@ def create_storage(api, sc_manifest, pvc_manifest):
         body=pvc_manifest,
         namespace='default')
 
+
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
     """
@@ -81,6 +84,7 @@ def test_provisioner_generic_ephemeral():
     pass
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that substituting different StorageClass parameters is reflected in
@@ -107,7 +111,8 @@ def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
     storage_class['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
     storage_class['parameters'] = {
         'numberOfReplicas': '2',
-        'staleReplicaTimeout': '20'
+        'staleReplicaTimeout': '20',
+        'dataEngine': DATA_ENGINE
     }
 
     create_storage(core_api, storage_class, pvc)
@@ -124,6 +129,7 @@ def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
     assert volumes.data[0].state == "attached"
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that input and output on a StorageClass provisioned
@@ -165,6 +171,7 @@ def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
     assert resp == test_data
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pvc, pod):  # NOQA
     """
     Test that a StorageClass can properly provision a volume with requested
@@ -216,6 +223,7 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     check_volume_replicas(volumes.data[0], tag_spec, node_default_tags)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.parametrize(
     "inode_size,block_size",
     [
