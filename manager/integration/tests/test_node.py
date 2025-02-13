@@ -53,6 +53,7 @@ from common import make_deployment_with_pvc # NOQA
 from common import prepare_host_disk, wait_for_volume_degraded
 from common import create_deployment_and_write_data
 from common import wait_scheduling_failure
+from common import DATA_ENGINE, BLOCK_DEV_PATH
 
 from backupstore import set_random_backupstore # NOQA
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -150,6 +151,14 @@ def reset_disk_settings():
     api.update(setting, value=DEFAULT_DISK_PATH)
 
 
+def get_default_disk_path():
+    if DATA_ENGINE == "v2":
+        default_disk_path = BLOCK_DEV_PATH
+    else:
+        default_disk_path = DEFAULT_DISK_PATH
+    return default_disk_path
+
+
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_update_node(client):  # NOQA
@@ -183,6 +192,7 @@ def test_update_node(client):  # NOQA
     assert node.allowScheduling
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
@@ -286,6 +296,7 @@ def test_node_disk_update(client):  # NOQA
     cleanup_host_disks(client, 'vol-disk-1', 'vol-disk-2')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_no_disks(client):  # NOQA
@@ -323,7 +334,8 @@ def test_replica_scheduler_no_disks(client):  # NOQA
     # test there's no disk fit for volume
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
+                                  size=SIZE, numberOfReplicas=len(nodes),
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
@@ -331,6 +343,7 @@ def test_replica_scheduler_no_disks(client):  # NOQA
     common.wait_for_volume_delete(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_disable_scheduling_on_cordoned_node(client,  # NOQA
                                              core_api,  # NOQA
@@ -380,7 +393,8 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
     # Create a volume
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=SIZE,
-                         numberOfReplicas=len(nodes))
+                         numberOfReplicas=len(nodes),
+                         dataEngine=DATA_ENGINE)
     common.wait_for_volume_detached(client, vol_name)
 
     # Set uncordon on node
@@ -411,6 +425,7 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
 
     # Cleanup volume
     cleanup_volume_by_name(client, vol_name)
+
 
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
@@ -491,6 +506,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     cleanup_host_disks(client, 'vol-small')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     """
@@ -512,7 +528,7 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     for node in nodes:
         disks = node.disks
         for _, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
+            if disk.path == get_default_disk_path():
                 expect_disk = disk
                 expect_node_disk[node.name] = expect_disk
             disk.storageReserved = disk.storageMaximum
@@ -523,7 +539,8 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     volume_size = 4 * Gi
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=str(volume_size),
-                         numberOfReplicas=len(nodes))
+                         numberOfReplicas=len(nodes),
+                         dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
@@ -577,6 +594,7 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_update_over_provisioning(client):  # NOQA
     """
@@ -595,7 +613,7 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
     for node in nodes:
         disks = node.disks
         for _, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
+            if disk.path == get_default_disk_path():
                 expect_disk = disk
                 expect_node_disk[node.name] = expect_disk
 
@@ -605,7 +623,8 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
 
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
+                                  size=SIZE, numberOfReplicas=len(nodes),
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
@@ -642,6 +661,7 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
     """
@@ -671,7 +691,8 @@ def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
                                   size=str(2*Gi),
-                                  numberOfReplicas=len(nodes))
+                                  numberOfReplicas=len(nodes),
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
@@ -679,6 +700,7 @@ def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
     common.wait_for_volume_delete(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     """
@@ -697,7 +719,7 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     for node in nodes:
         disks = node.disks
         for _, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
+            if disk.path == get_default_disk_path():
                 expect_disk = disk
                 expect_node_disk[node.name] = expect_disk
                 max_size_array.append(disk.storageMaximum)
@@ -707,8 +729,9 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
                                      retry=True)
             disks = node.disks
             for fsid, disk in iter(disks.items()):
-                wait_for_disk_status(client, node.name,
-                                     fsid, "storageReserved", 0)
+                if disk.path == get_default_disk_path():
+                    wait_for_disk_status(client, node.name,
+                                         fsid, "storageReserved", 0)
 
     # volume size is round up by 2MiB
     max_size = min(max_size_array) - 2 * 1024 * 1024
@@ -716,7 +739,8 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
                                   size=str(max_size),
-                                  numberOfReplicas=len(nodes))
+                                  numberOfReplicas=len(nodes),
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_TRUE)
@@ -745,6 +769,7 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_update_minimal_available(client):  # NOQA
     """
@@ -768,7 +793,7 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
     for node in nodes:
         disks = node.disks
         for _, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
+            if disk.path == get_default_disk_path():
                 expect_disk = disk
                 expect_node_disk[node.name] = expect_disk
 
@@ -788,7 +813,8 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
     lht_hostId = get_self_host_id()
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
+                                  size=SIZE, numberOfReplicas=len(nodes),
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
@@ -833,6 +859,7 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_controller_sync_storage_scheduled(client):  # NOQA
     """
@@ -865,8 +892,9 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     for node in nodes:
         disks = node.disks
         for fsid, disk in iter(disks.items()):
-            wait_for_disk_status(client, node.name, fsid,
-                                 "storageScheduled", SMALL_DISK_SIZE)
+            if disk.path == get_default_disk_path():
+                wait_for_disk_status(client, node.name, fsid,
+                                     "storageScheduled", SMALL_DISK_SIZE)
 
     nodes = client.list_node()
     for node in nodes:
@@ -889,6 +917,7 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk  # NOQA
@@ -961,6 +990,7 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     cleanup_host_disks(client, 'vol-test')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_controller_sync_disk_state(client):  # NOQA
@@ -2250,6 +2280,7 @@ def test_disk_migration(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_node_eviction(client, core_api, csi_pv, pvc, pod_make, volume_name): # NOQA
     """
     Test node eviction (assuming this is a 3 nodes cluster)
@@ -2302,6 +2333,7 @@ def test_node_eviction(client, core_api, csi_pv, pvc, pod_make, volume_name): # 
     assert expect_md5sum == created_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_node_eviction_no_schedulable_node(client, core_api, csi_pv, pvc, pod_make, volume_name, settings_reset): # NOQA
     """
     Test node eviction (assuming this is a 3 nodes cluster)
@@ -2370,6 +2402,7 @@ def test_node_eviction_no_schedulable_node(client, core_api, csi_pv, pvc, pod_ma
     assert expect_md5sum == created_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_node_eviction_soft_anti_affinity(client, core_api, csi_pv, pvc, pod_make, volume_name, settings_reset): # NOQA
     """
     Test node eviction (assuming this is a 3 nodes cluster)
@@ -2447,6 +2480,7 @@ def test_node_eviction_soft_anti_affinity(client, core_api, csi_pv, pvc, pod_mak
     assert expect_md5sum == created_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, volume_name): # NOQA
     """
     Test node eviction (assuming this is a 3 nodes cluster)
@@ -2795,6 +2829,7 @@ def check_all_replicas_evict_state(client, volume_name, expect_state): # NOQA
         assert eviction_requested is expect_state
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_drain_with_block_for_eviction_success(client, # NOQA
                                                core_api, # NOQA
                                                volume_name, # NOQA
@@ -3021,6 +3056,7 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     assert checksum2 == test_data_checksum2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_drain_with_block_for_eviction_failure(client, # NOQA
                                                core_api, # NOQA
                                                volume_name, # NOQA
@@ -3081,6 +3117,7 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
     assert checksum == test_data_checksum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.node  # NOQA
 def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
     """
@@ -3103,7 +3140,8 @@ def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name)
     # Create a volume
     volume = client.create_volume(name=volume_name,
                                   size=SIZE,
-                                  numberOfReplicas=3)
+                                  numberOfReplicas=3,
+                                  dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_detached(client,
                                              volume_name)
     assert volume.restoreRequired is False
