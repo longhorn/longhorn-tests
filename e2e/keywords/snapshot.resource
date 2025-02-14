@@ -6,6 +6,7 @@ Library    ../libs/keywords/snapshot_keywords.py
 
 *** Keywords ***
 Create snapshot ${snapshot_id} of volume ${volume_id}
+    ${snapshot_id}=  Convert To String  ${snapshot_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_snapshot    ${volume_name}    ${snapshot_id}
 
