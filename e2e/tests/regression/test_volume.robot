@@ -11,6 +11,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/snapshot.resource
 Resource    ../keywords/volume.resource
 
 Test Setup    Set test environment
@@ -65,3 +66,16 @@ Test RWX Volume Without Migratable Should Be Incompatible With Strict-Local
 
     When Create volume 0 with    numberOfReplicas=1    migratable=False    accessMode=RWX    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     Then No volume created
+
+Test Volume Attached at Maximum Snapshot Count
+    [Tags]    volume    snapshot-limit
+    [Documentation]    Validate that reaching the snapshot limit of 250 does not affect
+    ...                volume attach/detach operations.
+    ...                Issue: https://github.com/longhorn/longhorn/issues/10308
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}    numberOfReplicas=1
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    When Create 249 snapshot for volume 0
+    And Detach volume 0
+    Then Attach volume 0
+    And Wait for volume 0 healthy
