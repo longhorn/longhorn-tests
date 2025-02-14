@@ -6,6 +6,7 @@ Library    ../libs/keywords/snapshot_keywords.py
 
 *** Keywords ***
 Create snapshot ${snapshot_id} of volume ${volume_id}
+    ${snapshot_id}=  Convert To String  ${snapshot_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_snapshot    ${volume_name}    ${snapshot_id}
 
@@ -55,3 +56,8 @@ Validate snapshot ${snapshot_id} is in volume ${volume_id} snapshot list
 Create snapshot ${snapshot_id} of volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     Run Keyword And Expect Error    *    create_snapshot    ${volume_name}    ${snapshot_id}    waiting=False
+
+Create ${snapshot_count} snapshot for volume ${volume_id}
+    FOR    ${i}    IN RANGE    ${snapshot_count}
+        Create snapshot ${i} of volume ${volume_id}
+    END
