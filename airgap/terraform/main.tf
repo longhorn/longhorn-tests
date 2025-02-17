@@ -4,10 +4,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 3.0"
     }
-    digitalocean = {
-      source = "digitalocean/digitalocean"
-      version = "~> 2.0"
-    }
   }
 }
 
@@ -19,10 +15,6 @@ provider "aws" {
 
 data "aws_availability_zones" "available" {
   state = "available"
-}
-
-provider "digitalocean" {
-  token = var.do_token
 }
 
 locals {
@@ -257,21 +249,21 @@ resource "aws_instance" "lh_registry_aws_instance" {
   }
 }
 
-data "digitalocean_domain" "rancher_domain" {
-  name = "ci-qa.rancher.space"
+data "aws_route53_zone" "lh_zone" {
+  name = "longhorn.ninja"
 }
 
-resource "digitalocean_record" "lh_registry" {
+resource "aws_route53_record" "lh_registry" {
 
   depends_on = [
     aws_instance.lh_registry_aws_instance
   ]
 
-  domain = data.digitalocean_domain.rancher_domain.id
+  zone_id = data.aws_route53_zone.lh_zone.zone_id
+  name   = "lh-registry-${random_string.random_suffix.id}.longhorn.ninja"
   type   = "A"
-  name   = "lh-registry-${random_string.random_suffix.id}"
-  value  = aws_instance.lh_registry_aws_instance.public_ip
   ttl    = 60
+  records  = [aws_instance.lh_registry_aws_instance.public_ip]
 }
 
 # post setup
@@ -279,7 +271,7 @@ resource "null_resource" "post_setup" {
 
   depends_on = [
     aws_instance.lh_registry_aws_instance,
-    digitalocean_record.lh_registry
+    aws_route53_record.lh_registry
   ]
 
   provisioner "remote-exec" {
@@ -312,7 +304,7 @@ resource "null_resource" "post_setup" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /tmp/provision_registry_server.sh",
-      "registry_username=${local.registry_username} registry_password=${local.registry_password} registry_url=${digitalocean_record.lh_registry.fqdn} longhorn_version=${var.longhorn_version} /tmp/provision_registry_server.sh",
+      "registry_username=${local.registry_username} registry_password=${local.registry_password} registry_url=${aws_route53_record.lh_registry.fqdn} longhorn_version=${var.longhorn_version} /tmp/provision_registry_server.sh",
     ]
 
     connection {
