@@ -11,7 +11,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, secretName, secretNamespace):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -25,6 +25,17 @@ class StorageClass():
             manifest_dict['parameters']['fromBackup'] = fromBackup
             manifest_dict['parameters']['nfsOptions'] = nfsOptions
             manifest_dict['parameters']['dataEngine'] = dataEngine
+
+            if encrypted:
+                manifest_dict['parameters']['encrypted'] = encrypted
+                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = secretName
+                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = secretNamespace
+                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = secretName
+                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = secretNamespace
+                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = secretName
+                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = secretNamespace
+                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-name'] = secretName
+                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-namespace'] = secretNamespace
 
             self.api.create_storage_class(body=manifest_dict)
 
