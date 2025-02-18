@@ -5797,6 +5797,7 @@ def test_backuptarget_invalid(apps_api, # NOQA
                BACKUP_TARGET_MESSAGES_INVALID)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.volume_backup_restore   # NOQA
 def test_volume_backup_and_restore_with_lz4_compression_method(client, set_random_backupstore, volume_name):  # NOQA
     """
@@ -5829,6 +5830,7 @@ def test_volume_backup_and_restore_with_lz4_compression_method(client, set_rando
                 compression_method=BACKUP_COMPRESSION_METHOD_LZ4)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.volume_backup_restore   # NOQA
 def test_volume_backup_and_restore_with_gzip_compression_method(client, set_random_backupstore, volume_name):  # NOQA
     """
@@ -5861,6 +5863,7 @@ def test_volume_backup_and_restore_with_gzip_compression_method(client, set_rand
                 compression_method=BACKUP_COMPRESSION_METHOD_GZIP)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.volume_backup_restore   # NOQA
 def test_volume_backup_and_restore_with_none_compression_method(client, set_random_backupstore, volume_name):  # NOQA
     """
