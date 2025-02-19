@@ -26,7 +26,7 @@ class StorageClass():
             manifest_dict['parameters']['nfsOptions'] = nfsOptions
             manifest_dict['parameters']['dataEngine'] = dataEngine
 
-            if encrypted:
+            if encrypted == "true":
                 manifest_dict['parameters']['encrypted'] = encrypted
                 manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = secretName
                 manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = secretNamespace
