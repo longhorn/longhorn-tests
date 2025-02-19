@@ -9,8 +9,8 @@ class backup_keywords:
     def __init__(self):
         self.backup = Backup()
 
-    def create_backup(self, volume_name, backup_id):
-        self.backup.create(volume_name, backup_id)
+    def create_backup(self, volume_name, backup_id, cleanup_snapshot=False):
+        self.backup.create(volume_name, backup_id, cleanup_snapshot)
 
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
@@ -57,3 +57,9 @@ class backup_keywords:
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)
+
+    def check_snapshot_exists_for_backup(self, volume_name, backup_id,
+                                         exists=True):
+        self.backup.check_snapshot_exists_for_backup(volume_name,
+                                                     backup_id,
+                                                     exists)

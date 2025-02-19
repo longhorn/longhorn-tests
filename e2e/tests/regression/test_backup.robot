@@ -106,3 +106,17 @@ Test Incremental Restore
     And Delete pod 0
     And Delete persistentvolumeclaim for volume 3
     And Delete persistentvolume for volume 3
+
+Test Cleanup Snapshot After Backup Completed
+    [Documentation]    Test cleanup snapshot after backup completed
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+
+    When Write data 0 to volume 0
+    And Create backup 0 for volume 0
+    And Check snapshot for backup 0 of volume 0 exists True
+
+    When Write data 1 to volume 0
+    And Create backup 1 for volume 0 with cleanup snapshot True
+    And Check snapshot for backup 1 of volume 0 exists False

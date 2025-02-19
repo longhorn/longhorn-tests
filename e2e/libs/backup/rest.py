@@ -19,12 +19,13 @@ class Rest(Base):
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, backup_id):
+    def create(self, volume_name, backup_id, cleanup_snapshot=False):
         # create snapshot
         snapshot = self.snapshot.create(volume_name, backup_id)
 
         volume = self.volume.get(volume_name)
-        volume.snapshotBackup(name=snapshot.name)
+        volume.snapshotBackup(name=snapshot.name,
+                              cleanupBackupSnapshot=cleanup_snapshot)
         # after backup request we need to wait for completion of the backup
         # since the backup.cfg will only be available once the backup operation
         # has been completed
@@ -44,7 +45,8 @@ class Rest(Base):
             f"expect volume lastBackupAt is not empty, but it's {volume.lastBackupAt}"
 
         self.set_backup_id(backup.name, backup_id)
-        self.set_data_checksum(backup.name, self.volume.get_last_data_checksum(volume_name))
+        self.set_data_checksum(backup.name,
+                               self.volume.get_last_data_checksum(volume_name))
 
         return backup
 
