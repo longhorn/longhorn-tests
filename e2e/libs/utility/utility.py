@@ -210,7 +210,7 @@ def set_annotation(group, version, namespace, plural, name, annotation_key, anno
         try:
             cr = get_cr(group, version, namespace, plural, name)
             annotations = cr['metadata'].get('annotations', {})
-            annotations[annotation_key] = annotation_value
+            annotations[annotation_key] = f"{annotation_value}"
             cr['metadata']['annotations'] = annotations
             api.replace_namespaced_custom_object(
                 group=group,
