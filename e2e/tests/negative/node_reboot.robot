@@ -121,9 +121,9 @@ Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heav
         And Keep writing data to pod of statefulset 1
         And Keep writing data to pod of statefulset 2
 
-        When Power off node 0 for 6 mins
-        And Power off node 1 for 6 mins
-        And Power off node 2 for 6 mins
+        When Power off node 0 for 4 mins
+        And Power off node 1 for 4 mins
+        And Power off node 2 for 4 mins
         And Wait for longhorn ready
         And Wait for workloads pods stable
         ...    deployment 0    deployment 1    deployment 2
@@ -201,7 +201,7 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
         And Keep writing data to pod of statefulset 1
         And Keep writing data to pod of statefulset 2
 
-        When Power off all worker nodes for 6 mins
+        When Power off all worker nodes for 4 mins
         And Wait for longhorn ready
         And Wait for workloads pods stable
         ...    deployment 0    deployment 1    deployment 2
@@ -465,7 +465,7 @@ Power Off Replica Node Should Not Rebuild New Replica On Same Node
     END
 
 
-Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
     ...                Turn off the node without engine process - more than 5 mins
@@ -474,13 +474,13 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
     ...                Create a testvol of 3 replicas and attach it to node-1
     ...                Turn off node-2
-    ...                Wait for 6 minutes, turn on the node-2
+    ...                Wait for 4 minutes, turn on the node-2
     ...                The volume should reuse the failed replica to rebuild. 
     ...                Volume should become healthy again
     ...
     ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
     ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -489,7 +489,7 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 6 mins
+        When Power off node 1 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -497,13 +497,13 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     END
 
 
-Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
     [Tags]  replica  reboot  anti-affinity  longhorn-10210  
     [Documentation]    Anti-affinity Combination 2:
     ...                Replica Disk Level Soft Anti-Affinity: false
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -512,19 +512,19 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 6 mins
+        When Power off node 1 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: false
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -533,7 +533,7 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 6 mins
+        When Power off node 1 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -541,13 +541,13 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     END
 
 
-Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -556,13 +556,13 @@ Power Off Replica Node For More Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 6 mins
+        When Power off node 1 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
     ...                Turn off the node without engine process - less than 5 mins
@@ -571,13 +571,13 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
     ...                Create a testvol of 3 replicas and attach it to node-1
     ...                Turn off node-2
-    ...                Wait for 3 minutes, turn on the node-2
+    ...                Wait for 2 minutes, turn on the node-2
     ...                The volume should reuse the failed replica to rebuild. 
     ...                Volume should become healthy again
     ...
     ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
     ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -586,7 +586,7 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 3 mins
+        When Power off node 1 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -594,13 +594,13 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     END
 
 
-Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
     [Tags]  replica  reboot  anti-affinity  longhorn-10210  
     [Documentation]    Anti-affinity Combination 2:
     ...                Replica Disk Level Soft Anti-Affinity: false
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -609,19 +609,19 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 3 mins
+        When Power off node 1 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: false
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -630,7 +630,7 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 3 mins
+        When Power off node 1 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -638,13 +638,13 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     END
 
 
-Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -653,13 +653,13 @@ Power Off Replica Node For Less Than 5 Mins Should Reuse Failed Replica After Re
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 3 mins
+        When Power off node 1 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
     ...                Turn off the node with engine process - more than 5 mins
@@ -668,13 +668,13 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
     ...                Create a testvol of 3 replicas and attach it to node-1
     ...                Turn off node-1
-    ...                Wait for 6 minutes, turn on the node-1
+    ...                Wait for 4 minutes, turn on the node-1
     ...                The volume should reuse the failed replica to rebuild. 
     ...                Volume should become healthy again
     ...
     ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
     ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -683,7 +683,7 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 6 mins
+        When Power off node 0 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -691,13 +691,13 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     END
 
 
-Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 2:
     ...                Replica Disk Level Soft Anti-Affinity: false
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -706,19 +706,19 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 6 mins
+        When Power off node 0 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: false
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -727,7 +727,7 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 6 mins
+        When Power off node 0 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -735,13 +735,13 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     END
 
 
-Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -750,13 +750,13 @@ Power Off Volume Node For More Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 6 mins
+        When Power off node 0 for 4 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
     ...                Turn off the node with engine process - less than 5 mins
@@ -765,13 +765,13 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
     ...                Create a testvol of 3 replicas and attach it to node-1
     ...                Turn off node-1
-    ...                Wait for 5 minutes, turn on the node-1
+    ...                Wait for 2 minutes, turn on the node-1
     ...                The volume should reuse the failed replica to rebuild. 
     ...                Volume should become healthy again
     ...
     ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
     ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -780,7 +780,7 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 3 mins
+        When Power off node 0 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -788,13 +788,13 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     END
 
 
-Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 2:
     ...                Replica Disk Level Soft Anti-Affinity: false
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to false
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -803,19 +803,19 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 3 mins
+        When Power off node 0 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
 
 
-Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: false
     ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to false
     And Set setting replica-zone-soft-anti-affinity to true
@@ -824,7 +824,7 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 3 mins
+        When Power off node 0 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
 
@@ -832,14 +832,14 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     END
 
 
-Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
     ...                Replica Disk Level Soft Anti-Affinity: true
     ...                Replica Node Level Soft Anti-Affinity: true
     ...                Replica Zone Level Soft Anti-Affinity: true
 
-    Given Set setting replica-replenishment-wait-interval to 300
+    Given Set setting replica-replenishment-wait-interval to 180
     And Set setting replica-disk-soft-anti-affinity to true
     And Set setting replica-soft-anti-affinity to true
     And Set setting replica-zone-soft-anti-affinity to true
@@ -848,7 +848,7 @@ Power Off Volume Node For Less Than 5 Mins Should Reuse Failed Replica After Reb
     And Record volume 0 replica names
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 3 mins
+        When Power off node 0 for 2 mins
         And Wait for longhorn ready
         And Wait for volume 0 healthy
     END
