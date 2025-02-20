@@ -15,6 +15,10 @@ Create backup ${backup_id} for ${workload_kind} ${workload_id} volume
     ${volume_name}=    get_workload_volume_name    ${workload_name}
     create_backup  ${volume_name}  ${backup_id}
 
+Create backup ${backup_id} for volume ${volume_id} with cleanup snapshot ${cleanup_snapshot}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_backup    ${volume_name}    ${backup_id}    ${cleanup_snapshot}
+
 Verify backup list contains no error for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     verify_no_error    ${volume_name}
@@ -53,3 +57,7 @@ Volume ${volume_id} backup ${backup_id} should be able to create
     Create backup ${backup_id} for volume ${volume_id}
     Verify backup list contains no error for volume ${volume_id}
     Verify backup list contains backup ${backup_id} of volume ${volume_id}
+
+Check snapshot for backup ${backup_id} of volume ${volume_id} exists ${exists}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_snapshot_exists_for_backup    ${volume_name}    ${backup_id}    ${exists}
