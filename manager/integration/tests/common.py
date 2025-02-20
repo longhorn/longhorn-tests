@@ -1684,7 +1684,13 @@ def node_default_tags():
 
     tag_mappings = {}
     for tags, node in zip(DEFAULT_TAGS, nodes):
-        assert len(node.disks) == 1
+        if DATA_ENGINE == "v2":
+            # if the v2 data engine is enabled, both a file system disk
+            # and a block disk will coexist. This is because a v2 backing image
+            # requires a file system disk to function.
+            assert len(node.disks) == 2
+        else:
+            assert len(node.disks) == 1
 
         update_disks = get_update_disks(node.disks)
         update_disks[list(update_disks)[0]].tags = tags["disk"]
