@@ -20,6 +20,33 @@ Resource    ../keywords/setting.resource
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
 
+*** Keywords ***
+Power Off Node Test
+    [Arguments]    ${disk_affinity}    ${node_affinity}    ${zone_affinity}    ${node_num}    ${power_off_time}
+    [Documentation]    Keyword to test node power off behavior with different anti-affinity settings.
+    ...                Arguments:
+    ...                - ${disk_affinity}: Replica Disk Level Soft Anti-Affinity setting (true/false).
+    ...                - ${node_affinity}: Replica Node Level Soft Anti-Affinity setting (true/false).
+    ...                - ${zone_affinity}: Replica Zone Level Soft Anti-Affinity setting (true/false).
+    ...                - ${node_num}: Number of node to power off (e.g., 0 or 1).
+    ...                - ${power_off_time}: Duration (in minutes) to power off the node.
+    Given Set setting replica-replenishment-wait-interval to 180
+    And Set setting replica-disk-soft-anti-affinity to ${disk_affinity}
+    And Set setting replica-soft-anti-affinity to ${node_affinity}
+    And Set setting replica-zone-soft-anti-affinity to ${zone_affinity}
+    And Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Record volume 0 replica names
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Power off node ${node_num} for ${power_off_time} mins
+        And Wait for longhorn ready
+        And Wait for volume 0 healthy
+
+        Run Keyword If    '${node_affinity}' == 'false'
+        ...    Then Check volume 0 replica names are as recorded
+    END
+
 *** Test Cases ***
 Shutdown Volume Node And Test Auto Reattach To A New Node
     Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
@@ -121,9 +148,9 @@ Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heav
         And Keep writing data to pod of statefulset 1
         And Keep writing data to pod of statefulset 2
 
-        When Power off node 0 for 4 mins
-        And Power off node 1 for 4 mins
-        And Power off node 2 for 4 mins
+        When Power off node 0 for 6 mins
+        And Power off node 1 for 6 mins
+        And Power off node 2 for 6 mins
         And Wait for longhorn ready
         And Wait for workloads pods stable
         ...    deployment 0    deployment 1    deployment 2
@@ -201,7 +228,7 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
         And Keep writing data to pod of statefulset 1
         And Keep writing data to pod of statefulset 2
 
-        When Power off all worker nodes for 4 mins
+        When Power off all worker nodes for 6 mins
         And Wait for longhorn ready
         And Wait for workloads pods stable
         ...    deployment 0    deployment 1    deployment 2
@@ -465,390 +492,182 @@ Power Off Replica Node Should Not Rebuild New Replica On Same Node
     END
 
 
-Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled Zone Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
-    ...                Turn off the node without engine process - more than 5 mins
-    ...                Replica Disk Level Soft Anti-Affinity is false. 
-    ...                Replica Node Level Soft Anti-Affinity is still the default value which is false
-    ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
-    ...                Create a testvol of 3 replicas and attach it to node-1
-    ...                Turn off node-2
-    ...                Wait for 4 minutes, turn on the node-2
-    ...                The volume should reuse the failed replica to rebuild. 
-    ...                Volume should become healthy again
+    ...                Turn off the node without engine process - more than 3 mins
+    ...                - Replica Disk Level Soft Anti-Affinity is false.
+    ...                - Replica Node Level Soft Anti-Affinity is still the default value which is false
+    ...                - Replica Zone Level Soft Anti-Affinity is still the default value which is true
+    ...                - Create a testvol of 3 replicas and attach it to node-1
+    ...                - Turn off node-2
+    ...                - Wait for 4 minutes, turn on the node-2
+    ...                - The volume should reuse the failed replica to rebuild.
+    ...                - Volume should become healthy again
     ...
-    ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
-    ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
+    ...                - because the volume cannot be healthy in a single-zone cluster.
+    [Template]    Power Off Node Test
+        false    false    true    1    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Replica Node For More Than 3 Mins With Disable Disk Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210  
     [Documentation]    Anti-affinity Combination 2:
-    ...                Replica Disk Level Soft Anti-Affinity: false
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: false
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        false    true    true    1    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot With Disable Node Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: false
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: false
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    false    true    1    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Replica Node For More Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled All Anti-Affinity Settings
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    true    true    1    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled Zone Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
-    ...                Turn off the node without engine process - less than 5 mins
-    ...                Replica Disk Level Soft Anti-Affinity is false. 
-    ...                Replica Node Level Soft Anti-Affinity is still the default value which is false
-    ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
-    ...                Create a testvol of 3 replicas and attach it to node-1
-    ...                Turn off node-2
-    ...                Wait for 2 minutes, turn on the node-2
-    ...                The volume should reuse the failed replica to rebuild. 
-    ...                Volume should become healthy again
+    ...                Turn off the node without engine process - less than 3 mins
+    ...                - Replica Disk Level Soft Anti-Affinity is false.
+    ...                - Replica Node Level Soft Anti-Affinity is still the default value which is false
+    ...                - Replica Zone Level Soft Anti-Affinity is still the default value which is true
+    ...                - Create a testvol of 3 replicas and attach it to node-1
+    ...                - Turn off node-2
+    ...                - Wait for 3 minutes, turn on the node-2
+    ...                - The volume should reuse the failed replica to rebuild.
+    ...                - Volume should become healthy again
     ...
-    ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
-    ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
+    ...                - because the volume cannot be healthy in a single-zone cluster.
+    [Template]    Power Off Node Test
+        false    false    true    1    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Replica Node For Less Than 3 Mins With Disable Disk Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210  
     [Documentation]    Anti-affinity Combination 2:
-    ...                Replica Disk Level Soft Anti-Affinity: false
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: false
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        false    true    true    1    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot With Disable Node Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: false
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: false
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    false    true    1    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Replica Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled All Anti-Affinity Settings
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    true    true    1    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 1 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled Zone Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
-    ...                Turn off the node with engine process - more than 5 mins
-    ...                Replica Disk Level Soft Anti-Affinity is false. 
-    ...                Replica Node Level Soft Anti-Affinity is still the default value which is false
-    ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
-    ...                Create a testvol of 3 replicas and attach it to node-1
-    ...                Turn off node-1
-    ...                Wait for 4 minutes, turn on the node-1
-    ...                The volume should reuse the failed replica to rebuild. 
-    ...                Volume should become healthy again
+    ...                Turn off the node with engine process - more than 3 mins
+    ...                - Replica Disk Level Soft Anti-Affinity is false.
+    ...                - Replica Node Level Soft Anti-Affinity is still the default value which is false
+    ...                - Replica Zone Level Soft Anti-Affinity is still the default value which is true
+    ...                - Create a testvol of 3 replicas and attach it to node-1
+    ...                - Turn off node-2
+    ...                - Wait for 4 minutes, turn on the node-2
+    ...                - The volume should reuse the failed replica to rebuild.
+    ...                - Volume should become healthy again
     ...
-    ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
-    ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
+    ...                - because the volume cannot be healthy in a single-zone cluster.
+    [Template]    Power Off Node Test
+        false    false    true    0    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Volume Node For More Than 3 Mins With Disable Disk Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 2:
-    ...                Replica Disk Level Soft Anti-Affinity: false
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: false
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        false    true    true    0    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot With Disable Node Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: false
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: false
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    false    true    0    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Volume Node For More Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled All Anti-Affinity Settings
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    true    true    0    4
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 4 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 1
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled Zone Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210
-    ...                Turn off the node with engine process - less than 5 mins
-    ...                Replica Disk Level Soft Anti-Affinity is false. 
-    ...                Replica Node Level Soft Anti-Affinity is still the default value which is false
-    ...                Replica Zone Level Soft Anti-Affinity is still the default value which is true
-    ...                Create a testvol of 3 replicas and attach it to node-1
-    ...                Turn off node-1
-    ...                Wait for 2 minutes, turn on the node-1
-    ...                The volume should reuse the failed replica to rebuild. 
-    ...                Volume should become healthy again
+    ...                Turn off the node with engine process - less than 3 mins
+    ...                - Replica Disk Level Soft Anti-Affinity is false.
+    ...                - Replica Node Level Soft Anti-Affinity is still the default value which is false
+    ...                - Replica Zone Level Soft Anti-Affinity is still the default value which is true
+    ...                - Create a testvol of 3 replicas and attach it to node-1
+    ...                - Turn off node-2
+    ...                - Wait for 5 minutes, turn on the node-2
+    ...                - The volume should reuse the failed replica to rebuild.
+    ...                - Volume should become healthy again
     ...
-    ...                Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
-    ...                because the volume cannot be healthy in a single-zone cluster.
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
+    ...                - because the volume cannot be healthy in a single-zone cluster.
+    [Template]    Power Off Node Test
+        false    false    true    0    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 2
+Power Off Volume Node For Less Than 3 Mins With Disable Disk Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 2:
-    ...                Replica Disk Level Soft Anti-Affinity: false
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to false
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: false
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        false    true    true    0    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
-
-
-Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 3
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot With Disable Node Level Anti-Affinity Only
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 3:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: false
-    ...                Replica Zone Level Soft Anti-Affinity: true
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to false
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: false
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    false    true    0    2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-
-        Then Check volume 0 replica names are as recorded
-    END
-
-
-Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot Case 4
+Power Off Volume Node For Less Than 3 Mins Should Reuse Failed Replica After Reboot With Enabled All Anti-Affinity Settings
     [Tags]  replica  reboot  anti-affinity  longhorn-10210
     [Documentation]    Anti-affinity Combination 4:
-    ...                Replica Disk Level Soft Anti-Affinity: true
-    ...                Replica Node Level Soft Anti-Affinity: true
-    ...                Replica Zone Level Soft Anti-Affinity: true
-
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to true
-    And Set setting replica-soft-anti-affinity to true
-    And Set setting replica-zone-soft-anti-affinity to true
-    And Create volume 0 with    dataEngine=${DATA_ENGINE}
-    And Attach volume 0 to node 0
-    And Record volume 0 replica names
-
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Power off node 0 for 2 mins
-        And Wait for longhorn ready
-        And Wait for volume 0 healthy
-    END
+    ...                - Replica Disk Level Soft Anti-Affinity: true
+    ...                - Replica Node Level Soft Anti-Affinity: true
+    ...                - Replica Zone Level Soft Anti-Affinity: true
+    [Template]    Power Off Node Test
+        true    true    true    0    2
