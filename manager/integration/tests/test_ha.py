@@ -84,6 +84,7 @@ from common import wait_scheduling_failure
 from common import set_tags_for_node_and_its_disks
 from common import wait_for_tainted_node_engine_image_undeployed
 from common import wait_for_replica_count
+from common import DATA_ENGINE
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -104,6 +105,7 @@ BACKUPSTORE = get_backupstores()
 REPLICA_FAILURE_MODE_CRASH = "replica_failure_mode_crash"
 REPLICA_FAILURE_MODE_DELETE = "replica_failure_mode_delete"
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
     """
@@ -426,6 +428,7 @@ def ha_salvage_test(client, core_api, # NOQA
     cleanup_volume(client, volume)
 
 # https://github.com/rancher/longhorn/issues/253
+@pytest.mark.v2_volume_test  # NOQA
 def test_ha_backup_deletion_recovery(set_random_backupstore, client, volume_name):  # NOQA
     """
     [HA] Test deleting the restored snapshot and rebuild
@@ -448,7 +451,8 @@ def test_ha_backup_deletion_recovery(set_random_backupstore, client, volume_name
 
 def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""):  # NOQA
     client.create_volume(name=volume_name, size=size, numberOfReplicas=2,
-                         backingImage=backing_image)
+                         backingImage=backing_image,
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     host_id = get_self_host_id()
@@ -471,7 +475,8 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
     res_name = common.generate_volume_name()
     res_volume = client.create_volume(name=res_name, size=size,
                                       numberOfReplicas=2,
-                                      fromBackup=b.url)
+                                      fromBackup=b.url,
+                                      dataEngine=DATA_ENGINE)
     res_volume = wait_for_volume_restoration_completed(
         client, res_name)
     res_volume = wait_for_volume_detached(client, res_name)
@@ -492,13 +497,14 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
     snapshots = res_volume.snapshotList()
     assert len(snapshots) == 3
 
-    res_volume.snapshotDelete(name=backup_snapshot)
-    res_volume.snapshotPurge()
-    res_volume = wait_for_snapshot_purge(client, res_name,
-                                         backup_snapshot)
+    if DATA_ENGINE == "v1":
+        res_volume.snapshotDelete(name=backup_snapshot)
+        res_volume.snapshotPurge()
+        res_volume = wait_for_snapshot_purge(client, res_name,
+                                             backup_snapshot)
 
-    snapshots = res_volume.snapshotList()
-    assert len(snapshots) == 2
+        snapshots = res_volume.snapshotList()
+        assert len(snapshots) == 2
 
     ha_rebuild_replica_test(client, res_name)
 
@@ -510,6 +516,7 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
 
 
 # https://github.com/rancher/longhorn/issues/415
+@pytest.mark.v2_volume_test  # NOQA
 def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
     """
     Test prohibiting deleting the last replica
@@ -817,6 +824,7 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(client, core_api, vol
     assert original_md5sum == md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the restoring volume.
@@ -847,6 +855,7 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
                                  REPLICA_FAILURE_MODE_DELETE)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
@@ -886,7 +895,8 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     dr_volume_name = volume_name + "-dr"
     client.create_volume(name=dr_volume_name, size=str(2*Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
-                         frontend="", standby=True)
+                         frontend="", standby=True,
+                         dataEngine=DATA_ENGINE)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
@@ -1336,6 +1346,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     assert snapMap[snap4.name].removed is False
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.skipif('s3' not in BACKUPSTORE, reason='This test is only applicable for s3')  # NOQA
 def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstore_s3): # NOQA
     """
@@ -1388,6 +1399,7 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
         assert v.name != res_name
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_all_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if all replica restore failure will lead to the restore volume
@@ -1441,7 +1453,8 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
 
     res_name = "res-" + volume_name
     res_volume = client.create_volume(name=res_name,
-                                      fromBackup=b.url)
+                                      fromBackup=b.url,
+                                      dataEngine=DATA_ENGINE)
 
     wait_for_volume_condition_restore(client, res_name,
                                       "status", "True")
@@ -1651,6 +1664,7 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
     backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test volume can successfully retry restoring after
@@ -1696,7 +1710,8 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
 
     res_name = "res-" + volume_name
 
-    client.create_volume(name=res_name, fromBackup=b.url)
+    client.create_volume(name=res_name, fromBackup=b.url,
+                         dataEngine=DATA_ENGINE)
     wait_for_volume_condition_restore(client, res_name,
                                       "status", "True")
     wait_for_volume_condition_restore(client, res_name,
@@ -1751,6 +1766,7 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
     backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test DR volume can be recovered after
@@ -1800,7 +1816,8 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     dr_volume_name = volume_name + "-dr"
     client.create_volume(name=dr_volume_name, size=str(1 * Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
-                         frontend="", standby=True)
+                         frontend="", standby=True,
+                         dataEngine=DATA_ENGINE)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
     wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
@@ -1868,6 +1885,7 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     assert md5sum2 == dr_md5sum2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_volume_reattach_after_engine_sigkill(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
@@ -1952,6 +1970,7 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     check_volume_data(volume, data)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_should_not_be_created_when_no_suitable_node_found(client, volume_name, settings_reset): # NOQA
     """
     Test replica should not be created when no suitable node is found.
@@ -2005,6 +2024,7 @@ def test_replica_should_not_be_created_when_no_suitable_node_found(client, volum
     check_volume_data(volume, data)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_disable_replica_rebuild(client, volume_name):  # NOQA
     """
     Test disable replica rebuild
@@ -2047,7 +2067,8 @@ def test_disable_replica_rebuild(client, volume_name):  # NOQA
 
     # Step3
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=1)
+                                  numberOfReplicas=1,
+                                  dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume = volume.attach(hostId=node_1.name)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -2125,6 +2146,7 @@ def test_disable_replica_rebuild(client, volume_name):  # NOQA
     assert get_volume_running_replica_cnt(client, volume_name) == 2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     Test Auto Remount With Subpath
@@ -2608,6 +2630,7 @@ def prepare_engine_not_fully_deployed_environment_with_volumes(client, core_api)
     return volume1, volume2, taint_node_id
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_engine_image_miss_scheduled_perform_volume_operations(core_api, client, set_random_backupstore, volume_name): # NOQA
     """
     Test volume operations when engine image DaemonSet is miss
@@ -2652,12 +2675,14 @@ def test_engine_image_miss_scheduled_perform_volume_operations(core_api, client,
     volume.attach(hostId=host_id, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
 
-    expand_size = str(4 * Gi)
-    volume.expand(size=expand_size)
-    wait_for_volume_expansion(client, volume_name)
+    if DATA_ENGINE == "v1":
+        expand_size = str(4 * Gi)
+        volume.expand(size=expand_size)
+        wait_for_volume_expansion(client, volume_name)
+        volume = client.by_id_volume(volume_name)
+        assert volume.size == expand_size
+        check_block_device_size(volume, int(expand_size))
     volume = client.by_id_volume(volume_name)
-    assert volume.size == expand_size
-    check_block_device_size(volume, int(expand_size))
     check_volume_data(volume, snap1_data, False)
 
 
@@ -2736,7 +2761,6 @@ def test_engine_image_not_fully_deployed_perform_volume_operations(client, core_
     backupstore_test(client, get_self_host_id(), volume1.name,
                      size=str(3 * Gi),
                      compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD)
-
     expand_size = str(4 * Gi)
     volume1.expand(size=expand_size)
     wait_for_volume_expansion(client, volume1.name)
@@ -3118,6 +3142,7 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
         time.sleep(RETRY_INTERVAL_LONG)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_autosalvage_with_data_locality_enabled(client, core_api, make_deployment_with_pvc, volume_name, pvc): # NOQA
     """
     This e2e test follows the manual test steps at:
@@ -3158,7 +3183,8 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     # Step2
     client.create_volume(
         name=volume_name, size=str(1 * Gi), numberOfReplicas=1,
-        nodeSelector=tags, dataLocality="best-effort"
+        nodeSelector=tags, dataLocality="best-effort",
+        dataEngine=DATA_ENGINE
         )
 
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -3232,6 +3258,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
         time.sleep(RETRY_EXEC_INTERVAL)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_recovery_from_im_deletion(client, core_api, volume_name, make_deployment_with_pvc, pvc): # NOQA
     """
     Related issue :
@@ -3256,7 +3283,8 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     """
 
     # Step1
-    client.create_volume(name=volume_name, size=str(1 * Gi))
+    client.create_volume(name=volume_name, size=str(1 * Gi),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     pvc_name = volume_name + "-pvc"
     create_pv_for_volume(client, core_api, volume, volume_name)
@@ -3375,7 +3403,8 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
 
     restore_volume_name = volume_name + "-restore"
     client.create_volume(name=restore_volume_name, size=str(2 * Gi),
-                         fromBackup=b.url)
+                         fromBackup=b.url,
+                         dataEngine=DATA_ENGINE)
 
     _ = wait_for_volume_restoration_start(client, restore_volume_name, b.name)
     restore_volume = client.by_id_volume(restore_volume_name)
