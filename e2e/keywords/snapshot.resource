@@ -9,6 +9,11 @@ Create snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_snapshot    ${volume_name}    ${snapshot_id}
 
+Create snapshot ${snapshot_id} for ${workload_kind} ${workload_id} volume
+    ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name}=    get_workload_volume_name    ${workload_name}
+    create_snapshot    ${volume_name}    ${snapshot_id}
+
 Delete snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot    ${volume_name}    ${snapshot_id}
