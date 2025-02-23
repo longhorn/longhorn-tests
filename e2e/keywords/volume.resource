@@ -287,6 +287,14 @@ Volume ${volume_id} should have ${expected_replica_count} replicas running on no
     Set Test Variable    ${node_name}
     Set Test Variable    ${replica_count}
 
+Number of volume ${volume_id} replicas on node ${node_id_0} should be less than on node ${node_id_1}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name_0} =    get_node_by_index    ${node_id_0}
+    ${node_name_1} =    get_node_by_index    ${node_id_1}
+    ${replica_count_0} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_0}
+    ${replica_count_1} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_1}
+    Should Be True    ${replica_count_0} < ${replica_count_1}
+
 Volume ${volume_id} should have replicas running on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}

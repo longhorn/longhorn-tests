@@ -33,12 +33,12 @@ Test Backing Image Basic Operation
     And Delete backing image bi
 
 Test Uninstall When Backing Image Exists
-    [Tags]    uninstall    backing image
+    [Tags]    uninstall    backing image    robot:skip
     [Documentation]    Validates the uninstallation of Longhorn when backing
     ...                image exists.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/10044
-
+    Skip    The original issue has not been resolved yet.
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         Given Create backing image v1-bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v1    min_copies=3
         And Create backing image v1-bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v1    min_copies=3

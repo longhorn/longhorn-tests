@@ -21,6 +21,7 @@ from workload.workload import is_workload_pods_has_annotations
 from workload.workload import keep_writing_pod_data
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
+from workload.workload import wait_for_workload_pods_container_creating
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
@@ -121,6 +122,10 @@ class workload_keywords:
 
         logging(f'Keep writing data to pod {pod_name}')
         keep_writing_pod_data(pod_name)
+
+    def wait_for_workload_pods_container_creating(self, workload_name, namespace="default"):
+        logging(f'Waiting for {namespace} workload {workload_name} pods container creating')
+        wait_for_workload_pods_container_creating(workload_name, namespace=namespace)
 
     def wait_for_workload_pods_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')

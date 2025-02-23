@@ -223,6 +223,21 @@ def wait_for_workload_pods_running(workload_name, namespace="default"):
     assert False, f"Timeout waiting for {workload_name} pods running"
 
 
+def wait_for_workload_pods_container_creating(workload_name, namespace="default"):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        pods = get_workload_pods(workload_name, namespace=namespace)
+        if len(pods) > 0:
+            for pod in pods:
+                if pod.status.phase == "Pending":
+                    return
+
+        logging(f"Waiting for {workload_name} pods {[pod.metadata.name for pod in pods]} container creating, retry ({i}) ...")
+        time.sleep(retry_interval)
+
+    assert False, f"Timeout waiting for {workload_name} pods container creating"
+
+
 async def wait_for_workload_pods_stable(workload_name, namespace="default"):
     stable_pods = {}
     wait_for_stable_retry = {}

@@ -20,6 +20,12 @@ Wait for pod ${pod_id} running
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     wait_for_workload_pods_running    ${pod_name}
 
+Delete pod of ${workload_kind} ${workload_id}
+    [Arguments]    &{config}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    get_workload_pod_name    ${workload_name}
+    delete_pod    ${pod_name}    &{config}
+
 Delete pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     delete_pod    ${pod_name}
@@ -151,6 +157,10 @@ Delete replica of ${workload_kind} ${workload_id} volume on ${replica_locality}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
+
+Wait for ${workload_kind} ${workload_id} pods container creating
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    wait_for_workload_pods_container_creating    ${workload_name}
 
 Wait for workloads pods stable
     [Arguments]    @{args}

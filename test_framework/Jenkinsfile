@@ -33,7 +33,6 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
-        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'),
         file(credentialsId: 'AZURE_CRT_FILE', variable: 'AZURE_CRT_FILE'),
@@ -57,7 +56,6 @@ node {
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                            --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
-                                           --env TF_VAR_do_token=${DO_TOKEN} \
                                            --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
                                            --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
                                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
@@ -129,7 +127,6 @@ node {
                                        --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                                        --env TF_VAR_aws_region=${AWS_REGION} \
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
-                                       --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                        --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \

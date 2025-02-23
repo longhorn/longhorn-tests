@@ -40,8 +40,6 @@ node {
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
-        file(credentialsId: 'vpn.ovpn', variable: 'VPN_CONFIG'),
-        file(credentialsId: 'login.conf', variable: 'LOGIN_CONFIG'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
         string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
@@ -113,9 +111,6 @@ node {
                                        --mount source="vol-${imageName}",target=/tmp \
                                        ${imageName}
                 """
-
-                sh "docker cp ${VPN_CONFIG} ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/vpn.ovpn"
-                sh "docker cp ${LOGIN_CONFIG} ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/login.conf"
             }
 
             timeout(60) {

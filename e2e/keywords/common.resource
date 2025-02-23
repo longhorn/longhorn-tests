@@ -22,15 +22,28 @@ Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
+Library             ../libs/keywords/secret_keywords.py
 
 *** Keywords ***
+Set disk path based on host provider and architecture
+    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER
+    ${ARCH}=    Get Environment Variable    ARCH
+    IF    "${HOST_PROVIDER}" == "aws"
+        IF    "${ARCH}" == "amd64"
+            Set Test Variable    ${DISK_PATH}    /dev/xvdh
+        ELSE IF    "${ARCH}" == "arm64"
+            Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+        END
+    ELSE IF    '${HOST_PROVIDER}' == "harvester"
+        Set Test Variable    ${DISK_PATH}    /dev/vdc
+    END
+
 Set up v2 environment
+    set_disk_path_based_on_host_provider_and_architecture
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
-    ${host_provider}=    Get Environment Variable    HOST_PROVIDER
-    ${disk_path}=    Set Variable If    "${host_provider}" == "harvester"    /dev/vdc    /dev/xvdh
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    block-disk    ${worker_node}    block    ${disk_path}
+        add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
     END
 
 Set test environment
@@ -56,6 +69,7 @@ Cleanup test resources
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
+    cleanup_secrets
     cleanup_backups
     cleanup_disks
     cleanup_backing_images
