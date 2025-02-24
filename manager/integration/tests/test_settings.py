@@ -1119,27 +1119,16 @@ def update_settings_via_configmap(core_api, client, setting_names, setting_value
                                          body=configmap_body)
 
     def reset_default_settings():
-        if configmap_name == DEFAULT_SETTING_CONFIGMAP_NAME:
-            setting_names = [SETTING_DEFAULT_REPLICA_COUNT,
-                             SETTING_BACKUP_TARGET,
-                             SETTING_TAINT_TOLERATION]
-            setting_values = ["3", "", ""]
-            configmap_body = config_map_with_value(configmap_name,
-                                                   setting_names,
-                                                   setting_values,
-                                                   data_yaml_name)
-            core_api.patch_namespaced_config_map(name=configmap_name,
-                                                 namespace='longhorn-system',
-                                                 body=configmap_body)
-        elif configmap_name == DEFAULT_RESOURCE_CONFIGMAP_NAME:
-            # Directly cleanup data of ConfigMap `longhorn-default-resource`
-            # It will reset the default backup target settings
-            # if the ConfigMap contains the data 'backup-target': "", ... .
-            init_longhorn_default_setting_configmap(
-                core_api,
-                client,
-                configmap_name=DEFAULT_RESOURCE_CONFIGMAP_NAME,
-                data_yaml_name=DEFAULT_RESOURCE_YAML_NAME)
+        # Directly cleanup data of ConfigMap
+        # `longhorn-default-resource` and `longhorn-default-setting`
+        # It will reset the default backup target, replica count,
+        # and tolerations settings.
+        # if the ConfigMap contains the data 'backup-target': "", ... .
+        init_longhorn_default_setting_configmap(core_api,
+                                                client,
+                                                configmap_name=configmap_name,
+                                                data_yaml_name=data_yaml_name)
+        if configmap_name == DEFAULT_RESOURCE_CONFIGMAP_NAME:
             reset_backupstore_setting(client)
 
     request.addfinalizer(reset_default_settings)
@@ -1256,7 +1245,7 @@ def wait_backup_target_url_updated(client, target): # NOQA
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_setting_update_with_invalid_value_via_configmap(client, core_api, request):  # NOQA
+def test_setting_update_with_invalid_value_via_configmap(client, core_api, apps_api, request):  # NOQA
     """
     Test the default settings update with invalid value via configmap
     1. Create an attached volume
@@ -1318,6 +1307,18 @@ def test_setting_update_with_invalid_value_via_configmap(client, core_api, reque
         wait_backup_target_url_updated(client, target)
 
     cleanup_volume_by_name(client, vol_name)
+
+    # cleanup the ConfigMap `longhorn-default-setting`
+    init_longhorn_default_setting_configmap(core_api, client)
+    # reset the toleration setting
+    setting_value_str = ""
+    setting_value_dicts = []
+    update_setting(client, SETTING_TAINT_TOLERATION, setting_value_str)
+    wait_for_toleration_update(core_api, apps_api,
+                               len(client.list_node()),
+                               setting_value_dicts)
+
+    wait_for_longhorn_node_ready()
 
 
 @pytest.mark.v2_volume_test  # NOQA
