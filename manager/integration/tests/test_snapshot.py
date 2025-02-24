@@ -95,6 +95,7 @@ def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_n
                                             SNAPSHOT_DATA_INTEGRITY_IGNORED)  # NOQA
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_disabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated when
@@ -112,6 +113,7 @@ def test_snapshot_hash_global_disabled_with_immediate_hash(client, volume_name, 
                                   SNAPSHOT_DATA_INTEGRITY_IGNORED)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_disabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated when
@@ -191,6 +193,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_imm
                                             SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -206,6 +209,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -221,6 +225,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immedia
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -236,6 +241,7 @@ def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immedia
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -683,6 +689,7 @@ def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
     return count
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_cr(client, volume_name, settings_reset):  # NOQA
     """
     GitHub ticket: https://github.com/longhorn/longhorn/issues/6298
