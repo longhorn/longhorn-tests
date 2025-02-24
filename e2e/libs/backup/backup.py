@@ -15,8 +15,8 @@ class Backup(Base):
         else:
             self.backup = Rest()
 
-    def create(self, volume_name, backup_id):
-        return self.backup.create(volume_name, backup_id)
+    def create(self, volume_name, backup_id, cleanup_snapshot=False):
+        return self.backup.create(volume_name, backup_id, cleanup_snapshot)
 
     def get(self, backup_id, volume_name):
         return self.backup.get(backup_id, volume_name)
@@ -66,3 +66,13 @@ class Backup(Base):
 
     def cleanup_system_backups(self):
         return self.backup.cleanup_system_backups()
+
+    def check_snapshot_exists_for_backup(self, volume_name, backup_id,
+                                         exists=True):
+        backup = self.backup.get(backup_id, volume_name)
+        snap_name = backup.snapshotName
+        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name)
+        snap = self.backup.snapshot.get(volume_name, snapshot_id)
+        snap_exists = False if snap.removed else True
+        assert snap_exists == exists, \
+            f"Snapshot {snap_name} exists: {snap_exists}, expected: {exists}"
