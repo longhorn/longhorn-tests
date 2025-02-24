@@ -1,6 +1,11 @@
 *** Settings ***
 Documentation    Test backup listing
-...              https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/
+...              - https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/
+...              - After purging the snapshots on the volume, the snapshot count was reduced to two, 
+...              - one volume-head and one hidden system snapshot.
+...              - During the subsequent process of creating 250 backups, the snapshot count exceeded 250.
+...              - 248 regular snapshots and one volume-head and one hidden system snapshot, 
+...              - which resulted in a failed to create backup error.
 
 Test Tags    manual    negative
 
@@ -82,7 +87,7 @@ Perform backup 1001 times for deployment 0 volume
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         Create backup ${i} for deployment 0 volume
         Delete snapshot ${i} of deployment 0 volume
-        IF    ${i} % 249 == 0
+        IF    ${i} % 100 == 0
             ${workload_name}=   generate_name_with_suffix    deployment    0
             ${volume_name}=    get_workload_volume_name    ${workload_name}
             purge_snapshot    ${volume_name}
