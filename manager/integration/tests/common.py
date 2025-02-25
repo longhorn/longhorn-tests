@@ -1684,7 +1684,13 @@ def node_default_tags():
 
     tag_mappings = {}
     for tags, node in zip(DEFAULT_TAGS, nodes):
-        assert len(node.disks) == 1
+        if DATA_ENGINE == "v2":
+            # if the v2 data engine is enabled, both a file system disk
+            # and a block disk will coexist. This is because a v2 backing image
+            # requires a file system disk to function.
+            assert len(node.disks) == 2
+        else:
+            assert len(node.disks) == 1
 
         update_disks = get_update_disks(node.disks)
         update_disks[list(update_disks)[0]].tags = tags["disk"]
@@ -5539,12 +5545,16 @@ def create_backing_image_with_matching_url(client, name, url,
         if url == BACKING_IMAGE_RAW_URL:
             expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
         elif url == BACKING_IMAGE_QCOW2_URL:
-            expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
+            if DATA_ENGINE == "v2":
+                expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
+            else:
+                expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
         bi = client.create_backing_image(
             name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
             parameters={"url": url}, expectedChecksum=expected_checksum,
             minNumberOfCopies=minNumberOfCopies,
-            nodeSelector=nodeSelector, diskSelector=diskSelector)
+            nodeSelector=nodeSelector, diskSelector=diskSelector,
+            dataEngine=DATA_ENGINE)
     assert bi
 
     is_ready = False

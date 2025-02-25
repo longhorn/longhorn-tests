@@ -23,6 +23,7 @@ Library             ../libs/keywords/backup_keywords.py
 Library             ../libs/keywords/system_backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
+Library             ../libs/keywords/secret_keywords.py
 
 *** Keywords ***
 Set disk path based on host provider and architecture
@@ -69,6 +70,7 @@ Cleanup test resources
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
+    cleanup_secrets
     cleanup_backups
     cleanup_system_backups
     cleanup_system_restores
