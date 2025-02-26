@@ -56,7 +56,7 @@ node {
             stage('build') {
 
                 echo "Using credentials: $CREDS_ID"
-                echo "Using registration coce: $REGISTRATION_CODE_ID"
+                echo "Using registration code: $REGISTRATION_CODE_ID"
 
                 sh "pipelines/e2e/scripts/build.sh"
                 sh """ docker run -itd --cap-add=NET_ADMIN \
