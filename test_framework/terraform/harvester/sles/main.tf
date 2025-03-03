@@ -48,7 +48,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-qn4cg",
+            "imageName": "longhorn-qa/image-pqjk7",
             "size": 100,
             "bootOrder": 1
         }]
@@ -58,7 +58,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
@@ -95,7 +95,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-qn4cg",
+            "imageName": "longhorn-qa/image-pqjk7",
             "size": 100,
             "bootOrder": 1
         },
@@ -110,7 +110,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
