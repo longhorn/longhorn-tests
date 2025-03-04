@@ -7,6 +7,7 @@ from volume import Volume
 from workload.deployment import create_deployment
 from workload.deployment import delete_deployment
 from workload.deployment import list_deployments
+from workload.deployment import scale_deployment
 
 
 class deployment_keywords:
@@ -30,3 +31,7 @@ class deployment_keywords:
     def delete_deployment(self, name):
         logging(f'Deleting deployment {name}')
         delete_deployment(name)
+
+    def scale_deployment(self, deployment_name, replica_count):
+        logging(f'Scaling deployment {deployment_name} to {replica_count}')
+        return scale_deployment(deployment_name, replica_count)

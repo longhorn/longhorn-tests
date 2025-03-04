@@ -6,6 +6,7 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/deployment_keywords.py
 Library    ../libs/keywords/node_keywords.py
 Library    ../libs/keywords/workload_keywords.py
+Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
@@ -50,3 +51,15 @@ Check deployment ${deployment_id} pod not restarted
     ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
     ${current_pod_name} =    get_workload_pod_name    ${deployment_name}
     Should Be Equal    ${pod_name}    ${current_pod_name}
+
+Scale down deployment ${deployment_id} to detach volume
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    scale_deployment    ${deployment_name}    0
+    wait_for_volume_detached    ${volume_name}
+
+Scale up deployment ${deployment_id} to attach volume
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    scale_deployment    ${deployment_name}    1
+    wait_for_volume_attached    ${volume_name}
