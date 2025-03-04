@@ -13,6 +13,7 @@ from time import sleep
 
 from common import RETRY_COUNTS, RETRY_INTERVAL, SIZE
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import DATA_ENGINE
 
 
 def generate_tag_name():
@@ -31,6 +32,7 @@ def generate_unordered_tag_names():
     return unsorted, is_sorted
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_tag_basic(client):  # NOQA
     """
     Test that applying Tags to Nodes/Disks and retrieving them work as
@@ -43,7 +45,11 @@ def test_tag_basic(client):  # NOQA
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     disks = get_update_disks(node.disks)
-    assert len(node.disks) == 1
+    if DATA_ENGINE == "v2":
+        node_disk_count = 2
+    else:
+        node_disk_count = 1
+    assert len(node.disks) == node_disk_count
     assert len(node.disks[list(node.disks)[0]].tags) == 0, f" disks = {disks}"
     assert len(node.tags) == 0
 
@@ -86,6 +92,7 @@ def test_tag_basic(client):  # NOQA
     assert len(node.tags) == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_tag_scheduling(client, node_default_tags):  # NOQA
     """
     Test success scheduling with tags
@@ -140,7 +147,8 @@ def test_tag_scheduling(client, node_default_tags):  # NOQA
         volume_name = generate_volume_name()  # NOQA
         client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=3,
                              diskSelector=specs["disk"],
-                             nodeSelector=specs["node"])
+                             nodeSelector=specs["node"],
+                             dataEngine=DATA_ENGINE)
         volume = wait_for_volume_detached(client, volume_name)
         assert volume.diskSelector == specs["disk"]
         assert volume.nodeSelector == specs["node"]
@@ -153,6 +161,7 @@ def test_tag_scheduling(client, node_default_tags):  # NOQA
         cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
     """
     Test that scheduling fails if no Nodes/Disks with the requested Tags are
@@ -184,7 +193,8 @@ def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
             client.create_volume(name=volume_name, size=SIZE,
                                  numberOfReplicas=3,
                                  diskSelector=tags["disk"],
-                                 nodeSelector=tags["node"])
+                                 nodeSelector=tags["node"],
+                                 dataEngine=DATA_ENGINE)
         assert "does not exist" in str(e.value)
 
     unsatisfied_tag_cases = [
@@ -201,7 +211,8 @@ def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
         volume_name = generate_volume_name()
         client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=3,
                              diskSelector=tags["disk"],
-                             nodeSelector=tags["node"])
+                             nodeSelector=tags["node"],
+                             dataEngine=DATA_ENGINE)
         volume = wait_for_volume_detached(client, volume_name)
         assert volume.diskSelector == tags["disk"]
         assert volume.nodeSelector == tags["node"]
@@ -213,6 +224,7 @@ def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
         assert len(volumes) == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NOQA
     """
     Test that Replicas get scheduled if a Node/Disk disks updated with the
@@ -238,7 +250,8 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     }
     client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=3,
                          diskSelector=tag_spec["disk"],
-                         nodeSelector=tag_spec["node"])
+                         nodeSelector=tag_spec["node"],
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.diskSelector == tag_spec["disk"]
     assert volume.nodeSelector == tag_spec["node"]
