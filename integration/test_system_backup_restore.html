@@ -50,16 +50,13 @@ Then system restore should be in state Completed</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Scenario: test system backup and restore volume with backingimage</p>
-<p>Noted that for volume data integrity check, we have
-"test_system_backup_and_restore_volume_with_data" to cover it.
-BackingImage uses checksum to verified the data during backup/restore.
-If it is inconsistent, BackingImage will be failed and so is the test.
-Thus, we don't need to do data integrity check in this test.</p>
-<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5085">https://github.com/longhorn/longhorn/issues/5085</a></p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5085">https://github.com/longhorn/longhorn/issues/5085</a>
+<a href="https://github.com/longhorn/longhorn/issues/10057">https://github.com/longhorn/longhorn/issues/10057</a></p>
 <p>Given a backingimage
 And a volume created with the backingimage
 And a PVC for the volume
 And a PV for the volume
+And data written to volume
 When system backup created
 Then system backup in state Ready</p>
 <p>When volume deleted
@@ -72,7 +69,8 @@ And wait for PVC restoration to complete
 And wait for PV restoration to complete
 And volume should be detached</p>
 <p>When attach volume
-Then volume should be healthy</p></div>
+Then volume should be healthy
+And volume data should exist</p></div>
 </dd>
 <dt id="tests.test_system_backup_restore.test_system_backup_and_restore_volume_with_data"><code class="name flex">
 <span>def <span class="ident">test_system_backup_and_restore_volume_with_data</span></span>(<span>client, volume_name, set_random_backupstore)</span>
