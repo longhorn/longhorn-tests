@@ -136,18 +136,14 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
     """
     Scenario: test system backup and restore volume with backingimage
 
-    Noted that for volume data integrity check, we have
-    "test_system_backup_and_restore_volume_with_data" to cover it.
-    BackingImage uses checksum to verified the data during backup/restore.
-    If it is inconsistent, BackingImage will be failed and so is the test.
-    Thus, we don't need to do data integrity check in this test.
-
     Issue: https://github.com/longhorn/longhorn/issues/5085
+           https://github.com/longhorn/longhorn/issues/10057
 
     Given a backingimage
     And a volume created with the backingimage
     And a PVC for the volume
     And a PV for the volume
+    And data written to volume
     When system backup created
     Then system backup in state Ready
 
@@ -163,6 +159,7 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
 
     When attach volume
     Then volume should be healthy
+    And volume data should exist
     """
 
     host_id = get_self_host_id()
@@ -179,6 +176,8 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
 
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
+
+    data = write_volume_random_data(volume)
 
     system_backup_name = system_backup_random_name()
     client.create_system_backup(Name=system_backup_name)
@@ -206,6 +205,8 @@ def test_system_backup_and_restore_volume_with_backingimage(client, core_api, vo
 
     restored_volume.attach(hostId=host_id)
     restored_volume = wait_for_volume_healthy(client, volume_name)
+
+    check_volume_data(volume, data)
 
 
 @pytest.mark.v2_volume_test  # NOQA
