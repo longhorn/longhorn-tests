@@ -7,6 +7,7 @@ from kubernetes.client.rest import ApiException
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
@@ -39,19 +40,25 @@ def create_deployment(name, claim_name, replicaset=1):
         deployment_name = deployment.metadata.name
         replicas = deployment.spec.replicas
 
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for _ in range(retry_count):
-            deployment = api.read_namespaced_deployment(
-                name=deployment_name,
-                namespace=namespace)
-            # deployment is none if deployment is not yet created
-            if deployment is not None and \
-                deployment.status.ready_replicas == replicas:
-                break
-            time.sleep(retry_interval)
+        wait_for_deployment_replicas_ready(deployment_name, replicas)
 
-        assert deployment.status.ready_replicas == replicas
+def wait_for_deployment_replicas_ready(deployment_name, expected_ready_count, namespace='default'):
+    api = client.AppsV1Api()
 
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        logging(f"Waiting for deployment {deployment_name} replica ready ({i}) ...")
+
+        deployment = api.read_namespaced_deployment(
+            name=deployment_name,
+            namespace=namespace)
+        # deployment is none if deployment is not yet created
+        if deployment is not None and \
+            deployment.status.ready_replicas == expected_ready_count:
+            return
+        time.sleep(retry_interval)
+
+    assert False, f"Failed to wait for deployment replicas to be ready. Expected {expected_ready_count} replicas. Got {deployment.status.ready_replicas} replicas"
 
 def delete_deployment(name, namespace='default'):
     api = client.AppsV1Api()
@@ -77,6 +84,9 @@ def delete_deployment(name, namespace='default'):
         time.sleep(retry_interval)
     assert deleted
 
+def get_deployment(name, namespace='default'):
+    api = client.AppsV1Api()
+    return api.read_namespaced_deployment(name=name, namespace=namespace)
 
 def list_deployments(namespace='default', label_selector=None):
     api = client.AppsV1Api()
@@ -84,3 +94,17 @@ def list_deployments(namespace='default', label_selector=None):
         namespace=namespace,
         label_selector=label_selector
     )
+
+def scale_deployment(name, replica_count, namespace='default'):
+    logging(f"Scaling deployment {name} to {replica_count}")
+
+    apps_v1_api = client.AppsV1Api()
+
+    scale = client.V1Scale(
+        metadata=client.V1ObjectMeta(name=name, namespace=namespace),
+        spec=client.V1ScaleSpec(replicas=int(replica_count))
+    )
+    apps_v1_api.patch_namespaced_deployment_scale(name=name, namespace=namespace, body=scale)
+
+    deployment = get_deployment(name, namespace)
+    assert deployment.spec.replicas == int(replica_count)
