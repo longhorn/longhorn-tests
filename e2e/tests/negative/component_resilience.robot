@@ -58,18 +58,16 @@ Test Longhorn Components Recovery
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data.txt in deployment 0
 
-    IF    '${DATA_ENGINE}' == 'v1'
-        When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-        And Create volume 1 with    backingImage=bi    dataEngine=${DATA_ENGINE}
-        And Attach volume 1
-        And Wait for volume 1 healthy
-        And Write data to volume 1
+    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
+    And Create volume 1 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    And Attach volume 1
+    And Wait for volume 1 healthy
+    And Write data to volume 1
 
-        When Create storageclass longhorn-test-1 with    dataEngine=${DATA_ENGINE}
-        And Create persistentvolumeclaim 1 using RWX volume with longhorn-test-1 storageclass
-        And Create deployment 1 with persistentvolumeclaim 1
-        And Write 100 MB data to file data.txt in deployment 1
-    END
+    When Create storageclass longhorn-test-1 with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test-1 storageclass
+    And Create deployment 1 with persistentvolumeclaim 1
+    And Write 100 MB data to file data.txt in deployment 1
 
     When Delete Longhorn DaemonSet longhorn-csi-plugin pod on node 1
     And Delete Longhorn Deployment csi-attacher pod on node 1
@@ -87,11 +85,9 @@ Test Longhorn Components Recovery
     And Check volume 0 data is intact
     And Wait for deployment 0 pods stable
     And Check deployment 0 data in file data.txt is intact
-    IF    '${DATA_ENGINE}' == 'v1'
-        And Check volume 1 data is intact
-        And Wait for deployment 1 pods stable
-        And Check deployment 1 data in file data.txt is intact
-    END
+    And Check volume 1 data is intact
+    And Wait for deployment 1 pods stable
+    And Check deployment 1 data in file data.txt is intact
 
 Test Longhorn Volume Recovery
     [Documentation]    -- Manual test plan --
@@ -128,21 +124,19 @@ Test Longhorn Backing Image Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.    
     ...                    Delete the backing image manager pod and verify the pod gets recreated.
-    IF    '${DATA_ENGINE}' == 'v1'
-        When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-        And Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
-        And Attach volume 0
-        And Wait for volume 0 healthy
-        And Write data to volume 0
-        Then Delete instance-manager of volume 0 and wait for recover
+    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
+    And Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    Then Delete instance-manager of volume 0 and wait for recover
 
-        When Delete volume 0 replica on replica node
-        And Wait until volume 0 replica rebuilding started on replica node
-        Then Delete instance-manager of volume 0 and wait for recover
+    When Delete volume 0 replica on replica node
+    And Wait until volume 0 replica rebuilding started on replica node
+    Then Delete instance-manager of volume 0 and wait for recover
 
-        When Delete backing image managers and wait for recreation
-        Then Wait backing image managers running
-    END
+    When Delete backing image managers and wait for recreation
+    Then Wait backing image managers running
 
 Test Longhorn Dynamic Provisioned RWX Volume Recovery
     [Documentation]    -- Manual test plan --

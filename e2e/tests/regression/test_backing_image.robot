@@ -17,7 +17,7 @@ Test Teardown    Cleanup test resources
 Test Backing Image Basic Operation
     [Tags]    coretest
     [Documentation]    Test Backing Image APIs.
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
     When Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -33,17 +33,14 @@ Test Backing Image Basic Operation
     And Delete backing image bi
 
 Test Uninstall When Backing Image Exists
-    [Tags]    uninstall    backing image    robot:skip
+    [Tags]    uninstall    backing image
     [Documentation]    Validates the uninstallation of Longhorn when backing
     ...                image exists.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/10044
-    Skip    The original issue has not been resolved yet.
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Given Create backing image v1-bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v1    min_copies=3
-        And Create backing image v1-bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v1    min_copies=3
-        And Create backing image v2-bi-qcow2-1 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v2    min_copies=3
-        And Create backing image v2-bi-raw-1 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    data_engine=v2    min_copies=3
+        Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+        And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
         And Set setting deleting-confirmation-flag to true
 
         When Uninstall Longhorn

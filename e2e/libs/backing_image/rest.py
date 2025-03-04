@@ -12,23 +12,23 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, bi_name, source_type, url, expected_checksum, data_engine, min_copies):
-        logging(f"Creating backing image {bi_name}")
+    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies):
+        logging(f"Creating backing image {name}")
         get_longhorn_client().create_backing_image(
-            name=bi_name,
-            sourceType=source_type,
+            name=name,
+            sourceType=sourceType,
             parameters={
                 "url": url
             },
-            expectedChecksum=expected_checksum,
-            minNumberOfCopies=min_copies,
-            dataEngine=data_engine
+            expectedChecksum=expectedChecksum,
+            minNumberOfCopies=minNumberOfCopies,
+            dataEngine=dataEngine
         )
 
         ready = False
         bi = None
         for i in range(self.retry_count):
-            bi = get_longhorn_client().by_id_backing_image(bi_name)
+            bi = get_longhorn_client().by_id_backing_image(name)
             if len(bi.diskFileStatusMap) > 0 and bi.currentChecksum != "":
                 for disk, status in iter(bi.diskFileStatusMap.items()):
                     if status.state == self.BACKING_IMAGE_STATE_READY:
@@ -39,9 +39,9 @@ class Rest(Base):
             time.sleep(self.retry_interval)
 
         assert ready, f"expect backing image diskFileStatusMap ready, but it's {bi.diskFileStatusMap}"
-        if expected_checksum:
-            assert bi.currentChecksum == expected_checksum, f"expect backing image currentChecksum {bi.currentChecksum} equal to expected checksum {expected_checksum}"
-        assert bi.sourceType == source_type, f"expect backing image sourceType is {source_type}, but it's {bi.sourceType}"
+        if expectedChecksum:
+            assert bi.currentChecksum == expectedChecksum, f"expect backing image currentChecksum {bi.currentChecksum} equal to expected checksum {expectedChecksum}"
+        assert bi.sourceType == sourceType, f"expect backing image sourceType is {sourceType}, but it's {bi.sourceType}"
         assert bi.parameters["url"] == url, f"expect backing image url is {url}, but it's {bi.parameters['url']}"
         assert not bi.deletionTimestamp, f"expect backing image deletionTimestamp is empty, but it's {bi.deletionTimestamp}"
 

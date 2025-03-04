@@ -13,9 +13,9 @@ class BackingImage(Base):
         if self._strategy == LonghornOperationStrategy.REST:
             self.backing_image = Rest()
 
-    def create(self, bi_name, url, expected_checksum, data_engine, min_copies):
-        source_type = self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD if url else self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
-        return self.backing_image.create(bi_name, source_type, url, expected_checksum, data_engine, min_copies)
+    def create(self, name, url, expectedChecksum, dataEngine, minNumberOfCopies):
+        sourceType = self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD if url else self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
+        return self.backing_image.create(name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies)
 
     def get(self, bi_name):
         return self.backing_image.get(bi_name)
