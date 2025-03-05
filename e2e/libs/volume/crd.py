@@ -134,7 +134,7 @@ class CRD(Base):
             if e.reason != "Not Found":
                 Exception(f'exception for creating volumeattachments:', e)
         self.wait_for_volume_state(volume_name, "attached")
-        self.wait_for_volume_status(volume_name, "frontendDisabled", False)
+        self.wait_for_volume_status(volume_name, "frontendDisabled", disable_frontend)
 
     def is_attached_to(self, volume_name, node_name):
         return Rest().is_attached_to(volume_name, node_name)
