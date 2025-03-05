@@ -19,6 +19,10 @@ Delete snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot    ${volume_name}    ${snapshot_id}
 
+Delete snapshot ${snapshot_id} of volume ${volume_id} will fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    delete_snapshot    ${volume_name}    ${snapshot_id}
+
 Delete snapshot ${snapshot_id} of ${workload_kind} ${workload_id} volume
     ${snapshot_id}=  Convert To String  ${snapshot_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
