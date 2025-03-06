@@ -291,6 +291,11 @@ Check volume ${volume_id} replica on node ${node_id} exist
     ${replica_name}    get_replica_name_on_node    ${volume_name}    ${node_name}
     Should Not Be Equal    ${replica_name}    ${None}
 
+Wait for volume ${volume_id} replica on node ${node_id} to be deleted
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_replica_to_be_deleted    ${volume_name}    ${node_name}
+
 Volume ${volume_id} should have ${expected_replica_count} replicas running
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
