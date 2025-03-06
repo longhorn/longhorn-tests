@@ -61,9 +61,15 @@ Test Replica Auto Balance Disk In Pressure
     Given Set setting replica-soft-anti-affinity to false
     And Set setting replica-auto-balance-disk-pressure-percentage to 80
 
-    And Create 1 Gi disk 0 on node 0
-    And Create 1 Gi disk 1 on node 0
-    And Disable disk 1 scheduling on node 0
+    IF    "${DATA_ENGINE}" == "v1"
+        And Create 1 Gi filesystem type disk local-disk-0 on node 0
+        And Create 1 Gi filesystem type disk local-disk-1 on node 0
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        And Create 1 Gi block type disk local-disk-0 on node 0
+        And Create 1 Gi block type disk local-disk-1 on node 0
+    END
+    And Disable disk local-disk-1 scheduling on node 0
+    And Disable disk block-disk scheduling on node 0
     And Disable node 0 default disk
     And Disable node 1 scheduling
     And Disable node 2 scheduling
@@ -73,25 +79,28 @@ Test Replica Auto Balance Disk In Pressure
     And Create statefulset 0 using RWO volume with one-replica storageclass and size 316 Mi
     And Create statefulset 1 using RWO volume with one-replica storageclass and size 316 Mi
     And Create statefulset 2 using RWO volume with one-replica storageclass and size 316 Mi
-    And Check volume of statefulset 0 replica on node 0 disk 0
-    And Check volume of statefulset 1 replica on node 0 disk 0
-    And Check volume of statefulset 2 replica on node 0 disk 0
+    And Check volume of statefulset 0 replica on node 0 disk local-disk-0
+    And Check volume of statefulset 1 replica on node 0 disk local-disk-0
+    And Check volume of statefulset 2 replica on node 0 disk local-disk-0
 
     # Write 950 Mi * 80% / 3 = 254 Mi data to disk 0 to make it in pressure
     And Write 254 MB data to file data.bin in statefulset 0
     And Write 254 MB data to file data.bin in statefulset 1
     And Write 254 MB data to file data.bin in statefulset 2
-    And Check node 0 disk 0 is in pressure
+    And Check node 0 disk local-disk-0 is in pressure
 
-    When Enable disk 1 scheduling on node 0
+    When Enable disk local-disk-1 scheduling on node 0
     And set setting replica-auto-balance to best-effort
 
     # auto balance should happen
-    Then There should be replicas running on node 0 disk 0
-    And There should be replicas running on node 0 disk 1
-    And Check node 0 disk 0 is not in pressure
-    And Check node 0 disk 1 is not in pressure
+    Then Check node 0 disk local-disk-0 is not in pressure
+    And Check node 0 disk local-disk-1 is not in pressure
+    And There should be replicas running on node 0 disk local-disk-0
+    And There should be replicas running on node 0 disk local-disk-1
 
+    And Wait for volume of statefulset 0 healthy
+    And Wait for volume of statefulset 1 healthy
+    And Wait for volume of statefulset 2 healthy
     And Check statefulset 0 data in file data.bin is intact
     And Check statefulset 1 data in file data.bin is intact
     And Check statefulset 2 data in file data.bin is intact
