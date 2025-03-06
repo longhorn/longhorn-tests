@@ -69,7 +69,7 @@ Install Longhorn
 
 Delete instance-manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${pods} =    list_pods    longhorn-system    longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE},longhorn.io/node=${NODE_NAME}
+    ${pods} =    list_pods    longhorn-system    longhorn.io/component=instance-manager,longhorn.io/node=${NODE_NAME}
     FOR    ${pod}    IN    @{pods}
         delete_pod    ${pod}    longhorn-system    wait=False
     END
