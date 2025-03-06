@@ -16,6 +16,7 @@ Resource    ../keywords/engine.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -112,7 +113,7 @@ Test Strict Local Volume Disabled Revision Counter By Default
     And Volume 0 engine revisionCounterDisabled should be True
     And Volume 0 replica revisionCounterDisabled should be True
 
-Replica Rebuilding
+V1 Replica Rebuilding
     [Documentation]    -- Manual test plan --
     ...                1. Create and attach a volume.
     ...                2. Write a large amount of data to the volume.
@@ -132,7 +133,7 @@ Replica Rebuilding
     ...                - the rebuilding progress in UI page looks good.
     ...                - the data content is correct after rebuilding.
     ...                - volume r/w works fine.
-    When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v1
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
 
@@ -153,6 +154,33 @@ Replica Rebuilding
     Then Wait until volume 0 replica rebuilding started on node 1
     And Wait for volume 0 healthy
     And Check volume 0 crashed replica reused on node 1
+
+    And Check volume 0 data is intact
+    And Check volume 0 works
+
+V2 Replica Rebuilding
+    Given Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write 1 GB data to volume 0
+
+    When Disable node 1 scheduling
+    And Disable disk block-disk scheduling on node 1
+    And Delete instance-manager on node 1
+
+    # for a v2 volume, when a replica process crashed or an instance manager deleted,
+    # the corresponding replica running state won't be set to false,
+    # but the replica will be directly deleted
+    Then Wait for volume 0 replica on node 1 to be deleted
+    And Wait for volume 0 degraded
+
+    When Enable disk block-disk scheduling on node 1
+    Then Check volume 0 kept in degraded
+
+    When Enable node 1 scheduling
+    # since the replica has been deleted, no replica will be reused on node 1
+    Then Wait until volume 0 replica rebuilding started on node 1
+    And Wait for volume 0 healthy
 
     And Check volume 0 data is intact
     And Check volume 0 works
