@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.9.0 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/</link>
+    <description>Recent content in v1.9.0 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Test upgrade responder should collect system architecture and encrypted volume count</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/7047
+Test step Given Update upgrade-responder-url setting to http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+&amp;gt; k -n longhorn-system get setting upgrade-responder-url NAME VALUE APPLIED AGE upgrade-responder-url http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade true 22m  Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+ And Deploy upgrade responder stack.
+When Create unencrypted volume.
+And Create encrypted volume.
+And Wait 1~2 hours for collection data to send to the influxDB database.
+Then host_arch should exist in influxDB database.
+app_name=&amp;#34;longhorn&amp;#34; influxdb_pod=$(kubectl get pod | grep influxdb | awk &amp;#39;{print $1}&amp;#39; | head -n 1) kubectl exec -it ${influxdb_pod} -- influx -execute &amp;#39;SHOW TAG KEYS FROM upgrade_request&amp;#39; -database=&amp;#34;${app_name}_upgrade_responder&amp;#34; Sample output:</description>
+    </item>
+    
+  </channel>
+</rss>
