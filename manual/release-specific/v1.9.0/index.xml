@@ -7,6 +7,22 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Test Support Bundle Extended Collection</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-support-bundle-extended-collection/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-support-bundle-extended-collection/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6754
+Test /proc/mounts file Given Longhorn installed
+When generated support-bundle
+And proc_mounts file should exist in support-bundle/nodes//hostinfo/
+Test multipath.config file Given Longhorn installed
+And /etc/multipath.config exists on cluster nodes
+When generated support-bundle
+And multipath.config should exist in support-bundle/nodes//hostinfo/</description>
+    </item>
+    
+    <item>
       <title>Test upgrade responder should collect system architecture and encrypted volume count</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
