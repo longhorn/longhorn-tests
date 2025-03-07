@@ -1,25 +1,56 @@
 ---
-title: Test upgrade responder should collect system architecture and encrypted volume count
+title: Test upgrade responder extended collection
 ---
 
 ## Related issue
-https://github.com/longhorn/longhorn/issues/7047
+- https://github.com/longhorn/longhorn/issues/7047
+- https://github.com/longhorn/longhorn/issues/7599
 
 ## Test step
 
-**Given** Update `upgrade-responder-url` setting to `http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade`
+**Given** [Deploy upgrade responder stack](https://github.com/longhorn/longhorn/tree/master/dev/upgrade-responder).
+
+**And** Update `upgrade-responder-url` setting to `http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade`
 ```bash
 > k -n longhorn-system get setting upgrade-responder-url
 NAME                    VALUE                                                                              APPLIED   AGE
 upgrade-responder-url   http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade   true      22m
-
 ```
 > Match the checkUpgradeURL with the application name: `http://<APP_NAME>-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade`
 
-**And** [Deploy upgrade responder stack](https://github.com/longhorn/longhorn/tree/master/dev/upgrade-responder).
-
 **When** Create unencrypted volume.  
 **And** Create encrypted volume.  
+```bash
+> kubectl get volume -n longhorn-system -o custom-columns=":metadata.name,:spec.encrypted"
+
+vol-encrypted       true
+vol-unencrypted     false
+```
+
+**And** Create backing image.
+```bash
+> k -n longhorn-system get backingimage
+NAME   UUID       SOURCETYPE   SIZE      VIRTUALSIZE   AGE
+bi-0   1d0a5149   download     1161728   0             15s
+```
+
+**And** Setting `orphan-auto-deletion` is `false`.
+```bash
+> k -n longhorn-system get setting orphan-auto-deletion
+NAME                   VALUE   APPLIED   AGE
+orphan-auto-deletion   false   true      27h
+```
+
+**And** Create orphan directory.
+> Ref: https://github.com/longhorn/longhorn-tests/blob/da2e5641e3ee3b8c90f6f246e2772460317c9bda/manager/integration/tests/test_orphan.py#L73-L86
+
+**And** Orphan CR exists.
+```bash
+> k -n longhorn-system get orphans.longhorn.io
+NAME                                                                      TYPE      NODE
+orphan-6d553a4a2eef5271787ea28b21a386ebe4b3607f9016fb9c248fa4cf600e64f8   replica   ip-10-0-2-5
+```
+
 **And** Wait 1~2 hours for collection data to send to the influxDB database.
 
 **Then** `host_arch` should exist in influxDB database.
@@ -75,8 +106,14 @@ longhorn_setting_taint_toleration
 longhorn_setting_v1_data_engine
 longhorn_setting_v2_data_engine
 ```
+
 **And** `longhorn_volume_encrypted_false_count` should exist in influxDB database.  
-**And** `longhorn_volume_encrypted_true_count` should exist in influxDB database.
+**And** `longhorn_volume_encrypted_true_count` should exist in influxDB database.  
+**And** `longhorn_volume_number_of_replicas` should exist in influxDB database.  
+**And** `longhorn_volume_number_of_snapshots` should exist in influxDB database.  
+**And** `longhorn_backing_image_count` should exist in influxDB database.  
+**And** `longhorn_orphan_count` should exist in influxDB database.  
+
 ```bash
 kubectl exec -it ${influxdb_pod} -- influx -execute 'SHOW FIELD KEYS FROM upgrade_request' -database="${app_name}_upgrade_responder"
 ```
@@ -85,6 +122,7 @@ Sample output:
 name: upgrade_request
 fieldKey                                                            fieldType
 --------                                                            ---------
+longhorn_backing_image_count                                        float
 longhorn_disk_filesystem_count                                      float
 longhorn_instance_manager_average_cpu_usage_milli_cores             float
 longhorn_instance_manager_average_memory_usage_bytes                float
@@ -93,6 +131,7 @@ longhorn_manager_average_memory_usage_bytes                         float
 longhorn_namespace_uid                                              string
 longhorn_node_count                                                 float
 longhorn_node_disk_ssd_count                                        float
+longhorn_orphan_count                                               float
 longhorn_setting_backing_image_cleanup_wait_interval                float
 longhorn_setting_backing_image_recovery_wait_interval               float
 longhorn_setting_backup_concurrent_limit                            float
@@ -123,6 +162,8 @@ longhorn_volume_data_locality_disabled_count                        float
 longhorn_volume_encrypted_false_count                               float
 longhorn_volume_encrypted_true_count                                float
 longhorn_volume_frontend_blockdev_count                             float
+longhorn_volume_number_of_replicas                                  float
+longhorn_volume_number_of_snapshots                                 float
 longhorn_volume_replica_auto_balance_disabled_count                 float
 longhorn_volume_replica_disk_soft_anti_affinity_true_count          float
 longhorn_volume_replica_soft_anti_affinity_false_count              float
