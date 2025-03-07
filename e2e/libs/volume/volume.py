@@ -140,6 +140,9 @@ class Volume(Base):
     def wait_for_replica_running(self, volume_name, node_name):
         return self.volume.is_replica_running(volume_name, node_name, is_running=True)
 
+    def wait_for_replica_to_be_deleted(self, volume_name, node_name):
+        return self.volume.wait_for_replica_to_be_deleted(volume_name, node_name)
+
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 

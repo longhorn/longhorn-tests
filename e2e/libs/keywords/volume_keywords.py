@@ -246,6 +246,9 @@ class volume_keywords:
     def wait_for_replica_stopped(self, volume_name, node_name):
         self.volume.wait_for_replica_stopped(volume_name, node_name)
 
+    def wait_for_replica_to_be_deleted(self, volume_name, node_name):
+        self.volume.wait_for_replica_to_be_deleted(volume_name, node_name)
+
     def wait_for_replica_running(self, volume_name, node_name):
         self.volume.wait_for_replica_running(volume_name, node_name)
 
