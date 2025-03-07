@@ -232,6 +232,7 @@ class Node:
         self.update_disks(node_name, node.disks)
 
     def set_disk_scheduling(self, node_name, disk_name, allowScheduling):
+        logging(f"Setting node {node_name} disk {disk_name} allowScheduling to {allowScheduling}")
         node = get_longhorn_client().by_id_node(node_name)
 
         for name, disk in iter(node.disks.items()):
@@ -275,7 +276,9 @@ class Node:
 
     def get_disk_uuid(self, node_name, disk_name):
         node = get_longhorn_client().by_id_node(node_name)
-        return node["disks"][disk_name]["diskUUID"]
+        uuid = node["disks"][disk_name]["diskUUID"]
+        logging(f"Got node {node_name} disk {disk_name} uuid = {uuid}")
+        return uuid
 
     def wait_for_node_down(self, node_name):
         down = False

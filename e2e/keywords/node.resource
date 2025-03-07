@@ -33,31 +33,30 @@ Enable node ${node_id} default disk
     ${node_name} =    get_node_by_index    ${node_id}
     enable_default_disk    ${node_name}
 
-Disable disk ${disk_id} scheduling on node ${node_id}
+Disable disk ${disk_name} scheduling on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
     disable_disk    ${node_name}    ${disk_name}
 
-Enable disk ${disk_id} scheduling on node ${node_id}
+Enable disk ${disk_name} scheduling on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
     enable_disk    ${node_name}    ${disk_name}
 
-Check node ${node_id} disk ${disk_id} is in pressure
+Check node ${node_id} disk ${disk_name} is in pressure
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
     wait_for_disk_in_pressure    ${node_name}    ${disk_name}
 
-Check node ${node_id} disk ${disk_id} is not in pressure
+Check node ${node_id} disk ${disk_name} is not in pressure
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
     wait_for_disk_not_in_pressure    ${node_name}    ${disk_name}
 
-Create ${disk_size} Gi disk ${disk_id} on node ${node_id}
+Create ${disk_size} Gi ${disk_type} type disk ${disk_name} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
-    create_volume   ${disk_name}    size=${disk_size}Gi    numberOfReplicas=1
+    create_volume   ${disk_name}    size=${disk_size}Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     attach_volume    ${disk_name}    ${node_name}
     wait_for_volume_healthy    ${disk_name}
-    ${mount_path} =    mount_disk    ${disk_name}    ${node_name}
-    add_disk    ${disk_name}    ${node_name}    filesystem    ${mount_path}
+    IF    "${disk_type}" == "filesystem"
+        ${mount_path} =    mount_disk    ${disk_name}    ${node_name}
+    ELSE IF    "${disk_type}" == "block"
+        ${mount_path} =    Set Variable    /dev/longhorn/${disk_name}
+    END
+    add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}

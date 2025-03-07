@@ -269,6 +269,20 @@ class Rest(Base):
         assert condition_met, f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running on {node_name if node_name else 'nodes'} failed. There are only {running_replica_count} running replicas"
         return running_replica_count
 
+    def wait_for_replica_to_be_deleted(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            deleted = True
+            logging(f"Waiting for volume {volume_name} replica on {node_name} to be deleted ... ({i})")
+            volume = get_longhorn_client().by_id_volume(volume_name)
+            for r in volume.replicas:
+                if node_name == r.hostId:
+                    deleted = False
+                    break
+            if deleted:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} replica on {node_name} to be deleted: {volume.replicas}"
+
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         completed = False
         for i in range(self.retry_count):

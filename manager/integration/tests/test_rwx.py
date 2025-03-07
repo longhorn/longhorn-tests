@@ -676,6 +676,7 @@ def test_encrypted_rwx_volume(client, core_api, statefulset, storage_class, cryp
     storage_class['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = namespace  # NOQA
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = 'longhorn-crypto'  # NOQA
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = namespace  # NOQA
+    storage_class['parameters']['encrypted'] = 'true'
     create_storage_class(storage_class)
 
     # Create deployment with PVC

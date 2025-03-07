@@ -299,6 +299,9 @@ class CRD(Base):
     def wait_for_replica_count(self, volume_name, node_name, replica_count):
         return Rest().wait_for_replica_count(volume_name, node_name, replica_count)
 
+    def wait_for_replica_to_be_deleted(self, volume_name, node_name):
+        return Rest().wait_for_replica_to_be_deleted(volume_name, node_name)
+
     def wait_for_volume_keep_in_state(self, volume_name, desired_state):
         self.wait_for_volume_state(volume_name, desired_state)
 
