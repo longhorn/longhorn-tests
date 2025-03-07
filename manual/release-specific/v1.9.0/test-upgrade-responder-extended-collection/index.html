@@ -812,7 +812,7 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-support-bundle-extended-collection/">Test Support Bundle Extended Collection</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info/">Test upgrade responder should collect system architecture and encrypted volume count</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-extended-collection/">Test upgrade responder extended collection</a></li>
   
 
 </ul>
@@ -841,24 +841,46 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test upgrade responder should collect system architecture and encrypted volume count</h1>
+  <h1 id="title">Test upgrade responder extended collection</h1>
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/7047">https://github.com/longhorn/longhorn/issues/7047</a></p>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/7047">https://github.com/longhorn/longhorn/issues/7047</a></li>
+<li><a href="https://github.com/longhorn/longhorn/issues/7599">https://github.com/longhorn/longhorn/issues/7599</a></li>
+</ul>
 <h2 id="test-step">Test step</h2>
-<p><strong>Given</strong> Update <code>upgrade-responder-url</code> setting to <code>http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade</code></p>
+<p><strong>Given</strong> <a href="https://github.com/longhorn/longhorn/tree/master/dev/upgrade-responder">Deploy upgrade responder stack</a>.</p>
+<p><strong>And</strong> Update <code>upgrade-responder-url</code> setting to <code>http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade</code></p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; k -n longhorn-system get setting upgrade-responder-url
 NAME                    VALUE                                                                              APPLIED   AGE
 upgrade-responder-url   http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade   true      22m
-
 </code></pre></div><blockquote>
 <p>Match the checkUpgradeURL with the application name: <code>http://&lt;APP_NAME&gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade</code></p>
 </blockquote>
-<p><strong>And</strong> <a href="https://github.com/longhorn/longhorn/tree/master/dev/upgrade-responder">Deploy upgrade responder stack</a>.</p>
 <p><strong>When</strong> Create unencrypted volume.<br>
-<strong>And</strong> Create encrypted volume.<br>
-<strong>And</strong> Wait 1~2 hours for collection data to send to the influxDB database.</p>
+<strong>And</strong> Create encrypted volume.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; kubectl get volume -n longhorn-system -o custom-columns<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;:metadata.name,:spec.encrypted&#34;</span>
+
+vol-encrypted       true
+vol-unencrypted     false
+</code></pre></div><p><strong>And</strong> Create backing image.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; k -n longhorn-system get backingimage
+NAME   UUID       SOURCETYPE   SIZE      VIRTUALSIZE   AGE
+bi-0   1d0a5149   download     <span style="color:#ae81ff">1161728</span>   <span style="color:#ae81ff">0</span>             15s
+</code></pre></div><p><strong>And</strong> Setting <code>orphan-auto-deletion</code> is <code>false</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; k -n longhorn-system get setting orphan-auto-deletion
+NAME                   VALUE   APPLIED   AGE
+orphan-auto-deletion   false   true      27h
+</code></pre></div><p><strong>And</strong> Create orphan directory.</p>
+<blockquote>
+<p>Ref: <a href="https://github.com/longhorn/longhorn-tests/blob/da2e5641e3ee3b8c90f6f246e2772460317c9bda/manager/integration/tests/test_orphan.py#L73-L86">https://github.com/longhorn/longhorn-tests/blob/da2e5641e3ee3b8c90f6f246e2772460317c9bda/manager/integration/tests/test_orphan.py#L73-L86</a></p>
+</blockquote>
+<p><strong>And</strong> Orphan CR exists.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&gt; k -n longhorn-system get orphans.longhorn.io
+NAME                                                                      TYPE      NODE
+orphan-6d553a4a2eef5271787ea28b21a386ebe4b3607f9016fb9c248fa4cf600e64f8   replica   ip-10-0-2-5
+</code></pre></div><p><strong>And</strong> Wait 1~2 hours for collection data to send to the influxDB database.</p>
 <p><strong>Then</strong> <code>host_arch</code> should exist in influxDB database.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">app_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;longhorn&#34;</span>
 influxdb_pod<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>kubectl get pod | grep influxdb | awk <span style="color:#e6db74">&#39;{print $1}&#39;</span> | head -n 1<span style="color:#66d9ef">)</span>
@@ -909,13 +931,18 @@ longhorn_setting_taint_toleration
 longhorn_setting_v1_data_engine
 longhorn_setting_v2_data_engine
 </code></pre></div><p><strong>And</strong> <code>longhorn_volume_encrypted_false_count</code> should exist in influxDB database.<br>
-<strong>And</strong> <code>longhorn_volume_encrypted_true_count</code> should exist in influxDB database.</p>
+<strong>And</strong> <code>longhorn_volume_encrypted_true_count</code> should exist in influxDB database.<br>
+<strong>And</strong> <code>longhorn_volume_number_of_replicas</code> should exist in influxDB database.<br>
+<strong>And</strong> <code>longhorn_volume_number_of_snapshots</code> should exist in influxDB database.<br>
+<strong>And</strong> <code>longhorn_backing_image_count</code> should exist in influxDB database.<br>
+<strong>And</strong> <code>longhorn_orphan_count</code> should exist in influxDB database.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl exec -it <span style="color:#e6db74">${</span>influxdb_pod<span style="color:#e6db74">}</span> -- influx -execute <span style="color:#e6db74">&#39;SHOW FIELD KEYS FROM upgrade_request&#39;</span> -database<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>app_name<span style="color:#e6db74">}</span><span style="color:#e6db74">_upgrade_responder&#34;</span>
 </code></pre></div><p>Sample output:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">name: upgrade_request
 fieldKey                                                            fieldType
 <span style="color:#75715e">--------                                                            ---------
-</span><span style="color:#75715e"></span>longhorn_disk_filesystem_count                                      float
+</span><span style="color:#75715e"></span>longhorn_backing_image_count                                        float
+longhorn_disk_filesystem_count                                      float
 longhorn_instance_manager_average_cpu_usage_milli_cores             float
 longhorn_instance_manager_average_memory_usage_bytes                float
 longhorn_manager_average_cpu_usage_milli_cores                      float
@@ -923,6 +950,7 @@ longhorn_manager_average_memory_usage_bytes                         float
 longhorn_namespace_uid                                              string
 longhorn_node_count                                                 float
 longhorn_node_disk_ssd_count                                        float
+longhorn_orphan_count                                               float
 longhorn_setting_backing_image_cleanup_wait_interval                float
 longhorn_setting_backing_image_recovery_wait_interval               float
 longhorn_setting_backup_concurrent_limit                            float
@@ -953,6 +981,8 @@ longhorn_volume_data_locality_disabled_count                        float
 longhorn_volume_encrypted_false_count                               float
 longhorn_volume_encrypted_true_count                                float
 longhorn_volume_frontend_blockdev_count                             float
+longhorn_volume_number_of_replicas                                  float
+longhorn_volume_number_of_snapshots                                 float
 longhorn_volume_replica_auto_balance_disabled_count                 float
 longhorn_volume_replica_disk_soft_anti_affinity_true_count          float
 longhorn_volume_replica_soft_anti_affinity_false_count              float
@@ -963,7 +993,7 @@ longhorn_volume_unmap_mark_snap_chain_removed_false_count           float
 value                                                               integer
 </code></pre></div>
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.9.0/test-upgrade-responder-extended-collection.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

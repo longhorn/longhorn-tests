@@ -1693,6 +1693,21 @@ When Wait 1~2 hours for collection data to send to the influxDB database.</descr
     </item>
     
     <item>
+      <title>Test upgrade responder extended collection</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-extended-collection/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-extended-collection/</guid>
+      <description>Related issue  https://github.com/longhorn/longhorn/issues/7047 https://github.com/longhorn/longhorn/issues/7599  Test step Given Deploy upgrade responder stack.
+And Update upgrade-responder-url setting to http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+&amp;gt; k -n longhorn-system get setting upgrade-responder-url NAME VALUE APPLIED AGE upgrade-responder-url http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade true 22m  Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+ When Create unencrypted volume.
+And Create encrypted volume.
+&amp;gt; kubectl get volume -n longhorn-system -o custom-columns=&amp;#34;:metadata.name,:spec.encrypted&amp;#34; vol-encrypted true vol-unencrypted false And Create backing image.
+&amp;gt; k -n longhorn-system get backingimage NAME UUID SOURCETYPE SIZE VIRTUALSIZE AGE bi-0 1d0a5149 download 1161728 0 15s And Setting orphan-auto-deletion is false.</description>
+    </item>
+    
+    <item>
       <title>Test upgrade responder should collect SPDK related info</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-upgrade-responder-collect-spdk-related-info/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1703,23 +1718,6 @@ Test step Prerequisite Given Patch build and deploy Longhorn.
 diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -	checkUpgradeURL = &amp;quot;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;quot; +	checkUpgradeURL = &amp;quot;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;quot; ) type SettingController struct {  Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
  And Set setting v2-data-engine to true.
 And Add two block-type Disks in Longhorn Nodes.</description>
-    </item>
-    
-    <item>
-      <title>Test upgrade responder should collect system architecture and encrypted volume count</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-upgrade-responder-collect-extra-info/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/7047
-Test step Given Update upgrade-responder-url setting to http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
-&amp;gt; k -n longhorn-system get setting upgrade-responder-url NAME VALUE APPLIED AGE upgrade-responder-url http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade true 22m  Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
- And Deploy upgrade responder stack.
-When Create unencrypted volume.
-And Create encrypted volume.
-And Wait 1~2 hours for collection data to send to the influxDB database.
-Then host_arch should exist in influxDB database.
-app_name=&amp;#34;longhorn&amp;#34; influxdb_pod=$(kubectl get pod | grep influxdb | awk &amp;#39;{print $1}&amp;#39; | head -n 1) kubectl exec -it ${influxdb_pod} -- influx -execute &amp;#39;SHOW TAG KEYS FROM upgrade_request&amp;#39; -database=&amp;#34;${app_name}_upgrade_responder&amp;#34; Sample output:</description>
     </item>
     
     <item>
