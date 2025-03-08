@@ -119,3 +119,7 @@ class Rest(Base):
     def is_marked_as_removed(self, volume_name, snapshot_id):
         snapshot = self.get(volume_name, snapshot_id)
         assert snapshot.removed
+
+    def get_checksum(self, volume_name, snapshot_id):
+        snapshot = self.get(volume_name, snapshot_id)
+        return snapshot.checksum

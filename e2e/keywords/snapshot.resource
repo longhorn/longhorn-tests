@@ -65,3 +65,24 @@ Create ${snapshot_count} snapshot for volume ${volume_id}
     FOR    ${i}    IN RANGE    ${snapshot_count}
         Create snapshot ${i} of volume ${volume_id}
     END
+
+Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is skipped for ${timeout} seconds
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${timeout}
+        ${checksum} =    get_checksum    ${volume_name}    ${snapshot_id}
+        Run Keyword If    '${checksum}' != ''    Fail    Snapshot ${snapshot_id} checksum should be skipped but was calculated at ${i} seconds.
+        Sleep    1
+    END
+
+Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is calculated within ${timeout} seconds
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${checksum} =    Set Variable    ${EMPTY}
+
+    FOR    ${i}    IN RANGE    ${timeout}
+        ${checksum} =    get_checksum    ${volume_name}    ${snapshot_id}
+        Log To Console    Attempt ${i}: Snapshot ${snapshot_id} checksum = '${checksum}'
+        Run Keyword If    '${checksum}' != ''    Exit For Loop
+        Sleep    1
+    END
+
+    Should Not Be Empty    ${checksum}    FAIL: Snapshot ${snapshot_id} checksum was not calculated within ${timeout} seconds.
