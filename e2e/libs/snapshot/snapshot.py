@@ -47,3 +47,6 @@ class Snapshot(Base):
 
     def is_marked_as_removed(self, volume_name, snapshot_id):
         return self.snapshot.is_marked_as_removed(volume_name, snapshot_id)
+
+    def get_checksum(self, volume_name, snapshot_id):
+        return self.snapshot.get_checksum(volume_name, snapshot_id)
