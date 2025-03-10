@@ -1,12 +1,17 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
+def WORKSPACE = "/src/longhorn-tests"
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+def LONGHORN_TEST_CLOUDPROVIDER = "gcp"
+def K8S_DISTRO_NAME = "gke"
+def REGISTRY_URL = ""
 
 node {
 
     withCredentials([
         file(credentialsId: 'GCP_CREDS', variable: 'GCP_CREDS_FILE'),
         string(credentialsId: 'GCP_PROJECT', variable: 'GCP_PROJECT'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -21,6 +26,9 @@ node {
 
                 sh "pipelines/gke/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env REGISTRY_URL=${REGISTRY_URL} \
+                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
                                        --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
                                        --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
@@ -30,10 +38,11 @@ node {
                                        --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
+                                       --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
-                                       --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
                                        --env TF_VAR_gcp_project=${GCP_PROJECT} \
                                        --env TF_VAR_gcp_auth_file=/src/longhorn-tests/gcp_creds.json \
                                        --env TF_VAR_distro=${DISTRO} \
@@ -45,42 +54,30 @@ node {
 
             timeout(60) {
                 stage ('terraform') {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/gke/scripts/terraform-setup.sh"
                 }
 			}
 
             stage ('longhorn setup & tests') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/gke/scripts/longhorn-setup.sh"
             }
 
             stage ('download support bundle') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/../../${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/gke/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
 				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
 			}
 
             stage ('report generation') {
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
 
                 if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
                     summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
                 }
                 else {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
-
-                sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
-                LONGHORN_MANAGER_VERSION = sh (
-                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_MANAGER_IMAGE}",
-                    returnStdout: true
-                )
-                sh 'docker pull ${CUSTOM_LONGHORN_ENGINE_IMAGE}'
-                LONGHORN_ENGINE_VERSION = sh (
-                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_ENGINE_IMAGE}",
-                    returnStdout: true
-                )
-                manager.createSummary("info.gif").appendText("<p>longhorn-manager version: $LONGHORN_MANAGER_VERSION</p><p>longhorn-engine version: $LONGHORN_ENGINE_VERSION</p>", false, false, false, "black")
             }
 
         } catch (e) {

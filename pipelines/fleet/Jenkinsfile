@@ -9,12 +9,8 @@ def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
 
-// parameters for air gap installation
-def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
-def REGISTRY_URL
-def REGISTRY_USERNAME
-def REGISTRY_PASSWORD
+def REGISTRY_URL = ""
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -23,6 +19,7 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
     ]) {
 

@@ -130,7 +130,7 @@ install_longhorn_by_rancher() {
 
 
 wait_longhorn_status_running(){
-  local RETRY_COUNTS=10 # in minutes
+  local RETRY_COUNTS=60 # in minutes
   local RETRY_INTERVAL="1m"
 
   # csi and engine image components are installed after longhorn components.
@@ -164,28 +164,29 @@ get_longhorn_chart(){
 
 
 create_registry_secret(){
-  kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry docker-registry-secret --docker-server=${REGISTRY_URL} --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
+  if [[ -z "${REGISTRY_URL}" ]]; then
+    kubectl -n default create secret docker-registry docker-registry-secret --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
+    kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry docker-registry-secret --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
+  else
+    kubectl -n default create secret docker-registry docker-registry-secret --docker-server=${REGISTRY_URL} --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
+    kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry docker-registry-secret --docker-server=${REGISTRY_URL} --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
+  fi
+  kubectl patch serviceaccount default -p '{"secrets":[{"name":"docker-registry-secret"}]}' -n default
+  kubectl patch serviceaccount default -p '{"secrets":[{"name":"docker-registry-secret"}]}' -n longhorn-system
 }
 
 
-customize_longhorn_manifest_for_airgap(){
+customize_longhorn_manifest_registry(){
   # (1) add secret name to imagePullSecrets.name
   yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-driver-deployer").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
   yq -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
+  yq -i 'select(.kind == "DaemonSet" and .metadata.name == "pre-pull-share-manager-image").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
   yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-ui").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
   yq -i 'select(.kind == "ConfigMap" and .metadata.name == "longhorn-default-setting").data."default-setting.yaml"="registry-secret: docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
-  # (2) modify images to point to private registry
-  sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "${TF_VAR_tf_workspace}/longhorn.yaml"
-}
-
-
-customize_longhorn_chart_for_airgap(){
-  # specify private registry secret in chart/values.yaml
-  yq -i '.privateRegistry.createSecret=true' "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryUser=\"${REGISTRY_USERNAME}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryPasswd=\"${REGISTRY_PASSWORD}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i '.privateRegistry.registrySecret="docker-registry-secret"' "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  # (2) modify images to point to custom registry
+  if [[ ! -z "${REGISTRY_URL}" ]]; then
+    sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "${TF_VAR_tf_workspace}/longhorn.yaml"
+  fi
 }
 
 
@@ -453,6 +454,8 @@ run_longhorn_upgrade_test(){
   ## for v2 volume test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${TF_VAR_extra_block_device}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
 
+  yq e -i 'select(.kind == "Pod" and .metadata.name == "longhorn-test").spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
   # wait upgrade test pod to start running
@@ -532,6 +535,8 @@ run_longhorn_tests(){
   RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
+  yq e -i 'select(.kind == "Pod" and .metadata.name == "longhorn-test").spec.imagePullSecrets[0].name="docker-registry-secret"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   local RETRY_COUNTS=60
@@ -598,26 +603,15 @@ main(){
     install_metrics_server
   fi
 
-  if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
-    if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
-      create_registry_secret
-      get_longhorn_manifest
-      customize_longhorn_manifest_for_airgap
-      install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
-    elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm-chart" ]]; then
-      get_longhorn_chart
-      customize_longhorn_chart_for_airgap
-      install_longhorn_by_chart
-    elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
-      install_rancher
-      get_rancher_api_key
-      install_longhorn_by_rancher
-    fi
-    setup_longhorn_ui_nodeport
-    export_longhorn_ui_url
-    run_longhorn_tests
-  elif [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
+  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
+  # set debugging mode off to avoid leaking docker secrets to the logs.
+  # DON'T REMOVE!
+  set +x
+  create_registry_secret
+  set -x
+  customize_longhorn_manifest_registry
+
+  if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
@@ -633,13 +627,7 @@ main(){
     run_longhorn_upgrade_test
     run_longhorn_tests
   else
-    if [[ "${DISTRO}" == "sles" ]]; then
-      get_longhorn_chart
-      install_longhorn_by_chart
-    else
-      generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
-      install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
-    fi
+    install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
     run_longhorn_tests
