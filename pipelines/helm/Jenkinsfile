@@ -14,9 +14,7 @@ def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLA
 def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
 def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
-def REGISTRY_URL
-def REGISTRY_USERNAME
-def REGISTRY_PASSWORD
+def REGISTRY_URL = ""
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -25,7 +23,7 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
-        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
     ]) {
 
@@ -43,7 +41,8 @@ node {
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                            --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
-                                           --env TF_VAR_do_token=${DO_TOKEN} \
+                                           --env TF_VAR_docker_hub_username=${REGISTRY_USERNAME} \
+                                           --env TF_VAR_docker_hub_password=${REGISTRY_PASSWORD} \
                                            --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
                                            --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
                                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
