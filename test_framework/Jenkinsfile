@@ -117,7 +117,7 @@ node {
                                        --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
-                                       --env TF_VAR_extra_block_device=${RUN_V2_TEST} \
+                                       --env TF_VAR_extra_block_device="true" \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
