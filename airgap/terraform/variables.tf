@@ -34,6 +34,16 @@ variable "registry_aws_instance_type" {
   default     = "t2.micro"
 }
 
+variable "docker_hub_username" {
+  type = string
+  sensitive = true
+}
+
+variable "docker_hub_password" {
+  type = string
+  sensitive = true
+}
+
 variable "longhorn_version" {
   type = string
   default = "master"

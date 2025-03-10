@@ -42,7 +42,11 @@ resource "google_container_cluster" "cluster" {
   network            = google_compute_network.vpc_network.id
   subnetwork         = google_compute_subnetwork.subnetwork.id
   location           = data.google_compute_zones.available.names[0]
+<<<<<<< HEAD
   min_master_version = "1.31.1-gke.2105000"
+=======
+  min_master_version = "1.32.1-gke.1357001"
+>>>>>>> a7efe95 (ci: provide docker credentials when pulling Longhorn components images)
   remove_default_node_pool = true
   deletion_protection = false
   initial_node_count       = 1

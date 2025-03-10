@@ -50,6 +50,10 @@ spec:
         values: |
           preUpgradeChecker:
             jobEnabled: false
+          privateRegistry:
+            createSecret: false
+            registryUrl: ${REGISTRY_URL}
+            registrySecret: docker-registry-secret
   destination:
     server: https://kubernetes.default.svc
     namespace: ${LONGHORN_NAMESPACE}

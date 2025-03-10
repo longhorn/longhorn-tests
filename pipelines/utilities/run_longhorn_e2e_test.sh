@@ -34,7 +34,7 @@ run_longhorn_e2e_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[3].value="hdd"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
-  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
+  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "gke" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[5].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
@@ -52,6 +52,8 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_STABLE_VERSION", "value": "'${LONGHORN_STABLE_VERSION}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
+
+  yq e -i 'select(.kind == "Pod" and .metadata.name == "longhorn-test").spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 

@@ -5,6 +5,7 @@ set -x
 source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
+source pipelines/utilities/create_registry_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_helm_chart.sh
@@ -25,11 +26,6 @@ apply_selinux_workaround(){
 }
 
 
-create_registry_secret(){
-  kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry docker-registry-secret --docker-server=${REGISTRY_URL} --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
-}
-
-
 main(){
   set_kubeconfig
 
@@ -47,8 +43,15 @@ main(){
   install_backupstores
   install_csi_snapshotter
 
+  # set debugging mode off to avoid leaking docker secrets to the logs.
+  # DON'T REMOVE!
+  set +x
+  create_registry_secret
+  set -x
+
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
+    customize_longhorn_chart_registry
     install_longhorn
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
@@ -63,6 +66,10 @@ main(){
     run_longhorn_test
   else
     get_longhorn_chart
+<<<<<<< HEAD
+=======
+    customize_longhorn_chart_registry
+>>>>>>> a7efe95 (ci: provide docker credentials when pulling Longhorn components images)
     install_longhorn
     run_longhorn_test
   fi

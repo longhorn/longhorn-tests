@@ -312,7 +312,11 @@ resource "null_resource" "post_setup" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /tmp/provision_registry_server.sh",
+<<<<<<< HEAD
       "registry_username=${local.registry_username} registry_password=${local.registry_password} registry_url=${digitalocean_record.lh_registry.fqdn} longhorn_version=${var.longhorn_version} /tmp/provision_registry_server.sh",
+=======
+      "docker_hub_username=${var.docker_hub_username} docker_hub_password=${var.docker_hub_password} registry_username=${local.registry_username} registry_password=${local.registry_password} registry_url=${aws_route53_record.lh_registry.fqdn} longhorn_version=${var.longhorn_version} /tmp/provision_registry_server.sh",
+>>>>>>> a7efe95 (ci: provide docker credentials when pulling Longhorn components images)
     ]
 
     connection {

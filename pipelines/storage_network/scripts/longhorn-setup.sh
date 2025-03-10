@@ -5,6 +5,7 @@ set -x
 source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
+source pipelines/utilities/create_registry_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/storage_network.sh
 source pipelines/utilities/create_longhorn_namespace.sh
@@ -47,7 +48,14 @@ main(){
   install_backupstores
   install_csi_snapshotter
 
+  # set debugging mode off to avoid leaking docker secrets to the logs.
+  # DON'T REMOVE!
+  set +x
+  create_registry_secret
+  set -x
+
   generate_longhorn_yaml_manifest
+  customize_longhorn_manifest_registry
   install_longhorn_by_manifest
 
   update_storage_network_setting
