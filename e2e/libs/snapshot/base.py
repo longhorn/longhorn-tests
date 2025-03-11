@@ -71,3 +71,7 @@ class Base(ABC):
     @abstractmethod
     def is_marked_as_removed(self, volume_name, snapshot_id):
         return NotImplemented
+
+    @abstractmethod
+    def get_checksum(self, volume_name, snapshot_id):
+        return NotImplemented
