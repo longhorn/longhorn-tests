@@ -32,6 +32,8 @@ node {
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
+        usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
+        string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'),
         file(credentialsId: 'AZURE_CRT_FILE', variable: 'AZURE_CRT_FILE'),
@@ -117,6 +119,9 @@ node {
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env TF_VAR_extra_block_device="true" \
+                                       --env TF_VAR_lab_url=${LAB_URL} \
+                                       --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
+                                       --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
