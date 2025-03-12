@@ -3,7 +3,6 @@
 set -x
 
 source test_framework/scripts/kubeconfig.sh
-source test_framework/scripts/cleanup.sh
 
 terraform_setup(){
   if [[ ${TF_VAR_k8s_distro_name} == "aks" ]] || [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
@@ -15,6 +14,16 @@ terraform_setup(){
 
   if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "aws" ]]; then
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw controlplane_public_ip > /tmp/controlplane_public_ip
+  elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
+    terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kube_config > ${TF_VAR_tf_workspace}/kube_config.yaml
+    terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw cluster_id > /tmp/cluster_id
+    until [ "$(KUBECONFIG=${TF_VAR_tf_workspace}/kube_config.yaml kubectl get nodes -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true)" -eq 4 ]; do
+      echo "waiting for harvester cluster nodes to be running"
+      sleep 2
+    done
+    KUBECONFIG=${TF_VAR_tf_workspace}/kube_config.yaml kubectl get nodes --no-headers --selector=node-role.kubernetes.io/control-plane -owide | awk '{print $6}' > /tmp/controlplane_public_ip
+    KUBECONFIG=${TF_VAR_tf_workspace}/kube_config.yaml kubectl get nodes --no-headers -ojson | jq '.items[].metadata.name' | tr -d '"' > /tmp/instance_mapping
+    jq -Rn 'reduce inputs as $line ({}; .[$line] = $line)' /tmp/instance_mapping | sponge /tmp/instance_mapping
   fi
 
   if [[ ${TF_VAR_k8s_distro_name} == "rke" ]]; then
@@ -38,22 +47,5 @@ terraform_setup(){
   fi
 }
 
-
-if [[ "${BASH_SOURCE[0]}" -ef "$0" ]]; then
-  CLUSTER_READY=false
-  MAX_RETRY=3
-  RETRY=0
-  while [[ "${CLUSTER_READY}" == false ]] && [[ ${RETRY} -lt ${MAX_RETRY} ]]; do
-    terraform_setup
-    set_kubeconfig
-    if ! kubectl get pods -A | grep -q 'Running'; then
-      cleanup
-      RETRY=$((RETRY+1))
-    else
-      CLUSTER_READY=true
-    fi
-  done
-  if [[ "${CLUSTER_READY}" == false ]]; then
-    exit 1
-  fi
-fi
+terraform_setup
+set_kubeconfig
