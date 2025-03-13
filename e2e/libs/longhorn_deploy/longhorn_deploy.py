@@ -2,6 +2,7 @@ from longhorn_deploy.base import Base
 from longhorn_deploy.longhorn_kubectl import LonghornKubectl
 from longhorn_deploy.longhorn_helm_chart import LonghornHelmChart
 import os
+import time
 
 class LonghornDeploy(Base):
 
@@ -15,6 +16,9 @@ class LonghornDeploy(Base):
             self.longhorn = LonghornHelmChart()
 
     def uninstall(self, is_stable_version=False):
+        # add some delay before uninstallation
+        # for issue https://github.com/longhorn/longhorn/issues/10483
+        time.sleep(5)
         return self.longhorn.uninstall(is_stable_version)
 
     def check_longhorn_crd_removed(self):
