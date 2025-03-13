@@ -2,6 +2,9 @@
 title: "[#1355](https://github.com/longhorn/longhorn/issues/1355) The node the restore volume attached to is down"
 ---
 
+## Precondition
+- https://longhorn.io/docs/1.8.1/best-practices/#coredns-setup
+
 ### Case 1:
 1. Create a backup.
 2. Restore the above backup.
