@@ -54,8 +54,6 @@ install_longhorn_rancher_chart() {
             -var="rancher_chart_install_version=${CHART_VERSION}" \
             -var="longhorn_repo=${LONGHORN_REPO}" \
             -var="registry_url=${REGISTRY_URL}" \
-            -var="registry_user=${REGISTRY_USERNAME}" \
-            -var="registry_passwd=${REGISTRY_PASSWORD}" \
             -var="registry_secret=docker-registry-secret" \
             -auto-approve -no-color
   wait_longhorn_status_running

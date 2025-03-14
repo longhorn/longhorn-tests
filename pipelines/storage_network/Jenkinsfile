@@ -12,6 +12,7 @@ def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGIS
 def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
 def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
+def REGISTRY_URL = ""
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -20,6 +21,7 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
     ]) {
 
@@ -38,6 +40,9 @@ node {
 
                 sh "pipelines/storage_network/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env REGISTRY_URL=${REGISTRY_URL} \
+                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
                                        --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
                                        --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \

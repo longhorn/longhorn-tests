@@ -54,14 +54,17 @@ generate_longhorn_yaml_manifest() {
   fi
 }
 
-customize_longhorn_manifest_for_airgap(){
+customize_longhorn_manifest_registry(){
   # (1) add secret name to imagePullSecrets.name
   yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-driver-deployer").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "/tmp/longhorn.yaml"
   yq -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "/tmp/longhorn.yaml"
+  yq -i 'select(.kind == "DaemonSet" and .metadata.name == "pre-pull-share-manager-image").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "/tmp/longhorn.yaml"
   yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-ui").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "/tmp/longhorn.yaml"
   yq -i 'select(.kind == "ConfigMap" and .metadata.name == "longhorn-default-setting").data."default-setting.yaml"="registry-secret: docker-registry-secret"' "/tmp/longhorn.yaml"
-  # (2) modify images to point to private registry
-  sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "/tmp/longhorn.yaml"
+  # (2) modify images to point to custom registry
+  if [[ ! -z "${REGISTRY_URL}" ]]; then
+    sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "/tmp/longhorn.yaml"
+  fi
 }
 
 install_longhorn_by_manifest(){

@@ -11,4 +11,4 @@ fi
 # wait 30 seconds for graceful terraform termination
 sleep 30
 
-terraform -chdir=${TF_VAR_tf_workspace}/terraform destroy -auto-approve -no-color
+terraform -chdir=pipelines/gke/terraform destroy -auto-approve -no-color

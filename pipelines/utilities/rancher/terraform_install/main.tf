@@ -41,6 +41,10 @@ resource "rancher2_app_v2" "longhorn_app" {
   chart_name = "longhorn"
   chart_version = var.rancher_chart_install_version
   values = <<-EOF
+privateRegistry:
+  createSecret: false
+  registryUrl: ${var.registry_url}
+  registrySecret: ${var.registry_secret}
 image:
   csi:
     attacher:

@@ -43,7 +43,11 @@ sudo docker run -d --name registry \
 
 sudo docker login -u ${registry_username} -p ${registry_password} ${registry_url}
 
-# (7) pull longhorn images into registry
+# (7) log into docker hub before pulling images
+
+sudo docker login -u ${docker_hub_username} -p ${docker_hub_password}
+
+# (8) pull longhorn images into registry
 
 wget https://raw.githubusercontent.com/longhorn/longhorn/${longhorn_version}/deploy/longhorn-images.txt
 wget https://raw.githubusercontent.com/longhorn/longhorn/${longhorn_version}/scripts/save-images.sh
@@ -53,6 +57,6 @@ chmod +x "${PWD}/load-images.sh"
 sudo "${PWD}/save-images.sh" --image-list "${PWD}/longhorn-images.txt" --images "${PWD}/longhorn-images.tar.gz"
 sudo "${PWD}/load-images.sh" --image-list "${PWD}/longhorn-images.txt" --images "${PWD}/longhorn-images.tar.gz" --registry ${registry_url}
 
-# (8) test list all images in registry
+# (9) test list all images in registry
 
 curl -X GET -u ${registry_username}:${registry_password} https://${registry_url}/v2/_catalog
