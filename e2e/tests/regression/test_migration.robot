@@ -11,6 +11,7 @@ Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/migration.resource
+Resource    ../keywords/snapshot.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -68,3 +69,16 @@ Test Migration Rollback
     And Volume 0 migration should fail or rollback
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Snapshot Purge Rejection While Migration
+    [Tags]    coretest    migration
+    [Documentation]    Test that a snapshot purge request is rejected while migration is in progress.
+
+    Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
+    When Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Get volume 0 engine and replica names
+    And Write data to volume 0
+    And Attach volume 0 to node 1
+    And Wait for volume 0 migration to be ready
+    Then Purge volume 0 snapshot should fail
