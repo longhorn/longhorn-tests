@@ -339,7 +339,7 @@ properly.
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.create_and_check_volume"><code class="name flex">
-<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='33554432', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored', access_mode='rwo')</span>
+<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='33554432', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored', access_mode='rwo', data_engine='v1')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new volume with the specified parameters. Assert that the new
@@ -397,7 +397,7 @@ args:
 arguments for function.</p></div>
 </dd>
 <dt id="tests.common.create_backing_image_with_matching_url"><code class="name flex">
-<span>def <span class="ident">create_backing_image_with_matching_url</span></span>(<span>client, name, url, minNumberOfCopies=1, nodeSelector=[], diskSelector=[])</span>
+<span>def <span class="ident">create_backing_image_with_matching_url</span></span>(<span>client, name, url, minNumberOfCopies=1, nodeSelector=[], diskSelector=[], dataEngine='v1')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -501,7 +501,7 @@ created using a storage class).</p></div>
 <div class="desc"><p>Create a new StatefulSet for testing.</p></div>
 </dd>
 <dt id="tests.common.create_storage_class"><code class="name flex">
-<span>def <span class="ident">create_storage_class</span></span>(<span>sc_manifest)</span>
+<span>def <span class="ident">create_storage_class</span></span>(<span>sc_manifest, data_engine='v1')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -525,7 +525,7 @@ created using a storage class).</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.create_volume_and_write_data"><code class="name flex">
-<span>def <span class="ident">create_volume_and_write_data</span></span>(<span>client, volume_name, volume_size='33554432')</span>
+<span>def <span class="ident">create_volume_and_write_data</span></span>(<span>client, volume_name, volume_size='33554432', data_engine='v1')</span>
 </code></dt>
 <dd>
 <div class="desc"><ol>
@@ -961,6 +961,12 @@ greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.get_instance_manager_names"><code class="name flex">
+<span>def <span class="ident">get_instance_manager_names</span></span>(<span>client, data_engine='v1')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.get_iscsi_ip"><code class="name flex">
 <span>def <span class="ident">get_iscsi_ip</span></span>(<span>iscsi)</span>
 </code></dt>
@@ -1270,7 +1276,7 @@ provide a base set of Tags to work with in the tests.
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.prepare_pod_with_data_in_mb"><code class="name flex">
-<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', num_of_replicas=3, data_path='/data/test', data_size_in_mb=100, add_liveness_probe=True, access_mode='rwo')</span>
+<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', num_of_replicas=3, data_path='/data/test', data_size_in_mb=100, add_liveness_probe=True, access_mode='rwo', data_engine='v1')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1345,7 +1351,7 @@ provide a base set of Tags to work with in the tests.
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.reset_disks_for_all_nodes"><code class="name flex">
-<span>def <span class="ident">reset_disks_for_all_nodes</span></span>(<span>client)</span>
+<span>def <span class="ident">reset_disks_for_all_nodes</span></span>(<span>client, add_block_disks=False)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1601,6 +1607,12 @@ Retry if "too many retries error" happened.
 </code></dt>
 <dd>
 <div class="desc"><p>Write in a new StatefulSet name and the proper StorageClass name for tests.</p></div>
+</dd>
+<dt id="tests.common.v2_data_engine_cr_supported"><code class="name flex">
+<span>def <span class="ident">v2_data_engine_cr_supported</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 <dt id="tests.common.volume_name"><code class="name flex">
 <span>def <span class="ident">volume_name</span></span>(<span>request)</span>
@@ -2622,6 +2634,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.get_engine_image_status_value" href="#tests.common.get_engine_image_status_value">get_engine_image_status_value</a></code></li>
 <li><code><a title="tests.common.get_host_disk_size" href="#tests.common.get_host_disk_size">get_host_disk_size</a></code></li>
 <li><code><a title="tests.common.get_host_replica_count" href="#tests.common.get_host_replica_count">get_host_replica_count</a></code></li>
+<li><code><a title="tests.common.get_instance_manager_names" href="#tests.common.get_instance_manager_names">get_instance_manager_names</a></code></li>
 <li><code><a title="tests.common.get_iscsi_ip" href="#tests.common.get_iscsi_ip">get_iscsi_ip</a></code></li>
 <li><code><a title="tests.common.get_iscsi_lun" href="#tests.common.get_iscsi_lun">get_iscsi_lun</a></code></li>
 <li><code><a title="tests.common.get_iscsi_port" href="#tests.common.get_iscsi_port">get_iscsi_port</a></code></li>
@@ -2721,6 +2734,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.update_recurring_job" href="#tests.common.update_recurring_job">update_recurring_job</a></code></li>
 <li><code><a title="tests.common.update_setting" href="#tests.common.update_setting">update_setting</a></code></li>
 <li><code><a title="tests.common.update_statefulset_manifests" href="#tests.common.update_statefulset_manifests">update_statefulset_manifests</a></code></li>
+<li><code><a title="tests.common.v2_data_engine_cr_supported" href="#tests.common.v2_data_engine_cr_supported">v2_data_engine_cr_supported</a></code></li>
 <li><code><a title="tests.common.volume_name" href="#tests.common.volume_name">volume_name</a></code></li>
 <li><code><a title="tests.common.volume_read" href="#tests.common.volume_read">volume_read</a></code></li>
 <li><code><a title="tests.common.volume_valid" href="#tests.common.volume_valid">volume_valid</a></code></li>

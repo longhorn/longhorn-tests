@@ -88,7 +88,7 @@ hljs.highlightAll();
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_upgrade.test_upgrade"><code class="name flex">
-<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, upgrade_longhorn_transient_version, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class)</span>
+<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, upgrade_longhorn_transient_version, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class, make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test Longhorn upgrade</p>
@@ -101,23 +101,39 @@ disabled cases.</p>
 <p>Disable Auto Salvage Setting</p>
 </li>
 <li>
-<p>Find the upgrade image tag</p>
+<p>Add block disks</p>
 </li>
+<li>Find the upgrade image tag</li>
 <li>Create a volume, generate and write data into the volume.<ol>
 <li>Create vol_revision_enabled with revision counter enabled case.</li>
 <li>Create vol_revision_disabled with revision counter disabled case.</li>
 <li>Create vol_rebuild for replica rebuilding after system upgrade
 &amp; engine live upgrade</li>
 <li>Create strict local volume strict_local_vol</li>
+<li>Create vol_detached, never attached before upgrade</li>
+<li>Create vol_detached_with_data</li>
+<li>Create v2 volumes<ol>
+<li>Create vol_v2</li>
+<li>Create vol_detached_v2, never attached before upgrade</li>
+<li>Dynamic provisioned a v2 volume with deployment</li>
+</ol>
+</li>
 </ol>
 </li>
 <li>Create a Pod using a volume, generate and write data</li>
 <li>Create a StatefulSet with 2 replicas
 generate and write data to their volumes</li>
-<li>Keep all volumes attached</li>
+<li>Keep all volumes attached, except vol_detached, vol_detached_with_data,
+vol_v2_detached, vol_v2.</li>
 <li>Create custom resources</li>
+<li>v2 data engine custom resources<ol>
+<li>backup</li>
+<li>backing image</li>
+</ol>
+</li>
 <li>Upgrade Longhorn system.</li>
-<li>Check Pod and StatefulSet didn't restart after system upgrade</li>
+<li>Check Pod and StatefulSet, v1 instance manager pod didn't restart after
+system upgrade</li>
 <li>Check all volumes data</li>
 <li>Write all volumes data after system upgrade</li>
 <li>Check data written to all volumes after system upgrade</li>
