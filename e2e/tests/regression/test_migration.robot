@@ -20,17 +20,7 @@ Test Teardown    Cleanup test resources
 Test Migration Confirm
     [Tags]    coretest    migration
     [Documentation]    Test that a migratable RWX volume can be live migrated from one node to another.
-    ...
-    ...                1. Create a new RWX migratable volume.
-    ...                2. Attach to test node to write some test data on it.
-    ...                3. Detach from test node.
-    ...                4. Get set of nodes excluding the test node
-    ...                5. Attach volume to node 1 (initial node)
-    ...                6. Attach volume to node 2 (migration target)
-    ...                7. Wait for migration ready (engine running on node 2)
-    ...                8. Detach volume from node 1
-    ...                9. Observe volume migrated to node 2 (single active engine)
-    ...                10. Validate initially written test data
+
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -46,17 +36,7 @@ Test Migration Confirm
 Test Migration Rollback
     [Tags]    coretest    migration
     [Documentation]    Test that a migratable RWX volume can be rolled back to initial node.
-    ...
-    ...                1. Create a new RWX migratable volume.
-    ...                2. Attach to test node to write some test data on it.
-    ...                3. Detach from test node.
-    ...                4. Get set of nodes excluding the test node
-    ...                5. Attach volume to node 1 (initial node)
-    ...                6. Attach volume to node 2 (migration target)
-    ...                7. Wait for migration ready (engine running on node 2)
-    ...                8. Detach volume from node 2
-    ...                9. Observe volume stayed on node 1 (single active engine)
-    ...                10. Validate initially written test data
+
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 0
     And Wait for volume 0 healthy
