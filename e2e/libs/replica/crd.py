@@ -18,14 +18,17 @@ class CRD(Base):
             label_selector.append(f"longhornnode={node_name}")
         if disk_uuid:
             label_selector.append(f"longhorndiskuuid={disk_uuid}")
+        label_selector = ",".join(label_selector)
+        logging(f"Getting replicas with labels {label_selector}")
 
         replicas = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
             namespace="longhorn-system",
             plural="replicas",
-            label_selector=",".join(label_selector)
+            label_selector=label_selector
         )
+        logging(f"Got replicas {replicas['items']}")
         return replicas["items"]
 
     def get_replica_names(self, volume_name, numberOfReplicas):

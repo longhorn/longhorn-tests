@@ -99,7 +99,7 @@ variable "k8s_distro_name" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.32.0+k3s1"
+  default     = "v1.32.2+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
     rke: (default: v1.22.5-rancher1-1)
