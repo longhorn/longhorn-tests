@@ -88,7 +88,7 @@ class Harvester(Base):
             time.sleep(self.retry_interval)
         assert stopped, f"Expected vm {vm_id} to be stopped but it's not"
 
-        self.node.wait_for_node_down(power_off_node_name)
+        self.node.wait_for_node_down(vm_id)
 
     def power_on_node(self, node_name):
         vm_id = self.mapping[node_name]
@@ -118,4 +118,4 @@ class Harvester(Base):
             time.sleep(self.retry_interval)
         assert started, f"Expected vm {vm_id} to be started but it's not"
 
-        self.node.wait_for_node_up(power_on_node_name)
+        self.node.wait_for_node_up(vm_id)
