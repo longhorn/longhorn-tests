@@ -66,11 +66,12 @@ class CRD(Base):
                 plural="volumes",
                 body=body
             )
-            if not Standby:
-                self.wait_for_volume_state(volume_name, "detached")
-            else:
+            if fromBackup or Standby:
                 self.wait_for_volume_state(volume_name, "attached")
-            self.wait_for_restore_required_status(volume_name, Standby)
+                self.wait_for_restore_required_status(volume_name, True)
+            else:
+                self.wait_for_volume_state(volume_name, "detached")
+                self.wait_for_restore_required_status(volume_name, False)
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
