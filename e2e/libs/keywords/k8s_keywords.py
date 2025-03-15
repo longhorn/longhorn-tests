@@ -9,6 +9,7 @@ from k8s.k8s import cordon_node, uncordon_node
 from k8s.k8s import wait_all_pods_evicted
 from k8s.k8s import get_all_pods_on_node
 from k8s.k8s import check_node_cordoned
+from k8s.k8s import is_node_ready
 from k8s.k8s import get_instance_manager_on_node
 from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
@@ -78,6 +79,9 @@ class k8s_keywords:
 
     def get_all_pods_on_node(self, node_name):
         return get_all_pods_on_node(node_name)
+
+    def is_node_ready(self, node_name):
+        return is_node_ready(node_name)
 
     def check_node_cordoned(self, node_name):
         check_node_cordoned(node_name)

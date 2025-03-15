@@ -25,6 +25,34 @@ Reboot node ${idx}
 Restart all worker nodes
     reboot_all_worker_nodes
 
+Power off volume ${volume_id} volume node
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${powered_off_node} =    Set Variable    ${node_name}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
+    power_off_node_by_name    ${node_name}
+
+Power off volume ${volume_id} replica node
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_replica_node    ${volume_name}
+    ${powered_off_node} =    Set Variable    ${node_name}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
+    power_off_node_by_name    ${node_name}
+
+Power off volume ${volume_id} volume node without waiting
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${powered_off_node} =    Set Variable    ${node_name}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
+    power_off_node_by_name    ${node_name}    waiting=False
+
+Power off volume ${volume_id} replica node without waiting
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_replica_node    ${volume_name}
+    ${powered_off_node} =    Set Variable    ${node_name}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
+    power_off_node_by_name    ${node_name}    waiting=False
+
 Power off node ${idx} for ${power_off_time_in_min} mins
     reboot_node_by_index    ${idx}    ${power_off_time_in_min}
 
