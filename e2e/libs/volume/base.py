@@ -15,7 +15,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, wait_attached):
         return NotImplemented
 
     def set_data_checksum(self, volume_name, data_id, checksum):

@@ -26,7 +26,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, wait_attached):
         size_suffix = size[-2:]
         size_number = size[:-2]
         size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
@@ -66,11 +66,20 @@ class CRD(Base):
                 plural="volumes",
                 body=body
             )
-            if not Standby:
-                self.wait_for_volume_state(volume_name, "detached")
-            else:
+            if Standby:
                 self.wait_for_volume_state(volume_name, "attached")
-            self.wait_for_restore_required_status(volume_name, Standby)
+            else:
+                if fromBackup:
+                    if wait_attached:
+                        self.wait_for_volume_state(volume_name, "attached")
+                    else:
+                        self.wait_for_volume_state(volume_name, "detached")
+                else:
+                    self.wait_for_volume_state(volume_name, "detached")
+            if wait_attached:
+               self.wait_for_restore_required_status(volume_name, wait_attached)
+            else:
+               self.wait_for_restore_required_status(volume_name, Standby)
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
