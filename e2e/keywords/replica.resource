@@ -10,9 +10,8 @@ Volume ${volume_id} replica ${setting_name} should be ${setting_value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_replica_setting    ${volume_name}    ${setting_name}    ${setting_value}
 
-There should be replicas running on node ${node_id} disk ${disk_id}
+There should be replicas running on node ${node_id} disk ${disk_name}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     ${replicas} =    get_replicas    volume_name=    node_name=${node_name}    disk_uuid=${disk_uuid}
     Should Be True    len(${replicas}) > 0

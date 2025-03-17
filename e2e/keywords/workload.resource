@@ -234,11 +234,10 @@ Delete Longhorn ${workload_kind} ${workload_name} pod
     Log    ${pod_name}
     delete_pod    ${pod_name}     longhorn-system
 
-Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk ${disk_id}
+Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk ${disk_name}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${disk_name} =    generate_name_with_suffix    disk    ${disk_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
     Should Be True    len(${replicas}) > 0
