@@ -1,6 +1,11 @@
 ---
 title: Longhorn Upgrade test
 ---
+## Important
+- Since [#10539](https://github.com/longhorn/longhorn/issues/10539) has been completed, we can 
+  rely on the test results of `test_upgrade.py::test_upgrade` to validate the upgrade process, 
+  instead of manually testing this case when the testing version >= v1.8
+
 ### Setup
 1. 2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data.
 2. 2 deployments of one pod. 1 statefulset of 10 pods.
