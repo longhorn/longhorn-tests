@@ -844,7 +844,13 @@
   <h1 id="title">Longhorn Upgrade test</h1>
   <div>
     <article id="content">
-       <h3 id="setup">Setup</h3>
+       <h2 id="important">Important</h2>
+<ul>
+<li>Since <a href="https://github.com/longhorn/longhorn/issues/10539">#10539</a> has been completed, we can
+rely on the test results of <code>test_upgrade.py::test_upgrade</code> to validate the upgrade process,
+instead of manually testing this case when the testing version &gt;= v1.8</li>
+</ul>
+<h3 id="setup">Setup</h3>
 <ol>
 <li>2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data.</li>
 <li>2 deployments of one pod. 1 statefulset of 10 pods.</li>
