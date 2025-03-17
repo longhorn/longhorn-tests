@@ -32,3 +32,6 @@ class snapshot_keywords:
 
     def is_existing(self, volume_name, snapshot_id):
         assert self.snapshot.is_existing(volume_name, snapshot_id)
+
+    def get_checksum(self, volume_name, snapshot_id):
+        return self.snapshot.get_checksum(volume_name, snapshot_id)
