@@ -32,6 +32,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  setup_azurite_backup_store
   install_csi_snapshotter
 
   # set debugging mode off to avoid leaking docker secrets to the logs.
@@ -41,21 +42,14 @@ main(){
   set -x
 
   install_argocd
-  init_argocd
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    create_argocd_app "${LONGHORN_STABLE_VERSION}"
-    sync_argocd_app
+    install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-    UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
-    UPGRADE_LH_REPO_BRANCH="${LONGHORN_INSTALL_VERSION}"
-    UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_INSTALL_VERSION}"
     run_longhorn_upgrade_test
     run_longhorn_test
   else
-    create_argocd_app
-    sync_argocd_app
+    install_longhorn_custom
     run_longhorn_test
   fi
 }

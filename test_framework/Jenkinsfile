@@ -1,5 +1,7 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
+def summary_msg
+def WORKSPACE = "/src/longhorn-tests"
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
 // define optional parameters
@@ -20,6 +22,8 @@ def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONG
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def CUSTOM_SSH_PUBLIC_KEY = params.CUSTOM_SSH_PUBLIC_KEY ? params.CUSTOM_SSH_PUBLIC_KEY : ""
 def REGISTRY_URL = ""
+
+def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
 
 // parameter for mTls
 def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
@@ -174,10 +178,10 @@ node {
 			}
 
             stage ('report generation') {
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
 
                 if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
                     summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
                 }
                 else {
@@ -185,7 +189,7 @@ node {
                 }
 
                 if(JOB_BASE_NAME == "longhorn-tests-sles-amd64") {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py ${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ${BUILD_URL}"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py ${WORKSPACE}/longhorn-test-junit-report.xml ${BUILD_URL}"
                 }
             }
         } catch (e) {

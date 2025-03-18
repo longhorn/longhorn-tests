@@ -1,5 +1,8 @@
-source pipelines/utilities/longhorn_status.sh
+#!/bin/bash
 
+set -x
+
+source pipelines/utilities/longhorn_status.sh
 
 install_rancher() {
 
@@ -30,7 +33,6 @@ install_rancher() {
   kubectl -n cattle-system rollout status deploy/rancher
 }
 
-
 get_rancher_api_key() {
   while [[ -z "${TOKEN}" ]]; do
     TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
@@ -41,8 +43,8 @@ get_rancher_api_key() {
   done
 }
 
-
-install_longhorn_rancher_chart() {
+install_longhorn() {
+  LONGHORN_NAMESPACE="longhorn-system"
   CHART_VERSION="${1:-${LONGHORN_INSTALL_VERSION}}"
   terraform -chdir="pipelines/utilities/rancher/terraform_install" init
   terraform -chdir="pipelines/utilities/rancher/terraform_install" apply \
@@ -59,15 +61,48 @@ install_longhorn_rancher_chart() {
   wait_longhorn_status_running
 }
 
+install_longhorn_stable() {
+  install_longhorn "${LONGHORN_STABLE_VERSION}"
+}
 
-upgrade_longhorn_rancher_chart() {
-  terraform -chdir="pipelines/utilities/rancher/terraform_upgrade" init
-  terraform -chdir="pipelines/utilities/rancher/terraform_upgrade" apply \
+install_longhorn_custom() {
+  install_longhorn
+}
+
+upgrade_longhorn() {
+  TERRAFORM_UPGRADE_FOLDER="pipelines/utilities/rancher/terraform_upgrade"
+  # rm terraform state files if they exist
+  # otherwise when it is applied at the 2nd time during upgrading Longhorn from transient version to latest version
+  # it will try to uninstall Longhorn first due to the state is overwritten
+  rm -rf "${TERRAFORM_UPGRADE_FOLDER}/.terraform.lock.hcl" "${TERRAFORM_UPGRADE_FOLDER}/terraform.tfstate" "${TERRAFORM_UPGRADE_FOLDER}/.terraform"
+  LONGHORN_NAMESPACE="longhorn-system"
+  CHART_VERSION="${1:-${LONGHORN_INSTALL_VERSION}}"
+  terraform -chdir="${TERRAFORM_UPGRADE_FOLDER}" init
+  terraform -chdir="${TERRAFORM_UPGRADE_FOLDER}" apply \
             -var="api_url=https://${RANCHER_HOSTNAME}" \
             -var="access_key=${RANCHER_ACCESS_KEY}" \
             -var="secret_key=${RANCHER_SECRET_KEY}" \
-            -var="rancher_chart_install_version=${LONGHORN_INSTALL_VERSION}" \
+            -var="rancher_chart_install_version=${CHART_VERSION}" \
             -var="longhorn_repo=${LONGHORN_REPO}" \
+            -var="registry_url=${REGISTRY_URL}" \
+            -var="registry_secret=docker-registry-secret" \
             -auto-approve -no-color
   wait_longhorn_status_running
 }
+
+upgrade_longhorn_transient() {
+  upgrade_longhorn "${LONGHORN_TRANSIENT_VERSION}"
+}
+
+upgrade_longhorn_custom() {
+  upgrade_longhorn
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  if declare -f "$1" > /dev/null; then
+    "$@"
+  else
+    echo "Function '$1' not found"
+    exit 1
+  fi
+fi

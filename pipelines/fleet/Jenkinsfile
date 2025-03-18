@@ -1,5 +1,6 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
+def summary_msg
 def WORKSPACE = "/src/longhorn-tests"
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
@@ -42,11 +43,11 @@ node {
                                        --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
                                        --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env FLEET_REPO_URI=${FLEET_REPO_URI} \
-                                       --env FLEET_REPO_VERSION=${FLEET_REPO_VERSION} \
+                                       --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                        --env DISTRO=${DISTRO} \
-                                       --env FLEET_REPO_STABLE_VERSION=${FLEET_REPO_STABLE_VERSION} \
-                                       --env FLEET_REPO_TRANSIENT_VERSION=${FLEET_REPO_TRANSIENT_VERSION} \
+                                       --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \

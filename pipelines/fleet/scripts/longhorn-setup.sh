@@ -13,8 +13,7 @@ source pipelines/utilities/fleet.sh
 source pipelines/utilities/run_longhorn_test.sh
 
 
-export LONGHORN_NAMESPACE="longhorn-system"
-export LONGHORN_INSTALL_METHOD="fleet"
+LONGHORN_INSTALL_METHOD="fleet"
 
 
 main(){
@@ -32,6 +31,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  setup_azurite_backup_store
   install_csi_snapshotter
 
   # set debugging mode off to avoid leaking docker secrets to the logs.
@@ -43,16 +43,12 @@ main(){
   install_fleet
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    create_fleet_git_repo "${FLEET_REPO_STABLE_VERSION}"
+    install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    UPGRADE_LH_TRANSIENT_VERSION="${FLEET_REPO_TRANSIENT_VERSION}"
-    UPGRADE_LH_REPO_URL="${FLEET_REPO_URI}"
-    UPGRADE_LH_REPO_BRANCH="${FLEET_REPO_VERSION}"
-    UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${FLEET_REPO_VERSION}"
     run_longhorn_upgrade_test
     run_longhorn_test
   else
-    create_fleet_git_repo
+    install_longhorn_custom
     run_longhorn_test
   fi
 }

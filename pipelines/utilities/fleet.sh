@@ -1,5 +1,8 @@
-source pipelines/utilities/longhorn_status.sh
+#!/bin/bash
 
+set -x
+
+source pipelines/utilities/longhorn_status.sh
 
 install_fleet(){
   helm repo add fleet https://rancher.github.io/fleet-helm-charts/
@@ -7,9 +10,9 @@ install_fleet(){
   helm -n cattle-fleet-system install --create-namespace --wait fleet fleet/fleet
 }
 
-
 create_fleet_git_repo(){
-  REVISION="${1:-${FLEET_REPO_VERSION}}"
+  LONGHORN_NAMESPACE="longhorn-system"
+  REVISION="${1:-${LONGHORN_INSTALL_VERSION}}"
   cat > longhorn-gitrepo.yaml <<EOF
 apiVersion: fleet.cattle.io/v1alpha1
 kind: GitRepo
@@ -30,7 +33,6 @@ EOF
   wait_longhorn_status_running
 }
 
-
 wait_for_bundle_deployment_applied(){
   local RETRY_COUNTS=60 # in seconds
   local RETRY_INTERVAL="1s"
@@ -45,7 +47,6 @@ wait_for_bundle_deployment_applied(){
   done
 }
 
-
 wait_for_bundle_deployment_ready(){
   local RETRY_COUNTS=10 # in minutes
   local RETRY_INTERVAL="1m"
@@ -59,3 +60,24 @@ wait_for_bundle_deployment_ready(){
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: fleet bundle deployment timeout"; exit 1 ; fi
   done
 }
+
+install_longhorn_stable(){
+  create_fleet_git_repo "${LONGHORN_STABLE_VERSION}"
+}
+
+install_longhorn_transient(){
+  create_fleet_git_repo "${LONGHORN_TRANSIENT_VERSION}"
+}
+
+install_longhorn_custom(){
+  create_fleet_git_repo
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  if declare -f "$1" > /dev/null; then
+    "$@"
+  else
+    echo "Function '$1' not found"
+    exit 1
+  fi
+fi

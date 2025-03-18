@@ -2,6 +2,7 @@ import time
 
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
 
 
 class EngineImage():
@@ -45,9 +46,13 @@ class EngineImage():
     def wait_for_engine_image_deployed(self, image_name):
         self.wait_for_engine_image_created(image_name)
         for i in range(self.retry_count):
-            image = get_longhorn_client().by_id_engine_image(image_name)
-            if image.state == "deployed":
-                break
+            logging(f"Waiting for engine image {image_name} to be deployed ... ({i})")
+            try:
+                image = get_longhorn_client().by_id_engine_image(image_name)
+                if image.state == "deployed":
+                    break
+            except Exception as e:
+                logging(f"Failed to deploy engine image {image_name}: {e}")
             time.sleep(self.retry_interval)
         assert image.state == "deployed", f"Failed to deploy engine image {image_name}: {image}"
         return image

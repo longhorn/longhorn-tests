@@ -136,5 +136,5 @@ variable "custom_ssh_public_key" {
 
 variable "extra_block_device" {
   type = bool
-  default = false
+  default = true
 }

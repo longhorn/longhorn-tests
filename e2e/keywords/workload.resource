@@ -272,3 +272,9 @@ Assert volume size of ${workload_kind} ${workload_id} remains ${size} for at lea
         Should Be Equal    ${current_size_byte}    ${expected_size_byte}
         Sleep    1
     END
+
+Upgrade volume ${workload_kind} ${workload_id} engine to ${custom_engine_image}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    upgrade_engine_image    ${volume_name}    ${custom_engine_image}
+    wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
