@@ -23,12 +23,12 @@ Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume
     ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
-Create volume ${volume_id} from backup ${backup_id} of volume ${source_volume_id}
+Create volume ${target_volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
-    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
     ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
-    create_volume   ${volume_name}    numberOfReplicas=3    fromBackup=${backup_url}    &{config}
+    create_volume   ${target_volume_name}    numberOfReplicas=3    fromBackup=${backup_url}    &{config}
 
 Create volume ${volume_id} from ${workload_kind} ${workload_id} volume backup ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -416,6 +416,11 @@ Upgrade volume ${volume_id} engine to compatible engine image
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     upgrade_engine_image    ${volume_name}    ${compatible_engine_image_name}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${compatible_engine_image_name}
+
+Upgrade volume ${volume_id} engine to ${custom_engine_image}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    upgrade_engine_image    ${volume_name}    ${custom_engine_image}
+    wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
 
 Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

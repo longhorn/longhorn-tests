@@ -62,6 +62,7 @@ main(){
 
   if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
+    setup_azurite_backup_store
   fi
   install_csi_snapshotter
 

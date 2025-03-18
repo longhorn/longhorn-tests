@@ -410,19 +410,7 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert complete
 
-        updated = False
-        for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} lastBackup updated to {backup_name} ({i}) ...")
-            try:
-                volume = self.get(volume_name)
-                if volume['status']['lastBackup'] == backup_name:
-                    updated = True
-                    break
-            except Exception as e:
-                logging(f"Getting volume {volume_name} error: {e}")
-            time.sleep(self.retry_interval)
-        assert updated
-
+        volume = self.get(volume_name)
         if not volume['status']['isStandby']:
             self.wait_for_restore_required_status(volume_name, False)
 

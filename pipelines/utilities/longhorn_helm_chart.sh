@@ -1,14 +1,24 @@
-source pipelines/utilities/longhorn_status.sh
+#!/bin/bash
 
+set -x
+
+source pipelines/utilities/longhorn_status.sh
 
 get_longhorn_chart(){
   CHART_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
+
+  # create and clean tmpdir
+  TMPDIR="/tmp/longhorn"
+  mkdir -p ${TMPDIR}
+  rm -rf "${TMPDIR}/"
+
+  LONGHORN_REPO_DIR="${TMPDIR}/longhorn"
+
   git clone --single-branch \
             --branch "${CHART_VERSION}" \
             "${LONGHORN_REPO_URI}" \
             "${LONGHORN_REPO_DIR}"
 }
-
 
 customize_longhorn_chart_registry(){
   # specify custom registry secret in chart/values.yaml
@@ -18,7 +28,6 @@ customize_longhorn_chart_registry(){
     yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
   fi
 }
-
 
 customize_longhorn_chart(){
   # customize longhorn components repository and tag (version) in chart/values.yaml
@@ -55,8 +64,36 @@ customize_longhorn_chart(){
   fi
 }
 
-
 install_longhorn(){
+  LONGHORN_NAMESPACE="longhorn-system"
   helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
   wait_longhorn_status_running
 }
+
+install_longhorn_stable(){
+  get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
+  customize_longhorn_chart_registry
+  install_longhorn
+}
+
+install_longhorn_transient(){
+  get_longhorn_chart "${LONGHORN_TRANSIENT_VERSION}"
+  customize_longhorn_chart_registry
+  install_longhorn
+}
+
+install_longhorn_custom(){
+  get_longhorn_chart
+  customize_longhorn_chart_registry
+  customize_longhorn_chart
+  install_longhorn
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  if declare -f "$1" > /dev/null; then
+    "$@"
+  else
+    echo "Function '$1' not found"
+    exit 1
+  fi
+fi

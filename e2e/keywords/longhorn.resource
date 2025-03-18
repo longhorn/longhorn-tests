@@ -89,9 +89,15 @@ Wait for Longhorn components all running
     wait_for_namespace_pods_running    longhorn-system
 
 Install Longhorn stable version
-    install_longhorn_system    is_stable_version=True
+    install_longhorn_system    install_stable_version=True
 
 Uninstall Longhorn stable version
     ${backups_before_uninstall} =     list_all_backups
     uninstall_longhorn_system    is_stable_version=True
     Set Test Variable    ${backups_before_uninstall}
+
+Upgrade Longhorn to transient version
+    upgrade_longhorn    upgrade_to_transient_version=True
+
+Upgrade Longhorn to custom version
+    upgrade_longhorn

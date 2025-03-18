@@ -32,24 +32,42 @@ class Base(ABC):
         assert "level=error" not in logs, f"find string 'level=error' in uninstall log {logs}"
         assert "level=fatal" not in logs, f"find string 'level=fatal' in uninstall log {logs}"
 
-    def install_longhorn(self, is_stable_version=False):
-        current_path=os.getcwd()
-        full_path = os.path.join(current_path, LONGHORN_INSTALL_SCRIPT_PATH)
+    def create_longhorn_namespace(self):
+        command = "./pipelines/utilities/create_longhorn_namespace.sh"
+        process = subprocess.Popen([command, "create_longhorn_namespace"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Creating longhorn namespace failed")
+            time.sleep(self.retry_count)
+            assert False, "Creating longhorn namespace failed"
 
-        if is_stable_version is True:
-            cmd = ['bash', '-c', f'IS_INSTALL_STABLE_VERSION=true {full_path}']
-        else:
-            cmd = ['bash', full_path]
+    def install_backupstores(self):
+        command = "./pipelines/utilities/install_backupstores.sh"
+        process = subprocess.Popen([command, "install_backupstores"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Installing backupstores failed")
+            time.sleep(self.retry_count)
+            assert False, "Installing backupstores failed"
 
-        try:
-            output = subprocess.check_output(cmd, timeout=LONGHORN_INSTALL_TIMEOUT)
-            logging(output)
-        except subprocess.CalledProcessError as e:
-            logging(f"Command failed with exit code {e.returncode}")
-            logging(f"stdout: {e.output}")
-            logging(f"stderr: {e.stderr}")
-            raise
-        except subprocess.TimeoutExpired as e:
-            logging(f"Command timed out after {e.timeout} seconds")
-            logging(f"stdout: {e.output}")
-            raise
+    def create_registry_secret(self):
+        command = "./pipelines/utilities/create_registry_secret.sh"
+        process = subprocess.Popen([command, "create_registry_secret"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Creating registry secret failed")
+            time.sleep(self.retry_count)
+            assert False, "Creating registry secret failed"
+
+    def setup_longhorn_ui_nodeport(self):
+        command = "./pipelines/utilities/longhorn_ui.sh"
+        process = subprocess.Popen([command, "setup_longhorn_ui_nodeport"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Setting up Longhorn UI nodeport failed")
+            time.sleep(self.retry_count)
+            assert False, "Setting up Longhorn UI nodeport failed"

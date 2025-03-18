@@ -12,14 +12,7 @@ source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_rancher_chart.sh
 source pipelines/utilities/run_longhorn_test.sh
 
-# create and clean tmpdir
-TMPDIR="/tmp/longhorn"
-mkdir -p ${TMPDIR}
-rm -rf "${TMPDIR}/"
-
-export LONGHORN_NAMESPACE="longhorn-system"
-export LONGHORN_INSTALL_METHOD="rancher"
-
+LONGHORN_INSTALL_METHOD="rancher"
 
 main(){
   set_kubeconfig
@@ -36,6 +29,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  setup_azurite_backup_store
   install_csi_snapshotter
 
   # set debugging mode off to avoid leaking docker secrets to the logs.
@@ -48,21 +42,12 @@ main(){
   get_rancher_api_key
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    install_longhorn_rancher_chart "${LONGHORN_STABLE_VERSION}"
+    install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-    RANCHER_CHART_INSTALL_VERSION="${LONGHORN_INSTALL_VERSION}"
-    # extract 1.4.2 from 102.2.1+up1.4.2
-    RAW_VERSION=(${LONGHORN_INSTALL_VERSION/up/ })
-    if [[ "${LONGHORN_REPO}" == "rancher" ]]; then
-        UPGRADE_LH_ENGINE_IMAGE="rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"
-      else
-        UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:v${RAW_VERSION[1]}"
-      fi
     run_longhorn_upgrade_test
     run_longhorn_test
   else
-    install_longhorn_rancher_chart
+    install_longhorn_custom
     run_longhorn_test
   fi
 }

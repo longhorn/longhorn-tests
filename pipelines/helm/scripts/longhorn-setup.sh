@@ -12,14 +12,8 @@ source pipelines/utilities/longhorn_helm_chart.sh
 source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/run_longhorn_test.sh
 
-# create and clean tmpdir
-TMPDIR="/tmp/longhorn"
-mkdir -p ${TMPDIR}
-rm -rf "${TMPDIR}/"
 
-export LONGHORN_NAMESPACE="longhorn-system"
-export LONGHORN_REPO_DIR="${TMPDIR}/longhorn"
-export LONGHORN_INSTALL_METHOD="helm"
+LONGHORN_INSTALL_METHOD="helm"
 
 
 apply_selinux_workaround(){
@@ -42,6 +36,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  setup_azurite_backup_store
   install_csi_snapshotter
 
   # set debugging mode off to avoid leaking docker secrets to the logs.
@@ -57,19 +52,12 @@ main(){
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-    UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
-    UPGRADE_LH_REPO_BRANCH="${LONGHORN_REPO_BRANCH}"
-    UPGRADE_LH_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE}"
-    UPGRADE_LH_ENGINE_IMAGE="${CUSTOM_LONGHORN_ENGINE_IMAGE}"
-    UPGRADE_LH_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}"
-    UPGRADE_LH_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}"
-    UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}"
     run_longhorn_upgrade_test
     run_longhorn_test
   else
     get_longhorn_chart
     customize_longhorn_chart_registry
+    customize_longhorn_chart
     install_longhorn
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
