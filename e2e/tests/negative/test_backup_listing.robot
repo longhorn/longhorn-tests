@@ -112,6 +112,7 @@ Create pod ${pod_id} from volume ${source_volume_id} ${source_volume_size} GB vo
     ${backup_url}=    get_backup_url    ${backup_id}    ${source_volume_name}
     ${volume_name}=    generate_name_with_suffix    volume    ${pod_id}
     create_volume   ${volume_name}    size=${source_volume_size}Gi    numberOfReplicas=3    fromBackup=${backup_url}    dataEngine=${DATA_ENGINE}
+    wait_for_volume_detached    ${volume_name}
     Create persistentvolume for volume ${pod_id}
     Create persistentvolumeclaim for volume ${pod_id}
     Create pod ${pod_id} using volume ${pod_id}
@@ -140,6 +141,7 @@ Backup Listing With More Than 1000 Backups
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume
     Then Create volume 1 from deployment 0 volume random backup
+    And Wait for volume 1 detached
     And Create deployment 1 with volume 1
     Then Get deployment 1 volume data in file data
     And Volume 1 data should same as deployment 0 volume
@@ -152,11 +154,11 @@ Backup Listing Of Volume Bigger Than 200 Gi
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume
     Then Create volume 1 from deployment 0 volume random backup
+    And Wait for volume 1 detached
     And Create deployment 1 with volume 1
     Then Get deployment 1 volume data in file data
     And Volume 1 data should same as deployment 0 volume
-    Then Create volume 2 from deployment 0 volume random backup
-    And Create pod 2 mount 250 GB volume 2
+    Then Create pod 2 mount 250 GB volume 2
     And Write 210 GB large data to file 0 in pod 2
     Then Volume 2 backup 0 should be able to create
     Then Delete pod 2 and volume 2
