@@ -2,7 +2,7 @@ from robot.libraries.BuiltIn import BuiltIn
 
 import os
 
-from host import Harvester, Aws
+from host import Harvester, Aws, Vagrant
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
 
 from node import Node
@@ -11,17 +11,23 @@ from utility.utility import logging
 
 
 class host_keywords:
+    _host_providers = {
+        "aws": Aws,
+        "harvester": Harvester,
+        "vagrant": Vagrant,
+    }
 
     def __init__(self):
         self.volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        host_provider = os.getenv('HOST_PROVIDER')
-        if host_provider == "aws":
-            self.host = Aws()
-        elif host_provider == "harvester":
-            self.host = Harvester()
-        else:
-            raise Exception(f"Unsupported host provider {host_provider}")
+        self.host = self._create_host(os.getenv('HOST_PROVIDER'))
         self.node = Node()
+
+    @classmethod
+    def _create_host(cls, host_provider):
+        host_constructor = cls._host_providers.get(host_provider)
+        if host_constructor is None:
+            raise Exception(f"Unsupported host provider {host_provider}")
+        return host_constructor()
 
     def reboot_node_by_index(self, idx, power_off_time_in_min=1):
         node_name = self.node.get_node_by_index(idx)
