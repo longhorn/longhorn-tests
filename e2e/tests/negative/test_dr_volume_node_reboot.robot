@@ -4,15 +4,10 @@ Documentation    Test DR volume node reboot
 
 Test Tags    manual longhorn-8425
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
-Resource    ../keywords/deployment.resource
-Resource    ../keywords/workload.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/host.resource
-Resource    ../keywords/storageclass.resource
-Resource    ../keywords/persistentvolumeclaim.resource
-Resource    ../keywords/recurringjob.resource
-Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backup.resource
@@ -21,11 +16,6 @@ Resource    ../keywords/backup.resource
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
 
-*** Variables ***
-${RETRY_COUNT}    400
-${LOOP_COUNT}    5
-${RETRY_INTERVAL}    1
-${DATA_ENGINE}    v1
 
 *** Test Cases ***
 DR Volume Node Reboot During Initial Restoration
