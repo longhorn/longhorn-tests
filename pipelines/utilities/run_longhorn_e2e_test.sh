@@ -10,6 +10,10 @@ run_longhorn_e2e_test(){
 
   LONGHORN_TESTS_MANIFEST_FILE_PATH="e2e/deploy/test.yaml"
 
+  # Remove leading and trailing double quotes
+  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
+  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+
   eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
   for OPT in "${ROBOT_COMMAND_ARGS[@]}"; do
     ROBOT_COMMAND_ARR="${ROBOT_COMMAND_ARR}\"${OPT}\", "
@@ -20,9 +24,9 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${ROBOT_COMMAND_ARR}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
-  if [[ $BACKUP_STORE_TYPE = "s3" ]]; then    
+  if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${S3_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
-  elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then    
+  elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${NFS_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   elif [[ $BACKUP_STORE_TYPE = "cifs" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${CIFS_BACKUP_STORE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
@@ -34,7 +38,7 @@ run_longhorn_e2e_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[3].value="hdd"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
-  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
+  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "gke" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[5].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
@@ -52,6 +56,8 @@ run_longhorn_e2e_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_STABLE_VERSION", "value": "'${LONGHORN_STABLE_VERSION}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
+
+  yq e -i 'select(.kind == "Pod" and .metadata.name == "longhorn-test").spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
@@ -89,6 +95,10 @@ run_longhorn_e2e_test_out_of_cluster(){
     LONGHORN_BACKUPSTORES=${AZURITE_BACKUP_STORE}
   fi
   LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
+
+  # Remove leading and trailing double quotes
+  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
+  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
 
   eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
 

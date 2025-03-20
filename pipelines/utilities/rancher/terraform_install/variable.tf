@@ -30,14 +30,6 @@ variable "registry_url" {
   type = string
 }
 
-variable "registry_user" {
-  type = string
-}
-
-variable "registry_passwd" {
-  type = string
-}
-
 variable "registry_secret" {
   type = string
 }

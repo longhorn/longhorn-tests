@@ -7,7 +7,7 @@ SUPPORT_BUNDLE_ISSUE_URL=${2:-""}
 SUPPORT_BUNDLE_ISSUE_DESC=${3:-"Auto-generated support buundle"}
 
 set_kubeconfig_envvar(){
-    gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_zone` --project ${TF_VAR_gcp_project}
+    gcloud container clusters get-credentials `terraform -chdir=${PWD}/pipelines/gke/terraform output -raw cluster_name` --zone `terraform -chdir=${PWD}/pipelines/gke/terraform output -raw cluster_zone` --project ${TF_VAR_gcp_project}
 }
 
 set_kubeconfig_envvar

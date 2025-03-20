@@ -11,12 +11,12 @@ get_longhorn_chart(){
 
 
 customize_longhorn_chart_registry(){
-  # specify private registry secret in chart/values.yaml
-  yq -i '.privateRegistry.createSecret=true' "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryUser=\"${REGISTRY_USERNAME}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryPasswd=\"${REGISTRY_PASSWORD}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  # specify custom registry secret in chart/values.yaml
+  yq -i '.privateRegistry.createSecret=false' "${LONGHORN_REPO_DIR}/chart/values.yaml"
   yq -i '.privateRegistry.registrySecret="docker-registry-secret"' "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  if [[ ! -z "${REGISTRY_URL}" ]]; then
+    yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  fi
 }
 
 
