@@ -19,9 +19,7 @@ def RANCHER_CHART_INSTALL_VERSION = params.RANCHER_CHART_INSTALL_VERSION ? param
 def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def CUSTOM_SSH_PUBLIC_KEY = params.CUSTOM_SSH_PUBLIC_KEY ? params.CUSTOM_SSH_PUBLIC_KEY : ""
-def REGISTRY_URL
-def REGISTRY_USERNAME
-def REGISTRY_PASSWORD
+def REGISTRY_URL = ""
 
 // parameter for mTls
 def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
@@ -33,6 +31,9 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
+        usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
+        string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'),
         file(credentialsId: 'AZURE_CRT_FILE', variable: 'AZURE_CRT_FILE'),
@@ -56,6 +57,8 @@ node {
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                            --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
+                                           --env TF_VAR_docker_hub_username=${REGISTRY_USERNAME} \
+                                           --env TF_VAR_docker_hub_password=${REGISTRY_PASSWORD} \
                                            --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
                                            --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
                                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
@@ -115,7 +118,10 @@ node {
                                        --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
-                                       --env TF_VAR_extra_block_device=${RUN_V2_TEST} \
+                                       --env TF_VAR_extra_block_device="true" \
+                                       --env TF_VAR_lab_url=${LAB_URL} \
+                                       --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
+                                       --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
@@ -178,90 +184,8 @@ node {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
 
-                if(JOB_BASE_NAME != "longhorn-tests-regression") {
+                if(JOB_BASE_NAME == "longhorn-tests-sles-amd64") {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py ${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ${BUILD_URL}"
-                }
-
-                if(LONGHORN_INSTALL_METHOD == "custom") {
-                    sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
-                    LONGHORN_MANAGER_VERSION = sh (
-                        script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_MANAGER_IMAGE}",
-                        returnStdout: true
-                    )
-                    sh 'docker pull ${CUSTOM_LONGHORN_ENGINE_IMAGE}'
-                    LONGHORN_ENGINE_VERSION = sh (
-                        script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_ENGINE_IMAGE}",
-                        returnStdout: true
-                    )
-                    manager.createSummary("info.gif").appendText("<p>longhorn-manager version: $LONGHORN_MANAGER_VERSION</p><p>longhorn-engine version: $LONGHORN_ENGINE_VERSION</p>", false, false, false, "black")
-                }
-            }
-
-            stage ('longhorn coverage') {
-                if(!params.LONGHORN_UPGRADE_TEST && !params.AIR_GAP_INSTALLATION && JOB_BASE_NAME != "longhorn-tests-regression" && DISTRO == "sles") {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} test_framework/scripts/longhorn-coverage.sh"
-
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-manager-profile.html ."
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-engine-profile.html ."
-                    // sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-spdk-engine-profile.html ."
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-instance-manager-profile.html ."
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-share-manager-profile.html ."
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/backing-image-manager-profile.html ."
-
-                    publishHTML (target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: false,
-                        reportDir: '.',
-                        reportFiles: 'longhorn-manager-profile.html',
-                        reportName: "longhorn-manager coverage profile"
-                    ])
-
-                    publishHTML (target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: false,
-                        reportDir: '.',
-                        reportFiles: 'longhorn-engine-profile.html',
-                        reportName: "longhorn-engine coverage profile"
-                    ])
-
-                    // publishHTML (target: [
-                    //    allowMissing: true,
-                    //    alwaysLinkToLastBuild: true,
-                    //    keepAll: false,
-                    //     reportDir: '.',
-                    //     reportFiles: 'longhorn-spdk-engine-profile.html',
-                    //     reportName: "longhorn-spdk-engine coverage profile"
-                    // ])
-
-                    publishHTML (target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: false,
-                        reportDir: '.',
-                        reportFiles: 'longhorn-instance-manager-profile.html',
-                        reportName: "longhorn-instance-manager coverage profile"
-                    ])
-
-
-                    publishHTML (target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: false,
-                        reportDir: '.',
-                        reportFiles: 'longhorn-share-manager-profile.html',
-                        reportName: "longhorn-share-manager coverage profile"
-                    ])
-
-                    publishHTML (target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: false,
-                        reportDir: '.',
-                        reportFiles: 'backing-image-manager-profile.html',
-                        reportName: "backing-image-manager coverage profile"
-                    ])
                 }
             }
         } catch (e) {

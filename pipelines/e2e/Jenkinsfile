@@ -24,9 +24,7 @@ if (params.DISTRO == "sles") {
 
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def CUSTOM_SSH_PUBLIC_KEY = params.CUSTOM_SSH_PUBLIC_KEY ? params.CUSTOM_SSH_PUBLIC_KEY : ""
-def REGISTRY_URL
-def REGISTRY_USERNAME
-def REGISTRY_PASSWORD
+def REGISTRY_URL = ""
 
 // parameter for v2 test
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : true
@@ -38,7 +36,7 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
-        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),

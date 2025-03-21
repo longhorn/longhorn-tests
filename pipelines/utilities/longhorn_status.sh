@@ -1,5 +1,5 @@
 wait_longhorn_status_running(){
-  local RETRY_COUNTS=10 # in minutes
+  local RETRY_COUNTS=60 # in minutes
   local RETRY_INTERVAL="1m"
 
   # csi and engine image components are installed after longhorn components.

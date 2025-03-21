@@ -87,7 +87,10 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.uname().machine == "x86_64":
-    BLOCK_DEV_PATH = "/dev/xvdh"
+    if os.environ.get("LONGHORN_TEST_CLOUDPROVIDER") == "harvester":
+        BLOCK_DEV_PATH = "/dev/vdc"
+    else:
+        BLOCK_DEV_PATH = "/dev/xvdh"
 else:
     BLOCK_DEV_PATH = "/dev/nvme1n1"
 
@@ -542,7 +545,7 @@ def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
                             snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
-                            access_mode=ACCESS_MODE_RWO):
+                            access_mode=ACCESS_MODE_RWO, data_engine=DATA_ENGINE):  # NOQA
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -562,7 +565,7 @@ def create_and_check_volume(client, volume_name,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
                          snapshotDataIntegrity=snapshot_data_integrity,
-                         accessMode=access_mode, dataEngine=DATA_ENGINE)
+                         accessMode=access_mode, dataEngine=data_engine)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -1581,9 +1584,6 @@ def storage_class(request):
         },
         'reclaimPolicy': 'Delete'
     }
-    if DATA_ENGINE == 'v2':
-        sc_manifest['parameters']['dataEngine'] = 'v2'
-        sc_manifest['parameters']['fsType'] = 'ext4'
 
     def finalizer():
         api = get_storage_api_client()
@@ -3638,7 +3638,7 @@ def cleanup_test_disks(client):
             pass
 
 
-def reset_disks_for_all_nodes(client):  # NOQA
+def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
     default_disks = {
         "v1": {
             "path": DEFAULT_DISK_PATH,
@@ -3647,15 +3647,15 @@ def reset_disks_for_all_nodes(client):  # NOQA
         }
     }
 
-    enable_v2 = os.environ.get('RUN_V2_TEST')
-
-    if enable_v2 == "true":
-        default_disks["v2"] = {
-            "path": BLOCK_DEV_PATH,
-            "type": "block",
-            "default": True,
-        }
-        default_disks["v1"]["default"] = False
+    if v2_data_engine_cr_supported(client):
+        enable_v2 = os.environ.get('RUN_V2_TEST')
+        if enable_v2 == "true" or add_block_disks is True:
+            default_disks["v2"] = {
+                "path": BLOCK_DEV_PATH,
+                "type": "block",
+                "default": True,
+            }
+            default_disks["v1"]["default"] = False
 
     nodes = client.list_node()
     for n in nodes:
@@ -3781,19 +3781,12 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
-        enable_v2 = os.environ.get('RUN_V2_TEST') == "true"
-        v1_setting_value = "false" if enable_v2 else "true"
-        v2_setting_value = "true" if enable_v2 else "false"
-
-        if setting_name == "v1-data-engine":
-            setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
-            client.update(setting, value=v1_setting_value)
-            continue
-
+        # enable_v2 = os.environ.get('RUN_V2_TEST') == "true"
         if setting_name == "v2-data-engine":
-            setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
-            client.update(setting, value=v2_setting_value)
-            continue
+            if v2_data_engine_cr_supported(client):
+                setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
+                client.update(setting, value="true")
+                continue
 
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
@@ -4273,8 +4266,9 @@ def cleanup_crypto_secret():
     assert ok
 
 
-def create_storage_class(sc_manifest):
+def create_storage_class(sc_manifest, data_engine=DATA_ENGINE):
     api = get_storage_api_client()
+    sc_manifest['parameters']['dataEngine'] = data_engine
     api.create_storage_class(
         body=sc_manifest)
 
@@ -5014,6 +5008,8 @@ def make_deployment_with_pvc(request):
 
     def finalizer():
         apps_api = get_apps_api_client()
+        if not hasattr(make_deployment_with_pvc, 'deployment_manifests'):
+            return
         for deployment_manifest in \
                 make_deployment_with_pvc.deployment_manifests:
             deployment_name = deployment_manifest["metadata"]["name"]
@@ -5307,7 +5303,7 @@ def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
-        access_mode=ACCESS_MODE_RWO):# NOQA:
+        access_mode=ACCESS_MODE_RWO, data_engine=DATA_ENGINE):# NOQA:
 
     pod_name = volume_name + "-pod"
     pv_name = volume_name
@@ -5333,7 +5329,8 @@ def prepare_pod_with_data_in_mb(
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
                             size=volume_size,
-                            access_mode=access_mode)
+                            access_mode=access_mode,
+                            data_engine=data_engine)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
@@ -5523,7 +5520,8 @@ def assert_backup_state(b_actual, b_expected):
 
 def create_backing_image_with_matching_url(client, name, url,
                                            minNumberOfCopies=1,
-                                           nodeSelector=[], diskSelector=[]):
+                                           nodeSelector=[], diskSelector=[],
+                                           dataEngine=DATA_ENGINE):
     backing_images = client.list_backing_image()
     found = False
     for bi in backing_images:
@@ -5545,7 +5543,7 @@ def create_backing_image_with_matching_url(client, name, url,
         if url == BACKING_IMAGE_RAW_URL:
             expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
         elif url == BACKING_IMAGE_QCOW2_URL:
-            if DATA_ENGINE == "v2":
+            if dataEngine == "v2":
                 expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
             else:
                 expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
@@ -5554,7 +5552,7 @@ def create_backing_image_with_matching_url(client, name, url,
             parameters={"url": url}, expectedChecksum=expected_checksum,
             minNumberOfCopies=minNumberOfCopies,
             nodeSelector=nodeSelector, diskSelector=diskSelector,
-            dataEngine=DATA_ENGINE)
+            dataEngine=dataEngine)
     assert bi
 
     is_ready = False
@@ -5655,6 +5653,22 @@ def recurring_job_feature_supported(client):
         return True
     else:
         return False
+
+
+# this function checks if create v2 data engine CRs for upgrade is supported,
+# and is added for the case of test_upgrade starting from Longhorn >= v1.8.0
+# - v2 volumes cannot be upgraded from v1.7 to v1.8:
+#   https://github.com/longhorn/longhorn/issues/10053
+# - v2 backing images are not supported before v1.8.
+def v2_data_engine_cr_supported(client):
+    longhorn_version = client.by_id_setting('current-longhorn-version').value
+    version_doesnt_support_v2_backimg_image = ['v1.5', 'v1.6', 'v1.7']
+    if any(_version in longhorn_version for
+           _version in version_doesnt_support_v2_backimg_image):
+        print(f'{longhorn_version} doesn\'t support v2 cr for test')
+        return False
+    else:
+        return True
 
 
 # this function will check if system backup feature is supported, and is added
@@ -6453,7 +6467,8 @@ def system_restore_wait_for_state(state, name, client):  # NOQA
         f" but got {system_restore.state} after {RETRY_COUNTS} attempts"
 
 
-def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
+def create_volume_and_write_data(client, volume_name, volume_size=SIZE,
+                                 data_engine=DATA_ENGINE):
     """
     1. Create and attach a volume
     2. Write the data to volume
@@ -6461,7 +6476,8 @@ def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
     # Step 1
     volume = create_and_check_volume(client,
                                      volume_name,
-                                     size=volume_size)
+                                     size=volume_size,
+                                     data_engine=data_engine)
     volume = volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -6469,6 +6485,16 @@ def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
     volume_data = write_volume_random_data(volume)
 
     return volume, volume_data
+
+
+def get_instance_manager_names(client, data_engine=DATA_ENGINE):
+    ims = client.list_instance_manager()
+    result = []
+
+    for im in ims:
+        if im.dataEngine == data_engine:
+            result.append(im.name)
+    return result
 
 
 def wait_for_instance_manager_count(client, number, retry_counts=120):
