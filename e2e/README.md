@@ -73,6 +73,14 @@ export HOST_PROVIDER=aws
 export ARCH=amd64
 ```
 
+   While using `HOST_PROVIDER=vagrant`:
+
+```
+export VAGRANT_CWD=/path/to/vagrant/working/dir
+```
+
+   And all exported [Vagrant environment variables](https://developer.hashicorp.com/vagrant/docs/other/environmental-variables) are supported.
+
 1. To run uninstallation related test cases, export the following environment variables so the test code knows how to re-install Longhorn after the test cases are completed:
 
 ```

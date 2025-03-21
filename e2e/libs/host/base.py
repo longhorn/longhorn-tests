@@ -5,9 +5,12 @@ from node.node import Node
 
 class Base(ABC):
 
-    def __init__(self):
-        with open('/tmp/instance_mapping', 'r') as f:
-            self.mapping = yaml.safe_load(f)
+    def __init__(self, mapping=None):
+        if mapping:
+            self.mapping = mapping
+        else:
+            with open('/tmp/instance_mapping', 'r') as f:
+                self.mapping = yaml.safe_load(f)
         self.node = Node()
 
     @abstractmethod
