@@ -6,6 +6,7 @@ from kubernetes import client
 
 from recurringjob.base import Base
 
+from utility.constant import LONGHORN_NAMESPACE
 from utility.utility import filter_cr
 from utility.utility import get_longhorn_client
 from utility.utility import logging
@@ -16,6 +17,7 @@ class Rest(Base):
 
     def __init__(self):
         self.batch_v1_api = client.BatchV1Api()
+        self.core_v1_api = client.CoreV1Api()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, name, task, groups, cron, retain, concurrency, labels, parameters):
@@ -113,7 +115,44 @@ class Rest(Base):
             if job['task'] == 'snapshot':
                 self._check_snapshot_created(volume_name, job_name)
             elif job['task'] == 'backup':
-                self._check_backup_created(volume_name)
+                self._check_backup_created(volume_name, job_name)
+
+    def delete_expired_pending_recurringjob_pod(self, job_name, namespace=LONGHORN_NAMESPACE, expiration_seconds=5 * 60):
+        """
+        Deletes expired pending recurring job pods in the specified namespace.
+
+        This method lists all pods in the given namespace with the label
+        `recurring-job.longhorn.io={job_name}` and status `Pending`.
+        It calculates the age of each pod and deletes those that have been
+        pending for longer than the specified expiration time.
+
+        This is a workaround for an upstream issue where CronJob pods may remain
+        stuck in the `Pending` state indefinitely after a node reboot.
+        Issue: https://github.com/longhorn/longhorn/issues/7956
+        """
+        try:
+            pod_list = self.core_v1_api.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=f"recurring-job.longhorn.io={job_name}"
+            )
+            for pod in pod_list.items:
+                if pod.status.phase != "Pending":
+                    continue
+
+                pod_age = time.time() - pod.metadata.creation_timestamp.timestamp()
+                if pod_age > expiration_seconds:
+                    logging(f"Deleting expired pending recurringjob pod {pod.metadata.name}")
+                    self.core_v1_api.delete_namespaced_pod(
+                        name=pod.metadata.name,
+                        namespace=namespace,
+                        grace_period_seconds=0
+                    )
+                    logging(f"Deleted pod {pod.metadata.name}")
+                else:
+                    logging(f"Recurringjob pod {pod.metadata.name} in Pending state,\
+                        age {pod_age:.2f} < expiration {expiration_seconds}s")
+        except Exception as e:
+            logging(f"Failed to delete expired pending recurringjob pods: {e}")
 
     def _check_snapshot_created(self, volume_name, job_name):
         # check snapshot can be created by the recurringjob
@@ -122,6 +161,8 @@ class Rest(Base):
         label_selector=f"longhornvolume={volume_name}"
         snapshot_timestamp = 0
         for i in range(self.retry_count):
+            self.delete_expired_pending_recurringjob_pod(job_name)
+
             logging(f"Waiting for {volume_name} new snapshot created ({i}) ...")
             snapshot_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "snapshots", label_selector=label_selector)
             try:
@@ -147,7 +188,7 @@ class Rest(Base):
                         there's no new snapshot created by recurringjob \
                         {snapshot_list}"
 
-    def _check_backup_created(self, volume_name, retry_count=-1):
+    def _check_backup_created(self, volume_name, job_name, retry_count=-1):
         if retry_count == -1:
             retry_count = self.retry_count
 
@@ -157,6 +198,8 @@ class Rest(Base):
         label_selector=f"backup-volume={volume_name}"
         backup_timestamp = 0
         for i in range(retry_count):
+            self.delete_expired_pending_recurringjob_pod(job_name)
+
             logging(f"Waiting for {volume_name} new backup created ({i}) ...")
             backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "backups", label_selector=label_selector)
             try:
