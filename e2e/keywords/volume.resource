@@ -23,6 +23,13 @@ Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume
     ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
+Create volume ${volume_id} from backup ${backup_id} of volume ${source_volume_id}
+    [Arguments]    &{config}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
+    create_volume   ${volume_name}    numberOfReplicas=3    fromBackup=${backup_url}    &{config}
+
 Create volume ${volume_id} from ${workload_kind} ${workload_id} volume backup ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${workload_volume_name}=    get_workload_volume_name    ${workload_name}
@@ -74,6 +81,17 @@ Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
 Attach volume ${volume_id} in maintenance mode
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume_in_maintenance_mode    ${volume_name}
+
+Attach volume ${volume_id} to healthy node
+    ${volume_name}=  generate_name_with_suffix  volume  ${volume_id}
+    ${healthy_node_names}=  Get healthy node names
+
+    Run Keyword If    ${healthy_node_names} == []
+    ...    Fail    No healthy nodes available to attach volume!
+
+    ${healthy_node_name}=  Get From List  ${healthy_node_names}  0
+    Log    Attaching volume ${volume_id} to node ${healthy_node_name}
+    attach_volume  ${volume_name}  ${healthy_node_name}
 
 Detach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
