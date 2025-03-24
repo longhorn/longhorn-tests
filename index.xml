@@ -156,7 +156,7 @@ Steps:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/</guid>
-      <description>Case 1:   Create a backup.
+      <description>Precondition  https://longhorn.io/docs/1.8.1/best-practices/#coredns-setup  Case 1:   Create a backup.
   Restore the above backup.
   Power off the volume attached node during the restoring.
   Wait for the Longhorn node down.
