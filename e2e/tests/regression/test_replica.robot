@@ -44,3 +44,28 @@ Test Replica Rebuilding Per Volume Limit
     And Wait until volume 0 replicas rebuilding completed
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Offline Replica Rebuilding
+    [Tags]    coretest    offline-rebuilding
+    [Documentation]    Test offline replica rebuilding for a volume.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/8443
+    Given Create volume 0 with    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Detach volume 0
+    And Wait for volume 0 detached
+
+    When Delete 1 replicas of volume 0
+    Then Trigger volume 0 offline replica rebuilding
+    And Wait for volume 0 detached
+    And Volume 0 should have 2 replicas when detached
+    And Check volume 0 offline replica rebuilding state is completed with 2 replicas
+
+    When Delete 1 replicas of volume 0
+    Then Set setting auto-offline-replica-rebuilding to true
+    And Wait for volume 0 detached
+    And Volume 0 should have 2 replicas when detached
+    And Check volume 0 offline replica rebuilding state is completed with 2 replicas
+    And Set setting auto-offline-replica-rebuilding to false
