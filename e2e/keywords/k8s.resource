@@ -97,6 +97,23 @@ Check node ${node_id} cordoned
     ${node_name} =    get_node_by_index    ${node_id}
     check_node_cordoned    ${node_name}
 
+Get node ${node_id} status
+    ${node_id}=  Convert To String  ${node_id}
+    ${node_name}=  get_node_by_index  ${node_id}
+    ${is_ready}=  is_node_ready  ${node_name}
+    Log    Node ${node_name} ready status is ${is_ready}
+    ${node_status}=  Create Dictionary    node_id=${node_id}    node_name=${node_name}    node_ready=${is_ready}
+    [Return]  ${node_status}
+
+Get healthy node names
+    @{healthy_node_names}=    Create List
+    FOR    ${i}    IN RANGE    0    3
+        ${node_status}=    Get node ${i} status
+        Run Keyword If    ${node_status["node_ready"]} == True
+        ...    Append To List    ${healthy_node_names}    ${node_status["node_name"]}
+    END
+    [Return]    ${healthy_node_names}
+
 Force drain node ${node_id} and expect failure
     ${drained_node} =    get_node_by_index    ${node_id}
     ${instance_manager_name} =     get_instance_manager_on_node    ${drained_node}

@@ -37,6 +37,10 @@ Purge volume ${volume_id} snapshot
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     purge_snapshot    ${volume_name}
 
+Purge volume ${volume_id} snapshot should fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    purge_snapshot    ${volume_name}
+
 Validate snapshot ${parent_id} is parent of snapshot ${child_id} in volume ${volume_id} snapshot list
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_parent_of   ${volume_name}    ${parent_id}    ${child_id}

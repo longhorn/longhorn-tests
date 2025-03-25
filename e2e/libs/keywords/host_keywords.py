@@ -60,5 +60,5 @@ class host_keywords:
     def power_on_node_by_name(self, node_name):
         self.host.power_on_node(node_name)
 
-    def power_off_node_by_name(self, node_name):
-        self.host.power_off_node(node_name)
+    def power_off_node_by_name(self, node_name, waiting=True):
+        self.host.power_off_node(node_name, waiting)
