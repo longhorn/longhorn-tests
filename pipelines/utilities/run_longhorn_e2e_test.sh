@@ -10,9 +10,11 @@ run_longhorn_e2e_test(){
 
   LONGHORN_TESTS_MANIFEST_FILE_PATH="e2e/deploy/test.yaml"
 
-  # Remove leading and trailing double quotes
-  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
-  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+  if [[ "${ROBOT_CUSTOM_OPTIONS}" == \"*\" ]]; then
+    # Remove leading and trailing double quotes
+    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
+    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+  fi
 
   eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
   for OPT in "${ROBOT_COMMAND_ARGS[@]}"; do
@@ -96,9 +98,11 @@ run_longhorn_e2e_test_out_of_cluster(){
   fi
   LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
 
-  # Remove leading and trailing double quotes
-  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
-  ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+  if [[ "${ROBOT_CUSTOM_OPTIONS}" == \"*\" ]]; then
+    # Remove leading and trailing double quotes
+    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
+    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+  fi
 
   eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
 
