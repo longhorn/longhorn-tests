@@ -49,15 +49,11 @@ main(){
   setup_azurite_backup_store
   install_csi_snapshotter
 
-  # set debugging mode off to avoid leaking docker secrets to the logs.
-  # DON'T REMOVE!
-  set +x
-  create_registry_secret
-  set -x
-
+  get_longhorn_repo
   generate_longhorn_yaml_manifest
+  create_registry_secret
   customize_longhorn_manifest_registry
-  install_longhorn_by_manifest
+  install_longhorn
 
   update_storage_network_setting
 

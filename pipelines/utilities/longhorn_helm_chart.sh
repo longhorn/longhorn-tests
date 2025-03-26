@@ -89,6 +89,12 @@ install_longhorn_custom(){
   install_longhorn
 }
 
+uninstall_longhorn(){
+  LONGHORN_NAMESPACE="longhorn-system"
+  helm uninstall longhorn --namespace "${LONGHORN_NAMESPACE}"
+  kubectl delete ns "${LONGHORN_NAMESPACE}"
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"

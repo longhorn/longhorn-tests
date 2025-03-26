@@ -3,21 +3,23 @@ from node import Node
 from node_exec import NodeExec
 from k8s import k8s
 from utility.constant import LONGHORN_NAMESPACE
+from utility.utility import logging
 
 import subprocess
 import os
+import time
 
 class LonghornHelmChart(Base):
 
-    def uninstall(self, is_stable_version=False):
-        control_plane_nodes = Node.list_node_names_by_role(self, role="control-plane")
-        control_plane_node = control_plane_nodes[0]
-
-        cmd = f'export KUBECONFIG={os.getenv("KUBECONFIG")} && helm uninstall longhorn -n {LONGHORN_NAMESPACE}'
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        assert res, "apply helm uninstall command failed"
-
-        k8s.delete_namespace(namespace=LONGHORN_NAMESPACE)
+    def uninstall(self, is_stable_version):
+        command = "./pipelines/utilities/longhorn_helm_chart.sh"
+        process = subprocess.Popen([command, "uninstall_longhorn"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Uninstall longhorn failed")
+            time.sleep(self.retry_count)
+            assert False, "Uninstall longhorn failed"
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
     def install(self, install_stable_version):
