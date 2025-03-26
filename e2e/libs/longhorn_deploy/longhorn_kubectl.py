@@ -4,6 +4,7 @@ from node_exec import NodeExec
 from k8s import k8s
 from utility.constant import LONGHORN_NAMESPACE
 from utility.constant import LONGHORN_UNINSTALL_JOB_LABEL
+from utility.utility import logging
 
 import subprocess
 import os
@@ -11,28 +12,32 @@ import time
 
 class LonghornKubectl(Base):
 
-    def uninstall(self, is_stable_version=False):
+    def uninstall(self, is_stable_version):
         env_var = "LONGHORN_STABLE_VERSION" if is_stable_version else "LONGHORN_REPO_BRANCH"
         longhorn_branch = os.getenv(env_var)
         if not longhorn_branch:
            raise ValueError(f"Required environment variable {env_var} is not set")
 
-        control_plane_nodes = Node.list_node_names_by_role(self, role="control-plane")
-        control_plane_node = control_plane_nodes[0]
+        command = "./pipelines/utilities/longhorn_manifest.sh"
+        process = subprocess.Popen([command, "uninstall_longhorn", longhorn_branch],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Uninstall longhorn failed")
+            time.sleep(self.retry_count)
+            assert False, "Uninstall longhorn failed"
 
-        cmd = f"kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/{longhorn_branch}/uninstall/uninstall.yaml"
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        assert res, "apply uninstall yaml failed"
-        k8s.wait_namespaced_job_complete(job_label=LONGHORN_UNINSTALL_JOB_LABEL, namespace=LONGHORN_NAMESPACE)
         self.check_longhorn_uninstall_pod_log()
 
-        cmd = f"kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/{longhorn_branch}/deploy/longhorn.yaml"
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        assert res, "delete remaining components failed"
+        command = "./pipelines/utilities/longhorn_manifest.sh"
+        process = subprocess.Popen([command, "delete_longhorn_crds", longhorn_branch],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Deleting longhorn CRDs failed")
+            time.sleep(self.retry_count)
+            assert False, "Deleting longhorn CRDs failed"
 
-        cmd= f"kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/{longhorn_branch}/uninstall/uninstall.yaml"
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        assert res, "delete uninstallation components failed"
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
     def install(self, install_stable_version):

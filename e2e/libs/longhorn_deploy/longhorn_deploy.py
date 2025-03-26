@@ -15,7 +15,7 @@ class LonghornDeploy(Base):
         elif self._method == "helm":
             self.longhorn = LonghornHelmChart()
 
-    def uninstall(self, is_stable_version=False):
+    def uninstall(self, is_stable_version):
         # add some delay before uninstallation
         # for issue https://github.com/longhorn/longhorn/issues/10483
         time.sleep(60)
