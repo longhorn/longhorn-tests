@@ -1,6 +1,7 @@
 import pytest
 import subprocess
 import time
+import os
 
 from common import create_volume_and_write_data
 from common import volume_name  # NOQA
@@ -53,156 +54,99 @@ from common import wait_for_volume_recurring_job_update
 from common import get_volume_name
 from common import system_backup_feature_supported
 from common import system_backups_cleanup
+from common import RETRY_COUNTS, RETRY_INTERVAL
 from test_orphan import create_orphaned_directories_on_host
 from test_orphan import delete_orphans
 from backupstore import set_backupstore_s3
 from backupstore import set_backupstore_nfs, mount_nfs_backupstore
 
 
-@pytest.fixture
-def longhorn_install_method(request):
-    return request.config.getoption("--lh-install-method")
+def wait_for_engine_image_upgraded(client, volume_name, engine_image_name): # NOQA
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    if hasattr(engine, 'engineImage'):
+        upgraded = False
+        for i in range(RETRY_COUNTS):
+            print(f"Waiting for {volume_name} ei '{engine.engineImage}' \
+                  upgraded to {engine_image_name} ... ({i})")
+            if engine.engineImage == engine_image_name:
+                upgraded = True
+                break
+            else:
+                time.sleep(RETRY_INTERVAL)
+                volume = client.by_id_volume(volume_name)
+                engine = get_volume_engine(volume)
+        assert upgraded, \
+               f"assert volume {volume_name} engine image upgraded to \
+                 {engine_image_name}, but it's {engine.engineImage}"
+    else:
+        upgraded = False
+        for i in range(RETRY_COUNTS):
+            print(f"Waiting for {volume_name} engine image '{engine.image}' \
+                  upgraded to {engine_image_name} ... ({i})")
+            if engine.image == engine_image_name:
+                upgraded = True
+                break
+            else:
+                time.sleep(RETRY_INTERVAL)
+                volume = client.by_id_volume(volume_name)
+                engine = get_volume_engine(volume)
+        assert upgraded, \
+               f"assert volume {volume_name} engine image upgraded to \
+                 {engine_image_name}, but it's {engine.image}"
+    upgraded = False
+    for i in range(RETRY_COUNTS):
+        print(f"Waiting for {volume_name} current image \
+                '{engine.currentImage}' \
+                upgraded to {engine_image_name} ... ({i})")
+        if engine.currentImage == engine_image_name:
+            upgraded = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            volume = client.by_id_volume(volume_name)
+            engine = get_volume_engine(volume)
+    assert upgraded, \
+           f"assert volume {volume_name} current image upgraded to \
+             {engine_image_name}, but it's {engine.currentImage}"
 
 
-@pytest.fixture
-def rancher_hostname(request):
-    return request.config.getoption("--rancher-hostname")
+def longhorn_upgrade(upgrade_to_transient_version=False):
 
+    if upgrade_to_transient_version:
+        upgrade_function = "install_longhorn_transient"
+    else:
+        upgrade_function = "install_longhorn_custom"
 
-@pytest.fixture
-def rancher_access_key(request):
-    return request.config.getoption("--rancher-access-key")
-
-
-@pytest.fixture
-def rancher_secret_key(request):
-    return request.config.getoption("--rancher-secret-key")
-
-
-@pytest.fixture
-def rancher_chart_install_version(request):
-    return request.config.getoption("--rancher-chart-install-version")
-
-
-@pytest.fixture
-def longhorn_repo(request):
-    return request.config.getoption("--longhorn-repo")
-
-
-@pytest.fixture
-def flux_helm_chart_url(request):
-    return request.config.getoption("--flux-helm-chart-url")
-
-
-@pytest.fixture
-def flux_helm_chart_version(request):
-    return request.config.getoption("--flux-helm-chart-version")
-
-
-@pytest.fixture
-def upgrade_longhorn_transient_version(request):
-    return request.config.getoption("--upgrade-lh-transient-version")
-
-
-@pytest.fixture
-def upgrade_longhorn_repo_url(request):
-    return request.config.getoption("--upgrade-lh-repo-url")
-
-
-@pytest.fixture
-def upgrade_longhorn_repo_branch(request):
-    return request.config.getoption("--upgrade-lh-repo-branch")
-
-
-@pytest.fixture
-def upgrade_longhorn_manager_image(request):
-    return request.config.getoption("--upgrade-lh-manager-image")
-
-
-@pytest.fixture
-def upgrade_longhorn_engine_image(request):
-    return request.config.getoption("--upgrade-lh-engine-image")
-
-
-@pytest.fixture
-def upgrade_longhorn_instance_manager_image(request):
-    return request.config.getoption("--upgrade-lh-instance-manager-image")
-
-
-@pytest.fixture
-def upgrade_longhorn_share_manager_image(request):
-    return request.config.getoption("--upgrade-lh-share-manager-image")
-
-
-@pytest.fixture
-def upgrade_longhorn_backing_image_manager_image(request):
-    return request.config.getoption("--upgrade-lh-backing-image-manager-image")
-
-
-def longhorn_upgrade(longhorn_install_method,
-                     rancher_hostname,
-                     rancher_access_key,
-                     rancher_secret_key,
-                     rancher_chart_install_version,
-                     longhorn_repo,
-                     flux_helm_chart_url,
-                     flux_helm_chart_version,
-                     longhorn_repo_url,
-                     longhorn_repo_branch,
-                     longhorn_manager_image,
-                     longhorn_engine_image,
-                     longhorn_instance_manager_image,
-                     longhorn_share_manager_image,
-                     longhorn_backing_image_manager_image):
+    longhorn_install_method = os.getenv('LONGHORN_INSTALL_METHOD', 'manifest')
 
     if longhorn_install_method == "manifest":
-        command = "../scripts/upgrade-longhorn.sh"
-        process = subprocess.Popen([command,
-                                    longhorn_repo_url,
-                                    longhorn_repo_branch,
-                                    longhorn_manager_image,
-                                    longhorn_engine_image,
-                                    longhorn_instance_manager_image,
-                                    longhorn_share_manager_image,
-                                    longhorn_backing_image_manager_image],
+        command = "./pipelines/utilities/longhorn_manifest.sh"
+        process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "helm":
-        command = "./pipelines/helm/scripts/upgrade-longhorn.sh"
-        process = subprocess.Popen([command,
-                                    longhorn_repo_url,
-                                    longhorn_repo_branch,
-                                    longhorn_manager_image,
-                                    longhorn_engine_image,
-                                    longhorn_instance_manager_image,
-                                    longhorn_share_manager_image,
-                                    longhorn_backing_image_manager_image],
+        command = "./pipelines/utilities/longhorn_helm_chart.sh"
+        process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "rancher":
-        command = "./pipelines/rancher/scripts/upgrade-longhorn.sh"
-        process = subprocess.Popen([command,
-                                    rancher_hostname,
-                                    rancher_access_key,
-                                    rancher_secret_key,
-                                    rancher_chart_install_version,
-                                    longhorn_repo],
+        command = "./pipelines/utilities/longhorn_rancher_chart.sh"
+        upgrade_function = "upgrade_longhorn_transient" \
+            if upgrade_to_transient_version else "upgrade_longhorn_custom"
+        process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "flux":
-        command = "./pipelines/flux/scripts/upgrade-longhorn.sh"
-        process = subprocess.Popen([command,
-                                    flux_helm_chart_url,
-                                    flux_helm_chart_version],
+        command = "./pipelines/utilities/flux.sh"
+        process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "argocd":
-        command = "./pipelines/argocd/scripts/upgrade-longhorn.sh"
-        process = subprocess.Popen([command,
-                                    longhorn_repo_url,
-                                    longhorn_repo_branch],
+        command = "./pipelines/utilities/argocd.sh"
+        upgrade_function = "upgrade_longhorn_transient" \
+            if upgrade_to_transient_version else "upgrade_longhorn_custom"
+        process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "fleet":
-        command = "./pipelines/fleet/scripts/upgrade-longhorn.sh"
-        process = subprocess.Popen([command,
-                                    longhorn_repo_url,
-                                    longhorn_repo_branch],
+        command = "./pipelines/utilities/fleet.sh"
+        process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
 
     process.wait()
@@ -216,23 +160,7 @@ def longhorn_upgrade(longhorn_install_method,
 
 
 @pytest.mark.upgrade  # NOQA
-def test_upgrade(longhorn_install_method,
-                 rancher_hostname,
-                 rancher_access_key,
-                 rancher_secret_key,
-                 rancher_chart_install_version,
-                 longhorn_repo,
-                 flux_helm_chart_url,
-                 flux_helm_chart_version,
-                 upgrade_longhorn_transient_version,
-                 upgrade_longhorn_repo_url,
-                 upgrade_longhorn_repo_branch,
-                 upgrade_longhorn_manager_image,
-                 upgrade_longhorn_engine_image,
-                 upgrade_longhorn_instance_manager_image,
-                 upgrade_longhorn_share_manager_image,
-                 upgrade_longhorn_backing_image_manager_image,
-                 client, core_api, volume_name, csi_pv, # NOQA
+def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
                  pvc, pod_make, statefulset, rwx_statefulset, storage_class): # NOQA
     """
     Test Longhorn upgrade
@@ -269,16 +197,6 @@ def test_upgrade(longhorn_install_method,
     17. Delete one replica for vol_rebuild to trigger the rebuilding
     18. Verify the vol_rebuild is still healthy
     """
-    longhorn_install_method = longhorn_install_method
-    longhorn_transient_version = upgrade_longhorn_transient_version
-    longhorn_repo_url = upgrade_longhorn_repo_url
-    longhorn_repo_branch = upgrade_longhorn_repo_branch
-    longhorn_manager_image = upgrade_longhorn_manager_image
-    longhorn_engine_image = upgrade_longhorn_engine_image
-    longhorn_instance_manager_image = upgrade_longhorn_instance_manager_image
-    longhorn_share_manager_image = upgrade_longhorn_share_manager_image
-    longhorn_backing_image_manager_image = \
-        upgrade_longhorn_backing_image_manager_image
 
     host_id = get_self_host_id()
     pod_data_path = "/data/test"
@@ -396,43 +314,16 @@ def test_upgrade(longhorn_install_method,
     write_pod_volume_data(core_api, rwx_statefulset_pod_name,
                           rwx_test_data, filename='test1')
 
+    longhorn_transient_version = os.getenv('LONGHORN_TRANSIENT_VERSION', '')
     if longhorn_transient_version and len(longhorn_transient_version) > 0:
         # upgrade Longhorn manager to transient version
-        assert longhorn_upgrade(longhorn_install_method,
-                                rancher_hostname,
-                                rancher_access_key,
-                                rancher_secret_key,
-                                longhorn_transient_version,
-                                longhorn_repo,
-                                flux_helm_chart_url,
-                                longhorn_transient_version,
-                                longhorn_repo_url,
-                                longhorn_transient_version,
-                                "",
-                                "",
-                                "",
-                                "",
-                                "")
+        assert longhorn_upgrade(upgrade_to_transient_version=True)
 
         # wait for 1 minute before checking pod restarts
         time.sleep(60)
 
     # upgrade Longhorn manager
-    assert longhorn_upgrade(longhorn_install_method,
-                            rancher_hostname,
-                            rancher_access_key,
-                            rancher_secret_key,
-                            rancher_chart_install_version,
-                            longhorn_repo,
-                            flux_helm_chart_url,
-                            flux_helm_chart_version,
-                            longhorn_repo_url,
-                            longhorn_repo_branch,
-                            longhorn_manager_image,
-                            longhorn_engine_image,
-                            longhorn_instance_manager_image,
-                            longhorn_share_manager_image,
-                            longhorn_backing_image_manager_image)
+    assert longhorn_upgrade()
 
     client = get_longhorn_api_client()
 
@@ -545,7 +436,14 @@ def test_upgrade(longhorn_install_method,
             wait_for_volume_detached(client, v.name)
 
     engineimages = client.list_engine_image()
+    # the longhorn engine image to be upgraded to
+    # it should be defined,
+    # so os.environ is used to throw error if it's not found
+    longhorn_engine_image = os.environ['CUSTOM_LONGHORN_ENGINE_IMAGE']
+    print(f"target longhorn engine image = {longhorn_engine_image}")
+    print("listing available longhorn engine images:")
     for ei in engineimages:
+        print(f"{ei.image}")
         if ei.image == longhorn_engine_image:
             new_ei = ei
 
@@ -584,15 +482,7 @@ def test_upgrade(longhorn_install_method,
     # Verify volume's engine image has been upgraded
     for v in volumes:
         if v.name != restore_vol_name:
-            volume = client.by_id_volume(v.name)
-            engine = get_volume_engine(volume)
-            if hasattr(engine, 'engineImage'):
-                print("Checking engineImage...")
-                assert engine.engineImage == new_ei.image
-            else:
-                print("Checking image...")
-                assert engine.image == new_ei.image
-            assert engine.currentImage == new_ei.image
+            wait_for_engine_image_upgraded(client, v.name, new_ei.image)
 
     # Check All volumes data
     for sspod_info in statefulset_pod_info:
