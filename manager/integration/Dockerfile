@@ -45,11 +45,6 @@ RUN pip install -r requirements.txt
 ADD manager/integration /integration
 WORKDIR /integration/tests
 
-ADD pipelines/utilities ./pipelines/utilities
-ADD pipelines/helm/scripts/upgrade-longhorn.sh ./pipelines/helm/scripts/upgrade-longhorn.sh
-ADD pipelines/rancher/scripts/upgrade-longhorn.sh ./pipelines/rancher/scripts/upgrade-longhorn.sh
-ADD pipelines/flux/scripts/upgrade-longhorn.sh ./pipelines/flux/scripts/upgrade-longhorn.sh
-ADD pipelines/argocd/scripts/upgrade-longhorn.sh ./pipelines/argocd/scripts/upgrade-longhorn.sh
-ADD pipelines/fleet/scripts/upgrade-longhorn.sh ./pipelines/fleet/scripts/upgrade-longhorn.sh
+ADD pipelines ./pipelines
 
 ENTRYPOINT ["./run.sh"]
