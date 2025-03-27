@@ -16,24 +16,6 @@ INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
 INCLUDE_CA_OPT = "--include-cluster-autoscaler-test"
 
-LH_INSTALL_METHOD = "--lh-install-method"
-RANCHER_HOSTNAME = "--rancher-hostname"
-RANCHER_ACCESS_KEY = "--rancher-access-key"
-RANCHER_SECRET_KEY = "--rancher-secret-key"
-RANCHER_CHART_INSTALL_VERSION = "--rancher-chart-install-version"
-LONGHORN_REPO = "--longhorn-repo"
-FLUX_HELM_CHART_URL = "--flux-helm-chart-url"
-FLUX_HELM_CHART_VERSION = "--flux-helm-chart-version"
-UPGRADE_LH_TRANSIENT_VERSION = "--upgrade-lh-transient-version"
-UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
-UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
-UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
-UPGRADE_LH_ENGINE_IMAGE = "--upgrade-lh-engine-image"
-UPGRADE_LH_INSTANCE_MANAGER_IMAGE = "--upgrade-lh-instance-manager-image"
-UPGRADE_LH_SHARE_MANAGER_IMAGE = "--upgrade-lh-share-manager-image"
-UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE = \
-    "--upgrade-lh-backing-image-manager-image"
-
 
 def pytest_addoption(parser):
     parser.addoption(SKIP_BACKING_IMAGE_OPT, action="store_true",
@@ -58,105 +40,6 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_CA_OPT, action="store_true",
                      default=False,
                      help="include cluster autoscaler tests (default: False)")
-
-    parser.addoption(LH_INSTALL_METHOD, action="store",
-                     default="manifest",
-                     help='''set longhorn install method, this will be used
-                     to determine how to upgrade longhorn for test_upgrade
-                     (default: manifest''')
-
-    parser.addoption(RANCHER_HOSTNAME, action="store",
-                     default="",
-                     help='''if longhorn install method is rancher, specify
-                     where rancher is hosted''')
-
-    parser.addoption(RANCHER_ACCESS_KEY, action="store",
-                     default="",
-                     help='''if longhorn install method is rancher, specify
-                     the access key and secret key to have the permission to
-                     operate it''')
-
-    parser.addoption(RANCHER_SECRET_KEY, action="store",
-                     default="",
-                     help='''if longhorn install method is rancher, specify
-                     the access key and secret key to have the permission to
-                     operate it''')
-
-    parser.addoption(RANCHER_CHART_INSTALL_VERSION, action="store",
-                     default="",
-                     help='''if longhorn install method is rancher, specify
-                     the longhorn chart version you would like to install like
-                     102.2.1+up1.4.2''')
-
-    parser.addoption(LONGHORN_REPO, action="store",
-                     default="",
-                     help='''if longhorn install method is rancher, specify
-                     the longhorn dockerhub repo of longhorn components like
-                     longhornio or rancher''')
-
-    parser.addoption(FLUX_HELM_CHART_URL, action="store",
-                     default="https://charts.longhorn.io",
-                     help='''if longhorn install method is flux, specify the
-                     url of flux helm repository resource''')
-
-    parser.addoption(FLUX_HELM_CHART_VERSION, action="store",
-                     default="",
-                     help='''if longhorn install method is flux, specify the
-                     chart version when create flux helm release resource''')
-
-    parser.addoption(UPGRADE_LH_TRANSIENT_VERSION, action="store",
-                     default="",
-                     help='''set longhorn transient version, if provided,
-                     longhorn will first install the stable version,
-                     and then upgrade to this transient version,
-                     and finally upgrade to the version to be tested.
-                     (default:"")''')
-
-    longhorn_repo_url =\
-        "https://github.com/longhorn/longhorn.git"
-    parser.addoption(UPGRADE_LH_REPO_URL, action="store",
-                     default=longhorn_repo_url,
-                     help='''set longhorn repo url, this will be used
-                     to generate longhorn yaml manifest for test_upgrade
-                     (default:
-                     https://github.com/longhorn/longhorn.git)''')
-
-    parser.addoption(UPGRADE_LH_REPO_BRANCH, action="store",
-                     default="master",
-                     help='''set longhorn repo branch, this will be used
-                     to generate longhorn yaml manifest for test_upgrade
-                     (default: master)''')
-
-    parser.addoption(UPGRADE_LH_MANAGER_IMAGE, action="store",
-                     default="longhornio/longhorn-manager:master-head",
-                     help='''set custom longhorn-manger image, this image will
-                     be used in test_upgrade
-                     (default: longhornio/longhorn-manager:master-head)''')
-
-    parser.addoption(UPGRADE_LH_ENGINE_IMAGE, action="store",
-                     default="longhornio/longhorn-engine:master-head",
-                     help='''set custom longhorn-engine image, this image will
-                     be used in test_upgrade
-                     (default: longhornio/longhorn-engine:master-head)''')
-
-    parser.addoption(UPGRADE_LH_INSTANCE_MANAGER_IMAGE, action="store",
-                     default="longhornio/longhorn-instance-manager:master-head", # NOQA
-                     help='''set custom longhorn-instance-manager image, this
-                     image will be used in test_upgrade
-                     (default: longhornio/longhorn-instance-manager:master-head)
-                     ''') # NOQA
-
-    parser.addoption(UPGRADE_LH_SHARE_MANAGER_IMAGE, action="store",
-                     default="longhornio/longhorn-share-manager:master-head",
-                     help='''set custom longhorn-share-manager image, this image
-                     will be used in test_upgrade
-                     (default: longhornio/longhorn-share-manager:master-head)''') # NOQA
-
-    parser.addoption(UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE, action="store",
-                     default="longhornio/backing-image-manager:master-head",
-                     help='''set custom backing-image-manager image, this image
-                     will be used in test_upgrade
-                     (default: longhornio/backing-image-manager:master-head)''') # NOQA
 
 
 def pytest_collection_modifyitems(config, items):
