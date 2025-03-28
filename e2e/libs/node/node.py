@@ -114,11 +114,16 @@ class Node:
         return nodes[int(index)]
 
     def get_node_by_name(self, node_name, namespace="kube-system"):
-        if namespace == LONGHORN_NAMESPACE:
-            return get_longhorn_client().by_id_node(node_name)
-
-        core_api = client.CoreV1Api()
-        return core_api.read_node(node_name)
+        logging(f"Getting node by name {node_name} in namespace {namespace}")
+        try:
+            if namespace == LONGHORN_NAMESPACE:
+                return get_longhorn_client().by_id_node(node_name)
+            else:
+                core_api = client.CoreV1Api()
+                return core_api.read_node(node_name)
+        except Exception as e:
+            logging(f"Getting node by name {node_name} in namespace {namespace} failed: {e}")
+            return None
 
     def get_node_cpu_cores(self, node_name):
         node = self.get_node_by_name(node_name)
@@ -281,30 +286,29 @@ class Node:
         return uuid
 
     def wait_for_node_down(self, node_name):
-        down = False
         for i in range(self.retry_count):
             logging(f"Waiting for k8s node {node_name} down ... ({i})")
             node = self.get_node_by_name(node_name)
-            for condition in node.status.conditions:
-                if condition.type == "Ready" and condition.status != "True":
-                    down = True
-            if down:
-                break
+            if not node:
+                return
+            else:
+                for condition in node.status.conditions:
+                    if condition.type == "Ready" and condition.status != "True":
+                        return
             time.sleep(self.retry_interval)
-        assert down, f"Waiting for node {node_name} down failed: {node.status.conditions}"
+        assert False, f"Waiting for node {node_name} down failed: {node}"
 
     def wait_for_node_up(self, node_name):
         up = False
         for i in range(self.retry_count):
             logging(f"Waiting for k8s node {node_name} up ... ({i})")
             node = self.get_node_by_name(node_name)
-            for condition in node.status.conditions:
-                if condition.type == "Ready" and condition.status == "True":
-                    up = True
-            if up:
-                break
+            if node:
+                for condition in node.status.conditions:
+                    if condition.type == "Ready" and condition.status == "True":
+                        return
             time.sleep(self.retry_interval)
-        assert up, f"Waiting for node {node_name} up failed: {node.status.conditions}"
+        assert False, f"Waiting for node {node_name} up failed: {node}"
 
     def list_dm_devices(self, node_name):
         cmd = "dmsetup ls | awk '{print $1}'"
