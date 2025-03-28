@@ -58,3 +58,7 @@ Volume ${volume_id} backup ${backup_id} should be able to create
     Create backup ${backup_id} for volume ${volume_id}
     Verify backup list contains no error for volume ${volume_id}
     Verify backup list contains backup ${backup_id} of volume ${volume_id}
+
+Check snapshot for backup ${backup_id} of volume ${volume_id} exists ${exists}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_snapshot_exists_for_backup    ${volume_name}    ${backup_id}    ${exists}
