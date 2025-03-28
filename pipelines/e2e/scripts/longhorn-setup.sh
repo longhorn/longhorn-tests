@@ -15,27 +15,12 @@ source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/run_longhorn_e2e_test.sh
 source pipelines/utilities/coredns.sh
+source pipelines/utilities/longhornctl.sh
 
-# create and clean tmpdir
-TMPDIR="/tmp/longhorn"
-mkdir -p ${TMPDIR}
-rm -rf "${TMPDIR}/"
-
-export LONGHORN_NAMESPACE="longhorn-system"
-export LONGHORN_INSTALL_METHOD="manifest"
+LONGHORN_INSTALL_METHOD="manifest"
 
 create_instance_mapping_configmap(){
   kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
-}
-
-longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.7.2/longhornctl-linux-amd64 -o longhornctl
-  chmod +x longhornctl
-  ./longhornctl install preflight
-  ./longhornctl check preflight
-  if [[ -n $(./longhornctl check preflight 2>&1 | grep error) ]]; then
-    exit 1
-  fi
 }
 
 main(){
@@ -55,6 +40,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  setup_azurite_backup_store
   install_csi_snapshotter
 
   scale_up_coredns
@@ -69,14 +55,11 @@ main(){
     install_metrics_server
   fi
 
+  get_longhorn_repo
   generate_longhorn_yaml_manifest
-  # set debugging mode off to avoid leaking docker secrets to the logs.
-  # DON'T REMOVE!
-  set +x
   create_registry_secret
-  set -x
   customize_longhorn_manifest_registry
-  install_longhorn_by_manifest
+  install_longhorn
 
   setup_longhorn_ui_nodeport
   export_longhorn_ui_url

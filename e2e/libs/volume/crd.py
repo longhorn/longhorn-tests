@@ -26,7 +26,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
         size_suffix = size[-2:]
         size_number = size[:-2]
         size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
@@ -42,6 +42,7 @@ class CRD(Base):
                 }
             },
             "spec": {
+                "encrypted": encrypted,
                 "frontend": frontend,
                 "replicaAutoBalance": "ignored",
                 "size": size,
@@ -65,11 +66,12 @@ class CRD(Base):
                 plural="volumes",
                 body=body
             )
-            if not Standby:
-                self.wait_for_volume_state(volume_name, "detached")
-            else:
+            if fromBackup or Standby:
                 self.wait_for_volume_state(volume_name, "attached")
-            self.wait_for_restore_required_status(volume_name, Standby)
+                self.wait_for_restore_required_status(volume_name, True)
+            else:
+                self.wait_for_volume_state(volume_name, "detached")
+                self.wait_for_restore_required_status(volume_name, False)
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
@@ -81,6 +83,7 @@ class CRD(Base):
             assert volume['spec']['backingImage'] == backingImage, f"expect volume backingImage is {backingImage}, but it's {volume['spec']['backingImage']}"
             assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
             assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
+            assert volume['spec']['encrypted'] == encrypted, f"expect volume encrypted is {encrypted}, but it's {volume['spec']['encrypted']}"
         except ApiException as e:
             logging(e)
 
@@ -407,19 +410,7 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert complete
 
-        updated = False
-        for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} lastBackup updated to {backup_name} ({i}) ...")
-            try:
-                volume = self.get(volume_name)
-                if volume['status']['lastBackup'] == backup_name:
-                    updated = True
-                    break
-            except Exception as e:
-                logging(f"Getting volume {volume_name} error: {e}")
-            time.sleep(self.retry_interval)
-        assert updated
-
+        volume = self.get(volume_name)
         if not volume['status']['isStandby']:
             self.wait_for_restore_required_status(volume_name, False)
 

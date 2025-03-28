@@ -17,3 +17,11 @@ variable "rancher_chart_install_version" {
 variable "longhorn_repo" {
   type = string
 }
+
+variable "registry_url" {
+  type = string
+}
+
+variable "registry_secret" {
+  type = string
+}

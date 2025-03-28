@@ -206,6 +206,20 @@ EOF
   }
 }
 
+resource "rancher2_cluster_role_template_binding" "dev-longhorn" {
+  name = "dev-longhorn-binding"
+  cluster_id = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
+  role_template_id = "cluster-owner"
+  group_principal_id = "github_team://3300040"  
+}
+
+resource "rancher2_cluster_role_template_binding" "qa-longhorn" {
+  name = "qa-longhorn-binding"
+  cluster_id = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
+  role_template_id = "cluster-owner"
+  group_principal_id = "github_team://10714512"  
+}
+
 output "kube_config" {
   value = rancher2_cluster_v2.e2e-cluster.kube_config
   sensitive = true

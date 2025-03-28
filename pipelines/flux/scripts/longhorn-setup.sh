@@ -12,15 +12,7 @@ source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/flux.sh
 source pipelines/utilities/run_longhorn_test.sh
 
-# create and clean tmpdir
-TMPDIR="/tmp/longhorn"
-mkdir -p ${TMPDIR}
-rm -rf "${TMPDIR}/"
-
-export LONGHORN_NAMESPACE="longhorn-system"
-export LONGHORN_INSTALL_METHOD="flux"
-export HELM_CHART_DEFAULT_URL="https://charts.longhorn.io"
-
+LONGHORN_INSTALL_METHOD="flux"
 
 main(){
   set_kubeconfig
@@ -37,6 +29,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  setup_azurite_backup_store
   install_csi_snapshotter
 
   # set debugging mode off to avoid leaking docker secrets to the logs.
@@ -48,18 +41,12 @@ main(){
   init_flux
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    create_flux_helm_repo "${HELM_CHART_DEFAULT_URL}"
-    create_flux_helm_release "${LONGHORN_STABLE_VERSION}"
+    install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-    FLUX_HELM_CHART_URL="${HELM_CHART_URL}"
-    FLUX_HELM_CHART_VERSION="${LONGHORN_INSTALL_VERSION}"
-    UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_INSTALL_VERSION}"
     run_longhorn_upgrade_test
     run_longhorn_test
   else
-    create_flux_helm_repo "${HELM_CHART_URL}"
-    create_flux_helm_release "${LONGHORN_INSTALL_VERSION}"
+    install_longhorn_custom
     run_longhorn_test
   fi
 }
