@@ -7,9 +7,9 @@ run_longhorn_test(){
   LONGHORN_JUNIT_REPORT_PATH=`yq e '.spec.containers[0].env[] | select(.name == "LONGHORN_JUNIT_REPORT_PATH").value' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"`
 
   local PYTEST_COMMAND_ARGS='"-s", "--junitxml='${LONGHORN_JUNIT_REPORT_PATH}'"'
-  if [[ -n ${PYTEST_CUSTOM_OPTIONS} ]]; then
-    PYTEST_CUSTOM_OPTIONS=(${PYTEST_CUSTOM_OPTIONS})
-    for OPT in "${PYTEST_CUSTOM_OPTIONS[@]}"; do
+  if [[ -n ${CUSTOM_TEST_OPTIONS} ]]; then
+    CUSTOM_TEST_OPTIONS=(${CUSTOM_TEST_OPTIONS})
+    for OPT in "${CUSTOM_TEST_OPTIONS[@]}"; do
       PYTEST_COMMAND_ARGS=${PYTEST_COMMAND_ARGS}', "'${OPT}'"'
     done
   fi

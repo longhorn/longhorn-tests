@@ -105,6 +105,19 @@ install_longhorn_custom(){
   install_longhorn
 }
 
+uninstall_longhorn(){
+  LONGHORN_NAMESPACE="longhorn-system"
+  UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
+  kubectl create -f "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml"
+  kubectl wait --for=condition=complete job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --timeout=15m
+}
+
+delete_longhorn_crds(){
+  UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
+  kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/deploy/longhorn.yaml"
+  kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml"
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"

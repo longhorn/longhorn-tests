@@ -60,39 +60,26 @@ main(){
     kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-gke-cos-node-agent.yaml
   fi
 
-  if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
+  if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
     setup_azurite_backup_store
   fi
   install_csi_snapshotter
 
-  # set debugging mode off to avoid leaking docker secrets to the logs.
-  # DON'T REMOVE!
-  set +x
+  get_longhorn_repo
+  generate_longhorn_yaml_manifest
   create_registry_secret
-  set -x
+  customize_longhorn_manifest_registry
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    generate_longhorn_yaml_manifest
-    customize_longhorn_chart_registry
     install_longhorn_stable
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    UPGRADE_LH_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"
-    UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
-    UPGRADE_LH_REPO_BRANCH="${LONGHORN_REPO_BRANCH}"
-    UPGRADE_LH_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE}"
-    UPGRADE_LH_ENGINE_IMAGE="${CUSTOM_LONGHORN_ENGINE_IMAGE}"
-    UPGRADE_LH_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}"
-    UPGRADE_LH_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}"
-    UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}"
     run_longhorn_upgrade_test
     run_longhorn_test
   else
-    generate_longhorn_yaml_manifest
-    customize_longhorn_chart_registry
-    install_longhorn_by_manifest
+    install_longhorn
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
     run_longhorn_test

@@ -81,7 +81,7 @@ main(){
     install_iscsi
     install_cluster_autoscaler
   fi
-  if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
+  if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
       if [[ "${TF_VAR_k8s_distro_name}" == "eks" || "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
           install_backupstores_from_lh_repo
       else
@@ -108,11 +108,7 @@ main(){
 
   get_longhorn_repo
   generate_longhorn_yaml_manifest
-  # set debugging mode off to avoid leaking docker secrets to the logs.
-  # DON'T REMOVE!
-  set +x
   create_registry_secret
-  set -x
   customize_longhorn_manifest_registry
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then

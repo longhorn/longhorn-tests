@@ -3,20 +3,20 @@ NFS_BACKUP_STORE='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
 CIFS_BACKUP_STORE='cifs://longhorn-test-cifs-svc.default/backupstore$cifs-secret'
 AZURITE_BACKUP_STORE='azblob://longhorn-test-azurite@core.windows.net/$azblob-secret'
 
-run_longhorn_e2e_test(){
+run_longhorn_test(){
 
   LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-e2e-test:master-head"}
   LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD:-"manifest"}
 
   LONGHORN_TESTS_MANIFEST_FILE_PATH="e2e/deploy/test.yaml"
 
-  if [[ "${ROBOT_CUSTOM_OPTIONS}" == \"*\" ]]; then
+  if [[ "${CUSTOM_TEST_OPTIONS}" == \"*\" ]]; then
     # Remove leading and trailing double quotes
-    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
-    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+    CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS#\"}"
+    CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS%\"}"
   fi
 
-  eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
+  eval "ROBOT_COMMAND_ARGS=($CUSTOM_TEST_OPTIONS)"
   for OPT in "${ROBOT_COMMAND_ARGS[@]}"; do
     ROBOT_COMMAND_ARR="${ROBOT_COMMAND_ARR}\"${OPT}\", "
   done
@@ -143,7 +143,7 @@ run_longhorn_e2e_test(){
   kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/report.html "report.html" -c longhorn-test-report
 }
 
-run_longhorn_e2e_test_out_of_cluster(){
+run_longhorn_test_out_of_cluster(){
 
   if [[ ${BACKUP_STORE_TYPE} == "s3" ]]; then
     LONGHORN_BACKUPSTORES=${S3_BACKUP_STORE}
@@ -156,13 +156,13 @@ run_longhorn_e2e_test_out_of_cluster(){
   fi
   LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
 
-  if [[ "${ROBOT_CUSTOM_OPTIONS}" == \"*\" ]]; then
+  if [[ "${CUSTOM_TEST_OPTIONS}" == \"*\" ]]; then
     # Remove leading and trailing double quotes
-    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS#\"}"
-    ROBOT_CUSTOM_OPTIONS="${ROBOT_CUSTOM_OPTIONS%\"}"
+    CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS#\"}"
+    CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS%\"}"
   fi
 
-  eval "ROBOT_COMMAND_ARGS=($ROBOT_CUSTOM_OPTIONS)"
+  eval "ROBOT_COMMAND_ARGS=($CUSTOM_TEST_OPTIONS)"
 
   cat /tmp/instance_mapping
   cp "${KUBECONFIG}" /tmp/kubeconfig
