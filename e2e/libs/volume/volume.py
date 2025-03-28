@@ -146,8 +146,8 @@ class Volume(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
-    def wait_for_replica_count(self, volume_name, node_name, replica_count):
-        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count)
+    def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
+        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count, running)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
@@ -184,3 +184,9 @@ class Volume(Base):
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
         return self.volume.trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
+
+    def trigger_offline_replica_rebuild(self, volume_name):
+        return self.volume.trigger_offline_replica_rebuild(volume_name)
+
+    def check_offline_replica_rebuild_completed(self, volume_name, replica_count):
+        return self.volume.check_offline_replica_rebuild_completed(volume_name, replica_count)
