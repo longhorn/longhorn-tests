@@ -87,7 +87,7 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.uname().machine == "x86_64":
-    if os.environ.get("LONGHORN_TEST_CLOUDPROVIDER") == "harvester":
+    if os.environ.get("CLOUDPROVIDER") == "harvester":
         BLOCK_DEV_PATH = "/dev/vdc"
     else:
         BLOCK_DEV_PATH = "/dev/xvdh"
