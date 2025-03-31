@@ -555,6 +555,10 @@ run_longhorn_tests(){
 
 
 main(){
+  if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
+    sleep 300s
+  fi
+
   set_kubeconfig
 
   create_longhorn_namespace
