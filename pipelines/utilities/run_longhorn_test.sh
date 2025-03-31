@@ -40,6 +40,12 @@ run_longhorn_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
+  ## inject cloudprovider
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   set +x
   ## inject aws cloudprovider and credentials env variables from created secret
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "aws"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -122,6 +128,9 @@ run_longhorn_upgrade_test(){
   fi
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[4].value="'${LONGHORN_UPGRADE_TYPE}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
 
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
