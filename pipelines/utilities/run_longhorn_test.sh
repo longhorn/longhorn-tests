@@ -43,6 +43,9 @@ run_longhorn_test(){
   ## inject cloudprovider
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   set +x
   if [[ "${TF_VAR_k8s_distro_name}" != "gke" ]] && [[ "${TF_VAR_k8s_distro_name}" != "aks" ]]; then
     ## inject aws credentials env variables from created secret
@@ -116,6 +119,9 @@ run_longhorn_upgrade_test(){
   if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "gke" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
   fi
+
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
 
   # environment variables for upgrade test
   # install method can be manifest, helm, rancher, flux, fleet and argocd
