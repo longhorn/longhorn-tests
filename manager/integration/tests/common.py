@@ -3781,7 +3781,6 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
-        # enable_v2 = os.environ.get('RUN_V2_TEST') == "true"
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
@@ -6499,12 +6498,16 @@ def get_instance_manager_names(client, data_engine=DATA_ENGINE):
 
 def wait_for_instance_manager_count(client, number, retry_counts=120):
     for _ in range(retry_counts):
+        im_counts = 0
         ims = client.list_instance_manager()
-        if len(ims) == number:
+        for im in ims:
+            if im.dataEngine == DATA_ENGINE:
+                im_counts = im_counts + 1
+
+        if im_counts == number:
             break
         time.sleep(RETRY_INTERVAL_LONG)
-
-    return len(ims)
+    return im_counts
 
 
 def create_deployment_and_write_data(client, # NOQA
