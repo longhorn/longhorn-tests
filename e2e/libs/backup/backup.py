@@ -83,3 +83,14 @@ class Backup(Base):
 
     def cleanup_backups(self):
         return self.backup.cleanup_backups()
+
+    def check_snapshot_exists_for_backup(self, volume_name, backup_id, exists=True):
+        backup = self.backup.get(backup_id, volume_name)
+        if not backup or not backup.snapshotName:
+            raise ValueError(f"Backup {backup_id} not found or missing snapshot name")
+
+        snap_name = backup.snapshotName
+        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name)
+        snap = self.backup.snapshot.get(volume_name, snapshot_id)
+        snap_exists = not snap.removed
+        assert snap_exists == exists, f"Snapshot {snap_name} exists: {snap_exists}, expected: {exists}"
