@@ -123,9 +123,12 @@ ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
 write_files:
-  - path: /tmp/SUSE_Trust_Root_encoded.crt
-    content: |
-      ${filebase64("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")}
+  - path: "/tmp/SUSE_Trust_Root_encoded.crt"
+    encoding: "b64"
+    content: >-
+      ${fileexists("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      ? filebase64("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      : ""}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
   - zypper install -y qemu-guest-agent iptables open-iscsi nfs-client cryptsetup device-mapper
