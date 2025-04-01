@@ -43,7 +43,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     vm_namespace = "longhorn-qa"
 
     cpu_count = "4"
-    memory_size = "8"
+    memory_size = "16"
 
     disk_info = <<EOF
     {
@@ -90,7 +90,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     vm_namespace = "longhorn-qa"
 
     cpu_count = "4"
-    memory_size = "8"
+    memory_size = "16"
 
     disk_info = <<EOF
     {
@@ -122,6 +122,13 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+write_files:
+  - path: "/tmp/SUSE_Trust_Root_encoded.crt"
+    encoding: "b64"
+    content: >-
+      ${fileexists("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      ? filebase64("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      : ""}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
   - zypper install -y qemu-guest-agent iptables open-iscsi nfs-client cryptsetup device-mapper
@@ -140,6 +147,10 @@ runcmd:
   - echo dm_crypt >> /etc/modules-load.d/modules.conf
   - echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
   - echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
+  - base64 -d /tmp/SUSE_Trust_Root_encoded.crt > /tmp/SUSE_Trust_Root.crt
+  - mkdir -p /etc/pki/trust/anchors/
+  - cp /tmp/SUSE_Trust_Root.crt /etc/pki/trust/anchors/
+  - update-ca-certificates
   - shutdown -r +5
 EOF
   }
@@ -196,6 +207,20 @@ EOF
     }
     chart_values = ""
   }
+}
+
+resource "rancher2_cluster_role_template_binding" "dev-longhorn" {
+  name = "dev-longhorn-binding"
+  cluster_id = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
+  role_template_id = "cluster-owner"
+  group_principal_id = "github_team://3300040"  
+}
+
+resource "rancher2_cluster_role_template_binding" "qa-longhorn" {
+  name = "qa-longhorn-binding"
+  cluster_id = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
+  role_template_id = "cluster-owner"
+  group_principal_id = "github_team://10714512"  
 }
 
 output "kube_config" {
