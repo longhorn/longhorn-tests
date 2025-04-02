@@ -255,8 +255,8 @@ class volume_keywords:
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
-    def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None):
-        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count)
+    def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None, running=True):
+        return self.volume.wait_for_replica_count(volume_name, node_name, replica_count, running)
 
     def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
@@ -389,3 +389,11 @@ class volume_keywords:
                     return disk['storageMaximum']
 
         raise Exception(f"Failed to find storageMaximum for volume {volume_name} replica {replica_name} on node {node_name}")
+
+    def trigger_offline_replica_rebuild(self, volume_name):
+        logging(f'Trigger volume {volume_name} offline replica rebuilding')
+        self.volume.trigger_offline_replica_rebuild(volume_name)
+
+    def check_offline_replica_rebuild_completed(self, volume_name, replica_count=3):
+        logging(f'Check if volume {volume_name} offline replica rebuilding state is completed')
+        self.volume.check_offline_replica_rebuild_completed(volume_name, replica_count)
