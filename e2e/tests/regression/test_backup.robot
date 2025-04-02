@@ -135,3 +135,19 @@ Test Uninstallation With Backups
     And Check Longhorn CRD removed
 
     Then Install Longhorn
+
+Test Cleanup Snapshot With The Global Setting After Backup Completed
+    [Documentation]    Test cleanup snapshot with the global setting after backup completed
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+
+    When Write data 0 to volume 0
+    And Create backup 0 for volume 0
+    And Check snapshot for backup 0 of volume 0 exists True
+
+    When Set setting auto-cleanup-snapshot-after-on-demand-backup-completed to true
+    And Write data 1 to volume 0
+    And Create backup 1 for volume 0
+    And Check snapshot for backup 1 of volume 0 exists False
+    And Set setting auto-cleanup-snapshot-after-on-demand-backup-completed to false

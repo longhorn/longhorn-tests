@@ -62,6 +62,10 @@ install_backupstores_from_lh_repo(){
 
 
 main(){
+  if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
+    sleep 300s
+  fi
+
   set_kubeconfig
 
   create_longhorn_namespace
