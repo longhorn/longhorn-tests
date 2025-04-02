@@ -277,3 +277,62 @@ data "talos_cluster_health" "this" {
   control_plane_nodes  = aws_instance.lh_aws_instance_controlplane.*.private_ip
   worker_nodes         = aws_instance.lh_aws_instance_worker.*.private_ip
 }
+
+# Generate Talos Schematic and upload to Talos Factory
+resource "null_resource" "upload_schematic" {
+  depends_on = [
+    data.talos_cluster_health.this,
+    local_file.talosconfig
+  ]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      if [ ! -f "${path.module}/longhorn-talos.yaml" ]; then
+        echo "Error: longhorn-talos.yaml file not found"
+        exit 1
+      fi
+
+      curl -X POST --data-binary @${path.module}/longhorn-talos.yaml https://factory.talos.dev/schematics > ${path.module}/schematic_response.json
+    EOT
+  }
+}
+
+# Extract schematic ID from uploaded response
+data "local_file" "schematic_response" {
+  depends_on = [null_resource.upload_schematic]
+  filename   = "${path.module}/schematic_response.json"
+}
+
+locals {
+  schematic_id = jsondecode(data.local_file.schematic_response.content).id
+  talos_version = "v${var.os_distro_version}"
+}
+
+# Upgrade Talos cluster control node using schematic ID
+resource "null_resource" "upgrade_controlplane_nodes" {
+  count = var.lh_aws_instance_count_controlplane
+
+  provisioner "local-exec" {
+    command = <<EOT
+      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+        --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
+        -n ${aws_instance.lh_aws_instance_controlplane[count.index].private_ip} \
+        upgrade --image factory.talos.dev/installer/${local.schematic_id}:${local.talos_version}
+    EOT
+  }
+}
+
+# Upgrade Talos cluster worker nodes using schematic ID
+resource "null_resource" "upgrade_worker_nodes" {
+  count = var.lh_aws_instance_count_worker
+
+  provisioner "local-exec" {
+    command = <<EOT
+      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+        --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
+        -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} \
+        upgrade --image factory.talos.dev/installer/${local.schematic_id}:${local.talos_version}
+    EOT
+  }
+}
+
