@@ -82,7 +82,7 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
-    for _ in range(retry_count):
+    for attempt in range(retry_count):
         try:
             data_path = f"{data_directory}/{file_name}"
             api = client.CoreV1Api()
@@ -93,10 +93,15 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
                 sync;\
                 md5sum {data_path} | awk \'{{print $1}}\'"
             ]
-            return stream(
+            resp = stream(
                 api.connect_get_namespaced_pod_exec, pod_name, 'default',
                 command=write_data_cmd, stderr=True, stdin=False, stdout=True,
                 tty=False)
+
+            if "Input/output error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(f"Attempt {attempt+1}: Command failed in pod {pod_name}. Output: {resp}")
+
+            return resp
         except Exception as e:
             logging(f"Writing random data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
