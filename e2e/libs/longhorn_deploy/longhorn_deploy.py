@@ -1,6 +1,7 @@
 from longhorn_deploy.base import Base
 from longhorn_deploy.longhorn_kubectl import LonghornKubectl
 from longhorn_deploy.longhorn_helm_chart import LonghornHelmChart
+from longhorn_deploy.longhorn_rancher_chart import LonghornRancherChart
 import os
 import time
 
@@ -14,6 +15,8 @@ class LonghornDeploy(Base):
             self.longhorn = LonghornKubectl()
         elif self._method == "helm":
             self.longhorn = LonghornHelmChart()
+        elif self._method == "rancher":
+            self.longhorn = LonghornRancherChart()
 
     def uninstall(self, is_stable_version):
         # add some delay before uninstallation

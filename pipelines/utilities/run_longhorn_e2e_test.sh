@@ -132,6 +132,11 @@ run_longhorn_test(){
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn test pod start timeout"; exit 1 ; fi
   done
 
+  if [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
+    # share terraform state between jenkins job container and test pod
+    kubectl cp /src/longhorn-tests/pipelines/utilities/rancher longhorn-test:/e2e/pipelines/utilities/
+  fi
+
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
     kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
