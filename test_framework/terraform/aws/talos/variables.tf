@@ -31,12 +31,12 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "1.8.3"
+  default     = "1.9.5"
 }
 
 variable "aws_ami_talos_account_number" {
   type        = string
-  default     = "641769369267"
+  default     = "540036508848"
 }
 
 variable "lh_aws_instance_count_controlplane" {
