@@ -98,6 +98,34 @@ upgrade_longhorn_custom() {
   upgrade_longhorn
 }
 
+uninstall_longhorn() {
+  TERRAFORM_INSTALL_FOLDER="pipelines/utilities/rancher/terraform_install"
+  TERRAFORM_UPGRADE_FOLDER="pipelines/utilities/rancher/terraform_upgrade"
+  if [[ -e "${TERRAFORM_UPGRADE_FOLDER}/terraform.tfstate" ]]; then
+    terraform -chdir="${TERRAFORM_UPGRADE_FOLDER}" destroy \
+              -var="api_url=https://${RANCHER_HOSTNAME}" \
+              -var="access_key=${RANCHER_ACCESS_KEY}" \
+              -var="secret_key=${RANCHER_SECRET_KEY}" \
+              -var="rancher_chart_install_version=${CHART_VERSION}" \
+              -var="longhorn_repo=${LONGHORN_REPO}" \
+              -var="registry_url=${REGISTRY_URL}" \
+              -var="registry_secret=docker-registry-secret" \
+              -auto-approve -no-color
+  else
+    terraform -chdir="${TERRAFORM_INSTALL_FOLDER}" destroy \
+              -var="api_url=https://${RANCHER_HOSTNAME}" \
+              -var="access_key=${RANCHER_ACCESS_KEY}" \
+              -var="secret_key=${RANCHER_SECRET_KEY}" \
+              -var="rancher_chart_git_repo=${RANCHER_CHART_REPO_URI}" \
+              -var="rancher_chart_git_branch=${RANCHER_CHART_REPO_BRANCH}" \
+              -var="rancher_chart_install_version=${CHART_VERSION}" \
+              -var="longhorn_repo=${LONGHORN_REPO}" \
+              -var="registry_url=${REGISTRY_URL}" \
+              -var="registry_secret=docker-registry-secret" \
+              -auto-approve -no-color
+  fi
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"
