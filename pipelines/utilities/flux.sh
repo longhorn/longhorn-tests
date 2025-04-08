@@ -40,6 +40,15 @@ install_longhorn_custom(){
   create_flux_helm_release
 }
 
+uninstall_longhorn(){
+  LONGHORN_NAMESPACE="longhorn-system"
+  flux delete helmrelease longhorn -n "${LONGHORN_NAMESPACE}" --silent
+  while kubectl get helmrelease longhorn -n "${LONGHORN_NAMESPACE}" >/dev/null 2>&1; do
+    echo "Waiting for HelmRelease longhorn to be removed..."
+    sleep 5
+  done
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"
