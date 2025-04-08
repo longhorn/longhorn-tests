@@ -13,6 +13,7 @@ from k8s.k8s import is_node_ready
 from k8s.k8s import get_instance_manager_on_node
 from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
+from k8s.k8s import get_longhorn_node_condition_status
 
 from node import Node
 
@@ -94,3 +95,6 @@ class k8s_keywords:
 
     def wait_for_namespace_pods_running(self, namespace):
         return wait_for_namespace_pods_running(namespace)
+
+    def get_longhorn_node_condition_status(self, node_name, type):
+        return get_longhorn_node_condition_status(node_name, type)
