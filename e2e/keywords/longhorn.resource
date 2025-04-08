@@ -95,3 +95,16 @@ Uninstall Longhorn stable version
     ${backups_before_uninstall} =     list_all_backups
     uninstall_longhorn_system    is_stable_version=True
     Set Test Variable    ${backups_before_uninstall}
+<<<<<<< HEAD
+=======
+
+Upgrade Longhorn to transient version
+    upgrade_longhorn    upgrade_to_transient_version=True
+
+Upgrade Longhorn to custom version
+    upgrade_longhorn
+
+Check Longhorn node ${type} state on power off node is ${expect_state}
+    ${status} =    get_longhorn_node_condition_status    ${last_volume_node}    ${type}
+    Should Be Equal    ${status}    ${expect_state}
+>>>>>>> e6c6eeb (test(robot): automate manual test case Physical node down)
