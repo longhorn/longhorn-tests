@@ -6,6 +6,7 @@ from utility.constant import LONGHORN_INSTALL_SCRIPT_PATH
 from utility.constant import LONGHORN_INSTALL_TIMEOUT
 import subprocess
 import os
+import time
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 

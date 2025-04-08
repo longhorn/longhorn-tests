@@ -7,9 +7,9 @@ run_longhorn_test(){
   LONGHORN_JUNIT_REPORT_PATH=`yq e '.spec.containers[0].env[] | select(.name == "LONGHORN_JUNIT_REPORT_PATH").value' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"`
 
   local PYTEST_COMMAND_ARGS='"-s", "--junitxml='${LONGHORN_JUNIT_REPORT_PATH}'"'
-  if [[ -n ${PYTEST_CUSTOM_OPTIONS} ]]; then
-    PYTEST_CUSTOM_OPTIONS=(${PYTEST_CUSTOM_OPTIONS})
-    for OPT in "${PYTEST_CUSTOM_OPTIONS[@]}"; do
+  if [[ -n ${CUSTOM_TEST_OPTIONS} ]]; then
+    CUSTOM_TEST_OPTIONS=(${CUSTOM_TEST_OPTIONS})
+    for OPT in "${CUSTOM_TEST_OPTIONS[@]}"; do
       PYTEST_COMMAND_ARGS=${PYTEST_COMMAND_ARGS}', "'${OPT}'"'
     done
   fi
@@ -42,6 +42,9 @@ run_longhorn_test(){
 
   ## inject cloudprovider
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   set +x
   if [[ "${TF_VAR_k8s_distro_name}" != "gke" ]] && [[ "${TF_VAR_k8s_distro_name}" != "aks" ]]; then
@@ -116,6 +119,9 @@ run_longhorn_upgrade_test(){
   if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "gke" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
   fi
+
+  ## for v2 volume test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
 
   # environment variables for upgrade test
   # install method can be manifest, helm, rancher, flux, fleet and argocd

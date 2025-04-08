@@ -8,6 +8,7 @@ source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/create_registry_secret.sh
+source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/install_metrics_server.sh
 source pipelines/utilities/create_longhorn_namespace.sh
@@ -18,10 +19,6 @@ source pipelines/utilities/coredns.sh
 source pipelines/utilities/longhornctl.sh
 
 LONGHORN_INSTALL_METHOD="manifest"
-
-create_instance_mapping_configmap(){
-  kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
-}
 
 main(){
   set_kubeconfig
@@ -65,9 +62,9 @@ main(){
   export_longhorn_ui_url
 
   if [[ "${OUT_OF_CLUSTER}" == true ]]; then
-    run_longhorn_e2e_test_out_of_cluster
+    run_longhorn_test_out_of_cluster
   else
-    run_longhorn_e2e_test
+    run_longhorn_test
   fi
 }
 

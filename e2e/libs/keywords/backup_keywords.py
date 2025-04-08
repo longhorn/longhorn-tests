@@ -61,3 +61,6 @@ class backup_keywords:
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)
+
+    def check_snapshot_exists_for_backup(self, volume_name, backup_id, exists=True):
+        self.backup.check_snapshot_exists_for_backup(volume_name, backup_id, exists)
