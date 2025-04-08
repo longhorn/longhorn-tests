@@ -9,6 +9,6 @@ pytest-repeat==0.9.1
 pytest-order==1.0.1
 six==1.12.0
 minio==5.0.10
-pyyaml==6.0
+pyyaml==6.0.2
 pandas
 prometheus_client
