@@ -115,6 +115,10 @@ uninstall_longhorn(){
 delete_longhorn_crds(){
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
   kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/deploy/longhorn.yaml"
+}
+
+delete_uninstall_job(){
+  UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
   kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml"
 }
 
