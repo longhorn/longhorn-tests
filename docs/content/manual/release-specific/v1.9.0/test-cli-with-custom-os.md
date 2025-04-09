@@ -8,6 +8,9 @@ https://github.com/longhorn/longhorn/issues/10676
 ## Test CLI compatibility with custom OS
 
 **Given** Kubernetes cluster running on custom OS (based on Linux) not explicitly listed [here](https://github.com/longhorn/cli/blob/40b81007971033276c5d548d704ec0f9689f5fa0/pkg/utils/os.go#L18-L32)
+- Linux Mint for Ubuntu-like distro
+- Oracle Linux for Fedora-like distro
+- Manjaro for Arch-like distro
 
 **When** Run check using CLI tool `longhornctl check preflight`
 
