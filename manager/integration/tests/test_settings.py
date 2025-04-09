@@ -80,7 +80,9 @@ def check_workload_update(core_api, apps_api, count):  # NOQA
 
     im_pod_list = core_api.list_namespaced_pod(
         LONGHORN_NAMESPACE,
-        label_selector="longhorn.io/component=instance-manager").items
+        label_selector="longhorn.io/component=instance-manager, \
+                        longhorn.io/data-engine={}".format(DATA_ENGINE)).items
+
     if len(im_pod_list) != count:
         return False
 
@@ -484,11 +486,12 @@ def guaranteed_instance_manager_cpu_setting_check(  # NOQA
         for im in instance_managers:
             pod = core_api.read_namespaced_pod(name=im.name,
                                                namespace=LONGHORN_NAMESPACE)
-            if cpu_val:
-                assert (pod.spec.containers[0].resources.requests['cpu'] ==
-                        cpu_val)
-            else:
-                assert (not pod.spec.containers[0].resources.requests)
+            if pod.metadata.labels["longhorn.io/data-engine"] == "v1":
+                if cpu_val:
+                    assert (pod.spec.containers[0].resources.requests['cpu'] ==
+                            cpu_val)
+                else:
+                    assert (not pod.spec.containers[0].resources.requests)
 
 
 @pytest.mark.v2_volume_test  # NOQA
