@@ -9,6 +9,8 @@ https://github.com/longhorn/longhorn/issues/10676
 
 **Given** Kubernetes cluster running on custom OS (based on Linux) not explicitly listed [here](https://github.com/longhorn/cli/blob/40b81007971033276c5d548d704ec0f9689f5fa0/pkg/utils/os.go#L18-L32)
 
-**Then** Run check using CLI tool `longhornctl check preflight`
+**When** Run check using CLI tool `longhornctl check preflight`
 
-**Verify** The check should complete successfully. No pods in the DaemonSet should be in a failed state.
+**Then** The check should complete without operating system not supported error.
+
+**And** No pods in the DaemonSet should be in a failed state.
