@@ -122,6 +122,16 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+<<<<<<< HEAD
+=======
+write_files:
+  - path: "/tmp/SUSE_Trust_Root_encoded.crt"
+    encoding: "b64"
+    content: >-
+      ${fileexists("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      ? filebase64("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      : ""}
+>>>>>>> 91112fb (ci: refine HAL pipeline flow)
 runcmd:
   - SUSEConnect -r ${var.registration_code}
   - zypper install -y qemu-guest-agent iptables open-iscsi nfs-client cryptsetup device-mapper
