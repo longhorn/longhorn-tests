@@ -11,6 +11,7 @@ https://github.com/longhorn/longhorn/issues/10676
 - Linux Mint for Ubuntu-like distro
 - Oracle Linux for Fedora-like distro
 - Manjaro for Arch-like distro
+- Raspberry Pi OS for Debian-like distro
 
 **When** Run check using CLI tool `longhornctl check preflight`
 
