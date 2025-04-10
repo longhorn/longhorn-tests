@@ -318,6 +318,10 @@ Volume ${volume_id} should have ${expected_replica_count} replicas running
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
 
+Volume ${volume_id} should have ${expected_replica_count} replicas when detached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}    running=false
+
 Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -470,3 +474,11 @@ Assert device for volume ${volume_id} ${condition} exist on node ${node_id}
     ELSE
         Fail    Invalid condition: ${condition}
     END
+
+Enable volume ${volume_id} offline replica rebuilding
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_offline_replica_rebuild    ${volume_name}    enabled
+
+Ignore volume ${volume_id} offline replica rebuilding
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_offline_replica_rebuild    ${volume_name}    ignored

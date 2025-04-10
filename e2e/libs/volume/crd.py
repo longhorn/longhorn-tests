@@ -299,8 +299,8 @@ class CRD(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return Rest().get_replica_name_on_node(volume_name, node_name)
 
-    def wait_for_replica_count(self, volume_name, node_name, replica_count):
-        return Rest().wait_for_replica_count(volume_name, node_name, replica_count)
+    def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
+        return Rest().wait_for_replica_count(volume_name, node_name, replica_count, running)
 
     def wait_for_replica_to_be_deleted(self, volume_name, node_name):
         return Rest().wait_for_replica_to_be_deleted(volume_name, node_name)
@@ -629,3 +629,6 @@ class CRD(Base):
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
         return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
+
+    def update_offline_replica_rebuild(self, volume_name, rebuild_type):
+        return Rest().update_offline_replica_rebuild(volume_name, rebuild_type)

@@ -248,15 +248,15 @@ class Rest(Base):
                 if r.hostId == node_name:
                     return r.name
 
-    def wait_for_replica_count(self, volume_name, node_name, replica_count):
+    def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         condition_met = False
         for i in range(self.retry_count):
             running_replica_count = 0
             volume = get_longhorn_client().by_id_volume(volume_name)
             for r in volume.replicas:
-                if node_name and r.hostId == node_name and r.running:
+                if node_name and r.hostId == node_name and r.running == running:
                     running_replica_count += 1
-                elif not node_name and r.running:
+                elif not node_name and r.running == running:
                     running_replica_count += 1
             logging(f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running on {node_name if node_name else 'nodes'}, currently it's {running_replica_count} ... ({i})")
             if replica_count and running_replica_count == int(replica_count):
@@ -470,3 +470,7 @@ class Rest(Base):
 
         if is_unexpected_pass:
             raise Exception(f"Expected volume {volume_name} trim filesystem to fail")
+
+    def update_offline_replica_rebuild(self, volume_name, rebuild_type):
+        volume = self.get(volume_name)
+        volume.offlineRebuilding(OfflineRebuild=rebuild_type)
