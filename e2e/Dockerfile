@@ -31,7 +31,10 @@ RUN curl -sO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_
     chmod +x /usr/bin/terraform && \
     curl -s -o flux_install.sh https://fluxcd.io/install.sh && \
     chmod 700 flux_install.sh && \
-    ./flux_install.sh
+    ./flux_install.sh && \
+    curl -sSL -o argocd-linux-${ARCH} https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-${ARCH} && \
+    install -m 555 argocd-linux-${ARCH} /usr/local/bin/argocd && \
+    rm argocd-linux-${ARCH}
 
 ADD e2e /e2e
 WORKDIR /e2e
