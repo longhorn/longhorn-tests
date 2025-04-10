@@ -4,6 +4,7 @@ from longhorn_deploy.longhorn_helm_chart import LonghornHelmChart
 from longhorn_deploy.longhorn_rancher_chart import LonghornRancherChart
 from longhorn_deploy.longhorn_flux import LonghornFlux
 from longhorn_deploy.longhorn_fleet import LonghornFleet
+from longhorn_deploy.longhorn_argocd import LonghornArgocd
 import os
 import time
 
@@ -23,6 +24,8 @@ class LonghornDeploy(Base):
             self.longhorn = LonghornFlux()
         elif self._method == "fleet":
             self.longhorn = LonghornFleet()
+        elif self._method == "argocd":
+            self.longhorn = LonghornArgocd()
 
     def uninstall(self, is_stable_version):
         # add some delay before uninstallation
