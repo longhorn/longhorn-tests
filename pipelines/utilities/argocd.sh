@@ -130,6 +130,14 @@ install_longhorn_custom(){
   install_longhorn
 }
 
+uninstall_longhorn_app(){
+  if is_in_cluster; then
+    construct_kubeconfig
+  fi
+  init_argocd
+  argocd app delete longhorn --cascade -y
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"
