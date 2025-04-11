@@ -42,6 +42,28 @@ Write ${size} GB large data to file ${file_name} in pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     write_workload_pod_large_data    ${pod_name}    ${size}    ${file_name}
 
+Check pod ${pod_id} data in file ${file_name} is intact
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    check_workload_pod_data_checksum    ${pod_name}    ${file_name}
+
+Check file ${file_name} exists in pod ${pod_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    ${result}=    check_pod_data_exists    ${pod_name}    ${file_name}
+    Should Be True    ${result}
+
+Check pod ${pod_id} works
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    write_workload_pod_random_data    ${pod_name}    1024    random-data
+    check_workload_pod_data_checksum    ${pod_name}    random-data
+
+Check pod ${pod_id} did not restart
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    check_workload_pod_did_not_restart    ${pod_name}
+
+Check ${workload_kind} ${workload_id} pods did not restart
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    check_workload_pod_did_not_restart    ${workload_name}
+
 Power off volume node of ${workload_kind} ${workload_id} for ${duration} minutes
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}

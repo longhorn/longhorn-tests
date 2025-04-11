@@ -36,11 +36,11 @@ class Volume(Base):
     def get(self, volume_name):
         return self.volume.get(volume_name)
 
-    def list(self, label_selector=None):
-        return self.volume.list(label_selector=label_selector)
+    def list(self, label_selector=None, dataEngine=None):
+        return self.volume.list(label_selector=label_selector, dataEngine=dataEngine)
 
-    def list_names(self, label_selector=None):
-        return [item['metadata']['name'] for item in self.list(label_selector)]
+    def list_names(self, label_selector=None, dataEngine=None):
+        return [item['metadata']['name'] for item in self.list(label_selector, dataEngine)]
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         return self.volume.set_annotation(volume_name, annotation_key, annotation_value)
