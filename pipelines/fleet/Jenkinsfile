@@ -13,6 +13,8 @@ def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGIS
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def REGISTRY_URL = ""
 
+def TEST_TYPE = params.TEST_TYPE ? params.TEST_TYPE : "pytest"
+
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
@@ -44,6 +46,7 @@ node {
                                        --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env FLEET_REPO_URI=${FLEET_REPO_URI} \
                                        --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
+                                       --env TEST_TYPE="${TEST_TYPE}" \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                        --env DISTRO=${DISTRO} \
                                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
@@ -89,14 +92,21 @@ node {
 			}
 
             stage ('report generation') {
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
-
-                if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else {
-                    summary = junit 'longhorn-test-junit-report.xml'
+                if (params.TEST_TYPE == 'robot') {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/log.html ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/output.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/junit.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
+                    summary = robot outputPath: '.'
+                } else {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
+                    if(params.LONGHORN_UPGRADE_TEST) {
+                        sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
+                        summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
+                    }
+                    else {
+                        summary = junit 'longhorn-test-junit-report.xml'
+                    }
                 }
             }
 

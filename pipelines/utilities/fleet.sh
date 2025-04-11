@@ -73,6 +73,18 @@ install_longhorn_custom(){
   create_fleet_git_repo
 }
 
+uninstall_longhorn(){
+  GITREPO_NAMESPACE="fleet-local"
+  LONGHORN_NAMESPACE="longhorn-system"
+  # the gitrepo will be deleted immediately, leaving the longhorn-uninstall job running in the background
+  kubectl delete gitrepo longhorn -n "${GITREPO_NAMESPACE}"
+  until kubectl get job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" &> /dev/null; do
+    echo "Waiting for job/longhorn-uninstall to be created ..."
+    sleep 5
+  done
+  kubectl wait --for=condition=complete job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --timeout=15m
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"

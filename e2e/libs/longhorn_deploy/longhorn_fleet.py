@@ -3,23 +3,17 @@ from node import Node
 from node_exec import NodeExec
 from k8s import k8s
 from utility.constant import LONGHORN_NAMESPACE
-from utility.constant import LONGHORN_UNINSTALL_JOB_LABEL
 from utility.utility import logging
 
 import subprocess
 import os
 import time
 
-class LonghornKubectl(Base):
+class LonghornFleet(Base):
 
     def uninstall(self, is_stable_version):
-        env_var = "LONGHORN_STABLE_VERSION" if is_stable_version else "LONGHORN_REPO_BRANCH"
-        longhorn_branch = os.getenv(env_var)
-        if not longhorn_branch:
-           raise ValueError(f"Required environment variable {env_var} is not set")
-
-        command = "./pipelines/utilities/longhorn_manifest.sh"
-        process = subprocess.Popen([command, "uninstall_longhorn", longhorn_branch],
+        command = "./pipelines/utilities/fleet.sh"
+        process = subprocess.Popen([command, "uninstall_longhorn"],
                                    shell=False)
         process.wait()
         if process.returncode != 0:
@@ -27,25 +21,18 @@ class LonghornKubectl(Base):
             time.sleep(self.retry_count)
             assert False, "Uninstall longhorn failed"
 
-        self.check_longhorn_uninstall_pod_log()
+        env_var = "LONGHORN_STABLE_VERSION" if is_stable_version else "LONGHORN_INSTALL_VERSION"
+        longhorn_version = os.getenv(env_var)
+        if not longhorn_version:
+           raise ValueError(f"Required environment variable {env_var} is not set")
 
         command = "./pipelines/utilities/longhorn_manifest.sh"
-        process = subprocess.Popen([command, "delete_longhorn_crds", longhorn_branch],
+        process = subprocess.Popen([command, "delete_longhorn_crds", longhorn_version],
                                    shell=False)
         process.wait()
-        if process.returncode != 0:
-            logging(f"Deleting longhorn CRDs failed")
-            time.sleep(self.retry_count)
-            assert False, "Deleting longhorn CRDs failed"
-
-        command = "./pipelines/utilities/longhorn_manifest.sh"
-        process = subprocess.Popen([command, "delete_uninstall_job", longhorn_branch],
-                                   shell=False)
-        process.wait()
-        if process.returncode != 0:
-            logging(f"Deleting longhorn uninstall job failed")
-            time.sleep(self.retry_count)
-            assert False, "Deleting longhorn uninstall job failed"
+        # no need to check the process return code
+        # because some resources have been deleted by fleet
+        # it's expected to get some "Error from server (NotFound): error when deleting resource not found" errors
 
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
@@ -54,7 +41,7 @@ class LonghornKubectl(Base):
             install_function = "install_longhorn_stable"
         else:
             install_function = "install_longhorn_custom"
-        command = "./pipelines/utilities/longhorn_manifest.sh"
+        command = "./pipelines/utilities/fleet.sh"
         process = subprocess.Popen([command, install_function],
                                    shell=False)
         process.wait()
@@ -65,7 +52,7 @@ class LonghornKubectl(Base):
             upgrade_function = "install_longhorn_transient"
         else:
             upgrade_function = "install_longhorn_custom"
-        command = "./pipelines/utilities/longhorn_manifest.sh"
+        command = "./pipelines/utilities/fleet.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
         process.wait()
