@@ -8,7 +8,18 @@ Library    OperatingSystem
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
+Resource    ../keywords/workload.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/deployment.resource
+Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/snapshot.resource
+Resource    ../keywords/recurringjob.resource
+Resource    ../keywords/orphan.resource
+Resource    ../keywords/support_bundle.resource
+Resource    ../keywords/backing_image.resource
+Resource    ../keywords/system_backup.resource
 Resource    ../keywords/engine_image.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
@@ -29,9 +40,9 @@ Pre-release Checks
     ...    8. Restore backups
     ...    9. Uninstall Longhorn
     ...    10. Re-install Longhorn back for subsequent tests
-    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     # if Longhorn stable version is provided,
-    # uninstall the existing Longhorn and upgrade Longhorn from the stable version
+    # uninstall the existing Longhorn and install stable version of Longhorn to be upgraded
+    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
         Given Set setting deleting-confirmation-flag to true
         And Uninstall Longhorn
@@ -42,26 +53,152 @@ Pre-release Checks
         And Set up v2 environment
     END
 
-    And Create volume 0 with    dataEngine=v1
-    And Attach volume 0
-    And Wait for volume 0 healthy
-    And Write data 0 to volume 0
-    And Create backup 0 for volume 0
+    # after correct version of Longhorn is installed, start the test
+
+    # (0) disable auto salvage to allow faulted volumes to be revealed
+    Given Set setting auto-salvage to false
+
+    # (1) create a volume with revision counter enabled
+    When Set setting disable-revision-counter to false
+    And Create volume vol-revision-enabled with    dataEngine=v1
+    And Attach volume vol-revision-enabled
+    And Wait for volume vol-revision-enabled healthy
+    And Write data data-vol-revision-enabled to volume vol-revision-enabled
+
+    # (2) create a volume with revision counter disabled
+    When Set setting disable-revision-counter to true
+    And Create volume vol-revision-disabled with    dataEngine=v1
+    And Attach volume vol-revision-disabled
+    And Wait for volume vol-revision-disabled healthy
+    And Write data data-vol-revision-disabled to volume vol-revision-disabled
+
+    # (3) create a volume used by a pod
+    Given Create volume vol-pod with    size=3Gi    dataEngine=v1
+    And Create persistentvolume for volume vol-pod
+    And Create persistentvolumeclaim for volume vol-pod
+    And Create pod vol-pod using volume vol-pod
+    And Wait for pod vol-pod running
+    And Write 1024 MB data to file data.txt in pod vol-pod
+
+    # (4) create a volume used by a statefulset
+    When Create storageclass longhorn-test with    dataEngine=v1
+    And Create statefulset ss-upgrade using RWO volume with longhorn-test storageclass
+    And Wait for volume of statefulset ss-upgrade healthy
+    And Write 1024 MB data to file data.txt in statefulset ss-upgrade
+
+    # (5) create a strict-local volume
+    When Create volume vol-strict-local with    dataEngine=v1
+    And Attach volume vol-strict-local
+    And Wait for volume vol-strict-local healthy
+    And Write data data-vol-strict-local to volume vol-strict-local
+
+    # (6) create a rwx workload
+    When Create persistentvolumeclaim 0 using RWX volume with longhorn-test storageclass
+    And Create deployment deploy-upgrade with persistentvolumeclaim 0
+    And Wait for volume of deployment deploy-upgrade attached and healthy
+    And Write 1024 MB data to file data.txt in deployment deploy-upgrade
+
+    # (7) create a volume with a backing image
+    When Create backing image bi-v1 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1
+    And Create volume vol-bi with    size=3Gi    backingImage=bi-v1
+    And Create persistentvolume for volume vol-bi
+    And Create persistentvolumeclaim for volume vol-bi
+    And Create pod vol-pod-bi using volume vol-bi
+    And Wait for pod vol-pod-bi running
+    And Check file guests/catparrot.gif exists in pod vol-pod-bi
+    And Write 1024 MB data to file data.txt in pod vol-pod-bi
+
+    # (8) create a volume to be detached
+    When Create volume vol-detach with    dataEngine=v1
+    And Attach volume vol-detach
+    And Wait for volume vol-detach healthy
+    And Write data data-vol-detach to volume vol-detach
+    And Detach volume vol-detach
+    And Wait for volume vol-detach detached
+
+    # (9) create a volume for replica rebuilding after upgrade
+    When Create volume vol-rebuild with    dataEngine=v1
+    And Attach volume vol-rebuild
+    And Wait for volume vol-rebuild healthy
+    And Write data data-vol-rebuild to volume vol-rebuild
+
+    # (10) create a volume with recurring jobs
+    When Create volume vol-recurring with    dataEngine=v1
+    And Attach volume vol-recurring
+    And Wait for volume vol-recurring healthy
+    Then Create snapshot and backup recurringjob for volume vol-recurring
+    And Check recurringjobs for volume vol-recurring work
+
+    # (11) create a volume that is never attached before upgrade
+    And Create volume vol-never-attach with    dataEngine=v1
+
+    # (12) create custom resources
+    # support bundle
+    And Create support bundle
+    # system backup
+    And Create system backup 0
+    # orphaned replica
+    And Create volume v1 with    dataEngine=v1
+    And Attach volume v1
+    And Wait for volume v1 healthy
+    And Write data 0 to volume v1
+    And Create orphan replica for volume v1
+    And Wait for orphan count to be 1
+
+    # (13) create snapshot
+    And Create snapshot snapshot-v1 of volume v1
+    And Write data 1 to volume v1
+
+    # (14) create backup
+    And Create backup backup-v1 for volume v1
 
     # use DATA_ENGINE to control whether to test v2 volumes in the test
     # because v1.8.x v2 volumes aren't compatible with v1.7.x ones
     # we have to manually decide whether to include v2 volumes
     # based on what upgrade path we're testing
     IF    "${DATA_ENGINE}" == "v2"
-        And Create volume 1 with    dataEngine=v2
-        And Attach volume 1
-        And Wait for volume 1 healthy
-        And Write data 1 to volume 1
-        And Create backup 1 for volume 1
-        And Detach volume 1
-        And Wait for volume 1 detached
+
+        # (1) create a v2 volume that is never attached before upgrade
+        When Create volume v2-vol-never-attach with    dataEngine=v2
+
+        # (2) create a v2 volume with data
+        And Create volume v2 with    dataEngine=v2
+        And Attach volume v2
+        And Wait for volume v2 healthy
+        And Write data 0 to volume v2
+
+        # (3) create a v2 volume used by a deployment
+        When Create storageclass longhorn-test-v2 with    dataEngine=v2
+        And Create persistentvolumeclaim pvc-v2 using RWO volume with longhorn-test-v2 storageclass
+        And Create deployment deploy-v2-upgrade with persistentvolumeclaim pvc-v2
+        And Wait for volume of deployment deploy-v2-upgrade attached and healthy
+        And Write 1024 MB data to file data.txt in deployment deploy-v2-upgrade
+
+        # (4) create a v2 volume with a backing image
+        When Create backing image bi-v2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v2
+        And Create volume vol-bi-v2 with    size=3Gi    backingImage=bi-v2    dataEngine=v2
+        And Create persistentvolume for volume vol-bi-v2
+        And Create persistentvolumeclaim for volume vol-bi-v2
+        And Create pod vol-pod-bi-v2 using volume vol-bi-v2
+        And Wait for pod vol-pod-bi-v2 running
+        And Check file guests/catparrot.gif exists in pod vol-pod-bi-v2
+        And Write 1024 MB data to file data.txt in pod vol-pod-bi-v2
+
+        # (5) create v2 snapshot
+        And Create snapshot snapshot-v2 of volume v2
+        And Write data 1 to volume v2
+
+        # (6) create v2 backup
+        And Create backup backup-v2 for volume v2
+
+        # upgrading Longhorn with attached v2 volumes is not allowed
+        And Detach volume v2
+        And Wait for volume v2 detached
+        And Scale down deployment deploy-v2-upgrade to detach volume
+
     END
 
+    # system upgrade
     ${LONGHORN_TRANSIENT_VERSION}=    Get Environment Variable    LONGHORN_TRANSIENT_VERSION    default=''
     IF    '${LONGHORN_TRANSIENT_VERSION}' != ''
         When Upgrade Longhorn to transient version
@@ -69,44 +206,208 @@ Pre-release Checks
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
         When Upgrade Longhorn to custom version
-        ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
-        Then Upgrade volume 0 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
     END
 
-    When Delete volume 0 replica on node 1
-    Then Wait until volume 0 replica rebuilding started on node 1
-    And Wait until volume 0 replica rebuilding completed on node 1
-    And Wait for volume 0 healthy
-    And Check volume 0 data is intact
+    # do post system upgrade checks
 
-    When Detach volume 0
-    And Wait for volume 0 detached
-    Then Attach volume 0
-    And Wait for volume 0 healthy
-    And Check volume 0 data is intact
+    # (0) check v1 instance manager pods didn't restart
+    Then Check v1 instance manager pods did not restart
 
-    When Create volume 2 from backup 0 of volume 0
-    Then Wait for volume 2 restoration from backup 0 of volume 0 start
-    And Wait for volume 2 detached
-    And Attach volume 2
-    And Check volume 2 data is backup 0 of volume 0
+    # (1-1) check the data integrity of the volume with revision counter enabled
+    And Check volume vol-revision-enabled data is intact
+    And Check volume vol-revision-enabled works
+
+    # (2-1) check the data integrity of the volume with revision counter disabled
+    And Check volume vol-revision-disabled data is intact
+    And Check volume vol-revision-disabled works
+
+    # (3-1) check pod didn't restart and the data integrity of the volume used by a pod
+    And Check pod vol-pod did not restart
+    And Check pod vol-pod data in file data.txt is intact
+    And Check pod vol-pod works
+
+    # (4-1) check statefulset pod didn't restart and the data integrity of the volume used by a statefulset
+    And Check statefulset ss-upgrade pods did not restart
+    And Check statefulset ss-upgrade data in file data.txt is intact
+    And Check statefulset ss-upgrade works
+
+    # (5-1) check the data integrity of the strict-local volume
+    And Check volume vol-strict-local data is intact
+    And Check volume vol-strict-local works
+
+    # (6-1) check deployment pod didn't restart and the data integrity of the volume of the rwx workload
+    And Check deployment deploy-upgrade pods did not restart
+    And Check deployment deploy-upgrade data in file data.txt is intact
+    And Check deployment deploy-upgrade works
+
+    # (7-1) check pod didn't restart and the data integrity of the volume with a backing image
+    And Check pod vol-pod-bi did not restart
+    And Check file guests/catparrot.gif exists in pod vol-pod-bi
+    And Check pod vol-pod-bi data in file data.txt is intact
+    And Check pod vol-pod-bi works
+
+    # volume engines upgrade
+    IF    '${LONGHORN_STABLE_VERSION}' != ''
+        ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
+        When Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    END
+
+    # do post engine upgrade checks
+
+    # (1-2) check the data integrity of the volume with revision counter enabled
+    Then Check volume vol-revision-enabled data is intact
+    And Check volume vol-revision-enabled works
+
+    # (2-2) check the data integrity of the volume with revision counter disabled
+    And Check volume vol-revision-disabled data is intact
+    And Check volume vol-revision-disabled works
+
+    # (3-2) check pod didn't restart and the data integrity of the volume used by a pod
+    And And Check pod vol-pod did not restart
+    And Check pod vol-pod data in file data.txt is intact
+    And Check pod vol-pod works
+
+    # (4-2) check statefulset pod didn't restart and the data integrity of the volume used by a statefulset
+    And Check statefulset ss-upgrade pods did not restart
+    And Check statefulset ss-upgrade data in file data.txt is intact
+    And Check statefulset ss-upgrade works
+
+    # (5-2) check the data integrity of the strict-local volume
+    And Check volume vol-strict-local data is intact
+    And Check volume vol-strict-local works
+
+    # (6-2) check deployment pod didn't restart and the data integrity of the volume of the rwx workload
+    And Check deployment deploy-upgrade pods did not restart
+    And Check deployment deploy-upgrade data in file data.txt is intact
+    And Check deployment deploy-upgrade works
+
+    # (7-2) check pod didn't restart and the data integrity of the volume with a backing image
+    And Check pod vol-pod-bi did not restart
+    And Check file guests/catparrot.gif exists in pod vol-pod-bi
+    And Check pod vol-pod-bi data in file data.txt is intact
+    And Check pod vol-pod-bi works
+
+    # (8) check the detached volume can be attached after upgrade
+    When attach volume vol-detach
+    Then wait for volume vol-detach healthy
+    And Check volume vol-detach data is intact
+    And Check volume vol-detach works
+
+    # (9) trigger replica rebuilding after upgrade
+    When Delete volume vol-rebuild replica on node 1
+    Then Wait until volume vol-rebuild replica rebuilding started on node 1
+    And Wait until volume vol-rebuild replica rebuilding completed on node 1
+    And Wait for volume vol-rebuild healthy
+    And Check volume vol-rebuild data is intact
+
+    # (10) check recurring jobs are working after upgrade
+    And Check recurringjobs for volume vol-recurring work
+
+    # (11) check a volume that is never attached can be attached after upgrade
+    When Attach volume vol-never-attach
+    Then Wait for volume vol-never-attach attached
+    And Wait for volume vol-never-attach healthy
+    And Check volume vol-never-attach works
+
+    # (12) delete custom resources
+    And Cleanup orphans
+    And Delete system backup 0
+
+    # (13) revert snapshot
+    And Check volume v1 data is data 1
+    When Detach volume v1
+    And Wait for volume v1 detached
+    And Attach volume v1 in maintenance mode
+    And Wait for volume v1 healthy
+    And Revert volume v1 to snapshot snapshot-v1
+    And Detach volume v1
+    And Wait for volume v1 detached
+    And Attach volume v1
+    And Wait for volume v1 healthy
+    And Check volume v1 data is data 0
+
+    # (14) restore volume from backup
+    When Create volume vol-restore from backup backup-v1 of volume v1
+    Then Wait for volume vol-restore restoration from backup backup-v1 of volume v1 start
+    And Wait for volume vol-restore detached
+    And Attach volume vol-restore
+    And Check volume vol-restore data is backup backup-v1 of volume v1
+
+    # (15) check a volume can be detached and re-attached
+    When Detach volume vol-rebuild
+    And Wait for volume vol-rebuild detached
+    Then Attach volume vol-rebuild
+    And Wait for volume vol-rebuild healthy
+    And Check volume vol-rebuild data is intact
+
+    # (16) check a new volume with a backing image can be created
+    When Create volume new-vol-bi with    size=3Gi    backingImage=bi-v1
+    And Create persistentvolume for volume new-vol-bi
+    And Create persistentvolumeclaim for volume new-vol-bi
+    And Create pod new-vol-pod-bi using volume new-vol-bi
+    And Wait for pod new-vol-pod-bi running
+    And Check file guests/catparrot.gif exists in pod new-vol-pod-bi
+    And Write 1024 MB data to file data.txt in pod new-vol-pod-bi
 
     IF    "${DATA_ENGINE}" == "v2"
-        When Attach volume 1
-        Then Wait for volume 1 healthy
-        And Check volume 1 data is intact
 
-        When Delete volume 1 replica on node 1
-        Then Wait until volume 1 replica rebuilding started on node 1
-        And Wait until volume 1 replica rebuilding completed on node 1
-        And Wait for volume 1 healthy
-        And Check volume 1 data is intact
+        # (1) check a volume that is never attached can be attached after upgrade
+        When Attach volume v2-vol-never-attach
+        Then Wait for volume v2-vol-never-attach attached
+        And Wait for volume v2-vol-never-attach healthy
+        And Check volume v2-vol-never-attach works
 
-        When Create volume 3 from backup 1 of volume 1
-        Then Wait for volume 3 restoration from backup 1 of volume 1 start
-        And Wait for volume 3 detached
-        And Attach volume 3
-        And Check volume 3 data is backup 1 of volume 1
+        # (2) check the data integrity of a volume with data
+        When Attach volume v2
+        Then Wait for volume v2 attached
+        And Wait for volume v2 healthy
+        And Check volume v2 data is intact
+        And Check volume v2 works
+
+        # (3) check the data integrity of the volume used by a deployment
+        When Scale up deployment deploy-v2-upgrade to attach volume
+        And Check deployment deploy-v2-upgrade data in file data.txt is intact
+        And Check deployment deploy-v2-upgrade works
+
+        # (4) check the data integrity of the volume with a backing image
+        And Check file guests/catparrot.gif exists in pod vol-pod-bi-v2
+        And Check pod vol-pod-bi-v2 data in file data.txt is intact
+        And Check pod vol-pod-bi-v2 works
+
+        # (5) revert v2 snapshot
+        When Detach volume v2
+        And Wait for volume v2 detached
+        And Attach volume v2 in maintenance mode
+        And Wait for volume v2 healthy
+        And Revert volume v2 to snapshot snapshot-v2
+        And Detach volume v2
+        And Wait for volume v2 detached
+        And Attach volume v2
+        And Wait for volume v2 healthy
+        And Check volume v2 data is data 0
+
+        # (6) restore v2 volume from backup
+        When Create volume vol-restore-v2 from backup backup-v2 of volume v2    dataEngine=v2
+        Then Wait for volume vol-restore-v2 restoration from backup backup-v2 of volume v2 start
+        And Wait for volume vol-restore-v2 detached
+        And Attach volume vol-restore-v2
+        And Check volume vol-restore-v2 data is backup backup-v2 of volume v2
+
+        # (7) trigger v2 replica rebuilding after upgrade
+        When Delete volume v2 replica on node 1
+        Then Wait until volume v2 replica rebuilding started on node 1
+        And Wait until volume v2 replica rebuilding completed on node 1
+        And Wait for volume v2 healthy
+        And Check volume v2 data is data 0
+
+        # (8) check a new v2 volume with a backing image can be created
+        When Create volume new-vol-bi-v2 with    size=3Gi    backingImage=bi-v2    dataEngine=v2
+        And Create persistentvolume for volume new-vol-bi-v2
+        And Create persistentvolumeclaim for volume new-vol-bi-v2
+        And Create pod new-vol-pod-bi-v2 using volume new-vol-bi-v2
+        And Wait for pod new-vol-pod-bi-v2 running
+        And Check file guests/catparrot.gif exists in pod new-vol-pod-bi-v2
+        And Write 1024 MB data to file data.txt in pod new-vol-pod-bi-v2
     END
 
     # test uninstalling Longhorn
