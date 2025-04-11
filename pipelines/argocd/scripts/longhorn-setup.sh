@@ -7,10 +7,15 @@ source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
+source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/argocd.sh
-source pipelines/utilities/run_longhorn_test.sh
+if [[ ${TEST_TYPE} == "robot" ]]; then
+  source pipelines/utilities/run_longhorn_e2e_test.sh
+else
+  source pipelines/utilities/run_longhorn_test.sh
+fi
 
 
 export LONGHORN_NAMESPACE="longhorn-system"
@@ -40,13 +45,16 @@ main(){
   set +x
   create_registry_secret
   set -x
+  create_instance_mapping_configmap
 
   install_argocd
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
-    run_longhorn_upgrade_test
+    if [[ ${TEST_TYPE} == "pytest" ]]; then
+      run_longhorn_upgrade_test
+    fi
     run_longhorn_test
   else
     install_longhorn_custom
