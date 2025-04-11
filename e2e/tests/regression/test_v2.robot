@@ -116,3 +116,17 @@ V2 Volume Should Cleanup Resources When Instance Manager Is Deleted
         And Check volume 1 data is intact
         And Check volume 2 data is intact
     END
+
+V2 Volume Snapshot Data Integrity Check
+    [Tags]    robot:skip
+    [Documentation]    V2 Volume Snapshot Data Integrity Check
+    ...
+    ...                1. Install Longhorn with v2 engine enabled on nodes with an available nvme disk, i.e. not the system disk.    
+    ...                2. Create a volume of any size and more than one replica.
+    ...                3. Attach the volume to a node.
+    ...                4. Start intensive data writing over the volume.
+    ...                5. Make a snapshot of the volume while data writing is ongoing.
+    ...                6. Stop data writing.
+    ...                6. Wait snapshot checksum to be set.
+    ...                7. If snapshot checksum is correctly set, the test is ok.
+    Skip
