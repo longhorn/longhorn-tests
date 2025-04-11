@@ -43,6 +43,26 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert completed, f"Waiting for system restore {restore_name} to be completed failed: {system_restore}"
 
+    def delete_system_backup(self, backup_name):
+        logging(f"Deleting system backup {backup_name}")
+        system_backups = get_longhorn_client().list_system_backup()
+        for system_backup in system_backups:
+            if system_backup['name'] == backup_name:
+                try:
+                    get_longhorn_client().delete(system_backup)
+                except Exception as e:
+                    logging(f"Deleting system backup {system_backup['name']} failed: {e}")
+
+        for i in range(self.retry_count):
+            logging(f"Waiting for system backup {backup_name} to be deleted ... ({i})")
+            system_backups = get_longhorn_client().list_system_backup()
+            if backup_name in [s['name'] for s in system_backups]:
+                time.sleep(self.retry_interval)
+                continue
+            return
+
+        assert False, f"Deleting system backup {backup_name} failed: {system_backups}"
+
     def cleanup_system_backups(self):
         system_backups = get_longhorn_client().list_system_backup()
         for system_backup in system_backups:
