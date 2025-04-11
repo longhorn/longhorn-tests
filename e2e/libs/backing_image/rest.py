@@ -25,20 +25,21 @@ class Rest(Base):
             dataEngine=dataEngine
         )
 
-        ready = False
         bi = None
+        ready_copies = 0
         for i in range(self.retry_count):
             bi = get_longhorn_client().by_id_backing_image(name)
             if len(bi.diskFileStatusMap) > 0 and bi.currentChecksum != "":
+                ready_copies = 0
                 for disk, status in iter(bi.diskFileStatusMap.items()):
                     if status.state == self.BACKING_IMAGE_STATE_READY:
-                        ready = True
-                        break
-            if ready:
+                        ready_copies += 1
+            logging(f"Waiting for backing image {name} has {minNumberOfCopies} copies, currently it's {ready_copies} ... ({i})")
+            if ready_copies == minNumberOfCopies:
                 break
             time.sleep(self.retry_interval)
 
-        assert ready, f"expect backing image diskFileStatusMap ready, but it's {bi.diskFileStatusMap}"
+        assert ready_copies == minNumberOfCopies, f"expect backing image has {minNumberOfCopies} ready copies, but it's only {ready_copies}: {bi.diskFileStatusMap}"
         if expectedChecksum:
             assert bi.currentChecksum == expectedChecksum, f"expect backing image currentChecksum {bi.currentChecksum} equal to expected checksum {expectedChecksum}"
         assert bi.sourceType == sourceType, f"expect backing image sourceType is {sourceType}, but it's {bi.sourceType}"

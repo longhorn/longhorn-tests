@@ -11,8 +11,10 @@ from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
+from workload.pod import check_pod_did_not_restart
 from workload.workload import get_pod_data_checksum
 from workload.workload import check_pod_data_checksum
+from workload.workload import check_pod_data_exists
 from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
@@ -67,6 +69,9 @@ class workload_keywords:
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
 
+    def check_pod_data_exists(self, pod_name, file_name):
+        return check_pod_data_exists(pod_name, file_name)
+
     def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default", label_selector=""):
         pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
         for pod in pods:
@@ -92,7 +97,8 @@ class workload_keywords:
         logging(f"Storing pod {pod_name} file {file_name} checksum = {checksum}")
 
         volume_name = get_volume_name_by_pod(pod_name)
-        self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
+        self.volume.set_data_checksum(volume_name, file_name, checksum)
+        self.volume.set_last_data_checksum(volume_name, checksum)
 
     def write_workload_pod_large_data(self, workload_name, size_in_gb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
@@ -103,7 +109,8 @@ class workload_keywords:
         logging(f"Storing pod {pod_name} file {file_name} checksum = {checksum}")
 
         volume_name = get_volume_name_by_pod(pod_name)
-        self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
+        self.volume.set_data_checksum(volume_name, file_name, checksum)
+        self.volume.set_last_data_checksum(volume_name, checksum)
 
     def get_workload_pod_data_checksum(self, workload_name, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
@@ -112,7 +119,7 @@ class workload_keywords:
     def check_workload_pod_data_checksum(self, workload_name, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
         volume_name = get_volume_name_by_pod(pod_name)
-        expected_checksum = self.volume.get_annotation_value(volume_name, ANNOT_CHECKSUM)
+        expected_checksum = self.volume.get_data_checksum(volume_name, file_name)
 
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
@@ -218,3 +225,8 @@ class workload_keywords:
     def trim_workload_volume_filesystem(self, workload_name, is_expect_fail=False):
         volume_name = get_workload_volume_name(workload_name)
         self.volume.trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
+
+    def check_workload_pod_did_not_restart(self, workload_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+        logging(f"Checking workload {workload_name} pod {pod_name} did not restart")
+        check_pod_did_not_restart(pod_name)
