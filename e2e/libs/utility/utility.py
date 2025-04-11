@@ -53,6 +53,11 @@ def get_retry_count_and_interval():
     return retry_count, retry_interval
 
 
+def generate_random_id(num_bytes):
+    return ''.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(num_bytes))
+
+
 def generate_name_random(name_prefix="test-"):
     return name_prefix + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
