@@ -101,3 +101,7 @@ Upgrade Longhorn to transient version
 
 Upgrade Longhorn to custom version
     upgrade_longhorn
+
+Check Longhorn node ${type} state on power off node is ${expect_state}
+    ${status} =    get_longhorn_node_condition_status    ${last_volume_node}    ${type}
+    Should Be Equal    ${status}    ${expect_state}
