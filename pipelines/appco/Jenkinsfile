@@ -1,16 +1,26 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
-
+def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
+def registry_instance_type = params.ARCH == "amd64" ? "t2.micro" : (ARCH == "arm64" ? "t4g.micro" : null)
+def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
+def REGISTRY_URL = ""
+def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
+def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
+def USE_HDD = params.USE_HDD ? params.USE_HDD : false
+def WORKSPACE = "/src/longhorn-tests"
 
 node {
 
     withCredentials([
+        usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
-        file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH')  // Add the secret file credential here
+        file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),  // Add the secret file credential here
+        string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -20,9 +30,69 @@ node {
         checkout scm
 
         try {
+            if (params.AIR_GAP_INSTALLATION) {
+                stage('private registry build') {
+                    sh "airgap/scripts/build.sh"
+                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                            -v /var/run/docker.sock:/var/run/docker.sock \
+                                            --env TF_VAR_docker_hub_username=${REGISTRY_USERNAME} \
+                                            --env TF_VAR_docker_hub_password=${REGISTRY_PASSWORD} \
+                                            --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
+                                            --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
+                                            --env TF_VAR_arch=${ARCH}\
+                                            --env TF_VAR_registry_aws_instance_type=${registry_instance_type}\
+                                            --env TF_VAR_appco_test="true"\
+                                            --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
+                                            --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                            --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_UI_IMAGE=${CUSTOM_LONGHORN_UI_IMAGE} \
+                                            --env CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE=${CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE} \
+                                            --env CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE=${CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE=${CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE=${CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE} \
+                                            --env CUSTOM_LONGHORN_CSI_RESIZER_IMAGE=${CUSTOM_LONGHORN_CSI_RESIZER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE=${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE} \
+                                            --env CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE=${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE} \
+                                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
+                    """
+                }
+
+                stage ('private registry setup') {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
+                    REGISTRY_URL = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
+                        returnStdout: true
+                    )
+                    println REGISTRY_URL
+                    REGISTRY_USERNAME = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
+                        returnStdout: true
+                    )
+                    REGISTRY_PASSWORD = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
+                        returnStdout: true
+                    )
+                    // Pull appco images and push to private registry
+                    sh """ docker exec \
+                            --env REGISTRY_URL=${REGISTRY_URL} \
+                            --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                            --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
+                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./pipelines/appco/scripts/prepare-airgap-appco-images.sh
+                    """
+                }
+            }
 
             stage('build') {
+                if(JOB_BASE_NAME == "longhorn-tests-regression") {
 
+                    manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+
+                }
+
+                echo "Using credentials: $CREDS_ID"
                 echo "Using registration code: $REGISTRATION_CODE_ID"
 
                 sh "cp ${CA_CERT_PATH} SUSE_Trust_Root.crt"
@@ -30,6 +100,11 @@ node {
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
                                        --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
+                                       --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
+                                       --env REGISTRY_URL=${REGISTRY_URL} \
+                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
                                        --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
                                        --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
@@ -44,29 +119,45 @@ node {
                                        --env CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE=${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE} \
                                        --env CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE=${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE} \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                       --env CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS}" \
                                        --env DISTRO=${DISTRO} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
                                        --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
-                                       --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
+                                       --env TF_VAR_extra_block_device="true" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
                                        --env TF_VAR_arch=${ARCH} \
                                        --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
                                        --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                        --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
+                                       --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
+                                       --env TF_VAR_aws_region=${AWS_REGION} \
+                                       --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
+                                       --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
+                                       --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
+                                       --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
+                                       --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
+                                       --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       --env TF_VAR_custom_ssh_public_key="${CUSTOM_SSH_PUBLIC_KEY}" \
+                                       --env QASE_TOKEN=${QASE_TOKEN} \
+                                       --env QASE_PROJECT=LH \
                                        ${imageName}
                 """
+
             }
 
             timeout(60) {
                 stage ('terraform') {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/terraform_setup.sh"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
                 }
 			}
 
@@ -74,18 +165,10 @@ node {
                 sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/appco/scripts/longhorn-setup.sh"
             }
 
-            // https://github.com/rancher/suse-storage/issues/22, finding alternative way to do the same thing
-            //stage ('download support bundle') {
-            //   sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/download_support_bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
-            //    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
-			//	archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
-			//}
-
-            stage ('report generation') {
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
-
+            stage ('report generation') {                
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
                 if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
                     summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
                 }
                 else {
@@ -98,6 +181,13 @@ node {
             throw e
         } finally {
             stage ('releasing resources') {
+                if (sh (script: "docker container inspect airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/cleanup.sh"
+                    sh "docker stop airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rm -v airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rmi airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                }
+
                 if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/cleanup.sh"
                     sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
@@ -117,7 +207,6 @@ node {
             }
         }
     }
-
 }
 
 

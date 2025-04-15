@@ -53,3 +53,14 @@ variable "aws_ssh_private_key_file_path" {
   type        = string
   default     = "~/.ssh/id_rsa"
 }
+
+variable "appco_test" {
+  type = string
+  default = "false"
+}
+
+variable "arch" {
+  type        = string
+  description = "available values (amd64, arm64)"
+  default     = "amd64"
+}
