@@ -290,7 +290,7 @@ resource "null_resource" "post_setup" {
   }
 
   provisioner "file" {
-    source      = "${path.module}/user-data-scripts/provision_registry_server.sh"
+    source = "${path.module}/user-data-scripts/${var.appco_test == "true" ? "provision_appco_registry_server.sh" : "provision_registry_server.sh"}"
     destination = "/tmp/provision_registry_server.sh"
 
     connection {

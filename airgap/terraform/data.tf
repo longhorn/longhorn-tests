@@ -5,6 +5,6 @@ data "aws_ami" "aws_ami_ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu*${var.os_distro_version}-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd*/ubuntu-*${var.os_distro_version}-${var.arch}-server-*"]
   }
 }
