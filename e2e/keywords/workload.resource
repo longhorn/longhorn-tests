@@ -200,7 +200,7 @@ Check ${workload_kind} ${workload_id} pod is ${expect_state} on the original nod
     ${node_name} =    get_pod_node    ${pod}
     Should Be Equal    ${node_name}    ${last_volume_node}
 
-Check ${workload_kind} ${workload_id} pod is ${expect_state} on another node
+Wait for ${workload_kind} ${workload_id} pod is ${expect_state} on another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
     ${node_name} =    get_pod_node    ${pod}
@@ -233,6 +233,10 @@ Delete Longhorn ${workload_kind} ${workload_name} pod
     ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
     Log    ${pod_name}
     delete_pod    ${pod_name}     longhorn-system
+
+Force delete ${workload_kind} ${workload_id} pod on the original node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    delete_workload_pod_on_node    ${workload_name}    ${last_volume_node}    default
 
 Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk ${disk_name}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
