@@ -14,6 +14,15 @@ Resource    ../keywords/workload.resource
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
 
+*** Keywords ***
+Create deployment ${deployment_id} with volume ${volume_id}
+    ${volume_id}=  Convert To String  ${volume_id}
+    Create persistentvolume for volume ${volume_id}
+    Create persistentvolumeclaim for volume ${volume_id}
+    ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
+    ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
+    create_deployment    ${deployment_name}   ${pvc_name}
+
 *** Test Cases ***
 Test Replica Rebuilding Per Volume Limit
     [Tags]    coretest
@@ -70,3 +79,27 @@ Test Offline Replica Rebuilding
     And Wait for volume 0 detached
     And Volume 0 should have 3 replicas when detached
     And Set setting offline-replica-rebuilding to false
+
+Test Preempt Offline Replica Rebuilding By A Workload
+    [Tags]    coretest    offline-rebuilding
+    [Documentation]    Test preempt offline replica rebuilding by a workload.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/8443
+    Given Create volume 0 with    size=6Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    Then Detach volume 0
+    And Wait for volume 0 detached
+    Then Create deployment 0 with volume 0
+    And Wait for volume 0 healthy
+    Then Write 5120 MB data to file data.txt in deployment 0
+    And Scale down deployment 0 to detach volume
+    And Wait for volume 0 detached
+
+    When Delete volume 0 replica on node 0
+    Then Enable volume 0 offline replica rebuilding
+    And Wait until volume 0 replica rebuilding started on node 0
+    And Scale up deployment 0 to attach volume
+    And Wait for volume 0 healthy
+    And Write 512 MB data to file data.txt in deployment 0
+    And Delete deployment 0
