@@ -33,6 +33,13 @@ class recurringjob_keywords:
         self.recurringjob.create(job_name, task="backup")
         self.recurringjob.add_to_volume(job_name, volume_name)
 
+    def create_recurringjob_for_volume(self, volume_name, task, cron="*/2 * * * *"):
+        job_name = volume_name + '-' + task
+
+        logging(f'Creating recurringjob {job_name} for volume {volume_name}')
+        self.recurringjob.create(job_name, task=task, cron=cron)
+        self.recurringjob.add_to_volume(job_name, volume_name)
+
     def check_recurringjobs_work(self, volume_name):
         logging(f'Checking recurringjobs work for volume {volume_name}')
         self.recurringjob.check_jobs_work(volume_name)
