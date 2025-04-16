@@ -278,7 +278,8 @@ Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
 
 Wait until volume ${volume_id} replica rebuilding completed on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_replica_rebuilding_to_complete_on_node    ${volume_name}    ${replica_locality}
+    ${rebuilding_time} =    wait_for_replica_rebuilding_to_complete_on_node    ${volume_name}    ${replica_locality}
+    [Return]    ${rebuilding_time}
 
 Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
