@@ -166,7 +166,11 @@ class volume_keywords:
             node_name = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
         logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
+        start_time = time.time()
         self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
+        rebuilding_time = int(time.time() - start_time)
+        logging(f"Replica rebuilding for volume {volume_name} on node {node_name} completed in {rebuilding_time} seconds")
+        return rebuilding_time
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
         self.volume.wait_for_replica_rebuilding_complete(volume_name)
