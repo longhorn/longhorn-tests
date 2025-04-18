@@ -217,3 +217,12 @@ def is_pod_terminated_by_kubelet(pod):
             condition.status == "True":
             return True
     return False
+
+
+def check_pod_did_not_restart(pod_name):
+    core_api = client.CoreV1Api()
+    pod = core_api.read_namespaced_pod(name=pod_name, namespace="default")
+    if pod.status.container_statuses[0].restart_count != 0:
+        logging(f"Unexpected pod restart: {pod}")
+        time.sleep(self.retry_count)
+        assert False, f"Unexpected pod restart: {pod}"

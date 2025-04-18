@@ -210,6 +210,36 @@ def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directo
     assert False, f"Checking pod {pod_name} data checksum failed"
 
 
+def check_pod_data_exists(pod_name, file_name, data_directory="/data"):
+
+    logging(f"Checking if file {file_name} exists in pod {pod_name}")
+
+    wait_for_pod_status(pod_name, "Running")
+
+    try:
+        file_path = f"{data_directory}/{file_name}"
+        api = client.CoreV1Api()
+        cmd = [
+            '/bin/sh',
+            '-c',
+            f"ls {file_path}"
+        ]
+        output = stream(
+            api.connect_get_namespaced_pod_exec, pod_name, 'default',
+            command=cmd, stderr=True, stdin=False, stdout=True,
+            tty=False)
+
+        if "No such file or directory" not in output:
+            logging(f"Checked file {file_name} exists in pod {pod_name}: {output}")
+            return True
+        else:
+            logging(f"Checked file {file_name} doesn't exist in pod {pod_name}: {output}")
+            return False
+    except Exception as e:
+        logging(f"Checking if file {file_name} exists in pod {pod_name} failed: {e}")
+        return False
+
+
 def wait_for_workload_pods_running(workload_name, namespace="default"):
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):

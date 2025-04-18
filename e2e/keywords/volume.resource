@@ -114,22 +114,22 @@ Delete volume ${volume_id}
 Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${checksum} =    write_volume_random_data   ${volume_name}    2048
-    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write ${size} GB data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${checksum} =    write_volume_random_data   ${volume_name}    ${${size} * 1024}
-    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write data ${data_id} to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${checksum} =    write_volume_random_data   ${volume_name}    2048    ${data_id}
-    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write data ${data_id} ${size} MB to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${checksum} =    write_volume_random_data   ${volume_name}    ${size}    ${data_id}
-    Set List Value    ${volume_checksums}    ${volume_id}    ${checksum}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -367,7 +367,7 @@ Volume ${volume_id} should have replicas running on node ${node_id} and no addit
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${actual_checksum} =    get_volume_checksum    ${volume_name}
-    ${expected_checksum} =    Get From List    ${volume_checksums}    ${volume_id}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}
     Should Be Equal    ${actual_checksum}    ${expected_checksum}
 
 Check volume ${volume_id} data is data ${data_id}
@@ -376,7 +376,8 @@ Check volume ${volume_id} data is data ${data_id}
 
 Check volume ${volume_id} works
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${volume_data_checksum} =     write_volume_random_data   ${volume_name}    1024
+    ${checksum} =     write_volume_random_data   ${volume_name}    1024
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
     #TODO
     # write data to a file in the volume instead of writing /dev/longhorn/vol-name
     # so the data won't be overwritten and we can compare the checksum
@@ -425,6 +426,13 @@ Upgrade volume ${volume_id} engine to ${custom_engine_image}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
+Upgrade v1 volumes engine to ${custom_engine_image}
+    ${volume_names} =    list_volumes    dataEngine=v1
+    FOR    ${volume_name}    IN    @{volume_names}
+        upgrade_engine_image    ${volume_name}    ${custom_engine_image}
+        wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+    END
 
 Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

@@ -56,6 +56,9 @@ Check instance-manager pod is running on node ${node_id}
     ${pod} =     get_instance_manager_on_node    ${node_name}
     Should Not Be Equal    ${pod}    ${None}
 
+Check v1 instance manager pods did not restart
+    check_all_instance_managers_not_restart
+
 Uninstall Longhorn
     ${backups_before_uninstall} =     list_all_backups
     uninstall_longhorn_system

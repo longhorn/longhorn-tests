@@ -12,3 +12,7 @@ Create system backup ${system_backup_id}
 Restore system backup ${system_backup_id}
     ${backup_name} =    generate_name_with_suffix    system-backup    ${system_backup_id}
     create_system_restore    ${backup_name}
+
+Delete system backup ${system_backup_id}
+    ${backup_name} =    generate_name_with_suffix    system-backup    ${system_backup_id}
+    delete_system_backup    ${backup_name}

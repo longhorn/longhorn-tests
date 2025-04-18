@@ -422,25 +422,28 @@ class Rest(Base):
         assert created
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
+        logging(f"Upgrading volume {volume_name} engine image to {engine_image_name}")
         volume = self.get(volume_name)
         volume.engineUpgrade(image=engine_image_name)
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} engine image to be upgraded to {engine_image_name} ... ({i})")
             volume = self.get(volume_name)
             if volume.currentImage == engine_image_name:
                 break
             time.sleep(self.retry_interval)
         assert volume.currentImage == engine_image_name, f"Failed to upgrade engine image to {engine_image_name}: {volume}"
         self.wait_for_replica_ready_to_rw(volume_name)
+        logging(f"Upgraded volume {volume_name} engine image to {engine_image_name}")
 
     def wait_for_replica_ready_to_rw(self, volume_name):
-        for _ in range(self.retry_count):
+        for i in range(self.retry_count):
             ready = True
             volume = self.get(volume_name)
             replicas = volume.replicas
+            logging(f"Waiting for volume {volume_name} replica count = {volume.numberOfReplicas}, current count = {len(replicas)} ... ({i})")
             if len(replicas) != volume.numberOfReplicas:
-                logging(f"Waiting for volume {volume_name} replica count = {volume.numberOfReplicas}, current count = {len(replicas)}")
                 ready = False
                 time.sleep(self.retry_interval)
                 continue

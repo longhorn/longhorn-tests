@@ -60,9 +60,9 @@ class volume_keywords:
         logging(f'Detaching volume {volume_name} from node {node_name}')
         self.volume.detach(volume_name, node_name)
 
-    def list_volumes(self):
+    def list_volumes(self, dataEngine=None):
         logging(f'Listing volumes')
-        return self.volume.list_names()
+        return self.volume.list_names(dataEngine)
 
     def wait_for_volume_expand_to_size(self, volume_name, size):
         logging(f'Waiting for volume {volume_name} expand to {size}')
@@ -101,7 +101,7 @@ class volume_keywords:
 
         raise Exception(f"Failed to get node ID of the replica on {replica_locality}")
 
-    def write_volume_random_data(self, volume_name, size_in_mb, data_id=0):
+    def write_volume_random_data(self, volume_name, size_in_mb, data_id=None):
         logging(f'Writing {size_in_mb} MB random data to volume {volume_name}')
         return self.volume.write_random_data(volume_name, size_in_mb, data_id)
 

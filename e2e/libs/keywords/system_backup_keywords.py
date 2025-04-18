@@ -12,6 +12,9 @@ class system_backup_keywords:
     def create_system_restore(self, backup_name):
         self.system_backup.restore(backup_name)
 
+    def delete_system_backup(self, backup_name):
+        self.system_backup.delete_system_backup(backup_name)
+
     def cleanup_system_backups(self):
         self.system_backup.cleanup_system_backups()
 
