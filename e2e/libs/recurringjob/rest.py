@@ -232,5 +232,5 @@ class Rest(Base):
     def wait_for_systembackup_state(self, job_name, expected_state):
         return NotImplemented
 
-    def assert_volume_backup_created(self, volume_name, retry_count=-1):
-        self._check_backup_created(volume_name, retry_count=retry_count)
+    def assert_volume_backup_created(self, volume_name, job_name, retry_count=-1):
+        self._check_backup_created(volume_name, job_name, retry_count=retry_count)
