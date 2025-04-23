@@ -49,5 +49,5 @@ class RecurringJob(Base):
     def wait_for_systembackup_state(self, job_name, expected_state):
         return self.recurringjob.wait_for_systembackup_state(job_name, expected_state)
 
-    def assert_recurringjob_created_backup_for_volume(self, volume_name, retry_count=-1):
-        return self.recurringjob.assert_volume_backup_created(volume_name, retry_count=retry_count)
+    def assert_recurringjob_created_backup_for_volume(self, volume_name, job_name, retry_count=-1):
+        return self.recurringjob.assert_volume_backup_created(volume_name, job_name, retry_count=retry_count)
