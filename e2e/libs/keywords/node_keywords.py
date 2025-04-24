@@ -42,12 +42,17 @@ class node_keywords:
         logging(f"Setting node {node_name}; scheduling={allowScheduling}; evictionRequested={evictionRequested}")
         self.node.set_node(node_name, allowScheduling, evictionRequested)
 
+    def label_node(self, node_name, label):
+        self.node.label_node(node_name, label)
+
+    def cleanup_node_labels(self):
+        self.node.cleanup_node_labels()
+
     def disable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False)
 
     def enable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=True)
-
 
     def disable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=False)

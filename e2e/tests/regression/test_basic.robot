@@ -212,7 +212,7 @@ V2 Replica Rebuilding
 
     When Disable node 1 scheduling
     And Disable disk block-disk scheduling on node 1
-    And Delete instance-manager on node 1
+    And Delete v2 instance manager on node 1
 
     # for a v2 volume, when a replica process crashed or an instance manager deleted,
     # the corresponding replica running state won't be set to false,
