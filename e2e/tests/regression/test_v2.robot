@@ -31,7 +31,7 @@ Test V2 Volume Basic
     [Tags]  coretest
     [Documentation]    Test basic v2 volume operations
     When Create volume 0 with    dataEngine=v2
-    And Attach volume 0
+    And Attach volume 0 to node 0
     And Wait for volume 0 healthy
     And Write data to volume 0
     Then Check volume 0 data is intact
@@ -217,3 +217,90 @@ Test Creating V2 Volume With Backing Image After Replica Rebuilding
     And Create pod 1 using volume 1
     And Wait for pod 1 running
     And Write 1024 MB data to file data.txt in pod 1
+
+Test V2 Data Engine Selective Activation
+    # create volumes with 2 replicas on node 0 and node 1
+    # there is no replica on node 2
+    Given Create volume 0 attached to node 0 with 2 replicas excluding node 2    dataEngine=v2
+    And Create volume 1 attached to node 0 with 2 replicas excluding node 2    dataEngine=v1
+
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+    Then Check v2 instance manager is not running on node 2
+    And Check v1 instance manager is running on node 2
+
+    When Label node 1 with node.longhorn.io/disable-v2-data-engine=true
+    Then Check v2 instance manager is running on node 1
+    And Check v1 instance manager is running on node 1
+
+    When Detach volume 0
+    And Wait for volume 0 detached
+    Then Check v2 instance manager is not running on node 2
+    And Check v2 instance manager is not running on node 1
+    And Check v1 instance manager is running on node 2
+    And Check v1 instance manager is running on node 1
+
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine-
+    And Label node 1 with node.longhorn.io/disable-v2-data-engine-
+    Then Check v2 instance manager is running on node 2
+    And Check v2 instance manager is running on node 1
+
+Test V2 Volume Creation With Inactivated Data Engine
+    Given Label node 0 with node.longhorn.io/disable-v2-data-engine=true
+    And Label node 1 with node.longhorn.io/disable-v2-data-engine=true
+    And Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+
+    When Create volume 0 with    dataEngine=v2
+    Then Wait for volume 0 faulted
+
+    When Label node 0 with node.longhorn.io/disable-v2-data-engine-
+    And Label node 1 with node.longhorn.io/disable-v2-data-engine-
+    And Label node 2 with node.longhorn.io/disable-v2-data-engine-
+    Then Wait for volume 0 detached
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+Test V2 Instance Manager Deletion With Inactivated Data Engine
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+    And Delete v2 instance manager on node 2
+    Then Check v2 instance manager is not running on node 2
+    And Wait for volume 0 degraded
+
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine-
+    Then Check v2 instance manager is running on node 2
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
+Test V2 Instance Manager Deletion On Volume Attached Node With Inactivated Data Engine
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 2
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+    And Delete v2 instance manager on node 2
+    Then Check v2 instance manager is not running on node 2
+    And Check volume 0 kept in attaching
+
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine-
+    Then Check v2 instance manager is running on node 2
+    And Wait for volume 0 attached
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
+Test V2 Data Engine Selective Activation During Replica Rebuilding
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    When Delete volume 0 replica on node 2
+    And Wait until volume 0 replica rebuilding started on node 2
+    And Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+    Then Wait until volume 0 replica rebuilding completed on node 2
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
