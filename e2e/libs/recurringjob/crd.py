@@ -112,6 +112,7 @@ class CRD(Base):
                                            label_selector=f"recurring-job.longhorn.io/system-backup={job_name}")
             try:
                 if len(system_backup_list['items']) == 0:
+                    logging(f"Waiting for systembackup to be created by job {job_name} ... ({i})")
                     continue
 
                 for item in system_backup_list['items']:
@@ -124,8 +125,8 @@ class CRD(Base):
                 logging(f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed: {e}")
 
             time.sleep(self.retry_interval)
-        assert False, logging(f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed")
+        assert False, f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed"
 
-    def assert_volume_backup_created(self, volume_name, retry_count=-1):
+    def assert_volume_backup_created(self, volume_name, job_name, retry_count=-1):
         logging("Delegating the assert_volume_backup_created call to API because there is no CRD implementation")
-        return self.rest.assert_volume_backup_created(volume_name, retry_count=retry_count)
+        return self.rest.assert_volume_backup_created(volume_name, job_name, retry_count=retry_count)

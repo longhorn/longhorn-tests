@@ -25,14 +25,15 @@ Wait for recurringjob ${job_id} created systembackup to reach ${expected_state} 
     ${job_name} =   generate_name_with_suffix    system-backup    ${job_id}
     wait_for_recurringjob_created_systembackup_state    ${job_name}    ${expected_state}
 
-Assert recurringjob ${created_condition} backup for volume ${volume_id}
+Assert recurringjob ${job_id} ${created_condition} backup for volume ${volume_id}
     [Arguments]    &{args}
 
+    ${job_name} =   generate_name_with_suffix    system-backup    ${job_id}
     ${volume_name} =   generate_name_with_suffix    volume    ${volume_id}
     IF    "${created_condition}" == "created"
-        assert_recurringjob_created_backup_for_volume    ${volume_name}
+        assert_recurringjob_created_backup_for_volume    ${volume_name}    ${job_name}
     ELSE IF    "${created_condition}" == "not created"
-        Run Keyword And Expect Error    *    assert_recurringjob_created_backup_for_volume    ${volume_name}    retry_count=60
+        Run Keyword And Expect Error    *    assert_recurringjob_created_backup_for_volume    ${volume_name}    ${job_name}    retry_count=60
     ELSE
         Fail    Invalid created_condition: ${created_condition}
     END
