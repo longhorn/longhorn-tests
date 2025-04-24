@@ -27,6 +27,10 @@ Set node ${node_id} disks tags
     ${node_name} =    get_node_by_index    ${node_id}
     set_node_disks_tags   ${node_name}    @{tags}
 
+Label node ${node_id} with ${label}
+    ${node_name} =    get_node_by_index    ${node_id}
+    label_node   ${node_name}    ${label}
+
 Disable node ${node_id} scheduling
     ${node_name} =    get_node_by_index    ${node_id}
     disable_node_scheduling    ${node_name}

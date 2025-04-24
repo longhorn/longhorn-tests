@@ -450,6 +450,14 @@ Create single replica volume ${volume_id} with replica on node ${node_id}
     Detach volume ${volume_id}
     Wait for volume ${volume_id} detached
 
+Create volume ${volume_id} attached to node ${attach_node_id} with 2 replicas excluding node ${replica_excluding_node_id}
+    [Arguments]    &{config}
+    Create volume ${volume_id} with    &{config}
+    Attach volume ${volume_id} to node ${attach_node_id}
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 2
+    Delete volume ${volume_id} replica on node ${replica_excluding_node_id}
+
 Record volume ${volume_id} replica names
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     record_volume_replica_names    ${volume_name}

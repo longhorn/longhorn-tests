@@ -6,6 +6,8 @@ from node import Node
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from workload.pod import delete_pod
+from workload.pod import list_pods
 
 
 class InstanceManager:
@@ -48,3 +50,43 @@ class InstanceManager:
                 logging(f"Unexpected instance manager restart: {pod}")
                 time.sleep(self.retry_count)
                 assert False, f"Unexpected instance manager restart: {pod}"
+
+    def check_instance_manager_existence_on_node(self, node_name, engine_type="v1", exist=True):
+        longhorn_client = get_longhorn_client()
+        worker_nodes = self.node.list_node_names_by_role("worker")
+
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for {engine_type} instance manager {'running' if exist else 'not running'} on node {node_name} ... ({i})")
+            try:
+                label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
+                ims = list_pods("longhorn-system", label_selector)
+                if exist:
+                    if len(ims) > 0:
+                        logging(f"Got {engine_type} instance manager running on node {node_name}")
+                        return
+                else:
+                    if len(ims) == 0:
+                        logging(f"Found no {engine_type} instance manager running on node {node_name}")
+                        return
+            except Exception as e:
+                logging(f"Checking instance manager existence error: {e}")
+            time.sleep(retry_interval)
+
+        assert False, f"Failed to check instance manager existence"
+
+    def delete_instance_manager_on_node(self, node_name, engine_type="v1"):
+        longhorn_client = get_longhorn_client()
+        worker_nodes = self.node.list_node_names_by_role("worker")
+
+        try:
+            label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
+            ims = list_pods("longhorn-system", label_selector)
+            for im in ims:
+                logging(f"Got {engine_type} instance manager running on node {node_name}: {im.metadata.name}")
+                delete_pod(im.metadata.name, namespace='longhorn-system', wait=False)
+                return
+        except Exception as e:
+            logging(f"Deleting {engine_type} instance manager on node {node_name} error: {e}")
+
+        assert False, f"Failed to delete {engine_type} instance manager on node {node_name}"
