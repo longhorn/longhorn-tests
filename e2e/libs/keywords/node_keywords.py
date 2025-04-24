@@ -54,6 +54,12 @@ class node_keywords:
     def set_node_disks_tags(self, node_name, *tags):
         self.node.set_node_disks_tags(node_name, tags)
 
+    def label_node(self, node_name, label):
+        self.node.label_node(node_name, label)
+
+    def cleanup_node_labels(self):
+        self.node.cleanup_node_labels()
+
     def disable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False)
 
