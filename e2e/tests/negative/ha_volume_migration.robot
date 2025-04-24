@@ -117,7 +117,7 @@ Migration Confirmation After Migration Engine Crash
     And Wait for volume 0 migration to be ready
 
     # crash the engine on the migration node by killing its instance-manager pod
-    When Delete instance-manager on node 1
+    When Delete ${DATA_ENGINE} instance manager on node 1
     And Sleep    0.5
     # migration confirmation by detaching from the original node
     And Detach volume 0 from node 0
@@ -139,7 +139,7 @@ Migration Confirmation Before Migration Engine Crash
     When Detach volume 0 from node 0
     And Sleep    0.5
     # crash the engine on the migration node by killing its instance-manager pod
-    And Delete instance-manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 1
 
     Then Wait for volume 0 to migrate to node 1
     And Wait for volume 0 healthy
@@ -155,7 +155,7 @@ Migration Rollback After Migration Engine Crash
     And Wait for volume 0 migration to be ready
 
     # crash the engine on the migration node by killing its instance-manager pod
-    When Delete instance-manager on node 1
+    When Delete ${DATA_ENGINE} instance manager on node 1
     And Sleep    0.5
     # migration rollback by detaching from the migration node
     And Detach volume 0 from node 1
@@ -177,7 +177,7 @@ Migration Rollback Before Migration Engine Crash
     When Detach volume 0 from node 1
     And Sleep    0.5
     # crash the engine on the migration node by killing its instance-manager pod
-    And Delete instance-manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 1
 
     Then Wait for volume 0 to stay on node 0
     And Wait for volume 0 healthy
@@ -193,7 +193,7 @@ Migration Confirmation After Original Engine Crash
     And Wait for volume 0 migration to be ready
 
     # crash the engine on the original node by killing its instance-manager pod
-    When Delete instance-manager on node 0
+    When Delete ${DATA_ENGINE} instance manager on node 0
     And Sleep    0.5
     # migration confirmation by detaching from the original node
     And Detach volume 0 from node 0
@@ -215,7 +215,7 @@ Migration Confirmation Before Original Engine Crash
     When Detach volume 0 from node 0
     And Sleep    0.5
     # crash the engine on the original node by killing its instance-manager pod
-    And Delete instance-manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 0
 
     Then Wait for volume 0 to migrate to node 1
     And Wait for volume 0 healthy
@@ -231,7 +231,7 @@ Migration Rollback After Original Engine Crash
     And Wait for volume 0 migration to be ready
 
     # crash the engine on the original node by killing its instance-manager pod
-    When Delete instance-manager on node 0
+    When Delete ${DATA_ENGINE} instance manager on node 0
     And Sleep    0.5
     # migration rollback by detaching from the migration node
     And Detach volume 0 from node 1
@@ -253,7 +253,7 @@ Migration Rollback Before Original Engine Crash
     When Detach volume 0 from node 1
     And Sleep    0.5
     # crash the engine on the original node by killing its instance-manager pod
-    And Delete instance-manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 0
 
     Then Wait for volume 0 to stay on node 0
     And Wait for volume 0 healthy
@@ -269,7 +269,7 @@ Original Engine Crash During Migration
     And Wait for volume 0 migration to be ready
 
     # crash the engine on the original node by killing its instance-manager pod
-    When Delete instance-manager on node 0
+    When Delete ${DATA_ENGINE} instance manager on node 0
     # longhorn keeps the volume in detached state waiting for user to delete one of the 2 attachments
     Then Wait for volume 0 detached
 
@@ -289,7 +289,7 @@ Migration Engine Crash During Migration
     And Wait for volume 0 migration to be ready
 
     # crash the engine on the migration node by killing its instance-manager pod
-    When Delete instance-manager on node 1
+    When Delete ${DATA_ENGINE} instance manager on node 1
     # longhorn retries migration and the volume is attached to both nodes eventually
     Then Wait for volume 0 migration to be ready
 
@@ -303,9 +303,9 @@ All Engines Crash During Migration
     And Wait for volume 0 migration to be ready
 
     # crash all engines by killing their instance-manager pods
-    When Delete instance-manager on node 0
-    And Delete instance-manager on node 1
-    And Delete instance-manager on node 2
+    When Delete ${DATA_ENGINE} instance manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 2
     # longhorn keeps the volume in detached state waiting for user to delete one of the 2 attachments
     Then Wait for volume 0 detached
 
@@ -317,7 +317,7 @@ All Engines Crash During Migration
 
 Volume Degraded Before Migration And Confirmation
     Given Cordon node 2
-    And Delete instance-manager on node 2
+    And Delete ${DATA_ENGINE} instance manager on node 2
     And Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 degraded
@@ -335,7 +335,7 @@ Volume Degraded Before Migration And Confirmation
 
 Volume Degraded Before Migration And Rollback
     Given Cordon node 2
-    And Delete instance-manager on node 2
+    And Delete ${DATA_ENGINE} instance manager on node 2
     And Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 degraded
@@ -361,7 +361,7 @@ Volume Degraded Between Migration And Confirmation
     And Wait for volume 0 migration to be ready
 
     When Cordon node 2
-    And Delete instance-manager on node 2
+    And Delete ${DATA_ENGINE} instance manager on node 2
     # migration confirmation by detaching from the original node
     And Detach volume 0 from node 0
 
@@ -379,7 +379,7 @@ Volume Degraded Between Migration And Rollback
     And Wait for volume 0 migration to be ready
 
     When Cordon node 2
-    And Delete instance-manager on node 2
+    And Delete ${DATA_ENGINE} instance manager on node 2
     # migration rollback by detaching from the migration node
     And Detach volume 0 from node 1
 
