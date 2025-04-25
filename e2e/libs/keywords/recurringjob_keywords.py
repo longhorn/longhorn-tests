@@ -45,6 +45,6 @@ class recurringjob_keywords:
         logging(f'Waiting for recurringjob {job_name} created systembackup to reach state {expected_state}')
         self.recurringjob.wait_for_systembackup_state(job_name, expected_state)
 
-    def assert_recurringjob_created_backup_for_volume(self, volume_name, retry_count=-1):
-        logging(f'Checking recurringjob created backup for volume {volume_name}')
-        self.recurringjob.assert_recurringjob_created_backup_for_volume(volume_name, retry_count=retry_count)
+    def assert_recurringjob_created_backup_for_volume(self, volume_name, job_name, retry_count=-1):
+        logging(f'Checking recurringjob {job_name} created backup for volume {volume_name}')
+        self.recurringjob.assert_recurringjob_created_backup_for_volume(volume_name, job_name, retry_count=retry_count)
