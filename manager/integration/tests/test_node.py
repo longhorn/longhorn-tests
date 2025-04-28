@@ -2723,7 +2723,8 @@ def drain_node(core_api, node): # NOQA
         node.id,
         "--ignore-daemonsets",
         "--delete-emptydir-data",
-        "--grace-period=-1"
+        "--grace-period=-1",
+        "--force"
     ]
 
     subprocess.run(command, check=True)
