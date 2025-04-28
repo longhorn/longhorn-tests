@@ -2723,7 +2723,8 @@ def drain_node(core_api, node): # NOQA
         node.id,
         "--ignore-daemonsets",
         "--delete-emptydir-data",
-        "--grace-period=-1"
+        "--grace-period=-1",
+        "--force"
     ]
 
     subprocess.run(command, check=True)
@@ -2893,7 +2894,7 @@ def test_drain_with_block_for_eviction_success(client, # NOQA
     check_node_auto_evict_state(client, evict_source_node, True)
 
     # Step 7
-    wait_drain_complete(future, 60)
+    wait_drain_complete(future, RETRY_COUNTS)
     wait_for_volume_replica_count(client, volume_name, 2)
 
     # Step 8
