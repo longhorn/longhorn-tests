@@ -63,7 +63,7 @@ BACKING_IMAGE_STATE_FAILED_AND_CLEANUP = "failed-and-cleanup"
 
 PORT = ":9500"
 
-RETRY_COMMAND_COUNT = 3
+RETRY_COMMAND_COUNT = 5
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
 RETRY_COUNTS_LONG = 360
@@ -203,6 +203,7 @@ SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
     "backing-image-cleanup-wait-interval"
 SETTING_DISABLE_REVISION_COUNTER = "disable-revision-counter"
 SETTING_ORPHAN_AUTO_DELETION = "orphan-auto-deletion"
+SETTING_ORPHAN_RESOURCE_AUTO_DELETION = "orphan-resource-auto-deletion"
 SETTING_FAILED_BACKUP_TTL = "failed-backup-ttl"
 SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     "concurrent-automatic-engine-upgrade-per-node-limit"
@@ -6010,13 +6011,6 @@ def cleanup_all_support_bundles(client):
     Clean up all support bundles
     :param client: The Longhorn client to use in the request.
     """
-    longhorn_version = client.by_id_setting('current-longhorn-version').value
-    version_doesnt_have_support_bundle_manager = ['v1.1', 'v1.2', 'v1.3']
-    if any(_version in longhorn_version for
-           _version in version_doesnt_have_support_bundle_manager):
-        print(f'{longhorn_version} doesn\'t have support bundle manager')
-        return
-
     support_bundles = client.list_support_bundle()
     for support_bundle in support_bundles:
         id = support_bundle['id']

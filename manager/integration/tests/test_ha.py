@@ -3218,7 +3218,8 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
 
     # Step6
     labels = f'longhorn.io/node={node_1["name"]}, \
-               longhorn.io/instance-manager-type=aio'
+               longhorn.io/instance-manager-type=aio, \
+               longhorn.io/data-engine={DATA_ENGINE}'
 
     ret = core_api.list_namespaced_pod(
             namespace=LONGHORN_NAMESPACE, label_selector=labels)
