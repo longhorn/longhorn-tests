@@ -203,6 +203,7 @@ SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
     "backing-image-cleanup-wait-interval"
 SETTING_DISABLE_REVISION_COUNTER = "disable-revision-counter"
 SETTING_ORPHAN_AUTO_DELETION = "orphan-auto-deletion"
+SETTING_ORPHAN_RESOURCE_AUTO_DELETION = "orphan-resource-auto-deletion"
 SETTING_FAILED_BACKUP_TTL = "failed-backup-ttl"
 SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     "concurrent-automatic-engine-upgrade-per-node-limit"

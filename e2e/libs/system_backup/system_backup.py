@@ -19,6 +19,9 @@ class SystemBackup(Base):
     def restore(self, backup_name):
         return self.system_backup.restore(backup_name)
 
+    def delete_system_backup(self, backup_name):
+        return self.system_backup.delete_system_backup(backup_name)
+
     def cleanup_system_backups(self):
         return self.system_backup.cleanup_system_backups()
 

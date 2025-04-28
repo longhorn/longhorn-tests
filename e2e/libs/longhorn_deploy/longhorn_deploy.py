@@ -5,6 +5,7 @@ from longhorn_deploy.longhorn_rancher_chart import LonghornRancherChart
 from longhorn_deploy.longhorn_flux import LonghornFlux
 from longhorn_deploy.longhorn_fleet import LonghornFleet
 from longhorn_deploy.longhorn_argocd import LonghornArgocd
+from utility.utility import logging
 import os
 import time
 
@@ -28,15 +29,18 @@ class LonghornDeploy(Base):
             self.longhorn = LonghornArgocd()
 
     def uninstall(self, is_stable_version):
+        logging(f"Uninstalling Longhorn")
         # add some delay before uninstallation
         # for issue https://github.com/longhorn/longhorn/issues/10483
         time.sleep(60)
-        return self.longhorn.uninstall(is_stable_version)
+        self.longhorn.uninstall(is_stable_version)
+        logging(f"Uninstalled Longhorn")
 
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
 
     def install(self, install_stable_version):
+        logging(f"Installing Longhorn {'stable' if install_stable_version else 'the latest'} version")
         self.longhorn.create_longhorn_namespace()
         self.longhorn.install_backupstores()
         self.longhorn.create_registry_secret()
@@ -46,8 +50,10 @@ class LonghornDeploy(Base):
             time.sleep(self.retry_count)
             assert False, "Installing Longhorn failed"
         self.longhorn.setup_longhorn_ui_nodeport()
+        logging(f"Installed Longhorn")
 
     def upgrade(self, upgrade_to_transient_version):
+        logging(f"Upgrading Longhorn to {'transient' if upgrade_to_transient_version else 'the latest'} version")
         upgraded = self.longhorn.upgrade(upgrade_to_transient_version)
         if not upgraded:
             logging(f"Upgrading Longhorn failed")
@@ -56,3 +62,4 @@ class LonghornDeploy(Base):
         else:
             # add some delay between 2 upgrades
             time.sleep(60)
+        logging(f"Upgraded Longhorn")
