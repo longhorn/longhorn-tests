@@ -8,7 +8,7 @@ import shutil
 from common import core_api, client # NOQA
 from common import Gi, SIZE
 from common import volume_name # NOQA
-from common import SETTING_ORPHAN_AUTO_DELETION
+from common import SETTING_ORPHAN_RESOURCE_AUTO_DELETION
 from common import RETRY_COUNTS, RETRY_INTERVAL_LONG
 from common import get_self_host_id
 from common import get_update_disks, wait_for_disk_update, cleanup_node_disks
@@ -753,8 +753,8 @@ def test_orphan_auto_deletion(client, volume_name, request):  # NOQA
     assert wait_for_orphan_count(client, 1, 180) == 1
 
     # Step 6: enable orphan auto deletion
-    setting = client.by_id_setting(SETTING_ORPHAN_AUTO_DELETION)
-    client.update(setting, value="true")
+    setting = client.by_id_setting(SETTING_ORPHAN_RESOURCE_AUTO_DELETION)
+    client.update(setting, value="replicaData")
 
     # Step 7
     assert wait_for_orphan_count(client, 0, 180) == 0
