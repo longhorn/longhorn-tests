@@ -176,14 +176,19 @@ class CRD(Base):
             name=volume_name
         )
 
-    def list(self, label_selector=None):
-        return self.obj_api.list_namespaced_custom_object(
+    def list(self, label_selector=None, dataEngine=None):
+        items = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
             namespace="longhorn-system",
             plural="volumes",
             label_selector=label_selector
         )["items"]
+
+        if not dataEngine:
+            return items
+        else:
+            return [item for item in items if item['spec']['dataEngine'] == dataEngine]
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         # retry conflict error
@@ -479,8 +484,10 @@ class CRD(Base):
         ]
         checksum = NodeExec(node_name).issue_cmd(cmd)
 
-        logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
-        self.set_data_checksum(volume_name, data_id, checksum)
+        if data_id:
+            logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
+            self.set_data_checksum(volume_name, data_id, checksum)
+        logging(f"Storing volume {volume_name} data last recorded checksum = {checksum}")
         self.set_last_data_checksum(volume_name, checksum)
         return checksum
 

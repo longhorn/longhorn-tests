@@ -13,4 +13,4 @@ ${VOLUME_STATE_CHECK_TIMEOUT}    120
 
 @{powered_off_nodes}=
 
-@{volume_checksums}=    Create List    None    None    None
+&{volume_checksums}=

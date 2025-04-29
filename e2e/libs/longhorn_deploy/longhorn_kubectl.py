@@ -18,6 +18,7 @@ class LonghornKubectl(Base):
         if not longhorn_branch:
            raise ValueError(f"Required environment variable {env_var} is not set")
 
+        logging(f"Running longhorn uninstall job")
         command = "./pipelines/utilities/longhorn_manifest.sh"
         process = subprocess.Popen([command, "uninstall_longhorn", longhorn_branch],
                                    shell=False)
@@ -29,15 +30,13 @@ class LonghornKubectl(Base):
 
         self.check_longhorn_uninstall_pod_log()
 
+        logging(f"Deleting longhorn CRDs")
         command = "./pipelines/utilities/longhorn_manifest.sh"
         process = subprocess.Popen([command, "delete_longhorn_crds", longhorn_branch],
                                    shell=False)
         process.wait()
-        if process.returncode != 0:
-            logging(f"Deleting longhorn CRDs failed")
-            time.sleep(self.retry_count)
-            assert False, "Deleting longhorn CRDs failed"
 
+        logging(f"Deleting longhorn uninstall job")
         command = "./pipelines/utilities/longhorn_manifest.sh"
         process = subprocess.Popen([command, "delete_uninstall_job", longhorn_branch],
                                    shell=False)
