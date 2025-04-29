@@ -16,6 +16,7 @@ node {
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
+        usernamePassword(credentialsId: 'APPCO_CREDS', passwordVariable: 'APPCO_PASSWORD', usernameVariable: 'APPCO_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
@@ -80,6 +81,8 @@ node {
                             --env REGISTRY_URL=${REGISTRY_URL} \
                             --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
                             --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
+                            --env APPCO_USERNAME=${APPCO_USERNAME} \
+                            --env APPCO_PASSWORD=${APPCO_PASSWORD} \
                             airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./pipelines/appco/scripts/prepare-airgap-appco-images.sh
                     """
                 }
