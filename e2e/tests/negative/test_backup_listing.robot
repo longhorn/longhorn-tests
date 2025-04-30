@@ -47,14 +47,6 @@ Create volume ${volume_id} from ${workload_kind} ${workload_id} volume random ba
     create_volume   ${volume_name}    size=3Gi    numberOfReplicas=3    fromBackup=${backup_url}    dataEngine=${DATA_ENGINE}
     Set Test Variable    ${random_backup_id}    ${backup_id}
 
-Create deployment ${deployment_id} with volume ${volume_id}
-    ${volume_id}=  Convert To String  ${volume_id}
-    Create persistentvolume for volume ${volume_id}
-    Create persistentvolumeclaim for volume ${volume_id}
-    ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
-    ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
-    create_deployment    ${deployment_name}   ${pvc_name}
-
 Check volume ${volume_id} data is ${workload_kind} ${workload_id} volume backup ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${workload_volume_name}=    get_workload_volume_name    ${workload_name}
