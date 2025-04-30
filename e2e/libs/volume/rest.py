@@ -434,7 +434,6 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert volume.currentImage == engine_image_name, f"Failed to upgrade engine image to {engine_image_name}: {volume}"
-        self.wait_for_replica_ready_to_rw(volume_name)
         logging(f"Upgraded volume {volume_name} engine image to {engine_image_name}")
 
     def wait_for_replica_ready_to_rw(self, volume_name):
