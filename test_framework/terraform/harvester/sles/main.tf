@@ -150,7 +150,7 @@ runcmd:
   - mkdir -p /etc/pki/trust/anchors/
   - cp /tmp/SUSE_Trust_Root.crt /etc/pki/trust/anchors/
   - update-ca-certificates
-  - shutdown -r +5
+  - shutdown -r +1
 EOF
   }
 }
