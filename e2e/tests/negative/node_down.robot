@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    negative
+Test Tags    negative    node-down
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -36,7 +36,6 @@ Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod
     Then Wait for longhorn ready
     And Wait for statefulset 0 pods stable
     And Check statefulset 0 data in file data is intact
-    And Cleanup test resources
 
 Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
     [Arguments]    ${node_down_pod_deletion_policy}
@@ -55,7 +54,6 @@ Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
 
     When Power on off nodes
     Then Wait for longhorn ready
-    And Cleanup test resources
 
 Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
     [Arguments]    ${node_down_pod_deletion_policy}
@@ -79,7 +77,6 @@ Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
 
     When Power on off nodes
     Then Wait for longhorn ready
-    And Cleanup test resources
 
 Power Off Node And Longhorn Force Delete Terminating Deployment Pod
     [Arguments]    ${node_down_pod_deletion_policy}
@@ -99,29 +96,28 @@ Power Off Node And Longhorn Force Delete Terminating Deployment Pod
 
     When Power on off nodes
     Then Wait for longhorn ready
-    And Cleanup test resources
 
 *** Test Cases ***    NODE-DOWN-POD-DELETION-POLICY
-Node Down And Longhorn Not Force Delete Terminating StatefulSet Pod
-    [Tags]    node-down
-    [Template]    Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod
-        do-nothing
-        delete-deployment-pod
+Test Node Down Pod Deletion Policy Set To do-nothing And Longhorn Not Force Delete Terminating StatefulSet Pod
+    Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod    do-nothing
 
-Node Down And Longhorn Force Delete Terminating StatefulSet Pod
-    [Tags]    node-down
-    [Template]    Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
-        delete-statefulset-pod
-        delete-both-statefulset-and-deployment-pod
+Test Node Down Pod Deletion Policy Set To delete-deployment-pod And Longhorn Not Force Delete Terminating StatefulSet Pod
+    Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod    delete-deployment-pod
 
-Node Down And Longhorn Not Force Delete Terminating Deployment Pod
-    [Tags]    node-down
-    [Template]    Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
-        do-nothing
-        delete-statefulset-pod
+Test Node Down Pod Deletion Policy Set To delete-statefulset-pod And Longhorn Force Delete Terminating StatefulSet Pod
+    Power Off Node And Longhorn Force Delete Terminating Statefulset Pod    delete-statefulset-pod
 
-Node Down And Longhorn Force Delete Terminating Deployment Pod
-    [Tags]    node-down
-    [Template]    Power Off Node And Longhorn Force Delete Terminating Deployment Pod
-        delete-deployment-pod
-        delete-both-statefulset-and-deployment-pod
+Test Node Down Pod Deletion Policy Set To delete-both-statefulset-and-deployment-pod And Longhorn Force Delete Terminating StatefulSet Pod
+    Power Off Node And Longhorn Force Delete Terminating Statefulset Pod    delete-both-statefulset-and-deployment-pod
+
+Test Node Down Pod Deletion Policy Set To do-nothing And Longhorn Not Force Delete Terminating Deployment Pod
+    Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod    do-nothing
+
+Test Node Down Pod Deletion Policy Set To delete-statefulset-pod And Longhorn Not Force Delete Terminating Deployment Pod
+    Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod    delete-statefulset-pod
+
+Test Node Down Pod Deletion Policy Set To delete-deployment-pod And Longhorn Force Delete Terminating Deployment Pod
+    Power Off Node And Longhorn Force Delete Terminating Deployment Pod    delete-deployment-pod
+
+Test Node Down Pod Deletion Policy Set To delete-both-statefulset-and-deployment-pod And Longhorn Force Delete Terminating Deployment Pod
+    Power Off Node And Longhorn Force Delete Terminating Deployment Pod    delete-both-statefulset-and-deployment-pod
