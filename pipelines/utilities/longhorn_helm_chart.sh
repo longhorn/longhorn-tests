@@ -31,6 +31,7 @@ customize_longhorn_chart_registry(){
 
 customize_longhorn_chart(){
   # customize longhorn components repository and tag (version) in chart/values.yaml
+  OLD_IFS=$IFS
   IFS=':'
   if [[ -n "${CUSTOM_LONGHORN_MANAGER_IMAGE}" ]]; then
     read -ra ARR <<< "${CUSTOM_LONGHORN_MANAGER_IMAGE}"
@@ -62,6 +63,7 @@ customize_longhorn_chart(){
     yq -i ".image.longhorn.backingImageManager.repository=\"${ARR[0]}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
     yq -i ".image.longhorn.backingImageManager.tag=\"${ARR[1]}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
   fi
+  IFS=$OLD_IFS
 }
 
 install_longhorn(){
