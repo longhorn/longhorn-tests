@@ -49,18 +49,6 @@ enable_mtls(){
 }
 
 
-install_backupstores_from_lh_repo(){
-  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
-  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
-  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml"
-  AZURITE_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml"
-  kubectl create -f ${MINIO_BACKUPSTORE_URL} \
-                 -f ${NFS_BACKUPSTORE_URL} \
-                 -f ${CIFS_BACKUPSTORE_URL} \
-                 -f ${AZURITE_BACKUPSTORE_URL}
-}
-
-
 main(){
   if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
     sleep 300s
