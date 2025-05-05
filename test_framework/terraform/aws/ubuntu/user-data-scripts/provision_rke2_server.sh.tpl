@@ -18,6 +18,10 @@ node-taint:
   - "node-role.kubernetes.io/control-plane=true:NoSchedule"
 EOF
 
+systemctl stop multipathd.socket
+systemctl disable multipathd.socket
+systemctl stop multipathd.service
+systemctl disable multipathd.service
 systemctl enable rke2-server.service
 systemctl start rke2-server.service
 
