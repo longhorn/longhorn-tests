@@ -11,4 +11,9 @@ fi
 # wait 30 seconds for graceful terraform termination
 sleep 30
 
-terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color
+if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
+  terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -target=rancher2_cluster_v2.e2e-cluster -auto-approve -no-color
+  terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color
+else
+  terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color
+fi
