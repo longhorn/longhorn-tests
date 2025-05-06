@@ -45,3 +45,9 @@ class backupstore_keywords:
         prefix = self.backupstore.get_backup_volume_prefix(volume_name)
         file_path = os.path.join(prefix, "backups" ,file_name)
         self.backupstore.delete_file_in_backupstore(file_path)
+
+    def create_dummy_backup_from_file(self, file_name):
+        self.backupstore.create_dummy_backup(file_name)
+
+    def set_backupstore_poll_interval(self, poll_interval):
+        self.backupstore.set_backupstore_poll_interval(poll_interval)
