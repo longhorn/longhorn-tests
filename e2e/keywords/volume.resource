@@ -23,6 +23,12 @@ Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume
     ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
+Create DR volume ${volume_id} from backup ${backup_name}
+    [Arguments]    &{config}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url    ${backup_name}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
+
 Create volume ${target_volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
     ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
@@ -240,6 +246,10 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${so
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
     ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
+    wait_for_volume_restoration_to_complete    ${volume_name}    ${backup_name}
+
+Wait for volume ${volume_id} restoration from backup ${backup_name} to complete
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_restoration_to_complete    ${volume_name}    ${backup_name}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} start
