@@ -1,5 +1,10 @@
 import os
 import subprocess
+import time
+
+from workload.workload import get_workload_pod_names
+from utility.utility import subprocess_exec_cmd
+from utility.utility import logging
 
 from backupstore.base import Base
 
@@ -116,3 +121,15 @@ class Nfs(Base):
     def cleanup_backup_volumes(self):
         super().cleanup_backup_volumes()
         self.umount_nfs_backupstore()
+
+    def create_dummy_backup(self, filename):
+        logging(f"Creating dummy backup from file {filename}")
+        self.extract_dummy_backup(filename)
+        backupstore_pod_name = get_workload_pod_names("longhorn-test-nfs")[0]
+        cmd = ["kubectl", "cp", "./backupstore", f"{backupstore_pod_name}:/opt/backupstore"]
+        subprocess_exec_cmd(cmd)
+        cmd = ["rm", "-rf", "./backupstore"]
+        subprocess_exec_cmd(cmd)
+        # wait for backup sync by sleeping for the poll interval
+        time.sleep(30)
+        logging(f"Created dummy backup from file {filename}")

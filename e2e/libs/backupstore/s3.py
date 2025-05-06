@@ -3,14 +3,18 @@ import base64
 import json
 import tempfile
 import subprocess
+import time
 
 from minio import Minio
 from minio.error import ResponseError
+
+from workload.workload import get_workload_pod_names
 
 from backupstore.base import Base
 
 from urllib.parse import urlparse
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
 
 class S3(Base):
 
@@ -213,3 +217,17 @@ class S3(Base):
         block_object_files_list = list(block_object_files)
 
         return len(block_object_files_list)
+
+    def create_dummy_backup(self, filename):
+        logging(f"Creating dummy backup from file {filename}")
+        self.extract_dummy_backup(filename)
+        backupstore_pod_name = get_workload_pod_names("longhorn-test-minio")[0]
+        cmd = ["kubectl", "exec", backupstore_pod_name, "--", "mkdir", "-p", "/storage/backupbucket/backupstore"]
+        subprocess_exec_cmd(cmd)
+        cmd = ["kubectl", "-c", "minio-helper", "cp", "./backupstore", f"{backupstore_pod_name}:/storage/backupbucket/backupstore"]
+        subprocess_exec_cmd(cmd)
+        cmd = ["rm", "-rf", "./backupstore"]
+        subprocess_exec_cmd(cmd)
+        # wait for backup sync by sleeping for the poll interval
+        time.sleep(30)
+        logging(f"Created dummy backup from file {filename}")
