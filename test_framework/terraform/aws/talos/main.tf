@@ -195,6 +195,7 @@ data "talos_machine_configuration" "controlplane" {
   machine_secrets    = talos_machine_secrets.machine_secrets.machine_secrets
   docs               = false
   examples           = false
+  kubernetes_version = "${var.k8s_distro_version}"
   config_patches = [
     file("${path.module}/talos-patch.yaml")
   ]
@@ -210,6 +211,7 @@ data "talos_machine_configuration" "worker" {
   machine_secrets    = talos_machine_secrets.machine_secrets.machine_secrets
   docs               = false
   examples           = false
+  kubernetes_version = "${var.k8s_distro_version}"
   config_patches = [
     file("${path.module}/talos-patch-worker.yaml")
   ]
