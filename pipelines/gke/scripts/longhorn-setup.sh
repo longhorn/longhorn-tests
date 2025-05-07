@@ -50,6 +50,7 @@ EOF
   kubectl delete pod/print-os-release
 }
 
+
 main(){
   set_kubeconfig_envvar
   print_out_cluster_info
@@ -61,7 +62,7 @@ main(){
   fi
 
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
-    install_backupstores
+    install_backupstores_from_lh_repo
     setup_azurite_backup_store
   fi
   install_csi_snapshotter

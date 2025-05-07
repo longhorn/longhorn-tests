@@ -475,4 +475,4 @@ class Rest(Base):
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         volume = self.get(volume_name)
-        volume.offlineRebuilding(OfflineRebuild=rebuild_type)
+        volume.offlineReplicaRebuilding(OfflineRebuilding=rebuild_type)

@@ -3,6 +3,11 @@
 apt-get update
 apt-get install -y nfs-common cryptsetup dmsetup samba linux-modules-extra-`uname -r`
 
+systemctl stop multipathd.socket
+systemctl disable multipathd.socket
+systemctl stop multipathd.service
+systemctl disable multipathd.service
+
 modprobe uio
 modprobe uio_pci_generic
 modprobe vfio_pci

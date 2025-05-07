@@ -27,7 +27,17 @@ Restore volume attached node is down
     [Documentation]    Test the behavior of restoring a Longhorn volume when the attached node goes down.
     ...                Arguments:
     ...                - ${description}: Description of the test case.
-    ...                - ${encrypted}: Boolean to specify if the volume is encrypted (true/false).  
+    ...                - ${encrypted}: Boolean to specify if the volume is encrypted (true/false).
+    ...                - Manual Test Plan
+    ...                - Given Create a volume 0 with 3 replicas.
+    ...                - And Attach the volume 0 to a node.
+    ...                - And Write data 0 to the volume 0.
+    ...                - Then Create a backup of the volume 0.
+    ...                - When Restore the backup to volume 1.
+    ...                - And During the restoration, power off the node where the volume 1 is attached.
+    ...                - And Wait for the restoration to complete.
+    ...                - Then Attach the restored volume 1 to a healthy node.
+    ...                - Then Verify the restored data matches the backup.
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}    encrypted=${encrypted}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -53,16 +63,8 @@ Restore volume attached node is down
     And Delete volume 0
 
 *** Test Cases ***    DESCRIPTION    ENCRYPTED
-The Restore Volume Attached Node is Down
-    [Documentation]    - Manual Test Plan
-    ...                - Given Create a volume 0 with 3 replicas.
-    ...                - And Attach the volume 0 to a node.
-    ...                - And Write data 0 to the volume 0.
-    ...                - Then Create a backup of the volume 0.
-    ...                - When Restore the backup to volume 1.
-    ...                - And During the restoration, power off the node where the volume 1 is attached.
-    ...                - And Wait for the restoration to complete.
-    ...                - Then Attach the restored volume 1 to a healthy node.
-    ...                - Then Verify the restored data matches the backup.
+Test Volume Attached Node Is Down During Volume Restoration
     Test Restore Non-encrypted Volume Node Down    false
+
+Test Volume Attached Node Is Down During Encrypted Volume Restoration
     Test Restore Encrypted Volume Node Down    true

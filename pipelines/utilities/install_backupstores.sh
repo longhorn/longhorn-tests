@@ -13,6 +13,17 @@ install_backupstores(){
                  -f ${AZURITE_BACKUPSTORE_URL}
 }
 
+install_backupstores_from_lh_repo(){
+  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
+  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
+  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml"
+  AZURITE_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml"
+  kubectl create -f ${MINIO_BACKUPSTORE_URL} \
+                 -f ${NFS_BACKUPSTORE_URL} \
+                 -f ${CIFS_BACKUPSTORE_URL} \
+                 -f ${AZURITE_BACKUPSTORE_URL}
+}
+
 setup_azurite_backup_store(){
   RETRY=0
   MAX_RETRY=60
