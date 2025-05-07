@@ -355,6 +355,7 @@ class volume_keywords:
         actual_replica_names = sorted(actual_replica_names)
 
         assert actual_replica_names == expected_replica_names, \
+            f"The volume should reuse the failed replica to rebuild instead of creating a new one.\n" \
             f"Volume {volume_name} replica names mismatched:\n" \
             f"Want: {expected_replica_names}\n" \
             f"Got: {actual_replica_names}"
