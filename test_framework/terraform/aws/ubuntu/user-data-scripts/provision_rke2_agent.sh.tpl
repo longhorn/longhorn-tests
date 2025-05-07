@@ -42,7 +42,10 @@ server: ${rke2_server_url}
 token: ${rke2_cluster_secret}
 
 EOF
-
+systemctl stop multipathd.socket
+systemctl disable multipathd.socket
+systemctl stop multipathd.service
+systemctl disable multipathd.service
 systemctl enable rke2-agent.service
 systemctl start rke2-agent.service
 
