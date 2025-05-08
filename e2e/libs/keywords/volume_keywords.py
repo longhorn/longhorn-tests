@@ -62,7 +62,7 @@ class volume_keywords:
 
     def list_volumes(self, dataEngine=None):
         logging(f'Listing volumes')
-        return self.volume.list_names(dataEngine)
+        return self.volume.list_names(dataEngine=dataEngine)
 
     def wait_for_volume_expand_to_size(self, volume_name, size):
         logging(f'Waiting for volume {volume_name} expand to {size}')
