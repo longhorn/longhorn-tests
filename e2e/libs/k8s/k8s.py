@@ -32,6 +32,13 @@ async def restart_kubelet(node_name, downtime_in_sec=10):
 
     delete_pod(pod_name)
 
+def get_longhorn_node_condition_status(node_name, type):
+    jsonpath = f"jsonpath={{.status.conditions[?(@.type=='{type}')].status}}"
+    exec_cmd = [
+        "kubectl", "-n", "longhorn-system", "get",
+        "nodes.longhorn.io", node_name, "-o", jsonpath]
+    return subprocess_exec_cmd(exec_cmd).decode('utf-8')
+
 def delete_node(node_name):
     exec_cmd = ["kubectl", "delete", "node", node_name]
     res = subprocess_exec_cmd(exec_cmd)
