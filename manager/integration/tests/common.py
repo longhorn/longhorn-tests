@@ -336,6 +336,8 @@ BACKINGIMAGE_FAILED_EVICT_MSG = \
 enable_v2 = os.environ.get('RUN_V2_TEST')
 if enable_v2 == "true":
     DATA_ENGINE = "v2"
+    RETRY_COUNTS = RETRY_COUNTS_LONG
+    DEFAULT_POD_TIMEOUT = RETRY_COUNTS_LONG
 else:
     DATA_ENGINE = "v1"
 
