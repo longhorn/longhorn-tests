@@ -325,7 +325,10 @@ def mount_nfs_backupstore(client, mount_path="/mnt/nfs"):
     nfs_backuptarget = backupstore_get_backup_target(client)
     nfs_url = urlparse(nfs_backuptarget).netloc + \
         urlparse(nfs_backuptarget).path
-    cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
+
+    # NFSv4.1 and NFSv4.2 are currently not working on Talos version later than
+    # v1.9.0. As a workaround, use NFSv4.0 until the issue is resolved.
+    cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.0", nfs_url, mount_path]
     subprocess.check_output(cmd)
 
 
