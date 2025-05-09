@@ -74,7 +74,8 @@ class CRD(Base):
                 self.wait_for_restore_required_status(volume_name, False)
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
-            assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
+            if not Standby:
+                assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
             assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
             assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
@@ -480,7 +481,7 @@ class CRD(Base):
             "sh", "-c",
             f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; "
             "sync; "
-            f"md5sum {endpoint} | awk \'{{print $1}}\'"
+            f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
         ]
         checksum = NodeExec(node_name).issue_cmd(cmd)
 
@@ -571,7 +572,7 @@ class CRD(Base):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
-            ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
+            ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 

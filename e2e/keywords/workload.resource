@@ -46,6 +46,10 @@ Check pod ${pod_id} data in file ${file_name} is intact
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     check_workload_pod_data_checksum    ${pod_name}    ${file_name}
 
+Check pod ${pod_id} file ${file_name} has checksum ${expected_checksum}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    check_workload_pod_data_checksum    ${pod_name}    ${file_name}    ${expected_checksum}
+
 Check file ${file_name} exists in pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     ${result}=    check_pod_data_exists    ${pod_name}    ${file_name}

@@ -116,10 +116,11 @@ class workload_keywords:
         pod_name = get_workload_pod_names(workload_name)[0]
         return get_pod_data_checksum(pod_name, file_name)
 
-    def check_workload_pod_data_checksum(self, workload_name, file_name):
+    def check_workload_pod_data_checksum(self, workload_name, file_name, expected_checksum=""):
         pod_name = get_workload_pod_names(workload_name)[0]
         volume_name = get_volume_name_by_pod(pod_name)
-        expected_checksum = self.volume.get_data_checksum(volume_name, file_name)
+        if not expected_checksum:
+            expected_checksum = self.volume.get_data_checksum(volume_name, file_name)
 
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)

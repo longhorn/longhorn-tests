@@ -333,7 +333,7 @@ class Rest(Base):
         node_name = self.get(volume_name).controllers[0].hostId
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
-            ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
+            ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 
@@ -344,7 +344,8 @@ class Rest(Base):
         return NotImplemented
 
     def activate(self, volume_name):
-        for _ in range(self.retry_count):
+        for i in range(self.retry_count):
+            logging(f"Activating volume {volume_name} ... ({i})")
             volume = self.get(volume_name)
             engines = volume.controllers
             if len(engines) != 1 or \
@@ -358,6 +359,7 @@ class Rest(Base):
                 activated = True
                 break
             except Exception as e:
+                logging(f"Activating volume {volume_name} error: {e}")
                 assert "hasn't finished incremental restored" in str(e.error.message)
                 time.sleep(self.retry_interval)
             if activated:

@@ -91,7 +91,7 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
                 '-c',
                 f"dd if=/dev/urandom of={data_path} bs=1M count={size_in_mb} status=none;\
                 sync;\
-                md5sum {data_path} | awk \'{{print $1}}\'"
+                md5sum {data_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
             resp = stream(
                 api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -123,7 +123,7 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
                 '-c',
                 f"fallocate -l {size_in_gb}G {data_path};\
                 sync;\
-                md5sum {data_path} | awk \'{{print $1}}\'"
+                md5sum {data_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
             return stream(
                 api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -166,7 +166,7 @@ def get_pod_data_checksum(pod_name, file_name, data_directory="/data"):
     cmd_get_file_checksum = [
         '/bin/sh',
         '-c',
-        f"md5sum {file_path} | awk '{{print $1}}'"
+        f"md5sum {file_path} | awk '{{print $1}}' | tr -d ' \n'"
     ]
     actual_checksum = stream(
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -187,7 +187,7 @@ def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directo
             cmd_get_file_checksum = [
                 '/bin/sh',
                 '-c',
-                f"md5sum {file_path} | awk \'{{print $1}}\'"
+                f"md5sum {file_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
             actual_checksum = stream(
                 api.connect_get_namespaced_pod_exec, pod_name, 'default',

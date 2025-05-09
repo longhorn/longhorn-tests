@@ -168,6 +168,7 @@ def get_cr(group, version, namespace, plural, name):
         except ApiException as e:
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
+    assert False, "Getting namespaced custom object error"
 
 
 def get_all_crs(group, version, namespace, plural):
@@ -180,6 +181,7 @@ def get_all_crs(group, version, namespace, plural):
         except ApiException as e:
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
+    assert False, "Getting namespaced custom object error"
 
 
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
