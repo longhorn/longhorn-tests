@@ -326,6 +326,7 @@ resource "null_resource" "upgrade_controlplane_nodes" {
 
 # Upgrade Talos cluster worker nodes using schematic ID
 resource "null_resource" "upgrade_worker_nodes" {
+  depends_on = [null_resource.upgrade_controlplane_nodes]
   count = var.lh_aws_instance_count_worker
 
   provisioner "local-exec" {
@@ -334,6 +335,11 @@ resource "null_resource" "upgrade_worker_nodes" {
         --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
         -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} \
         upgrade --image factory.talos.dev/installer/${local.schematic_id}:${local.talos_version}
+      echo "Print containers & extensions"
+      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+        -n ${aws_instance.lh_aws_instance_worker[0].private_ip} containers
+      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+        -n ${aws_instance.lh_aws_instance_worker[0].private_ip} get extensions
     EOT
   }
 }
