@@ -17,7 +17,7 @@ from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import LONGHORN_NAMESPACE
 from common import XFS_MIN_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
-from common import size_to_string, create_storage_class, create_pvc, delete_storage_class
+from common import size_to_string, create_storage_class, create_pvc
 from common import create_crypto_secret
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_delete_dm_device
@@ -1039,6 +1039,5 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
         if len(csi_storage_capacities.items) == len(nodes):
             break
         time.sleep(RETRY_INTERVAL_LONG)
-    # cleanup created resources
-    delete_storage_class(sc_name)
+
     assert len(csi_storage_capacities.items) == len(nodes)
