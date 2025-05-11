@@ -17,7 +17,7 @@ from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import LONGHORN_NAMESPACE
 from common import XFS_MIN_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
-from common import size_to_string, create_storage_class, create_pvc
+from common import size_to_string, create_storage_class, create_pvc, delete_storage_class
 from common import create_crypto_secret
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_delete_dm_device
@@ -38,6 +38,8 @@ from common import fail_replica_expansion
 from common import get_volume_name, get_volume_dev_mb_data_md5sum # NOQA
 from common import exec_command_in_pod
 from common import DATA_ENGINE
+from common import RETRY_COUNTS_SHORT
+from common import RETRY_INTERVAL_LONG
 from backupstore import set_random_backupstore  # NOQA
 from kubernetes.stream import stream
 from kubernetes import client as k8sclient
@@ -1012,3 +1014,31 @@ def test_restage_volume_if_node_stage_volume_not_called():
     8. Verify that a Pod becomes running and remains running.
     """
     pass
+
+@pytest.mark.csi  # NOQA
+def test_csi_storage_capacity(client, storage_class): # NOQA
+    """
+    Test that CSIStorageCapacity objects are properly created
+
+    1. Verify that initially there are no CSIStorageCapacity objects
+    2. Create new storage class with volumeBindingMode set to WaitForFirstConsumer
+    3. Verify that CSIStorageCapacity object is created for each node
+    """
+
+    api = k8sclient.StorageV1Api()
+    csi_storage_capacities = api.list_namespaced_csi_storage_capacity(LONGHORN_NAMESPACE)
+    assert len(csi_storage_capacities.items) == 0
+
+    sc_name = 'longhorn-wait-for-first-consumer'
+    storage_class['metadata']['name'] = sc_name
+    storage_class['volumeBindingMode'] = 'WaitForFirstConsumer'
+    create_storage_class(storage_class)
+    nodes = client.list_node()
+    for _ in range(RETRY_COUNTS_SHORT):
+        csi_storage_capacities = api.list_namespaced_csi_storage_capacity(LONGHORN_NAMESPACE)
+        if len(csi_storage_capacities.items) == len(nodes):
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    # cleanup created resources
+    delete_storage_class(sc_name)
+    assert len(csi_storage_capacities.items) == len(nodes)
