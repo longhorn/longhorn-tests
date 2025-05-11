@@ -1027,7 +1027,7 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
 
     api = k8sclient.StorageV1Api()
     csi_storage_capacities = api.list_namespaced_csi_storage_capacity(LONGHORN_NAMESPACE)
-    assert len(csi_storage_capacities.items()) == 0
+    assert len(csi_storage_capacities.items) == 0
 
     sc_name = 'longhorn-wait-for-first-consumer'
     storage_class['metadata']['name'] = sc_name
@@ -1036,9 +1036,9 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
     nodes = client.list_node()
     for _ in range(RETRY_COUNTS_SHORT):
         csi_storage_capacities = api.list_namespaced_csi_storage_capacity(LONGHORN_NAMESPACE)
-        if len(csi_storage_capacities.items()) == len(nodes):
+        if len(csi_storage_capacities.items) == len(nodes):
             break
         time.sleep(RETRY_INTERVAL_LONG)
     # cleanup created resources
     delete_storage_class(sc_name)
-    assert len(csi_storage_capacities.items()) == len(nodes)
+    assert len(csi_storage_capacities.items) == len(nodes)
