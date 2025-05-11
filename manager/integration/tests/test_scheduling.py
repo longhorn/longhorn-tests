@@ -2458,15 +2458,15 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
         disk_id.append(replica.diskID)
 
 @pytest.mark.csi  # NOQA
-def test_capacity_aware_pod_scheduling(client, core_api, storage_class, statefulset):  # NOQA
+def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, statefulset):  # NOQA
     """
-    Test that kube-scheduler considers csi storage capacity when scheduling pods that use storage class with
-    volumeBindingMode set to WaitForFirstConsumer
+    Test that kube-scheduler is aware of storage capacity available on each node when scheduling pods using
+    a StorageClass with volumeBindingMode set to 'WaitForFirstConsumer'.
 
-    1. Update all nodes' disks(except for current node) to have only 10Gi of schedulable storage
-    2. Create new storage class with volumeBindingMode set to WaitForFirstConsumer
-    3. Create pod with pvc of size 15Gi that uses storage class created in step 2
-    4. Verify that pod is assigned to the current node (only current node should have enough storage capacity)
+    1. Reduce the schedulable storage on all nodes (except the current node) to 10Gi.
+    2. Create a new StorageClass with volumeBindingMode set to 'WaitForFirstConsumer'.
+    3. Deploy a StatefulSet with 3 replicas, each requesting a 15Gi PVC using the StorageClass from step 2.
+    4. Verify that all pods are scheduled onto the current node (since it’s the only one with sufficient storage).
     """
 
     lht_hostId = get_self_host_id()
@@ -2485,13 +2485,14 @@ def test_capacity_aware_pod_scheduling(client, core_api, storage_class, stateful
     storage_class['parameters']['numberOfReplicas'] = '1'
     create_storage_class(storage_class)
 
-    statefulset['spec']['replicas'] = 1
+    statefulset['spec']['replicas'] = 3
     volume_claim_template = statefulset['spec']['volumeClaimTemplates'][0]
     volume_claim_template['spec']['storageClassName'] = sc_name
     volume_claim_template['spec']['resources']['requests']['storage'] = '15Gi'
     create_and_wait_statefulset(statefulset)
 
-    pod_name = statefulset["metadata"]["name"] + '-0'
     pod_namespace = statefulset["metadata"]["namespace"]
-    pod = core_api.read_namespaced_pod(name=pod_name, namespace=pod_namespace)
-    assert pod.spec.node_name == lht_hostId
+    for i in range(statefulset['spec']['replicas']):
+        pod_name = statefulset["metadata"]["name"] + '-' + str(i)
+        pod = core_api.read_namespaced_pod(name=pod_name, namespace=pod_namespace)
+        assert pod.spec.node_name == lht_hostId
