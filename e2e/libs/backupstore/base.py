@@ -10,6 +10,7 @@ from utility.utility import get_longhorn_client
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
+from utility.constant import DEFAULT_BACKUPSTORE
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -44,7 +45,7 @@ class Base(ABC):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.core_api = client.CoreV1Api()
-        backupstore = os.environ.get('LONGHORN_BACKUPSTORE')
+        backupstore = os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
         if not backupstore:
             return
