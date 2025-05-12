@@ -59,6 +59,8 @@ class Rest(Base):
         for backup in backups:
             if self.get_backup_id(backup.name) == backup_id:
                 return backup
+            elif backup.name == backup_id:
+                return backup
         return None
 
     def get_from_list(self, backup_list, backup_id):
@@ -122,12 +124,10 @@ class Rest(Base):
 
     def list(self, volume_name):
         if not volume_name:
+            backup_volumes = get_longhorn_client().list_backupVolume().data
             backup_list = []
-            vol_list = self.volume.list()
-            for volume_name in vol_list:
-                backup_volume = self.get_backup_volume(volume_name)
-                if backup_volume:
-                    backup_list.extend(backup_volume.backupList().data)
+            for backup_volume in backup_volumes:
+                backup_list.extend(backup_volume.backupList().data)
             return backup_list
         else:
             backup_volume = self.get_backup_volume(volume_name)
