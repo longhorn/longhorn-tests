@@ -25,3 +25,5 @@ LONGHORN_INSTALL_TIMEOUT = 600
 
 # The activeDeadlineSeconds is set to 900 in https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
 LONGHORN_UNINSTALL_TIMEOUT = 900
+
+DEFAULT_BACKUPSTORE="s3://backupbucket@us-east-1/backupstore$minio-secret"
