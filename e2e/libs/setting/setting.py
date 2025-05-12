@@ -4,6 +4,7 @@ import time
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.constant import DEFAULT_BACKUPSTORE
 
 from backupstore.base import BackupStore
 
@@ -50,10 +51,10 @@ class Setting:
         return get_longhorn_client().by_id_setting(key).value
 
     def get_backupstore_url(self):
-        return os.environ.get('LONGHORN_BACKUPSTORE')
+        return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
     def get_backupstore_poll_interval(self):
-        return os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL')
+        return os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL', '30')
 
     def set_backupstore(self):
         backupstore = self.get_backupstore_url()
