@@ -104,6 +104,12 @@ spec:
         - name: minio-certificates
           mountPath: "/root/certs"
           readOnly: true
+      - name: minio-helper
+        image: busybox
+        args: ["/bin/sh", "-c", "while true;do date;sleep 5; done"]
+        volumeMounts:
+        - name: minio-volume
+          mountPath: "/storage"
 ---
 apiVersion: v1
 kind: Service
