@@ -47,3 +47,9 @@ variable "k8s_distro_version" {
     rke2: (default: v1.28.14+rke2r1)
   EOT
 }
+
+variable "custom_ssh_public_key" {
+  type      = string
+  default   = ""
+  sensitive = true
+}

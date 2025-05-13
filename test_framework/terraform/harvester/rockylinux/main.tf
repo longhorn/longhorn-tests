@@ -70,6 +70,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 runcmd:
   - - systemctl
     - enable
@@ -120,6 +121,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 package_update: true
 packages:
   - qemu-guest-agent
