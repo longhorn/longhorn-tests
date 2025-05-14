@@ -70,6 +70,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
   - zypper install -y qemu-guest-agent iptables
@@ -122,6 +123,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 write_files:
   - path: "/tmp/SUSE_Trust_Root_encoded.crt"
     content: >-

@@ -214,6 +214,9 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
     "snapshot-data-integrity-immediate-check-after-snapshot-creation"
 SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
+SETTING_V2_SNAPSHOT_DATA_INTEGRITY = "v2-data-engine-snapshot-data-integrity"
+SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = \
+    "v2-data-engine-fast-replica-rebuilding"
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     "concurrent-volume-backup-restore-per-node-limit"
 SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
