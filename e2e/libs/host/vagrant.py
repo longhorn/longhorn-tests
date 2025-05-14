@@ -37,37 +37,35 @@ class Vagrant(Base):
         return {node: node for node in nodes}
 
     def reboot_all_nodes(self, shut_down_time_in_sec=NODE_REBOOT_DOWN_TIME_SECOND):
+        logging(f'Rebooting all vms')
         self._vagrant_cmd(self._CMD_RELOAD)
-
-        logging(f'Wait for {shut_down_time_in_sec} seconds before starting all vms')
-        time.sleep(shut_down_time_in_sec)
         wait_for_cluster_ready()
-        logging(f'Started all instances')
+        logging(f'Rebooted all vms')
 
     def reboot_node(self, reboot_node_name, shut_down_time_in_sec=NODE_REBOOT_DOWN_TIME_SECOND):
+        logging(f"Rebooting vm {reboot_node_name}")
         self._vagrant_cmd(self._CMD_RELOAD, reboot_node_name)
-        logging(f'Wait for {shut_down_time_in_sec} seconds before starting vm {reboot_node_name}')
-        time.sleep(shut_down_time_in_sec)
-        logging(f'Started instances {reboot_node_name}')
+        logging(f"Rebooted vm {reboot_node_name}")
 
     def reboot_all_worker_nodes(self, shut_down_time_in_sec=NODE_REBOOT_DOWN_TIME_SECOND):
+        logging(f"Rebooting worker vms")
         instance_list = self.node.list_node_names_by_role('worker')
         self._vagrant_cmd(self._CMD_RELOAD, *instance_list)
-        logging(f'Wait for {shut_down_time_in_sec} seconds before starting worker vms')
-        time.sleep(shut_down_time_in_sec)
-        logging(f'Started worker instances')
+        logging(f"Rebooted worker vms")
 
     def power_off_node(self, power_off_node_name, waiting=True):
+        logging(f'Stopping vm {power_off_node_name}')
         self._vagrant_cmd(self._CMD_HALT, power_off_node_name)
-        logging(f'Stopping instance {power_off_node_name}')
         if waiting:
-            logging(f'Stopped instance {power_off_node_name}')
+            logging(f'Stopped vm {power_off_node_name}')
             self.node.wait_for_node_down(power_off_node_name)
 
     def power_on_node(self, power_on_node_name):
+        logging(f'Starting vm {power_on_node_name}')
         self._vagrant_cmd(self._CMD_UP, power_on_node_name)
-        logging(f'Started instance {power_on_node_name}')
+        logging(f'Started vm {power_on_node_name}')
         self.node.wait_for_node_up(power_on_node_name)
 
     def _vagrant_cmd(self, *args, **kwargs):
-        return subprocess.check_call([self._bin]+list(args), stdout=sys.stdout, stderr=sys.stderr, **kwargs)
+        res = subprocess.check_call([self._bin]+list(args), **kwargs)
+        logging(f"Executed {[self._bin]+list(args)} with result {res}")
