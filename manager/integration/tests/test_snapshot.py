@@ -685,17 +685,18 @@ def check_per_volume_hash_disable(client, volume_name, snapshot_data_integrity):
 def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
     snapshot_checksums_generate = False
 
-    count = 0
-    for count in range(RETRY_WAIT_CHECKSUM_COUNTS):
+    start_time = time.time()
+    for _ in range(RETRY_WAIT_CHECKSUM_COUNTS):
         if check_snapshot_checksums_set(volume_name):
-            print(f'All checksums are set in {count} sec')
+            elapsed_time = int(time.time() - start_time)
+            print(f'All checksums are set in {elapsed_time} sec')
             snapshot_checksums_generate = True
             break
         else:
             time.sleep(RETRY_INTERVAL)
 
     assert snapshot_checksums_generate
-    return count
+    return elapsed_time
 
 
 @pytest.mark.v2_volume_test  # NOQA
