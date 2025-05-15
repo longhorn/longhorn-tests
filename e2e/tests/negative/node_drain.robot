@@ -16,7 +16,7 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/node.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

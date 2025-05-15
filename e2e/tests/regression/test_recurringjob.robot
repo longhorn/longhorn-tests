@@ -9,7 +9,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/volume.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

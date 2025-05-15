@@ -14,7 +14,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

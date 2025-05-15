@@ -16,7 +16,7 @@ Resource    ../keywords/backupstore.resource
 Resource    ../keywords/longhorn.resource
 Library     ../libs/keywords/setting_keywords.py
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -60,7 +60,7 @@ Pull Backup Created By Another Longhorn System
     Then Install Longhorn
     And Set setting deleting-confirmation-flag to true
     And Set backupstore
-    And Set up v2 environment
+    And Enable v2 data engine and add block disks
     And Check backup synced from backupstore
     And Create volume 1 from backup 0 in another cluster
     And Wait for volume 1 detached
@@ -74,7 +74,7 @@ Pull Backup Created By Another Longhorn System
     # Install previous version and create backup
     Then Install Longhorn stable version
     And Set backupstore
-    And Set up v2 environment
+    And Enable v2 data engine and add block disks
     And Create volume 2 with    dataEngine=${DATA_ENGINE}
     And Attach volume 2
     And Wait for volume 2 healthy
@@ -89,7 +89,7 @@ Pull Backup Created By Another Longhorn System
      # Install current version then pull backup and verify data
     Then Install Longhorn
     And Set backupstore
-    And Set up v2 environment
+    And Enable v2 data engine and add block disks
     And Check backup synced from backupstore
     And Create volume 3 from backup 1 in another cluster
     And Wait for volume 3 detached

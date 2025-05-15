@@ -16,7 +16,7 @@ Resource    ../keywords/backupstore.resource
 Resource    ../keywords/longhorn.resource
 Library     ../libs/keywords/setting_keywords.py
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -46,20 +46,14 @@ Uninstallation Checks
     ...       - CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE (if not using master-head)
     ...       - CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE (if not using master-head)
 
-    Given Create volume 0 with    dataEngine=v1
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
-    And Create volume 1 with    dataEngine=v2
-    And Attach volume 1
-    And Wait for volume 1 healthy
 
     When Create backup 0 for volume 0
-    And Create backup 1 for volume 1
     Then Verify backup list contains no error for volume 0
-    And Verify backup list contains no error for volume 1
     And Verify backup list contains backup 0 of volume 0
-    And Verify backup list contains backup 1 of volume 1
 
     Then Set setting deleting-confirmation-flag to true
     And Uninstall Longhorn
