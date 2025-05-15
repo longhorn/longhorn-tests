@@ -77,6 +77,7 @@ Cleanup test resources
     cleanup_system_backups
     cleanup_system_restores
     cleanup_backing_images
+    cleanup_node_labels
     cleanup_disks
     cleanup_engine_images
     reset_backupstore

@@ -114,7 +114,7 @@ Drain Node With Force
 
     And Force drain volume of deployment 0 volume node
     And Wait for volume of deployment 0 attached to another node and degraded
-    And Check instance-manager pod is not running on drained node
+    And Check ${DATA_ENGINE} instance manager is not running on drained node
     Then Check deployment 0 data in file data.txt is intact
 
 Drain Node Without Force
@@ -136,7 +136,7 @@ Drain Node Without Force
     And Delete replica of deployment 0 volume on volume node
     And Drain volume of deployment 0 volume node
     And Wait for volume of deployment 0 attached to another node and degraded
-    And Check instance-manager pod is not running on drained node
+    And Check ${DATA_ENGINE} instance manager is not running on drained node
     Then Check deployment 0 data in file data.txt is intact
 
 Test Kubectl Drain Nodes For PVC/PV/LHV Is Created Through Longhorn API
@@ -181,7 +181,7 @@ Stopped Replicas On Deleted Nodes Should Not Be Counted As Healthy Replicas When
     And Power off node 1
 
     When Force drain node 2 and expect failure
-    And Check instance-manager pod is running on node 2
+    And Check ${DATA_ENGINE} instance manager is running on node 2
     And Check volume 0 replica on node 2 exist
 
 Setting Allow Node Drain with the Last Healthy Replica protects the last healthy replica with Pod Disruption Budget (PDB)
@@ -213,7 +213,7 @@ Setting Allow Node Drain with the Last Healthy Replica protects the last healthy
     And Power off node 1
 
     When Force drain node 2 and expect failure
-    And Check instance-manager pod is running on node 2
+    And Check ${DATA_ENGINE} instance manager is running on node 2
 
     When Set setting node-drain-policy to always-allow
     And Force drain node 2 and expect success
