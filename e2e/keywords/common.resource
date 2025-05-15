@@ -41,7 +41,10 @@ Set disk path based on host provider and architecture
         Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
-Set up v2 environment
+Enable v2 data engine and add block disks
+    ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
+    # if it's already configured, no need to do it again
+    Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
     set_disk_path_based_on_host_provider_and_architecture
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
@@ -49,11 +52,13 @@ Set up v2 environment
         add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
     END
 
-Set test environment
+Set up test environment
     init_k8s_api_client
     setup_control_plane_network_latency
     set_backupstore
-    set_up_v2_environment
+    IF     "${DATA_ENGINE}" == "v2"
+        Enable v2 data engine and add block disks
+    END
 
 Cleanup test resources
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}

@@ -24,7 +24,7 @@ Resource    ../keywords/engine_image.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -50,7 +50,7 @@ Pre-release Checks
 
         And Install Longhorn stable version
         And Set backupstore
-        And Set up v2 environment
+        And Enable v2 data engine and add block disks
     END
 
     # after correct version of Longhorn is installed, start the test

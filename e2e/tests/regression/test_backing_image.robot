@@ -10,7 +10,7 @@ Resource    ../keywords/backing_image.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
