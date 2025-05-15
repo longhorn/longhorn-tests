@@ -23,7 +23,7 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/setting.resource
 
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 Test Template    Power Off Node With Anti-Affinity Settings
 

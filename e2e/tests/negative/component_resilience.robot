@@ -16,7 +16,7 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/sharemanager.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Keywords ***

@@ -16,7 +16,7 @@ Resource    ../keywords/snapshot.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/metrics.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

@@ -9,6 +9,9 @@ class setting_keywords:
     def update_setting(self, key, value, retry=True):
         self.setting.update_setting(key, value, retry)
 
+    def get_setting(self, key):
+        return self.setting.get_setting(key)
+
     def set_backupstore(self):
         self.setting.set_backupstore()
 

@@ -23,7 +23,7 @@ Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backup.resource
 
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Variables ***
