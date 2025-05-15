@@ -892,7 +892,6 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
 
             actual_avaiable_percentage = \
                 check_disk.storageAvailable / check_disk.storageMaximum * 100
-            actual_avaiable_percentage = int(actual_avaiable_percentage)
 
             if not is_freed:
                 if actual_avaiable_percentage < expected_avaiable_percentage:
