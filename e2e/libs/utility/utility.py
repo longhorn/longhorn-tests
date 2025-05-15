@@ -21,6 +21,7 @@ from kubernetes.client.rest import ApiException
 from utility.constant import NAME_PREFIX
 from utility.constant import STREAM_EXEC_TIMEOUT
 from utility.constant import STORAGECLASS_NAME_PREFIX
+from utility.constant import DEFAULT_BACKUPSTORE
 
 
 class timeout:
@@ -83,7 +84,7 @@ def init_k8s_api_client():
 
 
 def get_backupstore():
-    return os.environ.get('LONGHORN_BACKUPSTORE', "")
+    return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
 
 def subprocess_exec_cmd(cmd):

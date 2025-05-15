@@ -27,8 +27,8 @@ Library             ../libs/keywords/secret_keywords.py
 
 *** Keywords ***
 Set disk path based on host provider and architecture
-    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER
-    ${ARCH}=    Get Environment Variable    ARCH
+    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
+    ${ARCH}=    Get Environment Variable    ARCH    amd64
     IF    "${HOST_PROVIDER}" == "aws"
         IF    "${ARCH}" == "amd64"
             Set Test Variable    ${DISK_PATH}    /dev/xvdh
@@ -37,6 +37,8 @@ Set disk path based on host provider and architecture
         END
     ELSE IF    '${HOST_PROVIDER}' == "harvester"
         Set Test Variable    ${DISK_PATH}    /dev/vdc
+    ELSE IF    '${HOST_PROVIDER}' == "vagrant"
+        Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
 Set up v2 environment
