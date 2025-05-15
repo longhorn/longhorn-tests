@@ -17,7 +17,7 @@ Resource    ../keywords/backup.resource
 Resource    ../keywords/k8s.resource
 
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 Test Template    Restore volume attached node is down
 

@@ -10,7 +10,7 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/variables.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Variables ***

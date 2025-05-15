@@ -12,13 +12,19 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backing_image.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/snapshot.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/k8s.resource
 
-Test Setup    Set test environment
+Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
+
+*** Keywords ***
+Set up v2 test environment
+    Set up test environment
+    Enable v2 data engine and add block disks
 
 *** Test Cases ***
 Test V2 Volume Basic
@@ -32,6 +38,79 @@ Test V2 Volume Basic
     And Detach volume 0
     And Wait for volume 0 detached
     And Delete volume 0
+
+Test V2 Snapshot
+    [Tags]    coretest
+    [Documentation]    Test snapshot operations
+    Given Create volume 0 with    dataEngine=v2
+    When Attach volume 0
+    And Wait for volume 0 healthy
+
+    And Create snapshot 0 of volume 0
+
+    And Write data 1 to volume 0
+    And Create snapshot 1 of volume 0
+
+    And Write data 2 to volume 0
+    And Create snapshot 2 of volume 0
+
+    Then Validate snapshot 0 is parent of snapshot 1 in volume 0 snapshot list
+    And Validate snapshot 1 is parent of snapshot 2 in volume 0 snapshot list
+    And Validate snapshot 2 is parent of volume-head in volume 0 snapshot list
+    # cannot delete snapshot 2 since it is the parent of volume head
+    And Delete snapshot 2 of volume 0 will fail
+
+    When Detach volume 0
+    And Wait for volume 0 detached
+    And Attach volume 0 in maintenance mode
+    And Wait for volume 0 healthy
+
+    And Revert volume 0 to snapshot 1
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is data 1
+    And Validate snapshot 1 is parent of volume-head in volume 0 snapshot list
+
+    # cannot delete snapshot 1 since it is the parent of volume head
+    When Delete snapshot 1 of volume 0 will fail
+    And Delete snapshot 2 of volume 0
+    And Delete snapshot 0 of volume 0
+
+    # delete a snapshot won't mark the snapshot as removed
+    # but directly remove it from the snapshot list without purge
+    Then Validate snapshot 2 is not in volume 0 snapshot list
+    And Validate snapshot 0 is not in volume 0 snapshot list
+
+    And Check volume 0 data is data 1
+
+Test V2 Replica Rebuilding
+    Given Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write 1 GB data to volume 0
+
+    When Disable node 1 scheduling
+    And Disable disk block-disk scheduling on node 1
+    And Delete instance-manager on node 1
+
+    # for a v2 volume, when a replica process crashed or an instance manager deleted,
+    # the corresponding replica running state won't be set to false,
+    # but the replica will be directly deleted
+    Then Wait for volume 0 replica on node 1 to be deleted
+    And Wait for volume 0 degraded
+
+    When Enable disk block-disk scheduling on node 1
+    Then Check volume 0 kept in degraded
+
+    When Enable node 1 scheduling
+    # since the replica has been deleted, no replica will be reused on node 1
+    Then Wait until volume 0 replica rebuilding started on node 1
+    And Wait for volume 0 healthy
+
+    And Check volume 0 data is intact
+    And Check volume 0 works
 
 Degraded Volume Replica Rebuilding
     [Tags]    coretest
