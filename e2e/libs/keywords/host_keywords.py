@@ -19,7 +19,7 @@ class host_keywords:
 
     def __init__(self):
         self.volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        self.host = self._create_host(os.getenv('HOST_PROVIDER'))
+        self.host = self._create_host(os.getenv('HOST_PROVIDER', 'vagrant'))
         self.node = Node()
 
     @classmethod
