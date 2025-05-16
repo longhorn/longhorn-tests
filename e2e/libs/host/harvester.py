@@ -119,3 +119,9 @@ class Harvester(Base):
         assert started, f"Expected vm {vm_id} to be started but it's not"
 
         self.node.wait_for_node_up(vm_id)
+
+    def create_snapshot(self, node_name):
+        return NotImplemented
+
+    def cleanup_snapshots(self):
+        return NotImplemented

@@ -69,3 +69,9 @@ class Vagrant(Base):
     def _vagrant_cmd(self, *args, **kwargs):
         res = subprocess.check_call([self._bin]+list(args), **kwargs)
         logging(f"Executed {[self._bin]+list(args)} with result {res}")
+
+    def create_snapshot(self, node_name):
+        return NotImplemented
+
+    def cleanup_snapshots(self):
+        return NotImplemented
