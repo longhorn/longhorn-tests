@@ -62,3 +62,9 @@ class host_keywords:
 
     def power_off_node_by_name(self, node_name, waiting=True):
         self.host.power_off_node(node_name, waiting)
+
+    def create_snapshot(self, node_name):
+        self.host.create_snapshot(node_name)
+
+    def cleanup_vm_snapshots(self):
+        self.host.cleanup_snapshots()
