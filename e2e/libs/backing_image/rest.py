@@ -1,6 +1,7 @@
 import time
 
 from backing_image.base import Base
+from backing_image.crd import CRD
 
 from utility.utility import logging
 from utility.utility import get_longhorn_client
@@ -115,13 +116,17 @@ class Rest(Base):
         assert len(get_longhorn_client().list_backing_image()) == 0
 
     def delete_backing_image_manager(self, name):
-        return NotImplemented
+        # delegate it to CRD since it doesn't have a REST implementation
+        return CRD().delete_backing_image_manager(name)
 
     def wait_all_backing_image_managers_running(self):
-        return NotImplemented
+        # delegate it to CRD since it doesn't have a REST implementation
+        return CRD().wait_all_backing_image_managers_running()
 
     def wait_backing_image_manager_restart(self, name, last_creation_time):
-        return NotImplemented
+        # delegate it to CRD since it doesn't have a REST implementation
+        return CRD().wait_backing_image_manager_restart(name, last_creation_time)
 
     def list_backing_image_manager(self):
-        return NotImplemented
+        # delegate it to CRD since it doesn't have a REST implementation
+        return CRD().list_backing_image_manager()
