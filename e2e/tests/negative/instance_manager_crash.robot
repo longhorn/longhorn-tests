@@ -12,7 +12,7 @@ Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/longhorn.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

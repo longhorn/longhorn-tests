@@ -11,7 +11,7 @@ Resource    ../keywords/stress.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

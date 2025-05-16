@@ -11,7 +11,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/migration.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 

@@ -10,7 +10,7 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/system_backup.resource
 Resource    ../keywords/longhorn.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -38,14 +38,10 @@ Test System Backup And Restore
 Test Uninstallation With System Backup
     [Tags]    uninstall
     [Documentation]    Test uninstall Longhorn with system backup
-    Given Create volume 0 with    dataEngine=v1
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
-    And Create volume 1 with    dataEngine=v2
-    And Attach volume 1
-    And Wait for volume 1 healthy
-    And Write data 1 to volume 1
 
     And Create system backup 0
 

@@ -12,7 +12,7 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/network.resource
 Resource    ../keywords/setting.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
