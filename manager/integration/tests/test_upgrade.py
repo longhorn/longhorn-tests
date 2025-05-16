@@ -131,7 +131,10 @@ def longhorn_upgrade(upgrade_to_transient_version=False):
     longhorn_install_method = os.getenv('LONGHORN_INSTALL_METHOD', 'manifest')
 
     if longhorn_install_method == "manifest":
-        command = "./pipelines/utilities/longhorn_manifest.sh"
+        if os.getenv('APPCO_TEST') == "true":
+            command = "./pipelines/appco/scripts/longhorn_manifest.sh"
+        else:
+            command = "./pipelines/utilities/longhorn_manifest.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "helm":
@@ -626,7 +629,11 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
     # the longhorn engine image to be upgraded to
     # it should be defined,
     # so os.environ is used to throw error if it's not found
-    longhorn_engine_image = os.environ['CUSTOM_LONGHORN_ENGINE_IMAGE']
+    if os.getenv('AIR_GAP_INSTALLATION') == "true":
+        longhorn_engine_image = os.environ['REGISTRY_URL'] + "/" + \
+                                os.environ['CUSTOM_LONGHORN_ENGINE_IMAGE']
+    else:
+        longhorn_engine_image = os.environ['CUSTOM_LONGHORN_ENGINE_IMAGE']
     print(f"target longhorn engine image = {longhorn_engine_image}")
     print("listing available longhorn engine images:")
     for ei in engineimages:
