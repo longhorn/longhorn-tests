@@ -33,17 +33,13 @@ class BackingImage(Base):
         return self.backing_image.cleanup_backing_images()
 
     def delete_backing_image_manager(self, name):
-        self.backing_image = CRD()
         return self.backing_image.delete_backing_image_manager(name)
 
     def wait_all_backing_image_managers_running(self):
-        self.backing_image = CRD()
         return self.backing_image.wait_all_backing_image_managers_running()
 
     def wait_backing_image_manager_restart(self, name, last_creation_time):
-        self.backing_image = CRD()
         self.backing_image.wait_backing_image_manager_restart(name, last_creation_time)
 
     def list_backing_image_manager(self):
-        self.backing_image = CRD()
         return self.backing_image.list_backing_image_manager()
