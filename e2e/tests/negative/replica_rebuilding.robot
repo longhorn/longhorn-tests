@@ -89,7 +89,7 @@ Reboot Replica Node While Offline Replica Rebuilding
 
 Delete Replicas One By One After The Volume Is Healthy
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 attached
     And Write 2048 MB data to file data.txt in deployment 0
@@ -116,7 +116,7 @@ Delete Replicas One By One Regardless Of The Volume Health
     ...                https://github.com/longhorn/longhorn/issues/9216 and will be fixed
     ...                in v1.9.0
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 attached
     And Get deployment 0 pod name

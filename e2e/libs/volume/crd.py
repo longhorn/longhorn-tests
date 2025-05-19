@@ -283,7 +283,7 @@ class CRD(Base):
     def wait_for_volume_state(self, volume_name, desired_state):
         volume = None
         for i in range(self.retry_count):
-            logging(f"Waiting for {volume_name} {desired_state} ({i}) ...")
+            logging(f"Waiting for {volume_name} {desired_state} ... ({i})")
             try:
                 volume = self.get(volume_name)
                 if volume["status"]["state"] == desired_state:
@@ -298,6 +298,19 @@ class CRD(Base):
         volume = self.get(volume_name)
         assert volume["spec"]["nodeID"] != ""
         assert volume["status"]["currentNodeID"] == ""
+
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        volume = None
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} cloneStatus to be {desired_state} ... ({i})")
+            try:
+                volume = self.get(volume_name)
+                if volume["status"]["cloneStatus"]["state"] == desired_state:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume} cloneStatus error: {e}")
+            time.sleep(self.retry_interval)
+        assert volume["status"]["cloneStatus"]["state"] == desired_state
 
     def is_replica_running(self, volume_name, node_name, is_running):
         return Rest().is_replica_running(volume_name, node_name, is_running)

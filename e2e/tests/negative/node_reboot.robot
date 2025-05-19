@@ -24,8 +24,8 @@ Test Teardown    Cleanup test resources
 Shutdown Volume Node And Test Auto Reattach To A New Node
     Given Set setting node-down-pod-deletion-policy to delete-both-statefulset-and-deployment-pod
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
@@ -60,9 +60,9 @@ Reboot Node One By One While Workload Heavy Writing
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=strict-local
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
@@ -101,9 +101,9 @@ Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heav
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=strict-local
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
@@ -142,9 +142,9 @@ Reboot All Worker Nodes While Workload Heavy Writing
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=strict-local
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
@@ -181,9 +181,9 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=strict-local
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
@@ -284,7 +284,7 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
 
 Physical Node Reboot With Attached Deployment
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using ${VOLUME_TYPE} volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=${VOLUME_TYPE}    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data in deployment 0
 
@@ -304,7 +304,7 @@ Physical Node Reboot With Attached Statefulset
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Replica Node
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Set setting node-down-pod-deletion-policy to do-nothing
-    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -323,7 +323,7 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Volume Node
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Set setting node-down-pod-deletion-policy to do-nothing
-    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -341,7 +341,7 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Replica Node
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Set setting node-down-pod-deletion-policy to delete-deployment-pod
-    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
@@ -360,7 +360,7 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Volume Node
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Set setting node-down-pod-deletion-policy to delete-deployment-pod
-    When Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data in deployment 0
