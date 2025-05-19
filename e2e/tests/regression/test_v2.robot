@@ -116,7 +116,7 @@ Degraded Volume Replica Rebuilding
     [Tags]    coretest
     Given Disable node 2 scheduling
     And Create storageclass longhorn-test with    dataEngine=v2
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 attached and degraded
     And Write 2048 MB data to file data.txt in deployment 0
@@ -135,7 +135,7 @@ V2 Volume Should Block Trim When Volume Is Degraded
     [Tags]    cluster
     Given Set setting auto-salvage to true
     And Create storageclass longhorn-test with    dataEngine=v2
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}

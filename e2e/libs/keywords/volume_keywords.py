@@ -294,6 +294,10 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be in faulted')
         self.volume.wait_for_volume_faulted(volume_name)
 
+    def wait_for_volume_clone_status_completed(self, volume_name):
+        logging(f'Waiting for volume {volume_name} clone status to be completed')
+        self.volume.wait_for_volume_clone_status(volume_name, "completed")
+
     def wait_for_volume_migration_to_be_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
         self.volume.wait_for_volume_migration_to_be_ready(volume_name)

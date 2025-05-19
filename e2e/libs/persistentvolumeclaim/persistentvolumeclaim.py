@@ -21,10 +21,11 @@ class PersistentVolumeClaim():
     _strategy = LonghornOperationStrategy.CRD
 
     def __init__(self):
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type, sc_name, storage_size="3GiB"):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None):
         storage_size_bytes = convert_size_to_bytes(storage_size)
 
         filepath = "./templates/workload/pvc.yaml"
@@ -47,11 +48,19 @@ class PersistentVolumeClaim():
             # correct access mode`
             if volume_type == 'RWX':
                 manifest_dict['spec']['accessModes'][0] = 'ReadWriteMany'
+
+            if dataSourceName and dataSourceKind:
+                manifest_dict['spec']['dataSource'] = {
+                    'name': dataSourceName,
+                    'kind': dataSourceKind
+                }
+
             api = client.CoreV1Api()
 
             api.create_namespaced_persistent_volume_claim(
                 body=manifest_dict,
                 namespace=namespace)
+            self.wait_for_pvc_phase(name, "Bound")
 
     def delete(self, name, namespace='default'):
         api = client.CoreV1Api()
@@ -63,13 +72,12 @@ class PersistentVolumeClaim():
         except ApiException as e:
             assert e.status == 404
 
-        retry_count, retry_interval = get_retry_count_and_interval()
         deleted = False
-        for _ in range(retry_count):
+        for _ in range(self.retry_count):
             if not self.is_exist(name, namespace):
                 deleted = True
                 break
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
         assert deleted
 
     def is_exist(self, name, namespace='default'):
@@ -84,6 +92,11 @@ class PersistentVolumeClaim():
 
     def get(self, claim_name):
         return self.claim.get(claim_name)
+
+    def get_volume_name(self, claim_name):
+        api = client.CoreV1Api()
+        pvc = api.read_namespaced_persistent_volume_claim(name=claim_name, namespace='default')
+        return pvc.spec.volume_name
 
     def list(self, claim_namespace="default", label_selector=None):
         return self.claim.list(claim_namespace=claim_namespace,
@@ -112,3 +125,17 @@ class PersistentVolumeClaim():
         target_size = current_size + size_in_byte
         expanded_size = self.claim.expand(claim_name, target_size, skip_retry=skip_retry)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
+
+    def wait_for_pvc_phase(self, pvc_name, phase):
+        api = client.CoreV1Api()
+        for i in range(self.retry_count):
+            try:
+                pvc = api.read_namespaced_persistent_volume_claim(
+                    name=pvc_name, namespace='default')
+                logging(f"Waiting for pvc {pvc_name} phase to be {phase}, currently it's {pvc.status.phase} ... ({i})")
+                if pvc.status.phase == phase:
+                    return
+            except Exception as e:
+                logging(f"Waiting for pvc {pvc_name} phase to be {phase} error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for pvc {pvc_name} phase to be {phase}: {pvc}"
