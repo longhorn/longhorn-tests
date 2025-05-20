@@ -190,3 +190,6 @@ class Volume(Base):
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         return self.volume.update_offline_replica_rebuild(volume_name, rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        return self.volume.update_data_locality(volume_name, data_locality)
