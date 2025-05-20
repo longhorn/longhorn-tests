@@ -398,3 +398,7 @@ class volume_keywords:
     def update_offline_replica_rebuild(self, volume_name, rebuild_type="ignore"):
         logging(f'Volume {volume_name} offline replica rebuilding is updating to {rebuild_type}')
         self.volume.update_offline_replica_rebuild(volume_name, rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        logging(f'Updating volume {volume_name} data locality {data_locality}')
+        self.volume.update_data_locality(volume_name, data_locality)

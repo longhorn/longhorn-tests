@@ -148,3 +148,20 @@ Test Replica Auto Balance Node Least Effort
 
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Data Locality
+    Given Create single replica volume 0 with replica on node 0    dataLocality=disabled    dataEngine=${DATA_ENGINE}
+    When Attach volume 0 to node 1
+    And Write data to volume 0
+    Then Volume 0 should have 0 replicas running on node 1
+
+    When Update volume 0 data locality to best-effort
+    Then Wait until volume 0 replica rebuilding started on node 1
+    And Volume 0 should have 1 replicas running on node 1
+    And Volume 0 should have 0 replicas running on node 0
+
+    When Detach volume 0 from node 1
+    And Attach volume 0 to node 2
+    Then Wait until volume 0 replica rebuilding started on node 2
+    And Volume 0 should have 1 replicas running on node 2
+    And Volume 0 should have 0 replicas running on node 1
