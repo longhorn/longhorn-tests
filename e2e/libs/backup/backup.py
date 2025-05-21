@@ -24,6 +24,16 @@ class Backup(Base):
     def get(self, backup_id, volume_name):
         return self.backup.get(backup_id, volume_name)
 
+    def get_backup_url(self, backup_id, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Getting volume {volume_name} backup {backup_id} url ... ({i})")
+            backup = self.get(backup_id, volume_name)
+            if backup and backup.url:
+                logging(f"Got volume {volume_name} backup {backup_id} url={backup.url}")
+                return backup.url
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get volume {volume_name} backup {backup_id} url: {backup}"
+
     def get_from_list(self, backup_list, backup_id):
         return self.backup.get_from_list(backup_list, backup_id)
 
