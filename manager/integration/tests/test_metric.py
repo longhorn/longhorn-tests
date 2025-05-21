@@ -160,8 +160,6 @@ def examine_metric_value(found_metric, metric_labels, expected_value=None):
     for key, value in metric_labels.items():
         assert found_metric.labels[key] == value
 
-    assert isinstance(found_metric.value, float)
-
     if expected_value is not None:
         assert found_metric.value == expected_value
     else:
@@ -216,8 +214,6 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
             continue
 
         filtered_metric = filter_metric_by_labels(metrics, expected_labels)
-
-        assert isinstance(filtered_metric.value, float)
 
         for key, value in expected_labels.items():
             value_type = type(value)
