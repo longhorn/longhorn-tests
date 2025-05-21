@@ -25,7 +25,7 @@ class backup_keywords:
         return self.backup.get(backup_id, volume_name).name
 
     def get_backup_url(self, backup_id, volume_name=None):
-        return self.backup.get(backup_id, volume_name).url
+        return self.backup.get_backup_url(backup_id, volume_name)
 
     def get_backup_url_from_backup_list(self, backup_list, backup_id):
         backup = self.backup.get_from_list(backup_list, backup_id)
