@@ -754,7 +754,7 @@ def test_orphan_auto_deletion(client, volume_name, request):  # NOQA
 
     # Step 6: enable orphan auto deletion
     setting = client.by_id_setting(SETTING_ORPHAN_RESOURCE_AUTO_DELETION)
-    client.update(setting, value="replicaData")
+    client.update(setting, value="replica-data")
 
     # Step 7
     assert wait_for_orphan_count(client, 0, 180) == 0
