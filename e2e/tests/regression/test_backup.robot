@@ -130,6 +130,7 @@ Test Uninstallation With Backups
     Then Install Longhorn
 
 Test Cleanup Snapshot With The Global Setting After Backup Completed
+    [Tags]    auto-cleanup-snapshot
     [Documentation]    Test cleanup snapshot with the global setting after backup completed
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
