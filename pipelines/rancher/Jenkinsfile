@@ -20,6 +20,8 @@ def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
 def RANCHER_PRIME = params.RANCHER_PRIME ? params.RANCHER_PRIME : false
 
+def BLOCK_DEVICE_SIZE = params.TEST_TYPE == "robot" ? 80 : 40
+
 node {
 
     withCredentials([
@@ -71,6 +73,7 @@ node {
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
                                        --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                        --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_block_device_size_worker=${BLOCK_DEVICE_SIZE} \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \

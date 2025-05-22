@@ -22,3 +22,8 @@ variable "arch" {
   type        = string
   default     = "amd64"
 }
+
+variable "block_device_size_worker" {
+  type        = number
+  default     = 40
+}
