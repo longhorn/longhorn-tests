@@ -67,6 +67,7 @@ Reboot Replica Node While Replica Rebuilding
     END
 
 Reboot Replica Node While Offline Replica Rebuilding
+    [Tags]    offline-rebuilding
     [Documentation]    Reboot a replica node during offline replica rebuilding is in progress.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/8443
