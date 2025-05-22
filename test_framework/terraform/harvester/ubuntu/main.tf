@@ -34,9 +34,9 @@ resource "rancher2_cloud_credential" "e2e-credential" {
   }
 }
 
-resource "rancher2_machine_config_v2" "e2e-machine-config" {
+resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 
-  generate_name = "e2e-machine-config-${random_string.random_suffix.id}"
+  generate_name = "e2e-machine-config-controlplane-${random_string.random_suffix.id}"
 
   harvester_config {
 
@@ -49,13 +49,8 @@ resource "rancher2_machine_config_v2" "e2e-machine-config" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-kkkjv",
-            "size": 100,
+            "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
-        },
-        {
-            "storageClassName": "harvester-longhorn",
-            "size": 100,
-            "bootOrder": 2
         }]
     }
     EOF
@@ -63,7 +58,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
@@ -75,6 +70,62 @@ resource "rancher2_machine_config_v2" "e2e-machine-config" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
+package_update: true
+packages:
+  - qemu-guest-agent
+  - iptables
+runcmd:
+  - - systemctl
+    - enable
+    - '--now'
+    - qemu-guest-agent.service
+EOF
+  }
+}
+
+resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
+
+  generate_name = "e2e-machine-config-worker-${random_string.random_suffix.id}"
+
+  harvester_config {
+
+    vm_namespace = "longhorn-qa"
+
+    cpu_count = "4"
+    memory_size = "8"
+
+    disk_info = <<EOF
+    {
+        "disks": [{
+            "imageName": "longhorn-qa/image-kkkjv",
+            "size": ${var.block_device_size_worker},
+            "bootOrder": 1
+        },
+        {
+            "storageClassName": "harvester-longhorn",
+            "size": ${var.block_device_size_worker},
+            "bootOrder": 2
+        }]
+    }
+    EOF
+
+    network_info = <<EOF
+    {
+        "interfaces": [{
+            "networkName": "longhorn-qa/vlan-2011"
+        }]
+    }
+    EOF
+
+    ssh_user = "ubuntu"
+
+    user_data = <<EOF
+#cloud-config
+ssh_authorized_keys:
+  - >-
+    ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 package_update: true
 packages:
   - qemu-guest-agent
@@ -124,8 +175,8 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
       worker_role = false
       quantity = 1
       machine_config {
-        kind = rancher2_machine_config_v2.e2e-machine-config.kind
-        name = rancher2_machine_config_v2.e2e-machine-config.name
+        kind = rancher2_machine_config_v2.e2e-machine-config-controlplane.kind
+        name = rancher2_machine_config_v2.e2e-machine-config-controlplane.name
       }
     }
     machine_pools {
@@ -136,8 +187,8 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
       worker_role = true
       quantity = 3
       machine_config {
-        kind = rancher2_machine_config_v2.e2e-machine-config.kind
-        name = rancher2_machine_config_v2.e2e-machine-config.name
+        kind = rancher2_machine_config_v2.e2e-machine-config-worker.kind
+        name = rancher2_machine_config_v2.e2e-machine-config-worker.name
       }
     }
     machine_selector_config {
