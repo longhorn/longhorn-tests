@@ -127,7 +127,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_controlplane
+    volume_size = var.block_device_size_controlplane
   }
 
   tags = {
@@ -142,7 +142,7 @@ resource "aws_ebs_volume" "lh_aws_ssd_volume" {
   count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
 
   availability_zone = var.aws_availability_zone
-  size              = var.lh_aws_instance_root_block_device_size_worker
+  size              = var.block_device_size_worker
   type              = "gp2"
 
   tags = {
@@ -163,7 +163,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_controlplane
+    volume_size = var.block_device_size_controlplane
   }
 
   tags = {
