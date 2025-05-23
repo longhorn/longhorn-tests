@@ -1,6 +1,6 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
-def summary_msg
+def summary_msg = ""
 def WORKSPACE = "/src/longhorn-tests"
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
@@ -101,7 +101,9 @@ node {
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/output.xml ."
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/junit.xml ."
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
-                    summary = robot outputPath: '.'
+                    robot outputPath: '.',
+                          passThreshold: 100.0,
+                          unstableThreshold: 0.0
                 } else {
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
                     if(params.LONGHORN_UPGRADE_TEST) {
@@ -136,7 +138,7 @@ node {
                 if (summary) {
                     summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
                 } else {
-                    summary_msg = "\n Test Failed: No Junit report"
+                    summary_msg = "\nNo Junit report"
                 }
 
                 if(params.SEND_SLACK_NOTIFICATION){
@@ -154,7 +156,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
   // Default values
-  def colorName = 'RED'
+  def color = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
   def summary = "${subject} (${env.BUILD_URL})" + summary_msg
@@ -163,7 +165,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   if (buildStatus == 'STARTED') {
     color = 'YELLOW'
     colorCode = '#FFFF00'
-  } else if (buildStatus == 'SUCCESSFUL') {
+  } else if (buildStatus in ['SUCCESSFUL', 'SUCCESS']) {
     color = 'GREEN'
     colorCode = '#00FF00'
   } else {
