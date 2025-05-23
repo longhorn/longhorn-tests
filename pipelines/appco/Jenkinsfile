@@ -126,7 +126,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
   // Default values
-  def colorName = 'RED'
+  def color = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
   def summary = "${subject} (${env.BUILD_URL})" + summary_msg
