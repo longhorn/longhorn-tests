@@ -204,6 +204,7 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     ]
     pvc['spec']['storageClassName'] = DEFAULT_STORAGECLASS_NAME
     storage_class['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
+    storage_class['parameters']['dataEngine'] = DATA_ENGINE
     storage_class['parameters']['diskSelector'] = 'ssd,nvme'
     storage_class['parameters']['nodeSelector'] = 'storage,main'
     volume_size = DEFAULT_VOLUME_SIZE * Gi
