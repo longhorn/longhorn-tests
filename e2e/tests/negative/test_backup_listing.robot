@@ -128,7 +128,7 @@ Pod ${pod_id} data should same as volume ${source_volume_id} backup ${backup_id}
 Backup Listing With More Than 1000 Backups
     [Tags]  manual  longhorn-8355
     [Documentation]    Test backup listing
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create persistentvolumeclaim 0    volume_type=RWO
     And Create deployment 0 with persistentvolumeclaim 0
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume
@@ -141,7 +141,7 @@ Backup Listing With More Than 1000 Backups
 Backup Listing Of Volume Bigger Than 200 Gi
     [Tags]  manual  longhorn-8355  large-size
     [Documentation]    Test backup bigger than 200 Gi
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create persistentvolumeclaim 0    volume_type=RWO
     And Create deployment 0 with persistentvolumeclaim 0
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume

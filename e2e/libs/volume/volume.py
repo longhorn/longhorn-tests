@@ -54,6 +54,9 @@ class Volume(Base):
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return self.volume.wait_for_restore_required_status(volume_name, restore_required_state)
 
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        return self.volume.wait_for_volume_clone_status(volume_name, desired_state)
+
     def wait_for_volume_to_be_created(self, volume_name):
         self.volume.wait_for_volume_to_be_created(volume_name)
 

@@ -20,7 +20,7 @@ Crash Instance Manager While Workload Pod Is Starting
     [Tags]    encrypted
     Given Create crypto secret
     And Create storageclass longhorn-crypto with    encrypted=true
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-crypto storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data.txt in deployment 0

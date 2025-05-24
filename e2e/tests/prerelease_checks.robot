@@ -93,7 +93,7 @@ Pre-release Checks
     And Write data data-vol-strict-local to volume vol-strict-local
 
     # (6) create a rwx workload
-    When Create persistentvolumeclaim 0 using RWX volume with longhorn-test storageclass
+    When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment deploy-upgrade with persistentvolumeclaim 0
     And Wait for volume of deployment deploy-upgrade attached and healthy
     And Write 1024 MB data to file data.txt in deployment deploy-upgrade
@@ -169,7 +169,7 @@ Pre-release Checks
 
         # (3) create a v2 volume used by a deployment
         When Create storageclass longhorn-test-v2 with    dataEngine=v2
-        And Create persistentvolumeclaim pvc-v2 using RWO volume with longhorn-test-v2 storageclass
+        And Create persistentvolumeclaim pvc-v2    volume_type=RWO    sc_name=longhorn-test-v2
         And Create deployment deploy-v2-upgrade with persistentvolumeclaim pvc-v2
         And Wait for volume of deployment deploy-v2-upgrade attached and healthy
         And Write 1024 MB data to file data.txt in deployment deploy-v2-upgrade

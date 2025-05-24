@@ -31,7 +31,9 @@ Delete volume of ${workload_kind} ${workload_id} replica node
 
 Add deleted node back
     reboot_node_by_name    ${deleted_node}
-    add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+    IF     "${DATA_ENGINE}" == "v2"
+        add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+    END
 
 Force drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

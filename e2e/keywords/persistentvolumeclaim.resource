@@ -7,14 +7,35 @@ Library    ../libs/keywords/persistentvolumeclaim_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
-Create persistentvolumeclaim ${claim_id} using ${volume_type} volume
+Create persistentvolumeclaim ${claim_id}
     [Arguments]    &{config}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_persistentvolumeclaim    ${claim_name}    ${volume_type}    &{config}
+    create_persistentvolumeclaim    ${claim_name}    &{config}
 
-Create persistentvolumeclaim ${claim_id} using ${volume_type} volume with ${sc_name} storageclass
+Create persistentvolumeclaim ${cloned_claim_id} from persistentvolumeclaim ${source_claim_id}
+    ${cloned_claim_name} =    generate_name_with_suffix    claim    ${cloned_claim_id}
+    ${source_claim_name} =    generate_name_with_suffix    claim    ${source_claim_id}
+    create_persistentvolumeclaim    ${cloned_claim_name}    dataSourceName=${source_claim_name}    dataSourceKind=PersistentVolumeClaim
+
+Wait for volume of persistentvolumeclaim ${claim_id} to be created
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_persistentvolumeclaim    ${claim_name}    ${volume_type}    ${sc_name}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_to_be_created    ${volume_name}
+
+Wait for volume of persistentvolumeclaim ${claim_id} cloning to complete
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_clone_status_completed    ${volume_name}
+
+Wait for volume of persistentvolumeclaim ${claim_id} healthy
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_healthy    ${volume_name}
+
+Wait for volume of persistentvolumeclaim ${claim_id} detached
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_detached    ${volume_name}
 
 Delete persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}

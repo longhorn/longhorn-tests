@@ -172,7 +172,7 @@ class Rest(Base):
                         # but job_name is in spec.labels.RecurringJob
                         # and crd doesn't support field selector
                         # so need to filter by ourselves
-                        if 'RecurringJob' in item['spec']['labels'] and \
+                        if item['spec']['labels'] and 'RecurringJob' in item['spec']['labels'] and \
                             item['spec']['labels']['RecurringJob'] == job_name and \
                             item['status']['readyToUse'] == True:
                             snapshot_time = item['metadata']['creationTimestamp']

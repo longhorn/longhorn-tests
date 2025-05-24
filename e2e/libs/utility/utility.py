@@ -65,11 +65,22 @@ def generate_name_random(name_prefix="test-"):
                 for _ in range(6))
 
 
+def is_integer(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
+
 def generate_name_with_suffix(kind, suffix):
-    if kind == "storageclass":
-        return f"{STORAGECLASS_NAME_PREFIX}-{suffix}"
+    if not is_integer(suffix):
+        return suffix
     else:
-        return f"{NAME_PREFIX}-{kind}-{suffix}"
+        if kind == "storageclass":
+            return f"{STORAGECLASS_NAME_PREFIX}-{suffix}"
+        else:
+            return f"{NAME_PREFIX}-{kind}-{suffix}"
 
 
 def init_k8s_api_client():

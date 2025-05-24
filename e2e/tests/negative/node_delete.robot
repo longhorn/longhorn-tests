@@ -21,8 +21,8 @@ Delete Volume Node While Replica Rebuilding
     Given Set setting node-down-pod-deletion-policy to do-nothing
     And Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Write 2048 MB data to file data in deployment 0
@@ -54,8 +54,8 @@ Delete Replica Node While Replica Rebuilding
     Given Set setting node-down-pod-deletion-policy to do-nothing
     And Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Write 2048 MB data to file data in deployment 0
