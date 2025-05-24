@@ -33,3 +33,10 @@ class Base(ABC):
     def power_on_node(self, node_name):
         return NotImplemented
 
+    @abstractmethod
+    def create_snapshot(self, node_name):
+        return NotImplemented
+
+    @abstractmethod
+    def cleanup_snapshots(self):
+        return NotImplemented

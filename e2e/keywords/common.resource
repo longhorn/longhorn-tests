@@ -66,6 +66,7 @@ Cleanup test resources
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
+    cleanup_vm_snapshots
     uncordon_all_nodes
     cleanup_control_plane_network_latency
     reset_node_schedule
