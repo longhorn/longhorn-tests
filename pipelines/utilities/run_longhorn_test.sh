@@ -123,6 +123,9 @@ run_longhorn_upgrade_test(){
   ## for v2 volume test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
 
+  ## for appco test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+
   # environment variables for upgrade test
   # install method can be manifest, helm, rancher, flux, fleet and argocd
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_INSTALL_METHOD", "value": "'${LONGHORN_INSTALL_METHOD}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
@@ -140,6 +143,31 @@ run_longhorn_upgrade_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+    if [[ $APPCO_TEST = "true" ]]; then
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_URL", "value": "'${REGISTRY_URL}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "AIR_GAP_INSTALLATION", "value": "'${AIR_GAP_INSTALLATION}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_UI_IMAGE", "value": "'${CUSTOM_LONGHORN_UI_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE", "value": "'${CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_RESIZER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_RESIZER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_MANAGER_IMAGE", "value": "'${TRANSIENT_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_ENGINE_IMAGE", "value": "'${TRANSIENT_ENGINE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_INSTANCE_MANAGER_IMAGE", "value": "'${TRANSIENT_INSTANCE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_SHARE_MANAGER_IMAGE", "value": "'${TRANSIENT_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_UI_IMAGE", "value": "'${TRANSIENT_UI_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_SUPPORT_BUNDLE_IMAGE", "value": "'${TRANSIENT_SUPPORT_BUNDLE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_ATTACHER_IMAGE", "value": "'${TRANSIENT_CSI_ATTACHER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_PROVISIONER_IMAGE", "value": "'${TRANSIENT_CSI_PROVISIONER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_NODE_REGISTRAR_IMAGE", "value": "'${TRANSIENT_CSI_NODE_REGISTRAR_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_RESIZER_IMAGE", "value": "'${TRANSIENT_CSI_RESIZER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_SNAPSHOTTER_IMAGE", "value": "'${TRANSIENT_CSI_SNAPSHOTTER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_LIVENESSPROBE_IMAGE", "value": "'${TRANSIENT_CSI_LIVENESSPROBE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+    fi
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_HOSTNAME", "value": "'${RANCHER_HOSTNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_ACCESS_KEY", "value": "'${RANCHER_ACCESS_KEY}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
