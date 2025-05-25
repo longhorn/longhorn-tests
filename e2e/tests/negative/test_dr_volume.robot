@@ -2,7 +2,7 @@
 Documentation    Test DR volume node reboot
 ...              https://github.com/longhorn/longhorn/issues/8425
 
-Test Tags    manual
+Test Tags    manual    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

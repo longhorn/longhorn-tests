@@ -18,7 +18,7 @@ resource "aws_instance" "lh_aws_instance_controlplane_rke" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_controlplane
+    volume_size = var.block_device_size_controlplane
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
@@ -53,7 +53,7 @@ resource "aws_instance" "lh_aws_instance_worker_rke" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_worker
+    volume_size = var.block_device_size_worker
   } 
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
