@@ -131,6 +131,12 @@ Test Replica Auto Balance Node Least Effort
     And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
     And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
     # 1 or 2 replicas, but not 3 replicas, on node 0 could be reschduled to node 1
+    # replica count on each node could be:
+    # 5, 1, 0
+    # or
+    # 4, 2, 0
+    # but not
+    # 3, 3, 0
     And Number of volume 0 replicas on node 1 should be less than on node 0
     And Volume 0 should have 0 replicas running on node 2 and no additional scheduling occurs
 
@@ -144,6 +150,11 @@ Test Replica Auto Balance Node Least Effort
     And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
     And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
     And Volume 0 should have replicas running on node 2 and no additional scheduling occurs
+    # replicas on node 0 will be rescheduled to node 2
+    # replica counts on each node could be:
+    # 4, 1, 1
+    # 3, 2, 1
+    # so replica count of node 0 should still be greater than that of node 2
     And Number of volume 0 replicas on node 2 should be less than on node 0
 
     And Wait for volume 0 healthy
