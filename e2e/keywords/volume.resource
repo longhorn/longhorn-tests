@@ -355,7 +355,11 @@ Number of volume ${volume_id} replicas on node ${node_id_0} should be less than 
     ${node_name_1} =    get_node_by_index    ${node_id_1}
     ${replica_count_0} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_0}
     ${replica_count_1} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_1}
-    Should Be True    ${replica_count_0} < ${replica_count_1}
+    ${more_than} =    Evaluate    ${replica_count_0} >= ${replica_count_1}
+    Run Keyword If    ${more_than}
+        ...    Log to console    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
+        ...    Sleep    ${retry_count}
+        ...    Fail    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
 
 Volume ${volume_id} should have replicas running on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -370,7 +374,11 @@ Volume ${volume_id} should have ${expected_replica_count} replicas running on no
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
-        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        ${not_equal} =    Evaluate    int(${replica_count}) != int(${new_replica_count})
+        Run Keyword If    ${not_equal}
+        ...    Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        ...    Sleep    ${retry_count}
+        ...    Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
         Sleep    5
     END
 
@@ -379,7 +387,11 @@ Volume ${volume_id} should have replicas running on node ${node_id} and no addit
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
-        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        ${not_equal} =    Evaluate    int(${replica_count}) != int(${new_replica_count})
+        Run Keyword If    ${not_equal}
+        ...    Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        ...    Sleep    ${retry_count}
+        ...    Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
         Sleep    5
     END
 
