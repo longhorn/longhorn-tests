@@ -102,6 +102,13 @@ class Node:
                 logging(f"Removing disk {disk_name} from node {node_name}")
         self.update_disks(node_name, disks)
 
+    def set_node_disks_tags(self, node_name, tags):
+        node = get_longhorn_client().by_id_node(node_name)
+        for disk_name, disk in iter(node.disks.items()):
+            logging(f"Setting tags {tags} to node {node_name} disk {disk_name}")
+            disk.tags = list(tags)
+        self.update_disks(node_name, node.disks)
+
     def is_accessing_node_by_index(self, node):
         p = re.compile('node (\d)')
         if m := p.match(node):
@@ -201,6 +208,19 @@ class Node:
             time.sleep(self.retry_interval)
 
         raise AssertionError(f"Updating node {node_name} failed")
+
+    def set_node_tags(self, node_name, tags):
+        for i in range(self.retry_count):
+            logging(f"Setting tags {tags} to node {node_name} .. ({i})")
+            try:
+                node = get_longhorn_client().by_id_node(node_name)
+                get_longhorn_client().update(node, tags=list(tags))
+                self.set_node_scheduling(node_name)
+                return
+            except Exception as e:
+                logging(f"Setting tags {tags} to node {node_name} failed: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Setting tags {tags} to node {node_name} failed"
 
     def set_node_scheduling(self, node_name, allowScheduling=True, retry=True):
         node = get_longhorn_client().by_id_node(node_name)
