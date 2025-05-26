@@ -26,7 +26,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector):
         size_suffix = size[-2:]
         size_number = size[:-2]
         size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
@@ -55,7 +55,9 @@ class CRD(Base):
                 "Standby": Standby,
                 "fromBackup": fromBackup,
                 # disable revision counter by default from v1.7.0
-                "revisionCounterDisabled": True
+                "revisionCounterDisabled": True,
+                "nodeSelector": nodeSelector,
+                "diskSelector": diskSelector
             }
         }
         try:
@@ -85,6 +87,8 @@ class CRD(Base):
             assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
             assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
             assert volume['spec']['encrypted'] == encrypted, f"expect volume encrypted is {encrypted}, but it's {volume['spec']['encrypted']}"
+            assert volume['spec']['nodeSelector'] == nodeSelector, f"expect volume nodeSelector is {nodeSelector}, but it's {volume['spec']['nodeSelector']}"
+            assert volume['spec']['diskSelector'] == diskSelector, f"expect volume diskSelector is {diskSelector}, but it's {volume['spec']['diskSelector']}"
         except ApiException as e:
             logging(e)
 

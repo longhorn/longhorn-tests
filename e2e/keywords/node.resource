@@ -17,6 +17,16 @@ Set node ${node_id} with
     ${node_name} =    get_node_by_index    ${node_id}
     set_node   ${node_name}    &{config}
 
+Set node ${node_id} tags
+    [Arguments]    @{tags}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_node_tags   ${node_name}    @{tags}
+
+Set node ${node_id} disks tags
+    [Arguments]    @{tags}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_node_disks_tags   ${node_name}    @{tags}
+
 Disable node ${node_id} scheduling
     ${node_name} =    get_node_by_index    ${node_id}
     disable_node_scheduling    ${node_name}
