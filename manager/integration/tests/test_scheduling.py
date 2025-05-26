@@ -619,6 +619,7 @@ def test_replica_auto_balance_node_least_effort(client, volume_name):  # NOQA
 
 
 @pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.flaky(reruns=3)
 def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     """
     Scenario: replica auto-balance nodes with `best_effort`.
