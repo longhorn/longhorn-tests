@@ -88,3 +88,5 @@ Cleanup test resources
     cleanup_engine_images
     reset_backupstore
     reset_settings
+    reset_node_tags
+    reset_node_disks_tags

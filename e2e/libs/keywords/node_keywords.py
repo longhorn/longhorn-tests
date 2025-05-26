@@ -32,6 +32,12 @@ class node_keywords:
             logging(f"Resetting node {node_name} disks to default")
             self.node.reset_disks(node_name)
 
+    def reset_node_disks_tags(self):
+        nodes = self.node.list_node_names_by_role("worker")
+        for node_name in nodes:
+            logging(f"Resetting node {node_name} disks tags")
+            self.set_node_disks_tags(node_name)
+
     def disable_default_disk(self, node_name):
         self.node.set_default_disk_scheduling(node_name, allowScheduling=False)
 
@@ -42,12 +48,17 @@ class node_keywords:
         logging(f"Setting node {node_name}; scheduling={allowScheduling}; evictionRequested={evictionRequested}")
         self.node.set_node(node_name, allowScheduling, evictionRequested)
 
+    def set_node_tags(self, node_name, *tags):
+        self.node.set_node_tags(node_name, tags)
+
+    def set_node_disks_tags(self, node_name, *tags):
+        self.node.set_node_disks_tags(node_name, tags)
+
     def disable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False)
 
     def enable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=True)
-
 
     def disable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=False)
@@ -57,9 +68,14 @@ class node_keywords:
 
     def reset_node_schedule(self):
         nodes = self.node.list_node_names_by_role("worker")
-
         for node_name in nodes:
             self.enable_node_scheduling(node_name)
+
+    def reset_node_tags(self):
+        nodes = self.node.list_node_names_by_role("worker")
+        for node_name in nodes:
+            logging(f"Resetting node {node_name} tags")
+            self.set_node_tags(node_name)
 
     def check_node_is_not_schedulable(self, node_name):
         self.node.check_node_schedulable(node_name, schedulable="False")
