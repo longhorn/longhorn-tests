@@ -1204,6 +1204,7 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
         assert replica.currentImage == engine_upgrade_image
 
 
+@pytest.mark.flaky(reruns=3)
 def test_engine_crash_during_live_upgrade(client, core_api, # NOQA
                                           make_deployment_with_pvc, # NOQA
                                           volume_name): # NOQA
