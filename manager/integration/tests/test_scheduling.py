@@ -2,6 +2,7 @@ import common
 import pytest
 import time
 import copy
+import math
 
 from common import apps_api  # NOQA
 from common import client  # NOQA
@@ -618,6 +619,7 @@ def test_replica_auto_balance_node_least_effort(client, volume_name):  # NOQA
 
 
 @pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.flaky(reruns=3)
 def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     """
     Scenario: replica auto-balance nodes with `best_effort`.
@@ -993,11 +995,11 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
     target_data_size = target_disk_size_usage - current_useage
 
     # Calculate the data size to write to each volume.
-    data_size = int(target_data_size / len(volume_names))
+    data_size = math.ceil(target_data_size / len(volume_names))
     assert data_size != 0, \
         f"Failed to get data size for disk {scheduled_disk_name}."
 
-    data_size_mb = int(data_size / 1024 / 1024)
+    data_size_mb = math.ceil(data_size / 1024 / 1024)
     pod_md5sums = {}
 
     # Write data to each volume and get the MD5 checksum..

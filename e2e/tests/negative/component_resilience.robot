@@ -155,7 +155,7 @@ Test Longhorn Dynamic Provisioned RWX Volume Recovery
         When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
         And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
         And Create deployment 0 with persistentvolumeclaim 0
-        And Write 500 MB data to file data.txt in deployment 0
+        And Write 2048 MB data to file data.txt in deployment 0
         Then Delete instance-manager of deployment 0 volume and wait for recover
 
         When Delete replica of deployment 0 volume on replica node
@@ -183,7 +183,7 @@ Test Longhorn Dynamic Provisioned RWO Volume Recovery
     When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
-    And Write 500 MB data to file data.txt in deployment 0
+    And Write 2048 MB data to file data.txt in deployment 0
     Then Delete instance-manager of deployment 0 volume and wait for recover
 
     When Delete replica of deployment 0 volume on replica node

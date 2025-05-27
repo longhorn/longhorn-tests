@@ -71,12 +71,12 @@ variable "lh_aws_instance_type_worker" {
   default     = "t2.xlarge"
 }
 
-variable "lh_aws_instance_root_block_device_size_controlplane" {
+variable "block_device_size_controlplane" {
   type        = number
   default     = 40
 }
 
-variable "lh_aws_instance_root_block_device_size_worker" {
+variable "block_device_size_worker" {
   type        = number
   default     = 40
 }

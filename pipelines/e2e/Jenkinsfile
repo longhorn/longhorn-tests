@@ -1,6 +1,6 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
-def summary_msg
+def summary_msg = ""
 def WORKSPACE = "/src/longhorn-tests"
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
@@ -35,6 +35,8 @@ def OUT_OF_CLUSTER = params.OUT_OF_CLUSTER ? params.OUT_OF_CLUSTER : false
 
 def TAG_RESOURCE_OWNER = params.TAG_RESOURCE_OWNER ? params.TAG_RESOURCE_OWNER : false
 def RESOURCE_OWNER = "longhorn-infra"
+
+def BLOCK_DEVICE_SIZE = params.BLOCK_DEVICE_SIZE ? params.BLOCK_DEVICE_SIZE : 80
 
 node {
 
@@ -97,6 +99,7 @@ node {
                                        --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
                                        --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
                                        --env AWS_DEFAULT_REGION=${AWS_REGION} \
+                                       --env TF_VAR_block_device_size_worker=${BLOCK_DEVICE_SIZE} \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
@@ -142,7 +145,9 @@ node {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/junit.xml ."
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
 
-                summary = robot outputPath: '.'
+                robot outputPath: '.',
+                      passThreshold: 100.0,
+                      unstableThreshold: 0.0
 
                 if(JOB_BASE_NAME != "longhorn-e2e-test") {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py junit.xml ${BUILD_URL}"
@@ -169,12 +174,6 @@ node {
                     sh "docker volume rm vol-${imageName}"
                 }
 
-                if (summary) {
-                    summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
-                } else {
-                    summary_msg = "\n Test Failed: No Junit report"
-                }
-
                 if(params.SEND_SLACK_NOTIFICATION){
                     notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
                 }
@@ -190,7 +189,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
   // Default values
-  def colorName = 'RED'
+  def color = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
   def summary = "${subject} (${env.BUILD_URL})" + summary_msg
@@ -199,7 +198,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   if (buildStatus == 'STARTED') {
     color = 'YELLOW'
     colorCode = '#FFFF00'
-  } else if (buildStatus == 'SUCCESSFUL') {
+  } else if (buildStatus in ['SUCCESSFUL', 'SUCCESS']) {
     color = 'GREEN'
     colorCode = '#00FF00'
   } else {
