@@ -16,6 +16,11 @@ Create pod ${pod_id} using volume ${volume_id}
     ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_pod    ${pod_name}    ${claim_name}
 
+Create pod ${pod_id} using persistentvolumeclaim ${claim_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_pod    ${pod_name}    ${claim_name}
+
 Wait for pod ${pod_id} running
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     wait_for_workload_pods_running    ${pod_name}
@@ -45,6 +50,16 @@ Write ${size} GB large data to file ${file_name} in pod ${pod_id}
 Check pod ${pod_id} data in file ${file_name} is intact
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     check_workload_pod_data_checksum    ${pod_name}    ${file_name}
+
+Record file ${file_name} checksum in pod ${pod_id} as checksum ${checksum_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    ${checksum} =    get_workload_pod_data_checksum   ${pod_name}    ${file_name}
+    Set To Dictionary    ${volume_checksums}    ${checksum_id}    ${checksum}
+
+Check pod ${pod_id} file ${file_name} checksum matches checksum ${checksum_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${checksum_id}
+    check_workload_pod_data_checksum    ${pod_name}    ${file_name}    ${expected_checksum}
 
 Check pod ${pod_id} file ${file_name} has checksum ${expected_checksum}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
