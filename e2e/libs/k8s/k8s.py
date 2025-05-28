@@ -43,6 +43,16 @@ def delete_node(node_name):
     exec_cmd = ["kubectl", "delete", "node", node_name]
     res = subprocess_exec_cmd(exec_cmd)
 
+def set_k8s_node_zone(node_name, zone_name=""):
+    if zone_name:
+        logging(f"Setting node {node_name} zone to {zone_name}")
+        exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/zone={zone_name}", "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+    else:
+        logging(f"Resetting node {node_name} zone")
+        exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/zone-", "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+
 def drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--ignore-daemonsets", "--delete-emptydir-data"]
     res = subprocess_exec_cmd(exec_cmd)
