@@ -193,6 +193,10 @@ Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
 
+Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}
+
 Wait for volume ${volume_id} cloning to complete
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_clone_status_completed    ${volume_name}

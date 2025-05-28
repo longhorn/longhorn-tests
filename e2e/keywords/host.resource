@@ -76,10 +76,13 @@ Power off node ${node_id}
 
 Create vm snapshot on node ${node_id}
     ${node_name} =     get_node_by_index    ${node_id}
-    create_snapshot    ${node_name}
+    create_vm_snapshot    ${node_name}
 
 Create vm snapshot on volume node of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${volume_name}
-    create_snapshot    ${node_name}
+    create_vm_snapshot    ${node_name}
+
+Delete vm snapshots
+    cleanup_vm_snapshots
