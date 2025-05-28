@@ -14,6 +14,7 @@ from k8s.k8s import get_instance_manager_on_node
 from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
 from k8s.k8s import get_longhorn_node_condition_status
+from k8s.k8s import set_k8s_node_zone
 
 from node import Node
 
@@ -55,6 +56,14 @@ class k8s_keywords:
         replica_node = volume_keywords.get_replica_node(volume_name)
         delete_node(replica_node)
         return replica_node
+
+    def set_k8s_node_zone(self, node_name, zone_name):
+        set_k8s_node_zone(node_name, zone_name)
+
+    def cleanup_k8s_node_zone(self):
+        nodes = Node().list_node_names_by_role("worker")
+        for node in nodes:
+            set_k8s_node_zone(node)
 
     def drain_node(self, node_name):
         drain_node(node_name)
