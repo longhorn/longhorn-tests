@@ -8,8 +8,9 @@ Library    ../libs/keywords/backup_keywords.py
 
 *** Keywords ***
 Create volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}
+    create_volume   ${volume_name}    &{config}
 
 Create volume ${volume_id} with
     [Arguments]    &{config}
@@ -144,6 +145,10 @@ Keep writing data to volume ${volume_id}
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
+
+Delete volume ${volume_id} replica on all ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_replica_on_nodes    ${volume_name}    ${replica_locality}
 
 Delete ${count} replicas of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -435,6 +440,16 @@ Create volume ${volume_id} with ${size} GB and no replicas on the attached node
     Update volume ${volume_id} replica count to 2
     Delete volume ${volume_id} replica on volume node
 
+Create single replica volume ${volume_id} with replica on node ${node_id}
+    [Arguments]    &{config}
+    Create volume ${volume_id}    numberOfReplicas=3    &{config}
+    Attach volume ${volume_id} to node ${node_id}
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 1
+    Delete volume ${volume_id} replica on all replica node
+    Detach volume ${volume_id}
+    Wait for volume ${volume_id} detached
+
 Record volume ${volume_id} replica names
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     record_volume_replica_names    ${volume_name}
@@ -516,3 +531,7 @@ Enable volume ${volume_id} offline replica rebuilding
 Ignore volume ${volume_id} offline replica rebuilding
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_offline_replica_rebuild    ${volume_name}    ignored
+
+Update volume ${volume_id} data locality to ${data_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_data_locality    ${volume_name}    ${data_locality}
