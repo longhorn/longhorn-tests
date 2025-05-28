@@ -18,7 +18,12 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/setting.resource
 
 Test Setup    Set up test environment
-Test Teardown    Cleanup test resources
+Test Teardown    Cleanup host provider and test resources
+
+*** Keywords ***
+Cleanup host provider and test resources
+    Delete vm snapshots
+    Cleanup test resources
 
 *** Test Cases ***
 Take VM Snapshot On Volume Node While Workload Heavy Writing
