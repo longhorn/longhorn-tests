@@ -31,9 +31,9 @@ class volume_keywords:
         for volume in volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[]):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
@@ -294,6 +294,10 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be in faulted')
         self.volume.wait_for_volume_faulted(volume_name)
 
+    def wait_for_volume_clone_status_completed(self, volume_name):
+        logging(f'Waiting for volume {volume_name} clone status to be completed')
+        self.volume.wait_for_volume_clone_status(volume_name, "completed")
+
     def wait_for_volume_migration_to_be_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
         self.volume.wait_for_volume_migration_to_be_ready(volume_name)
@@ -394,3 +398,7 @@ class volume_keywords:
     def update_offline_replica_rebuild(self, volume_name, rebuild_type="ignore"):
         logging(f'Volume {volume_name} offline replica rebuilding is updating to {rebuild_type}')
         self.volume.update_offline_replica_rebuild(volume_name, rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        logging(f'Updating volume {volume_name} data locality {data_locality}')
+        self.volume.update_data_locality(volume_name, data_locality)

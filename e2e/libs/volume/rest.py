@@ -79,6 +79,18 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert volume['state'] == desired_state
 
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        for i in range(self.retry_count):
+            try:
+                volume = self.get(volume_name)
+                logging(f"Waiting for volume {volume_name} cloneStatus to be {desired_state} ... ({i})")
+                if volume['cloneStatus']['status'] == desired_state:
+                    return
+            except Exception as e:
+                logging(f"Waiting for volume {volume_name} cloneStatus to be {desired_state} error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} cloneStatus to be {desired_state}: {volume}"
+
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return NotImplemented
 
@@ -478,3 +490,7 @@ class Rest(Base):
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         volume = self.get(volume_name)
         volume.offlineReplicaRebuilding(OfflineRebuilding=rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        volume = self.get(volume_name)
+        volume.updateDataLocality(dataLocality=data_locality)

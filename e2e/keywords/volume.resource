@@ -8,8 +8,9 @@ Library    ../libs/keywords/backup_keywords.py
 
 *** Keywords ***
 Create volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}
+    create_volume   ${volume_name}    &{config}
 
 Create volume ${volume_id} with
     [Arguments]    &{config}
@@ -145,6 +146,10 @@ Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
 
+Delete volume ${volume_id} replica on all ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_replica_on_nodes    ${volume_name}    ${replica_locality}
+
 Delete ${count} replicas of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replicas    ${volume_name}    ${count}
@@ -187,6 +192,10 @@ Wait for volume ${volume_id} faulted
 Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
+
+Wait for volume ${volume_id} cloning to complete
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_clone_status_completed    ${volume_name}
 
 Check volume ${volume_id} replica on node ${node_id} kept in stopped
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -346,7 +355,11 @@ Number of volume ${volume_id} replicas on node ${node_id_0} should be less than 
     ${node_name_1} =    get_node_by_index    ${node_id_1}
     ${replica_count_0} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_0}
     ${replica_count_1} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_1}
-    Should Be True    ${replica_count_0} < ${replica_count_1}
+    ${more_than} =    Evaluate    ${replica_count_0} >= ${replica_count_1}
+    Run Keyword If    ${more_than}
+        ...    Log to console    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
+        ...    Sleep    ${retry_count}
+        ...    Fail    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
 
 Volume ${volume_id} should have replicas running on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -361,7 +374,11 @@ Volume ${volume_id} should have ${expected_replica_count} replicas running on no
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
-        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        ${not_equal} =    Evaluate    int(${replica_count}) != int(${new_replica_count})
+        Run Keyword If    ${not_equal}
+        ...    Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        ...    Sleep    ${retry_count}
+        ...    Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
         Sleep    5
     END
 
@@ -370,7 +387,11 @@ Volume ${volume_id} should have replicas running on node ${node_id} and no addit
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
-        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        ${not_equal} =    Evaluate    int(${replica_count}) != int(${new_replica_count})
+        Run Keyword If    ${not_equal}
+        ...    Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        ...    Sleep    ${retry_count}
+        ...    Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
         Sleep    5
     END
 
@@ -418,6 +439,16 @@ Create volume ${volume_id} with ${size} GB and no replicas on the attached node
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 2
     Delete volume ${volume_id} replica on volume node
+
+Create single replica volume ${volume_id} with replica on node ${node_id}
+    [Arguments]    &{config}
+    Create volume ${volume_id}    numberOfReplicas=3    &{config}
+    Attach volume ${volume_id} to node ${node_id}
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 1
+    Delete volume ${volume_id} replica on all replica node
+    Detach volume ${volume_id}
+    Wait for volume ${volume_id} detached
 
 Record volume ${volume_id} replica names
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -500,3 +531,7 @@ Enable volume ${volume_id} offline replica rebuilding
 Ignore volume ${volume_id} offline replica rebuilding
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_offline_replica_rebuild    ${volume_name}    ignored
+
+Update volume ${volume_id} data locality to ${data_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_data_locality    ${volume_name}    ${data_locality}

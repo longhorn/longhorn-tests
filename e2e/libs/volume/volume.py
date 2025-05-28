@@ -15,8 +15,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -53,6 +53,9 @@ class Volume(Base):
 
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return self.volume.wait_for_restore_required_status(volume_name, restore_required_state)
+
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        return self.volume.wait_for_volume_clone_status(volume_name, desired_state)
 
     def wait_for_volume_to_be_created(self, volume_name):
         self.volume.wait_for_volume_to_be_created(volume_name)
@@ -187,3 +190,6 @@ class Volume(Base):
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         return self.volume.update_offline_replica_rebuild(volume_name, rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        return self.volume.update_data_locality(volume_name, data_locality)

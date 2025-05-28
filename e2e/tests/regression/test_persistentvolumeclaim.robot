@@ -28,7 +28,7 @@ Test PersistentVolumeClaim Expand More Than Storage Maximum Size Should Fail
     ...                Issue: https://github.com/longhorn/longhorn/issues/6633
 
     Given Set setting storage-over-provisioning-percentage to 100
-    And Create persistentvolumeclaim 0 using RWX volume    storage_size=2GiB
+    And Create persistentvolumeclaim 0    volume_type=RWX volume    storage_size=2GiB
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 10 MB data to file data.txt in deployment 0
 
