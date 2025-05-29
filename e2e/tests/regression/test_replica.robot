@@ -92,7 +92,7 @@ Test Preempt Offline Replica Rebuilding By A Workload
     And Enable volume 0 offline replica rebuilding
     # wait for offline rebuilding to start.
     Then Wait until volume 0 replica rebuilding started on node 0
-    And Volume 0 should have 3 replicas running
+    And Volume 0 should have 3 replicas
 
     # scale up the workload and it will preempt the offline rebuilding.
     When Scale up deployment 0 to attach volume
