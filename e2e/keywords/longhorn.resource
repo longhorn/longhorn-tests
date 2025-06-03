@@ -47,14 +47,16 @@ Check Longhorn workload pods ${condition} annotated with ${key}
     ...    ELSE IF    '${condition}' == 'is'    Should Be True    ${is_annotated}
     ...    ELSE    Fail    Invalid condition ${condition}
 
-Check instance-manager pod is not running on drained node
-    ${pod} =     get_instance_manager_on_node    ${drained_node}
-    Should Be Equal    ${pod}    ${None}
+Check ${engine_type} instance manager is not running on drained node
+    check_instance_manager_existence_on_node    ${drained_node}    ${engine_type}    ${False}
 
-Check instance-manager pod is running on node ${node_id}
+Check ${engine_type} instance manager is running on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${pod} =     get_instance_manager_on_node    ${node_name}
-    Should Not Be Equal    ${pod}    ${None}
+    check_instance_manager_existence_on_node    ${node_name}    ${engine_type}    ${True}
+
+Check ${engine_type} instance manager is not running on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    check_instance_manager_existence_on_node    ${node_name}    ${engine_type}    ${False}
 
 Check v1 instance manager pods did not restart
     check_all_instance_managers_not_restart
@@ -70,12 +72,9 @@ Check all Longhorn CRD removed
 Install Longhorn
     install_longhorn_system
 
-Delete instance-manager on node ${node_id}
+Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${pods} =    list_pods    longhorn-system    longhorn.io/component=instance-manager,longhorn.io/node=${NODE_NAME}
-    FOR    ${pod}    IN    @{pods}
-        delete_pod    ${pod}    longhorn-system    wait=False
-    END
+    delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
 Delete instance-manager of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

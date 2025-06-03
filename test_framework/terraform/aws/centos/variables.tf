@@ -63,7 +63,7 @@ variable "lh_aws_instance_type_worker" {
   description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
 }
 
-variable "lh_aws_instance_root_block_device_size_controlplane" {
+variable "block_device_size_controlplane" {
   type        = number
   default     = 40
 }
@@ -83,7 +83,7 @@ variable "lh_aws_instance_name_worker" {
   default     = "meldafrawi-lh-test-worker"
 }
 
-variable "lh_aws_instance_root_block_device_size_worker" {
+variable "block_device_size_worker" {
   type        = number
   default     = 40
 }

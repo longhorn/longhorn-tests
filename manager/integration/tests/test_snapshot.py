@@ -30,6 +30,8 @@ from common import SNAPSHOT_DATA_INTEGRITY_ENABLED
 from common import SNAPSHOT_DATA_INTEGRITY_FAST_CHECK
 from common import SNAPSHOT_DATA_INTEGRITY_DISABLED
 from common import SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT, RETRY_COUNTS_SHORT # NOQA
+from common import DATA_ENGINE
+from common import SETTING_V2_SNAPSHOT_DATA_INTEGRITY, SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED # NOQA
 
 RETRY_WAIT_CHECKSUM_COUNTS = 600
 SNAPSHOT_CHECK_PERIOD = 300
@@ -193,7 +195,6 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_imm
                                             SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
 
 
-@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -209,7 +210,6 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
-@pytest.mark.v2_volume_test  # NOQA
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -300,8 +300,17 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
 
     cronjob = f"{minutes} {hours} * * *"
 
+    if DATA_ENGINE == "v1":
+        snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
+        snapshot_fast_data_rebuild_enabled_setting = \
+            SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
+    elif DATA_ENGINE == "v2":
+        snapshot_data_integrity_setting = SETTING_V2_SNAPSHOT_DATA_INTEGRITY
+        snapshot_fast_data_rebuild_enabled_setting =  \
+            SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
+
     update_setting(client,
-                   SETTING_SNAPSHOT_DATA_INTEGRITY,
+                   snapshot_data_integrity_setting,
                    data_integrity)
     update_setting(client,
                    SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION,  # NOQA
@@ -310,7 +319,7 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
                    SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB,
                    cronjob)
     update_setting(client,
-                   SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED,
+                   snapshot_fast_data_rebuild_enabled_setting,
                    fast_replica_rebuild)
 
 
@@ -676,17 +685,18 @@ def check_per_volume_hash_disable(client, volume_name, snapshot_data_integrity):
 def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
     snapshot_checksums_generate = False
 
-    count = 0
-    for count in range(RETRY_WAIT_CHECKSUM_COUNTS):
+    start_time = time.time()
+    for _ in range(RETRY_WAIT_CHECKSUM_COUNTS):
         if check_snapshot_checksums_set(volume_name):
-            print(f'All checksums are set in {count} sec')
+            elapsed_time = int(time.time() - start_time)
+            print(f'All checksums are set in {elapsed_time} sec')
             snapshot_checksums_generate = True
             break
         else:
             time.sleep(RETRY_INTERVAL)
 
     assert snapshot_checksums_generate
-    return count
+    return elapsed_time
 
 
 @pytest.mark.v2_volume_test  # NOQA

@@ -16,7 +16,7 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/sharemanager.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Keywords ***
@@ -54,7 +54,7 @@ Test Longhorn Components Recovery
     And Write data to volume 0
 
     When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data.txt in deployment 0
 
@@ -65,7 +65,7 @@ Test Longhorn Components Recovery
     And Write data to volume 1
 
     When Create storageclass longhorn-test-1 with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test-1 storageclass
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test-1
     And Create deployment 1 with persistentvolumeclaim 1
     And Write 100 MB data to file data.txt in deployment 1
 
@@ -153,9 +153,9 @@ Test Longhorn Dynamic Provisioned RWX Volume Recovery
     ...                    Delete the Share-manager pod and verify the RWX volume is able recover. Verify the data too.
     IF    '${DATA_ENGINE}' == 'v1'
         When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-        And Create persistentvolumeclaim 0 using RWX volume with longhorn-test storageclass
+        And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
         And Create deployment 0 with persistentvolumeclaim 0
-        And Write 500 MB data to file data.txt in deployment 0
+        And Write 2048 MB data to file data.txt in deployment 0
         Then Delete instance-manager of deployment 0 volume and wait for recover
 
         When Delete replica of deployment 0 volume on replica node
@@ -181,9 +181,9 @@ Test Longhorn Dynamic Provisioned RWO Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.
     When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
-    And Write 500 MB data to file data.txt in deployment 0
+    And Write 2048 MB data to file data.txt in deployment 0
     Then Delete instance-manager of deployment 0 volume and wait for recover
 
     When Delete replica of deployment 0 volume on replica node

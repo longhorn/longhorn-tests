@@ -79,6 +79,18 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert volume['state'] == desired_state
 
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        for i in range(self.retry_count):
+            try:
+                volume = self.get(volume_name)
+                logging(f"Waiting for volume {volume_name} cloneStatus to be {desired_state} ... ({i})")
+                if volume['cloneStatus']['status'] == desired_state:
+                    return
+            except Exception as e:
+                logging(f"Waiting for volume {volume_name} cloneStatus to be {desired_state} error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} cloneStatus to be {desired_state}: {volume}"
+
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return NotImplemented
 
@@ -333,7 +345,7 @@ class Rest(Base):
         node_name = self.get(volume_name).controllers[0].hostId
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
-            ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
+            ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 
@@ -344,7 +356,8 @@ class Rest(Base):
         return NotImplemented
 
     def activate(self, volume_name):
-        for _ in range(self.retry_count):
+        for i in range(self.retry_count):
+            logging(f"Activating volume {volume_name} ... ({i})")
             volume = self.get(volume_name)
             engines = volume.controllers
             if len(engines) != 1 or \
@@ -358,6 +371,7 @@ class Rest(Base):
                 activated = True
                 break
             except Exception as e:
+                logging(f"Activating volume {volume_name} error: {e}")
                 assert "hasn't finished incremental restored" in str(e.error.message)
                 time.sleep(self.retry_interval)
             if activated:
@@ -434,7 +448,6 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert volume.currentImage == engine_image_name, f"Failed to upgrade engine image to {engine_image_name}: {volume}"
-        self.wait_for_replica_ready_to_rw(volume_name)
         logging(f"Upgraded volume {volume_name} engine image to {engine_image_name}")
 
     def wait_for_replica_ready_to_rw(self, volume_name):
@@ -476,4 +489,8 @@ class Rest(Base):
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         volume = self.get(volume_name)
-        volume.offlineRebuilding(OfflineRebuild=rebuild_type)
+        volume.offlineReplicaRebuilding(OfflineRebuilding=rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        volume = self.get(volume_name)
+        volume.updateDataLocality(dataLocality=data_locality)

@@ -11,11 +11,40 @@ def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 def WORKSPACE = "/src/longhorn-tests"
 
+def STABLE_MANAGER_IMAGE
+def STABLE_ENGINE_IMAGE
+def STABLE_INSTANCE_MANAGER_IMAGE
+def STABLE_SHARE_MANAGER_IMAGE
+def STABLE_BACKING_IMAGE_MANAGER_IMAGE
+def STABLE_UI_IMAGE
+def STABLE_SUPPORT_BUNDLE_IMAGE
+def STABLE_CSI_ATTACHER_IMAGE
+def STABLE_CSI_PROVISIONER_IMAGE
+def STABLE_CSI_NODE_REGISTRAR_IMAGE
+def STABLE_CSI_RESIZER_IMAGE
+def STABLE_CSI_SNAPSHOTTER_IMAGE
+def STABLE_CSI_LIVENESSPROBE_IMAGE
+
+def TRANSIENT_MANAGER_IMAGE
+def TRANSIENT_ENGINE_IMAGE
+def TRANSIENT_INSTANCE_MANAGER_IMAGE
+def TRANSIENT_SHARE_MANAGER_IMAGE
+def TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE
+def TRANSIENT_UI_IMAGE
+def TRANSIENT_SUPPORT_BUNDLE_IMAGE
+def TRANSIENT_CSI_ATTACHER_IMAGE
+def TRANSIENT_CSI_PROVISIONER_IMAGE
+def TRANSIENT_CSI_NODE_REGISTRAR_IMAGE
+def TRANSIENT_CSI_RESIZER_IMAGE
+def TRANSIENT_CSI_SNAPSHOTTER_IMAGE
+def TRANSIENT_CSI_LIVENESSPROBE_IMAGE
+
 node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
+        usernamePassword(credentialsId: 'APPCO_CREDS', passwordVariable: 'APPCO_PASSWORD', usernameVariable: 'APPCO_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         usernamePassword(credentialsId: 'LAB_API_KEY', passwordVariable: 'LAB_SECRET_KEY', usernameVariable: 'LAB_ACCESS_KEY'),
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
@@ -30,6 +59,39 @@ node {
         checkout scm
 
         try {
+            stage('Parse Images') {
+                def stableImagesYaml = readYaml text: params.STABLE_VERSION_IMAGES
+                def transientImagesYaml = readYaml text: params.TRANSIENT_VERSION_IMAGES
+
+                STABLE_MANAGER_IMAGE = stableImagesYaml['longhorn-manager-image']
+                STABLE_ENGINE_IMAGE = stableImagesYaml['longhorn-engine-image']
+                STABLE_INSTANCE_MANAGER_IMAGE = stableImagesYaml['longhorn-instance-manager-image']
+                STABLE_SHARE_MANAGER_IMAGE = stableImagesYaml['longhorn-share-manager-image']
+                STABLE_BACKING_IMAGE_MANAGER_IMAGE = stableImagesYaml['longhorn-backing-image-manager-image']
+                STABLE_UI_IMAGE = stableImagesYaml['longhorn-ui-image']
+                STABLE_SUPPORT_BUNDLE_IMAGE = stableImagesYaml['support-bundle-image']
+                STABLE_CSI_ATTACHER_IMAGE = stableImagesYaml['csi-attacher-image']
+                STABLE_CSI_PROVISIONER_IMAGE = stableImagesYaml['csi-provisioner-image']
+                STABLE_CSI_NODE_REGISTRAR_IMAGE = stableImagesYaml['csi-node-registrar-image']
+                STABLE_CSI_RESIZER_IMAGE = stableImagesYaml['csi-resizer-image']
+                STABLE_CSI_SNAPSHOTTER_IMAGE = stableImagesYaml['csi-snapshotter-image']
+                STABLE_CSI_LIVENESSPROBE_IMAGE = stableImagesYaml['csi-livenessprobe-image']
+
+                TRANSIENT_MANAGER_IMAGE = transientImagesYaml['longhorn-manager-image']
+                TRANSIENT_ENGINE_IMAGE = transientImagesYaml['longhorn-engine-image']
+                TRANSIENT_INSTANCE_MANAGER_IMAGE = transientImagesYaml['longhorn-instance-manager-image']
+                TRANSIENT_SHARE_MANAGER_IMAGE = transientImagesYaml['longhorn-share-manager-image']
+                TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE = transientImagesYaml['longhorn-backing-image-manager-image']
+                TRANSIENT_UI_IMAGE = transientImagesYaml['longhorn-ui-image']
+                TRANSIENT_SUPPORT_BUNDLE_IMAGE = transientImagesYaml['support-bundle-image']
+                TRANSIENT_CSI_ATTACHER_IMAGE = transientImagesYaml['csi-attacher-image']
+                TRANSIENT_CSI_PROVISIONER_IMAGE = transientImagesYaml['csi-provisioner-image']
+                TRANSIENT_CSI_NODE_REGISTRAR_IMAGE = transientImagesYaml['csi-node-registrar-image']
+                TRANSIENT_CSI_RESIZER_IMAGE = transientImagesYaml['csi-resizer-image']
+                TRANSIENT_CSI_SNAPSHOTTER_IMAGE = transientImagesYaml['csi-snapshotter-image']
+                TRANSIENT_CSI_LIVENESSPROBE_IMAGE = transientImagesYaml['csi-livenessprobe-image']
+            }
+
             if (params.AIR_GAP_INSTALLATION) {
                 stage('private registry build') {
                     sh "airgap/scripts/build.sh"
@@ -56,6 +118,35 @@ node {
                                             --env CUSTOM_LONGHORN_CSI_RESIZER_IMAGE=${CUSTOM_LONGHORN_CSI_RESIZER_IMAGE} \
                                             --env CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE=${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE} \
                                             --env CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE=${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE} \
+                                            --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
+                                            --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                            --env STABLE_MANAGER_IMAGE=${STABLE_MANAGER_IMAGE} \
+                                            --env STABLE_ENGINE_IMAGE=${STABLE_ENGINE_IMAGE} \
+                                            --env STABLE_INSTANCE_MANAGER_IMAGE=${STABLE_INSTANCE_MANAGER_IMAGE} \
+                                            --env STABLE_SHARE_MANAGER_IMAGE=${STABLE_SHARE_MANAGER_IMAGE} \
+                                            --env STABLE_BACKING_IMAGE_MANAGER_IMAGE=${STABLE_BACKING_IMAGE_MANAGER_IMAGE} \
+                                            --env STABLE_UI_IMAGE=${STABLE_UI_IMAGE} \
+                                            --env STABLE_SUPPORT_BUNDLE_IMAGE=${STABLE_SUPPORT_BUNDLE_IMAGE} \
+                                            --env STABLE_CSI_ATTACHER_IMAGE=${STABLE_CSI_ATTACHER_IMAGE} \
+                                            --env STABLE_CSI_PROVISIONER_IMAGE=${STABLE_CSI_PROVISIONER_IMAGE} \
+                                            --env STABLE_CSI_NODE_REGISTRAR_IMAGE=${STABLE_CSI_NODE_REGISTRAR_IMAGE} \
+                                            --env STABLE_CSI_RESIZER_IMAGE=${STABLE_CSI_RESIZER_IMAGE} \
+                                            --env STABLE_CSI_SNAPSHOTTER_IMAGE=${STABLE_CSI_SNAPSHOTTER_IMAGE} \
+                                            --env STABLE_CSI_LIVENESSPROBE_IMAGE=${STABLE_CSI_LIVENESSPROBE_IMAGE} \
+                                            --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
+                                            --env TRANSIENT_MANAGER_IMAGE=${TRANSIENT_MANAGER_IMAGE} \
+                                            --env TRANSIENT_ENGINE_IMAGE=${TRANSIENT_ENGINE_IMAGE} \
+                                            --env TRANSIENT_INSTANCE_MANAGER_IMAGE=${TRANSIENT_INSTANCE_MANAGER_IMAGE} \
+                                            --env TRANSIENT_SHARE_MANAGER_IMAGE=${TRANSIENT_SHARE_MANAGER_IMAGE} \
+                                            --env TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE=${TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE} \
+                                            --env TRANSIENT_UI_IMAGE=${TRANSIENT_UI_IMAGE} \
+                                            --env TRANSIENT_SUPPORT_BUNDLE_IMAGE=${TRANSIENT_SUPPORT_BUNDLE_IMAGE} \
+                                            --env TRANSIENT_CSI_ATTACHER_IMAGE=${TRANSIENT_CSI_ATTACHER_IMAGE} \
+                                            --env TRANSIENT_CSI_PROVISIONER_IMAGE=${TRANSIENT_CSI_PROVISIONER_IMAGE} \
+                                            --env TRANSIENT_CSI_NODE_REGISTRAR_IMAGE=${TRANSIENT_CSI_NODE_REGISTRAR_IMAGE} \
+                                            --env TRANSIENT_CSI_RESIZER_IMAGE=${TRANSIENT_CSI_RESIZER_IMAGE} \
+                                            --env TRANSIENT_CSI_SNAPSHOTTER_IMAGE=${TRANSIENT_CSI_SNAPSHOTTER_IMAGE} \
+                                            --env TRANSIENT_CSI_LIVENESSPROBE_IMAGE=${TRANSIENT_CSI_LIVENESSPROBE_IMAGE} \
                                             airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
                     """
                 }
@@ -80,7 +171,9 @@ node {
                             --env REGISTRY_URL=${REGISTRY_URL} \
                             --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
                             --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
-                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./pipelines/appco/scripts/prepare-airgap-appco-images.sh
+                            --env APPCO_USERNAME=${APPCO_USERNAME} \
+                            --env APPCO_PASSWORD=${APPCO_PASSWORD} \
+                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./pipelines/appco/scripts/prepare_airgap_appco_images.sh
                     """
                 }
             }
@@ -125,6 +218,32 @@ node {
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
                                        --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
+                                       --env STABLE_MANAGER_IMAGE=${STABLE_MANAGER_IMAGE} \
+                                       --env STABLE_ENGINE_IMAGE=${STABLE_ENGINE_IMAGE} \
+                                       --env STABLE_INSTANCE_MANAGER_IMAGE=${STABLE_INSTANCE_MANAGER_IMAGE} \
+                                       --env STABLE_SHARE_MANAGER_IMAGE=${STABLE_SHARE_MANAGER_IMAGE} \
+                                       --env STABLE_BACKING_IMAGE_MANAGER_IMAGE=${STABLE_BACKING_IMAGE_MANAGER_IMAGE} \
+                                       --env STABLE_UI_IMAGE=${STABLE_UI_IMAGE} \
+                                       --env STABLE_SUPPORT_BUNDLE_IMAGE=${STABLE_SUPPORT_BUNDLE_IMAGE} \
+                                       --env STABLE_CSI_ATTACHER_IMAGE=${STABLE_CSI_ATTACHER_IMAGE} \
+                                       --env STABLE_CSI_PROVISIONER_IMAGE=${STABLE_CSI_PROVISIONER_IMAGE} \
+                                       --env STABLE_CSI_NODE_REGISTRAR_IMAGE=${STABLE_CSI_NODE_REGISTRAR_IMAGE} \
+                                       --env STABLE_CSI_RESIZER_IMAGE=${STABLE_CSI_RESIZER_IMAGE} \
+                                       --env STABLE_CSI_SNAPSHOTTER_IMAGE=${STABLE_CSI_SNAPSHOTTER_IMAGE} \
+                                       --env STABLE_CSI_LIVENESSPROBE_IMAGE=${STABLE_CSI_LIVENESSPROBE_IMAGE} \
+                                       --env TRANSIENT_MANAGER_IMAGE=${TRANSIENT_MANAGER_IMAGE} \
+                                       --env TRANSIENT_ENGINE_IMAGE=${TRANSIENT_ENGINE_IMAGE} \
+                                       --env TRANSIENT_INSTANCE_MANAGER_IMAGE=${TRANSIENT_INSTANCE_MANAGER_IMAGE} \
+                                       --env TRANSIENT_SHARE_MANAGER_IMAGE=${TRANSIENT_SHARE_MANAGER_IMAGE} \
+                                       --env TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE=${TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE} \
+                                       --env TRANSIENT_UI_IMAGE=${TRANSIENT_UI_IMAGE} \
+                                       --env TRANSIENT_SUPPORT_BUNDLE_IMAGE=${TRANSIENT_SUPPORT_BUNDLE_IMAGE} \
+                                       --env TRANSIENT_CSI_ATTACHER_IMAGE=${TRANSIENT_CSI_ATTACHER_IMAGE} \
+                                       --env TRANSIENT_CSI_PROVISIONER_IMAGE=${TRANSIENT_CSI_PROVISIONER_IMAGE} \
+                                       --env TRANSIENT_CSI_NODE_REGISTRAR_IMAGE=${TRANSIENT_CSI_NODE_REGISTRAR_IMAGE} \
+                                       --env TRANSIENT_CSI_RESIZER_IMAGE=${TRANSIENT_CSI_RESIZER_IMAGE} \
+                                       --env TRANSIENT_CSI_SNAPSHOTTER_IMAGE=${TRANSIENT_CSI_SNAPSHOTTER_IMAGE} \
+                                       --env TRANSIENT_CSI_LIVENESSPROBE_IMAGE=${TRANSIENT_CSI_LIVENESSPROBE_IMAGE} \
                                        --env TF_VAR_extra_block_device="true" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
                                        --env TF_VAR_arch=${ARCH} \
@@ -150,6 +269,8 @@ node {
                                        --env TF_VAR_custom_ssh_public_key="${CUSTOM_SSH_PUBLIC_KEY}" \
                                        --env QASE_TOKEN=${QASE_TOKEN} \
                                        --env QASE_PROJECT=LH \
+                                       --env APPCO_TEST="true" \
+                                       --env LONGHORN_INSTALL_METHOD="manifest" \
                                        ${imageName}
                 """
 
@@ -162,7 +283,7 @@ node {
 			}
 
             stage ('longhorn setup & tests') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/appco/scripts/longhorn-setup.sh"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/appco/scripts/longhorn_setup.sh"
             }
 
             stage ('report generation') {                
@@ -175,7 +296,6 @@ node {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
             }
-
         } catch (e) {
             currentBuild.result = "FAILED"
             throw e
@@ -215,7 +335,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
   // Default values
-  def colorName = 'RED'
+  def color = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
   def summary = "${subject} (${env.BUILD_URL})" + summary_msg

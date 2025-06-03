@@ -52,3 +52,19 @@ variable "registration_code" {
   type    = string
   sensitive   = true
 }
+
+variable "custom_ssh_public_key" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "block_device_size_controlplane" {
+  type        = number
+  default     = 40
+}
+
+variable "block_device_size_worker" {
+  type        = number
+  default     = 40
+}

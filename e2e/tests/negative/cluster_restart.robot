@@ -16,7 +16,7 @@ Resource    ../keywords/snapshot.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/metrics.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -28,12 +28,12 @@ Restart Cluster While Workload Heavy Writing
     And Create storageclass nfs-4-2 with    nfsOptions=vers=4.2,noresvport,timeo=450,retrans=8    dataEngine=${DATA_ENGINE}
     And Create storageclass nfs-hard-mount with    nfsOptions=hard,timeo=50,retrans=1    dataEngine=${DATA_ENGINE}
     And Create storageclass nfs-soft-mount with    nfsOptions=soft,timeo=250,retrans=5    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
-    And Create persistentvolumeclaim 3 using RWX volume with nfs-4-2 storageclass
-    And Create persistentvolumeclaim 4 using RWX volume with nfs-hard-mount storageclass
-    And Create persistentvolumeclaim 5 using RWX volume with nfs-soft-mount storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=strict-local
+    And Create persistentvolumeclaim 3    volume_type=RWX    sc_name=nfs-4-2
+    And Create persistentvolumeclaim 4    volume_type=RWX    sc_name=nfs-hard-mount
+    And Create persistentvolumeclaim 5    volume_type=RWX    sc_name=nfs-soft-mount
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Create deployment 2 with persistentvolumeclaim 2

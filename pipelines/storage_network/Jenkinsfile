@@ -1,6 +1,6 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
-def summary_msg
+def summary_msg = ""
 def WORKSPACE = "/src/longhorn-tests"
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
@@ -147,7 +147,7 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
   // Default values
-  def colorName = 'RED'
+  def color = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
   def summary = "${subject} (${env.BUILD_URL})" + summary_msg

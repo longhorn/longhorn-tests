@@ -26,7 +26,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector):
         size_suffix = size[-2:]
         size_number = size[:-2]
         size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
@@ -55,7 +55,9 @@ class CRD(Base):
                 "Standby": Standby,
                 "fromBackup": fromBackup,
                 # disable revision counter by default from v1.7.0
-                "revisionCounterDisabled": True
+                "revisionCounterDisabled": True,
+                "nodeSelector": nodeSelector,
+                "diskSelector": diskSelector
             }
         }
         try:
@@ -74,7 +76,8 @@ class CRD(Base):
                 self.wait_for_restore_required_status(volume_name, False)
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
-            assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
+            if not Standby:
+                assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
             assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
             assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
@@ -84,6 +87,8 @@ class CRD(Base):
             assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
             assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
             assert volume['spec']['encrypted'] == encrypted, f"expect volume encrypted is {encrypted}, but it's {volume['spec']['encrypted']}"
+            assert volume['spec']['nodeSelector'] == nodeSelector, f"expect volume nodeSelector is {nodeSelector}, but it's {volume['spec']['nodeSelector']}"
+            assert volume['spec']['diskSelector'] == diskSelector, f"expect volume diskSelector is {diskSelector}, but it's {volume['spec']['diskSelector']}"
         except ApiException as e:
             logging(e)
 
@@ -282,7 +287,7 @@ class CRD(Base):
     def wait_for_volume_state(self, volume_name, desired_state):
         volume = None
         for i in range(self.retry_count):
-            logging(f"Waiting for {volume_name} {desired_state} ({i}) ...")
+            logging(f"Waiting for {volume_name} {desired_state} ... ({i})")
             try:
                 volume = self.get(volume_name)
                 if volume["status"]["state"] == desired_state:
@@ -297,6 +302,33 @@ class CRD(Base):
         volume = self.get(volume_name)
         assert volume["spec"]["nodeID"] != ""
         assert volume["status"]["currentNodeID"] == ""
+
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        volume = None
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} cloneStatus to be {desired_state} ... ({i})")
+            try:
+                volume = self.get(volume_name)
+                if volume["status"]["cloneStatus"]["state"] == desired_state:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume} cloneStatus error: {e}")
+            time.sleep(self.retry_interval)
+        assert volume["status"]["cloneStatus"]["state"] == desired_state
+
+    def wait_for_volume_condition(self, volume_name, condition_name, condition_status):
+        volume = None
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} {condition_name}={condition_status} ... ({i})")
+            try:
+                volume = self.get(volume_name)
+                for condition in volume["status"]["conditions"]:
+                    if condition["type"].lower() == condition_name.lower() and condition["status"].lower() == condition_status.lower():
+                        return
+            except Exception as e:
+                logging(f"Getting volume {volume} conditions error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for {volume_name} {condition_name}={condition_status}: {volume}"
 
     def is_replica_running(self, volume_name, node_name, is_running):
         return Rest().is_replica_running(volume_name, node_name, is_running)
@@ -480,7 +512,7 @@ class CRD(Base):
             "sh", "-c",
             f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; "
             "sync; "
-            f"md5sum {endpoint} | awk \'{{print $1}}\'"
+            f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
         ]
         checksum = NodeExec(node_name).issue_cmd(cmd)
 
@@ -571,7 +603,7 @@ class CRD(Base):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
-            ["sh", "-c", f"md5sum {endpoint} | awk \'{{print $1}}\'"])
+            ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 
@@ -639,3 +671,6 @@ class CRD(Base):
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         return Rest().update_offline_replica_rebuild(volume_name, rebuild_type)
+
+    def update_data_locality(self, volume_name, data_locality):
+        return Rest().update_data_locality(volume_name, data_locality)

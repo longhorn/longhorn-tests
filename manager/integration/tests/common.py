@@ -214,6 +214,9 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
     "snapshot-data-integrity-immediate-check-after-snapshot-creation"
 SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
+SETTING_V2_SNAPSHOT_DATA_INTEGRITY = "v2-data-engine-snapshot-data-integrity"
+SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = \
+    "v2-data-engine-fast-replica-rebuilding"
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     "concurrent-volume-backup-restore-per-node-limit"
 SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
@@ -3787,7 +3790,11 @@ def reset_settings(client):
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
-                client.update(setting, value="true")
+                try:
+                    client.update(setting, value="true")
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to true")
+                    print(e)
                 continue
 
         s = client.by_id_setting(setting_name)

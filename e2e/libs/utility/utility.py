@@ -21,6 +21,7 @@ from kubernetes.client.rest import ApiException
 from utility.constant import NAME_PREFIX
 from utility.constant import STREAM_EXEC_TIMEOUT
 from utility.constant import STORAGECLASS_NAME_PREFIX
+from utility.constant import DEFAULT_BACKUPSTORE
 
 
 class timeout:
@@ -64,11 +65,22 @@ def generate_name_random(name_prefix="test-"):
                 for _ in range(6))
 
 
+def is_integer(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
+
 def generate_name_with_suffix(kind, suffix):
-    if kind == "storageclass":
-        return f"{STORAGECLASS_NAME_PREFIX}-{suffix}"
+    if not is_integer(suffix):
+        return suffix
     else:
-        return f"{NAME_PREFIX}-{kind}-{suffix}"
+        if kind == "storageclass":
+            return f"{STORAGECLASS_NAME_PREFIX}-{suffix}"
+        else:
+            return f"{NAME_PREFIX}-{kind}-{suffix}"
 
 
 def init_k8s_api_client():
@@ -83,7 +95,7 @@ def init_k8s_api_client():
 
 
 def get_backupstore():
-    return os.environ.get('LONGHORN_BACKUPSTORE', "")
+    return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
 
 def subprocess_exec_cmd(cmd):
@@ -168,6 +180,7 @@ def get_cr(group, version, namespace, plural, name):
         except ApiException as e:
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
+    assert False, "Getting namespaced custom object error"
 
 
 def get_all_crs(group, version, namespace, plural):
@@ -180,6 +193,7 @@ def get_all_crs(group, version, namespace, plural):
         except ApiException as e:
             logging(f"Getting namespaced custom object error: {e}")
         time.sleep(retry_interval)
+    assert False, "Getting namespaced custom object error"
 
 
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):

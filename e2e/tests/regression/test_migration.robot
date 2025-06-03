@@ -13,7 +13,7 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/migration.resource
 Resource    ../keywords/snapshot.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***

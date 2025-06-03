@@ -11,6 +11,7 @@ from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
 from node_exec import NodeExec
 
 class Node:
@@ -101,6 +102,13 @@ class Node:
             else:
                 logging(f"Removing disk {disk_name} from node {node_name}")
         self.update_disks(node_name, disks)
+
+    def set_node_disks_tags(self, node_name, tags):
+        node = get_longhorn_client().by_id_node(node_name)
+        for disk_name, disk in iter(node.disks.items()):
+            logging(f"Setting tags {tags} to node {node_name} disk {disk_name}")
+            disk.tags = list(tags)
+        self.update_disks(node_name, node.disks)
 
     def is_accessing_node_by_index(self, node):
         p = re.compile('node (\d)')
@@ -202,6 +210,19 @@ class Node:
 
         raise AssertionError(f"Updating node {node_name} failed")
 
+    def set_node_tags(self, node_name, tags):
+        for i in range(self.retry_count):
+            logging(f"Setting tags {tags} to node {node_name} .. ({i})")
+            try:
+                node = get_longhorn_client().by_id_node(node_name)
+                get_longhorn_client().update(node, tags=list(tags))
+                self.set_node_scheduling(node_name)
+                return
+            except Exception as e:
+                logging(f"Setting tags {tags} to node {node_name} failed: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Setting tags {tags} to node {node_name} failed"
+
     def set_node_scheduling(self, node_name, allowScheduling=True, retry=True):
         node = get_longhorn_client().by_id_node(node_name)
 
@@ -215,18 +236,11 @@ class Node:
         for i in range(self.retry_count):
             logging(f"Setting node {node_name} allowScheduling to {allowScheduling} ... ({i})")
             try:
-                node = get_longhorn_client().update(node, allowScheduling=allowScheduling,
-                                 tags=node.tags)
+                return get_longhorn_client().update(node, allowScheduling=allowScheduling, tags=node.tags)
             except Exception as e:
                 logging(f"Setting node {node_name} allowScheduling to {allowScheduling} failed: {e}")
-                if DISK_BEING_SYNCING in str(e.error.message):
-                    time.sleep(NODE_UPDATE_RETRY_INTERVAL)
-                    continue
-                raise
-            else:
-                break
-
-        return node
+            time.sleep(self.retry_interval)
+        assert False, f"Setting node {node_name} allowScheduling to {allowScheduling} failed"
 
     def set_default_disk_scheduling(self, node_name, allowScheduling):
         node = get_longhorn_client().by_id_node(node_name)
@@ -244,6 +258,19 @@ class Node:
             if name == disk_name:
                 disk.allowScheduling = allowScheduling
         self.update_disks(node_name, node.disks)
+
+    def label_node(self, node_name, label):
+        logging(f"Labeling node {node_name} with {label}")
+        exec_cmd = ["kubectl", "label", "node", node_name, label]
+        res = subprocess_exec_cmd(exec_cmd)
+
+    def cleanup_node_labels(self):
+        nodes = self.list_node_names_by_role("worker")
+        for node_name in nodes:
+            logging(f"Cleaning up node {node_name} labels")
+            # we can't blindly clean up all labels since there are some k8s default labels
+            exec_cmd = ["kubectl", "label", "node", node_name, "node.longhorn.io/disable-v2-data-engine-"]
+            res = subprocess_exec_cmd(exec_cmd)
 
     def check_node_schedulable(self, node_name, schedulable):
         node = get_longhorn_client().by_id_node(node_name)

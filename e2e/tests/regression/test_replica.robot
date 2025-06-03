@@ -11,7 +11,7 @@ Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -70,3 +70,36 @@ Test Offline Replica Rebuilding
     And Wait for volume 0 detached
     And Volume 0 should have 3 replicas when detached
     And Set setting offline-replica-rebuilding to false
+
+Test Preempt Offline Replica Rebuilding By A Workload
+    [Tags]    coretest    offline-rebuilding
+    [Documentation]    Test preempt offline replica rebuilding by a workload.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/8443
+    Given Create volume 0 with    size=6Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Create deployment 0 with volume 0
+    And Wait for volume 0 healthy
+    And Write 5120 MB data to file data.txt in deployment 0
+    And Scale down deployment 0 to detach volume
+    And Wait for volume 0 detached
+
+    # enable offline replica rebuilding.
+    When Delete volume 0 replica on node 0
+    And Enable volume 0 offline replica rebuilding
+    # wait for offline rebuilding to start.
+    Then Wait until volume 0 replica rebuilding started on node 0
+    And Volume 0 should have 3 replicas running
+
+    # scale up the workload and it will preempt the offline rebuilding.
+    When Scale up deployment 0 to attach volume
+    # the volume might be detched or not so we only wait for volume becomes healthy.
+    # we should try to check if offline rebuilding will be canceled and online rebuilding takes over.
+    # then the volume becomes healthy without offline rebuilding.
+    And Wait for volume 0 healthy
+    # write some data with workload pod to check if the workload works.
+    And Write 64 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact

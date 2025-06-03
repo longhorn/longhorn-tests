@@ -121,7 +121,7 @@ resource "aws_eks_node_group" "node_group" {
   ami_type       = var.arch == "amd64" ? "AL2_x86_64" : "AL2_ARM_64"
   capacity_type  = "ON_DEMAND"
   instance_types = [var.arch == "amd64" ? "t2.xlarge" : "a1.2xlarge"]
-  disk_size      = 40
+  disk_size      = var.block_device_size_worker
   scaling_config {
     desired_size = 3
     max_size     = 6

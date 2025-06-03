@@ -14,7 +14,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -131,6 +131,12 @@ Test Replica Auto Balance Node Least Effort
     And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
     And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
     # 1 or 2 replicas, but not 3 replicas, on node 0 could be reschduled to node 1
+    # replica count on each node could be:
+    # 5, 1, 0
+    # or
+    # 4, 2, 0
+    # but not
+    # 3, 3, 0
     And Number of volume 0 replicas on node 1 should be less than on node 0
     And Volume 0 should have 0 replicas running on node 2 and no additional scheduling occurs
 
@@ -144,7 +150,30 @@ Test Replica Auto Balance Node Least Effort
     And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
     And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
     And Volume 0 should have replicas running on node 2 and no additional scheduling occurs
+    # replicas on node 0 will be rescheduled to node 2
+    # replica counts on each node could be:
+    # 4, 1, 1
+    # 3, 2, 1
+    # so replica count of node 0 should still be greater than that of node 2
     And Number of volume 0 replicas on node 2 should be less than on node 0
 
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Data Locality
+    Given Create single replica volume 0 with replica on node 0    dataLocality=disabled    dataEngine=${DATA_ENGINE}
+    When Attach volume 0 to node 1
+    And Write data to volume 0
+    Then Volume 0 should have 0 replicas running on node 1
+
+    When Update volume 0 data locality to best-effort
+    Then Wait until volume 0 replica rebuilding started on node 1
+    And Volume 0 should have 1 replicas running on node 1
+    And Volume 0 should have 0 replicas running on node 0
+
+    When Detach volume 0 from node 1
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 2
+    Then Wait until volume 0 replica rebuilding started on node 2
+    And Volume 0 should have 1 replicas running on node 2
+    And Volume 0 should have 0 replicas running on node 1

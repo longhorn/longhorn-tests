@@ -49,7 +49,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-b9czb",
-            "size": 100,
+            "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
     }
@@ -58,7 +58,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
@@ -70,6 +70,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 runcmd:
   - - systemctl
     - enable
@@ -94,12 +95,12 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-b9czb",
-            "size": 100,
+            "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
         {
             "storageClassName": "harvester-longhorn",
-            "size": 100,
+            "size": ${var.block_device_size_worker},
             "bootOrder": 2
         }]
     }
@@ -108,7 +109,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
@@ -120,6 +121,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 package_update: true
 packages:
   - qemu-guest-agent

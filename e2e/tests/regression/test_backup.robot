@@ -15,7 +15,7 @@ Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/longhorn.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Keywords ***
@@ -111,24 +111,17 @@ Test Incremental Restore
 Test Uninstallation With Backups
     [Tags]    uninstall
     [Documentation]    Test uninstall Longhorn with normal and failed backups
-    Given Create volume 0 with    dataEngine=v1
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
-    And Create volume 1 with    dataEngine=v2
-    And Attach volume 1
-    And Wait for volume 1 healthy
-    And Write data 1 to volume 1
 
     # create failed backups by resetting backupstore and create backups without available backup targets
     And Reset Backupstore
     And Create backup 0 for volume 0    wait=False
-    And Create backup 1 for volume 1    wait=False
     And Verify backup list contains errors for volume 0
-    And Verify backup list contains errors for volume 1
     And Set Backupstore
-    And Create backup 2 for volume 0
-    And Create backup 3 for volume 1
+    And Create backup 1 for volume 0
 
     When Set setting deleting-confirmation-flag to true
     And Uninstall Longhorn
@@ -137,6 +130,7 @@ Test Uninstallation With Backups
     Then Install Longhorn
 
 Test Cleanup Snapshot With The Global Setting After Backup Completed
+    [Tags]    auto-cleanup-snapshot
     [Documentation]    Test cleanup snapshot with the global setting after backup completed
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0

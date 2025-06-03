@@ -13,7 +13,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/sharemanager.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -78,7 +78,7 @@ Test Setting Storage Network For RWX Volume Enabled
     ...                Precondition: Storage network configured.
 
     Given Set setting storage-network-for-rwx-volume-enabled to false
-    When Create persistentvolumeclaim 0 using RWX volume
+    When Create persistentvolumeclaim 0    volume_type=RWX
     And Create deployment 0 with persistentvolumeclaim 0 with max replicaset
     Then Check Longhorn workload pods not annotated with k8s.v1.cni.cncf.io/networks
         ...    longhorn-csi-plugin
@@ -90,7 +90,7 @@ Test Setting Storage Network For RWX Volume Enabled
     And Wait for all sharemanager to be deleted
 
     When Set setting storage-network-for-rwx-volume-enabled to true
-    And Create persistentvolumeclaim 1 using RWX volume
+    And Create persistentvolumeclaim 1    volume_type=RWX
     And Create deployment 1 with persistentvolumeclaim 1 with max replicaset
     Then Check Longhorn workload pods is annotated with k8s.v1.cni.cncf.io/networks
         ...    longhorn-csi-plugin

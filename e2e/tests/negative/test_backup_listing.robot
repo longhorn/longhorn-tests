@@ -23,7 +23,7 @@ Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backup.resource
 
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Variables ***
@@ -46,14 +46,6 @@ Create volume ${volume_id} from ${workload_kind} ${workload_id} volume random ba
     ${backup_url}=    get_backup_url    ${backup_id}    ${workload_volume_name}
     create_volume   ${volume_name}    size=3Gi    numberOfReplicas=3    fromBackup=${backup_url}    dataEngine=${DATA_ENGINE}
     Set Test Variable    ${random_backup_id}    ${backup_id}
-
-Create deployment ${deployment_id} with volume ${volume_id}
-    ${volume_id}=  Convert To String  ${volume_id}
-    Create persistentvolume for volume ${volume_id}
-    Create persistentvolumeclaim for volume ${volume_id}
-    ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
-    ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
-    create_deployment    ${deployment_name}   ${pvc_name}
 
 Check volume ${volume_id} data is ${workload_kind} ${workload_id} volume backup ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -136,7 +128,7 @@ Pod ${pod_id} data should same as volume ${source_volume_id} backup ${backup_id}
 Backup Listing With More Than 1000 Backups
     [Tags]  manual  longhorn-8355
     [Documentation]    Test backup listing
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create persistentvolumeclaim 0    volume_type=RWO
     And Create deployment 0 with persistentvolumeclaim 0
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume
@@ -149,7 +141,7 @@ Backup Listing With More Than 1000 Backups
 Backup Listing Of Volume Bigger Than 200 Gi
     [Tags]  manual  longhorn-8355  large-size
     [Documentation]    Test backup bigger than 200 Gi
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create persistentvolumeclaim 0    volume_type=RWO
     And Create deployment 0 with persistentvolumeclaim 0
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume

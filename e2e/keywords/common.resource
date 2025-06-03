@@ -15,6 +15,7 @@ Library             ../libs/keywords/persistentvolumeclaim_keywords.py
 Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/storageclass_keywords.py
 Library             ../libs/keywords/node_keywords.py
+Library             ../libs/keywords/orphan_keywords.py
 Library             ../libs/keywords/backing_image_keywords.py
 Library             ../libs/keywords/engine_image_keywords.py
 Library             ../libs/keywords/setting_keywords.py
@@ -27,8 +28,8 @@ Library             ../libs/keywords/secret_keywords.py
 
 *** Keywords ***
 Set disk path based on host provider and architecture
-    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER
-    ${ARCH}=    Get Environment Variable    ARCH
+    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
+    ${ARCH}=    Get Environment Variable    ARCH    amd64
     IF    "${HOST_PROVIDER}" == "aws"
         IF    "${ARCH}" == "amd64"
             Set Test Variable    ${DISK_PATH}    /dev/xvdh
@@ -37,9 +38,14 @@ Set disk path based on host provider and architecture
         END
     ELSE IF    '${HOST_PROVIDER}' == "harvester"
         Set Test Variable    ${DISK_PATH}    /dev/vdc
+    ELSE IF    '${HOST_PROVIDER}' == "vagrant"
+        Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
-Set up v2 environment
+Enable v2 data engine and add block disks
+    ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
+    # if it's already configured, no need to do it again
+    Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
     set_disk_path_based_on_host_provider_and_architecture
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
@@ -47,11 +53,13 @@ Set up v2 environment
         add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
     END
 
-Set test environment
+Set up test environment
     init_k8s_api_client
     setup_control_plane_network_latency
     set_backupstore
-    set_up_v2_environment
+    IF     "${DATA_ENGINE}" == "v2"
+        Enable v2 data engine and add block disks
+    END
 
 Cleanup test resources
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
@@ -74,8 +82,13 @@ Cleanup test resources
     cleanup_backups
     cleanup_system_backups
     cleanup_system_restores
+    delete_orphans
     cleanup_backing_images
+    cleanup_node_labels
     cleanup_disks
     cleanup_engine_images
     reset_backupstore
     reset_settings
+    reset_node_tags
+    reset_node_disks_tags
+    cleanup_k8s_node_zone

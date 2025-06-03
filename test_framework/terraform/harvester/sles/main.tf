@@ -49,7 +49,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-pqjk7",
-            "size": 100,
+            "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
     }
@@ -70,6 +70,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
   - zypper install -y qemu-guest-agent iptables
@@ -96,12 +97,12 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-pqjk7",
-            "size": 100,
+            "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
         {
             "storageClassName": "harvester-longhorn",
-            "size": 100,
+            "size": ${var.block_device_size_worker},
             "bootOrder": 2
         }]
     }
@@ -122,6 +123,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 write_files:
   - path: "/tmp/SUSE_Trust_Root_encoded.crt"
     content: >-
@@ -150,7 +152,7 @@ runcmd:
   - mkdir -p /etc/pki/trust/anchors/
   - cp /tmp/SUSE_Trust_Root.crt /etc/pki/trust/anchors/
   - update-ca-certificates
-  - shutdown -r +5
+  - shutdown -r +1
 EOF
   }
 }

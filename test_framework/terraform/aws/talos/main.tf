@@ -127,7 +127,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_controlplane
+    volume_size = var.block_device_size_controlplane
   }
 
   tags = {
@@ -142,7 +142,7 @@ resource "aws_ebs_volume" "lh_aws_ssd_volume" {
   count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
 
   availability_zone = var.aws_availability_zone
-  size              = var.lh_aws_instance_root_block_device_size_worker
+  size              = var.block_device_size_worker
   type              = "gp2"
 
   tags = {
@@ -163,7 +163,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_controlplane
+    volume_size = var.block_device_size_controlplane
   }
 
   tags = {
@@ -195,6 +195,7 @@ data "talos_machine_configuration" "controlplane" {
   machine_secrets    = talos_machine_secrets.machine_secrets.machine_secrets
   docs               = false
   examples           = false
+  kubernetes_version = "${var.k8s_distro_version}"
   config_patches = [
     file("${path.module}/talos-patch.yaml")
   ]
@@ -210,6 +211,7 @@ data "talos_machine_configuration" "worker" {
   machine_secrets    = talos_machine_secrets.machine_secrets.machine_secrets
   docs               = false
   examples           = false
+  kubernetes_version = "${var.k8s_distro_version}"
   config_patches = [
     file("${path.module}/talos-patch-worker.yaml")
   ]
@@ -324,6 +326,7 @@ resource "null_resource" "upgrade_controlplane_nodes" {
 
 # Upgrade Talos cluster worker nodes using schematic ID
 resource "null_resource" "upgrade_worker_nodes" {
+  depends_on = [null_resource.upgrade_controlplane_nodes]
   count = var.lh_aws_instance_count_worker
 
   provisioner "local-exec" {
@@ -332,6 +335,11 @@ resource "null_resource" "upgrade_worker_nodes" {
         --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
         -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} \
         upgrade --image factory.talos.dev/installer/${local.schematic_id}:${local.talos_version}
+      echo "Print containers & extensions"
+      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+        -n ${aws_instance.lh_aws_instance_worker[0].private_ip} containers
+      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+        -n ${aws_instance.lh_aws_instance_worker[0].private_ip} get extensions
     EOT
   }
 }

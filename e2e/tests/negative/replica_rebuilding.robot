@@ -12,7 +12,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
@@ -66,9 +66,30 @@ Reboot Replica Node While Replica Rebuilding
         And Check volume 0 data is intact
     END
 
+Reboot Replica Node While Offline Replica Rebuilding
+    [Tags]    offline-rebuilding
+    [Documentation]    Reboot a replica node during offline replica rebuilding is in progress.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/8443
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Write 4 GB data to volume 0
+    And Detach volume 0
+    And Wait for volume 0 detached
+
+    When Delete volume 0 replica on node 0
+    Then Enable volume 0 offline replica rebuilding
+    And Wait until volume 0 replica rebuilding started on node 0
+
+    When Reboot volume 0 replica node
+    And Wait for volume 0 detached
+    And Volume 0 should have 3 replicas when detached
+
 Delete Replicas One By One After The Volume Is Healthy
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 attached
     And Write 2048 MB data to file data.txt in deployment 0
@@ -95,7 +116,7 @@ Delete Replicas One By One Regardless Of The Volume Health
     ...                https://github.com/longhorn/longhorn/issues/9216 and will be fixed
     ...                in v1.9.0
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 attached
     And Get deployment 0 pod name

@@ -19,7 +19,7 @@ class host_keywords:
 
     def __init__(self):
         self.volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        self.host = self._create_host(os.getenv('HOST_PROVIDER'))
+        self.host = self._create_host(os.getenv('HOST_PROVIDER', 'vagrant'))
         self.node = Node()
 
     @classmethod
@@ -62,3 +62,9 @@ class host_keywords:
 
     def power_off_node_by_name(self, node_name, waiting=True):
         self.host.power_off_node(node_name, waiting)
+
+    def create_vm_snapshot(self, node_name):
+        self.host.create_snapshot(node_name)
+
+    def cleanup_vm_snapshots(self):
+        self.host.cleanup_snapshots()

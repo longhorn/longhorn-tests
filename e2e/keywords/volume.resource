@@ -8,8 +8,9 @@ Library    ../libs/keywords/backup_keywords.py
 
 *** Keywords ***
 Create volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}
+    create_volume   ${volume_name}    &{config}
 
 Create volume ${volume_id} with
     [Arguments]    &{config}
@@ -21,6 +22,12 @@ Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
     ${backup_url} =    get_backup_url    ${backup_id}    ${source_volume_name}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
+
+Create DR volume ${volume_id} from backup ${backup_name}
+    [Arguments]    &{config}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url    ${backup_name}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
 Create volume ${target_volume_id} from backup ${backup_id} of volume ${source_volume_id}
@@ -139,6 +146,10 @@ Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
 
+Delete volume ${volume_id} replica on all ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_replica_on_nodes    ${volume_name}    ${replica_locality}
+
 Delete ${count} replicas of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replicas    ${volume_name}    ${count}
@@ -181,6 +192,14 @@ Wait for volume ${volume_id} faulted
 Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
+
+Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}
+
+Wait for volume ${volume_id} cloning to complete
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_clone_status_completed    ${volume_name}
 
 Check volume ${volume_id} replica on node ${node_id} kept in stopped
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -240,6 +259,10 @@ Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${so
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
     ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
+    wait_for_volume_restoration_to_complete    ${volume_name}    ${backup_name}
+
+Wait for volume ${volume_id} restoration from backup ${backup_name} to complete
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_restoration_to_complete    ${volume_name}    ${backup_name}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} start
@@ -336,7 +359,11 @@ Number of volume ${volume_id} replicas on node ${node_id_0} should be less than 
     ${node_name_1} =    get_node_by_index    ${node_id_1}
     ${replica_count_0} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_0}
     ${replica_count_1} =    wait_for_replica_count    ${volume_name}    node_name=${node_name_1}
-    Should Be True    ${replica_count_0} < ${replica_count_1}
+    IF    ${replica_count_0} >= ${replica_count_1}
+        Log to console    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
+        Sleep    ${retry_count}
+        Fail    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
+    END
 
 Volume ${volume_id} should have replicas running on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -351,7 +378,11 @@ Volume ${volume_id} should have ${expected_replica_count} replicas running on no
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
-        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        IF    int(${replica_count}) != int(${new_replica_count})
+            Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+            Sleep    ${retry_count}
+            Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        END
         Sleep    5
     END
 
@@ -360,7 +391,11 @@ Volume ${volume_id} should have replicas running on node ${node_id} and no addit
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
-        Should Be Equal As Integers    ${replica_count}    ${new_replica_count}
+        IF     int(${replica_count}) != int(${new_replica_count})
+            Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+            Sleep    ${retry_count}
+            Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        END
         Sleep    5
     END
 
@@ -408,6 +443,24 @@ Create volume ${volume_id} with ${size} GB and no replicas on the attached node
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 2
     Delete volume ${volume_id} replica on volume node
+
+Create single replica volume ${volume_id} with replica on node ${node_id}
+    [Arguments]    &{config}
+    Create volume ${volume_id}    numberOfReplicas=3    &{config}
+    Attach volume ${volume_id} to node ${node_id}
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 1
+    Delete volume ${volume_id} replica on all replica node
+    Detach volume ${volume_id}
+    Wait for volume ${volume_id} detached
+
+Create volume ${volume_id} attached to node ${attach_node_id} with 2 replicas excluding node ${replica_excluding_node_id}
+    [Arguments]    &{config}
+    Create volume ${volume_id} with    &{config}
+    Attach volume ${volume_id} to node ${attach_node_id}
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 2
+    Delete volume ${volume_id} replica on node ${replica_excluding_node_id}
 
 Record volume ${volume_id} replica names
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -490,3 +543,7 @@ Enable volume ${volume_id} offline replica rebuilding
 Ignore volume ${volume_id} offline replica rebuilding
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_offline_replica_rebuild    ${volume_name}    ignored
+
+Update volume ${volume_id} data locality to ${data_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_data_locality    ${volume_name}    ${data_locality}

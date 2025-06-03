@@ -9,6 +9,8 @@ from kubernetes import client
 from utility.utility import get_longhorn_client
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+from utility.utility import subprocess_exec_cmd
+from utility.constant import DEFAULT_BACKUPSTORE
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -43,7 +45,7 @@ class Base(ABC):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.core_api = client.CoreV1Api()
-        backupstore = os.environ.get('LONGHORN_BACKUPSTORE')
+        backupstore = os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
         if not backupstore:
             return
@@ -116,7 +118,7 @@ class Base(ABC):
         backup_target = get_longhorn_client().by_id_backupTarget(
                             self.DEFAULT_BACKUPTARGET)
         for i in range(self.retry_count):
-            logging(f"Updating backupstore to {url}${credential_secret} ... ({i})")
+            logging(f"Updating backupstore to url={url}, credential_secret={credential_secret}, poll_interval={poll_interval} ... ({i})")
             try:
                 backup_target.backupTargetUpdate(name=self.DEFAULT_BACKUPTARGET,
                                                  backupTargetURL=url,
@@ -124,9 +126,9 @@ class Base(ABC):
                                                  pollInterval=str(poll_interval))
                 return
             except Exception as e:
-                logging(f"Failed to update backupstore to {url}${credential_secret}: {e}")
+                logging(f"Failed to update backupstore to url={url}, credential_secret={credential_secret}, poll_interval={poll_interval}: {e}")
             time.sleep(self.retry_interval)
-        assert False, f"Failed to update backupstore to {url}${credential_secret}"
+        assert False, f"Failed to update backupstore to url={url}, credential_secret={credential_secret}, poll_interval={poll_interval}"
 
     @abstractmethod
     def get_backup_volume_prefix(self, volume_name):
@@ -170,6 +172,14 @@ class Base(ABC):
 
     @abstractmethod
     def count_backup_block_files(self):
+        return NotImplemented
+
+    def extract_dummy_backup(self, filename):
+        filepath = f"./templates/backup/{filename}"
+        subprocess_exec_cmd(["tar", "-xzvf", filepath])
+
+    @abstractmethod
+    def create_dummy_backup(self, filename):
         return NotImplemented
 
 
@@ -209,4 +219,7 @@ class BackupStore(Base):
         return NotImplemented
 
     def count_backup_block_files(self):
+        return NotImplemented
+
+    def create_dummy_backup(self, filename):
         return NotImplemented

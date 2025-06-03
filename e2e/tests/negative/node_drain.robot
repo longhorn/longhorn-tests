@@ -16,15 +16,15 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/node.resource
 
-Test Setup    Set test environment
+Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Force Drain Volume Node While Replica Rebuilding
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 0 healthy
@@ -57,8 +57,8 @@ Force Drain Volume Node While Replica Rebuilding
 Force Drain Replica Node While Replica Rebuilding
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
-    And Create persistentvolumeclaim 1 using RWX volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 0 healthy
@@ -104,7 +104,7 @@ Drain Node With Force
     ...    9. Verify the instance manager pods are gone and not recreated after the drain.
     ...    10. Validate the volume content. The data is intact.
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 2048 MB data to file data.txt in deployment 0
@@ -114,7 +114,7 @@ Drain Node With Force
 
     And Force drain volume of deployment 0 volume node
     And Wait for volume of deployment 0 attached to another node and degraded
-    And Check instance-manager pod is not running on drained node
+    And Check ${DATA_ENGINE} instance manager is not running on drained node
     Then Check deployment 0 data in file data.txt is intact
 
 Drain Node Without Force
@@ -127,7 +127,7 @@ Drain Node Without Force
     ...    5. One by one all the pods should get evicted.
     ...    6. Verify the instance manager pods are gone and not recreated after the drain.
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0 using RWO volume with longhorn-test storageclass
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 2048 MB data to file data.txt in deployment 0
@@ -136,7 +136,7 @@ Drain Node Without Force
     And Delete replica of deployment 0 volume on volume node
     And Drain volume of deployment 0 volume node
     And Wait for volume of deployment 0 attached to another node and degraded
-    And Check instance-manager pod is not running on drained node
+    And Check ${DATA_ENGINE} instance manager is not running on drained node
     Then Check deployment 0 data in file data.txt is intact
 
 Test Kubectl Drain Nodes For PVC/PV/LHV Is Created Through Longhorn API
@@ -181,7 +181,7 @@ Stopped Replicas On Deleted Nodes Should Not Be Counted As Healthy Replicas When
     And Power off node 1
 
     When Force drain node 2 and expect failure
-    And Check instance-manager pod is running on node 2
+    And Check ${DATA_ENGINE} instance manager is running on node 2
     And Check volume 0 replica on node 2 exist
 
 Setting Allow Node Drain with the Last Healthy Replica protects the last healthy replica with Pod Disruption Budget (PDB)
@@ -213,7 +213,7 @@ Setting Allow Node Drain with the Last Healthy Replica protects the last healthy
     And Power off node 1
 
     When Force drain node 2 and expect failure
-    And Check instance-manager pod is running on node 2
+    And Check ${DATA_ENGINE} instance manager is running on node 2
 
     When Set setting node-drain-policy to always-allow
     And Force drain node 2 and expect success

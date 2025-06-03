@@ -49,7 +49,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-6rgfq",
-            "size": 100,
+            "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
     }
@@ -58,7 +58,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
@@ -70,6 +70,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 runcmd:
   - - systemctl
     - enable
@@ -94,12 +95,12 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-6rgfq",
-            "size": 100,
+            "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
         {
             "storageClassName": "harvester-longhorn",
-            "size": 100,
+            "size": ${var.block_device_size_worker},
             "bootOrder": 2
         }]
     }
@@ -108,7 +109,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     network_info = <<EOF
     {
         "interfaces": [{
-            "networkName": "longhorn-qa/vlan104"
+            "networkName": "longhorn-qa/vlan-2011"
         }]
     }
     EOF
@@ -120,6 +121,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 ssh_authorized_keys:
   - >-
     ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
 runcmd:
   - transactional-update register -r ${var.registration_code}
   - transactional-update pkg install -y qemu-guest-agent iptables open-iscsi nfs-client cryptsetup device-mapper
@@ -140,7 +142,7 @@ runcmd:
   - echo dm_crypt >> /etc/modules-load.d/modules.conf
   - echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
   - echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
-  - shutdown -r +5
+  - shutdown -r +1
 EOF
   }
 }

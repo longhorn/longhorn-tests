@@ -31,7 +31,13 @@ Delete volume of ${workload_kind} ${workload_id} replica node
 
 Add deleted node back
     reboot_node_by_name    ${deleted_node}
-    add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+    IF     "${DATA_ENGINE}" == "v2"
+        add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+    END
+
+Set k8s node ${node_id} zone ${zone_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_k8s_node_zone    ${node_name}    ${zone_name}
 
 Force drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
