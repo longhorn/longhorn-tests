@@ -60,6 +60,9 @@ run_longhorn_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_USERNAME", "value": "'${REGISTRY_USERNAME}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_PASSWORD", "value": "'${REGISTRY_PASSWORD}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  # add k8s distro for kubelet restart
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "K8S_DISTRO", "value": "'${TF_VAR_k8s_distro_name}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   # upgrade test parameters
   if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]] || [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_URI", "value": "'${LONGHORN_REPO_URI}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -198,6 +201,7 @@ run_longhorn_test_out_of_cluster(){
              -e LONGHORN_INSTALL_METHOD="${LONGHORN_INSTALL_METHOD}"\
              -e LONGHORN_STABLE_VERSION="${LONGHORN_STABLE_VERSION}"\
              -e LONGHORN_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"\
+             -e K8S_DISTRO="${TF_VAR_k8s_distro_name}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
   docker stop "${CONTAINER_NAME}"
