@@ -28,20 +28,6 @@ class recurringjob_keywords:
         logging(f"Creating recurringjob {job_name}, task={task}, groups={groups}, cron={cron}, concurrency={concurrency}, labels={labels}")
         self.recurringjob.create(job_name, task=task, groups=groups, cron=cron, concurrency=concurrency, labels=labels)
 
-    def create_snapshot_recurringjob_for_volume(self, volume_name):
-        job_name = volume_name + '-snap'
-
-        logging(f'Creating snapshot recurringjob {job_name} for volume {volume_name}')
-        self.recurringjob.create(job_name, task="snapshot")
-        self.recurringjob.add_to_volume(job_name, volume_name)
-
-    def create_backup_recurringjob_for_volume(self, volume_name):
-        job_name = volume_name + '-bak'
-
-        logging(f'Creating backup recurringjob {job_name} for volume {volume_name}')
-        self.recurringjob.create(job_name, task="backup")
-        self.recurringjob.add_to_volume(job_name, volume_name)
-
     def create_recurringjob_for_volume(self, volume_name, task, cron="*/2 * * * *"):
         job_name = volume_name + '-' + task
 
