@@ -9,6 +9,7 @@ from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
 from utility.utility import get_retry_count_and_interval
+from utility.utility import generate_random_id
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -22,6 +23,7 @@ class Harvester(Base):
             'R_SESS': f"{os.getenv('LAB_ACCESS_KEY')}:{os.getenv('LAB_SECRET_KEY')}"
         }
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+        self.snapshot_ids = []
 
     def reboot_all_nodes(self, shut_down_time_in_sec=NODE_REBOOT_DOWN_TIME_SECOND):
         node_names = [key for key in self.mapping.keys()]
@@ -70,6 +72,7 @@ class Harvester(Base):
                 break
             except Exception as e:
                 logging(f"Stopping vm failed with error {e}")
+            time.sleep(self.retry_interval)
         logging(f"Stopping vm {vm_id}")
 
         if not waiting:
@@ -103,6 +106,7 @@ class Harvester(Base):
                 break
             except Exception as e:
                 logging(f"Starting vm failed with error {e}")
+            time.sleep(self.retry_interval)
         logging(f"Starting vm {vm_id}")
 
         started = False
@@ -121,7 +125,64 @@ class Harvester(Base):
         self.node.wait_for_node_up(vm_id)
 
     def create_snapshot(self, node_name):
-        return NotImplemented
+
+        vm_id = self.mapping[node_name]
+        vm_uid = self.get_vm_info(node_name)['metadata']['uid']
+        snapshot_name = f"snap-{vm_id}-{generate_random_id(4)}"
+
+        logging(f"Creating vm snapshot {snapshot_name} for {node_name}")
+
+        data = {
+	        "metadata": {
+		        "name": snapshot_name,
+		        "namespace": "longhorn-qa",
+		        "ownerReferences": [{
+			        "name": vm_id,
+			        "kind": "VirtualMachine",
+			        "uid": vm_uid,
+			        "apiVersion": "kubevirt.io/v1"
+		        }]
+	        },
+	        "spec": {
+		        "source": {
+			        "apiGroup": "kubevirt.io",
+			        "kind": "VirtualMachine",
+			        "name": vm_id
+		        },
+		        "type": "snapshot"
+	        },
+	        "type": "harvesterhci.io.virtualmachinebackup"
+        }
+
+        url = f"{os.getenv('LAB_URL')}/k8s/clusters/{os.getenv('LAB_CLUSTER_ID')}/v1/harvester/harvesterhci.io.virtualmachinebackups/longhorn-qa"
+
+        self.snapshot_ids.append(snapshot_name)
+
+        resp = requests.post(url, cookies=self.cookies, json=data, verify=False)
+        logging(f"resp = {resp}")
+        assert resp.status_code == 201, f"Failed to create vm snapshot for {node_name} response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+        logging(f"Created vm snapshot {snapshot_name} for {node_name}")
 
     def cleanup_snapshots(self):
-        return NotImplemented
+        for snapshot_id in self.snapshot_ids:
+            logging(f"Deleting vm snapshot {snapshot_id}")
+            url = f"{os.getenv('LAB_URL')}/k8s/clusters/{os.getenv('LAB_CLUSTER_ID')}/v1/harvester/harvesterhci.io.virtualmachinebackups/longhorn-qa/{snapshot_id}"
+            resp = requests.delete(url, cookies=self.cookies, verify=False)
+            assert resp.status_code == 200, f"Failed to delete vm snapshot {snapshot_id} response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+            logging(f"Deleted vm snapshot {snapshot_id}")
+
+    def get_vm_info(self, node_name):
+        vm_id = self.mapping[node_name]
+
+        url = f"{self.url}/{vm_id}"
+        for i in range(self.retry_count):
+            logging(f"Trying to get vm {vm_id} info ... ({i})")
+            try:
+                resp = requests.get(url, cookies=self.cookies, verify=False)
+                logging(f"resp = {resp}")
+                assert resp.status_code == 200, f"Failed to get vm {vm_id} info response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
+                return resp.json()
+            except Exception as e:
+                logging(f"Getting vm info failed with error {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get vm {vm_id} info response: {resp.status_code} {resp.reason}, request: {resp.request.url} {resp.request.headers}"
