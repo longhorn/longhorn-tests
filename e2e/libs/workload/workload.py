@@ -160,6 +160,30 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
             logging(f"Writing data to pod {pod_name} failed with error: {e}")
             time.sleep(retry_interval)
 
+def run_commands_in_pod(pod_name, commands):
+    exit_code_prefix = "EXIT_CODE:"
+    api = client.CoreV1Api()
+    cmd = [
+        '/bin/sh',
+        '-c',
+        f"cd /data && {commands}; echo {exit_code_prefix}$?"
+    ]
+
+    output = stream(
+        api.connect_get_namespaced_pod_exec, pod_name, 'default',
+        command=cmd, stderr=True, stdin=False, stdout=True,
+        tty=False)
+
+    if exit_code_prefix not in output:
+        raise RuntimeError(f"Failed to run commands {commands} in pod {pod_name}: {output}")
+    else:
+        logging(f"Ran commands {commands} in pod {pod_name} with result: {output}")
+
+    exit_line = output.strip().splitlines()[-1]
+    exit_code = int(exit_line.replace(exit_code_prefix, "").strip())
+    if exit_code != 0:
+        raise RuntimeError(f"Failed to run commands {commands} in pod {pod_name}: {output}")
+
 def get_pod_data_checksum(pod_name, file_name, data_directory="/data"):
     file_path = f"{data_directory}/{file_name}"
     api = client.CoreV1Api()

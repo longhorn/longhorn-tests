@@ -28,6 +28,7 @@ from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
 from workload.workload import get_pod_node
+from workload.workload import run_commands_in_pod
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -130,6 +131,11 @@ class workload_keywords:
 
         logging(f'Keep writing data to pod {pod_name}')
         keep_writing_pod_data(pod_name)
+
+    def run_commands_workload_pod(self, workload_name, commands):
+        pod_name = get_workload_pod_names(workload_name)[0]
+        logging(f'Running commands {commands} in pod {pod_name}')
+        run_commands_in_pod(pod_name, commands)
 
     def wait_for_workload_pods_container_creating(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods container creating')
