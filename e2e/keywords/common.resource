@@ -27,6 +27,9 @@ Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 
 *** Keywords ***
+Test should pass
+    No Operation
+
 Set disk path based on host provider and architecture
     ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
     ${ARCH}=    Get Environment Variable    ARCH    amd64

@@ -15,11 +15,16 @@ spec:
       labels:
         app: test-deployment
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
-        - image: busybox
+        - image: alpine/git
           imagePullPolicy: IfNotPresent
           name: sleep
-          args: ['/bin/sh', '-c', 'while true;do date;sleep 5; done']
+          command: ['/bin/sh', '-c']
+          args: ['while true;do date;sleep 5; done']
           volumeMounts:
             - name: pod-data
               mountPath: /data
