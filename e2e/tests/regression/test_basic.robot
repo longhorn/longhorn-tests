@@ -8,9 +8,11 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/deployment.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
+Resource    ../keywords/workload.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/engine.resource
 Resource    ../keywords/replica.resource
@@ -157,3 +159,14 @@ V1 Replica Rebuilding
 
     And Check volume 0 data is intact
     And Check volume 0 works
+
+Test File Ownership And Permission By Executing Git Clone
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Create deployment 1 with persistentvolumeclaim 1
+
+    When Run commands in deployment 0    commands=git clone https://github.com/longhorn/longhorn.git
+    And Run commands in deployment 1    commands=git clone https://github.com/longhorn/longhorn.git
+    Then Test should pass
