@@ -262,15 +262,25 @@ class Rest(Base):
 
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         condition_met = False
+        mode = "RW" if running else ""
         for i in range(self.retry_count):
             running_replica_count = 0
             volume = get_longhorn_client().by_id_volume(volume_name)
             for r in volume.replicas:
-                if node_name and r.hostId == node_name and r.running == running:
-                    running_replica_count += 1
-                elif not node_name and r.running == running:
-                    running_replica_count += 1
-            logging(f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running on {node_name if node_name else 'nodes'}, currently it's {running_replica_count} ... ({i})")
+                if node_name and r.hostId == node_name:
+                    # if running == True, it collects running replicas
+                    # if running == False, it collects stopped replicas
+                    # if running == None, it collects all replicas
+                    if running is not None and r.running == running and r.mode == mode:
+                        running_replica_count += 1
+                    elif running is None:
+                        running_replica_count += 1
+                elif not node_name:
+                    if running is not None and r.running == running and r.mode == mode:
+                        running_replica_count += 1
+                    elif running is None:
+                        running_replica_count += 1
+            logging(f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running={running} on {node_name if node_name else 'nodes'}, currently it's {running_replica_count} ... ({i})")
             if replica_count and running_replica_count == int(replica_count):
                 condition_met = True
                 break
@@ -278,7 +288,7 @@ class Rest(Base):
                 condition_met = True
                 break
             time.sleep(self.retry_interval)
-        assert condition_met, f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running on {node_name if node_name else 'nodes'} failed. There are only {running_replica_count} running replicas"
+        assert condition_met, f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running={running} on {node_name if node_name else 'nodes'} failed. There are only {running_replica_count} replicas"
         return running_replica_count
 
     def wait_for_replica_to_be_deleted(self, volume_name, node_name):
