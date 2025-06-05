@@ -4,6 +4,8 @@ from recurringjob.rest import Rest
 
 from strategy import LonghornOperationStrategy
 
+from utility.constant import LONGHORN_NAMESPACE
+
 
 class RecurringJob(Base):
 
@@ -51,3 +53,6 @@ class RecurringJob(Base):
 
     def assert_recurringjob_created_backup_for_volume(self, volume_name, job_name, retry_count=-1):
         return self.recurringjob.assert_volume_backup_created(volume_name, job_name, retry_count=retry_count)
+
+    def wait_for_pod_completion_without_error(self, job_name):
+        return self.recurringjob.wait_for_pod_completion_without_error(job_name)
