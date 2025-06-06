@@ -61,6 +61,7 @@ from common import wait_for_volume_condition_toomanysnapshots
 from common import wait_for_volume_degraded, wait_for_volume_healthy
 from common import wait_for_volume_faulted
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
+from common import VOLUME_FRONTEND_NVMF
 from common import VOLUME_CONDITION_SCHEDULED
 from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
@@ -106,6 +107,7 @@ from common import BACKUP_TARGET_MESSAGES_INVALID
 from common import wait_scheduling_failure
 from common import DATA_ENGINE
 from common import SETTING_BACKUP_TARGET
+from common import nvmf_login, nvmf_logout
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -129,6 +131,16 @@ from backupstore import SETTING_BACKUP_TARGET_NOT_SUPPORTED
 from kubernetes import client as k8sclient
 
 BACKUPSTORE = get_backupstores()
+
+# For test_volume_basic: the 'iscsi' frontend is not included as it is
+# already covered by test_volume_iscsi_basic.
+# The 'ublk' frontend is also excluded since it is not yet supported on
+# SLES 15 SP6.
+FRONTENDS = (
+    [VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_NVMF]
+    if DATA_ENGINE == "v2"
+    else [VOLUME_FRONTEND_BLOCKDEV]
+)
 
 @pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
@@ -240,9 +252,10 @@ def volume_rw_test(dev):
     check_device_data(dev, data)
 
 
+@pytest.mark.parametrize("frontend", FRONTENDS)
 @pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
-def test_volume_basic(client, volume_name):  # NOQA
+def test_volume_basic(client, volume_name, frontend):  # NOQA
     """
     Test basic volume operations:
 
@@ -251,10 +264,10 @@ def test_volume_basic(client, volume_name):  # NOQA
     3. Check soft anti-affinity rule
     4. Write then read back to check volume data
     """
-    volume_basic_test(client, volume_name)
+    volume_basic_test(client, volume_name, backing_image="", frontend=frontend)
 
 
-def volume_basic_test(client, volume_name, backing_image=""):  # NOQA
+def volume_basic_test(client, volume_name, backing_image="", frontend=VOLUME_FRONTEND_BLOCKDEV):  # NOQA
     num_hosts = len(client.list_node())
     num_replicas = 3
     with pytest.raises(Exception):
@@ -272,14 +285,15 @@ def volume_basic_test(client, volume_name, backing_image=""):  # NOQA
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=num_replicas,
                                      size=SIZE,
-                                     backing_image=backing_image)
+                                     backing_image=backing_image,
+                                     frontend=frontend)
     assert volume.restoreRequired is False
 
     def validate_volume_basic(expected, actual):
         assert actual.name == expected.name
         assert actual.size == expected.size
         assert actual.numberOfReplicas == expected.numberOfReplicas
-        assert actual.frontend == VOLUME_FRONTEND_BLOCKDEV
+        assert actual.frontend == expected.frontend
         assert actual.backingImage == backing_image
         assert actual.state == expected.state
         assert actual.created == expected.created
@@ -321,7 +335,14 @@ def volume_basic_test(client, volume_name, backing_image=""):  # NOQA
     check_volume_endpoint(volumes[0])
 
     volume = client.by_id_volume(volume_name)
-    volume_rw_test(get_volume_endpoint(volume))
+    if frontend == VOLUME_FRONTEND_NVMF:
+        try:
+            dev = nvmf_login(get_volume_endpoint(volume))
+            volume_rw_test(dev)
+        finally:
+            nvmf_logout(get_volume_endpoint(volume))
+    else:
+        volume_rw_test(get_volume_endpoint(volume))
 
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
