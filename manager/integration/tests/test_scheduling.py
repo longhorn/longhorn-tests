@@ -2457,3 +2457,48 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
     for replica in volume.replicas:
         assert replica.diskID not in disk_id
         disk_id.append(replica.diskID)
+
+def test_best_effort_data_locality(client, volume_name):  # NOQA
+    """
+    Scenario: replica should be scheduled only after volume is attached, and it should be scheduled to the local node.
+              - volume data locality is set to `best-effort`
+              - volume has 1 replica
+
+    Issue: https://github.com/longhorn/longhorn/issues/11007
+    """
+    # Repeat test for 10 times to make sure replica is scheduled to the local node.
+    for i in range(10):
+        best_effort_data_locality_test(client, f'{volume_name}-{i}')
+
+
+def best_effort_data_locality_test(client, volume_name):  # NOQA
+    number_of_replicas = 1
+    volume = client.create_volume(name=volume_name,
+                                  size=str(1 * Gi),
+                                  numberOfReplicas=number_of_replicas,
+                                  dataLocality="best-effort")
+
+    # replica should stay unscheduled until volume is attached
+    for _ in range(10):
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume_name)
+        assert len(volume.replicas) == number_of_replicas
+        assert volume.replicas[0]['hostId'] == ""
+        assert not volume.replicas[0].running
+
+    self_node = get_self_host_id()
+    # attach volume to the self_node
+    volume.attach(hostId=self_node)
+    volume = wait_for_volume_healthy(client, volume_name)
+    # wait for replica to be on the self_node
+    for _ in range(30):
+        volume = client.by_id_volume(volume_name)
+        assert len(volume.replicas) == number_of_replicas
+        # fail if replica is scheduled to another node
+        assert volume.replicas[0]['hostId'] == "" or volume.replicas[0]['hostId'] == self_node
+        if volume.replicas[0]['hostId'] == self_node:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert volume.replicas[0]['hostId'] == self_node, \
+        f"Unexpected hostID {volume.replicas[0]['hostId']} for replica {volume.replicas[0].name}.\n"
