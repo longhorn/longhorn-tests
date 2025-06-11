@@ -17,15 +17,17 @@ spec:
       labels:
         app: test-statefulset
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       terminationGracePeriodSeconds: 10
       containers:
-      - image: busybox:1.34.0
+      - image: alpine/git
         imagePullPolicy: IfNotPresent
         name: sleep
-        args:
-        - "/bin/sh"
-        - "-c"
-        - while true;do date;sleep 5; done
+        command: ['/bin/sh', '-c']
+        args: ['while true;do date;sleep 5; done']
         volumeMounts:
         - name: pod-data
           mountPath: "/data"
