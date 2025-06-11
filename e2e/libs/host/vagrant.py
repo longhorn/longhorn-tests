@@ -9,6 +9,7 @@ from host.base import Base
 
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
+from utility.utility import generate_random_id
 
 
 class Vagrant(Base):
@@ -16,6 +17,7 @@ class Vagrant(Base):
     _CMD_RELOAD = 'reload'
     _CMD_HALT = 'halt'
     _CMD_STATUS = 'status'
+    _CMD_SNAPSHOT = 'snapshot'
 
     def __init__(self):
         """
@@ -28,6 +30,8 @@ class Vagrant(Base):
 
         super().__init__(mapping=node_mapping)
         self._bin = cmd_bin
+
+        self.snapshot_ids = []
 
     @classmethod
     def _get_node_mapping(cls, cmd_bin):
@@ -66,12 +70,19 @@ class Vagrant(Base):
         logging(f'Started vm {power_on_node_name}')
         self.node.wait_for_node_up(power_on_node_name)
 
+    def create_snapshot(self, node_name):
+        snapshot_name = f"{node_name}-snap-{generate_random_id(4)}"
+        logging(f"Creating vm snapshot {snapshot_name} for {node_name}")
+        self._vagrant_cmd(self._CMD_SNAPSHOT, "save", node_name, snapshot_name)
+        self.snapshot_ids.append(snapshot_name)
+        logging(f"Created vm snapshot {snapshot_name} for {node_name}")
+
+    def cleanup_snapshots(self):
+        for snapshot_id in self.snapshot_ids:
+            logging(f"Deleting vm snapshot {snapshot_id}")
+            self._vagrant_cmd(self._CMD_SNAPSHOT, "delete", snapshot_id.split("-snap-")[0], snapshot_id)
+            logging(f"Deleted vm snapshot {snapshot_id}")
+
     def _vagrant_cmd(self, *args, **kwargs):
         res = subprocess.check_call([self._bin]+list(args), **kwargs)
         logging(f"Executed {[self._bin]+list(args)} with result {res}")
-
-    def create_snapshot(self, node_name):
-        return NotImplemented
-
-    def cleanup_snapshots(self):
-        return NotImplemented
