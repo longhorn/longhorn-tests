@@ -51,8 +51,8 @@ class Volume(Base):
     def wait_for_volume_state(self, volume_name, desired_state):
         return self.volume.wait_for_volume_state(volume_name, desired_state)
 
-    def wait_for_volume_condition(self, volume_name, condition_name, condition_status):
-        return self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status)
+    def wait_for_volume_condition(self, volume_name, condition_name, condition_status, reason):
+        return self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)
 
     def wait_for_restore_required_status(self, volume_name, restore_required_state):
         return self.volume.wait_for_restore_required_status(volume_name, restore_required_state)
