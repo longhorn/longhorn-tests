@@ -141,7 +141,7 @@ class Aws(Base):
 
     def cleanup_snapshots(self):
         for snapshot_id in self.snapshot_ids:
-            print(f"Deleting vm snapshot {snapshot_id}")
+            logging(f"Deleting vm snapshot {snapshot_id}")
             self.aws_client.delete_snapshot(SnapshotId=snapshot_id)
             for i in range(self.retry_count):
                 logging(f"Waiting for vm snapshot {snapshot_id} deleted ... ({i})")
