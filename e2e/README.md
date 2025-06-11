@@ -95,6 +95,12 @@ export LONGHORN_STABLE_VERSION=master-head
 export IS_INSTALL_STABLE_VERSION=true
 ```
 
+1. To run kubelet restart related test cases, export the following environment variable so the test code knows how the kubernetes distro is using(support value: k3s, rke2):
+
+```
+export K8S_DISTRO=k3s
+```
+
 1. Prepare test environment and run the test:
 ```
 cd e2e

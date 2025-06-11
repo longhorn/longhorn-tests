@@ -1,5 +1,6 @@
 import time
 import asyncio
+import os
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -19,10 +20,13 @@ from workload.pod import new_pod_manifest
 
 
 async def restart_kubelet(node_name, downtime_in_sec=10):
+    k8s_distro = os.environ.get("K8S_DISTRO", "")
+    agent_service = "rke2-agent" if k8s_distro == "rke2" else "k3s-agent"
+
     manifest = new_pod_manifest(
         image=IMAGE_UBUNTU,
         command=["/bin/bash"],
-        args=["-c", f"sleep 10 && systemctl stop k3s-agent && sleep {downtime_in_sec} && systemctl start k3s-agent"],
+        args=["-c", f"sleep 10 && systemctl stop {agent_service} && sleep {downtime_in_sec} && systemctl start {agent_service}"],
         node_name=node_name
     )
     pod_name = manifest['metadata']['name']
