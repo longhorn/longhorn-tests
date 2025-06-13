@@ -46,12 +46,12 @@ VOLUME_HEAD_NAME = "volume-head"
 
 BACKING_IMAGE_NAME = "bi-test"
 BACKING_IMAGE_QCOW2_URL = \
-    "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2"
+    "https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2"  # NOQA
 BACKING_IMAGE_QCOW2_CHECKSUM = \
     "bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94" \
     "e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b"
 BACKING_IMAGE_RAW_URL = \
-    "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw"
+    "https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.raw"    # NOQA
 BACKING_IMAGE_RAW_CHECKSUM = \
     "304f3ed30ca6878e9056ee6f1b02b328239f0d0c2c1272840998212f9734b196371560b" \
     "3b939037e4f4c2884ce457c2cbc9f0621f4f5d1ca983983c8cdf8cd9a"
