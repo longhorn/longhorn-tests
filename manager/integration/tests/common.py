@@ -1755,16 +1755,25 @@ def client(request):
     # Make sure nodes and managers are all online.
     ips = get_mgr_ips()
 
+    api_client = None
+
     # check if longhorn manager port is open before calling get_client
     for ip in ips:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        mgr_port_open = sock.connect_ex((ip, 9500))
+        family = socket.AF_INET6 if ':' in ip else socket.AF_INET
+        sock = socket.socket(family, socket.SOCK_STREAM)
 
-        if mgr_port_open == 0:
-            client = get_client(ip + PORT)
-            break
+        try:
+            if sock.connect_ex((ip, 9500)) == 0:
+                api_client = get_client(ip + PORT)
+                break
+        finally:
+            sock.close()
 
-    hosts = client.list_node()
+    if api_client is None:
+        raise RuntimeError(
+            "Failed to connect to any Longhorn manager on ports 9500")
+
+    hosts = api_client.list_node()
     assert len(hosts) == len(ips)
 
     request.addfinalizer(lambda: cleanup_client())
@@ -1779,7 +1788,7 @@ def client(request):
 
     cleanup_client()
 
-    return client
+    return api_client
 
 
 @pytest.fixture
