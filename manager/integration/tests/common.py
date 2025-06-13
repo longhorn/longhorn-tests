@@ -26,6 +26,7 @@ from kubernetes.stream import stream
 
 from kubernetes.client.rest import ApiException
 from datetime import datetime
+from urllib.parse import urlparse
 
 Ki = 1024
 Mi = (1024 * 1024)
@@ -2802,15 +2803,13 @@ def parse_iscsi_endpoint(iscsi):
 
 
 def get_iscsi_ip(iscsi):
-    iscsi_endpoint = parse_iscsi_endpoint(iscsi)
-    ip = iscsi_endpoint[0].split(':')
-    return ip[0]
+    parsed = urlparse(iscsi)
+    return parsed.hostname
 
 
 def get_iscsi_port(iscsi):
-    iscsi_endpoint = parse_iscsi_endpoint(iscsi)
-    ip = iscsi_endpoint[0].split(':')
-    return ip[1]
+    parsed = urlparse(iscsi)
+    return parsed.port
 
 
 def get_iscsi_target(iscsi):
