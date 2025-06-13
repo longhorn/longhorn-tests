@@ -394,22 +394,26 @@ def get_custom_object_api_client():
 
 
 def get_longhorn_api_client():
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         try:
             k8sconfig.load_incluster_config()
             ips = get_mgr_ips()
 
             # check if longhorn manager port is open before calling get_client
             for ip in ips:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                mgr_port_open = sock.connect_ex((ip, 9500))
+                # Determine if IP is IPv6
+                family = socket.AF_INET6 if ':' in ip else socket.AF_INET
+                sock = socket.socket(family, socket.SOCK_STREAM)
 
-                if mgr_port_open == 0:
-                    client = get_client(ip + PORT)
-                    break
-            return client
+            try:
+                if sock.connect_ex((ip, 9500)) == 0:
+                    return get_client(ip + PORT)
+            finally:
+                sock.close()
         except Exception:
             time.sleep(RETRY_INTERVAL)
+
+    raise Exception("Failed to get Longhorn API client after retries")
 
 
 def cleanup_volume(client, volume):
