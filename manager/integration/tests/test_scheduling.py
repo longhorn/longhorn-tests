@@ -2460,13 +2460,18 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
 @pytest.mark.csi  # NOQA
 def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, statefulset):  # NOQA
     """
-    Test that kube-scheduler is aware of storage capacity available on each node when scheduling pods using
-    a StorageClass with volumeBindingMode set to 'WaitForFirstConsumer'.
+    Test that kube-scheduler is aware of storage capacity available on each node
+    when scheduling pods using a StorageClass with volumeBindingMode set to 
+    'WaitForFirstConsumer'.
 
-    1. Reduce the schedulable storage on all nodes (except the current node) to 10Gi.
-    2. Create a new StorageClass with volumeBindingMode set to 'WaitForFirstConsumer'.
-    3. Deploy a StatefulSet with 3 replicas, each requesting a 15Gi PVC using the StorageClass from step 2.
-    4. Verify that all pods are scheduled onto the current node (since it’s the only one with sufficient storage).
+    1. Reduce the schedulable storage on all nodes (except the current node) 
+       to 10Gi.
+    2. Create a new StorageClass with volumeBindingMode set 
+       to 'WaitForFirstConsumer'.
+    3. Deploy a StatefulSet with 3 replicas, each requesting a 15Gi PVC using 
+       the StorageClass from step 2.
+    4. Verify that all pods are scheduled onto the current node (since it’s the 
+       only one with sufficient storage).
     """
 
     lht_hostId = get_self_host_id()
@@ -2494,5 +2499,6 @@ def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, 
     pod_namespace = statefulset["metadata"]["namespace"]
     for i in range(statefulset['spec']['replicas']):
         pod_name = statefulset["metadata"]["name"] + '-' + str(i)
-        pod = core_api.read_namespaced_pod(name=pod_name, namespace=pod_namespace)
-        assert pod.spec.node_name == lht_hostId
+        sts_pod = core_api.read_namespaced_pod(
+            name=pod_name, namespace=pod_namespace)
+        assert sts_pod.spec.node_name == lht_hostId
