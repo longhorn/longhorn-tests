@@ -234,3 +234,6 @@ class Rest(Base):
 
     def assert_volume_backup_created(self, volume_name, job_name, retry_count=-1):
         self._check_backup_created(volume_name, job_name, retry_count=retry_count)
+
+    def wait_for_pod_completion_without_error(self, job_name, namespace=LONGHORN_NAMESPACE):
+        return NotImplemented
