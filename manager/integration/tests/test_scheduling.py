@@ -2460,7 +2460,7 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
 
 def test_best_effort_data_locality(client, volume_name):  # NOQA
     """
-    Scenario: replica should be scheduled only after volume is attached, 
+    Scenario: replica should be scheduled only after volume is attached,
               and it should be scheduled to the local node.
             - volume data locality is set to `best-effort`
             - volume has 1 replica
@@ -2497,7 +2497,7 @@ def best_effort_data_locality_test(client, volume_name):  # NOQA
         volume = client.by_id_volume(volume_name)
         assert len(volume.replicas) == number_of_replicas
         # fail if replica is scheduled to another node
-        assert (volume.replicas[0]['hostId'] == "" or 
+        assert (volume.replicas[0]['hostId'] == "" or
                 volume.replicas[0]['hostId'] == self_node)
         if volume.replicas[0]['hostId'] == self_node:
             break
