@@ -1021,7 +1021,7 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
     Test that CSIStorageCapacity objects are properly created
 
     1. Verify that initially there are no CSIStorageCapacity objects
-    2. Create new storage class with volumeBindingMode set 
+    2. Create new storage class with volumeBindingMode set
        to WaitForFirstConsumer
     3. Verify that CSIStorageCapacity object is created for each node
     """

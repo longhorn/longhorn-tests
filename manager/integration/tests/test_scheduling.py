@@ -2460,17 +2460,17 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
 @pytest.mark.csi  # NOQA
 def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, statefulset):  # NOQA
     """
-    Test that kube-scheduler is aware of storage capacity available on each node
-    when scheduling pods using a StorageClass with volumeBindingMode set to 
-    'WaitForFirstConsumer'.
+    Test that kube-scheduler is aware of storage capacity available on each
+    node when scheduling pods using a StorageClass with volumeBindingMode set
+    to 'WaitForFirstConsumer'.
 
-    1. Reduce the schedulable storage on all nodes (except the current node) 
+    1. Reduce the schedulable storage on all nodes (except the current node)
        to 10Gi.
-    2. Create a new StorageClass with volumeBindingMode set 
+    2. Create a new StorageClass with volumeBindingMode set
        to 'WaitForFirstConsumer'.
-    3. Deploy a StatefulSet with 3 replicas, each requesting a 15Gi PVC using 
+    3. Deploy a StatefulSet with 3 replicas, each requesting a 15Gi PVC using
        the StorageClass from step 2.
-    4. Verify that all pods are scheduled onto the current node (since it’s the 
+    4. Verify that all pods are scheduled onto the current node (since it’s the
        only one with sufficient storage).
     """
 
@@ -2482,7 +2482,8 @@ def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, 
             for _, disk in disks.items():
                 disk.storageReserved = disk.storageMaximum - 10 * Gi
             update_disks = get_update_disks(disks)
-            update_node_disks(client, node.name, disks=update_disks, retry=True)
+            update_node_disks(client, node.name, disks=update_disks,
+                              retry=True)
 
     sc_name = 'longhorn-wait-for-first-consumer'
     storage_class['metadata']['name'] = sc_name
