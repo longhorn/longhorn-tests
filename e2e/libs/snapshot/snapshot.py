@@ -21,6 +21,9 @@ class Snapshot(Base):
     def get(self, volume_name, snapshot_id):
         return self.snapshot.get(volume_name, snapshot_id)
 
+    def get_snapshot_by_name(self, volume_name, snapshot_name):
+        return self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
+
     def get_volume_head(self, volume_name):
         return self.snapshot.get_volume_head(volume_name)
 
