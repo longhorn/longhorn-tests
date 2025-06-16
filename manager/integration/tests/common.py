@@ -12,6 +12,7 @@ import signal
 import types
 import threading
 import re
+import ipaddress
 
 import socket
 import pytest
@@ -1892,8 +1893,19 @@ def cleanup_disks_on_node(client, node_id, *disks):  # NOQA
         cleanup_host_disks(client, disk)
 
 
-def get_client(address):
-    url = 'http://' + address + '/v1/schemas'
+def get_client(address_with_port):
+    # Split IP and port
+    if address_with_port.count(':') > 1:
+        ip_part, port = address_with_port.rsplit(':', 1)
+        ip = ipaddress.ip_address(ip_part)
+        if ip.version == 6:
+            formatted_address = f"[{ip_part}]:{port}"
+        else:
+            formatted_address = f"{ip_part}:{port}"
+    else:
+        formatted_address = address_with_port
+
+    url = f'http://{formatted_address}/v1/schemas'
     c = longhorn.from_env(url=url)
     return c
 
