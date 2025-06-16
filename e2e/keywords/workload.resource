@@ -47,6 +47,11 @@ Write ${size} GB large data to file ${file_name} in pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     write_workload_pod_large_data    ${pod_name}    ${size}    ${file_name}
 
+Run commands in ${workload_kind} ${workload_id}
+    [Arguments]    &{config}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    run_commands_workload_pod    ${workload_name}    &{config}
+
 Check pod ${pod_id} data in file ${file_name} is intact
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     check_workload_pod_data_checksum    ${pod_name}    ${file_name}
