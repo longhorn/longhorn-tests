@@ -3,32 +3,33 @@ from node import Node
 from node_exec import NodeExec
 from k8s import k8s
 from utility.constant import LONGHORN_NAMESPACE
+from utility.utility import logging
 
+import subprocess
 import os
+import time
 
-class LonghornHelmChart(Base):
+class LonghornFlux(Base):
 
-    def uninstall(self, is_stable_version=False):
-        control_plane_nodes = Node.list_node_names_by_role(self, role="control-plane")
-        control_plane_node = control_plane_nodes[0]
-
-        cmd = f'export KUBECONFIG={os.getenv("KUBECONFIG")} && helm uninstall longhorn -n {LONGHORN_NAMESPACE}'
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        assert res, "apply helm uninstall command failed"
+    def uninstall(self, is_stable_version):
+        command = "./pipelines/utilities/flux.sh"
+        process = subprocess.Popen([command, "uninstall_longhorn"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Uninstall longhorn failed")
+            time.sleep(self.retry_count)
+            assert False, "Uninstall longhorn failed"
 
         k8s.delete_namespace(namespace=LONGHORN_NAMESPACE)
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
-<<<<<<< HEAD
-    def install(self, is_stable_version=False):
-        self.install_longhorn(is_stable_version)
-=======
     def install(self, install_stable_version):
         if install_stable_version:
             install_function = "install_longhorn_stable"
         else:
             install_function = "install_longhorn_custom"
-        command = "./pipelines/utilities/longhorn_helm_chart.sh"
+        command = "./pipelines/utilities/flux.sh"
         process = subprocess.Popen([command, install_function],
                                    shell=False)
         process.wait()
@@ -39,7 +40,7 @@ class LonghornHelmChart(Base):
             upgrade_function = "install_longhorn_transient"
         else:
             upgrade_function = "install_longhorn_custom"
-        command = "./pipelines/utilities/longhorn_helm_chart.sh"
+        command = "./pipelines/utilities/flux.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
         try:
@@ -50,4 +51,3 @@ class LonghornHelmChart(Base):
             process.kill()
             process.wait()
             return False
->>>>>>> 1ab6132 (test(robot): Automate manual test case Test System Upgrade with New Instance Manager)

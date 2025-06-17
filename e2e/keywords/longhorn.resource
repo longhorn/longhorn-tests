@@ -56,6 +56,9 @@ Check instance-manager pod is running on node ${node_id}
     ${pod} =     get_instance_manager_on_node    ${node_name}
     Should Not Be Equal    ${pod}    ${None}
 
+Check v1 instance manager pods recreated
+    wait_all_instance_managers_recreated
+
 Uninstall Longhorn
     ${backups_before_uninstall} =     list_all_backups
     uninstall_longhorn_system
@@ -95,3 +98,31 @@ Uninstall Longhorn stable version
     ${backups_before_uninstall} =     list_all_backups
     uninstall_longhorn_system    is_stable_version=True
     Set Test Variable    ${backups_before_uninstall}
+<<<<<<< HEAD
+=======
+
+Upgrade Longhorn to transient version
+    ${upgraded} =    upgrade_longhorn    upgrade_to_transient_version=True
+    IF    "${upgraded}" == ${False}
+        Log To Console    Upgrade failed
+        Fail    Upgrading Longhorn to transient failed
+    END
+
+Upgrade Longhorn to custom version
+    ${upgraded} =    upgrade_longhorn
+    IF    "${upgraded}" == ${False}
+        Log To Console    Upgrade failed
+        Fail    Upgrading Longhorn failed
+    END
+
+Upgrade Longhorn to custom version should fail
+    ${upgraded} =     upgrade_longhorn    wait_when_fail=False
+    IF    "${upgraded}" == ${True}
+        Log To Console    Upgrade succeed
+        Fail    Upgrading Longhorn succeed
+    END
+
+Check Longhorn node ${type} state on power off node is ${expect_state}
+    ${status} =    get_longhorn_node_condition_status    ${last_volume_node}    ${type}
+    Should Be Equal    ${status}    ${expect_state}
+>>>>>>> 1ab6132 (test(robot): Automate manual test case Test System Upgrade with New Instance Manager)

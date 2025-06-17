@@ -33,5 +33,35 @@ class LonghornKubectl(Base):
         assert res, "delete uninstallation components failed"
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
+<<<<<<< HEAD
     def install(self, is_stable_version=False):
         self.install_longhorn(is_stable_version)
+=======
+    def install(self, install_stable_version):
+        if install_stable_version:
+            install_function = "install_longhorn_stable"
+        else:
+            install_function = "install_longhorn_custom"
+        command = "./pipelines/utilities/longhorn_manifest.sh"
+        process = subprocess.Popen([command, install_function],
+                                   shell=False)
+        process.wait()
+        return True if process.returncode == 0 else False
+
+    def upgrade(self, upgrade_to_transient_version, timeout):
+        if upgrade_to_transient_version:
+            upgrade_function = "install_longhorn_transient"
+        else:
+            upgrade_function = "install_longhorn_custom"
+        command = "./pipelines/utilities/longhorn_manifest.sh"
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+        try:
+            process.wait(timeout=timeout)
+            return True if process.returncode == 0 else False
+        except subprocess.TimeoutExpired:
+            logging(f"Upgrade timeout after {timeout}s. Killing process...")
+            process.kill()
+            process.wait()
+            return False
+>>>>>>> 1ab6132 (test(robot): Automate manual test case Test System Upgrade with New Instance Manager)
