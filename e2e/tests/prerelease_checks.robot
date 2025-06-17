@@ -65,17 +65,17 @@ Pre-release Checks
 
         # (1) create a volume with revision counter enabled
         When Set setting disable-revision-counter to false
-        And Create volume vol-revision-enabled with    dataEngine=v1
+        And Create volume vol-revision-enabled with    size=1Gi    dataEngine=v1
         And Attach volume vol-revision-enabled
         And Wait for volume vol-revision-enabled healthy
-        And Write data data-vol-revision-enabled to volume vol-revision-enabled
+        And Write data data-vol-revision-enabled 256 MB to volume vol-revision-enabled
 
         # (2) create a volume with revision counter disabled
         When Set setting disable-revision-counter to true
-        And Create volume vol-revision-disabled with    dataEngine=v1
+        And Create volume vol-revision-disabled with    size=1Gi    dataEngine=v1
         And Attach volume vol-revision-disabled
         And Wait for volume vol-revision-disabled healthy
-        And Write data data-vol-revision-disabled to volume vol-revision-disabled
+        And Write data data-vol-revision-disabled 256 MB to volume vol-revision-disabled
 
         # (3) create a volume used by a pod
         Given Create volume vol-pod with    size=3Gi    dataEngine=v1
@@ -92,10 +92,10 @@ Pre-release Checks
         And Write 1024 MB data to file data.txt in statefulset ss-upgrade
 
         # (5) create a strict-local volume
-        When Create volume vol-strict-local with    dataEngine=v1
+        When Create volume vol-strict-local with    size=1Gi    dataEngine=v1
         And Attach volume vol-strict-local
         And Wait for volume vol-strict-local healthy
-        And Write data data-vol-strict-local to volume vol-strict-local
+        And Write data data-vol-strict-local 256 MB to volume vol-strict-local
     
         # (6) create a rwx workload
         When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
@@ -114,10 +114,10 @@ Pre-release Checks
         And Write 1024 MB data to file data.txt in pod vol-pod-bi
 
         # (8) create a volume to be detached
-        When Create volume vol-detach with    dataEngine=v1
+        When Create volume vol-detach with    size=1Gi    dataEngine=v1
         And Attach volume vol-detach
         And Wait for volume vol-detach healthy
-        And Write data data-vol-detach to volume vol-detach
+        And Write data data-vol-detach 256 MB to volume vol-detach
         And Detach volume vol-detach
         And Wait for volume vol-detach detached
     
@@ -128,14 +128,14 @@ Pre-release Checks
         And Write data data-vol-rebuild to volume vol-rebuild
     
         # (10) create a volume with recurring jobs
-        When Create volume vol-recurring with    dataEngine=v1
+        When Create volume vol-recurring with    size=1Gi    dataEngine=v1
         And Attach volume vol-recurring
         And Wait for volume vol-recurring healthy
         Then Create snapshot and backup recurringjob for volume vol-recurring
         And Check recurringjobs for volume vol-recurring work
 
         # (11) create a volume that is never attached before upgrade
-        And Create volume vol-never-attach with    dataEngine=v1
+        And Create volume vol-never-attach with    size=1Gi    dataEngine=v1
 
         # (12) create custom resources
         # support bundle
@@ -143,16 +143,16 @@ Pre-release Checks
         # system backup
         And Create system backup 0
         # orphaned replica
-        And Create volume v1 with    dataEngine=v1
+        And Create volume v1 with    size=1Gi    dataEngine=v1
         And Attach volume v1
         And Wait for volume v1 healthy
-        And Write data 0 to volume v1
+        And Write data 0 256 MB to volume v1
         And Create orphan replica for volume v1
         And Wait for orphan count to be 1
 
         # (13) create snapshot
         And Create snapshot snapshot-v1 of volume v1
-        And Write data 1 to volume v1
+        And Write data 1 256 MB to volume v1
 
         # (14) create backup
         And Create backup backup-v1 for volume v1
@@ -166,13 +166,13 @@ Pre-release Checks
     IF    "${DATA_ENGINE}" == "v2"
 
         # (1) create a v2 volume that is never attached before upgrade
-        When Create volume v2-vol-never-attach with    dataEngine=v2
+        When Create volume v2-vol-never-attach with    size=1Gi    dataEngine=v2
 
         # (2) create a v2 volume with data
-        And Create volume v2 with    dataEngine=v2
+        And Create volume v2 with    size=1Gi    dataEngine=v2
         And Attach volume v2
         And Wait for volume v2 healthy
-        And Write data 0 to volume v2
+        And Write data 0 256 MB to volume v2
 
         # (3) create a v2 volume used by a deployment
         When Create storageclass longhorn-test-v2 with    dataEngine=v2
@@ -193,7 +193,7 @@ Pre-release Checks
 
         # (5) create v2 snapshot
         And Create snapshot snapshot-v2 of volume v2
-        And Write data 1 to volume v2
+        And Write data 1 256 MB to volume v2
 
         # (6) create v2 backup
         And Create backup backup-v2 for volume v2
@@ -340,7 +340,7 @@ Pre-release Checks
         And Check volume v1 data is data 0
 
         # (14) restore volume from backup
-        When Create volume vol-restore from backup backup-v1 of volume v1
+        When Create volume vol-restore from backup backup-v1 of volume v1    size=1Gi
         Then Wait for volume vol-restore restoration from backup backup-v1 of volume v1 start
         And Wait for volume vol-restore detached
         And Attach volume vol-restore
@@ -402,7 +402,7 @@ Pre-release Checks
         And Check volume v2 data is data 0
 
         # (6) restore v2 volume from backup
-        When Create volume vol-restore-v2 from backup backup-v2 of volume v2    dataEngine=v2
+        When Create volume vol-restore-v2 from backup backup-v2 of volume v2    size=1Gi    dataEngine=v2
         Then Wait for volume vol-restore-v2 restoration from backup backup-v2 of volume v2 start
         And Wait for volume vol-restore-v2 detached
         And Attach volume vol-restore-v2
