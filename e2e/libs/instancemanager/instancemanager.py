@@ -8,6 +8,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from workload.pod import delete_pod
 from workload.pod import list_pods
+from datetime import datetime, timezone, timedelta
 
 
 class InstanceManager:
@@ -36,6 +37,32 @@ class InstanceManager:
             time.sleep(self.retry_interval)
 
         assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
+
+    def wait_all_instance_managers_recreated(self):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        core_api = client.CoreV1Api()
+        baseline_time = datetime.now(timezone.utc)- timedelta(seconds=10)
+
+        for i in range(retry_count):
+            ims = get_longhorn_client().list_instance_manager()
+            v1_im_names = [im.name for im in ims if im.dataEngine == "v1"]
+            recreated = []
+            logging(f"Checking v1 instance managers {v1_im_names} have recreated")
+
+            for im_name in v1_im_names:
+                pod = core_api.read_namespaced_pod(name=im_name, namespace="longhorn-system")
+                creation_time = pod.metadata.creation_timestamp
+                if creation_time > baseline_time:
+                    recreated.append(im_name)
+                else:
+                    logging(f"Instance manager {im_name} not recreated")
+
+            if len(recreated) == len(v1_im_names):
+                logging(f"All instance-manager pods have restarted")
+                return
+            time.sleep(retry_interval)
+
+        assert False, f"Instance managers never recreated after {retry_count} attempts"
 
     def check_all_instance_managers_not_restart(self):
 
