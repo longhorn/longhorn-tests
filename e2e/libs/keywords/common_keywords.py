@@ -20,6 +20,9 @@ class common_keywords:
     def get_worker_nodes(self):
         return Node().list_node_names_by_role("worker")
 
+    def get_control_plane_node(self):
+        return Node().list_node_names_by_role("control-plane")[0]
+
     def get_node_by_index(self, node_id):
         return Node().get_node_by_index(node_id)
 
