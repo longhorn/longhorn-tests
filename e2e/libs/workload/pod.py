@@ -37,6 +37,13 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
             'labels': labels
         },
         'spec': {
+            'tolerations': [{
+                'key': 'node-role.kubernetes.io/control-plane',
+                'effect': 'NoSchedule'
+            }, {
+                'key': 'node-role.kubernetes.io/etcd',
+                'effect': 'NoExecute'
+            }],
             'nodeName': node_name,
             'restartPolicy': 'Never',
             'containers': [{
@@ -122,12 +129,21 @@ def create_pod(manifest, is_wait_for_pod_running=False):
 def delete_pod(name, namespace='default', wait=True):
     logging(f"Deleting pod {name} in namespace {namespace}")
     core_api = client.CoreV1Api()
-    try:
-        core_api.delete_namespaced_pod(name=name, namespace=namespace, grace_period_seconds=0)
-        if wait:
-            wait_delete_pod(name)
-    except rest.ApiException as e:
-        assert e.status == 404
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        try:
+            core_api.delete_namespaced_pod(name=name, namespace=namespace, grace_period_seconds=0)
+            if wait:
+                wait_delete_pod(name)
+        except rest.ApiException as e:
+            if e.status == 404:
+                logging(f"Deleted pod {name} in namespace {namespace}")
+                return
+            else:
+                logging(f"Deleting pod {name} in namespace {namespace} error: {e}")
+        except Exception as e:
+            logging(f"Deleting pod {name} in namespace {namespace} error: {e}")
+        time.sleep(retry_interval)
 
 
 def list_pods(namespace='default', label_selector=None):

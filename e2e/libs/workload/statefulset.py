@@ -13,7 +13,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 
-def create_statefulset(statefulset_name, volume_type, sc_name, size):
+def create_statefulset(statefulset_name, volume_type, sc_name, size, node_name):
     filepath = "./templates/workload/statefulset.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -36,6 +36,10 @@ def create_statefulset(statefulset_name, volume_type, sc_name, size):
         # correct request storage size
         if size:
             manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['resources']['requests']['storage'] = size
+
+        # run the workload on a specific node
+        if node_name:
+            manifest_dict['spec']['template']['spec'].setdefault('nodeSelector', {})['kubernetes.io/hostname'] = node_name
 
         api = client.AppsV1Api()
         statefulset = api.create_namespaced_stateful_set(
