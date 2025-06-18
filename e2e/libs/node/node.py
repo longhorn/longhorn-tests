@@ -264,6 +264,11 @@ class Node:
         exec_cmd = ["kubectl", "label", "node", node_name, label]
         res = subprocess_exec_cmd(exec_cmd)
 
+    def taint_node(self, node_name, taint):
+        logging(f"Tainting node {node_name} with {taint}")
+        exec_cmd = ["kubectl", "taint", "node", node_name, taint, "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+
     def cleanup_node_labels(self):
         nodes = self.list_node_names_by_role("worker")
         for node_name in nodes:
