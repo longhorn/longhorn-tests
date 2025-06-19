@@ -316,19 +316,19 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert volume["status"]["cloneStatus"]["state"] == desired_state
 
-    def wait_for_volume_condition(self, volume_name, condition_name, condition_status):
+    def wait_for_volume_condition(self, volume_name, condition_name, condition_status, reason):
         volume = None
         for i in range(self.retry_count):
-            logging(f"Waiting for {volume_name} {condition_name}={condition_status} ... ({i})")
+            logging(f"Waiting for {volume_name} {condition_name}={condition_status} reason={reason} ... ({i})")
             try:
                 volume = self.get(volume_name)
                 for condition in volume["status"]["conditions"]:
-                    if condition["type"].lower() == condition_name.lower() and condition["status"].lower() == condition_status.lower():
+                    if condition["type"].lower() == condition_name.lower() and condition["status"].lower() == condition_status.lower() and reason in condition["reason"]:
                         return
             except Exception as e:
                 logging(f"Getting volume {volume} conditions error: {e}")
             time.sleep(self.retry_interval)
-        assert False, f"Failed to wait for {volume_name} {condition_name}={condition_status}: {volume}"
+        assert False, f"Failed to wait for {volume_name} {condition_name}={condition_status} reason={reason}: {volume}"
 
     def is_replica_running(self, volume_name, node_name, is_running):
         return Rest().is_replica_running(volume_name, node_name, is_running)
