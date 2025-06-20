@@ -15,5 +15,5 @@ class longhorn_deploy_keywords:
     def install_longhorn_system(self, install_stable_version=False):
         self.longhorn.install(install_stable_version)
 
-    def upgrade_longhorn(self, upgrade_to_transient_version=False):
-        self.longhorn.upgrade(upgrade_to_transient_version)
+    def upgrade_longhorn(self, upgrade_to_transient_version=False, timeout=600, wait_when_fail=True):
+        return self.longhorn.upgrade(upgrade_to_transient_version, timeout, wait_when_fail)

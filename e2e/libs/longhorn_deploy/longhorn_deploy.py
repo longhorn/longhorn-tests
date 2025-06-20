@@ -15,6 +15,7 @@ class LonghornDeploy(Base):
 
     def __init__(self):
 
+        super().__init__()
         if self._method == "manifest":
             self.longhorn = LonghornKubectl()
         elif self._method == "helm":
@@ -52,14 +53,16 @@ class LonghornDeploy(Base):
         self.longhorn.setup_longhorn_ui_nodeport()
         logging(f"Installed Longhorn")
 
-    def upgrade(self, upgrade_to_transient_version):
+    def upgrade(self, upgrade_to_transient_version, timeout, wait_when_fail):
         logging(f"Upgrading Longhorn to {'transient' if upgrade_to_transient_version else 'the latest'} version")
-        upgraded = self.longhorn.upgrade(upgrade_to_transient_version)
+        upgraded = self.longhorn.upgrade(upgrade_to_transient_version, timeout)
         if not upgraded:
             logging(f"Upgrading Longhorn failed")
-            time.sleep(self.retry_count)
-            assert False, "Upgrading Longhorn failed"
+            if wait_when_fail is True:
+                time.sleep(self.retry_count)
+            return False
         else:
             # add some delay between 2 upgrades
             time.sleep(60)
         logging(f"Upgraded Longhorn")
+        return upgraded

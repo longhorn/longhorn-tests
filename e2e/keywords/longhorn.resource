@@ -61,6 +61,9 @@ Check ${engine_type} instance manager is not running on node ${node_id}
 Check v1 instance manager pods did not restart
     check_all_instance_managers_not_restart
 
+Check v1 instance manager pods recreated
+    wait_all_instance_managers_recreated
+
 Uninstall Longhorn
     ${backups_before_uninstall} =     list_all_backups
     uninstall_longhorn_system
@@ -99,10 +102,25 @@ Uninstall Longhorn stable version
     Set Test Variable    ${backups_before_uninstall}
 
 Upgrade Longhorn to transient version
-    upgrade_longhorn    upgrade_to_transient_version=True
+    ${upgraded} =    upgrade_longhorn    upgrade_to_transient_version=True
+    IF    "${upgraded}" == ${False}
+        Log To Console    Upgrade failed
+        Fail    Upgrading Longhorn to transient failed
+    END
 
 Upgrade Longhorn to custom version
-    upgrade_longhorn
+    ${upgraded} =    upgrade_longhorn
+    IF    "${upgraded}" == ${False}
+        Log To Console    Upgrade failed
+        Fail    Upgrading Longhorn failed
+    END
+
+Upgrade Longhorn to custom version should fail
+    ${upgraded} =     upgrade_longhorn    wait_when_fail=False
+    IF    "${upgraded}" == ${True}
+        Log To Console    Upgrade succeed
+        Fail    Upgrading Longhorn succeed
+    END
 
 Check Longhorn node ${type} state on power off node is ${expect_state}
     ${status} =    get_longhorn_node_condition_status    ${last_volume_node}    ${type}
