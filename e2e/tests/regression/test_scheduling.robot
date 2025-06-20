@@ -185,7 +185,7 @@ Test Replica Deleting Priority With Best-effort Data Locality
     And Set node 1 tags    AVAIL
 
     ${avail_node_selector}=    Create List    AVAIL
-    When Create volume 0    dataLocality=best-effort    nodeSelector=${avail_node_selector}    dataEngine=${DATA_ENGINE}
+    When Create volume 0    numberOfReplicas=3    dataLocality=best-effort    nodeSelector=${avail_node_selector}    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 2
     And Wait for volume 0 degraded
     Then Volume 0 should have running replicas on node 0
@@ -197,8 +197,8 @@ Test Replica Deleting Priority With Best-effort Data Locality
     And Wait for volume 0 healthy
     # Longhorn will prioritize deleting replicas on the same node to maintain the balance
     # the replica on the node with more replicas than the others will be deleted
-    Then Volume 0 should have running replicas on node 0
-    And Volume 0 should have running replicas on node 1
+    Then Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
 
 Test Unexpected Volume Detachment During Data Locality Maintenance
     [Documentation]    Test that the volume is not corrupted if there is an unexpected
