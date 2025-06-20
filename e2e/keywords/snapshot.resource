@@ -3,6 +3,7 @@ Documentation    Snapshot Keywords
 
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/snapshot_keywords.py
+Library    ../libs/keywords/csi_volume_snapshot_keywords.py
 
 *** Keywords ***
 Create snapshot ${snapshot_id} of volume ${volume_id}
@@ -90,3 +91,11 @@ Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is calculated w
     END
 
     Should Not Be Empty    ${checksum}    FAIL: Snapshot ${snapshot_id} checksum was not calculated within ${timeout} seconds.
+
+Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should be created
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
+    ${longhorn_snapshot_name} =    get_longhorn_snapshot_name_associated_with_csi_volume_snapshot    ${csi_volume_snapshot_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${longhorn_snapshot} =    get_snapshot_by_name    ${volume_name}    ${longhorn_snapshot_name}
+    Should Not Be Equal    ${longhorn_snapshot}    ${None}
