@@ -60,6 +60,10 @@ Check deployment ${deployment_id} pod not restarted
     ${current_pod_name} =    get_workload_pod_name    ${deployment_name}
     Should Be Equal    ${pod_name}    ${current_pod_name}
 
+Scale deployment ${deployment_id} to ${replicaset_size}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    scale_deployment    ${deployment_name}    ${replicaset_size}
+
 Scale down deployment ${deployment_id} to detach volume
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
