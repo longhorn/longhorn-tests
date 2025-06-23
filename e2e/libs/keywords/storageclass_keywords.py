@@ -13,3 +13,9 @@ class storageclass_keywords:
 
     def cleanup_storageclasses(self):
         self.storageclass.cleanup()
+
+    def set_storageclass_default_state(self, name, make_default):
+        self.storageclass.set_storageclass_default_state(name, make_default)
+
+    def assert_storageclass_is_default(self, name, is_default):
+        self.storageclass.assert_storageclass_is_default(name, is_default)
