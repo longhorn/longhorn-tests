@@ -143,6 +143,7 @@ def reset_cluster_ready_status(request):
     yield
     node_controlplane_label = 'node-role.kubernetes.io/control-plane'
     node_ip_annotation = "flannel.alpha.coreos.com/public-ip"
+    node_ipv6_annotation = "flannel.alpha.coreos.com/public-ipv6"
 
     k8s_api_client = get_core_api_client()
     longhorn_api_client = get_longhorn_api_client()
@@ -154,7 +155,20 @@ def reset_cluster_ready_status(request):
 
         if node_controlplane_label not in node_item.metadata.labels:
             node_name = node_item.metadata.name
-            node_ip = node_item.metadata.annotations[node_ip_annotation]
+
+            try:
+                node_ip = node_item.metadata.annotations[node_ip_annotation]
+            except KeyError:
+                node_ip = node_item.metadata.annotations[node_ipv6_annotation]
+
+                # TODO: Implement support for IPv6 in the cloud provider
+                # client.
+                #
+                # For now, IPv6 addresses are skipped, and host-level
+                # operations will be covered by the robot test cases.
+                print(f'Skipping node {node_name} with IPv6 address {node_ip}')
+                continue
+
             node = cloudprovider.instance_id_by_ip(node_ip)
         else:
             continue
@@ -190,6 +204,7 @@ def test_offline_node(reset_cluster_ready_status):
     pod_lable_selector = "longhorn-test=test-job"
     node_controlplane_label = 'node-role.kubernetes.io/control-plane'
     node_ip_annotation = "flannel.alpha.coreos.com/public-ip"
+    node_ipv6_annotation = "flannel.alpha.coreos.com/public-ipv6"
 
     k8s_api_client = get_core_api_client()
     longhorn_api_client = get_longhorn_api_client()
@@ -204,7 +219,19 @@ def test_offline_node(reset_cluster_ready_status):
     for node_item in k8s_api_client.list_node().items:
         if node_controlplane_label not in node_item.metadata.labels:
             node_name = node_item.metadata.name
-            node_ip = node_item.metadata.annotations[node_ip_annotation]
+
+            try:
+                node_ip = node_item.metadata.annotations[node_ip_annotation]
+            except KeyError:
+                node_ip = node_item.metadata.annotations[node_ipv6_annotation]
+                # TODO: Implement support for IPv6 in the cloud provider
+                # client.
+                #
+                # For now, IPv6 addresses are skipped, and host-level
+                # operations will be covered by the robot test cases.
+                print(f'Skipping test; found node {node_name} with IPv6 address {node_ip}')  # NOQA
+                return
+
             if node_name == longhorn_test_node_name:
                 continue
             else:
