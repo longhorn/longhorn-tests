@@ -6,10 +6,20 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/recurringjob_keywords.py
 
 *** Keywords ***
+Create ${job_task} recurringjob ${job_id}
+    [Arguments]    &{args}
+
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    create_recurringjob    ${job_name}    ${job_task}    &{args}
+
 Create snapshot and backup recurringjob for volume ${volume_id}
+    Create recurringjob for volume ${volume_id} with    task=snapshot
+    Create recurringjob for volume ${volume_id} with    task=backup
+
+Create recurringjob for volume ${volume_id} with
+    [Arguments]    &{config}
     ${volume_name} =   generate_name_with_suffix    volume    ${volume_id}
-    create_snapshot_recurringjob_for_volume    ${volume_name}
-    create_backup_recurringjob_for_volume    ${volume_name}
+    create_recurringjob_for_volume    ${volume_name}    &{config}
 
 Check recurringjobs for volume ${volume_id} work
     ${volume_name} =   generate_name_with_suffix    volume    ${volume_id}
@@ -37,3 +47,7 @@ Assert recurringjob ${job_id} ${created_condition} backup for volume ${volume_id
     ELSE
         Fail    Invalid created_condition: ${created_condition}
     END
+
+Wait for ${job_task} recurringjob ${job_id} to complete without error
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    wait_for_recurringjob_pod_completion_without_error    ${job_name}

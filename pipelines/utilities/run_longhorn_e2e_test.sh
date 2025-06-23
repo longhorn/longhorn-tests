@@ -60,6 +60,9 @@ run_longhorn_test(){
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_USERNAME", "value": "'${REGISTRY_USERNAME}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_PASSWORD", "value": "'${REGISTRY_PASSWORD}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  # add k8s distro for kubelet restart
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "K8S_DISTRO", "value": "'${TF_VAR_k8s_distro_name}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   # upgrade test parameters
   if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]] || [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_URI", "value": "'${LONGHORN_REPO_URI}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -83,7 +86,9 @@ run_longhorn_test(){
     # but CUSTOM_LONGHORN_ENGINE_IMAGE is still needed to test engine image upgrading during the test
     # extract 1.4.2 from 102.2.1+up1.4.2
     RAW_VERSION=(${LONGHORN_INSTALL_VERSION/up/ })
-    if [[ "${LONGHORN_REPO}" == "rancher" ]]; then
+    if [[ "${LONGHORN_REPO}" == "rancher" && "${RANCHER_PRIME}" == "true" ]]; then
+      CUSTOM_LONGHORN_ENGINE_IMAGE="registry.rancher.com/rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"
+    elif [[ "${LONGHORN_REPO}" == "rancher" ]]; then
       CUSTOM_LONGHORN_ENGINE_IMAGE="rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"
     else
       CUSTOM_LONGHORN_ENGINE_IMAGE="longhornio/longhorn-engine:v${RAW_VERSION[1]}"
@@ -198,6 +203,7 @@ run_longhorn_test_out_of_cluster(){
              -e LONGHORN_INSTALL_METHOD="${LONGHORN_INSTALL_METHOD}"\
              -e LONGHORN_STABLE_VERSION="${LONGHORN_STABLE_VERSION}"\
              -e LONGHORN_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"\
+             -e K8S_DISTRO="${TF_VAR_k8s_distro_name}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
   docker stop "${CONTAINER_NAME}"

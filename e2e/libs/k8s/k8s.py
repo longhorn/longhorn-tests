@@ -1,5 +1,6 @@
 import time
 import asyncio
+import os
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -12,6 +13,8 @@ from utility.utility import subprocess_exec_cmd
 from utility.utility import subprocess_exec_cmd_with_timeout
 from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
 
+from node import Node
+
 from workload.constant import IMAGE_UBUNTU
 from workload.pod import create_pod
 from workload.pod import delete_pod
@@ -19,10 +22,17 @@ from workload.pod import new_pod_manifest
 
 
 async def restart_kubelet(node_name, downtime_in_sec=10):
+    k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
+    node_type = "control-plane" if node_name in Node().list_node_names_by_role("control-plane") else "worker"
+    if k8s_distro == "k3s":
+        service_name = "k3s-agent" if node_type == "worker" else "k3s"
+    elif k8s_distro == "rke2":
+        service_name = "rke2-agent" if node_type == "worker" else "rke2-server"
+
     manifest = new_pod_manifest(
         image=IMAGE_UBUNTU,
         command=["/bin/bash"],
-        args=["-c", f"sleep 10 && systemctl stop k3s-agent && sleep {downtime_in_sec} && systemctl start k3s-agent"],
+        args=["-c", f"sleep 10 && systemctl stop {service_name} && sleep {downtime_in_sec} && systemctl start {service_name}"],
         node_name=node_name
     )
     pod_name = manifest['metadata']['name']

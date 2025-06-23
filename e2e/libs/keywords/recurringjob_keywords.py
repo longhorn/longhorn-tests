@@ -1,3 +1,5 @@
+import ast
+
 from recurringjob import RecurringJob
 
 from utility.constant import LABEL_TEST
@@ -19,18 +21,18 @@ class recurringjob_keywords:
         for recurringjob in recurringjobs['items']:
             self.recurringjob.delete(recurringjob['metadata']['name'])
 
-    def create_snapshot_recurringjob_for_volume(self, volume_name):
-        job_name = volume_name + '-snap'
+    def create_recurringjob(self, job_name, task, groups="[]", cron="*/2 * * * *", concurrency=1, labels="{}"):
+        groups = ast.literal_eval(groups)
+        labels = ast.literal_eval(labels)
 
-        logging(f'Creating snapshot recurringjob {job_name} for volume {volume_name}')
-        self.recurringjob.create(job_name, task="snapshot")
-        self.recurringjob.add_to_volume(job_name, volume_name)
+        logging(f"Creating recurringjob {job_name}, task={task}, groups={groups}, cron={cron}, concurrency={concurrency}, labels={labels}")
+        self.recurringjob.create(job_name, task=task, groups=groups, cron=cron, concurrency=concurrency, labels=labels)
 
-    def create_backup_recurringjob_for_volume(self, volume_name):
-        job_name = volume_name + '-bak'
+    def create_recurringjob_for_volume(self, volume_name, task, cron="*/2 * * * *"):
+        job_name = volume_name + '-' + task
 
-        logging(f'Creating backup recurringjob {job_name} for volume {volume_name}')
-        self.recurringjob.create(job_name, task="backup")
+        logging(f'Creating recurringjob {job_name} for volume {volume_name}')
+        self.recurringjob.create(job_name, task=task, cron=cron)
         self.recurringjob.add_to_volume(job_name, volume_name)
 
     def check_recurringjobs_work(self, volume_name):
@@ -48,3 +50,7 @@ class recurringjob_keywords:
     def assert_recurringjob_created_backup_for_volume(self, volume_name, job_name, retry_count=-1):
         logging(f'Checking recurringjob {job_name} created backup for volume {volume_name}')
         self.recurringjob.assert_recurringjob_created_backup_for_volume(volume_name, job_name, retry_count=retry_count)
+
+    def wait_for_recurringjob_pod_completion_without_error(self, job_name):
+        logging(f'Waiting for recurringjob {job_name} pod completion without error')
+        self.recurringjob.wait_for_pod_completion_without_error(job_name)

@@ -151,6 +151,8 @@ CONDITION_REASON_SCHEDULING_FAILURE = "ReplicaSchedulingFailure"
 
 VOLUME_FRONTEND_BLOCKDEV = "blockdev"
 VOLUME_FRONTEND_ISCSI = "iscsi"
+VOLUME_FRONTEND_UBLK = "ublk"
+VOLUME_FRONTEND_NVMF = "nvmf"
 
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "100"
@@ -339,6 +341,8 @@ BACKINGIMAGE_FAILED_EVICT_MSG = \
 enable_v2 = os.environ.get('RUN_V2_TEST')
 if enable_v2 == "true":
     DATA_ENGINE = "v2"
+    RETRY_COUNTS = RETRY_COUNTS_LONG
+    DEFAULT_POD_TIMEOUT = RETRY_COUNTS_LONG
 else:
     DATA_ENGINE = "v1"
 
@@ -2825,6 +2829,63 @@ def exec_local(cmd):
     return subprocess.check_output(exec_cmd)
 
 
+def parse_nvmf_endpoint(nvmf):
+    return nvmf[7:].split('/')
+
+
+def get_nvmf_ip(nvmf):
+    nvmf_endpoint = parse_nvmf_endpoint(nvmf)
+    return nvmf_endpoint[0].split(':')[0]
+
+
+def get_nvmf_port(nvmf):
+    nvmf_endpoint = parse_nvmf_endpoint(nvmf)
+    return nvmf_endpoint[0].split(':')[1]
+
+
+def get_nvmf_nqn(nvmf):
+    nvmf_endpoint = parse_nvmf_endpoint(nvmf)
+    return nvmf_endpoint[1]
+
+
+def nvmf_login(nvmf):
+    # Related commands are documented at:
+    # https://github.com/longhorn/longhorn-tests/wiki/Connect-to-the-NVMf-frontend-volume # NOQA
+    ip = get_nvmf_ip(nvmf)
+    port = get_nvmf_port(nvmf)
+    # NVMe Qualified Name
+    nqn = get_nvmf_nqn(nvmf)
+
+    cmd_connect = f"nvme connect -t tcp -a {ip} -s {port} -n {nqn}"
+    subprocess.check_output(cmd_connect.split())
+    return wait_for_nvme_device()
+
+
+def nvmf_logout(nvmf):
+    nqn = get_nvmf_nqn(nvmf)
+    try:
+        subprocess.check_call(["nvme", "disconnect", "-n", nqn])
+        print(f"Disconnected from {nqn}")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to disconnect from {nqn}: {e}")
+
+
+def wait_for_nvme_device():
+    for _ in range(RETRY_COUNTS):
+        try:
+            output = subprocess.check_output(["nvme", "list"], text=True)
+            print(f"nvme list output =\n {output}")
+            for line in output.splitlines():
+                if line.startswith("/dev/nvme"):
+                    dev_path = line.split()[0]
+                    return dev_path
+        except subprocess.CalledProcessError as e:
+            print(f"nvme list failed: {e.output}")
+        time.sleep(RETRY_INTERVAL)
+
+    raise Exception("NVMe device not found after retries")
+
+
 def iscsi_login(iscsi_ep):
     ip = get_iscsi_ip(iscsi_ep)
     port = get_iscsi_port(iscsi_ep)
@@ -3232,10 +3293,13 @@ def check_volume_endpoint(v):
     if v.disableFrontend:
         assert endpoint == ""
     else:
-        if v.frontend == VOLUME_FRONTEND_BLOCKDEV:
+        if v.frontend == VOLUME_FRONTEND_BLOCKDEV or \
+           v.frontend == VOLUME_FRONTEND_UBLK:
             assert endpoint == os.path.join(DEV_PATH, v.name)
         elif v.frontend == VOLUME_FRONTEND_ISCSI:
             assert endpoint.startswith("iscsi://")
+        elif v.frontend == VOLUME_FRONTEND_NVMF:
+            assert endpoint.startswith("nvmf://")
         else:
             raise Exception("Unexpected volume frontend:", v.frontend)
     return endpoint
