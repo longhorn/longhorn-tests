@@ -284,7 +284,7 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
         backingImage: "bi-parrot"
         backingImageDataSourceType: "download"
         backing_image_data_source_parameters = (
-          '{"url": "https://backing-image-example.s3-region.amazonaws.com/'
+          '{"url": "https://backing-image-example.s3.dualstack.s3-region.amazonaws.com/'  # NOQA
           'test-backing-image"}'
         )
       ```
@@ -300,7 +300,7 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
     storage_class['parameters']['backingImage'] = 'bi-parrot'
     storage_class['parameters']['backingImageDataSourceType'] = 'download'
     storage_class['parameters']['backingImageDataSourceParameters'] = (
-        '{"url": "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/'
+        '{"url": "https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/'  # NOQA
         'parrot.qcow2"}')
     storage_class['reclaimPolicy'] = 'Delete'
 
