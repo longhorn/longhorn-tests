@@ -53,3 +53,8 @@ Assert persistentvolumeclaim ${claim_id} requested size remains ${size} for at l
         Should Be Equal    ${current_size_byte}    ${expected_size_byte}
         Sleep    1
     END
+
+Assert persistentvolumeclaim ${claim_id} is using storageclass ${storageclass_name}
+   ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+   ${current_storageclass} =    get_pvc_storageclass_name    ${claim_name}
+   Should Be Equal    ${current_storageclass}    ${storageclass_name}
