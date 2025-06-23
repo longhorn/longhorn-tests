@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       K8s keywords
 
+Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/volume_keywords.py
@@ -16,6 +17,10 @@ Stop volume node kubelet of ${workload_kind} ${workload_id} for ${duration} seco
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${volume_name}
     restart_kubelet    ${node_name}    ${duration}
+
+Stop control plane kubelet for ${duration} seconds
+    ${control_plane_node_name} =    get_control_plane_node
+    restart_kubelet    ${control_plane_node_name}    ${duration}
 
 Delete volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

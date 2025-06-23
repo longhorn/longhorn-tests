@@ -23,6 +23,11 @@ Create statefulset ${statefulset_id} using ${volume_type} volume with ${sc_name}
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     create_statefulset    ${statefulset_name}    ${volume_type}    ${sc_name}    ${size}Gi
 
+Create statefulset ${statefulset_id}
+    [Arguments]    &{config}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    create_statefulset    ${statefulset_name}    &{config}
+
 Scale statefulset ${statefulset_id} to ${replicaset_size}
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     scale_statefulset    ${statefulset_name}    ${replicaset_size}
