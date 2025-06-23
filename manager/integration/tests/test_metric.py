@@ -1,6 +1,7 @@
 import pytest
 import requests
 import time
+import ipaddress
 
 from collections import defaultdict
 from kubernetes.stream import stream
@@ -83,6 +84,16 @@ def get_metrics(core_api, metric_node_id): # NOQA
         if po.spec.node_name == metric_node_id:
             manager_ip = po.status.pod_ip
             break
+
+    if not manager_ip:
+        raise RuntimeError(
+            f"No Longhorn manager pod found on node {metric_node_id}"
+        )
+
+    # Handle IPv6 addresses
+    ip_obj = ipaddress.ip_address(manager_ip)
+    if ip_obj.version == 6:
+        manager_ip = f"[{manager_ip}]"
 
     metrics = requests.get("http://{}:9500/metrics".format(manager_ip)).content
     string_data = metrics.decode('utf-8')
