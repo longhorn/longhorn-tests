@@ -44,3 +44,6 @@ class persistentvolumeclaim_keywords:
 
     def get_volume_name_from_persistentvolumeclaim(self, claim_name):
         return self.claim.get_volume_name(claim_name)
+
+    def get_pvc_storageclass_name(self, claim_name):
+        return self.claim.get_pvc_storageclass_name(claim_name)

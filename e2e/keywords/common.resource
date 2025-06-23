@@ -82,6 +82,7 @@ Cleanup test resources
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
+    set_storageclass_default_state    longhorn    ${True}
     cleanup_secrets
     cleanup_backups
     cleanup_system_backups
