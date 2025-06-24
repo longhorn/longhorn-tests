@@ -33,5 +33,5 @@ Crash Instance Manager While Workload Pod Is Starting
         Then Check deployment 0 data in file data.txt is intact
 
         And Delete pod of deployment 0    wait=False
-        And Wait for deployment 0 pods container creating
+        And Wait for deployment 0 pods creating
     END
