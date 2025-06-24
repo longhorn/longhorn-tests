@@ -84,6 +84,9 @@ export VAGRANT_CWD=/path/to/vagrant/working/dir
 1. To run upgrade/uninstallation related test cases, export the following environment variables so the test code knows how to re-install Longhorn after the test cases are completed:
 
 ```
+cd e2e
+cp -r ../pipelines/ ./
+
 export LONGHORN_INSTALL_METHOD=manifest
 export LONGHORN_REPO_BRANCH=master
 export LONGHORN_STABLE_VERSION=v1.8.1
