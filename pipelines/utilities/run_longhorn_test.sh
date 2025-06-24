@@ -182,7 +182,9 @@ run_longhorn_upgrade_test(){
     # but CUSTOM_LONGHORN_ENGINE_IMAGE is still needed to test engine image upgrading during the test
     # extract 1.4.2 from 102.2.1+up1.4.2
     RAW_VERSION=(${LONGHORN_INSTALL_VERSION/up/ })
-    if [[ "${LONGHORN_REPO}" == "rancher" ]]; then
+    if [[ "${LONGHORN_REPO}" == "rancher" && "${RANCHER_PRIME}" == "true" ]]; then
+      CUSTOM_LONGHORN_ENGINE_IMAGE="registry.rancher.com/rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"
+    elif [[ "${LONGHORN_REPO}" == "rancher" ]]; then
       CUSTOM_LONGHORN_ENGINE_IMAGE="rancher/mirrored-longhornio-longhorn-engine:v${RAW_VERSION[1]}"
     else
       CUSTOM_LONGHORN_ENGINE_IMAGE="longhornio/longhorn-engine:v${RAW_VERSION[1]}"

@@ -95,8 +95,8 @@ Test Replica Auto Balance Disk In Pressure
     # auto balance should happen
     Then Check node 0 disk local-disk-0 is not in pressure
     And Check node 0 disk local-disk-1 is not in pressure
-    And There should be replicas running on node 0 disk local-disk-0
-    And There should be replicas running on node 0 disk local-disk-1
+    And There should be running replicas on node 0 disk local-disk-0
+    And There should be running replicas on node 0 disk local-disk-1
 
     And Wait for volume of statefulset 0 healthy
     And Wait for volume of statefulset 1 healthy
@@ -117,19 +117,19 @@ Test Replica Auto Balance Node Least Effort
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
-    Then Volume 0 should have 6 replicas running on node 0
-    And Volume 0 should have 0 replicas running on node 1
-    And Volume 0 should have 0 replicas running on node 2
+    Then Volume 0 should have 6 running replicas on node 0
+    And Volume 0 should have 0 running replicas on node 1
+    And Volume 0 should have 0 running replicas on node 2
 
     When Enable node 1 scheduling
     # wait for auto balance
-    Then Volume 0 should have replicas running on node 1
-    And Volume 0 should have 6 replicas running
+    Then Volume 0 should have running replicas on node 1
+    And Volume 0 should have 6 running replicas
     # loop 3 times with 5-second wait and compare the replica count to:
     # ensure no additional scheduling occurs
     # the replica count remains unchanged
-    And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
-    And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
+    And Volume 0 should have running replicas on node 0 and no additional scheduling occurs
+    And Volume 0 should have running replicas on node 1 and no additional scheduling occurs
     # 1 or 2 replicas, but not 3 replicas, on node 0 could be reschduled to node 1
     # replica count on each node could be:
     # 5, 1, 0
@@ -138,18 +138,18 @@ Test Replica Auto Balance Node Least Effort
     # but not
     # 3, 3, 0
     And Number of volume 0 replicas on node 1 should be less than on node 0
-    And Volume 0 should have 0 replicas running on node 2 and no additional scheduling occurs
+    And Volume 0 should have 0 running replicas on node 2 and no additional scheduling occurs
 
     When Enable node 2 scheduling
     # wait for auto balance
-    Then Volume 0 should have replicas running on node 2
-    And Volume 0 should have 6 replicas running
+    Then Volume 0 should have running replicas on node 2
+    And Volume 0 should have 6 running replicas
     # loop 3 times with 5-second wait and compare the replica count to:
     # ensure no additional scheduling occurs
     # the replica count remains unchanged
-    And Volume 0 should have replicas running on node 0 and no additional scheduling occurs
-    And Volume 0 should have replicas running on node 1 and no additional scheduling occurs
-    And Volume 0 should have replicas running on node 2 and no additional scheduling occurs
+    And Volume 0 should have running replicas on node 0 and no additional scheduling occurs
+    And Volume 0 should have running replicas on node 1 and no additional scheduling occurs
+    And Volume 0 should have running replicas on node 2 and no additional scheduling occurs
     # replicas on node 0 will be rescheduled to node 2
     # replica counts on each node could be:
     # 4, 1, 1
@@ -161,19 +161,108 @@ Test Replica Auto Balance Node Least Effort
     And Check volume 0 data is intact
 
 Test Data Locality
+    [Documentation]    Test that Longhorn builds a local replica on the engine node
     Given Create single replica volume 0 with replica on node 0    dataLocality=disabled    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 1
     And Write data to volume 0
-    Then Volume 0 should have 0 replicas running on node 1
+    Then Volume 0 should have 0 running replicas on node 1
 
     When Update volume 0 data locality to best-effort
     Then Wait until volume 0 replica rebuilding started on node 1
-    And Volume 0 should have 1 replicas running on node 1
-    And Volume 0 should have 0 replicas running on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have 0 running replicas on node 0
 
     When Detach volume 0 from node 1
     And Wait for volume 0 detached
     And Attach volume 0 to node 2
     Then Wait until volume 0 replica rebuilding started on node 2
-    And Volume 0 should have 1 replicas running on node 2
-    And Volume 0 should have 0 replicas running on node 1
+    And Volume 0 should have 1 running replicas on node 2
+    And Volume 0 should have 0 running replicas on node 1
+
+Test Replica Deleting Priority With Best-effort Data Locality
+    [Documentation]    Test that Longhorn prioritizes deleting replicas on the same node
+    Given Set node 0 tags    AVAIL
+    And Set node 1 tags    AVAIL
+
+    ${avail_node_selector}=    Create List    AVAIL
+    When Create volume 0    numberOfReplicas=3    dataLocality=best-effort    nodeSelector=${avail_node_selector}    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 2
+    And Wait for volume 0 degraded
+    Then Volume 0 should have running replicas on node 0
+    And Volume 0 should have running replicas on node 1
+    And Volume 0 should have 0 running replicas on node 2
+    And Check volume 0 works
+
+    When Update volume 0 replica count to 2
+    And Wait for volume 0 healthy
+    # Longhorn will prioritize deleting replicas on the same node to maintain the balance
+    # the replica on the node with more replicas than the others will be deleted
+    Then Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+
+Test Unexpected Volume Detachment During Data Locality Maintenance
+    [Documentation]    Test that the volume is not corrupted if there is an unexpected
+    ...                detachment during building local replica
+    Given Set setting replica-soft-anti-affinity to false
+
+    When Create volume 0    numberOfReplicas=1    dataLocality=best-effort    dataEngine=${DATA_ENGINE}
+    Then Attach volume 0 to node 2
+    And Wait for volume 0 healthy
+    And Volume 0 should have 1 running replicas on node 2
+    And Volume 0 should have 0 running replicas on node 1
+    And Volume 0 should have 0 running replicas on node 0
+
+    And Write data to volume 0
+    And Detach volume 0 from node 2
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 0
+
+    When Wait until volume 0 replica rebuilding started on node 0
+    And Detach volume 0 from node 0
+    And Wait for volume 0 detached
+    Then Attach volume 0 to node 1
+    And Wait for volume 0 healthy
+    And Volume 0 should have 0 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have 0 running replicas on node 2
+    And Check volume 0 data is intact
+
+Test Data Locality With Failed Scheduled Replica
+    [Documentation]    Make sure failed to schedule local replica doesn't block the
+    ...                the creation of other replicas.
+    Given Disable node 2 scheduling
+    And Set setting replica-soft-anti-affinity to false
+
+    When Create volume 0    numberOfReplicas=1    dataLocality=best-effort    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 2
+    And Wait for volume 0 healthy
+    Then Volume 0 should have 2 replicas
+    And Volume 0 should have 1 running replicas
+    And Volume 0 should have stopped replicas
+    And Wait for volume 0 condition Scheduled to be false    reason=LocalReplicaSchedulingFailure
+
+    When Update volume 0 replica count to 3
+    And Wait for volume 0 degraded
+    Then Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have stopped replicas
+
+    When Update volume 0 replica count to 2
+    And Wait for volume 0 healthy
+    Then Volume 0 should have 3 replicas
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have stopped replicas
+
+    When Update volume 0 replica count to 1
+    And Wait for volume 0 healthy
+    Then Volume 0 should have 2 replicas
+    And Volume 0 should have 1 running replicas
+    And Volume 0 should have 1 stopped replicas
+
+    When Update volume 0 data locality to disabled
+    And Update volume 0 replica count to 2
+    Then Volume 0 should have 2 replicas
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have 0 replicas on node 2

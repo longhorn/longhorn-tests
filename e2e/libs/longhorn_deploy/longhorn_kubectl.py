@@ -59,7 +59,7 @@ class LonghornKubectl(Base):
         process.wait()
         return True if process.returncode == 0 else False
 
-    def upgrade(self, upgrade_to_transient_version):
+    def upgrade(self, upgrade_to_transient_version, timeout):
         if upgrade_to_transient_version:
             upgrade_function = "install_longhorn_transient"
         else:
@@ -67,5 +67,11 @@ class LonghornKubectl(Base):
         command = "./pipelines/utilities/longhorn_manifest.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
-        process.wait()
-        return True if process.returncode == 0 else False
+        try:
+            process.wait(timeout=timeout)
+            return True if process.returncode == 0 else False
+        except subprocess.TimeoutExpired:
+            logging(f"Upgrade timeout after {timeout}s. Killing process...")
+            process.kill()
+            process.wait()
+            return False

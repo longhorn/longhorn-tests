@@ -194,8 +194,9 @@ Wait for volume ${volume_id} degraded
     wait_for_volume_degraded    ${volume_name}
 
 Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
 
 Wait for volume ${volume_id} cloning to complete
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -277,7 +278,8 @@ Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
 
 Wait until volume ${volume_id} replica rebuilding completed on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_replica_rebuilding_to_complete_on_node    ${volume_name}    ${replica_locality}
+    ${rebuilding_time} =    wait_for_replica_rebuilding_to_complete_on_node    ${volume_name}    ${replica_locality}
+    [Return]    ${rebuilding_time}
 
 Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -337,21 +339,38 @@ Wait for volume ${volume_id} replica on node ${node_id} to be deleted
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_to_be_deleted    ${volume_name}    ${node_name}
 
-Volume ${volume_id} should have ${expected_replica_count} replicas running
+Volume ${volume_id} should have ${expected_replica_count} running replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
 
+Volume ${volume_id} should have ${expected_replica_count} stopped replicas
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    replica_count=${expected_replica_count}    running=${False}
+
+Volume ${volume_id} should have stopped replicas
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    running=${False}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}    running=${None}
+
 Volume ${volume_id} should have ${expected_replica_count} replicas when detached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}    running=false
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}    running=${False}
 
-Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
     Set Test Variable    ${volume_name}
     Set Test Variable    ${node_name}
     Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have ${expected_replica_count} replicas on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}    running=${None}
 
 Number of volume ${volume_id} replicas on node ${node_id_0} should be less than on node ${node_id_1}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -365,7 +384,7 @@ Number of volume ${volume_id} replicas on node ${node_id_0} should be less than 
         Fail    Node ${node_id_0} has more replicas than node ${node_id_1}, ${replica_count_0} >= ${replica_count_1}
     END
 
-Volume ${volume_id} should have replicas running on node ${node_id}
+Volume ${volume_id} should have running replicas on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
@@ -373,8 +392,8 @@ Volume ${volume_id} should have replicas running on node ${node_id}
     Set Test Variable    ${node_name}
     Set Test Variable    ${replica_count}
 
-Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id} and no additional scheduling occurs
-    Volume ${volume_id} should have ${expected_replica_count} replicas running on node ${node_id}
+Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id}
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
@@ -386,8 +405,8 @@ Volume ${volume_id} should have ${expected_replica_count} replicas running on no
         Sleep    5
     END
 
-Volume ${volume_id} should have replicas running on node ${node_id} and no additional scheduling occurs
-    Volume ${volume_id} should have replicas running on node ${node_id}
+Volume ${volume_id} should have running replicas on node ${node_id} and no additional scheduling occurs
+    Volume ${volume_id} should have running replicas on node ${node_id}
     FOR    ${i}    IN RANGE    3
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}

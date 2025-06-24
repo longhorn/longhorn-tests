@@ -166,7 +166,11 @@ class volume_keywords:
             node_name = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
         logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
+        start_time = time.time()
         self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
+        rebuilding_time = int(time.time() - start_time)
+        logging(f"Replica rebuilding for volume {volume_name} on node {node_name} completed in {rebuilding_time} seconds")
+        return rebuilding_time
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
         self.volume.wait_for_replica_rebuilding_complete(volume_name)
@@ -294,8 +298,8 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be in faulted')
         self.volume.wait_for_volume_faulted(volume_name)
 
-    def wait_for_volume_condition(self, volume_name, condition_name, condition_status):
-        self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status)
+    def wait_for_volume_condition(self, volume_name, condition_name, condition_status, reason=""):
+        self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)
 
     def wait_for_volume_clone_status_completed(self, volume_name):
         logging(f'Waiting for volume {volume_name} clone status to be completed')
