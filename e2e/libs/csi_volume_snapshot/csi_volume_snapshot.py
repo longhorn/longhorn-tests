@@ -118,21 +118,24 @@ class CSIVolumeSnapshot:
 
         logging(f"Cleaning up csi volume snapshot classes")
 
-        classes = self.api.list_cluster_custom_object(
-            group=self.group,
-            version=self.version,
-            plural="volumesnapshotclasses"
-        )
-
-        for item in classes.get("items", []):
-            name = item["metadata"]["name"]
-            print(f"Deleting csi volume snapshot class {name}")
-            self.api.delete_cluster_custom_object(
+        try:
+            classes = self.api.list_cluster_custom_object(
                 group=self.group,
                 version=self.version,
-                plural="volumesnapshotclasses",
-                name=name
+                plural="volumesnapshotclasses"
             )
+
+            for item in classes.get("items", []):
+                name = item["metadata"]["name"]
+                print(f"Deleting csi volume snapshot class {name}")
+                self.api.delete_cluster_custom_object(
+                    group=self.group,
+                    version=self.version,
+                    plural="volumesnapshotclasses",
+                    name=name
+                )
+        except ApiException as e:
+            assert e.status == 404
 
     def cleanup_csi_volume_snapshots(self):
 
