@@ -34,6 +34,10 @@ class Backup(Base):
             time.sleep(self.retry_interval)
         assert False, f"Failed to get volume {volume_name} backup {backup_id} url: {backup}"
 
+    def get_latest_backup_url(self, volume_name):
+        latest_backup = self.backup.get_latest(volume_name)
+        return latest_backup.url
+
     def get_from_list(self, backup_list, backup_id):
         return self.backup.get_from_list(backup_list, backup_id)
 
@@ -69,6 +73,12 @@ class Backup(Base):
         volume_backup_count= len(self.list(volume_name))
         assert volume_backup_count == expected_backup_count, \
             f"Expected {expected_backup_count} backups, but found {volume_backup_count} backups for volume {volume_name}"
+
+    def wait_for_snapshot_backup_to_be_created(self, volume_name, snapshot_name):
+        return self.backup.wait_for_snapshot_backup_to_be_created(volume_name, snapshot_name)
+
+    def wait_for_snapshot_backup_to_be_deleted(self, volume_name, snapshot_name):
+        return self.backup.wait_for_snapshot_backup_to_be_deleted(volume_name, snapshot_name)
 
     def delete(self, volume_name, backup_id):
         return NotImplemented

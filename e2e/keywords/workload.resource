@@ -61,10 +61,20 @@ Record file ${file_name} checksum in pod ${pod_id} as checksum ${checksum_id}
     ${checksum} =    get_workload_pod_data_checksum   ${pod_name}    ${file_name}
     Set To Dictionary    ${volume_checksums}    ${checksum_id}    ${checksum}
 
+Record file ${file_name} checksum in ${workload_kind} ${workload_id} as checksum ${checksum_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${checksum} =    get_workload_pod_data_checksum   ${workload_name}    ${file_name}
+    Set To Dictionary    ${volume_checksums}    ${checksum_id}    ${checksum}
+
 Check pod ${pod_id} file ${file_name} checksum matches checksum ${checksum_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${checksum_id}
     check_workload_pod_data_checksum    ${pod_name}    ${file_name}    ${expected_checksum}
+
+Check ${workload_kind} ${workload_id} file ${file_name} checksum matches checksum ${checksum_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${checksum_id}
+    check_workload_pod_data_checksum    ${workload_name}    ${file_name}    ${expected_checksum}
 
 Check pod ${pod_id} file ${file_name} has checksum ${expected_checksum}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}

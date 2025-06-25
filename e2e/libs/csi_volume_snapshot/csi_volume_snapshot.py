@@ -1,6 +1,7 @@
 import yaml
 import time
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
@@ -124,13 +125,39 @@ class CSIVolumeSnapshot:
 
         for item in classes.get("items", []):
             name = item["metadata"]["name"]
-            print(f"Deleting csi volume snapshot class {name}")
-            self.api.delete_cluster_custom_object(
-                group=self.group,
-                version=self.version,
-                plural="volumesnapshotclasses",
-                name=name
-            )
+            deleted = False
+            for i in range(self.retry_count):
+                logging(f"Deleting csi volume snapshot class {name} ...")
+                try:
+                    self.api.delete_cluster_custom_object(
+                        group=self.group,
+                        version=self.version,
+                        plural="volumesnapshotclasses",
+                        name=name
+                    )
+                except ApiException as e:
+                    if e.status == 404:
+                        deleted = True
+                        break
+                time.sleep(self.retry_interval)
+            assert deleted, f"Failed to cleanup csi volume snapshot classes"
+
+    def delete_csi_volume_snapshot(self, csi_volume_snapshot_name):
+        for i in range(self.retry_count):
+            logging(f"Deleting csi volume snapshot {csi_volume_snapshot_name} ... ({i})")
+            try:
+                self.api.delete_namespaced_custom_object(
+                    group=self.group,
+                    version=self.version,
+                    namespace="default",
+                    plural="volumesnapshots",
+                    name=csi_volume_snapshot_name
+                )
+            except ApiException as e:
+                if e.status == 404:
+                    return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to delete csi volume snapshot {csi_volume_snapshot_name}"
 
     def cleanup_csi_volume_snapshots(self):
 
@@ -145,11 +172,20 @@ class CSIVolumeSnapshot:
 
         for item in snapshots.get("items", []):
             name = item["metadata"]["name"]
-            logging(f"Deleting csi volume snapshot {name}")
-            self.api.delete_namespaced_custom_object(
-                group=self.group,
-                version=self.version,
-                namespace="default",
-                plural="volumesnapshots",
-                name=name
-            )
+            deleted = False
+            for i in range(self.retry_count):
+                logging(f"Deleting csi volume snapshot {name} ... ({i})")
+                try:
+                    self.api.delete_namespaced_custom_object(
+                        group=self.group,
+                        version=self.version,
+                        namespace="default",
+                        plural="volumesnapshots",
+                        name=name
+                    )
+                except ApiException as e:
+                    if e.status == 404:
+                        deleted = True
+                        break
+                time.sleep(self.retry_interval)
+            assert deleted, f"Failed to clean up csi volume snapshots"
