@@ -54,6 +54,10 @@ class PersistentVolumeClaim():
                     'name': dataSourceName,
                     'kind': dataSourceKind
                 }
+                if dataSourceKind == 'VolumeSnapshot':
+                    manifest_dict['spec']['dataSource']['apiGroup'] = 'snapshot.storage.k8s.io'
+
+            logging(f"yaml = {manifest_dict}")
 
             api = client.CoreV1Api()
 
