@@ -275,6 +275,13 @@ Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
     END
     delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    ${label_selector}
 
+Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes
+    ${node_names} =    list_node_names_by_role    worker
+
+    FOR    ${node_name}    IN    @{node_names}
+        delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
+    END
+
 Delete Longhorn ${workload_kind} ${workload_name} pod
     ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
     Log    ${pod_name}
@@ -328,3 +335,20 @@ Upgrade volume ${workload_kind} ${workload_id} engine to ${custom_engine_image}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
+Record ${workload_kind} ${workload_id} pod UIDs
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_uids} =    get_workload_pod_uids    ${workload_name}
+    # [Return]    ${pod_uids}
+    Set Test Variable    ${recorded_pod_uids}    ${pod_uids}
+
+Assert pod UIDs of ${workload_kind} ${workload_id} remain unchanged
+    [Arguments]    ${num_checks}
+
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    FOR    ${i}    IN RANGE    ${num_checks}
+        Log To Console    Checking pod UIDs of ${workload_name} remain unchanged ...(${i + 1}/${num_checks})
+        ${pod_uids} =    get_workload_pod_uids    ${workload_name}
+        Should Be Equal As Strings    ${pod_uids}    ${recorded_pod_uids}
+        Sleep    1
+    END
