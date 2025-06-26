@@ -46,10 +46,25 @@ if [[ "${extra_block_device}" != true ]]; then
   fi
 fi
 
+if [[ "${network_stack}" == "ipv6" ]]; then
+  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
+  sysctl --system
+  cat <<EOF > /etc/resolv.conf
+nameserver 2606:4700:4700::1111
+nameserver 2001:4860:4860::8888
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+EOF
+  chattr +i /etc/resolv.conf || true
+  IP=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+else
+  IP=$(hostname -I | awk '{print $1}')
+fi
+
 # TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
 set +e
 
-until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
+until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-ip=$IP --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s agent did not install correctly'
   sleep 2
 done
