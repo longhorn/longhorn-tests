@@ -81,18 +81,23 @@ export VAGRANT_CWD=/path/to/vagrant/working/dir
 
    And all exported [Vagrant environment variables](https://developer.hashicorp.com/vagrant/docs/other/environmental-variables) are supported.
 
-1. To run uninstallation related test cases, export the following environment variables so the test code knows how to re-install Longhorn after the test cases are completed:
+1. To run upgrade/uninstallation related test cases, export the following environment variables so the test code knows how to re-install Longhorn after the test cases are completed:
 
 ```
+cd e2e
+cp -r ../pipelines/ ./
+
 export LONGHORN_INSTALL_METHOD=manifest
 export LONGHORN_REPO_BRANCH=master
-export CUSTOM_LONGHORN_MANAGER_IMAGE=master-head
-export CUSTOM_LONGHORN_ENGINE_IMAGE=master-head
-export CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=master-head
-export CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=master-head
-export CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=master-head
+export LONGHORN_STABLE_VERSION=v1.8.1
+export LONGHORN_TRANSIENT_VERSION=v1.8.2
+export LONGHORN_REPO_URI=https://github.com/longhorn/longhorn.git
+export CUSTOM_LONGHORN_MANAGER_IMAGE=longhornio/longhorn-manager:master-head
+export CUSTOM_LONGHORN_ENGINE_IMAGE=longhornio/longhorn-engine:master-head
+export CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=longhornio/longhorn-instance-manager:master-head
+export CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=longhornio/longhorn-share-manager:master-head
+export CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=longhornio/backing-image-manager:master-head
 export LONGHORN_STABLE_VERSION=master-head
-export IS_INSTALL_STABLE_VERSION=true
 ```
 
 1. To run kubelet restart related test cases, export the following environment variable so the test code knows how the kubernetes distro is using(support value: k3s, rke2):

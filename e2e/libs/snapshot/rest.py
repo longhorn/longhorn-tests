@@ -54,6 +54,14 @@ class Rest(Base):
                 return snapshot
         assert False
 
+    def get_snapshot_by_name(self, volume_name, snapshot_name):
+        snapshots = self.list(volume_name)
+        for snapshot in snapshots:
+            if snapshot.name == snapshot_name:
+                logging(f"Got snapshot {snapshot_name} of volume {volume_name}")
+                return snapshot
+        return None
+
     def list(self, volume_name):
         return self.volume.get(volume_name).snapshotList().data
 
