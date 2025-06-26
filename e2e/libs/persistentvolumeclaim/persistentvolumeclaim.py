@@ -139,3 +139,12 @@ class PersistentVolumeClaim():
                 logging(f"Waiting for pvc {pvc_name} phase to be {phase} error: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for pvc {pvc_name} phase to be {phase}: {pvc}"
+
+    def get_pvc_storageclass_name(self, pvc_name):
+        logging(f"Reading for pvc {pvc_name} storageclass name")
+        api = client.CoreV1Api()
+        pvc = api.read_namespaced_persistent_volume_claim(
+                    name=pvc_name, namespace='default')
+        logging(f"Pvc {pvc_name} is using storageclass {pvc.spec.storage_class_name }")
+
+        return pvc.spec.storage_class_name
