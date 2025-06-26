@@ -9,6 +9,21 @@ sudo zypper install -y open-iscsi nfs-client jq azure-cli
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
+if [[ "${network_stack}" == "ipv6" ]]; then
+  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
+  sysctl --system
+  cat <<EOF > /etc/resolv.conf
+nameserver 2606:4700:4700::1111
+nameserver 2001:4860:4860::8888
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+EOF
+  chattr +i /etc/resolv.conf || true
+  rke2_server_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+else
+  rke2_server_public_ip="${control_plane_ipv4}"
+fi
+
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="server" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 
 mkdir -p /etc/rancher/rke2
@@ -17,10 +32,18 @@ cat << EOF > /etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0644"
 token: ${rke2_cluster_secret}
 tls-san:
-  - ${rke2_server_public_ip}
+  - $rke2_server_public_ip
 node-taint:
   - "node-role.kubernetes.io/control-plane:NoSchedule"
 EOF
+
+if [[ "${network_stack}" == "ipv6" ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+advertise-address: $rke2_server_public_ip
+cluster-cidr: fd00:10::/56
+service-cidr: fd00:20::/112
+EOF
+fi
 
 systemctl enable rke2-server.service
 
