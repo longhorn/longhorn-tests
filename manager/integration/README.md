@@ -6,8 +6,7 @@
 Requirement:
 1. A Kubernetes cluster with at least 3 worker nodes.
    - And control node(s) with following taints:
-      - `node-role.kubernetes.io/master=true:NoExecute`
-      - `node-role.kubernetes.io/master=true:NoSchedule` 
+      - `node-role.kubernetes.io/control-plane:NoSchedule` 
 2. Longhorn system has already been successfully deployed in the cluster.
 3. No volume exists in the Longhorn system.
 4. Need kubernetes 1.10 or higher.

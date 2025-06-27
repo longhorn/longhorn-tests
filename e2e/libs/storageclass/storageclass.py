@@ -1,10 +1,10 @@
 import yaml
+import json
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from utility.utility import logging
-
 
 class StorageClass():
 
@@ -50,3 +50,31 @@ class StorageClass():
         storage_classes = self.api.list_storage_class(label_selector="test.longhorn.io=e2e")
         for item in storage_classes.items:
             self.delete(item.metadata.name)
+
+    def set_storageclass_default_state(self, name, make_default=True):
+        if make_default:
+            logging(f"Set default annotation for storageclass {name}")
+            value = "true"
+        else:
+            logging(f"Remove default annotation for storageclass {name}")
+            value = None
+
+        patch_body = {
+            "metadata": {
+                "annotations": {
+                    "storageclass.kubernetes.io/is-default-class": value
+                    }
+                }
+            }
+        self.api.patch_storage_class(name=name, body=patch_body)
+        self.assert_storageclass_is_default(name, is_default=make_default)
+
+    def assert_storageclass_is_default(self, name, is_default):
+        sc = self.api.read_storage_class(name)
+        annotations = sc.metadata.annotations or {}
+        actual = annotations.get("storageclass.kubernetes.io/is-default-class", "false")
+
+        if is_default:
+            assert actual == "true", f"StorageClass '{name}' is NOT default but expected to be."
+        else:
+            assert actual.lower() != "true", f"StorageClass '{name}' IS default but should not be."

@@ -25,6 +25,7 @@ Library             ../libs/keywords/system_backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
+Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 
 *** Keywords ***
 Test should pass
@@ -81,6 +82,7 @@ Cleanup test resources
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
+    set_storageclass_default_state    longhorn    ${True}
     cleanup_secrets
     cleanup_backups
     cleanup_system_backups
@@ -95,3 +97,5 @@ Cleanup test resources
     reset_node_tags
     reset_node_disks_tags
     cleanup_k8s_node_zone
+    cleanup_csi_volume_snapshots
+    cleanup_csi_volume_snapshot_classes
