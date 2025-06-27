@@ -23,7 +23,7 @@ from workload.workload import is_workload_pods_has_annotations
 from workload.workload import keep_writing_pod_data
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
-from workload.workload import wait_for_workload_pods_container_creating
+from workload.workload import wait_for_workload_pods_creating
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
@@ -137,13 +137,13 @@ class workload_keywords:
         logging(f'Running commands {commands} in pod {pod_name}')
         run_commands_in_pod(pod_name, commands)
 
-    def wait_for_workload_pods_container_creating(self, workload_name, namespace="default"):
-        logging(f'Waiting for {namespace} workload {workload_name} pods container creating')
-        wait_for_workload_pods_container_creating(workload_name, namespace=namespace)
+    def wait_for_workload_pods_creating(self, workload_name, node_name=None, namespace="default"):
+        logging(f'Waiting for {namespace} workload {workload_name} pods creating')
+        wait_for_workload_pods_creating(workload_name, node_name, namespace=namespace)
 
-    def wait_for_workload_pods_running(self, workload_name, namespace="default"):
+    def wait_for_workload_pods_running(self, workload_name, node_name=None, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')
-        wait_for_workload_pods_running(workload_name, namespace=namespace)
+        wait_for_workload_pods_running(workload_name, node_name, namespace=namespace)
 
     def wait_for_workloads_pods_running(self, workload_names, namespace="default"):
         logging(f'Waiting for {namespace} workloads {workload_names} pods running')

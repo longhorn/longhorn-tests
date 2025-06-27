@@ -12,7 +12,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1):
+def create_deployment(name, claim_name, node_name, replicaset=1):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -29,6 +29,11 @@ def create_deployment(name, claim_name, replicaset=1):
 
         # correct claim name
         manifest_dict['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = claim_name
+
+        # run the workload on a specific node
+        if node_name:
+            manifest_dict['spec']['template']['spec'].setdefault('nodeSelector', {})['kubernetes.io/hostname'] = node_name
+
         api = client.AppsV1Api()
 
         deployment = api.create_namespaced_deployment(
@@ -108,3 +113,49 @@ def scale_deployment(name, replica_count, namespace='default'):
 
     deployment = get_deployment(name, namespace)
     assert deployment.spec.replicas == int(replica_count)
+
+def schedule_deployment(name, node_name, namespace='default'):
+    logging(f"Scheduling deployment {name} to node {node_name}")
+
+    patch_body = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "nodeSelector": {
+                        "kubernetes.io/hostname": node_name
+                    }
+                }
+            }
+        }
+    }
+
+    apps_v1_api = client.AppsV1Api()
+    apps_v1_api.patch_namespaced_deployment(name=name, namespace=namespace, body=patch_body)
+
+def set_deployment_node_affinity(name, node_name, namespace='default'):
+    logging(f"Setting deployment {name} node affinity to node {node_name}")
+
+    patch_body = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "affinity": {
+                        "nodeAffinity": {
+                            "requiredDuringSchedulingIgnoredDuringExecution": {
+                                "nodeSelectorTerms": [{
+                                    "matchExpressions": [{
+                                        "key": "kubernetes.io/hostname",
+                                        "operator": "In",
+                                        "values": [node_name]
+                                    }]
+                                }]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    apps_v1_api = client.AppsV1Api()
+    apps_v1_api.patch_namespaced_deployment(name=name, namespace=namespace, body=patch_body)

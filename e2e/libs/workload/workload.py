@@ -264,37 +264,37 @@ def check_pod_data_exists(pod_name, file_name, data_directory="/data"):
         return False
 
 
-def wait_for_workload_pods_running(workload_name, namespace="default"):
+def wait_for_workload_pods_running(workload_name, node_name=None, namespace="default"):
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
         pods = get_workload_pods(workload_name, namespace=namespace)
         if len(pods) > 0:
             running_pods = []
             for pod in pods:
-                if pod.status.phase == "Running":
+                if pod.status.phase == "Running" and (not node_name or pod.spec.node_name == node_name):
                     running_pods.append(pod.metadata.name)
             if len(running_pods) == len(pods):
                 return
 
-        logging(f"Waiting for {workload_name} pods {running_pods} running, retry ({i}) ...")
+        logging(f"Waiting for {workload_name} pods {running_pods} running on node {node_name}, retry ({i}) ...")
         time.sleep(retry_interval)
 
     assert False, f"Timeout waiting for {workload_name} pods running"
 
 
-def wait_for_workload_pods_container_creating(workload_name, namespace="default"):
+def wait_for_workload_pods_creating(workload_name, node_name=None, namespace="default"):
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
         pods = get_workload_pods(workload_name, namespace=namespace)
         if len(pods) > 0:
             for pod in pods:
-                if pod.status.phase == "Pending":
+                if (pod.status.phase == "Pending" or pod.status.phase == "Running") and (not node_name or pod.spec.node_name == node_name):
                     return
 
-        logging(f"Waiting for {workload_name} pods {[pod.metadata.name for pod in pods]} container creating, retry ({i}) ...")
+        logging(f"Waiting for {workload_name} pods {[pod.metadata.name for pod in pods]} creating on node {node_name}, retry ({i}) ...")
         time.sleep(retry_interval)
 
-    assert False, f"Timeout waiting for {workload_name} pods container creating"
+    assert False, f"Timeout waiting for {workload_name} pods creating"
 
 
 async def wait_for_workload_pods_stable(workload_name, namespace="default"):
