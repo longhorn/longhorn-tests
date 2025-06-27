@@ -62,6 +62,30 @@ class Rest(Base):
                 return snapshot
         return None
 
+    def wait_for_snapshot_to_be_created(self, volume_name, snapshot_name):
+        for i in range(self.retry_count):
+            logging(f"Trying to get volume {volume_name} snapshot {snapshot_name} ... ({i})")
+            try:
+                snapshot = self.get_snapshot_by_name(volume_name, snapshot_name)
+                if snapshot:
+                    return snapshot
+            except Exception as e:
+                logging(f"Failed to get volume {volume_name} snapshot {snapshot_name}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get volume {volume_name} snapshot {snapshot_name}"
+
+    def wait_for_snapshot_to_be_deleted(self, volume_name, snapshot_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} snapshot {snapshot_name} to be deleted ... ({i})")
+            try:
+                snapshot = self.get_snapshot_by_name(volume_name, snapshot_name)
+                if not snapshot or snapshot.removed:
+                    return
+            except Exception as e:
+                logging(f"Failed to wait for volume {volume_name} snapshot {snapshot_name} to be deleted: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} snapshot {snapshot_name} to be deleted"
+
     def list(self, volume_name):
         return self.volume.get(volume_name).snapshotList().data
 
