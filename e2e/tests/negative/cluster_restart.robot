@@ -123,3 +123,46 @@ Check If Nodes Are Under Memory Pressure After Cluster Restart
         And Check statefulset 5 works
         And Check if nodes are under memory pressure
     END
+
+Scale Down Workloads Before Restarting Cluster
+    [Tags]    cluster
+    [Documentation]    https://github.com/longhorn/longhorn/issues/7258
+    ...                1. Create some deployments
+    ...                2. Scale down the deployments without waiting for the volumes completedly detached
+    ...                3. Restart the cluster
+    ...                4. After the cluster restarted, scale up the deployments to check if the volumes
+    ...                   can still be attached, and the workloads work
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=strict-local
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Create deployment 1 with persistentvolumeclaim 1
+    And Create deployment 2 with persistentvolumeclaim 2
+    And Write 128 MB data to file data.bin in deployment 0
+    And Write 128 MB data to file data.bin in deployment 1
+    And Write 128 MB data to file data.bin in deployment 2
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Scale deployment 0 to 0
+        And Scale deployment 1 to 0
+        And Scale deployment 2 to 0
+        And Restart cluster
+        And Wait for longhorn ready
+
+        Then Scale deployment 0 to 1
+        And Scale deployment 1 to 1
+        And Scale deployment 2 to 1
+        And Wait for volume of deployment 0 attached
+        And Wait for volume of deployment 1 attached
+        And Wait for volume of deployment 2 attached
+        And Wait for volume of deployment 0 healthy
+        And Wait for volume of deployment 1 healthy
+        And Wait for volume of deployment 2 healthy
+        And Wait for workloads pods stable
+        ...    deployment 0    deployment 1    deployment 2
+        And Check deployment 0 data in file data.bin is intact
+        And Check deployment 1 data in file data.bin is intact
+        And Check deployment 2 data in file data.bin is intact
+    END
