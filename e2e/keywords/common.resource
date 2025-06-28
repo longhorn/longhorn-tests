@@ -48,6 +48,10 @@ Set disk path based on host provider and architecture
 
 Enable v2 data engine and add block disks
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
+    ${V1_DATA_ENGINE_ENABLED}=    get_setting    v1-data-engine
+    IF    "${V1_DATA_ENGINE_ENABLED}" == "false"
+        update_setting    v1-data-engine    false
+    END
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
     set_disk_path_based_on_host_provider_and_architecture
