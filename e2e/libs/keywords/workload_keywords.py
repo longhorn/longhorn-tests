@@ -237,3 +237,7 @@ class workload_keywords:
         pod_name = get_workload_pod_names(workload_name)[0]
         logging(f"Checking workload {workload_name} pod {pod_name} did not restart")
         check_pod_did_not_restart(pod_name)
+
+    def get_workload_pod_uids(self, workload_name):
+        pod_list = get_workload_pods(workload_name)
+        return {pod.metadata.name: pod.metadata.uid for pod in pod_list}

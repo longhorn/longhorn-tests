@@ -1,6 +1,8 @@
 import yaml
 import time
+
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
@@ -116,40 +118,46 @@ class CSIVolumeSnapshot:
 
         logging(f"Cleaning up csi volume snapshot classes")
 
-        classes = self.api.list_cluster_custom_object(
-            group=self.group,
-            version=self.version,
-            plural="volumesnapshotclasses"
-        )
-
-        for item in classes.get("items", []):
-            name = item["metadata"]["name"]
-            print(f"Deleting csi volume snapshot class {name}")
-            self.api.delete_cluster_custom_object(
+        try:
+            classes = self.api.list_cluster_custom_object(
                 group=self.group,
                 version=self.version,
-                plural="volumesnapshotclasses",
-                name=name
+                plural="volumesnapshotclasses"
             )
+
+            for item in classes.get("items", []):
+                name = item["metadata"]["name"]
+                print(f"Deleting csi volume snapshot class {name}")
+                self.api.delete_cluster_custom_object(
+                    group=self.group,
+                    version=self.version,
+                    plural="volumesnapshotclasses",
+                    name=name
+                )
+        except ApiException as e:
+            assert e.status == 404
 
     def cleanup_csi_volume_snapshots(self):
 
         logging(f"Cleaning up csi volume snapshots")
 
-        snapshots = self.api.list_namespaced_custom_object(
-            group=self.group,
-            version=self.version,
-            namespace="default",
-            plural="volumesnapshots"
-        )
-
-        for item in snapshots.get("items", []):
-            name = item["metadata"]["name"]
-            logging(f"Deleting csi volume snapshot {name}")
-            self.api.delete_namespaced_custom_object(
+        try:
+            snapshots = self.api.list_namespaced_custom_object(
                 group=self.group,
                 version=self.version,
                 namespace="default",
-                plural="volumesnapshots",
-                name=name
+                plural="volumesnapshots"
             )
+
+            for item in snapshots.get("items", []):
+                name = item["metadata"]["name"]
+                logging(f"Deleting csi volume snapshot {name}")
+                self.api.delete_namespaced_custom_object(
+                    group=self.group,
+                    version=self.version,
+                    namespace="default",
+                    plural="volumesnapshots",
+                    name=name
+                )
+        except ApiException as e:
+            assert e.status == 404

@@ -29,6 +29,21 @@ Create deployment ${deployment_id} with volume ${volume_id}
     ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
     create_deployment    ${deployment_name}   ${pvc_name}
 
+Create deployment ${deployment_id} using volume ${volume_id}
+    [Arguments]    ${num_replicaset}
+
+    ${node_count} =    Set Variable    3
+    IF    '${num_replicaset}' == 'max'
+        ${node_names} =    list_node_names_by_role    worker
+        ${node_count} =    Get length  ${node_names}
+    ELSE IF    '${num_replicaset}' != ''
+        ${node_count} =    Convert To Integer    ${num_replicaset}
+    END
+
+    ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
+
 Delete deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     delete_deployment    ${deployment_name}
