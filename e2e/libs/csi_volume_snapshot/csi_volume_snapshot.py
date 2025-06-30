@@ -128,14 +128,17 @@ class CSIVolumeSnapshot:
             for item in classes.get("items", []):
                 name = item["metadata"]["name"]
                 logging(f"Deleting csi volume snapshot class {name}")
-                self.api.delete_cluster_custom_object(
-                    group=self.group,
-                    version=self.version,
-                    plural="volumesnapshotclasses",
-                    name=name
-                )
-        except ApiException as e:
-            assert e.status == 404
+                try:
+                    self.api.delete_cluster_custom_object(
+                        group=self.group,
+                        version=self.version,
+                        plural="volumesnapshotclasses",
+                        name=name
+                    )
+                except ApiException as delete_exception:
+                    assert delete_exception.status == 404
+        except ApiException as list_exception:
+            assert list_exception.status == 404
 
     def delete_csi_volume_snapshot(self, csi_volume_snapshot_name):
         for i in range(self.retry_count):
@@ -169,12 +172,15 @@ class CSIVolumeSnapshot:
             for item in snapshots.get("items", []):
                 name = item["metadata"]["name"]
                 logging(f"Deleting csi volume snapshot {name}")
-                self.api.delete_namespaced_custom_object(
-                    group=self.group,
-                    version=self.version,
-                    namespace="default",
-                    plural="volumesnapshots",
-                    name=name
-                )
-        except ApiException as e:
-            assert e.status == 404
+                try:
+                    self.api.delete_namespaced_custom_object(
+                        group=self.group,
+                        version=self.version,
+                        namespace="default",
+                        plural="volumesnapshots",
+                        name=name
+                    )
+                except ApiException as delete_exception:
+                    assert delete_exception.status == 404
+        except ApiException as list_exception:
+            assert list_exception.status == 404
