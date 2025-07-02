@@ -22,9 +22,9 @@ install_longhorn_custom(){
   )
   echo "${IMAGES[@]}"
   LONGHORN_NAMESPACE="longhorn-system"
-  LONGHORN_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_REPO_BRANCH}/deploy/longhorn.yaml"
+  LONGHORN_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_REPO_BRANCH#v}/deploy/longhorn.yaml"
   get_longhorn_manifest "${LONGHORN_MANIFEST_URL}"
-  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}" "${LONGHORN_REPO_BRANCH}" "${IMAGES[@]}"
+  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}" "v${LONGHORN_REPO_BRANCH#v}" "${IMAGES[@]}"
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     customize_longhorn_manifest_for_private_registry
   fi
@@ -49,10 +49,10 @@ install_longhorn_stable(){
   )
   echo "${STABLE_VERSION_IMAGES[@]}"
   LONGHORN_NAMESPACE="longhorn-system"
-  LONGHORN_STABLE_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_STABLE_VERSION}/deploy/longhorn.yaml"
+  LONGHORN_STABLE_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_STABLE_VERSION#v}/deploy/longhorn.yaml"
 
   get_longhorn_manifest "${LONGHORN_STABLE_MANIFEST_URL}"
-  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}" "${LONGHORN_STABLE_VERSION}" "${STABLE_VERSION_IMAGES[@]}"
+  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}" "v${LONGHORN_STABLE_VERSION#v}" "${STABLE_VERSION_IMAGES[@]}"
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     customize_longhorn_manifest_for_private_registry
   fi
@@ -77,10 +77,10 @@ install_longhorn_transient(){
   )
   echo "${TRANSIENT_VERSION_IMAGES[@]}"
   LONGHORN_NAMESPACE="longhorn-system"
-  LONGHORN_TRANSIENT_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_TRANSIENT_VERSION}/deploy/longhorn.yaml"
+  LONGHORN_TRANSIENT_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_TRANSIENT_VERSION#v}/deploy/longhorn.yaml"
 
   get_longhorn_manifest "${LONGHORN_TRANSIENT_MANIFEST_URL}"
-  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}" "${LONGHORN_TRANSIENT_VERSION}" "${TRANSIENT_VERSION_IMAGES[@]}"
+  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}" "v${LONGHORN_TRANSIENT_VERSION#v}" "${TRANSIENT_VERSION_IMAGES[@]}"
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     customize_longhorn_manifest_for_private_registry
   fi
@@ -138,7 +138,7 @@ generate_longhorn_yaml_manifest() {
   local CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE="${CUSTOM_IMAGES[12]}"
 
   git clone --single-branch \
-            --branch ${LONGHORN_REPO_BRANCH} \
+            --branch v${LONGHORN_REPO_BRANCH#v} \
             ${LONGHORN_REPO_URI} \
             ${LONGHORN_REPO_DIR}
 

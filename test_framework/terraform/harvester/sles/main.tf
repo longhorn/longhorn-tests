@@ -127,8 +127,8 @@ ssh_authorized_keys:
 write_files:
   - path: "/tmp/SUSE_Trust_Root_encoded.crt"
     content: >-
-      ${fileexists("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
-      ? filebase64("/usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt")
+      ${fileexists("/usr/local/share/ca-certificates/SUSE_Trust_Root.crt")
+      ? filebase64("/usr/local/share/ca-certificates/SUSE_Trust_Root.crt")
       : ""}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
