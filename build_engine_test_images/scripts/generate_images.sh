@@ -33,8 +33,8 @@ git config --global user.email mock@gmail.com
 git config --global user.name mock
 git commit -a -m "make commit number diff"
 sudo make build
-base_image=$(sudo make package | grep "Successfully tagged longhornio/longhorn-engine:" | cut -d ' ' -f3)
-echo $base_image
+base_image=$((sudo make package || true) 2>&1 | grep -o "longhornio/longhorn-engine:[^ ]*" | head -n 1)
+echo "base_image=$base_image"
 
 version=`docker run ${base_image} longhorn version --client-only`
 export CLIAPIVersion=`echo $version|jq -r ".clientVersion.cliAPIVersion"`
