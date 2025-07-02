@@ -2,6 +2,8 @@
 
 set -x
 
+export LONGHORN_REPO_BRANCH="${LONGHORN_VERSION}"
+
 source pipelines/utilities/run_longhorn_test.sh
 source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/install_csi_snapshotter.sh
@@ -11,8 +13,12 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/longhornctl.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/create_registry_secret.sh
-source pipelines/appco/scripts/longhorn_manifest.sh
-
+source pipelines/utilities/install_csi_snapshotter.sh
+if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]]; then
+  source pipelines/appco/scripts/longhorn_manifest.sh
+elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
+  source pipelines/appco/scripts/longhorn_helm_chart.sh
+fi
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -23,7 +29,7 @@ LONGHORN_NAMESPACE="longhorn-system"
 
 
 apply_selinux_workaround(){
-  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_REPO_BRANCH}/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_REPO_BRANCH#v}/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
 }
 
 
@@ -59,6 +65,9 @@ install_backupstores(){
                -f ${NFS_BACKUPSTORE_URL}
 }
 
+create_appco_secret(){
+  kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry application-collection --docker-server=dp.apps.rancher.io --docker-username="${APPCO_USERNAME}" --docker-password="${APPCO_PASSWORD}"
+}
 
 main(){
   set_kubeconfig
@@ -66,14 +75,15 @@ main(){
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
-
+  
+  create_longhorn_namespace
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!
   set +x
   create_aws_secret
+  create_appco_secret
   set -x
 
-  create_longhorn_namespace
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi

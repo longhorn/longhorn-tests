@@ -138,7 +138,10 @@ def longhorn_upgrade(upgrade_to_transient_version=False):
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "helm":
-        command = "./pipelines/utilities/longhorn_helm_chart.sh"
+        if os.getenv('APPCO_TEST') == "true":
+            command = "./pipelines/appco/scripts/longhorn_helm_chart.sh"
+        else:
+            command = "./pipelines/utilities/longhorn_helm_chart.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
     elif longhorn_install_method == "rancher":
