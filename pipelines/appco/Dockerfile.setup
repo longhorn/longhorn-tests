@@ -12,9 +12,11 @@ ENV WORKSPACE /src/longhorn-tests
 
 WORKDIR $WORKSPACE
 
-RUN mkdir -p /usr/local/share/ca-certificates/suse
-# SUSE_Trust_Root.crt stored on jenkins
-COPY SUSE_Trust_Root.crt /usr/local/share/ca-certificates/suse/SUSE_Trust_Root.crt
+# SUSE_Trust_Root.crt stored on Jenkins
+COPY SUSE_Trust_Root.crt /usr/local/share/ca-certificates/SUSE_Trust_Root.crt
+RUN apk update && \
+    apk add --no-cache ca-certificates && \
+    update-ca-certificates
 
 RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl && \
     mv kubectl /usr/local/bin/kubectl && \
