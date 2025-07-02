@@ -9,6 +9,12 @@ Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
+Create deployment ${deployment_id} on node ${node_id} with persistentvolumeclaim ${claim_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_deployment    ${deployment_name}    ${claim_name}    node_name=${node_name}
+
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
@@ -28,6 +34,16 @@ Create deployment ${deployment_id} with volume ${volume_id}
     ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
     ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
     create_deployment    ${deployment_name}   ${pvc_name}
+
+Schedule deployment ${deployment_id} to node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    schedule_deployment    ${deployment_name}    ${node_name}
+
+Set deployment ${deployment_id} node affinity to node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    set_deployment_node_affinity    ${deployment_name}    ${node_name}
 
 Delete deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
