@@ -2,6 +2,8 @@
 
 set -x
 
+export LONGHORN_REPO_BRANCH="${LONGHORN_VERSION}"
+
 source pipelines/utilities/run_longhorn_test.sh
 source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/longhorn_ui.sh
@@ -10,8 +12,12 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/longhornctl.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/create_registry_secret.sh
-source pipelines/appco/scripts/longhorn_manifest.sh
-
+source pipelines/utilities/install_csi_snapshotter.sh
+if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]]; then
+  source pipelines/appco/scripts/longhorn_manifest.sh
+elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
+  source pipelines/appco/scripts/longhorn_helm_chart.sh
+fi
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -22,31 +28,12 @@ LONGHORN_NAMESPACE="longhorn-system"
 
 
 apply_selinux_workaround(){
-  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_REPO_BRANCH}/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_REPO_BRANCH#v}/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
 }
 
 
 enable_mtls(){
   kubectl apply -f "${TF_VAR_tf_workspace}/templates/longhorn-grpc-tls.yml" -n ${LONGHORN_NAMESPACE}
-}
-
-
-install_csi_snapshotter_crds(){
-    CSI_SNAPSHOTTER_REPO_URL="https://github.com/longhorn/csi-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
-
-    [[ "${LONGHORN_REPO_URI}" =~ https://([^/]+)/([^/]+)/([^/.]+)(.git)? ]]
-    wget "https://raw.githubusercontent.com/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/${LONGHORN_REPO_BRANCH}/deploy/longhorn-images.txt" -O "/tmp/longhorn-images.txt"
-    IFS=: read -ra IMAGE_TAG_PAIR <<< $(grep csi-snapshotter /tmp/longhorn-images.txt)
-    CSI_SNAPSHOTTER_REPO_BRANCH="${IMAGE_TAG_PAIR[1]}"
-
-    git clone --single-branch \
-              --branch "${CSI_SNAPSHOTTER_REPO_BRANCH}" \
-            "${CSI_SNAPSHOTTER_REPO_URL}" \
-            "${CSI_SNAPSHOTTER_REPO_DIR}"
-
-    kubectl apply -f ${CSI_SNAPSHOTTER_REPO_DIR}/client/config/crd \
-                  -f ${CSI_SNAPSHOTTER_REPO_DIR}/deploy/kubernetes/snapshot-controller
 }
 
 
@@ -77,6 +64,9 @@ install_backupstores(){
                -f ${NFS_BACKUPSTORE_URL}
 }
 
+create_appco_secret(){
+  kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry application-collection --docker-server=dp.apps.rancher.io --docker-username="${APPCO_USERNAME}" --docker-password="${APPCO_PASSWORD}"
+}
 
 main(){
   set_kubeconfig
@@ -84,18 +74,19 @@ main(){
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
-
+  
+  create_longhorn_namespace
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!
   set +x
   create_aws_secret
+  create_appco_secret
   set -x
 
-  create_longhorn_namespace
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi
-  install_csi_snapshotter_crds
+  install_csi_snapshotter
   if [[ "${TF_VAR_enable_mtls}" == true ]]; then
     enable_mtls
   fi
