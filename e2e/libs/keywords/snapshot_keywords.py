@@ -38,3 +38,9 @@ class snapshot_keywords:
 
     def get_snapshot_by_name(self, volume_name, snapshot_name):
         return self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
+
+    def wait_for_snapshot_to_be_created(self, volume_name, snapshot_name):
+        return self.snapshot.wait_for_snapshot_to_be_created(volume_name, snapshot_name)
+
+    def wait_for_snapshot_to_be_deleted(self, volume_name, snapshot_name):
+        return self.snapshot.wait_for_snapshot_to_be_deleted(volume_name, snapshot_name)
