@@ -5,3 +5,11 @@ output "network_interface_ids" {
   ]
   value = join(" ", concat(aws_network_interface.instance_eth0[*].id, aws_network_interface.instance_eth1[*].id))
 }
+
+output "controlplane_public_ip" {
+  depends_on = [
+    aws_eip.aws_eip,
+    aws_instance.aws_instance
+  ]
+  value = var.network_stack == "ipv6" ? "[${aws_instance.aws_instance[0].ipv6_addresses[0]}]" : aws_eip.aws_eip[0].public_ip
+}

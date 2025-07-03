@@ -10,4 +10,6 @@ for id in ${NETWORK_INTERFACE_IDS}; do
   aws ec2 modify-network-interface-attribute --network-interface-id "${id}" --no-source-dest-check
 done
 
+terraform -chdir=pipelines/storage_network/terraform output -raw controlplane_public_ip > /tmp/controlplane_public_ip
+
 exit $?
