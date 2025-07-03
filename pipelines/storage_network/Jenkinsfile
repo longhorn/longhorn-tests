@@ -18,6 +18,8 @@ def REGISTRY_URL = ""
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
+def NETWORK_STACK = params.NETWORK_STACK ? params.NETWORK_STACK : "ipv4"
+
 node {
 
     withCredentials([
@@ -82,6 +84,7 @@ node {
                                        --env TF_VAR_mtu=${MTU_SIZE} \
                                        --env TF_VAR_multus_version=${MULTUS_VERSION} \
                                        --env TF_VAR_thick_plugin=${THICK_PLUGIN} \
+                                       --env TF_VAR_network_stack="${NETWORK_STACK}" \
                                        ${imageName}
                 """
             }
@@ -97,7 +100,7 @@ node {
             }
 
             stage ('download support bundle') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/download-support-bundle.sh ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
 				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
 			}

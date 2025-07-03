@@ -12,8 +12,9 @@ data "aws_ami" "aws_ami_sles" {
 data "template_file" "provision_k3s_server" {
   template = var.k8s_distro_name == "k3s" ? file("${path.module}/user-data-scripts/provision_k3s_server.sh.tpl") : null
   vars = {
+    network_stack = var.network_stack
+    control_plane_ipv4 = aws_eip.aws_eip[0].public_ip
     k3s_cluster_secret = random_password.cluster_secret.result
-    k3s_server_public_ip = aws_eip.aws_eip[0].public_ip
     k3s_version =  var.k8s_distro_version
     thick_plugin = var.thick_plugin
   }
@@ -23,6 +24,7 @@ data "template_file" "provision_k3s_server" {
 data "template_file" "provision_k3s_agent" {
   template = var.k8s_distro_name == "k3s" ? file("${path.module}/user-data-scripts/provision_k3s_agent.sh.tpl") : null
   vars = {
+    network_stack = var.network_stack
     k3s_server_url = "https://${aws_eip.aws_eip[0].public_ip}:6443"
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
@@ -48,5 +50,8 @@ data "template_file" "routes" {
     N1 = aws_network_interface.instance_eth1[0].private_ip
     N2 = aws_network_interface.instance_eth1[1].private_ip
     N3 = aws_network_interface.instance_eth1[2].private_ip
+    N1_v6 = aws_network_interface.instance_eth1[0].ipv6_address_list[0]
+    N2_v6 = aws_network_interface.instance_eth1[1].ipv6_address_list[0]
+    N3_v6 = aws_network_interface.instance_eth1[2].ipv6_address_list[0]
   }
 }

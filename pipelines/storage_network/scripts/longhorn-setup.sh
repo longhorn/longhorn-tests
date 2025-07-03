@@ -8,8 +8,11 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/storage_network.sh
+source pipelines/utilities/coredns.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
+source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/run_longhorn_test.sh
 
 # create and clean tmpdir
@@ -44,6 +47,9 @@ main(){
   fi
   deploy_network_attachment_definition
 
+  patch_coredns_ipv6_name_servers
+  scale_up_coredns
+
   create_longhorn_namespace
   install_backupstores
   setup_azurite_backup_store
@@ -55,7 +61,13 @@ main(){
   customize_longhorn_manifest_registry
   install_longhorn
 
+  setup_longhorn_ui_nodeport
+  export_longhorn_ui_url
+
   update_storage_network_setting
+  # instance manager pods should restart after the storage network setting applied
+  wait_longhorn_status_running
+  validate_storage_network_setting_taking_effect
 
   run_longhorn_test
 }
