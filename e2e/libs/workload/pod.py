@@ -134,7 +134,8 @@ def delete_pod(name, namespace='default', wait=True):
         try:
             core_api.delete_namespaced_pod(name=name, namespace=namespace, grace_period_seconds=0)
             if wait:
-                wait_delete_pod(name)
+                wait_delete_pod(name, namespace)
+            break
         except rest.ApiException as e:
             if e.status == 404:
                 logging(f"Deleted pod {name} in namespace {namespace}")
