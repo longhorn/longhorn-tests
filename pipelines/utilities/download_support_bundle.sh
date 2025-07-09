@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 source pipelines/utilities/kubeconfig.sh
+source pipelines/utilities/longhorn_ui.sh
 
 set -e
 
@@ -9,12 +10,11 @@ SUPPORT_BUNDLE_ISSUE_URL=${2:-""}
 SUPPORT_BUNDLE_ISSUE_DESC=${3:-"Auto-generated support bundle"}
 
 set_kubeconfig
-
-LH_FRONTEND_ADDR=`kubectl get svc -n longhorn-system longhorn-frontend -o json | jq -r '.spec.clusterIP + ":" + (.spec.ports[0].port|tostring)'`
+export_longhorn_ui_url
 
 JSON_PAYLOAD="{\"issueURL\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\", \"description\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\"}"
 
-CURL_CMD="curl -XPOST http://${LH_FRONTEND_ADDR}/v1/supportbundles -H 'Accept: application/json' -H 'Accept-Encoding: gzip, deflate' -d '"${JSON_PAYLOAD}"'"
+CURL_CMD="curl -XPOST ${LONGHORN_CLIENT_URL}/v1/supportbundles -H 'Accept: application/json' -H 'Accept-Encoding: gzip, deflate' -d '"${JSON_PAYLOAD}"'"
 
 SUPPORT_BUNDLE_URL=`kubectl exec -n longhorn-system svc/longhorn-frontend -- bash -c "${CURL_CMD}"  | jq -r '.links.self + "/" + .name'`
 

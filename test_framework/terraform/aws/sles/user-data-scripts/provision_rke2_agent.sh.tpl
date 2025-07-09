@@ -46,12 +46,17 @@ if [[ "${extra_block_device}" != true ]]; then
   fi
 fi
 
-RKE_SERVER_IP=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $1}'`
-RKE_SERVER_PORT=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $2}'`
-
-while ! nc -z $${RKE_SERVER_IP} $${RKE_SERVER_PORT}; do   
-  sleep 10 #
-done
+if [[ "${network_stack}" == "ipv6" ]]; then
+  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
+  sysctl --system
+  cat <<EOF > /etc/resolv.conf
+nameserver 2606:4700:4700::1111
+nameserver 2001:4860:4860::8888
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+EOF
+  chattr +i /etc/resolv.conf || true
+fi
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 
