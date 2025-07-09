@@ -137,6 +137,7 @@ Migration Confirmation Before Migration Engine Crash
 
     # migration confirmation by detaching from the original node
     When Detach volume 0 from node 0
+    And Log To Console    "Sleep 0.5s after migration confirmation but before the migration engine crash"
     And Sleep    0.5
     # crash the engine on the migration node by killing its instance-manager pod
     And Delete ${DATA_ENGINE} instance manager on node 1
@@ -175,6 +176,7 @@ Migration Rollback Before Migration Engine Crash
 
     # migration rollback by detaching from the migration node
     When Detach volume 0 from node 1
+    And Log To Console    "Sleep 0.5s after migration rollback but before the migration engine crash"
     And Sleep    0.5
     # crash the engine on the migration node by killing its instance-manager pod
     And Delete ${DATA_ENGINE} instance manager on node 1
@@ -213,6 +215,7 @@ Migration Confirmation Before Original Engine Crash
 
     # migration confirmation by detaching from the original node
     When Detach volume 0 from node 0
+    And Log To Console    "Sleep 0.5s after migration confirmation but before the original engine crash"
     And Sleep    0.5
     # crash the engine on the original node by killing its instance-manager pod
     And Delete ${DATA_ENGINE} instance manager on node 0
@@ -251,6 +254,7 @@ Migration Rollback Before Original Engine Crash
 
     # migration rollback by detaching from the migration node
     When Detach volume 0 from node 1
+    And Log To Console    "Sleep 0.5s after migration rollback but before the original engine crash"
     And Sleep    0.5
     # crash the engine on the original node by killing its instance-manager pod
     And Delete ${DATA_ENGINE} instance manager on node 0
