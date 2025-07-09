@@ -35,8 +35,10 @@ from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
+from utility.utility import list_namespaced_pod
 
 from volume import Volume
+from datetime import datetime, timezone
 
 
 class workload_keywords:
@@ -241,3 +243,14 @@ class workload_keywords:
     def get_workload_pod_uids(self, workload_name):
         pod_list = get_workload_pods(workload_name)
         return {pod.metadata.name: pod.metadata.uid for pod in pod_list}
+
+    def check_pod_not_restart_after_specific_time(self, namespace, label, time):        
+        pods = list_namespaced_pod(namespace, label)
+
+        if time.tzinfo is None:
+            time = time.replace(tzinfo=timezone.utc)
+
+        for pod in pods:
+            creation_time = pod.metadata.creation_timestamp
+            logging(f"Comparing pod creation: {creation_time} < {time}")
+            assert creation_time < time, f"{pod.metadata.name} restarted after test started"
