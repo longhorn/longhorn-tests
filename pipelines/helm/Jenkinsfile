@@ -45,7 +45,7 @@ node {
                 stage('airgap build') {
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                           --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
+                                           --env TF_VAR_longhorn_version=${LONGHORN_REPO_BRANCH} \
                                            --env TF_VAR_docker_hub_username=${REGISTRY_USERNAME} \
                                            --env TF_VAR_docker_hub_password=${REGISTRY_PASSWORD} \
                                            --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
