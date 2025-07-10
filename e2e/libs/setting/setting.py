@@ -160,7 +160,11 @@ class Setting:
 
             s = client.by_id_setting(setting_name)
             if s.value != setting_default_value and not setting_readonly:
-                try:
-                    client.update(s, value=setting_default_value)
-                except Exception as e:
-                    logging(f"Failed to reset {setting_name} to {setting_default_value}: {e}")
+                for i in range(self.retry_count):
+                    logging(f"Try to reset {setting_name} to {setting_default_value} ... ({i})")
+                    try:
+                        client.update(s, value=setting_default_value)
+                        break
+                    except Exception as e:
+                        logging(f"Failed to reset {setting_name} to {setting_default_value}: {e}")
+                    time.sleep(self.retry_interval)
