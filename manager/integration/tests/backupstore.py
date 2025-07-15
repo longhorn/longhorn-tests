@@ -15,6 +15,7 @@ from common import SETTING_BACKUP_TARGET
 from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
+from common import RETRY_COUNTS
 from common import RETRY_COUNTS_SHORT
 from common import RETRY_INTERVAL
 from common import EXCEPTION_ERROR_REASON_NOT_FOUND
@@ -179,6 +180,7 @@ def set_backupstore_s3(client):
             set_backupstore_url(client, backupsettings[0])
             set_backupstore_credential_secret(client, backupsettings[1])
             set_backupstore_poll_interval(client, poll_interval)
+            wait_for_default_backup_target_available(client)
             break
 
 
@@ -190,6 +192,7 @@ def set_backupstore_nfs(client):
             set_backupstore_url(client, backupstore)
             set_backupstore_credential_secret(client, "")
             set_backupstore_poll_interval(client, poll_interval)
+            wait_for_default_backup_target_available(client)
             break
 
 
@@ -202,6 +205,7 @@ def set_backupstore_cifs(client):
             set_backupstore_url(client, backupsettings[0])
             set_backupstore_credential_secret(client, backupsettings[1])
             set_backupstore_poll_interval(client, poll_interval)
+            wait_for_default_backup_target_available(client)
             break
 
 
@@ -214,6 +218,7 @@ def set_backupstore_azurite(client):
             set_backupstore_url(client, backupsettings[0])
             set_backupstore_credential_secret(client, backupsettings[1])
             set_backupstore_poll_interval(client, poll_interval)
+            wait_for_default_backup_target_available(client)
             break
 
 
@@ -317,6 +322,18 @@ def set_backupstore_poll_interval_by_setting(client, poll_interval):
         else:
             break
     assert backup_target_poll_interal_setting.value == poll_interval
+
+
+def wait_for_default_backup_target_available(client):
+    for i in range(RETRY_COUNTS):
+        print(f"waiting for default backup target available ... ({i})")
+        bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
+        if bt.available:
+            return
+        else:
+            print(f"default backup target is not available: {bt}")
+        time.sleep(RETRY_INTERVAL)
+    assert False, "default backup target is not available"
 
 
 def mount_nfs_backupstore(client, mount_path="/mnt/nfs"):
