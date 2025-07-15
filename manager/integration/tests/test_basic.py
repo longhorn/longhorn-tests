@@ -5,6 +5,7 @@ import subprocess
 import time
 import random
 import yaml
+import longhorn
 
 import common
 from common import client, random_labels, volume_name, clients  # NOQA
@@ -99,7 +100,6 @@ from common import BACKUP_COMPRESSION_METHOD_LZ4
 from common import BACKUP_COMPRESSION_METHOD_GZIP
 from common import BACKUP_COMPRESSION_METHOD_NONE
 from common import create_and_wait_deployment
-from common import get_custom_object_api_client
 from common import scale_up_engine_image_daemonset
 from common import BACKUP_TARGET_MESSAGE_EMPTY_URL
 from common import BACKUP_TARGET_MESSAGES_INVALID
@@ -5767,21 +5767,10 @@ def test_backuptarget_invalid(apps_api, # NOQA
 
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
-
-    for i in range(RETRY_COUNTS):
-        api = get_custom_object_api_client()
-        backups = api.list_namespaced_custom_object("longhorn.io",
-                                                    "v1beta2",
-                                                    "longhorn-system",
-                                                    "backups")
-
-        if backups["items"][0]["status"]["state"] == "Error":
-            break
-        time.sleep(RETRY_INTERVAL)
-
-    assert backups["items"][0]["spec"]["snapshotName"] == snap.name
-    assert backups["items"][0]["status"]["state"] == "Error"
+    try:
+        volume.snapshotBackup(name=snap.name)
+    except longhorn.ApiError as e:
+        assert "backup target default is not available" in e.error.message
 
     # In https://github.com/longhorn/longhorn/issues/8210, the backup target
     # could not properly reconcile when the URL or secret were "broken", and
