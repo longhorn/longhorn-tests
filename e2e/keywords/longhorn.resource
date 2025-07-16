@@ -125,3 +125,6 @@ Upgrade Longhorn to custom version should fail
 Check Longhorn node ${type} state on power off node is ${expect_state}
     ${status} =    get_longhorn_node_condition_status    ${last_volume_node}    ${type}
     Should Be Equal    ${status}    ${expect_state}
+
+Check longhorn manager pods not restarted after test start
+    check_pod_not_restart_after_specific_time    longhorn-system    app=longhorn-manager    ${test_start_time}
