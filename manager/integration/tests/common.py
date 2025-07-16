@@ -406,12 +406,13 @@ def get_longhorn_api_client():
                 # Determine if IP is IPv6
                 family = socket.AF_INET6 if ':' in ip else socket.AF_INET
                 sock = socket.socket(family, socket.SOCK_STREAM)
+                sock.settimeout(RETRY_COUNTS_SHORT)
 
-            try:
-                if sock.connect_ex((ip, 9500)) == 0:
-                    return get_client(ip + PORT)
-            finally:
-                sock.close()
+                try:
+                    if sock.connect_ex((ip, 9500)) == 0:
+                        return get_client(ip + PORT)
+                finally:
+                    sock.close()
         except Exception:
             time.sleep(RETRY_INTERVAL)
 
