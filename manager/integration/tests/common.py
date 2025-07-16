@@ -397,6 +397,7 @@ def get_longhorn_api_client():
 
             # check if longhorn manager port is open before calling get_client
             for ip in ips:
+<<<<<<< HEAD
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 mgr_port_open = sock.connect_ex((ip, 9500))
 
@@ -404,6 +405,18 @@ def get_longhorn_api_client():
                     client = get_client(ip + PORT)
                     break
             return client
+=======
+                # Determine if IP is IPv6
+                family = socket.AF_INET6 if ':' in ip else socket.AF_INET
+                sock = socket.socket(family, socket.SOCK_STREAM)
+                sock.settimeout(RETRY_COUNTS_SHORT)
+
+                try:
+                    if sock.connect_ex((ip, 9500)) == 0:
+                        return get_client(ip + PORT)
+                finally:
+                    sock.close()
+>>>>>>> 8ce3b8b (test: fix getting longhorn api client could hang)
         except Exception:
             time.sleep(RETRY_INTERVAL)
 
