@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    negative
+Test Tags    ha-migration    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

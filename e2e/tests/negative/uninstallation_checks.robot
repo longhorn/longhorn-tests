@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Uninstallation Checks
 
-Test Tags    negative
+Test Tags    uninstall    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -21,7 +21,6 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Uninstallation Checks
-    [Tags]    uninstall
     [Documentation]    Uninstallation Checks
     ...    Prerequisites
     ...    - Have a setup of Longhorn installed on a kubernetes cluster.

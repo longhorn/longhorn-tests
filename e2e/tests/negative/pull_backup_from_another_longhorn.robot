@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Uninstallation Checks
 
-Test Tags    negative
+Test Tags    uninstall    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -21,7 +21,6 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Pull Backup Created By Another Longhorn System
-    [Tags]    uninstall
     [Documentation]    Pull backup created by another Longhorn system
     ...    1. Install test version of Longhorn.
     ...    2. Create volume, write data, and take backup.

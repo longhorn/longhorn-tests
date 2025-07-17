@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    CSI Volume Snapshot Test Cases
 
-Test Tags    regression
+Test Tags    regression csi-snapshotter
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
