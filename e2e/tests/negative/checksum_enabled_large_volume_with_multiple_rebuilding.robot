@@ -70,12 +70,12 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     # After creating snapshot 0 for volume 0, the snapshot A must be purged.
     # Once purged, snapshot 0 for volume 0 will generate a new checksum.
     And Purge volume 0 snapshot
-    # The timeout for validating the snapshot checksum is set to 1200 seconds 
-    # because this test involves writing 30 GB of data to the volume. 
-    # Based on observations on AWS, generating the snapshot checksum 
+    # Since this test involves writing 30 GB of data to the volume.
+    # Based on observations on AWS, generating the snapshot checksum
     # in such cases can take up to approximately 18 minutes. 
-    # If needed, this value can be adjusted further based on future test results or requirements.
-    And Validate snapshot 0 checksum of volume 0 is calculated within 1200 seconds
+    # Make sure to set RETRY_COUNT to a sufficiently large value
+    # to wait until the checksum is calculated
+    And Wait for volume 0 snapshot 0 checksum to be calculated
     And Power off node 1 for 4 mins
 
     Then Wait for longhorn ready

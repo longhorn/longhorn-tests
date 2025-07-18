@@ -155,3 +155,16 @@ class Rest(Base):
     def get_checksum(self, volume_name, snapshot_id):
         snapshot = self.get(volume_name, snapshot_id)
         return snapshot.checksum
+
+    def wait_for_snapshot_checksum_to_be_created(self, volume_name, snapshot_id):
+        for i in range(self.retry_count):
+            logging(f"Trying to get volume {volume_name} snapshot {snapshot_id} checksum ... ({i})")
+            try:
+                checksum = self.get_checksum(volume_name, snapshot_id)
+                if checksum:
+                    logging(f"Got volume {volume_name} snapshot {snapshot_id} checksum: {checksum}")
+                    return checksum
+            except Exception as e:
+                logging(f"Failed to get volume {volume_name} snapshot {snapshot_id} checksum: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get volume {volume_name} snapshot {snapshot_id} checksum"
