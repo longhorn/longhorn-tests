@@ -86,6 +86,7 @@ main(){
     enable_mtls
   fi
 
+  patch_coredns_ipv6_name_servers
   scale_up_coredns
 
   # msg="failed to get package manager" error="operating systems amzn are not supported"

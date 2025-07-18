@@ -7,8 +7,6 @@ set_kubeconfig(){
     done
   elif [[ "${LONGHORN_TEST_CLOUDPROVIDER}" == "harvester" ]]; then
     export KUBECONFIG="test_framework/kube_config.yaml"
-  elif [[ "${TF_VAR_k8s_distro_name}" == "rke" ]]; then
-    export KUBECONFIG="test_framework/kube_config_rke.yml"
   elif [[ "${TF_VAR_k8s_distro_name}" == "rke2" ]]; then
     export KUBECONFIG="test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
   elif [[ "${TF_VAR_k8s_distro_name}" == "k3s" ]]; then
