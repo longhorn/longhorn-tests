@@ -28,6 +28,10 @@ resource "random_password" "cluster_secret" {
 resource "aws_vpc" "aws_vpc" {
   cidr_block = "10.0.0.0/16"
 
+  assign_generated_ipv6_cidr_block  = true
+  enable_dns_support                = true
+  enable_dns_hostnames              = true
+
   tags = {
     Name = "${var.aws_vpc_name}-${random_string.random_suffix.id}"
     Owner = var.resources_owner
@@ -55,6 +59,11 @@ resource "aws_route_table" "aws_public_rt" {
     gateway_id = aws_internet_gateway.aws_igw.id
   }
 
+  route {
+    ipv6_cidr_block = "::/0"
+    gateway_id      = aws_internet_gateway.aws_igw.id
+  }
+
   tags = {
     Name = "lh_aws_public_rt-${random_string.random_suffix.id}"
     Owner = var.resources_owner
@@ -62,9 +71,11 @@ resource "aws_route_table" "aws_public_rt" {
 }
 
 resource "aws_subnet" "aws_subnet_1" {
-  vpc_id     = aws_vpc.aws_vpc.id
-  availability_zone = "us-east-1c"
-  cidr_block = "10.0.1.0/24"
+  vpc_id                          = aws_vpc.aws_vpc.id
+  availability_zone               = "us-east-1c"
+  cidr_block                      = "10.0.1.0/24"
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.aws_vpc.ipv6_cidr_block, 8, 0)
+  assign_ipv6_address_on_creation = true
 
   tags = {
     Name = "lh_subnet_1-${random_string.random_suffix.id}"
@@ -73,9 +84,11 @@ resource "aws_subnet" "aws_subnet_1" {
 }
 
 resource "aws_subnet" "aws_subnet_2" {
-  vpc_id     = aws_vpc.aws_vpc.id
-  availability_zone = "us-east-1c"
-  cidr_block = "10.0.2.0/24"
+  vpc_id                          = aws_vpc.aws_vpc.id
+  availability_zone               = "us-east-1c"
+  cidr_block                      = "10.0.2.0/24"
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.aws_vpc.ipv6_cidr_block, 8, 1)
+  assign_ipv6_address_on_creation = true
 
   tags = {
     Name = "lh_subnet_2-${random_string.random_suffix.id}"
@@ -109,15 +122,22 @@ resource "aws_security_group" "aws_secgrp" {
   vpc_id      = aws_vpc.aws_vpc.id
 
   ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
+    description = "Allow all ports"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    description = "Allow all ports"
+    description = "Allow all ports over IPv6"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -128,7 +148,7 @@ resource "aws_security_group" "aws_secgrp" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
   tags = {
@@ -145,6 +165,7 @@ resource "aws_key_pair" "aws_pair_key" {
 resource "aws_network_interface" "instance_eth0" {
   subnet_id   = aws_subnet.aws_subnet_1.id
   security_groups = [aws_security_group.aws_secgrp.id]
+  ipv6_address_count = 1
 
   count = var.aws_instance_count
 
@@ -195,6 +216,7 @@ resource "aws_network_interface" "instance_eth1" {
 
   subnet_id   = aws_subnet.aws_subnet_2.id
   security_groups = [aws_security_group.aws_secgrp.id]
+  ipv6_address_count = 1
 
   count = var.aws_instance_count
 
@@ -257,7 +279,16 @@ resource "null_resource" "rsync_kubeconfig_file" {
   }
 
   provisioner "local-exec" {
-    command = "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.aws_eip[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.aws_eip[0].public_ip}:6443#' k3s.yaml"
+    command = <<EOT
+    export K3S_SERVER_IP=$(
+        [ "${var.network_stack}" = "ipv6" ] && echo "[${aws_instance.aws_instance[0].ipv6_addresses[0]}]" || echo ${aws_eip.aws_eip[0].public_ip}
+    )
+    export LOCAL_IP=$(
+        [ "${var.network_stack}" = "ipv6" ] && echo "\[::1\]" || echo "127.0.0.1"
+    )
+    rsync -aPvz --rsync-path="sudo rsync" -e "ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}" "${aws_eip.aws_eip[0].public_ip}:/etc/rancher/k3s/k3s.yaml" . && \
+    sed -i "s#https://$LOCAL_IP:6443#https://$K3S_SERVER_IP:6443#" k3s.yaml
+EOT
   }
 }
 
