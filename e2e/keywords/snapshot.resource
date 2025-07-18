@@ -79,18 +79,9 @@ Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is skipped for 
         Sleep    1
     END
 
-Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is calculated within ${timeout} seconds
+Wait for volume ${volume_id} snapshot ${snapshot_id} checksum to be calculated
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${checksum} =    Set Variable    ${EMPTY}
-
-    FOR    ${i}    IN RANGE    ${timeout}
-        ${checksum} =    get_checksum    ${volume_name}    ${snapshot_id}
-        Log To Console    Attempt ${i}: Snapshot ${snapshot_id} checksum = '${checksum}'
-        Run Keyword If    '${checksum}' != ''    Exit For Loop
-        Sleep    1
-    END
-
-    Should Not Be Empty    ${checksum}    FAIL: Snapshot ${snapshot_id} checksum was not calculated within ${timeout} seconds.
+    wait_for_snapshot_checksum_to_be_created    ${volume_name}    ${snapshot_id}
 
 Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should be created
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
