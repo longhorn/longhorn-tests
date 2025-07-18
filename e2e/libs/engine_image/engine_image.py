@@ -83,9 +83,11 @@ class EngineImage():
         assert found, f"Failed to create engine image {image_name}: {images}"
 
     def cleanup_engine_images(self):
+        logging(f"Cleaning up engine images")
         images = get_longhorn_client().list_engine_image().data
         for image in images:
             if not image.default:
+                logging(f"Cleaning up engine image {image.name}")
                 self.wait_for_engine_image_ref_count(image.name, 0)
                 get_longhorn_client().delete(image)
                 self.wait_for_engine_image_deleted(image.name)

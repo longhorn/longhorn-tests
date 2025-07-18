@@ -116,12 +116,9 @@ Test Uninstallation With Backups
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
 
-    # create failed backups by resetting backupstore and create backups without available backup targets
-    And Reset Backupstore
-    And Create backup 0 for volume 0    wait=False
+    And Create backup 0 for volume 0
+    And Create error backup for volume 0
     And Verify backup list contains errors for volume 0
-    And Set Backupstore
-    And Create backup 1 for volume 0
 
     When Set setting deleting-confirmation-flag to true
     And Uninstall Longhorn
