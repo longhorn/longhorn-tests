@@ -16,7 +16,7 @@ Test Setup   Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
-Test Volume Snapshot Checksum When Healthy Replicas More Then 1
+Test Volume Snapshot Checksum When Healthy Replicas More Than 1
     [Tags]    volume setting snapshot
     [Documentation]
     ...    This test validates that snapshot checksum calculation is performed when the number of healthy replicas is more than 1.
@@ -29,7 +29,7 @@ Test Volume Snapshot Checksum When Healthy Replicas More Then 1
     And Create snapshot 0 of volume 0
 
     Then Validate snapshot 0 is in volume 0 snapshot list
-    And Validate snapshot 0 checksum of volume 0 is calculated within 60 seconds
+    And Wait for volume 0 snapshot 0 checksum to be calculated
 
 Test Volume Snapshot Checksum Skipped When Less Than 2 Healthy Replicas
     [Tags]    volume setting snapshot
