@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Manual Test Cases
-Test Tags    negative
+Test Tags    upgrade    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -27,6 +27,7 @@ Test system upgrade with a new storage class being default
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version
+    And Enable v2 data engine and add block disks
     And Create storageclass longhorn-rep-2 with    dataEngine=${DATA_ENGINE}    numberOfReplicas=2
     And Set storageclass longhorn-rep-2 as default
     And Remove default from storageClass longhorn

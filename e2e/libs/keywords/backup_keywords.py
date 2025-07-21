@@ -12,6 +12,9 @@ class backup_keywords:
     def create_backup(self, volume_name, backup_id, wait=True):
         self.backup.create(volume_name, backup_id, wait)
 
+    def create_error_backup(self, volume_name):
+        self.backup.create_error_backup(volume_name)
+
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
 
@@ -21,11 +24,20 @@ class backup_keywords:
     def verify_backup_count(self, volume_name, expected_backup_count):
         self.backup.verify_backup_count(volume_name, expected_backup_count)
 
+    def wait_for_snapshot_backup_to_be_created(self, volume_name, snapshot_name):
+        return self.backup.wait_for_snapshot_backup_to_be_created(volume_name, snapshot_name)
+
+    def wait_for_snapshot_backup_to_be_deleted(self, volume_name, snapshot_name):
+        return self.backup.wait_for_snapshot_backup_to_be_deleted(volume_name, snapshot_name)
+
     def get_backup_name(self, backup_id, volume_name=None):
         return self.backup.get(backup_id, volume_name).name
 
     def get_backup_url(self, backup_id, volume_name=None):
         return self.backup.get_backup_url(backup_id, volume_name)
+
+    def get_latest_backup_url(self, volume_name):
+        return self.backup.get_latest_backup_url(volume_name)
 
     def get_backup_url_from_backup_list(self, backup_list, backup_id):
         backup = self.backup.get_from_list(backup_list, backup_id)

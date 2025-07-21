@@ -35,7 +35,7 @@ class Rest(Base):
         # has been completed
         self.wait_for_backup_completed(volume_name, snapshot.name)
 
-        backup = self.get_by_snapshot(volume_name, snapshot.name)
+        backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot.name)
         logging(f"Created backup {backup.name} from snapshot {snapshot.name}")
 
         for i in range(self.retry_count):
@@ -54,6 +54,19 @@ class Rest(Base):
 
         return backup
 
+    def create_error_backup(self, volume_name):
+        # create backup from a non-existing snapshot
+        snapshot_name = "non-existing"
+        volume = self.volume.get(volume_name)
+        volume.snapshotBackup(name=snapshot_name)
+
+        self.wait_for_backup_error(volume_name)
+
+        backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot_name)
+        logging(f"Created error backup {backup.name} from snapshot {snapshot_name}")
+
+        return backup
+
     def get(self, backup_id, volume_name):
         backups = self.list(volume_name)
         for backup in backups:
@@ -62,6 +75,13 @@ class Rest(Base):
             elif backup.name == backup_id:
                 return backup
         return None
+
+    def get_latest(self, volume_name):
+        backups = self.list(volume_name)
+        if len(backups):
+            return backups[-1]
+        else:
+            return None
 
     def get_from_list(self, backup_list, backup_id):
         for backup in backup_list["items"]:
@@ -75,6 +95,14 @@ class Rest(Base):
         return None
 
     def get_by_snapshot(self, volume_name, snapshot_name):
+        backup_volume = self.get_backup_volume(volume_name)
+        backups = backup_volume.backupList().data
+        for backup in backups:
+            if backup.snapshotName == snapshot_name:
+                return backup
+        return None
+
+    def wait_for_snapshot_backup_to_be_created(self, volume_name, snapshot_name):
         """
         look for a backup from snapshot on the backupstore
         it's important to note that this can only be used for a completed backup
@@ -84,15 +112,25 @@ class Rest(Base):
         for i in range(self.retry_count):
             logging(f"Trying to get backup from volume {volume_name} snapshot {snapshot_name} ... ({i})")
             try:
-                backup_volume = self.get_backup_volume(volume_name)
-                backups = backup_volume.backupList().data
-                for backup in backups:
-                    if backup.snapshotName == snapshot_name:
-                        return backup
+                backup = self.get_by_snapshot(volume_name, snapshot_name)
+                if backup:
+                    return backup
             except Exception as e:
-                logging(f"Failed to find backup from volume {volume_name} snapshot {snapshot_name} with error: {e}")
+                logging(f"Failed to find backup from volume {volume_name} snapshot {snapshot_name}: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to find backup from volume {volume_name} snapshot {snapshot_name}"
+
+    def wait_for_snapshot_backup_to_be_deleted(self, volume_name, snapshot_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for snapshot {snapshot_name} backup from volume {volume_name} to be deleted ... ({i})")
+            try:
+                backup = self.get_by_snapshot(volume_name, snapshot_name)
+                if not backup:
+                    return
+            except Exception as e:
+                logging(f"Failed to wait for snapshot {snapshot_name} backup from volume {volume_name} to be deleted: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for snapshot {snapshot_name} backup from volume {volume_name} to be deleted"
 
     def get_backup_volume(self, volume_name):
         for i in range(self.retry_count):
@@ -120,7 +158,26 @@ class Rest(Base):
             if completed:
                 break
             time.sleep(self.retry_interval)
-        assert completed, f"Expected from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
+        assert completed, f"Expected backup from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
+
+    def wait_for_backup_error(self, volume_name):
+        error = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for backup from volume {volume_name} error ... ({i})")
+            volume = self.volume.get(volume_name)
+            for backup in volume.backupStatus:
+                # when creating a backup from a non-existing snapshot
+                # the snapshot field in this backup is empty
+                # instead of the non-existing snapshot name
+                if not backup.snapshot and backup.state == "Error":
+                    error = True
+                    break
+                else:
+                    continue
+            if error:
+                break
+            time.sleep(self.retry_interval)
+        assert error, f"Expected backup from volume {volume_name} error, but it's {volume}"
 
     def list(self, volume_name):
         if not volume_name:

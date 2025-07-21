@@ -24,6 +24,12 @@ class Snapshot(Base):
     def get_snapshot_by_name(self, volume_name, snapshot_name):
         return self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
 
+    def wait_for_snapshot_to_be_created(self, volume_name, snapshot_name):
+        return self.snapshot.wait_for_snapshot_to_be_created(volume_name, snapshot_name)
+
+    def wait_for_snapshot_to_be_deleted(self, volume_name, snapshot_name):
+        return self.snapshot.wait_for_snapshot_to_be_deleted(volume_name, snapshot_name)
+
     def get_volume_head(self, volume_name):
         return self.snapshot.get_volume_head(volume_name)
 
@@ -53,3 +59,6 @@ class Snapshot(Base):
 
     def get_checksum(self, volume_name, snapshot_id):
         return self.snapshot.get_checksum(volume_name, snapshot_id)
+
+    def wait_for_snapshot_checksum_to_be_created(self, volume_name, snapshot_id):
+        return self.snapshot.wait_for_snapshot_checksum_to_be_created(volume_name, snapshot_id)

@@ -66,18 +66,21 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     And Set setting snapshot-data-integrity-immediate-check-after-snapshot-creation to true
     And Create snapshot 0 of volume 0
     And Validate snapshot 0 is in volume 0 snapshot list
-    # The timeout for validating the snapshot checksum is set to 1200 seconds 
-    # because this test involves writing 30 GB of data to the volume. 
-    # Based on observations on AWS, generating the snapshot checksum 
+    # Longhorn creates a snapshot A (data size 30 GiB) without a checksum during the first rebuild.
+    # After creating snapshot 0 for volume 0, the snapshot A must be purged.
+    # Once purged, snapshot 0 for volume 0 will generate a new checksum.
+    And Purge volume 0 snapshot
+    # Since this test involves writing 30 GB of data to the volume.
+    # Based on observations on AWS, generating the snapshot checksum
     # in such cases can take up to approximately 18 minutes. 
-    # If needed, this value can be adjusted further based on future test results or requirements.
-    And Validate snapshot 0 checksum of volume 0 is calculated within 1200 seconds
+    # Make sure to set RETRY_COUNT to a sufficiently large value
+    # to wait until the checksum is calculated
+    And Wait for volume 0 snapshot 0 checksum to be calculated
     And Power off node 1 for 4 mins
 
     Then Wait for longhorn ready
-    And Wait until volume 0 replica rebuilding started on node 1
     ${2nd_rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 1
     And Wait for volume 0 healthy
     ${status}=    Evaluate    ${2nd_rebuild_time} <= ${rebuild_time}
     Run Keyword If    not ${status}
-    ...    Log    The 2nd replica rebuilding time ${2nd_rebuild_time}s > 1st ${rebuild_time}s    WARN
+    ...    Fail    The 2nd replica rebuilding time ${2nd_rebuild_time}s > 1st ${rebuild_time}s

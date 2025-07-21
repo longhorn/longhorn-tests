@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    negative    cluster
+Test Tags    cluster    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -21,7 +21,6 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Restart Cluster While Workload Heavy Writing
-    [Tags]    cluster
     Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
@@ -82,7 +81,6 @@ Restart Cluster While Workload Heavy Writing
     END
 
 Check If Nodes Are Under Memory Pressure After Cluster Restart
-    [Tags]    cluster
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass nfs-4-2 with    nfsOptions=vers=4.2,noresvport,timeo=450,retrans=8    dataEngine=${DATA_ENGINE}
@@ -125,7 +123,6 @@ Check If Nodes Are Under Memory Pressure After Cluster Restart
     END
 
 Scale Down Workloads Before Restarting Cluster
-    [Tags]    cluster
     [Documentation]    https://github.com/longhorn/longhorn/issues/7258
     ...                1. Create some deployments
     ...                2. Scale down the deployments without waiting for the volumes completedly detached

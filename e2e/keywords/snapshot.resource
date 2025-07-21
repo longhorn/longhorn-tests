@@ -79,23 +79,25 @@ Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is skipped for 
         Sleep    1
     END
 
-Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is calculated within ${timeout} seconds
+Wait for volume ${volume_id} snapshot ${snapshot_id} checksum to be calculated
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${checksum} =    Set Variable    ${EMPTY}
-
-    FOR    ${i}    IN RANGE    ${timeout}
-        ${checksum} =    get_checksum    ${volume_name}    ${snapshot_id}
-        Log To Console    Attempt ${i}: Snapshot ${snapshot_id} checksum = '${checksum}'
-        Run Keyword If    '${checksum}' != ''    Exit For Loop
-        Sleep    1
-    END
-
-    Should Not Be Empty    ${checksum}    FAIL: Snapshot ${snapshot_id} checksum was not calculated within ${timeout} seconds.
+    wait_for_snapshot_checksum_to_be_created    ${volume_name}    ${snapshot_id}
 
 Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should be created
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
     ${longhorn_snapshot_name} =    get_longhorn_snapshot_name_associated_with_csi_volume_snapshot    ${csi_volume_snapshot_name}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
-    ${longhorn_snapshot} =    get_snapshot_by_name    ${volume_name}    ${longhorn_snapshot_name}
-    Should Not Be Equal    ${longhorn_snapshot}    ${None}
+    wait_for_snapshot_to_be_created    ${volume_name}    ${longhorn_snapshot_name}
+
+Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should be deleted
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_snapshot_to_be_deleted    ${volume_name}    ${longhorn_snapshot_name}
+
+Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should still exist
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_snapshot_to_be_created    ${volume_name}    ${longhorn_snapshot_name}

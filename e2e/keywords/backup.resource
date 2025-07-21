@@ -16,6 +16,10 @@ Create backup ${backup_id} for ${workload_kind} ${workload_id} volume
     ${volume_name}=    get_workload_volume_name    ${workload_name}
     create_backup  ${volume_name}  ${backup_id}
 
+Create error backup for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_error_backup    ${volume_name}
+
 Verify backup list contains errors for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     verify_errors    ${volume_name}
@@ -62,3 +66,22 @@ Volume ${volume_id} backup ${backup_id} should be able to create
 Check snapshot for backup ${backup_id} of volume ${volume_id} exists ${exists}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_snapshot_exists_for_backup    ${volume_name}    ${backup_id}    ${exists}
+
+Wait for backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} to be created
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
+    ${longhorn_snapshot_name} =    get_longhorn_snapshot_name_associated_with_csi_volume_snapshot    ${csi_volume_snapshot_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_snapshot_backup_to_be_created    ${volume_name}    ${longhorn_snapshot_name}
+
+Wait for backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} to be deleted
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_snapshot_backup_to_be_deleted    ${volume_name}    ${longhorn_snapshot_name}
+
+Backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should still exist
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_snapshot_backup_to_be_created    ${volume_name}    ${longhorn_snapshot_name}
