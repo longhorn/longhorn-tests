@@ -11,14 +11,22 @@ Resource    ../keywords/persistentvolume.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/backup_backing_image.resource
+Resource    ../keywords/system_backup.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/longhorn.resource
 
 Test Setup    Set up test environment
-Test Teardown    Cleanup test resources
+Test Teardown    Cleanup test resources without corrupting remote backupstore
 
 *** Keywords ***
+# Reset backup target from remote AWS S3 to local minio backup store before cleaning up resources
+# to avoid deleting the existing backupa on AWS S3
+Cleanup test resources without corrupting remote backupstore
+    Set backupstore
+    Cleanup test resources
+
 Snapshot PV PVC could not be created on DR volume 1
     Create snapshot 0 of volume 1 will fail
     Create persistentvolume for volume 1 will fail
@@ -142,3 +150,19 @@ Test Cleanup Snapshot With The Global Setting After Backup Completed
     And Create backup 1 for volume 0
     And Check snapshot for backup 1 of volume 0 exists False
     And Set setting auto-cleanup-snapshot-after-on-demand-backup-completed to false
+
+Test Backupstore With Existing Backups
+    [Documentation]    https://github.com/longhorn/longhorn/issues/11337
+    Given Reset backupstore
+    When Set backupstore url to s3://longhorn-test-backupstore@us-east-1/
+    And Set backupstore secret to host-provider-cred-secret
+    And Set backupstore poll interval to 30 seconds
+    Then Wait for backupstore ready
+    # the existing backup in the backup store is called test-backup
+    And Wait for backup test-backup ready
+    # backup backing image name will change every time it's synced by the remote backup store
+    # it's impossible to validate it by a given name
+    # https://github.com/longhorn/longhorn/issues/11355
+    And Wait for backing image backup for backing image bi ready
+    # the existing system backup in the backup store is called system-backup
+    And Wait for system backup system-backup ready
