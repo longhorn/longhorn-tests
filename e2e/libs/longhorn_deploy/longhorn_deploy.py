@@ -42,6 +42,7 @@ class LonghornDeploy(Base):
         self.longhorn.create_longhorn_namespace()
         self.longhorn.install_backupstores()
         self.longhorn.create_registry_secret()
+        self.longhorn.create_aws_secret()
         installed = self.longhorn.install(install_stable_version)
         if not installed:
             logging(f"Installing Longhorn failed")

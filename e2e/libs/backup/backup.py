@@ -83,6 +83,15 @@ class Backup(Base):
     def wait_for_snapshot_backup_to_be_deleted(self, volume_name, snapshot_name):
         return self.backup.wait_for_snapshot_backup_to_be_deleted(volume_name, snapshot_name)
 
+    def wait_for_backup_ready(self, backup_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for backup {backup_name} ready ... ({i})")
+            backup = self.backup.get_by_name(backup_name)
+            if backup and backup['status']['state'] == "Completed":
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for backup {backup_name} ready"
+
     def delete(self, volume_name, backup_id):
         return NotImplemented
 
