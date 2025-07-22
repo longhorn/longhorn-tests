@@ -20,14 +20,14 @@ Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Keywords ***
-Delete instance-manager of volume ${volume_id} and wait for recover
-    When Delete instance-manager of volume ${volume_id}
+Delete ${engine_type} instance manager of volume ${volume_id} and wait for recover
+    When Delete ${engine_type} instance manager of volume ${volume_id}
     And Wait for volume ${volume_id} degraded
     And Wait for volume ${volume_id} healthy
     And Check volume ${volume_id} data is intact
 
-Delete instance-manager of deployment ${deployment_id} volume and wait for recover
-    When Delete instance-manager of deployment ${deployment_id} volume
+Delete ${engine_type} instance manager of deployment ${deployment_id} volume and wait for recover
+    When Delete ${engine_type} instance manager of deployment ${deployment_id} volume
     And Wait for volume of deployment ${deployment_id} attached and degraded
     And Wait for volume of deployment ${deployment_id} healthy
     And Wait for deployment ${deployment_id} pods stable
@@ -105,11 +105,11 @@ Test Longhorn Volume Recovery
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
-    Then Delete instance-manager of volume 0 and wait for recover
+    Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
 
     When Delete volume 0 replica on replica node
     And Wait until volume 0 replica rebuilding started on replica node
-    Then Delete instance-manager of volume 0 and wait for recover
+    Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
 
 Test Longhorn Backing Image Volume Recovery
     [Documentation]    -- Manual test plan --
@@ -129,11 +129,11 @@ Test Longhorn Backing Image Volume Recovery
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
-    Then Delete instance-manager of volume 0 and wait for recover
+    Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
 
     When Delete volume 0 replica on replica node
     And Wait until volume 0 replica rebuilding started on replica node
-    Then Delete instance-manager of volume 0 and wait for recover
+    Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
 
     When Delete backing image managers and wait for recreation
     Then Wait backing image managers running
@@ -156,11 +156,11 @@ Test Longhorn Dynamic Provisioned RWX Volume Recovery
         And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
         And Create deployment 0 with persistentvolumeclaim 0
         And Write 2048 MB data to file data.txt in deployment 0
-        Then Delete instance-manager of deployment 0 volume and wait for recover
+        Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
         When Delete replica of deployment 0 volume on replica node
         And Wait until volume of deployment 0 replica rebuilding started on replica node
-        Then Delete instance-manager of deployment 0 volume and wait for recover
+        Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
         When Delete sharemanager pod of deployment 0 and wait for recreation
         And Wait for sharemanager pod of deployment 0 running
@@ -184,8 +184,8 @@ Test Longhorn Dynamic Provisioned RWO Volume Recovery
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 2048 MB data to file data.txt in deployment 0
-    Then Delete instance-manager of deployment 0 volume and wait for recover
+    Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
     When Delete replica of deployment 0 volume on replica node
     And Wait until volume of deployment 0 replica rebuilding started on replica node
-    Then Delete instance-manager of deployment 0 volume and wait for recover
+    Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
