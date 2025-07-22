@@ -135,7 +135,7 @@ V1 Replica Rebuilding
     ...                - the rebuilding progress in UI page looks good.
     ...                - the data content is correct after rebuilding.
     ...                - volume r/w works fine.
-    When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v1
+    Given Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v1
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
 
@@ -144,16 +144,18 @@ V1 Replica Rebuilding
     And Disable node 1 scheduling
     And Disable node 1 default disk
 
-    And Crash volume 0 replica process on node 1
+    When Crash volume 0 replica process on node 1
     Then Wait volume 0 replica on node 1 stopped
     And Wait for volume 0 degraded
 
-    And Enable node 1 default disk
+    When Enable node 1 default disk
     Then Check volume 0 replica on node 1 kept in stopped
     And Check volume 0 kept in degraded
 
-    And Enable node 1 scheduling
-    Then Wait until volume 0 replica rebuilding started on node 1
+    When Enable node 1 scheduling
+    # it isn’t guaranteed to catch the moment when the replica is rebuilding.
+    # a replica could become healthy directly without showing the rebuilding progress
+    Then Wait until volume 0 replica rebuilding completed on node 1
     And Wait for volume 0 healthy
     And Check volume 0 crashed replica reused on node 1
 

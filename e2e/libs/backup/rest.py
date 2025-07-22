@@ -54,6 +54,19 @@ class Rest(Base):
 
         return backup
 
+    def create_error_backup(self, volume_name):
+        # create backup from a non-existing snapshot
+        snapshot_name = "non-existing"
+        volume = self.volume.get(volume_name)
+        volume.snapshotBackup(name=snapshot_name)
+
+        self.wait_for_backup_error(volume_name)
+
+        backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot_name)
+        logging(f"Created error backup {backup.name} from snapshot {snapshot_name}")
+
+        return backup
+
     def get(self, backup_id, volume_name):
         backups = self.list(volume_name)
         for backup in backups:
@@ -145,7 +158,26 @@ class Rest(Base):
             if completed:
                 break
             time.sleep(self.retry_interval)
-        assert completed, f"Expected from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
+        assert completed, f"Expected backup from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
+
+    def wait_for_backup_error(self, volume_name):
+        error = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for backup from volume {volume_name} error ... ({i})")
+            volume = self.volume.get(volume_name)
+            for backup in volume.backupStatus:
+                # when creating a backup from a non-existing snapshot
+                # the snapshot field in this backup is empty
+                # instead of the non-existing snapshot name
+                if not backup.snapshot and backup.state == "Error":
+                    error = True
+                    break
+                else:
+                    continue
+            if error:
+                break
+            time.sleep(self.retry_interval)
+        assert error, f"Expected backup from volume {volume_name} error, but it's {volume}"
 
     def list(self, volume_name):
         if not volume_name:

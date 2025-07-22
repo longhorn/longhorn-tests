@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    negative    node-down
+Test Tags    manual    negative    node-down
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

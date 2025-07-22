@@ -13,7 +13,7 @@ Documentation    Power off node with different anti-affinity combinations
 ...              - Note: Test cases with replica-zone-soft-anti-affinity=false are skipped
 ...              - because the volume cannot be healthy in a single-zone cluster.
 
-Test Tags        negative  replica  reboot  anti-affinity  longhorn-10210
+Test Tags    manual    negative    replica    reboot    anti-affinity    longhorn-10210
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

@@ -36,6 +36,9 @@ class snapshot_keywords:
     def get_checksum(self, volume_name, snapshot_id):
         return self.snapshot.get_checksum(volume_name, snapshot_id)
 
+    def wait_for_snapshot_checksum_to_be_created(self, volume_name, snapshot_id):
+        return self.snapshot.wait_for_snapshot_checksum_to_be_created(volume_name, snapshot_id)
+
     def get_snapshot_by_name(self, volume_name, snapshot_name):
         return self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
 
