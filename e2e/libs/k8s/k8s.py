@@ -10,8 +10,8 @@ from robot.libraries.BuiltIn import BuiltIn
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
-from utility.utility import subprocess_exec_cmd_with_timeout
 from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
+from utility.constant import DRAIN_TIMEOUT
 
 from node import Node
 
@@ -47,7 +47,7 @@ def get_longhorn_node_condition_status(node_name, type):
     exec_cmd = [
         "kubectl", "-n", "longhorn-system", "get",
         "nodes.longhorn.io", node_name, "-o", jsonpath]
-    return subprocess_exec_cmd(exec_cmd).decode('utf-8')
+    return subprocess_exec_cmd(exec_cmd)
 
 def delete_node(node_name):
     exec_cmd = ["kubectl", "delete", "node", node_name]
@@ -67,9 +67,9 @@ def drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--ignore-daemonsets", "--delete-emptydir-data"]
     res = subprocess_exec_cmd(exec_cmd)
 
-def force_drain_node(node_name, timeout):
+def force_drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--force", "--ignore-daemonsets", "--delete-emptydir-data"]
-    res = subprocess_exec_cmd_with_timeout(exec_cmd, timeout)
+    res = subprocess_exec_cmd(exec_cmd, timeout=DRAIN_TIMEOUT)
 
 def cordon_node(node_name):
     exec_cmd = ["kubectl", "cordon", node_name]
@@ -134,7 +134,7 @@ def get_instance_manager_on_node(node_name):
 def check_instance_manager_pdb_not_exist(instance_manager):
     exec_cmd = ["kubectl", "get", "pdb", "-n", "longhorn-system"]
     res = subprocess_exec_cmd(exec_cmd)
-    assert instance_manager not in res.decode('utf-8')
+    assert instance_manager not in res
 
 def wait_namespaced_job_complete(job_label, namespace):
     retry_count, retry_interval = get_retry_count_and_interval()

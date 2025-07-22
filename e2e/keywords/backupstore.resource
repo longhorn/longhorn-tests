@@ -16,5 +16,14 @@ Delete file ${file_name} in the backups folder of volume ${volume_id}
 Create dummy backup from ${filename}
     create_dummy_backup_from_file    ${filename}
 
-Set backupstore poll intervel to ${poll_interval} seconds
+Set backupstore poll interval to ${poll_interval} seconds
     set_backupstore_poll_interval    ${poll_interval}
+
+Set backupstore url to ${url}
+    set_backupstore_url    ${url}
+
+Set backupstore secret to ${secret}
+    set_backupstore_secret    ${secret}
+
+Wait for backupstore ready
+    wait_for_backupstore_available
