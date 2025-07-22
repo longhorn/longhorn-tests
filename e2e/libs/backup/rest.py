@@ -102,6 +102,9 @@ class Rest(Base):
                 return backup
         return None
 
+    def get_by_name(self, backup_name):
+        return CRD().get_by_name(backup_name)
+
     def wait_for_snapshot_backup_to_be_created(self, volume_name, snapshot_name):
         """
         look for a backup from snapshot on the backupstore

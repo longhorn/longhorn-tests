@@ -69,8 +69,7 @@ class k8s_keywords:
         drain_node(node_name)
 
     def force_drain_node(self, node_name):
-        timeout = int(BuiltIn().get_variable_value("${DRAIN_TIMEOUT}", default="90"))
-        force_drain_node(node_name, timeout)
+        force_drain_node(node_name)
 
     def uncordon_node(self, node_name):
         uncordon_node(node_name)
