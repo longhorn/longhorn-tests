@@ -1,6 +1,6 @@
 install_csi_snapshotter(){
   CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-  CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
+  CSI_SNAPSHOTTER_REPO_BRANCH="v8.3.0"
   CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
 
   git clone --single-branch \
