@@ -79,16 +79,16 @@ Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
-Delete instance-manager of volume ${volume_id}
+Delete ${engine_type} instance manager of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${instance_manager} =     get_volume_instance_manager    ${volume_name}
-    delete_pod    ${instance_manager}    longhorn-system
+    ${node_name} =    get_volume_node    ${volume_name}
+    delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
-Delete instance-manager of deployment ${deployment_id} volume
+Delete ${engine_type} instance manager of deployment ${deployment_id} volume
     ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
-    ${instance_manager} =     get_volume_instance_manager    ${volume_name}
-    delete_pod    ${instance_manager}    longhorn-system
+    ${node_name} =    get_volume_node    ${volume_name}
+    delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
 Wait for Longhorn components all running
     wait_for_namespace_pods_running    longhorn-system
