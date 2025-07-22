@@ -1,6 +1,9 @@
+import json
+
 from kubernetes import client
 from backup.base import Base
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
 
 class CRD(Base):
 
@@ -18,6 +21,18 @@ class CRD(Base):
 
     def get_by_snapshot(self, volume_name, snapshot_name):
         return NotImplemented
+
+    # directly get backup CRD by its name
+    # which is impossible through REST API
+    # since a backup is bound to a backupvolume (/v1/backup/vol-name) or
+    # a volume (/v1/volumes/vol-name) in REST API
+    def get_by_name(self, backup_name):
+        cmd = f"kubectl get backups {backup_name} -n longhorn-system -ojson"
+        try:
+            return json.loads(subprocess_exec_cmd(cmd))
+        except Exception as e:
+            logging(f"Failed to get backup {backup_name}: {e}")
+            return None
 
     def get_backup_volume(self, volume_name):
         return NotImplemented

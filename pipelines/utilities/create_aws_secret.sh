@@ -8,4 +8,5 @@ create_aws_secret(){
   yq e -i '.data.AWS_DEFAULT_REGION |= "'${AWS_DEFAULT_REGION_BASE64}'"' "pipelines/templates/host_provider_cred_secrets.yml"
 
   kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml"
+  kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml" -n longhorn-system
 }

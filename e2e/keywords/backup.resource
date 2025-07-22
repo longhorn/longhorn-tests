@@ -80,6 +80,9 @@ Wait for backup associated with csi volume snapshot ${csi_volume_snapshot_id} of
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_snapshot_backup_to_be_deleted    ${volume_name}    ${longhorn_snapshot_name}
 
+Wait for backup ${backup_name} ready
+    wait_for_backup_ready    ${backup_name}
+
 Backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should still exist
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

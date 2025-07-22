@@ -10,4 +10,5 @@ create_harvester_secret(){
   yq e -i '.data.LAB_CLUSTER_ID |= "'${LAB_CLUSTER_ID_BASE64}'"' "pipelines/templates/host_provider_cred_secrets.yml"
 
   kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml"
+  kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml" -n longhorn-system
 }

@@ -1,4 +1,5 @@
 from system_backup.base import Base
+from system_backup.crd import CRD
 from utility.utility import logging
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
@@ -62,6 +63,9 @@ class Rest(Base):
             return
 
         assert False, f"Deleting system backup {backup_name} failed: {system_backups}"
+
+    def wait_for_system_backup_ready(self, backup_name):
+        return CRD().wait_for_system_backup_ready(backup_name)
 
     def cleanup_system_backups(self):
         system_backups = get_longhorn_client().list_system_backup()
