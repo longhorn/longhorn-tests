@@ -28,6 +28,8 @@ main(){
     apply_kubectl_retry
   fi
 
+  create_longhorn_namespace
+
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
@@ -40,7 +42,6 @@ main(){
   set -x
   create_instance_mapping_configmap
 
-  create_longhorn_namespace
   install_backupstores
   setup_azurite_backup_store
   install_csi_snapshotter

@@ -8,9 +8,6 @@ Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/node_keywords.py
 
-*** Variables ***
-${DRAIN_TIMEOUT}    90
-
 *** Keywords ***
 Stop volume node kubelet of ${workload_kind} ${workload_id} for ${duration} seconds
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

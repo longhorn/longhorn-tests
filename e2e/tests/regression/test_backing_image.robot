@@ -7,6 +7,7 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backing_image.resource
+Resource    ../keywords/backup_backing_image.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 
@@ -48,3 +49,8 @@ Test Uninstall When Backing Image Exists
         Then Check all Longhorn CRD removed
         And Install Longhorn
     END
+
+Test Backup Backing Image
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
+    When Create backup backing image bi-backup for backing image bi
+    Then Wait for backing image backup for backing image bi ready

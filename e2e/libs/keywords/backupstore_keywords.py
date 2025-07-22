@@ -51,3 +51,12 @@ class backupstore_keywords:
 
     def set_backupstore_poll_interval(self, poll_interval):
         self.backupstore.set_backupstore_poll_interval(poll_interval)
+
+    def set_backupstore_url(self, url):
+        self.backupstore.set_backupstore_url(url)
+
+    def set_backupstore_secret(self, secret):
+        self.backupstore.set_backupstore_secret(secret)
+
+    def wait_for_backupstore_available(self):
+        self.backupstore.wait_for_backupstore_available()
