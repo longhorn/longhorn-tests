@@ -26,7 +26,7 @@ Crash Instance Manager While Workload Pod Is Starting
     And Write 100 MB data to file data.txt in deployment 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Delete instance-manager of deployment 0 volume
+        When Delete v1 instance manager of deployment 0 volume
         # after deleting instance manager, the workload pod will be recrated as well
         And Wait for deployment 0 pods stable
         And Wait for volume of deployment 0 healthy

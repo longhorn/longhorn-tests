@@ -174,7 +174,7 @@ V2 Volume Should Cleanup Resources When Instance Manager Is Deleted
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Cordon node 0
-        And Delete instance-manager of volume 0
+        And Delete v2 instance manager of volume 0
 
         Then Assert DM device for volume 0 not exist on node 0
         And Assert DM device for volume 1 not exist on node 0
