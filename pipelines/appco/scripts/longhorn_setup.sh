@@ -4,6 +4,7 @@ set -x
 
 source pipelines/utilities/run_longhorn_test.sh
 source pipelines/utilities/kubeconfig.sh
+source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/coredns.sh
 source pipelines/utilities/create_aws_secret.sh
@@ -28,25 +29,6 @@ apply_selinux_workaround(){
 
 enable_mtls(){
   kubectl apply -f "${TF_VAR_tf_workspace}/templates/longhorn-grpc-tls.yml" -n ${LONGHORN_NAMESPACE}
-}
-
-
-install_csi_snapshotter_crds(){
-    CSI_SNAPSHOTTER_REPO_URL="https://github.com/longhorn/csi-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
-
-    [[ "${LONGHORN_REPO_URI}" =~ https://([^/]+)/([^/]+)/([^/.]+)(.git)? ]]
-    wget "https://raw.githubusercontent.com/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/${LONGHORN_REPO_BRANCH}/deploy/longhorn-images.txt" -O "/tmp/longhorn-images.txt"
-    IFS=: read -ra IMAGE_TAG_PAIR <<< $(grep csi-snapshotter /tmp/longhorn-images.txt)
-    CSI_SNAPSHOTTER_REPO_BRANCH="${IMAGE_TAG_PAIR[1]}"
-
-    git clone --single-branch \
-              --branch "${CSI_SNAPSHOTTER_REPO_BRANCH}" \
-            "${CSI_SNAPSHOTTER_REPO_URL}" \
-            "${CSI_SNAPSHOTTER_REPO_DIR}"
-
-    kubectl apply -f ${CSI_SNAPSHOTTER_REPO_DIR}/client/config/crd \
-                  -f ${CSI_SNAPSHOTTER_REPO_DIR}/deploy/kubernetes/snapshot-controller
 }
 
 
@@ -95,7 +77,7 @@ main(){
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi
-  install_csi_snapshotter_crds
+  install_csi_snapshotter
   if [[ "${TF_VAR_enable_mtls}" == true ]]; then
     enable_mtls
   fi
