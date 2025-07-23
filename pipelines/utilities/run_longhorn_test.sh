@@ -75,6 +75,10 @@ run_longhorn_test(){
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn test pod start timeout"; exit 1 ; fi
   done
 
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    unset_kubectl_retry
+  fi
+
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
     kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
@@ -240,6 +244,10 @@ run_longhorn_upgrade_test(){
     echo "waiting upgrade test pod to be in running state ... rechecking in 10s"
     sleep 10s
   done
+
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    unset_kubectl_retry
+  fi
 
   # wait upgrade test to complete
   while [[ -n "`kubectl get pod ${LONGHORN_UPGRADE_TEST_POD_NAME} -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
