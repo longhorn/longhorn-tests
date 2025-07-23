@@ -17,6 +17,10 @@ Library     DateTime
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
+*** Variables ***
+${NUM_VOLUMES}    100
+${NUM_VOLUMES_DETACH}    20
+
 *** Keywords ***
 Get test start time
     ${test_start_time}=    Get Current Date    result_format=datetime
@@ -24,9 +28,6 @@ Get test start time
     Set Test Variable    ${test_start_time}
 
 Perform recurring job workflow under load
-    ${NUM_VOLUMES} =    Set Variable    100
-    ${NUM_VOLUMES_DETACH} =    Set Variable    20
-    
     When Get test start time
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    
     FOR    ${i}    IN RANGE    ${NUM_VOLUMES}
