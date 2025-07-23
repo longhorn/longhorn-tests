@@ -4,6 +4,7 @@ set -x
 
 export LONGHORN_REPO_BRANCH="${LONGHORN_VERSION}"
 
+source pipelines/utilities/kubectl_retry.sh
 source pipelines/utilities/run_longhorn_test.sh
 source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/install_csi_snapshotter.sh
@@ -72,6 +73,10 @@ create_appco_secret(){
 main(){
   set_kubeconfig
 
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    apply_kubectl_retry
+  fi
+
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
@@ -94,17 +99,10 @@ main(){
 
   scale_up_coredns
 
-  # https://github.com/rancherlabs/harvester-access-lab/issues/17
-  if [ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]; then
-    echo "LONGHORN_TEST_CLOUDPROVIDER is harvester. Sleeping for 300 seconds..."
-    sleep 300s
-  fi
-
   # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
     [[ "${DISTRO}" != "sle-micro" ]]; then
-    #longhornctl_check
-    sleep 5s
+    longhornctl_check
   fi
 
   create_registry_secret

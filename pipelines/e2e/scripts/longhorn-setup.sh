@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/kubeconfig.sh
+source pipelines/utilities/kubectl_retry.sh
 source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
@@ -22,6 +23,10 @@ LONGHORN_INSTALL_METHOD="manifest"
 
 main(){
   set_kubeconfig
+
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    apply_kubectl_retry
+  fi
 
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
