@@ -15,6 +15,9 @@ Resource    ../keywords/backupstore.resource
 Resource    ../keywords/persistentvolume.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/setting.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/deployment.resource
 
 
 Test Setup    Set up test environment
@@ -126,7 +129,7 @@ Sync Up With Backup Target During DR Volume Activation
     Then Check pod 0 file version-info.txt has checksum d51dc42f616b67126fd2aa1e1f43385b
 
 Test DR Volume Live Upgrade And Rebuild
-    [Tags]    robot:skip
+    [Tags]    manual    negative    dr-volume-live-upgrade-and-rebuild
     [Documentation]    - Test DR volume live upgrade and rebuild
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/1279
@@ -149,4 +152,99 @@ Test DR Volume Live Upgrade And Rebuild
     ...                - Launch a pod for the 2nd activated volume, and verify the restored data is correct.
     ...                - Crash one replica for the 2nd activated volume.
     ...                - Wait for the rebuild complete, then verify the volume still works fine by reading/writing more data.
-    Skip
+
+    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Fail    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    # Precondition: Set up environment and install Longhorn
+    Given Set setting deleting-confirmation-flag to true
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+
+    When Install Longhorn stable version
+    And Set backupstore
+    And Enable v2 data engine and add block disks
+
+    # Scenario 1: Create initial deployment and backups
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test    storage_size=1GiB
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    When Write 512 MB data to file data0 in deployment 0
+    Then Record file data0 checksum in deployment 0 as checksum 0
+
+    When Create backup 0 for deployment 0 volume
+    Then Verify backup list contains backup 0 of deployment 0 volume
+    And Create DR volume 1 from backup 0 of deployment 0 volume
+    And Create DR volume 2 from backup 0 of deployment 0 volume
+
+    # Scenario 2: Volume expansion and data restoration
+    Given Scale deployment 0 to 0
+    And Wait for volume of deployment 0 detached
+    When Expand deployment 0 volume to 3 GiB
+    Then Wait for deployment 0 volume size expanded
+    When Scale deployment 0 to 1
+    Then Wait for volume of deployment 0 attached
+    And Wait for volume of deployment 0 healthy
+    When Write 1024 MB data to file data1 in deployment 0
+    Then Record file data1 checksum in deployment 0 as checksum 1
+
+    When Create backup 1 for deployment 0 volume
+    And Wait for volume 1 restoration from backup 1 of deployment 0 volume completed
+    And Wait for volume 2 restoration from backup 1 of deployment 0 volume completed
+
+    # Scenario 3: Upgrade Longhorn and crash recovery
+    When Upgrade Longhorn to custom version
+    And Delete volume 1 replica on node 1
+    Then Wait for volume 1 degraded
+    And Wait until volume 1 replica rebuilding completed on node 1
+    And Wait for volume 1 healthy
+
+    When Write 128 MB data to file data2 in deployment 0
+    Then Record file data2 checksum in deployment 0 as checksum 2
+
+    When Create backup 2 for deployment 0 volume
+    And Wait for volume 1 restoration from backup 2 of deployment 0 volume completed
+    And Wait for volume 2 restoration from backup 2 of deployment 0 volume completed
+
+    # Scenario 4: Volume engines upgrade and data verification
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
+    When Upgrade volume 1 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    And Activate DR volume 1
+    Then Wait for volume 1 detached
+    And Create persistentvolume for volume 1
+    And Create persistentvolumeclaim for volume 1
+    And Create pod 1 using volume 1
+    Then Wait for pod 1 running
+    And Check pod 1 file data0 checksum matches checksum 0
+    And Check pod 1 file data1 checksum matches checksum 1
+    And Check pod 1 file data2 checksum matches checksum 2
+
+    When Upgrade volume deployment 0 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    And Upgrade volume 2 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+
+    When Delete volume 2 replica on node 2
+    Then Wait for volume 2 degraded
+    And Wait until volume 2 replica rebuilding completed on node 2
+    And Wait for volume 2 healthy
+
+    When Delete volume 2 replica on node 2
+    And Activate DR volume 2
+    Then Wait for volume 2 detached
+    And Create persistentvolume for volume 2
+    And Create persistentvolumeclaim for volume 2
+    And Create pod 2 using volume 2
+    Then Wait for pod 2 running
+    And Check pod 2 file data0 checksum matches checksum 0
+    And Check pod 2 file data1 checksum matches checksum 1
+    And Check pod 2 file data2 checksum matches checksum 2
+
+    When Delete volume 2 replica on volume node
+    Then Wait until volume 2 replicas rebuilding completed
+    And Wait for volume 2 healthy
+    And Check pod 2 file data0 checksum matches checksum 0
+    And Check pod 2 file data1 checksum matches checksum 1
+    And Check pod 2 file data2 checksum matches checksum 2
+    And Check pod 2 works
