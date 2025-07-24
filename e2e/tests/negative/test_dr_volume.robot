@@ -124,3 +124,29 @@ Sync Up With Backup Target During DR Volume Activation
     # the content of version-info.txt in backup 2 is version-2
     # and the checksum is d51dc42f616b67126fd2aa1e1f43385b
     Then Check pod 0 file version-info.txt has checksum d51dc42f616b67126fd2aa1e1f43385b
+
+Test DR Volume Live Upgrade And Rebuild
+    [Tags]    robot:skip
+    [Documentation]    - Test DR volume live upgrade and rebuild
+    ...                Related Issue:
+    ...                https://github.com/longhorn/longhorn/issues/1279
+    ...                -- Manual test plan -- 
+    ...                - Launch Longhorn at the previous version and Launch a Pod with a Longhorn volume.
+    ...                - Write 1st data to the volume, take the 1st backup, and create two DR volumes from the 1st backup.
+    ...                - Shutdown the Pod and expand the original volume and wait for the expansion complete.
+    ...                - Write 2nd data that exceeds the original volume size, then take the 2nd backup.
+    ...                - Trigger incremental restore for the DR volumes and wait for the restoration to complete.
+    ...                - Upgrade Longhorn to the latest version.
+    ...                - Crash one replica for the first DR volume and verify the rebuild process and state transition from Degraded to Healthy.
+    ...                - Write 3rd data to the original volume, take the 3rd backup, and trigger incremental restore for the DR volumes.
+    ...                - Do live upgrade for the 1st DR volume. This live upgrade call should success
+    ...                - Activate the 1st DR volume and launch a Pod for the activated DR volume, then verify the restored data is correct.
+    ...                - Do live upgrade for the original volume and the 2nd DR volume
+    ...                - Crash one replica for the 2nd DR volume and verify the rebuild process and state transition from Degraded to Healthy.
+    ...                - Crash one random replica for the 2nd DR volume and wait for the restore & rebuild complete.
+    ...                - Delete one replica for the 2nd DR volume, then activate the 2nd DR volume before the rebuild complete.
+    ...                - Verify the DR volume will be auto detached after the rebuild complete.
+    ...                - Launch a pod for the 2nd activated volume, and verify the restored data is correct.
+    ...                - Crash one replica for the 2nd activated volume.
+    ...                - Wait for the rebuild complete, then verify the volume still works fine by reading/writing more data.
+    Skip
