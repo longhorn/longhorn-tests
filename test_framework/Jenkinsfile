@@ -99,6 +99,10 @@ node {
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration coce: $REGISTRATION_CODE_ID"
 
+                if (RUN_V2_TEST) {
+                    CUSTOM_TEST_OPTIONS += " -m v2_volume_test"
+                }
+
                 sh "test_framework/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
