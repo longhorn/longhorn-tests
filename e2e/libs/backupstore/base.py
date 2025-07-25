@@ -110,6 +110,18 @@ class Base(ABC):
                                 credential_secret=bt.credentialSecret,
                                 poll_interval=poll_interval)
 
+    def wait_for_backupstore_available(self):
+        for i in range(self.retry_count):
+            logging(f"Waiting for default backupstore available ... ({i})")
+            try:
+                bt = get_longhorn_client().by_id_backupTarget(self.DEFAULT_BACKUPTARGET)
+                if bt.available:
+                    return
+            except Exception as e:
+                logging(f"Failed to get default backupstore: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for default backupstore available"
+
     def reset_backupstore(self):
         self.update_backupstore()
 
