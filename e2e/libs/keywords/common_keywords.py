@@ -4,6 +4,7 @@ from node_exec import NodeExec
 from utility.utility import convert_size_to_bytes
 from utility.utility import init_k8s_api_client
 from utility.utility import generate_name_with_suffix
+from utility.utility import pod_exec
 
 
 class common_keywords:
@@ -34,3 +35,6 @@ class common_keywords:
         if to_str:
             return str(convert_size_to_bytes(size))
         return convert_size_to_bytes(size)
+
+    def pod_exec(self, pod_name, namespace, cmd):
+        return pod_exec(pod_name, namespace, cmd)
