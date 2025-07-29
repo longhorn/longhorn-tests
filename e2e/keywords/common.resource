@@ -99,3 +99,10 @@ Cleanup test resources
     cleanup_k8s_node_zone
     cleanup_csi_volume_snapshots
     cleanup_csi_volume_snapshot_classes
+
+Execute command in pod
+    [Documentation]    Executes a command in a specified pod and returns the result.
+    [Arguments]    ${pod_name}    ${namespace}    ${command}
+    ${cmd} =    Set Variable    kubectl exec -n ${namespace} ${pod_name} -- sh -c "${command}"
+    ${result} =    Run    ${cmd}
+    [Return]    ${result}
