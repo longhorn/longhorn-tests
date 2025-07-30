@@ -297,6 +297,13 @@ Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes
         delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
     END
 
+Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes simultaneously
+    ${node_names} =    list_node_names_by_role    worker
+
+    FOR    ${node_name}    IN    @{node_names}
+        delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    wait=${False}
+    END
+
 Delete Longhorn ${workload_kind} ${workload_name} pod
     ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
     Log    ${pod_name}
