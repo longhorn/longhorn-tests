@@ -35,3 +35,20 @@ Wait for sharemanager pod of deployment ${deployment_id} running
     ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
     wait_for_share_manager_pod_running    ${volume_name}
+
+Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_id} is ${size}
+    ${size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+    ${expected_size_byte}=    Evaluate    ${size_byte} - (16 * 1024 * 1024)
+    ${expected_size_byte}=    Convert To String    ${expected_size_byte}
+
+    ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name}=    get_workload_volume_name    ${workload_name}
+    ${share_manager_pod}=    Set Variable    share-manager-${volume_name}
+    Wait Until Keyword Succeeds    ${RETRY_COUNT}    ${RETRY_INTERVAL}
+    ...    Check encrypted disk size in sharemanager pod    ${share_manager_pod}    ${volume_name}    ${expected_size_byte}
+
+Check encrypted disk size in sharemanager pod
+    [Arguments]    ${sharemanager_pod}    ${volume_name}    ${expected_size}
+    ${cmd}=    Set Variable    fdisk -l | grep /dev/mapper/${volume_name}
+    ${result}=    Execute command in pod    ${sharemanager_pod}    longhorn-system    ${cmd}
+    Should Contain    ${result}    ${expected_size}
