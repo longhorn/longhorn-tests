@@ -6,6 +6,7 @@ import random
 import yaml
 import signal
 import subprocess
+import shlex
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
@@ -98,15 +99,18 @@ def get_backupstore():
     return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
 
-def subprocess_exec_cmd(cmd):
-    res = subprocess.check_output(cmd)
+def subprocess_exec_cmd(cmd, input=None, timeout=None):
+    logging(f"Executing command {cmd}")
+    if isinstance(cmd, str):
+        res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True)
+    elif isinstance(cmd, list):
+        res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True)
+    else:
+        raise ValueError("Command must be a string or list")
+
     logging(f"Executed command {cmd} with result {res}")
     return res
 
-def subprocess_exec_cmd_with_timeout(cmd, timeout):
-    res = subprocess.check_output(cmd, timeout=timeout)
-    logging(f"Executed command {cmd} with timeout {timeout}s, result {res}")
-    return res
 
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()

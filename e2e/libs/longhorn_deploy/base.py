@@ -63,6 +63,16 @@ class Base(ABC):
             time.sleep(self.retry_count)
             assert False, "Creating registry secret failed"
 
+    def create_aws_secret(self):
+        command = "./pipelines/utilities/create_aws_secret.sh"
+        process = subprocess.Popen([command, "create_aws_secret"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Creating aws secret failed")
+            time.sleep(self.retry_count)
+            assert False, "Creating aws secret failed"
+
     def setup_longhorn_ui_nodeport(self):
         command = "./pipelines/utilities/longhorn_ui.sh"
         process = subprocess.Popen([command, "setup_longhorn_ui_nodeport"],

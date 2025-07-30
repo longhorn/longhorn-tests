@@ -30,6 +30,9 @@ class backup_keywords:
     def wait_for_snapshot_backup_to_be_deleted(self, volume_name, snapshot_name):
         return self.backup.wait_for_snapshot_backup_to_be_deleted(volume_name, snapshot_name)
 
+    def wait_for_backup_ready(self, backup_name):
+        return self.backup.wait_for_backup_ready(backup_name)
+
     def get_backup_name(self, backup_id, volume_name=None):
         return self.backup.get(backup_id, volume_name).name
 
