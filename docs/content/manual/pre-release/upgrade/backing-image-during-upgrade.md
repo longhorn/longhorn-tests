@@ -15,10 +15,9 @@ title: Test Backing Image during Longhorn upgrade
 7. Wait for system upgrade complete. Then verify:
     1. All old backing image manager and the related pod will be cleaned up automatically after the current downloading is complete. And the existing backing image files won't be removed.
     2. New default backing image manager will take over all backing image ownerships and show the info in the status map: 
-        1. For the small backing image, the new backing image manager will directly take over all ready files.
-        2. For the large backing image, the new backing image manager will take over the only ready file and mark all in-progress files as failed first. Then it will re-sync the files after the backoff window.  
-    3. All attached volumes still work fine without replica crash, and the content is correct in the volumes during/after the upgrade.
-    4. The last volume get attached successfully without replica crash, and the content is correct.
+    3. All backing image files are ready on each nodes.
+    4. All attached volumes still work fine without replica crash, and the content is correct in the volumes after the upgrade.
+    5. The last volume get attached successfully without replica crash, and the content is correct.
 8. Verify volumes and backing images can be deleted.
 
 ## System upgrade with incompatible backing image manager image
@@ -40,7 +39,7 @@ title: Test Backing Image during Longhorn upgrade
 3. Create and attach volumes with the backing image. Wait for all disk files of the backing image being ready.
 4. Run `kubectl -n longhorn system get pod -w` in a separate session.
 5. Upgrade Longhorn manager but with the backing image manager image unchanged. (Actually we can mock this upgrade by removing all longhorn manager pods simultaneously.)
-6. Check if all disk file status of the backing image becomes `unknown` then `ready` during the longhorn manager pods termination and restart. (May need to refresh the UI page after restart.)
+6. Check at latest one disk file status of the backing image becomes `unknown` then `ready` during the longhorn manager pods termination and restart. (May need to refresh the UI page after restart.)
 7. After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.
 8. Repeat step4 ~ step8 for 10 times.
 
@@ -51,7 +50,7 @@ https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
 https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
 https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 
 ```
-    
+
 #### The way to generate a longhorn-manager image with higher API version
 1. Download longhorn manager repo with command `git clone https://github.com/longhorn/longhorn-manager.git`.
 2. Increase the constant `CurrentBackingImageManagerAPIVersion` in `longhorn-manager/engineapi/backing_image_manager.go` by 1.

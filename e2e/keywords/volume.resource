@@ -93,6 +93,10 @@ Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
 
+Attach volume ${volume_id} without waiting for attachment
+    ${volume_name}=    Generate Name With Suffix    volume    ${volume_id}
+    attach_volume    ${volume_name}    wait_volume_attached=False
+
 Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${workload_volume_name} =    get_workload_volume_name    ${workload_name}
@@ -519,6 +523,10 @@ Upgrade volume ${volume_id} engine to compatible engine image
 Upgrade volume ${volume_id} engine to ${custom_engine_image}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
+    wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
+Verify volume ${volume_id} is using engine image ${custom_engine_image}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
 
 Upgrade v1 volumes engine to ${custom_engine_image}
