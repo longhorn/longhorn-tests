@@ -198,10 +198,6 @@ cni: "calico"
 disable-kube-proxy: false
 etcd-expose-metrics: false
 EOF
-    upgrade_strategy {
-      control_plane_concurrency = "10%"
-      worker_concurrency = "10%"
-    }
     etcd {
       snapshot_schedule_cron = "0 */5 * * *"
       snapshot_retention = 5
