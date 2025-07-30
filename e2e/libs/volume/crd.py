@@ -105,7 +105,7 @@ class CRD(Base):
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
-    def attach(self, volume_name, node_name, disable_frontend):
+    def attach(self, volume_name, node_name, disable_frontend, wait_volume_attached):
 
         migratable = self.get(volume_name)['spec']['migratable']
         type = "longhorn-api" if not migratable else "csi-attacher"
@@ -141,8 +141,9 @@ class CRD(Base):
             # https://github.com/longhorn/longhorn/issues/3715
             if e.reason != "Not Found":
                 Exception(f'exception for creating volumeattachments:', e)
-        self.wait_for_volume_state(volume_name, "attached")
-        self.wait_for_volume_status(volume_name, "frontendDisabled", disable_frontend)
+        if wait_volume_attached:
+            self.wait_for_volume_state(volume_name, "attached")
+            self.wait_for_volume_status(volume_name, "frontendDisabled", disable_frontend)
 
     def is_attached_to(self, volume_name, node_name):
         return Rest().is_attached_to(volume_name, node_name)

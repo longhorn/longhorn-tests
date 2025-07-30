@@ -58,6 +58,23 @@ class Rest(Base):
         for disk_id, status in bi.diskFileStatusMap.items():
             assert status.state == self.BACKING_IMAGE_STATE_READY, f"expect backing image on disk {disk_id} ready, but it's {status}"
 
+    def not_all_disk_file_status_are_ready(self, bi_name):
+        try:
+            self.all_disk_file_status_are_ready(bi_name)
+        except Exception:
+            return
+        assert False, f"Expected at least one disk file not ready for backing image '{bi_name}', but all are ready."
+
+    def wait_for_all_disk_file_status_are_ready(self, bi_name):
+        for i in range(self.retry_count):
+            try:
+                self.all_disk_file_status_are_ready(bi_name)
+                return
+            except Exception:
+                time.sleep(self.retry_interval)
+                continue
+        assert False, f"not all backingimages diks are ready"
+
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         bi = self.get(bi_name)
         disk_ids = list(bi.diskFileStatusMap.keys())
@@ -130,3 +147,7 @@ class Rest(Base):
     def list_backing_image_manager(self):
         # delegate it to CRD since it doesn't have a REST implementation
         return CRD().list_backing_image_manager()
+
+    def list_backing_image_data_source(self):
+        # delegate it to CRD since it doesn't have a REST implementation
+        return CRD().list_backing_image_data_source()

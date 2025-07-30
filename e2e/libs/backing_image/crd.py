@@ -46,6 +46,15 @@ class CRD(Base):
             plural="backingimagemanagers",
             label_selector=label_selector)
 
+    def list_backing_image_data_source(self):
+        label_selector = 'longhorn.io/component=backing-image-data-source'
+        return self.obj_api.list_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="backingimagedatasources",
+            label_selector=label_selector)
+
     def delete_backing_image_manager(self, name):
         logging(f"deleting backing image manager {name} ...")
         self.obj_api.delete_namespaced_custom_object(
