@@ -138,7 +138,8 @@ WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DIRECTORY_PATH = '/var/lib/longhorn/longhorn-test/'
+DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn/')
+DIRECTORY_PATH = os.path.join(DEFAULT_DISK_PATH, 'longhorn-test')
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
 VOLUME_CONDITION_RESTORE = "Restore"
@@ -156,7 +157,6 @@ VOLUME_FRONTEND_ISCSI = "iscsi"
 VOLUME_FRONTEND_UBLK = "ublk"
 VOLUME_FRONTEND_NVMF = "nvmf"
 
-DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "100"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
@@ -6445,7 +6445,7 @@ def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):
 
 def get_disk_uuid():
 
-    f = open('/var/lib/longhorn/longhorn-disk.cfg')
+    f = open(os.path.join(DEFAULT_DISK_PATH, 'longhorn-disk.cfg'))
     data = json.load(f)
 
     return data["diskUUID"]
