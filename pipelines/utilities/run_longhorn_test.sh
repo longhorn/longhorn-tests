@@ -43,6 +43,10 @@ run_longhorn_test(){
   RESOURCE_SUFFIX=$(terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
+  if [[ "${DISTRO}" == "talos" ]]; then
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[8].value="/var/mnt/longhorn/"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  fi
+
   ## inject cloudprovider
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 

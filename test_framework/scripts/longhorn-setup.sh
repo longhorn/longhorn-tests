@@ -104,6 +104,10 @@ main(){
   create_registry_secret
   customize_longhorn_manifest_registry
 
+  if [[ "${DISTRO}" == "talos" ]]; then
+    customize_longhorn_default_data_path /var/mnt/longhorn/
+  fi
+
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_stable
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
