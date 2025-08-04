@@ -1,8 +1,7 @@
 *** Settings ***
-Documentation    Test DR volume node reboot
-...              https://github.com/longhorn/longhorn/issues/8425
+Documentation    Test DR volume
 
-Test Tags    manual    negative
+Test Tags    manual    negative    dr-volume
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -26,20 +25,19 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 DR Volume Node Reboot During Initial Restoration
-    [Tags]    longhorn-8425
     [Documentation]    Test DR volume node reboot during initial restoration
     ...                Related Issue:
-    ...                https://github.com/longhorn/longhorn/issues/8425
-    ...
-    ...                Create a pod with Longhorn volume.
-    ...                Write data to the volume and get the md5sum.
-    ...                Create the 1st backup for the volume.
-    ...                Create a DR volume from the backup.
-    ...                Wait for the DR volume starting the initial restore.
-    ...                Then reboot the DR volume attached node immediately.
-    ...                Wait for the DR volume detached then reattached.
-    ...                Wait for the DR volume restore complete after the reattachment.
-    ...                Activate the DR volume and check the data md5sum.
+    ...                https://github.com/longhorn/longhorn/issues/1366
+    ...                https://github.com/longhorn/longhorn/issues/1328
+    ...                - Create a pod with Longhorn volume.
+    ...                - Write data to the volume and get the md5sum.
+    ...                - Create the 1st backup for the volume.
+    ...                - Create a DR volume from the backup.
+    ...                - Wait for the DR volume starting the initial restore.
+    ...                - Then reboot the DR volume attached node immediately.
+    ...                - Wait for the DR volume detached then reattached.
+    ...                - Wait for the DR volume restore complete after the reattachment.
+    ...                - Activate the DR volume and check the data md5sum.
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -59,23 +57,23 @@ DR Volume Node Reboot During Initial Restoration
     END
 
 DR Volume Node Reboot During Incremental Restoration
-    [Tags]    longhorn-8425
     [Documentation]    Test DR volume node reboot During Incremental Restoration
     ...                Related Issue:
-    ...                https://github.com/longhorn/longhorn/issues/8425
+    ...                https://github.com/longhorn/longhorn/issues/1366
+    ...                https://github.com/longhorn/longhorn/issues/1328
     ...
-    ...                Create a pod with Longhorn volume.
-    ...                Write data to the volume and get the md5sum.
-    ...                Create the 1st backup for the volume.
-    ...                Create a DR volume from the backup.
-    ...                Wait for the DR volume to complete the initial restore.
-    ...                Write more data to the original volume and get the md5sum.
-    ...                Create the 2nd backup for the volume.
-    ...                Wait for the DR volume incremental restore getting triggered.
-    ...                Then reboot the DR volume attached node immediately.
-    ...                Wait for the DR volume detached then reattached.
-    ...                Wait for the DR volume restore complete after the reattachment.
-    ...                Activate the DR volume and check the data md5sum.
+    ...                - Create a pod with Longhorn volume.
+    ...                - Write data to the volume and get the md5sum.
+    ...                - Create the 1st backup for the volume.
+    ...                - Create a DR volume from the backup.
+    ...                - Wait for the DR volume to complete the initial restore.
+    ...                - Write more data to the original volume and get the md5sum.
+    ...                - Create the 2nd backup for the volume.
+    ...                - Wait for the DR volume incremental restore getting triggered.
+    ...                - Then reboot the DR volume attached node immediately.
+    ...                - Wait for the DR volume detached then reattached.
+    ...                - Wait for the DR volume restore complete after the reattachment.
+    ...                - Activate the DR volume and check the data md5sum.
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -133,7 +131,7 @@ Test DR Volume Live Upgrade And Rebuild
     [Documentation]    - Test DR volume live upgrade and rebuild
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/1279
-    ...                -- Manual test plan -- 
+    ...                - Manual test plan - 
     ...                - Launch Longhorn at the previous version and Launch a Pod with a Longhorn volume.
     ...                - Write 1st data to the volume, take the 1st backup, and create two DR volumes from the 1st backup.
     ...                - Shutdown the Pod and expand the original volume and wait for the expansion complete.
