@@ -199,6 +199,16 @@ def get_pod_logs(namespace, pod_label):
 
     return logs
 
+def get_latest_pod_logs(namespace, pod_label):
+    api = client.CoreV1Api()
+    try:
+        pods = api.list_namespaced_pod(namespace, label_selector=pod_label)
+        latest_pod = max(pods.items, key=lambda pod: pod.status.start_time)
+        logs = api.read_namespaced_pod_log(name=latest_pod.metadata.name, namespace=namespace)
+        return logs
+    except client.exceptions.ApiException as e:
+        logging(f"Exception when calling CoreV1Api: {e}")
+
 def list_namespace_pods(namespace):
     v1 = client.CoreV1Api()
     pods = v1.list_namespaced_pod(namespace=namespace)

@@ -31,9 +31,6 @@ class LonghornDeploy(Base):
 
     def uninstall(self, is_stable_version):
         logging(f"Uninstalling Longhorn")
-        # add some delay before uninstallation
-        # for issue https://github.com/longhorn/longhorn/issues/10483
-        time.sleep(60)
         self.longhorn.uninstall(is_stable_version)
         logging(f"Uninstalled Longhorn")
 

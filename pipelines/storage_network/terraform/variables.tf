@@ -111,3 +111,12 @@ variable "thick_plugin" {
   type    = bool
   default = true
 }
+
+variable "network_stack" {
+  type      = string
+  default   = "ipv4"
+  validation {
+    condition     = contains(["ipv4", "ipv6"], var.network_stack)
+    error_message = "network_stack must be one of ipv4 or ipv6"
+  }
+}

@@ -29,7 +29,7 @@ class Base(ABC):
             assert "longhorn.io" not in crd.metadata.name
 
     def check_longhorn_uninstall_pod_log(self):
-        logs = k8s.get_pod_logs(LONGHORN_NAMESPACE, LONGHORN_UNINSTALL_JOB_LABEL)
+        logs = k8s.get_latest_pod_logs(LONGHORN_NAMESPACE, LONGHORN_UNINSTALL_JOB_LABEL)
         assert "level=error" not in logs, f"find string 'level=error' in uninstall log {logs}"
         assert "level=fatal" not in logs, f"find string 'level=fatal' in uninstall log {logs}"
 

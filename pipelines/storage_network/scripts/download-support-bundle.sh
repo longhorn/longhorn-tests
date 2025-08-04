@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source pipelines/utilities/longhorn_ui.sh
+
 set -e
 
 SUPPORT_BUNDLE_FILE_NAME=${1:-"lh-support-bundle.zip"}
@@ -8,10 +10,6 @@ SUPPORT_BUNDLE_ISSUE_DESC=${3:-"Auto-generated support bundle"}
 
 set_kubeconfig_envvar(){
     export KUBECONFIG="${PWD}/pipelines/storage_network/terraform/k3s.yaml"
-}
-
-export_longhorn_ui_url(){
-  export LONGHORN_CLIENT_URL="http://$(cat /tmp/controlplane_public_ip):30000"
 }
 
 set_kubeconfig_envvar
@@ -27,7 +25,7 @@ SUPPORT_BUNDLE_READY=false
 while [[ ${SUPPORT_BUNDLE_READY} == false ]]; do
     PERCENT=`kubectl exec -n longhorn-system svc/longhorn-frontend -- curl -H 'Accept: application/json' ${SUPPORT_BUNDLE_URL} | jq -r '.progressPercentage' || true`
     echo ${PERCENT}
-    
+
     if [[ ${PERCENT} == 100 ]]; then SUPPORT_BUNDLE_READY=true; fi
 done
 
