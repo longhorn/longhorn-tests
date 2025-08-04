@@ -146,6 +146,11 @@ Stop volume nodes kubelet for ${duration} seconds
     END
     restart_kubelet_on_nodes    ${duration}    ${node_list}
 
+Wait for volume of ${workload_kind} ${workload_id} detached
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_detached    ${volume_name}
+
 Wait for volume of ${workload_kind} ${workload_id} attached
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
