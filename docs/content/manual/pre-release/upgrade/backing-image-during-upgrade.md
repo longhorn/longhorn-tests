@@ -39,9 +39,8 @@ title: Test Backing Image during Longhorn upgrade
 3. Create and attach volumes with the backing image. Wait for all disk files of the backing image being ready.
 4. Run `kubectl -n longhorn system get pod -w` in a separate session.
 5. Upgrade Longhorn manager but with the backing image manager image unchanged. (Actually we can mock this upgrade by removing all longhorn manager pods simultaneously.)
-6. Check at latest one disk file status of the backing image becomes `unknown` then `ready` during the longhorn manager pods termination and restart. (May need to refresh the UI page after restart.)
-7. After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.
-8. Repeat step4 ~ step8 for 10 times.
+6. After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.
+7. Repeat step4 ~ step8 for 10 times.
 
 #### Available test backing image URLs:
 ```
