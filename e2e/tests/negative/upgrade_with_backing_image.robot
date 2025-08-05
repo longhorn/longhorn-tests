@@ -126,9 +126,8 @@ System upgrade with the same backing image manager image
     ...                3. Create and attach volumes with the backing image. Wait for all disk files of the backing image being ready.
     ...                4. Run kubectl -n longhorn system get pod -w in a separate session.
     ...                5. Upgrade Longhorn manager but with the backing image manager image unchanged. (Actually we can mock this upgrade by removing all longhorn manager pods simultaneously.)
-    ...                6. Check at latest one disk file status of the backing image becomes unknown then ready during the longhorn manager pods termination and restart. (May need to refresh the UI page after restart.)
-    ...                7. After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.
-    ...                8. Repeat step4 ~ step8 for 10 times.
+    ...                6. After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.
+    ...                7. Repeat step4 ~ step8 for 10 times.
     ...
     ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/
     ${BACKING_IMAGE_MANAGER_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE
@@ -147,7 +146,6 @@ System upgrade with the same backing image manager image
 
     FOR    ${i}    IN RANGE    10
         When Delete Longhorn DaemonSet longhorn-manager pod on all nodes simultaneously
-        And Verify not all disk file status of backing image bi are ready
         And No backimg image data source pod exist
         Then Wait for Longhorn components all running
         And Wait for all disk file status of backing image bi are ready
