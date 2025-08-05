@@ -30,6 +30,14 @@ Create DR volume ${volume_id} from backup ${backup_name}
     ${backup_url} =    get_backup_url    ${backup_name}
     create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
+Create DR volume ${target_volume_id} from backup ${backup_id} of ${workload_kind} ${workload_id} volume
+    [Arguments]    &{config}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${backup_url} =    get_backup_url    ${backup_id}    ${volume_name}
+    create_volume   ${target_volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
+
 Create volume ${target_volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
     ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
@@ -84,6 +92,10 @@ Volume ${volume_id} should not be attached to node ${node_id}
 Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
+
+Attach volume ${volume_id} without waiting for attachment
+    ${volume_name}=    Generate Name With Suffix    volume    ${volume_id}
+    attach_volume    ${volume_name}    wait_volume_attached=False
 
 Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -262,6 +274,13 @@ Wait for volume ${volume_id} to stay on node ${node_id}
 Wait for volume ${volume_id} restoration to complete
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_restoration_to_complete    ${volume_name}
+
+Wait for volume ${target_volume_id} restoration from backup ${backup_id} of ${workload_kind} ${workload_id} volume completed
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${source_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
+    wait_for_volume_restoration_to_complete    ${target_volume_name}    ${backup_name}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -504,6 +523,10 @@ Upgrade volume ${volume_id} engine to compatible engine image
 Upgrade volume ${volume_id} engine to ${custom_engine_image}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
+    wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
+Verify volume ${volume_id} is using engine image ${custom_engine_image}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
 
 Upgrade v1 volumes engine to ${custom_engine_image}
