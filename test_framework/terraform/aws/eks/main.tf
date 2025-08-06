@@ -118,9 +118,11 @@ resource "aws_eks_node_group" "node_group" {
   node_group_name = "${local.resource_name_prefix}-ng"
   node_role_arn   = aws_iam_role.eks_node_role.arn
   subnet_ids      = module.vpc.public_subnets
-  ami_type       = var.arch == "amd64" ? "AL2_x86_64" : "AL2_ARM_64"
+  ami_type       = var.arch == "amd64" ? "AL2023_x86_64_STANDARD" : "AL2023_ARM_64_STANDARD"
   capacity_type  = "ON_DEMAND"
-  instance_types = [var.arch == "amd64" ? "t2.xlarge" : "a1.2xlarge"]
+  # For Arm-based instances, Amazon Linux 2023 (AL2023) only supports instance types that use Graviton2 or later processors.
+  # AL2023 doesn’t support A1 instances.
+  instance_types = [var.arch == "amd64" ? "t2.xlarge" : "t4g.xlarge"]
   disk_size      = var.block_device_size_worker
   scaling_config {
     desired_size = 3
