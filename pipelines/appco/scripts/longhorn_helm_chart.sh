@@ -20,7 +20,7 @@ install_longhorn_custom(){
       --version "${LONGHORN_VERSION}"
   else
     # set debugging mode off to avoid leaking appco secrets to the logs.
-    # DON'T REMOVE!    
+    # DON'T REMOVE!
     set +x
     helm_login_appco
     set -x
@@ -69,6 +69,12 @@ install_longhorn_stable(){
       --namespace "${LONGHORN_NAMESPACE}" \
       --version "${LONGHORN_STABLE_VERSION}"
   else
+    # set debugging mode off to avoid leaking appco secrets to the logs.
+    # DON'T REMOVE!
+    set +x
+    helm_login_appco
+    set -x
+
     for ((i=1; i<=HELM_INSTALL_RETRY_LIMIT; i++)); do
       helm upgrade --install longhorn "${LONGHORN_STABLE_VERSION_CHART_URI}" \
         --version "${LONGHORN_STABLE_VERSION}" \
@@ -99,6 +105,12 @@ install_longhorn_transient(){
       --namespace "${LONGHORN_NAMESPACE}" \
       --version "${LONGHORN_TRANSIENT_VERSION}"
   else
+    # set debugging mode off to avoid leaking appco secrets to the logs.
+    # DON'T REMOVE!
+    set +x
+    helm_login_appco
+    set -x
+
     for ((i=1; i<=HELM_INSTALL_RETRY_LIMIT; i++)); do
       helm upgrade --install longhorn "${LONGHORN_TRANSIENT_VERSION_CHART_URI}" \
         --version "${LONGHORN_TRANSIENT_VERSION}" \

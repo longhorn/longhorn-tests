@@ -71,7 +71,6 @@ main(){
 
   if [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
     create_admin_service_account
-    install_iscsi
     install_cluster_autoscaler
   fi
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
@@ -90,9 +89,7 @@ main(){
   patch_coredns_ipv6_name_servers
   scale_up_coredns
 
-  # msg="failed to get package manager" error="operating systems amzn are not supported"
-  if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "talos" ]]; then
+  if [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 
