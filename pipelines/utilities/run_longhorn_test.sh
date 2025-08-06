@@ -64,6 +64,11 @@ run_longhorn_test(){
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
+  until kubectl get pod longhorn-test >/dev/null 2>&1; do
+    echo "waiting for longhorn-test pod to be created ... rechecking in 10s"
+    sleep 10s
+  done
+
   local RETRY_COUNTS=60
   local RETRIES=0
   # wait longhorn tests pod to start running
