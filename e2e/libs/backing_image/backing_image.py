@@ -23,9 +23,6 @@ class BackingImage(Base):
     def all_disk_file_status_are_ready(self, bi_name):
         return self.backing_image.all_disk_file_status_are_ready(bi_name)
 
-    def not_all_disk_file_status_are_ready(self, bi_name):
-        return self.backing_image.not_all_disk_file_status_are_ready(bi_name)
-
     def wait_for_all_disk_file_status_are_ready(self, bi_name):
         return self.backing_image.wait_for_all_disk_file_status_are_ready(bi_name)
 

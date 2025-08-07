@@ -22,6 +22,9 @@ class SystemBackup(Base):
     def delete_system_backup(self, backup_name):
         return self.system_backup.delete_system_backup(backup_name)
 
+    def wait_for_system_backup_ready(self, backup_name):
+        return self.system_backup.wait_for_system_backup_ready(backup_name)
+
     def cleanup_system_backups(self):
         return self.system_backup.cleanup_system_backups()
 

@@ -111,7 +111,7 @@ Sync Up With Backup Target During DR Volume Activation
     # the name of precreated backup 2 is backup-b823c0557efa4a4f
     And Wait for volume 0 restoration from backup backup-96b3a82b011e4b76 to complete
 
-    When Set backupstore poll intervel to 3600 seconds
+    When Set backupstore poll interval to 3600 seconds
     And Create dummy backup from backup-2.tar.gz
     And Activate DR volume 0
     And Wait for volume 0 detached
