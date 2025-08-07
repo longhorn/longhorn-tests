@@ -16,6 +16,7 @@ Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/secret.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -280,6 +281,34 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
         And Check volume 0 works
         And Check volume 1 works
         And Check volume 2 works
+    END
+
+Reboot Volume Node With Encrypted RWO Volume
+    [Tags]    encrypted    volume    rwo
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Write 100 MB data to file data in deployment 0
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        And Reboot volume node of deployment 0
+        And Wait for deployment 0 pods stable
+        Then Check deployment 0 data in file data is intact
+    END
+
+Reboot Volume Node With Encrypted RWX Volume
+    [Tags]    encrypted    volume    rwx
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-crypto
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Write 100 MB data to file data in deployment 0
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        And Reboot volume node of deployment 0
+        And Wait for deployment 0 pods stable
+        Then Check deployment 0 data in file data is intact
     END
 
 Physical Node Reboot With Attached Deployment
