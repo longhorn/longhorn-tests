@@ -6,6 +6,8 @@ Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/longhorn_deploy_keywords.py
 Library             ../libs/keywords/backup_keywords.py
+Library             ../libs/keywords/backing_image_keywords.py
+
 
 *** Variables ***
 @{longhorn_workloads}
@@ -128,3 +130,6 @@ Check Longhorn node ${type} state on power off node is ${expect_state}
 
 Check longhorn manager pods not restarted after test start
     check_pod_not_restart_after_specific_time    longhorn-system    app=longhorn-manager    ${test_start_time}
+
+Check longhorn backing image manager image is ${expected_image}
+    check_backing_image_manager_images    ${expected_image}
