@@ -990,7 +990,8 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
     storage_available = scheduled_disk.storageAvailable
 
     # Calculate the total data size to add to simulate disk pressure.
-    target_disk_size_usage = storage_maximum * disk_pressure_percentage / 100
+    target_disk_size_usage = \
+        storage_maximum * (disk_pressure_percentage + 1) / 100
     current_useage = storage_maximum - storage_available
     target_data_size = target_disk_size_usage - current_useage
 
