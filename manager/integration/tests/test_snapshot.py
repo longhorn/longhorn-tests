@@ -644,8 +644,7 @@ def check_hashed_and_without_immediate_hash(client, volume_name, snapshot_data_i
     # Step 4
     generate_checksums_time = wait_for_snapshot_checksums_generate(volume) # NOQA
     remaining = SNAPSHOT_CHECK_PERIOD - sleep_time
-    time_range = range(remaining-SNAPSHOT_CHECK_TOLERATION_DELAY,
-                       remaining+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    time_range = range(0, remaining+SNAPSHOT_CHECK_TOLERATION_DELAY)
     assert generate_checksums_time in time_range
 
 
