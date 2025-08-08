@@ -108,7 +108,8 @@ Test Strict Local Volume Disabled Revision Counter By Default
     ...    1. Set the global setting disable-revision-counter to false
     ...    2. Create a volume with 1 replica and strict-local data locality
     ...    3. See that the revisionCounterDisabled: true for volume/engine/replica CRs
-    Given Set setting disable-revision-counter to false
+    Given Setting disable-revision-counter is set to {"v1":"false"}
+
     When Create volume 0 with    numberOfReplicas=1    dataLocality=strict-local
     And Wait for volume 0 detached
     Then Volume 0 setting revisionCounterDisabled should be True

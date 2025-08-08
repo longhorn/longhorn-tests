@@ -21,8 +21,8 @@ Test Teardown    Cleanup test resources
 *** Keywords ***
 Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod
     [Arguments]    ${node_down_pod_deletion_policy}
-    Given Set setting default-replica-count to 2
-    And Set setting node-down-pod-deletion-policy to ${node_down_pod_deletion_policy}
+    Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
+    And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Write 100 MB data to file data in statefulset 0
@@ -39,8 +39,8 @@ Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod
 
 Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
     [Arguments]    ${node_down_pod_deletion_policy}
-    Given Set setting default-replica-count to 2
-    And Set setting node-down-pod-deletion-policy to ${node_down_pod_deletion_policy}
+    Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
+    And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Write 100 MB data to file data in statefulset 0
@@ -57,8 +57,8 @@ Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
 
 Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
     [Arguments]    ${node_down_pod_deletion_policy}
-    Given Set setting default-replica-count to 2
-    And Set setting node-down-pod-deletion-policy to ${node_down_pod_deletion_policy}
+    Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
+    And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
@@ -80,8 +80,8 @@ Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
 
 Power Off Node And Longhorn Force Delete Terminating Deployment Pod
     [Arguments]    ${node_down_pod_deletion_policy}
-    Given Set setting default-replica-count to 2
-    And Set setting node-down-pod-deletion-policy to ${node_down_pod_deletion_policy}
+    Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
+    And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0

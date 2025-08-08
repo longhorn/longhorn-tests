@@ -27,7 +27,7 @@ Test Replica Rebuilding Per Volume Limit
     ...    6. Wait for the volume to complete rebuilding. Then remove 4 of the 5 replicas.
     ...    7. Monitoring the volume replica list again.
     ...    8. Once the rebuild was completed again, verify the data checksum.
-    Given Set setting replica-soft-anti-affinity to true
+    Given Setting replica-soft-anti-affinity is set to true
     And Create volume 0 with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -65,11 +65,11 @@ Test Offline Replica Rebuilding
     And Ignore volume 0 offline replica rebuilding
 
     When Delete volume 0 replica on node 0
-    Then Set setting offline-replica-rebuilding to true
+    Then Setting offline-replica-rebuilding is set to {"v1":"true","v2":"true"}
     And Wait until volume 0 replica rebuilding started on node 0
     And Wait for volume 0 detached
     And Volume 0 should have 3 replicas when detached
-    And Set setting offline-replica-rebuilding to false
+    And Setting offline-replica-rebuilding is set to {"v1":"false","v2":"false"}
 
 Test Preempt Offline Replica Rebuilding By A Workload
     [Tags]    coretest    offline-rebuilding
