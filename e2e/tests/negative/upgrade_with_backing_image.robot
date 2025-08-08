@@ -49,12 +49,12 @@ System upgrade with compatible backing image manager image
     ${BACKING_IMAGE_MANAGER_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE
     ${ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE
 
-    Given Set setting deleting-confirmation-flag to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check all Longhorn CRD removed
 
     When Install Longhorn stable version
-    And Set setting concurrent-automatic-engine-upgrade-per-node-limit to 3
+    And Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 3
 
     When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
     FOR    ${i}    IN RANGE    2

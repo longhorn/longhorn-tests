@@ -21,7 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Restart Cluster While Workload Heavy Writing
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass nfs-4-2 with    nfsOptions=vers=4.2,noresvport,timeo=450,retrans=8    dataEngine=${DATA_ENGINE}

@@ -21,7 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Force Drain Volume Node While Replica Rebuilding
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
@@ -55,7 +55,7 @@ Force Drain Volume Node While Replica Rebuilding
     END
 
 Force Drain Replica Node While Replica Rebuilding
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
@@ -171,7 +171,7 @@ Stopped Replicas On Deleted Nodes Should Not Be Counted As Healthy Replicas When
     ...        kubectl get pods --field-selector spec.nodeName=<Node_2 name> -o wide -n longhorn-system
     ...    And The last healthy replica exists on the Node_2.
     Given Disable node 0 scheduling
-    And Set setting node-drain-policy to block-if-contains-last-replica
+    And Setting node-drain-policy is set to block-if-contains-last-replica
     And Given Create volume 0 with    size=5Gi    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
@@ -203,7 +203,7 @@ Setting Allow Node Drain with the Last Healthy Replica protects the last healthy
     ...    And The PDB will be deleted and can be verified with the following command:
     ...        kubectl get pdb <replica name, e.g., instance-manager-r-xxxxxxxx> -n longhorn-system
     Given Disable node 0 scheduling
-    And Set setting node-drain-policy to block-if-contains-last-replica
+    And Setting node-drain-policy is set to block-if-contains-last-replica
     And Given Create volume 0 with    size=5Gi    numberOfReplicas=2        dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
@@ -215,6 +215,6 @@ Setting Allow Node Drain with the Last Healthy Replica protects the last healthy
     When Force drain node 2 and expect failure
     And Check ${DATA_ENGINE} instance manager is running on node 2
 
-    When Set setting node-drain-policy to always-allow
+    When Setting node-drain-policy is set to always-allow
     And Force drain node 2 and expect success
     And Check PDB not exist    instance_manager=${instance_manager_name}

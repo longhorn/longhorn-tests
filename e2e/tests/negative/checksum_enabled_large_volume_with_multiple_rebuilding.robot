@@ -25,8 +25,8 @@ Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
     ...                - Create a recurring job of snapshot & backup.
     ...                - Delete a replica and wait for the replica rebuilding.
     ...                - Check volume data is intact
-    Given Set setting snapshot-data-integrity to enabled
-    And Set setting snapshot-data-integrity-immediate-check-after-snapshot-creation to true
+    Given Setting snapshot-data-integrity is set to enabled
+    And Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to true
     And Create volume 0 with    size=50Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
@@ -62,8 +62,8 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     ${rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 1
     And Wait for volume 0 healthy
     
-    When Set setting snapshot-data-integrity to enabled
-    And Set setting snapshot-data-integrity-immediate-check-after-snapshot-creation to true
+    When Setting snapshot-data-integrity is set to enabled
+    And Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to true
     And Create snapshot 0 of volume 0
     And Validate snapshot 0 is in volume 0 snapshot list
     # Longhorn creates a snapshot A (data size 30 GiB) without a checksum during the first rebuild.
