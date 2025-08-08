@@ -6,7 +6,7 @@ terraform {
     }
     talos = {
       source = "siderolabs/talos"
-      version = ">= 0.4.0"
+      version = ">= 0.8.1"
     }
   }
 }
@@ -137,9 +137,23 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   }
 }
 
-resource "aws_ebs_volume" "lh_aws_ssd_volume" {
+resource "aws_ebs_volume" "lh_aws_ssd_volume_v1" {
 
-  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
+  count = var.lh_aws_instance_count_worker
+
+  availability_zone = var.aws_availability_zone
+  size              = var.block_device_size_worker
+  type              = "gp2"
+
+  tags = {
+    Name = "lh-aws-ssd-volume-${count.index}-${random_string.random_suffix.id}"
+    Owner = var.resources_owner
+  }
+}
+
+resource "aws_ebs_volume" "lh_aws_ssd_volume_v2" {
+
+  count = var.lh_aws_instance_count_worker
 
   availability_zone = var.aws_availability_zone
   size              = var.block_device_size_worker
@@ -163,7 +177,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.block_device_size_controlplane
+    volume_size = var.block_device_size_worker
   }
 
   tags = {
@@ -173,12 +187,22 @@ resource "aws_instance" "lh_aws_instance_worker" {
   }
 }
 
-resource "aws_volume_attachment" "lh_aws_ssd_volume_att_k3s" {
+resource "aws_volume_attachment" "lh_aws_ssd_volume_v1_att_k3s" {
 
-  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
+  count = var.lh_aws_instance_count_worker
+
+  device_name  = "/dev/xvdb"
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume_v1[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "lh_aws_ssd_volume_v2_att_k3s" {
+
+  count = var.lh_aws_instance_count_worker
 
   device_name  = "/dev/xvdh"
-  volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume_v2[count.index].id
   instance_id  = aws_instance.lh_aws_instance_worker[count.index].id
   force_detach = true
 }
@@ -310,23 +334,40 @@ locals {
   talos_version = "v${var.os_distro_version}"
 }
 
-# Upgrade Talos cluster control node using schematic ID
-resource "null_resource" "upgrade_controlplane_nodes" {
-  count = var.lh_aws_instance_count_controlplane
+# Patch Talos cluster worker nodes to mount /var/mnt/longhorn
+resource "null_resource" "patch_worker_nodes" {
+  depends_on = [null_resource.upload_schematic]
+  count = var.lh_aws_instance_count_worker
 
   provisioner "local-exec" {
     command = <<EOT
-      talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
-        --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
-        -n ${aws_instance.lh_aws_instance_controlplane[count.index].private_ip} \
-        upgrade --image factory.talos.dev/installer/${local.schematic_id}:${local.talos_version}
-    EOT
+talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+  -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get disks
+talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+  --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
+  -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} \
+  patch mc --patch @${path.module}/user-volumes-patch.yaml
+while true; do
+  if talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get volumestatus u-longhorn &>/dev/null; then
+    echo "Volume u-longhorn is now available on ${aws_instance.lh_aws_instance_worker[count.index].private_ip}"
+    break
+  fi
+  sleep 1
+done
+while true; do
+  if talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get mountstatus u-longhorn &>/dev/null; then
+    echo "Mount u-longhorn is now available on ${aws_instance.lh_aws_instance_worker[count.index].private_ip}"
+    break
+  fi
+  sleep 1
+done
+EOT
   }
 }
 
 # Upgrade Talos cluster worker nodes using schematic ID
 resource "null_resource" "upgrade_worker_nodes" {
-  depends_on = [null_resource.upgrade_controlplane_nodes]
+  depends_on = [null_resource.patch_worker_nodes]
   count = var.lh_aws_instance_count_worker
 
   provisioner "local-exec" {
@@ -337,10 +378,9 @@ resource "null_resource" "upgrade_worker_nodes" {
         upgrade --image factory.talos.dev/installer/${local.schematic_id}:${local.talos_version}
       echo "Print containers & extensions"
       talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
-        -n ${aws_instance.lh_aws_instance_worker[0].private_ip} containers
+        -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} containers
       talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
-        -n ${aws_instance.lh_aws_instance_worker[0].private_ip} get extensions
+        -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get extensions
     EOT
   }
 }
-

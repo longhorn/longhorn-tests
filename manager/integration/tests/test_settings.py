@@ -33,6 +33,7 @@ from common import (  # NOQA
     SETTING_BACKUPSTORE_POLL_INTERVAL,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     SETTING_V1_DATA_ENGINE,
+    DEFAULT_DISK_PATH,
     RETRY_COUNTS_SHORT, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -645,7 +646,11 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     """
 
     # Step 1
-    subprocess.check_call(["rm", "-rf", "/var/lib/longhorn/backing-images"])
+    subprocess.check_call([
+        "rm",
+        "-rf",
+        os.path.join(DEFAULT_DISK_PATH, 'backing-images')
+    ])
 
     # Step 2
     create_backing_image_with_matching_url(
@@ -678,12 +683,17 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
         assert status.state == "ready"
 
-    backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
+    backing_images_in_disk = os.listdir(os.path.join(DEFAULT_DISK_PATH,
+                                        'backing-images'))
     assert len(backing_images_in_disk) == 1
-    assert os.path.exists("/var/lib/longhorn/backing-images/{}/backing"
-                          .format(backing_images_in_disk[0]))
-    assert os.path.exists("/var/lib/longhorn/backing-images/{}/backing.cfg"
-                          .format(backing_images_in_disk[0]))
+    assert os.path.exists(os.path.join(DEFAULT_DISK_PATH,
+                                       "backing-images",
+                                       backing_images_in_disk[0],
+                                       "backing"))
+    assert os.path.exists(os.path.join(DEFAULT_DISK_PATH,
+                                       "backing-images",
+                                       backing_images_in_disk[0],
+                                       "backing.cfg"))
 
     # Step 5
     current_host = client.by_id_node(id=lht_host_id)
@@ -709,7 +719,7 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     for i in range(RETRY_EXEC_COUNTS):
         try:
             backing_images_in_disk = os.listdir(
-                "/var/lib/longhorn/backing-images")
+                os.path.join(DEFAULT_DISK_PATH, "backing-images"))
             assert len(backing_images_in_disk) == 0
         except Exception:
             time.sleep(RETRY_INTERVAL)

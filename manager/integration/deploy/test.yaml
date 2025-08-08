@@ -57,6 +57,8 @@ spec:
       value: "false"
     - name: RESOURCE_SUFFIX
       value: ""
+    - name: DEFAULT_DATA_PATH
+      value: "/var/lib/longhorn/"
     volumeMounts:
     - name: dev
       mountPath: /dev
@@ -67,6 +69,9 @@ spec:
       mountPropagation: Bidirectional
     - name: longhorn
       mountPath: /var/lib/longhorn/
+      mountPropagation: Bidirectional
+    - name: longhorn-non-default-data-path
+      mountPath: /var/mnt/longhorn/
       mountPropagation: Bidirectional
     - name: test-report
       mountPath: /tmp/test-report
@@ -95,6 +100,9 @@ spec:
   - name: longhorn
     hostPath:
       path: /var/lib/longhorn/
+  - name: longhorn-non-default-data-path
+    hostPath:
+      path: /var/mnt/longhorn/
   - name: test-report
     hostPath:
       path: /tmp/test-report/

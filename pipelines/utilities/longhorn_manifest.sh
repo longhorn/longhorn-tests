@@ -80,6 +80,11 @@ customize_longhorn_manifest_registry(){
   fi
 }
 
+customize_longhorn_default_data_path(){
+  DEFAULT_DATA_PATH="${1:-/var/lib/longhorn/}"
+  sed -i "/default-setting\.yaml: |-/a\    default-data-path: ${DEFAULT_DATA_PATH}" "${LONGHORN_MANIFEST_PATH}"
+}
+
 install_longhorn(){
   LONGHORN_NAMESPACE="longhorn-system"
   kubectl apply -f "${LONGHORN_MANIFEST_PATH}"

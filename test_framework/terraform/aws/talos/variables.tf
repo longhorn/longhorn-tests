@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "1.9.5"
+  default     = "1.10.6"
 }
 
 variable "aws_ami_talos_account_number" {
@@ -83,7 +83,7 @@ variable "block_device_size_worker" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.30.0"
+  default     = "v1.32.4"
 }
 
 variable "use_hdd" {

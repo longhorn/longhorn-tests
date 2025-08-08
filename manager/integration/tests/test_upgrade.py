@@ -65,6 +65,7 @@ from common import v2_data_engine_cr_supported
 from common import get_instance_manager_names
 from common import LONGHORN_NAMESPACE
 from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import DEFAULT_DISK_PATH
 from test_orphan import create_orphaned_directories_on_host
 from test_orphan import delete_orphans
 from backupstore import set_backupstore_s3
@@ -325,7 +326,7 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
     # orphan
     create_orphaned_directories_on_host(
         client.by_id_volume(pod_volume_name),
-        ["/var/lib/longhorn"],
+        [DEFAULT_DISK_PATH],
         1)
     # snapshot and backup
     backup_stores = get_backupstores()
