@@ -30,8 +30,6 @@ from common import SNAPSHOT_DATA_INTEGRITY_ENABLED
 from common import SNAPSHOT_DATA_INTEGRITY_FAST_CHECK
 from common import SNAPSHOT_DATA_INTEGRITY_DISABLED
 from common import SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT, RETRY_COUNTS_SHORT # NOQA
-from common import DATA_ENGINE
-from common import SETTING_V2_SNAPSHOT_DATA_INTEGRITY, SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED # NOQA
 
 RETRY_WAIT_CHECKSUM_COUNTS = 600
 SNAPSHOT_CHECK_PERIOD = 300
@@ -300,27 +298,27 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
 
     cronjob = f"{minutes} {hours} * * *"
 
-    if DATA_ENGINE == "v1":
-        snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
-        snapshot_fast_data_rebuild_enabled_setting = \
-            SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
-    elif DATA_ENGINE == "v2":
-        snapshot_data_integrity_setting = SETTING_V2_SNAPSHOT_DATA_INTEGRITY
-        snapshot_fast_data_rebuild_enabled_setting =  \
-            SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
+    snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
+    snapshot_fast_data_rebuild_enabled_setting = \
+        SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
 
     update_setting(client,
                    snapshot_data_integrity_setting,
                    data_integrity)
     update_setting(client,
                    SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION,  # NOQA
-                   immediate_check)
+                   json.dumps({
+                        "v1": str(immediate_check)
+                   }, separators=(',', ':')))
     update_setting(client,
                    SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB,
                    cronjob)
     update_setting(client,
                    snapshot_fast_data_rebuild_enabled_setting,
-                   fast_replica_rebuild)
+                   json.dumps({
+                        "v1": str(fast_replica_rebuild),
+                        "v2": str(fast_replica_rebuild)
+                   }, separators=(',', ':')))
 
 
 def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode, retry_count=SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY):  # NOQA
