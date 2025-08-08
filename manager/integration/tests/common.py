@@ -235,6 +235,7 @@ SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
+SETTING_V2_DATA_ENGINE_INTERRUPT_MODE = "v2-data-engine-interrupt-mode-enabled"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -3877,6 +3878,16 @@ def reset_settings(client):
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
+                try:
+                    client.update(setting, value="true")
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to true")
+                    print(e)
+                continue
+
+        if setting_name == SETTING_V2_DATA_ENGINE_INTERRUPT_MODE:
+            if os.environ.get('RUN_V2_INTERRUPT_MODE') == "true":
+                setting = client.by_id_setting(setting_name)
                 try:
                     client.update(setting, value="true")
                 except Exception as e:
