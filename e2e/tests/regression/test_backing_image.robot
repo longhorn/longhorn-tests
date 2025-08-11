@@ -54,3 +54,20 @@ Test Backup Backing Image
     Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
     When Create backup backing image bi-backup for backing image bi
     Then Wait for backing image backup for backing image bi ready
+
+Test Backing Image Download Timeout
+    [Tags]    robot:skip
+    [Documentation]    Test the backing image context timeout is enlarged to 30 sec
+    ...
+    ...    1. Given a backing image file ready for download
+    ...    2. And create a backing image CR to download the given image
+    ...    3. And wait for backing image data source pod get launched
+    ...    4  When temporary block the download connection for 5 second
+    ...    5. And resume the download connection
+    ...    6. Then the backing image data source should be able to download the image without timeout error
+    ...    7. When create a backing image CR to download the given image
+    ...    8. And wait for backing image data source pod get launched
+    ...    9  When temporary block the download connection for 35 second
+    ...    10. And resume the download connection
+    ...    11. Then the backing image data source should fail to download the image
+    Skip
