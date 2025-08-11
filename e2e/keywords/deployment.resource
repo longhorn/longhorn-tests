@@ -90,3 +90,7 @@ Scale up deployment ${deployment_id} to attach volume
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
     scale_deployment    ${deployment_name}    1
     wait_for_volume_attached    ${volume_name}
+
+Wait for deployment ${deployment_id} volume size expanded
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    wait_for_workload_claim_size_expanded    ${deployment_name}

@@ -10,10 +10,11 @@ elif [[  ${selinux_mode} == "permissive" ]]; then
     sudo setenforce  0
 fi
 
-sudo yum update -y                                                              
+sudo dnf install kernel-modules-extra-$(uname -r) -y
+sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq
-sudo systemctl -q enable iscsid                                                 
+sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 

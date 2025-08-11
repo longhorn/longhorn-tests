@@ -68,6 +68,11 @@ run_longhorn_test(){
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
+  until kubectl get pod longhorn-test >/dev/null 2>&1; do
+    echo "waiting for longhorn-test pod to be created ... rechecking in 10s"
+    sleep 10s
+  done
+
   local RETRY_COUNTS=60
   local RETRIES=0
   # wait longhorn tests pod to start running
@@ -78,6 +83,10 @@ run_longhorn_test(){
 
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn test pod start timeout"; exit 1 ; fi
   done
+
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    unset_kubectl_retry
+  fi
 
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
@@ -188,6 +197,8 @@ run_longhorn_upgrade_test(){
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_LONGHORN_COMPOMENT_REGISTRY", "value": "'${APPCO_LONGHORN_COMPOMENT_REGISTRY}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_VERSION", "value": "'${LONGHORN_VERSION}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_NAMESPACE", "value": "'${LONGHORN_NAMESPACE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_USERNAME", "value": "'${APPCO_USERNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_PASSWORD", "value": "'${APPCO_PASSWORD}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     fi
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_HOSTNAME", "value": "'${RANCHER_HOSTNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
@@ -246,6 +257,10 @@ run_longhorn_upgrade_test(){
     echo "waiting upgrade test pod to be in running state ... rechecking in 10s"
     sleep 10s
   done
+
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    unset_kubectl_retry
+  fi
 
   # wait upgrade test to complete
   while [[ -n "`kubectl get pod ${LONGHORN_UPGRADE_TEST_POD_NAME} -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do

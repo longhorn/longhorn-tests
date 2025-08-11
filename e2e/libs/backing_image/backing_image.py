@@ -3,7 +3,7 @@ from backing_image.rest import Rest
 from backing_image.crd import CRD
 
 from strategy import LonghornOperationStrategy
-
+from utility.utility import list_namespaced_pod
 
 class BackingImage(Base):
 
@@ -22,6 +22,9 @@ class BackingImage(Base):
 
     def all_disk_file_status_are_ready(self, bi_name):
         return self.backing_image.all_disk_file_status_are_ready(bi_name)
+
+    def wait_for_all_disk_file_status_are_ready(self, bi_name):
+        return self.backing_image.wait_for_all_disk_file_status_are_ready(bi_name)
 
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         return self.backing_image.clean_up_backing_image_from_a_random_disk(bi_name)
@@ -43,3 +46,10 @@ class BackingImage(Base):
 
     def list_backing_image_manager(self):
         return self.backing_image.list_backing_image_manager()
+
+    def list_backing_image_data_source_pod(self):
+        label_selector = 'longhorn.io/component=backing-image-data-source'
+        return list_namespaced_pod(
+            namespace="longhorn-system",
+            label_selector=label_selector
+        )

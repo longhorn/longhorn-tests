@@ -12,6 +12,9 @@ class backing_image_keywords:
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)
 
+    def wait_for_all_disk_file_status_are_ready(self, bi_name):
+        self.backing_image.wait_for_all_disk_file_status_are_ready(bi_name)
+
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         self.backing_image.clean_up_backing_image_from_a_random_disk(bi_name)
 
@@ -40,3 +43,18 @@ class backing_image_keywords:
             last_creation_time = backing_image["metadata"]["creationTimestamp"]
             self.backing_image.delete_backing_image_manager(name)
             self.backing_image.wait_backing_image_manager_restart(name, last_creation_time)
+
+    def check_backing_image_manager_images(self, image_name):
+        backing_image_managers = self.backing_image.list_backing_image_manager()
+        for backing_image_manager in backing_image_managers["items"]:
+            name = backing_image_manager["metadata"]["name"]
+            spec_image = backing_image_manager.get("spec", {}).get("image")
+            if spec_image != image_name:
+                raise AssertionError(
+                    f"BackingImageManager '{name}' has image '{spec_image}', "
+                    f"but expected '{image_name}'"
+                )
+
+    def get_backing_image_data_source_pod_count(self):
+        response = self.backing_image.list_backing_image_data_source_pod()
+        return len(response)

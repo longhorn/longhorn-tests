@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/kubeconfig.sh
+source pipelines/utilities/kubectl_retry.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
@@ -50,11 +51,11 @@ enable_mtls(){
 
 
 main(){
-  if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
-    sleep 300s
-  fi
-
   set_kubeconfig
+
+  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
+    apply_kubectl_retry
+  fi
 
   create_longhorn_namespace
 
@@ -70,7 +71,6 @@ main(){
 
   if [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
     create_admin_service_account
-    install_iscsi
     install_cluster_autoscaler
   fi
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
@@ -89,9 +89,7 @@ main(){
   patch_coredns_ipv6_name_servers
   scale_up_coredns
 
-  # msg="failed to get package manager" error="operating systems amzn are not supported"
-  if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "talos" ]]; then
+  if [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 

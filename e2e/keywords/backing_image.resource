@@ -11,6 +11,9 @@ Create backing image ${backing_image_name} with
 Verify all disk file status of backing image ${backing_image_name} are ready
     all_disk_file_status_are_ready    ${backing_image_name}
 
+Wait for all disk file status of backing image ${backing_image_name} are ready
+    wait_for_all_disk_file_status_are_ready    ${backing_image_name}
+
 Verify clean up backing image ${backing_image_name} from a disk will fail
     Run Keyword And Expect Error    *    clean_up_backing_image_from_a_random_disk    ${backing_image_name}
 
@@ -28,3 +31,7 @@ Delete backing image managers and wait for recreation
 
 Wait backing image managers running
     wait_all_backing_image_managers_running
+
+No backimg image data source pod exist
+    ${ds_count}=     get_backing_image_data_source_pod_count
+    Should Be Equal    ${ds_count}     ${0}

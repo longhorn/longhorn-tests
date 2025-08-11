@@ -75,12 +75,12 @@ class workload_keywords:
     def check_pod_data_exists(self, pod_name, file_name):
         return check_pod_data_exists(pod_name, file_name)
 
-    def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default", label_selector=""):
+    def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default", label_selector="", wait=True):
         pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
         for pod in pods:
             if pod.spec.node_name == node_name:
                 logging(f'Deleting pod {pod.metadata.name} on node {node_name}')
-                delete_pod(pod.metadata.name, namespace=namespace)
+                delete_pod(pod.metadata.name, namespace=namespace, wait=wait)
 
     def get_workload_pod_name(self, workload_name, namespace="default"):
         return get_workload_pod_names(workload_name, namespace)[0]
