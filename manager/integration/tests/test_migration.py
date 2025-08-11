@@ -1,9 +1,10 @@
 import pytest
 import subprocess
 import common
+import os
 from common import clients, volume_name, wait_for_volume_healthy  # NOQA
 from common import get_random_client
-from common import SIZE
+from common import SIZE, DEFAULT_DISK_PATH
 from common import wait_for_volume_delete
 from common import set_node_scheduling
 from common import get_volume_endpoint, write_volume_dev_random_mb_data
@@ -251,7 +252,7 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
     8. Validate initially written test data.
     """
     def finalizer():
-        exec_cmd = ["mkdir", "-p", "/var/lib/longhorn/replicas"]
+        exec_cmd = ["mkdir", "-p", os.path.join(DEFAULT_DISK_PATH, 'replicas')]
         subprocess.check_output(exec_cmd)
 
     request.addfinalizer(finalizer)
@@ -272,7 +273,7 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
     for replica in volume.replicas:
         old_replicas.append(replica.name)
 
-    exec_cmd = ["rm", "-rf",  "/var/lib/longhorn/replicas"]
+    exec_cmd = ["rm", "-rf",  os.path.join(DEFAULT_DISK_PATH, 'replicas')]
     subprocess.check_output(exec_cmd)
     volume = common.wait_for_volume_degraded(client, volume_name)
 
