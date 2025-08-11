@@ -4368,6 +4368,18 @@ def create_storage_class(sc_manifest, data_engine=DATA_ENGINE):
     api.create_storage_class(
         body=sc_manifest)
 
+    sc_name = sc_manifest['metadata']['name']
+    for i in range(RETRY_COUNTS):
+        try:
+            sc = api.read_storage_class(sc_name)
+            return sc
+        except ApiException as e:
+            if e.status != 404:
+                raise
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, f"Failed to wait for sc {sc_name} to be created"
+
 
 def delete_storage_class(sc_name):
     api = get_storage_api_client()
