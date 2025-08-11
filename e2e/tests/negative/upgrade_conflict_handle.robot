@@ -12,7 +12,6 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
 Resource    ../keywords/recurringjob.resource
-Library     DateTime
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -22,11 +21,6 @@ ${NUM_VOLUMES}    100
 ${NUM_VOLUMES_DETACH}    20
 
 *** Keywords ***
-Get test start time
-    ${test_start_time}=    Get Current Date    result_format=datetime
-    Log    ${test_start_time}
-    Set Test Variable    ${test_start_time}
-
 Perform recurring job workflow under load
     When Get test start time
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    
