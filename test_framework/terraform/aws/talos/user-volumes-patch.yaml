@@ -1,0 +1,8 @@
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn
+provisioning:
+  diskSelector:
+    match: disk.dev_path == '/dev/xvdb' || disk.dev_path == '/dev/nvme2n1'
+  grow: true
+  minSize: 10GiB
