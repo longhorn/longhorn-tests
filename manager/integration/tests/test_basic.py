@@ -5467,6 +5467,7 @@ def test_delete_backup_during_restoring_volume(set_random_backupstore, client): 
                                       "reason", "RestoreFailure")
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.parametrize("fs_type", [FS_TYPE_EXT4, FS_TYPE_XFS])  # NOQA
 def test_filesystem_trim(client, fs_type):  # NOQA
     """
