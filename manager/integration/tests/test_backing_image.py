@@ -32,7 +32,7 @@ from common import cleanup_all_recurring_jobs
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
     DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, \
-    BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi, SIZE
+    BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi, SIZE, DEFAULT_DISK_PATH
 
 from common import wait_for_volume_detached
 from common import wait_for_backing_image_status
@@ -565,7 +565,11 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     assert volume.size == str(BACKING_IMAGE_EXT4_SIZE)
 
     # Step 4
-    subprocess.check_output(['rm', '-rf', '/var/lib/longhorn/backing-images/'])
+    subprocess.check_output([
+        'rm',
+        '-rf',
+        os.path.join(DEFAULT_DISK_PATH, 'backing-images')
+    ])
 
     # Step 5
     disk_uuid = get_disk_uuid()

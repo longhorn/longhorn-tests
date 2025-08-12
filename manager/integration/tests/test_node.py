@@ -70,8 +70,8 @@ NODE_UPDATE_WAIT_INTERVAL = 2
 
 @pytest.fixture
 def random_disk_path():
-    return "/var/lib/longhorn-" + "".join(choice(ascii_lowercase + digits)
-                                          for _ in range(6))
+    return f"{DEFAULT_DISK_PATH.rstrip('/')}-" + \
+      "".join(choice(ascii_lowercase + digits) for _ in range(6))
 
 
 @pytest.yield_fixture

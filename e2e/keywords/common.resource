@@ -27,10 +27,16 @@ Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
+Library             DateTime
 
 *** Keywords ***
 Test should pass
     No Operation
+
+Get test start time
+    ${test_start_time}=    Get Current Date    result_format=datetime
+    Log    ${test_start_time}
+    Set Test Variable    ${test_start_time}
 
 Set disk path based on host provider and architecture
     ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
