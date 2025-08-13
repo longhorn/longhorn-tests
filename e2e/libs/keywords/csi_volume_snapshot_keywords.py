@@ -25,3 +25,6 @@ class csi_volume_snapshot_keywords:
 
     def cleanup_csi_volume_snapshots(self):
         self.csi_volume_snapshot.cleanup_csi_volume_snapshots()
+
+    def force_delete_volumesnapshot(self, snapshot_name):
+        self.csi_volume_snapshot.force_delete_volumesnapshot(snapshot_name)
