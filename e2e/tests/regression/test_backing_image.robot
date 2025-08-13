@@ -43,7 +43,7 @@ Test Uninstall When Backing Image Exists
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
         And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
-        And Set setting deleting-confirmation-flag to true
+        And Setting deleting-confirmation-flag is set to true
 
         When Uninstall Longhorn
 

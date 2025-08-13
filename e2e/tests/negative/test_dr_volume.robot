@@ -157,7 +157,7 @@ Test DR Volume Live Upgrade And Rebuild
     END
 
     # Precondition: Set up environment and install Longhorn
-    Given Set setting deleting-confirmation-flag to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 

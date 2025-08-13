@@ -133,7 +133,7 @@ Degraded Volume Replica Rebuilding
 
 V2 Volume Should Block Trim When Volume Is Degraded
     [Tags]    cluster
-    Given Set setting auto-salvage to true
+    Given Setting auto-salvage is set to true
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0

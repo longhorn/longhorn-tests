@@ -38,7 +38,7 @@ Test Soft Anti Affinity Scheduling
     And Wait for volume 0 healthy
     And Write data to volume 0
 
-    When Set setting replica-soft-anti-affinity to true
+    When Setting replica-soft-anti-affinity is set to true
     # disabling scheduling on a node only sets the node status to "Disable", not "Unschedulable"
     # therefore disabling scheduling doesn't alter the node["conditions"]["Schedulable"]["status"] field
     # only cordoning a node can set it to "Unschedulable"
@@ -58,8 +58,8 @@ Test Replica Auto Balance Disk In Pressure
     ...    space. Replicas should not be rebuilt at the same time.
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/4105
-    Given Set setting replica-soft-anti-affinity to false
-    And Set setting replica-auto-balance-disk-pressure-percentage to 80
+    Given Setting replica-soft-anti-affinity is set to false
+    And Setting replica-auto-balance-disk-pressure-percentage is set to 80
 
     IF    "${DATA_ENGINE}" == "v1"
         And Create 1 Gi filesystem type disk local-disk-0 on node 0
@@ -90,7 +90,7 @@ Test Replica Auto Balance Disk In Pressure
     And Check node 0 disk local-disk-0 is in pressure
 
     When Enable disk local-disk-1 scheduling on node 0
-    And set setting replica-auto-balance to best-effort
+    And Setting replica-auto-balance is set to best-effort
 
     # auto balance should happen
     Then Check node 0 disk local-disk-0 is not in pressure
@@ -108,8 +108,8 @@ Test Replica Auto Balance Disk In Pressure
 Test Replica Auto Balance Node Least Effort
     [Tags]    coretest
     [Documentation]    Scenario: replica auto-balance nodes with `least_effort`
-    Given Set setting replica-soft-anti-affinity to true
-    And Set setting replica-auto-balance to least-effort
+    Given Setting replica-soft-anti-affinity is set to true
+    And Setting replica-auto-balance is set to least-effort
 
     When Disable node 1 scheduling
     And Disable node 2 scheduling
@@ -203,7 +203,7 @@ Test Replica Deleting Priority With Best-effort Data Locality
 Test Unexpected Volume Detachment During Data Locality Maintenance
     [Documentation]    Test that the volume is not corrupted if there is an unexpected
     ...                detachment during building local replica
-    Given Set setting replica-soft-anti-affinity to false
+    Given Setting replica-soft-anti-affinity is set to false
 
     When Create volume 0    numberOfReplicas=1    dataLocality=best-effort    dataEngine=${DATA_ENGINE}
     Then Attach volume 0 to node 2
@@ -231,7 +231,7 @@ Test Data Locality With Failed Scheduled Replica
     [Documentation]    Make sure failed to schedule local replica doesn't block the
     ...                the creation of other replicas.
     Given Disable node 2 scheduling
-    And Set setting replica-soft-anti-affinity to false
+    And Setting replica-soft-anti-affinity is set to false
 
     When Create volume 0    numberOfReplicas=1    dataLocality=best-effort    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 2
