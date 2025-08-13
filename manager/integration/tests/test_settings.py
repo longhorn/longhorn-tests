@@ -3,6 +3,7 @@ import pytest
 import os
 import subprocess
 import yaml
+import json
 
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
@@ -422,13 +423,15 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, [im_on_host], "Running", True, "150m")
 
-    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU, "10")
+    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
+                   '{"v1":"10","v2":"10"}')
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, "Running", True,
         str(int(allocatable_millicpu*10/100)) + "m")
 
-    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU, "0")
+    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
+                   '{"v1":"0","v2":"0"}')
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, "Running", True, "")
@@ -443,7 +446,8 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, "Running", True, "")
 
-    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU, "20")
+    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
+                   '{"v1":"20","v2":"20"}')
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, "Running", True,
@@ -1185,13 +1189,23 @@ def test_setting_replica_count_update_via_configmap(client, core_api, request): 
     update_settings_via_configmap(core_api,
                                   client,
                                   [SETTING_DEFAULT_REPLICA_COUNT],
-                                  [replica_count],
+                                  [
+                                      json.dumps({
+                                          "v1": str(replica_count),
+                                          "v2": str(replica_count)
+                                      }, separators=(',', ':'))
+                                  ],
                                   request)
     # Step 5
     validate_settings(core_api,
                       client,
                       [SETTING_DEFAULT_REPLICA_COUNT],
-                      [replica_count])
+                      [
+                          json.dumps({
+                              "v1": str(replica_count),
+                              "v2": str(replica_count)
+                          }, separators=(',', ':'))
+                      ])
     # Step 6
     retry_setting_update(client,
                          SETTING_DEFAULT_REPLICA_COUNT,
