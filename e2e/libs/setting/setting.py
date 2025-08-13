@@ -26,26 +26,41 @@ class Setting:
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.backupstore = BackupStore()
 
+    def _update_setting(self, key, value):
+        setting = get_longhorn_client().by_id_setting(key)
+        get_longhorn_client().update(setting, value=value)
+
     def update_setting(self, key, value, retry=True):
+        logging(f"Trying to update setting {key} to {value} ...")
         if retry:
+            logging(
+                f"Retrying {self.retry_count} times with "
+                f"{self.retry_interval} seconds interval."
+            )
             for i in range(self.retry_count):
                 try:
-                    logging(f"Trying to update setting {key} to {value} ... ({i})")
-                    setting = get_longhorn_client().by_id_setting(key)
-                    get_longhorn_client().update(setting, value=value)
-                    if self.get_setting(key) == value:
-                        logging(f"Updated setting {key} to {value}")
-                        return
+                    self._update_setting(key, value)
+                    return
                 except Exception as e:
-                    logging(e)
-                time.sleep(self.retry_interval)
+                    logging(
+                        f"Retrying to update setting {key} to {value} ... "
+                        f"({i + 1})"
+                    )
+                    # Failed if it is the last retry
+                    if i == self.retry_count - 1:
+                        logging(
+                            f"Failed to update setting {key} to {value} after "
+                            f"{self.retry_count} attempts: {e}"
+                        )
+                        raise
+                    else:
+                        logging(
+                            f"Retrying to update setting {key} to {value} ... "
+                            f"(attempt {i + 1})"
+                        )
+                        time.sleep(self.retry_interval)
         else:
-            logging(f"Trying to update setting {key} to {value} ...")
-            setting = get_longhorn_client().by_id_setting(key)
-            get_longhorn_client().update(setting, value=value)
-            return
-
-        assert False, f"Failed to update setting {key} to {value} ... {setting}"
+            self._update_setting(key, value)
 
     def get_setting(self, key):
         return get_longhorn_client().by_id_setting(key).value
@@ -70,10 +85,26 @@ class Setting:
                         self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
                         backupsettings[1],
                         retry=False)
+                    value = self.get_setting(
+                        self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                    if value != backupsettings[1]:
+                        raise Exception(
+                            f"Failed to set "
+                            f"{self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET} "
+                            f"to {backupsettings[1]}"
+                        )
 
                 self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL,
                                     poll_interval,
                                     retry=False)
+                value = self.get_setting(
+                    self.SETTING_BACKUPSTORE_POLL_INTERVAL)
+                if value != poll_interval:
+                    raise Exception(
+                        f"Failed to set "
+                        f"{self.SETTING_BACKUPSTORE_POLL_INTERVAL} "
+                        f"to {poll_interval}"
+                    )
             except Exception as e:
                 if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
                     self.backupstore.set_backupstore_url(backupsettings[0])
@@ -88,12 +119,36 @@ class Setting:
     def reset_backupstore(self):
         try:
             self.update_setting(self.SETTING_BACKUP_TARGET, "", retry=False)
+            value = self.get_setting(self.SETTING_BACKUP_TARGET)
+            if value != "":
+                raise Exception(
+                    f"Failed to reset {self.SETTING_BACKUP_TARGET} to empty, "
+                    f"current value: {value}"
+                )
             self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
                                 "",
                                 retry=False)
+
+            value = self.get_setting(
+                self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            if value != "":
+                raise Exception(
+                    f"Failed to reset "
+                    f"{self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET} to empty,"
+                    f"current value: {value}"
+                )
+
+            # Resetting the poll interval to 300 seconds as default
             self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL,
                                 "300",
                                 retry=False)
+            value = self.get_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL)
+            if value != "300":
+                raise Exception(
+                    f"Failed to reset "
+                    f"{self.SETTING_BACKUPSTORE_POLL_INTERVAL} to 300.\n"
+                    f"Current value: {value}"
+                )
         except Exception as e:
             if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
                 self.backupstore.reset_backupstore()

@@ -53,7 +53,7 @@ Test Upgrade Stability with Large Workload
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
     END
     
-    Given Set setting deleting-confirmation-flag to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 

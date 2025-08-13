@@ -128,7 +128,7 @@ Test Uninstallation With Backups
     And Create error backup for volume 0
     And Verify backup list contains errors for volume 0
 
-    When Set setting deleting-confirmation-flag to true
+    When Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
@@ -145,11 +145,11 @@ Test Cleanup Snapshot With The Global Setting After Backup Completed
     And Create backup 0 for volume 0
     And Check snapshot for backup 0 of volume 0 exists True
 
-    When Set setting auto-cleanup-snapshot-after-on-demand-backup-completed to true
+    When Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to true
     And Write data 1 to volume 0
     And Create backup 1 for volume 0
     And Check snapshot for backup 1 of volume 0 exists False
-    And Set setting auto-cleanup-snapshot-after-on-demand-backup-completed to false
+    And Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to false
 
 Test Backupstore With Existing Backups
     [Documentation]    https://github.com/longhorn/longhorn/issues/11337
