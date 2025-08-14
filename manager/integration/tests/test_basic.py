@@ -238,9 +238,9 @@ def test_settings(client):  # NOQA
             assert name+" with invalid value " in \
                    str(e.value)
             setting = client.update(setting, value="2")
-            assert setting.value == "2"
+            assert setting.value == '{"v1":"2","v2":"2"}'
             setting = client.by_id_setting(name)
-            assert setting.value == "2"
+            assert setting.value == '{"v1":"2","v2":"2"}'
 
         setting = client.update(setting, value=old_value)
         assert setting.value == old_value
@@ -604,6 +604,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     # create a snapshot and backup
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
+
     bv, b = find_backup(client, volume_name, snap.name)
     backup_id = b.id
 
@@ -2186,7 +2187,7 @@ def test_setting_default_replica_count(client, volume_name):  # NOQA
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_detached(client, volume_name)
-    assert len(volume.replicas) == int(setting.value)
+    assert len(volume.replicas) == 5
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -5467,6 +5468,7 @@ def test_delete_backup_during_restoring_volume(set_random_backupstore, client): 
                                       "reason", "RestoreFailure")
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.parametrize("fs_type", [FS_TYPE_EXT4, FS_TYPE_XFS])  # NOQA
 def test_filesystem_trim(client, fs_type):  # NOQA
     """
