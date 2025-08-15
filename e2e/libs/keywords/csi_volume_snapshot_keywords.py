@@ -1,4 +1,5 @@
 from csi_volume_snapshot import CSIVolumeSnapshot
+import asyncio
 
 class csi_volume_snapshot_keywords:
 
@@ -25,3 +26,6 @@ class csi_volume_snapshot_keywords:
 
     def cleanup_csi_volume_snapshots(self):
         self.csi_volume_snapshot.cleanup_csi_volume_snapshots()
+
+    def delete_then_remove_finalizer(self, snapshot_name):
+        asyncio.run(self.csi_volume_snapshot.delete_then_remove_finalizer(snapshot_name))
