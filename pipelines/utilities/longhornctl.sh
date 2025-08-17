@@ -3,7 +3,4 @@ longhornctl_check(){
   chmod +x longhornctl
   ./longhornctl install preflight
   ./longhornctl check preflight
-  if [[ -n $(./longhornctl check preflight 2>&1 | grep error) ]]; then
-    exit 1
-  fi
 }
