@@ -54,19 +54,6 @@ class Rest(Base):
 
         return backup
 
-    def create_error_backup(self, volume_name):
-        # create backup from a non-existing snapshot
-        snapshot_name = "non-existing"
-        volume = self.volume.get(volume_name)
-        volume.snapshotBackup(name=snapshot_name)
-
-        self.wait_for_backup_error(volume_name)
-
-        backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot_name)
-        logging(f"Created error backup {backup.name} from snapshot {snapshot_name}")
-
-        return backup
-
     def get(self, backup_id, volume_name):
         backups = self.list(volume_name)
         for backup in backups:
