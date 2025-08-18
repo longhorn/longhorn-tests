@@ -24,7 +24,7 @@ Test Teardown    Cleanup test resources without corrupting remote backupstore
 # Reset backup target from remote AWS S3 to local minio backup store before cleaning up resources
 # to avoid deleting the existing backupa on AWS S3
 Cleanup test resources without corrupting remote backupstore
-    Set backupstore
+    Set default backupstore
     Cleanup test resources
 
 Snapshot PV PVC could not be created on DR volume 1
@@ -153,7 +153,7 @@ Test Cleanup Snapshot With The Global Setting After Backup Completed
 
 Test Backupstore With Existing Backups
     [Documentation]    https://github.com/longhorn/longhorn/issues/11337
-    Given Reset backupstore
+    Given Reset default backupstore
     When Set backupstore url to s3://longhorn-test-backupstore@us-east-1/
     And Set backupstore secret to host-provider-cred-secret
     And Set backupstore poll interval to 30 seconds

@@ -58,7 +58,7 @@ Pull Backup Created By Another Longhorn System
     # Install current version then pull backup and verify data
     Then Install Longhorn
     And Setting deleting-confirmation-flag is set to true
-    And Set backupstore
+    And Set default backupstore
     And Enable v2 data engine and add block disks
     And Check backup synced from backupstore
     And Create volume 1 from backup 0 in another cluster
@@ -72,7 +72,7 @@ Pull Backup Created By Another Longhorn System
 
     # Install previous version and create backup
     Then Install Longhorn stable version
-    And Set backupstore
+    And Set default backupstore
     And Enable v2 data engine and add block disks
     And Create volume 2 with    dataEngine=${DATA_ENGINE}
     And Attach volume 2
@@ -87,7 +87,7 @@ Pull Backup Created By Another Longhorn System
 
      # Install current version then pull backup and verify data
     Then Install Longhorn
-    And Set backupstore
+    And Set default backupstore
     And Enable v2 data engine and add block disks
     And Check backup synced from backupstore
     And Create volume 3 from backup 1 in another cluster

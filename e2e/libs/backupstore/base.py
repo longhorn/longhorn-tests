@@ -87,6 +87,17 @@ class Base(ABC):
                             self.DEFAULT_BACKUPTARGET).pollInterval
         return from_k8s_duration_to_seconds(k8s_duration)
 
+    def set_backupstore(self):
+        backupstore = os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
+        if backupstore:
+            backupsettings = backupstore.split("$")
+            poll_interval = os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL', '30')
+            self.set_backupstore_url(backupsettings[0])
+            if len(backupsettings) > 1:
+                self.set_backupstore_secret(backupsettings[1])
+            self.set_backupstore_poll_interval(poll_interval)
+            self.wait_for_backupstore_available()
+
     def set_backupstore_url(self, url):
         bt = get_longhorn_client().by_id_backupTarget(
                             self.DEFAULT_BACKUPTARGET)
