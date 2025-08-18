@@ -7,8 +7,6 @@ from utility.utility import logging
 from utility.utility import is_json_object
 from utility.constant import DEFAULT_BACKUPSTORE
 
-from backupstore.base import BackupStore
-
 
 class Setting:
 
@@ -25,7 +23,6 @@ class Setting:
 
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
-        self.backupstore = BackupStore()
 
     def _update_setting(self, key, value):
         setting = get_longhorn_client().by_id_setting(key)
@@ -66,116 +63,6 @@ class Setting:
 
     def get_setting(self, key):
         return get_longhorn_client().by_id_setting(key).value
-
-    def get_backupstore_url(self):
-        return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
-
-    def get_backupstore_poll_interval(self):
-        return os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL', '30')
-
-    def set_backupstore(self):
-        backupstore = self.get_backupstore_url()
-        if backupstore:
-            backupsettings = backupstore.split("$")
-            poll_interval = self.get_backupstore_poll_interval()
-            try:
-                self.update_setting(self.SETTING_BACKUP_TARGET,
-                                    backupsettings[0],
-                                    retry=False)
-                if len(backupsettings) > 1:
-                    self.update_setting(
-                        self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
-                        backupsettings[1],
-                        retry=False)
-                    value = self.get_setting(
-                        self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-                    if value != backupsettings[1]:
-                        raise Exception(
-                            f"Failed to set "
-                            f"{self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET} "
-                            f"to {backupsettings[1]}"
-                        )
-
-                self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL,
-                                    poll_interval,
-                                    retry=False)
-                value = self.get_setting(
-                    self.SETTING_BACKUPSTORE_POLL_INTERVAL)
-                if value != poll_interval:
-                    raise Exception(
-                        f"Failed to set "
-                        f"{self.SETTING_BACKUPSTORE_POLL_INTERVAL} "
-                        f"to {poll_interval}"
-                    )
-            except Exception as e:
-                if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
-                    self.backupstore.set_backupstore_url(backupsettings[0])
-                    if len(backupsettings) > 1:
-                        self.backupstore.set_backupstore_secret(
-                            backupsettings[1])
-                    self.backupstore.set_backupstore_poll_interval(
-                        poll_interval)
-                else:
-                    logging(e)
-
-    def reset_backupstore(self):
-        try:
-            self.update_setting(self.SETTING_BACKUP_TARGET, "", retry=False)
-            value = self.get_setting(self.SETTING_BACKUP_TARGET)
-            if value != "":
-                raise Exception(
-                    f"Failed to reset {self.SETTING_BACKUP_TARGET} to empty, "
-                    f"current value: {value}"
-                )
-            self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
-                                "",
-                                retry=False)
-
-            value = self.get_setting(
-                self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            if value != "":
-                raise Exception(
-                    f"Failed to reset "
-                    f"{self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET} to empty,"
-                    f"current value: {value}"
-                )
-
-            # Resetting the poll interval to 300 seconds as default
-            self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL,
-                                "300",
-                                retry=False)
-            value = self.get_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL)
-            if value != "300":
-                raise Exception(
-                    f"Failed to reset "
-                    f"{self.SETTING_BACKUPSTORE_POLL_INTERVAL} to 300.\n"
-                    f"Current value: {value}"
-                )
-        except Exception as e:
-            if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
-                self.backupstore.reset_backupstore()
-            else:
-                logging(e)
-
-    def get_backup_target(self):
-        try:
-            return self.get_setting(self.SETTING_BACKUP_TARGET)
-        except Exception as e:
-            if self.SETTING_BACKUP_TARGET_NOT_SUPPORTED in e.error.message:
-                return self.backupstore.get_backupstore_url()
-            else:
-                logging(e)
-
-    def get_secret(self):
-        try:
-            return self.get_setting(
-                self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-        except Exception as e:
-            if (self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET_NOT_SUPPORTED
-                    in e.error.message):
-                return self.backupstore.get_backupstore_secret()
-            else:
-                logging(e)
 
     def reset_settings(self):
         client = get_longhorn_client()

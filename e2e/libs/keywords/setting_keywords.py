@@ -12,11 +12,5 @@ class setting_keywords:
     def get_setting(self, key):
         return self.setting.get_setting(key)
 
-    def set_backupstore(self):
-        self.setting.set_backupstore()
-
-    def reset_backupstore(self):
-        self.setting.reset_backupstore()
-
     def reset_settings(self):
         self.setting.reset_settings()

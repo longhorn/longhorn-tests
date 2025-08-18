@@ -14,6 +14,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/backupstore.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/orphan.resource
@@ -52,7 +53,7 @@ Pre-release Checks
         And Check Longhorn CRD removed
 
         And Install Longhorn stable version
-        And Set backupstore
+        And Set default backupstore
         And Enable v2 data engine and add block disks
     END
 
