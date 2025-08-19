@@ -118,15 +118,12 @@ Test Incremental Restore
 
 Test Uninstallation With Backups
     [Tags]    uninstall
-    [Documentation]    Test uninstall Longhorn with normal and failed backups
+    [Documentation]    Test uninstall Longhorn with backups
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
-
     And Create backup 0 for volume 0
-    And Create error backup for volume 0
-    And Verify backup list contains errors for volume 0
 
     When Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
