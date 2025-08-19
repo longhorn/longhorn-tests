@@ -11,9 +11,9 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, backup_name):
+    def create(self, backup_name, backup_policy):
         logging(f"Creating system backup {backup_name}")
-        get_longhorn_client().create_system_backup(Name=backup_name)
+        get_longhorn_client().create_system_backup(Name=backup_name, VolumeBackupPolicy=backup_policy)
         ready = False
         for i in range(self.retry_count):
             logging(f"Waiting for system backup {backup_name} to be ready ... ({i})")
