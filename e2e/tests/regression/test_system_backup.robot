@@ -9,6 +9,7 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/system_backup.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/backup.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -50,3 +51,17 @@ Test Uninstallation With System Backup
     And Check Longhorn CRD removed
 
     Then Install Longhorn
+
+Test Create System Backup With DR Volume
+    [Documentation]    Test create system backup with DR volume
+    ...                Issue: https://github.com/longhorn/longhorn/issues/10239
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create backup 0 for volume 0
+    And Check snapshot for backup 0 of volume 0 exists True
+
+    When Create DR volume 1 from backup 0
+    And Create system backup 0
+    And Assert volume 1 remains attached for at least 60 seconds
