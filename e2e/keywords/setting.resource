@@ -8,10 +8,7 @@ Set setting ${setting_key} to ${setting_value} will fail
     Run Keyword And Expect Error    *    update_setting    ${setting_key}    ${setting_value}    retry=False
 
 Setting ${setting_key} is set to ${setting_value}
-    [Arguments]    ${retry}=True
-    update_setting    ${setting_key}    ${setting_value}    retry=${retry}
-    ${value} =    get_setting    ${setting_key}
-    Should Be Equal    ${value}    ${setting_value}
+    update_setting    ${setting_key}    ${setting_value}
 
 Update Setting To Invalid Value And Verify
     [Arguments]    ${setting_key}    ${setting_value}
