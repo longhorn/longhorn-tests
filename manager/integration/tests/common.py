@@ -5563,7 +5563,7 @@ def wait_for_pods_volume_delete(client, pod_list,  # NOQA
 
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
                                            state, desire=True):
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         im = client.by_id_instance_manager(im_name)
         try:
             pod = core_api.read_namespaced_pod(name=im_name,

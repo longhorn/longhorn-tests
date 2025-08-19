@@ -31,7 +31,7 @@ Test RWX Volume Data Integrity After CSI Plugin Pod Restart
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/8184
 
-    Given Set setting auto-delete-pod-when-volume-detached-unexpectedly to true
+    Given Setting auto-delete-pod-when-volume-detached-unexpectedly is set to true
     And Create persistentvolumeclaim 0    volume_type=RWX
     And Create deployment 0 with persistentvolumeclaim 0 with max replicaset
     And Write 10 MB data to file data.txt in deployment 0

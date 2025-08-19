@@ -15,8 +15,7 @@ Test Teardown    Cleanup test resources
 *** Test Cases ***
 Test Replica Zone Hard Anti Affinity
     [Documentation]    Test replica scheduling with replica-zone-soft-anti-affinity set to false
-    Given Set setting replica-zone-soft-anti-affinity to false
-
+    Given Setting replica-zone-soft-anti-affinity is set to false
     And Set k8s node 0 zone lh-zone0
     And Set k8s node 1 zone lh-zone1
     And Set k8s node 2 zone lh-zone1
@@ -32,8 +31,7 @@ Test Replica Zone Hard Anti Affinity
 
 Test Replica Zone Soft Anti Affinity
     [Documentation]    Test replica scheduling with replica-zone-soft-anti-affinity set to true
-    Given Set setting replica-zone-soft-anti-affinity to true
-
+    Given Setting replica-zone-soft-anti-affinity is set to true
     And Set k8s node 0 zone lh-zone0
     And Set k8s node 1 zone lh-zone0
     And Set k8s node 2 zone lh-zone0

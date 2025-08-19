@@ -45,7 +45,7 @@ Test Uninstallation With System Backup
 
     And Create system backup 0
 
-    When Set setting deleting-confirmation-flag to true
+    When Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 

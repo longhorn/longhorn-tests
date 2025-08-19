@@ -12,9 +12,6 @@ class backup_keywords:
     def create_backup(self, volume_name, backup_id, wait=True):
         self.backup.create(volume_name, backup_id, wait)
 
-    def create_error_backup(self, volume_name):
-        self.backup.create_error_backup(volume_name)
-
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
 
