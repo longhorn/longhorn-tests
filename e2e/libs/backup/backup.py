@@ -18,8 +18,8 @@ class Backup(Base):
         else:
             self.backup = Rest()
 
-    def create(self, volume_name, backup_id, wait):
-        return self.backup.create(volume_name, backup_id, wait)
+    def create(self, volume_name, backup_id, wait, snapshot_id=None):
+        return self.backup.create(volume_name, backup_id, wait, snapshot_id)
 
     def get(self, backup_id, volume_name):
         return self.backup.get(backup_id, volume_name)
