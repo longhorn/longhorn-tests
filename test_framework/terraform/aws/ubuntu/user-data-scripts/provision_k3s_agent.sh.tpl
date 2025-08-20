@@ -1,7 +1,8 @@
 #!/bin/bash
 
-apt-get update
-apt-get install -y nfs-common cryptsetup dmsetup samba linux-modules-extra-`uname -r`
+apt-get -o Acquire::ForceIPv4=true update
+apt-get -o Acquire::ForceIPv4=true install -y "linux-modules-extra-$(uname -r)"
+apt-get -o Acquire::ForceIPv4=true install -y nfs-common cryptsetup dmsetup samba
 
 systemctl stop multipathd.socket
 systemctl disable multipathd.socket
