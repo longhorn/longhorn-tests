@@ -19,12 +19,12 @@ Test System Upgrade with New Instance Manager
     # maximum value of guaranteed-instance-manager-cpu is 40
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
-        Fail    Environment variable LONGHORN_STABLE_VERSION is not set
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
     ${LONGHORN_TRANSIENT_VERSION}=    Get Environment Variable    LONGHORN_TRANSIENT_VERSION    default=''
     IF    '${LONGHORN_TRANSIENT_VERSION}' == ''
-        Fail    Environment variable LONGHORN_TRANSIENT_VERSION is not set
+        Skip    Environment variable LONGHORN_TRANSIENT_VERSION is not set
     END
 
     Given Setting deleting-confirmation-flag is set to true

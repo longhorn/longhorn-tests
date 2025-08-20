@@ -19,7 +19,7 @@ Test Teardown    Cleanup test resources
 Test system upgrade with a new storage class being default
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
-        Fail    Environment variable LONGHORN_STABLE_VERSION is not set
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
     Given Setting deleting-confirmation-flag is set to true

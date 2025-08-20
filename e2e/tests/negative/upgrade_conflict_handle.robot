@@ -50,7 +50,7 @@ Test Stability of Longhorn with Large Workload
 Test Upgrade Stability with Large Workload
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
-        Fail    Environment variable LONGHORN_STABLE_VERSION is not set
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
     
     Given Setting deleting-confirmation-flag is set to true
