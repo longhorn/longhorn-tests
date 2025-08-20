@@ -10,7 +10,7 @@ def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
 def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 def WORKSPACE = "/src/longhorn-tests"
-def LONGHORN_INSTALL_METHOD = AIR_GAP_INSTALLATION ? 'manifest' : 'helm'
+def LONGHORN_INSTALL_METHOD = 'helm'
 
 def envArgs
 def vars = [
