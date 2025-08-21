@@ -102,9 +102,5 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def cleanup_system_backups(self):
-        return NotImplemented
-
-    @abstractmethod
     def cleanup_backups(self):
         return NotImplemented

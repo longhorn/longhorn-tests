@@ -107,9 +107,6 @@ class Backup(Base):
     def cleanup_backup_volumes(self):
         return self.backup.cleanup_backup_volumes()
 
-    def cleanup_system_backups(self):
-        return self.backup.cleanup_system_backups()
-
     def cleanup_backups(self):
         return self.backup.cleanup_backups()
 
