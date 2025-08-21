@@ -4,6 +4,7 @@ import time
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.utility import is_json_object
 from utility.constant import DEFAULT_BACKUPSTORE
 
 
@@ -28,34 +29,35 @@ class Setting:
         get_longhorn_client().update(setting, value=value)
 
     def update_setting(self, key, value, retry=True):
+        longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
+        version_doesnt_support_consolidated_settings = ['v1.7', 'v1.8', 'v1.9']
+        if any(_version in longhorn_version for _version in version_doesnt_support_consolidated_settings):
+            try:
+                value = next(iter(is_json_object(value).values()))
+            except Exception as e:
+                pass
+
         logging(f"Trying to update setting {key} to {value} ...")
+
         if retry:
-            logging(
-                f"Retrying {self.retry_count} times with "
-                f"{self.retry_interval} seconds interval."
-            )
             for i in range(self.retry_count):
+                logging(f"Trying to update setting {key} to {value} ... ({i})")
                 try:
                     self._update_setting(key, value)
-                    return
+                    break
                 except Exception as e:
-                    logging(
-                        f"Retrying to update setting {key} to {value} ... "
-                        f"({i + 1})"
-                    )
-                    # Failed if it is the last retry
-                    if i == self.retry_count - 1:
-                        logging(
-                            f"Failed to update setting {key} to {value} after "
-                            f"{self.retry_count} attempts: {e}"
-                        )
-                        raise
-                    else:
-                        logging(
-                            f"Retrying to update setting {key} to {value} ... "
-                            f"(attempt {i + 1})"
-                        )
-                        time.sleep(self.retry_interval)
+                    logging(f"Failed to update setting {key} to {value}: {e}")
+                time.sleep(self.retry_interval)
+            updated_setting = self.get_setting(key)
+            try:
+                updated_setting = is_json_object(updated_setting)
+                try:
+                    value = is_json_object(value)
+                    assert updated_setting == value, f"Failed to update setting {key} to {value}, current value is {updated_setting}"
+                except ValueError:
+                    assert all(v == value for v in updated_setting.values()), f"Failed to update setting {key} to {value}, current value is {updated_setting}"
+            except ValueError:
+                assert updated_setting == value, f"Failed to update setting {key} to {value}, current value is {updated_setting}"
         else:
             self._update_setting(key, value)
 

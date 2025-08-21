@@ -6,8 +6,8 @@ class system_backup_keywords:
     def __init__(self):
         self.system_backup = SystemBackup()
 
-    def create_system_backup(self, backup_name):
-        self.system_backup.create(backup_name)
+    def create_system_backup(self, backup_name, backup_policy='if-not-present'):
+        self.system_backup.create(backup_name, backup_policy)
 
     def create_system_restore(self, backup_name):
         self.system_backup.restore(backup_name)

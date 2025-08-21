@@ -20,9 +20,15 @@ class Rest(Base):
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, backup_id, wait):
-        # create snapshot
-        snapshot = self.snapshot.create(volume_name, backup_id)
+    def create(self, volume_name, backup_id, wait, snapshot_id=None):
+        if not snapshot_id:
+            # create snapshot
+            snapshot = self.snapshot.create(volume_name, backup_id)
+        else:
+            # use existing snapshot
+            snapshot = self.snapshot.get(volume_name, snapshot_id)
+            if not snapshot:
+                raise Exception(f"Snapshot {snapshot_id} not found for volume {volume_name}")
 
         volume = self.volume.get(volume_name)
         volume.snapshotBackup(name=snapshot.name)
@@ -51,19 +57,6 @@ class Rest(Base):
 
         self.set_backup_id(backup.name, backup_id)
         self.set_data_checksum(backup.name, self.volume.get_last_data_checksum(volume_name))
-
-        return backup
-
-    def create_error_backup(self, volume_name):
-        # create backup from a non-existing snapshot
-        snapshot_name = "non-existing"
-        volume = self.volume.get(volume_name)
-        volume.snapshotBackup(name=snapshot_name)
-
-        self.wait_for_backup_error(volume_name)
-
-        backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot_name)
-        logging(f"Created error backup {backup.name} from snapshot {snapshot_name}")
 
         return backup
 

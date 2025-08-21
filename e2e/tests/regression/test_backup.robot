@@ -118,15 +118,12 @@ Test Incremental Restore
 
 Test Uninstallation With Backups
     [Tags]    uninstall
-    [Documentation]    Test uninstall Longhorn with normal and failed backups
+    [Documentation]    Test uninstall Longhorn with backups
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
-
     And Create backup 0 for volume 0
-    And Create error backup for volume 0
-    And Verify backup list contains errors for volume 0
 
     When Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
@@ -166,3 +163,25 @@ Test Backupstore With Existing Backups
     And Wait for backing image backup for backing image bi ready
     # the existing system backup in the backup store is called system-backup
     And Wait for system backup system-backup ready
+
+Backup Older Snapshot When Newer Snapshot Backup Exists
+    [Tags]    backup
+    [Documentation]
+    ...    This test verifies that a volume can successfully create a backup from
+    ...    an older snapshot even after a newer snapshot had already been backed
+    ...    up.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/11461
+
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Create snapshot 0 of volume 0
+    And Write data to volume 0
+    And Create snapshot 1 of volume 0
+    And Validate snapshot 0 is parent of snapshot 1 in volume 0 snapshot list
+    And Create backup 0 for volume 0    snapshot_id=1
+    And Verify backup list contains no error for volume 0
+
+    When Create backup 1 for volume 0    snapshot_id=0
+    Then Verify backup list contains no error for volume 0
