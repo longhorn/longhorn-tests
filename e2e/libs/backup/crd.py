@@ -88,6 +88,3 @@ class CRD(Base):
             except Exception as e:
                 if e.reason != "Not Found":
                     Exception(f"Deleting backup failed: {e}")
-
-    def cleanup_system_backups(self):
-        return NotImplemented

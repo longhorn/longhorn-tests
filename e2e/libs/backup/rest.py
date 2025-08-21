@@ -273,25 +273,3 @@ class Rest(Base):
 
     def cleanup_backups(self):
         return CRD().cleanup_backups()
-
-    def cleanup_system_backups(self):
-
-        system_backups = get_longhorn_client().list_system_backup()
-        for system_backup in system_backups:
-            # ignore the error when clean up
-            try:
-                get_longhorn_client().delete(system_backup)
-            except Exception as e:
-                name = system_backup['name']
-                print("\nException when cleanup system backup ", name)
-                print(e)
-
-        ok = False
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for _ in range(retry_count):
-            system_backups = get_longhorn_client().list_system_backup()
-            if len(system_backups) == 0:
-                ok = True
-                break
-            time.sleep(retry_interval)
-        assert ok

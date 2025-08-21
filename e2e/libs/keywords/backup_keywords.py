@@ -63,7 +63,6 @@ class backup_keywords:
 
     def cleanup_backups(self):
         if get_backupstore():
-            self.backup.cleanup_system_backups()
             self.backup.cleanup_backup_volumes()
             self.backup.cleanup_backups()
 

@@ -16,6 +16,8 @@ Test Teardown    Cleanup test resources
 Test System Backup Recurring Job When volume-backup-policy is disabled
     [Tags]    recurring-job    system-backup-recurring-job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
     When Create system-backup recurringjob 0    parameters={"volume-backup-policy":"disabled"}
 
     Then Assert recurringjob 0 not created backup for volume 0
@@ -24,6 +26,8 @@ Test System Backup Recurring Job When volume-backup-policy is disabled
 Test System Backup Recurring Job When volume-backup-policy is if-not-present
     [Tags]    recurring-job    system-backup-recurring-job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
     When Create system-backup recurringjob 0    parameters={"volume-backup-policy":"if-not-present"}
 
     Then Assert recurringjob 0 created backup for volume 0
