@@ -7,6 +7,7 @@ import yaml
 import signal
 import subprocess
 import shlex
+import json
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
@@ -380,3 +381,10 @@ def convert_size_to_bytes(size):
         return int(size)
 
     raise ValueError(f"Invalid size format: {size}")
+
+
+def is_json_object(s):
+    parsed = json.loads(s)
+    if isinstance(parsed, dict):
+        return parsed
+    raise ValueError(f"input {s} is not a valid json object")
