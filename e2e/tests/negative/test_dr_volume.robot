@@ -162,7 +162,7 @@ Test DR Volume Live Upgrade And Rebuild
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version
-    And Set backupstore
+    And Set default backupstore
     And Enable v2 data engine and add block disks
 
     # Scenario 1: Create initial deployment and backups

@@ -11,6 +11,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/backupstore.resource
 Resource    ../keywords/recurringjob.resource
 
 Test Setup    Set up test environment
@@ -58,7 +59,7 @@ Test Upgrade Stability with Large Workload
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version    
-    And set_backupstore
+    And Set default backupstore
 
     When Perform recurring job workflow under load    
     And Upgrade Longhorn to custom version
