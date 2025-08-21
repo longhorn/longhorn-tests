@@ -73,6 +73,7 @@ Set up test environment
     END
 
 Cleanup test resources
+    set_backupstore
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
