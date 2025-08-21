@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    upgrade    negative
+Test Tags    2-stage-upgrade    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
