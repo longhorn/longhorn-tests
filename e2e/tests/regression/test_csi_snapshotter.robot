@@ -105,3 +105,17 @@ Test CSI Volume Snapshot Associated With Longhorn Backup With Deletion Policy Re
 
     When Delete csi volume snapshot 0
     Then Backup associated with csi volume snapshot 0 of deployment 0 should still exist
+
+Test CSI Volume Snapshot With Invalid Backup Target
+    [Documentation]    https://github.com/longhorn/longhorn/issues/10501
+    Given Reset backupstore
+    When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 attached and healthy
+
+    When Create csi volume snapshot class 0    type=bak    deletionPolicy=Delete
+    And Create csi volume snapshot 0 for persistentvolumeclaim 0
+    And Sleep    90
+    And Verify no backup created
+    And Delete CSI volume snapshot 0 forcibly

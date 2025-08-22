@@ -1,5 +1,6 @@
 import yaml
 import time
+import asyncio
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -184,3 +185,41 @@ class CSIVolumeSnapshot:
                     assert delete_exception.status == 404
         except ApiException as list_exception:
             assert list_exception.status == 404
+
+    def remove_csi_volume_snapshot_finalizer(self, csi_volume_snapshot_name):
+        for i in range(self.retry_count):
+            logging(f"Removing finalizers from CSI volume snapshot {csi_volume_snapshot_name} ... ({i})")
+            try:
+                snapshot = self.api.get_namespaced_custom_object(
+                    group=self.group,
+                    version=self.version,
+                    namespace="default",
+                    plural="volumesnapshots",
+                    name=csi_volume_snapshot_name
+                )
+                if not snapshot.get("metadata", {}).get("finalizers"):
+                    return
+
+                snapshot["metadata"]["finalizers"] = []
+                self.api.replace_namespaced_custom_object(
+                    group=self.group,
+                    version=self.version,
+                    namespace="default",
+                    plural="volumesnapshots",
+                    name=csi_volume_snapshot_name,
+                    body=snapshot
+                )
+                return
+            except ApiException as e:
+                if e.status == 404:
+                    return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to remove finalizers from csi volume snapshot {csi_volume_snapshot_name}"
+
+    async def delete_then_remove_finalizer(self, snapshot_name):
+        loop = asyncio.get_event_loop()
+        delete_task = loop.run_in_executor(None, self.delete_csi_volume_snapshot, snapshot_name)
+        # Give K8s a moment to mark volumesnapshot as 'Terminating'
+        await asyncio.sleep(2)
+        await loop.run_in_executor(None, self.remove_csi_volume_snapshot_finalizer, snapshot_name)
+        await delete_task
