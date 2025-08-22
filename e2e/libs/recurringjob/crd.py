@@ -111,6 +111,9 @@ class CRD(Base):
 
     def wait_for_systembackup_state(self, job_name, expected_state):
         for i in range(self.retry_count):
+
+            time.sleep(self.retry_interval)
+
             system_backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "systembackups",
                                            label_selector=f"recurring-job.longhorn.io/system-backup={job_name}")
             try:
@@ -127,7 +130,6 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed: {e}")
 
-            time.sleep(self.retry_interval)
         assert False, f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed"
 
     def assert_volume_backup_created(self, volume_name, job_name, retry_count=-1):
