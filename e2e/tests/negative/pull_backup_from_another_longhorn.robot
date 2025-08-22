@@ -1,7 +1,7 @@
 *** Settings ***
-Documentation    Uninstallation Checks
+Documentation    Pull Backup From Another Longhorn
 
-Test Tags    uninstall    negative
+Test Tags    upgrade    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
