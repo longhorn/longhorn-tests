@@ -18,20 +18,26 @@ Test System Backup Recurring Job When volume-backup-policy is disabled
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
+    And Create volume 1 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     When Create system-backup recurringjob 0    parameters={"volume-backup-policy":"disabled"}
 
     Then Assert recurringjob 0 not created backup for volume 0
     And Wait for recurringjob 0 created systembackup to reach Ready state
+    And Wait for volume 0 attached
+    And Wait for volume 1 detached
 
 Test System Backup Recurring Job When volume-backup-policy is if-not-present
     [Tags]    recurring-job    system-backup-recurring-job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
+    And Create volume 1 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     When Create system-backup recurringjob 0    parameters={"volume-backup-policy":"if-not-present"}
 
     Then Assert recurringjob 0 created backup for volume 0
     And Wait for recurringjob 0 created systembackup to reach Ready state
+    And Wait for volume 0 attached
+    And Wait for volume 1 detached
 
 Recurring Job Pod Should Not Crash
     [Tags]    regression    recurring-job
