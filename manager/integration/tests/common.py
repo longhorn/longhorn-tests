@@ -2826,6 +2826,66 @@ def exec_local(cmd):
     return subprocess.check_output(exec_cmd)
 
 
+<<<<<<< HEAD
+=======
+def parse_nvmf_endpoint(nvmf):
+    return nvmf[7:].split('/')
+
+
+def get_nvmf_ip(nvmf):
+    nvmf_endpoint = parse_nvmf_endpoint(nvmf)
+    return nvmf_endpoint[0].split(':')[0]
+
+
+def get_nvmf_port(nvmf):
+    nvmf_endpoint = parse_nvmf_endpoint(nvmf)
+    return nvmf_endpoint[0].split(':')[1]
+
+
+def get_nvmf_nqn(nvmf):
+    nvmf_endpoint = parse_nvmf_endpoint(nvmf)
+    return nvmf_endpoint[1]
+
+
+def nvmf_login(nvmf):
+    # Related commands are documented at:
+    # https://github.com/longhorn/longhorn-tests/wiki/Connect-to-the-NVMf-frontend-volume # NOQA
+    ip = get_nvmf_ip(nvmf)
+    port = get_nvmf_port(nvmf)
+    # NVMe Qualified Name
+    nqn = get_nvmf_nqn(nvmf)
+
+    cmd_connect = f"nvme connect -t tcp -a {ip} -s {port} -n {nqn}"
+    subprocess.check_output(cmd_connect.split())
+    return wait_for_nvme_device()
+
+
+def nvmf_logout(nvmf):
+    nqn = get_nvmf_nqn(nvmf)
+    try:
+        subprocess.check_call(["nvme", "disconnect", "-n", nqn])
+        print(f"Disconnected from {nqn}")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to disconnect from {nqn}: {e}")
+
+
+def wait_for_nvme_device():
+    for _ in range(RETRY_COUNTS):
+        try:
+            output = subprocess.check_output(["nvme", "list"], text=True)
+            print(f"nvme list output =\n {output}")
+            for line in output.splitlines():
+                if "SPDK bdev Controller" in line:
+                    dev_path = line.split()[0]
+                    return dev_path
+        except subprocess.CalledProcessError as e:
+            print(f"nvme list failed: {e.output}")
+        time.sleep(RETRY_INTERVAL)
+
+    raise Exception("NVMe device not found after retries")
+
+
+>>>>>>> 7746c6e9 (test: fix v2 test case test_volume_basic[nvmf] on machines with real nvme devices)
 def iscsi_login(iscsi_ep):
     ip = get_iscsi_ip(iscsi_ep)
     port = get_iscsi_port(iscsi_ep)
