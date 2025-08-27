@@ -2899,7 +2899,7 @@ def wait_for_nvme_device():
             output = subprocess.check_output(["nvme", "list"], text=True)
             print(f"nvme list output =\n {output}")
             for line in output.splitlines():
-                if line.startswith("/dev/nvme"):
+                if "SPDK bdev Controller" in line:
                     dev_path = line.split()[0]
                     return dev_path
         except subprocess.CalledProcessError as e:
