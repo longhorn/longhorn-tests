@@ -47,6 +47,7 @@ node {
         string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID'),
         string(credentialsId: 'AZURE_SUBSCRIPTION_ID', variable: 'AZURE_SUBSCRIPTION_ID'),
         string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
+        file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -60,6 +61,7 @@ node {
             if (params.AIR_GAP_INSTALLATION) {
 
                 stage('airgap build') {
+                    sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                            --env TF_VAR_longhorn_version=${LONGHORN_REPO_BRANCH} \
