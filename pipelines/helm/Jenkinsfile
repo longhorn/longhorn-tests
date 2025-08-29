@@ -30,6 +30,7 @@ node {
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
+        file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -43,6 +44,7 @@ node {
             if (params.AIR_GAP_INSTALLATION) {
 
                 stage('airgap build') {
+                    sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                            --env TF_VAR_longhorn_version=${LONGHORN_REPO_BRANCH} \
