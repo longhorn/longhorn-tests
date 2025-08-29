@@ -1,7 +1,7 @@
 *** Settings ***
-Documentation    Uninstallation Checks
+Documentation    Pull Backup From Another Longhorn
 
-Test Tags    uninstall    negative
+Test Tags    upgrade    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -51,14 +51,14 @@ Pull Backup Created By Another Longhorn System
     When Create backup 0 for volume 0
     Then Verify backup list contains no error for volume 0
     And Verify backup list contains backup 0 of volume 0
-    Then Set setting deleting-confirmation-flag to true
+    Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     # Install current version then pull backup and verify data
     Then Install Longhorn
-    And Set setting deleting-confirmation-flag to true
-    And Set backupstore
+    And Setting deleting-confirmation-flag is set to true
+    And Set default backupstore
     And Enable v2 data engine and add block disks
     And Check backup synced from backupstore
     And Create volume 1 from backup 0 in another cluster
@@ -66,13 +66,13 @@ Pull Backup Created By Another Longhorn System
     And Attach volume 1
     And Wait for volume 1 healthy
     Then Check volume 1 data is backup 0 created in another cluster
-    And Set setting deleting-confirmation-flag to true
+    And Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     # Install previous version and create backup
     Then Install Longhorn stable version
-    And Set backupstore
+    And Set default backupstore
     And Enable v2 data engine and add block disks
     And Create volume 2 with    dataEngine=${DATA_ENGINE}
     And Attach volume 2
@@ -81,13 +81,13 @@ Pull Backup Created By Another Longhorn System
     When Create backup 1 for volume 2
     Then Verify backup list contains no error for volume 2
     And Verify backup list contains backup 1 of volume 2
-    Then Set setting deleting-confirmation-flag to true
+    Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn stable version
     And Check Longhorn CRD removed
 
      # Install current version then pull backup and verify data
     Then Install Longhorn
-    And Set backupstore
+    And Set default backupstore
     And Enable v2 data engine and add block disks
     And Check backup synced from backupstore
     And Create volume 3 from backup 1 in another cluster

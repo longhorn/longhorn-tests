@@ -21,7 +21,7 @@ Test Volume Snapshot Checksum When Healthy Replicas More Than 1
     [Documentation]
     ...    This test validates that snapshot checksum calculation is performed when the number of healthy replicas is more than 1.
     
-    Given Set setting snapshot-data-integrity-immediate-check-after-snapshot-creation to true
+    Given Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to {"v1":"true","v2":"true"}
     And Create volume 0 with    size=100Mi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
 
     When Attach volume 0
@@ -36,7 +36,7 @@ Test Volume Snapshot Checksum Skipped When Less Than 2 Healthy Replicas
     [Documentation]
     ...    This test validates that snapshot checksum calculation is skipped when the number of healthy replicas is less than 2.
 
-    Given Set setting snapshot-data-integrity-immediate-check-after-snapshot-creation to true
+    Given Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to {"v1":"true","v2":"true"}
     And Disable node 1 scheduling
     And Disable node 2 scheduling
     And Create volume 0 with    size=100Mi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}

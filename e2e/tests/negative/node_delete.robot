@@ -18,8 +18,8 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Delete Volume Node While Replica Rebuilding
-    Given Set setting node-down-pod-deletion-policy to do-nothing
-    And Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting node-down-pod-deletion-policy is set to do-nothing
+    And Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
@@ -51,8 +51,8 @@ Delete Volume Node While Replica Rebuilding
     END
 
 Delete Replica Node While Replica Rebuilding
-    Given Set setting node-down-pod-deletion-policy to do-nothing
-    And Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting node-down-pod-deletion-policy is set to do-nothing
+    And Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test

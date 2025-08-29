@@ -11,6 +11,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/backupstore.resource
 Resource    ../keywords/recurringjob.resource
 
 Test Setup    Set up test environment
@@ -53,12 +54,12 @@ Test Upgrade Stability with Large Workload
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
     END
     
-    Given Set setting deleting-confirmation-flag to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version    
-    And set_backupstore
+    And Set default backupstore
 
     When Perform recurring job workflow under load    
     And Upgrade Longhorn to custom version

@@ -30,8 +30,6 @@ from common import SNAPSHOT_DATA_INTEGRITY_ENABLED
 from common import SNAPSHOT_DATA_INTEGRITY_FAST_CHECK
 from common import SNAPSHOT_DATA_INTEGRITY_DISABLED
 from common import SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT, RETRY_COUNTS_SHORT # NOQA
-from common import DATA_ENGINE
-from common import SETTING_V2_SNAPSHOT_DATA_INTEGRITY, SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED # NOQA
 
 RETRY_WAIT_CHECKSUM_COUNTS = 600
 SNAPSHOT_CHECK_PERIOD = 300
@@ -50,7 +48,8 @@ def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, s
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
-                                       "true", "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_with_immediate_hash(client, volume_name,
                                          SNAPSHOT_DATA_INTEGRITY_IGNORED)
 
@@ -63,7 +62,8 @@ def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
-                                       "false", "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_without_immediate_hash(client, volume_name,
                                             SNAPSHOT_DATA_INTEGRITY_IGNORED)
 
@@ -77,7 +77,8 @@ def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
-                                       "true", "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_with_immediate_hash(client,
                                          volume_name,
                                          SNAPSHOT_DATA_INTEGRITY_IGNORED)
@@ -91,8 +92,8 @@ def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_n
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
-                                       "false",
-                                       "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_without_immediate_hash(client, volume_name,
                                             SNAPSHOT_DATA_INTEGRITY_IGNORED)  # NOQA
 
@@ -109,8 +110,8 @@ def test_snapshot_hash_global_disabled_with_immediate_hash(client, volume_name, 
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
-                                       "true",
-                                       "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_per_volume_hash_disable(client, volume_name,
                                   SNAPSHOT_DATA_INTEGRITY_IGNORED)
 
@@ -127,8 +128,8 @@ def test_snapshot_hash_global_disabled_without_immediate_hash(client, volume_nam
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
-                                       "false",
-                                       "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_per_volume_hash_disable(client, volume_name,
                                   SNAPSHOT_DATA_INTEGRITY_IGNORED)
 
@@ -143,8 +144,8 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
-                                       "true",
-                                       "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_with_immediate_hash(client, volume_name,
                                          SNAPSHOT_DATA_INTEGRITY_ENABLED)
 
@@ -158,8 +159,8 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immedi
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
-                                       "false",
-                                       "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_without_immediate_hash(client, volume_name,
                                             SNAPSHOT_DATA_INTEGRITY_ENABLED)
 
@@ -174,8 +175,8 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immedi
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
-                                       "true",
-                                       "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_with_immediate_hash(client, volume_name,
                                          SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
 
@@ -189,8 +190,8 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_imm
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
-                                       "false",
-                                       "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_hashed_and_without_immediate_hash(client, volume_name,
                                             SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
 
@@ -204,8 +205,8 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
-                                       "true",
-                                       "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_per_volume_hash_disable(client, volume_name,
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
@@ -219,8 +220,8 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immedia
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
-                                       "false",
-                                       "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_per_volume_hash_disable(client, volume_name,
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
@@ -235,8 +236,8 @@ def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immedia
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
-                                       "true",
-                                       "true")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"true","v2":"true"}')
     check_per_volume_hash_disable(client, volume_name,
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
@@ -251,8 +252,8 @@ def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_imme
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
-                                       "false",
-                                       "true")
+                                       '{"v1":"false","v2":"false"}',
+                                       '{"v1":"true","v2":"true"}')
     check_per_volume_hash_disable(client, volume_name,
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
@@ -266,8 +267,8 @@ def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_n
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
-                                       "true",
-                                       "false")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"false","v2":"false"}')
     detect_and_repair_corrupted_replica(client, volume_name,
                                         SNAPSHOT_DATA_INTEGRITY_ENABLED,
                                         retry_count=SNAPSHOT_CHECK_PERIOD * 2)
@@ -282,8 +283,8 @@ def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volum
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
-                                       "true",
-                                       "false")
+                                       '{"v1":"true","v2":"true"}',
+                                       '{"v1":"false","v2":"false"}')
     detect_and_repair_corrupted_replica(client, volume_name,
                                         SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
                                         retry_count=SNAPSHOT_CHECK_PERIOD * 2)
@@ -300,14 +301,9 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
 
     cronjob = f"{minutes} {hours} * * *"
 
-    if DATA_ENGINE == "v1":
-        snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
-        snapshot_fast_data_rebuild_enabled_setting = \
-            SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
-    elif DATA_ENGINE == "v2":
-        snapshot_data_integrity_setting = SETTING_V2_SNAPSHOT_DATA_INTEGRITY
-        snapshot_fast_data_rebuild_enabled_setting =  \
-            SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
+    snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
+    snapshot_fast_data_rebuild_enabled_setting = \
+        SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
 
     update_setting(client,
                    snapshot_data_integrity_setting,

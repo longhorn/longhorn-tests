@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pre-release Checks Test Case
 
-Test Tags    pre-release
+Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release
 
 Library    OperatingSystem
 
@@ -14,6 +14,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/backupstore.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/orphan.resource
@@ -47,31 +48,31 @@ Pre-release Checks
     # uninstall the existing Longhorn and install stable version of Longhorn to be upgraded
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
-        Given Set setting deleting-confirmation-flag to true
+        Given Setting deleting-confirmation-flag is set to true
         And Uninstall Longhorn
         And Check Longhorn CRD removed
 
         And Install Longhorn stable version
-        And Set backupstore
+        And Set default backupstore
         And Enable v2 data engine and add block disks
     END
 
     # after correct version of Longhorn is installed, start the test
 
     # (0) disable auto salvage to allow faulted volumes to be revealed
-    Given Set setting auto-salvage to false
+    Given Setting auto-salvage is set to false
 
     IF    '${test_v2_only}' == 'false'
 
         # (1) create a volume with revision counter enabled
-        When Set setting disable-revision-counter to false
+        When Setting disable-revision-counter is set to {"v1":"false"}
         And Create volume vol-revision-enabled with    size=1Gi    dataEngine=v1
         And Attach volume vol-revision-enabled
         And Wait for volume vol-revision-enabled healthy
         And Write data data-vol-revision-enabled 256 MB to volume vol-revision-enabled
 
         # (2) create a volume with revision counter disabled
-        When Set setting disable-revision-counter to true
+        When Setting disable-revision-counter is set to {"v1":"false"}
         And Create volume vol-revision-disabled with    size=1Gi    dataEngine=v1
         And Attach volume vol-revision-disabled
         And Wait for volume vol-revision-disabled healthy
@@ -426,7 +427,7 @@ Pre-release Checks
     END
 
     # test uninstalling Longhorn
-    Then Set setting deleting-confirmation-flag to true
+    Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 

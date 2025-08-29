@@ -37,12 +37,12 @@ Power Off Node With Anti-Affinity Settings
     ...                - ${zone_affinity}: Replica Zone Level Soft Anti-Affinity setting (true/false).
     ...                - ${node_num}: Number of node to power off (e.g., 0 or 1).
     ...                - ${power_off_time}: Duration (in minutes) to power off the node.
-    Given Set setting replica-replenishment-wait-interval to 180
-    And Set setting replica-disk-soft-anti-affinity to ${disk_affinity}
-    And Set setting replica-soft-anti-affinity to ${node_affinity}
-    And Set setting replica-zone-soft-anti-affinity to ${zone_affinity}
+    Given Setting replica-replenishment-wait-interval is set to 180
+    And Setting replica-disk-soft-anti-affinity is set to ${disk_affinity}
+    And Setting replica-soft-anti-affinity is set to ${node_affinity}
+    And Setting replica-zone-soft-anti-affinity is set to ${zone_affinity}
     IF    "${DATA_ENGINE}" == "v2"
-        And Set setting v2-data-engine-fast-replica-rebuilding to true
+        And Setting v2-data-engine-fast-replica-rebuilding is set to true
     END
 
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}

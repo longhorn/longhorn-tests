@@ -19,7 +19,8 @@ Test Teardown    Cleanup test resources
 *** Keywords ***
 Kubelet Restart Immediately Test
     [Arguments]    ${numberOfReplicas}
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
+
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=${numberOfReplicas}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -42,7 +43,7 @@ Kubelet Restart Immediately Test
 
 Kubelet Restart After Temporary Downtime
     [Arguments]    ${numberOfReplicas}
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=${numberOfReplicas}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -68,7 +69,7 @@ Kubelet Restart After Temporary Downtime
 
 *** Test Cases ***
 Restart Volume Node Kubelet While Workload Heavy Writing
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -87,7 +88,7 @@ Restart Volume Node Kubelet While Workload Heavy Writing
     END
 
 Stop Volume Node Kubelet For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -132,7 +133,7 @@ Restart Volume Node Kubelet Immediately On Single Node Cluster
     Then Kubelet Restart Immediately Test    numberOfReplicas=1
 
 Restart Volume Node Kubelet After Temporary Downtime
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -159,7 +160,7 @@ Restart Volume Node Kubelet After Temporary Downtime
 Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster
     Given Cordon node 1
     And Cordon node 2
-    When Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    When Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}        numberOfReplicas=1
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass

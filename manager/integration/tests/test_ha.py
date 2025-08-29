@@ -349,7 +349,7 @@ def ha_salvage_test(client, core_api, # NOQA
         client.by_id_setting(SETTING_DISABLE_REVISION_COUNTER)
     setting = client.update(disable_revision_counter_setting, value="true")
     assert setting.name == SETTING_DISABLE_REVISION_COUNTER
-    assert setting.value == "true"
+    assert setting.value == '{"v1":"true"}'
 
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3,
@@ -391,10 +391,10 @@ def ha_salvage_test(client, core_api, # NOQA
     assert setting.value == "true"
 
     disable_revision_counter_setting = \
-        client.by_id_setting("disable-revision-counter")
+        client.by_id_setting(SETTING_DISABLE_REVISION_COUNTER)
     setting = client.update(disable_revision_counter_setting, value="false")
-    assert setting.name == "disable-revision-counter"
-    assert setting.value == "false"
+    assert setting.name == SETTING_DISABLE_REVISION_COUNTER
+    assert setting.value == '{"v1":"false"}'
 
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3,

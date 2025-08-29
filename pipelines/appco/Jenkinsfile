@@ -10,7 +10,7 @@ def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
 def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 def WORKSPACE = "/src/longhorn-tests"
-def LONGHORN_INSTALL_METHOD = AIR_GAP_INSTALLATION ? 'manifest' : 'helm'
+def LONGHORN_INSTALL_METHOD = 'helm'
 
 def envArgs
 def vars = [
@@ -76,7 +76,7 @@ node {
 
         try {
             stage ('fetch test images list') {
-                sh "cp ${CA_CERT_PATH} SUSE_Trust_Root.crt"
+                sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
                 sh "pipelines/appco/scripts/build.sh"
                 sh """ docker run -itd --name fetch-test-images-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                         -v /var/run/docker.sock:/var/run/docker.sock \
@@ -84,6 +84,8 @@ node {
                                         --env TF_VAR_docker_hub_password=${REGISTRY_PASSWORD} \
                                         --env APPCO_USERNAME=${APPCO_USERNAME} \
                                         --env APPCO_PASSWORD=${APPCO_PASSWORD} \
+                                        --dns=10.113.53.53 \
+                                        --dns=10.113.53.54 \
                                         ${imageName}
                     """
 
@@ -125,7 +127,6 @@ node {
 
             if (params.AIR_GAP_INSTALLATION) {
                 stage('private registry build') {
-                    sh "cp ${CA_CERT_PATH} SUSE_Trust_Root.crt"
                     sh "airgap/scripts/build.sh"
                     sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -136,6 +137,8 @@ node {
                                             --env TF_VAR_arch=${ARCH}\
                                             --env TF_VAR_registry_aws_instance_type=${registry_instance_type}\
                                             --env TF_VAR_appco_test="true"\
+                                            --dns=10.113.53.53 \
+                                            --dns=10.113.53.54 \
                                             airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
                     """
                 }
@@ -189,7 +192,6 @@ node {
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration code: $REGISTRATION_CODE_ID"
 
-                sh "cp ${CA_CERT_PATH} SUSE_Trust_Root.crt"
                 sh "pipelines/appco/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
@@ -238,6 +240,8 @@ node {
                                        --env QASE_PROJECT=LH \
                                        --env APPCO_TEST="true" \
                                        --env LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD} \
+                                       --dns=10.113.53.53 \
+                                       --dns=10.113.53.54 \
                                        ${envArgs} \
                                        ${imageName}
                 """

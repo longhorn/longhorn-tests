@@ -9,11 +9,8 @@ class backup_keywords:
     def __init__(self):
         self.backup = Backup()
 
-    def create_backup(self, volume_name, backup_id, wait=True):
-        self.backup.create(volume_name, backup_id, wait)
-
-    def create_error_backup(self, volume_name):
-        self.backup.create_error_backup(volume_name)
+    def create_backup(self, volume_name, backup_id, wait=True, snapshot_id=None):
+        self.backup.create(volume_name, backup_id, wait, snapshot_id)
 
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
@@ -66,7 +63,6 @@ class backup_keywords:
 
     def cleanup_backups(self):
         if get_backupstore():
-            self.backup.cleanup_system_backups()
             self.backup.cleanup_backup_volumes()
             self.backup.cleanup_backups()
 
