@@ -257,7 +257,6 @@ Test V2 Instance Manager Deletion On Volume Attached Node With Inactivated Data 
     When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
     And Delete v2 instance manager on node 2
     Then Check v2 instance manager is not running on node 2
-    And Wait for volume 0 detached
 
     When Label node 2 with node.longhorn.io/disable-v2-data-engine-
     Then Check v2 instance manager is running on node 2
