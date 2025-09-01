@@ -17,7 +17,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Disconnect Volume Node Network While Workload Heavy Writing
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -33,7 +33,7 @@ Disconnect Volume Node Network While Workload Heavy Writing
     END
 
 Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Set setting rwx-volume-fast-failover to ${RWX_VOLUME_FAST_FAILOVER}
+    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Create statefulset 1 using RWX volume with longhorn-test storageclass
@@ -57,7 +57,7 @@ Node Disconnect And Keep Data Writing And No Replica On The Disconnected Node
     ...                Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)
     ...                Wait for the node back.
     ...                The volume should remain detached, and all replicas remain in ERROR state.
-    Given Set setting auto-salvage to false
+    Given Setting auto-salvage is set to false
 
     When Create volume 0 with 10 GB and no replicas on the attached node
     And Keep writing data to volume 0
@@ -77,7 +77,7 @@ Node Disconnect And Keep Data Writing And Have Replica On The Disconnected Node
     ...                Wait for the node back.
     ...                The volume will be in degraded state and then started the replica rebuilding process.
     ...                The volume become healthy.
-    Given Set setting auto-salvage to false
+    Given Setting auto-salvage is set to false
 
     When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
@@ -98,7 +98,7 @@ Node Disconnect And No Replica On Disconnected Node
     ...                No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)
     ...                Wait for the node back.
     ...                The volume will be in an attached state with its robustness unknown at first, then the volume become healthy.
-    Given Set setting auto-salvage to false
+    Given Setting auto-salvage is set to false
 
     When Create volume 0 with 10 GB and no replicas on the attached node
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
@@ -115,7 +115,7 @@ Node Disconnect And Have Replica On Disconnected Node
     ...                No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)
     ...                Wait for the node back.
     ...                The volume will be in an attached state with its robustness unknown at first, then the volume become healthy.
-    Given Set setting auto-salvage to false
+    Given Setting auto-salvage is set to false
 
     When Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1

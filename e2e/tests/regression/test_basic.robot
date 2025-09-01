@@ -108,14 +108,15 @@ Test Strict Local Volume Disabled Revision Counter By Default
     ...    1. Set the global setting disable-revision-counter to false
     ...    2. Create a volume with 1 replica and strict-local data locality
     ...    3. See that the revisionCounterDisabled: true for volume/engine/replica CRs
-    Given Set setting disable-revision-counter to false
+    Given Setting disable-revision-counter is set to {"v1":"false"}
+
     When Create volume 0 with    numberOfReplicas=1    dataLocality=strict-local
     And Wait for volume 0 detached
     Then Volume 0 setting revisionCounterDisabled should be True
     And Volume 0 engine revisionCounterDisabled should be True
     And Volume 0 replica revisionCounterDisabled should be True
 
-V1 Replica Rebuilding
+Replica Rebuilding
     [Documentation]    -- Manual test plan --
     ...                1. Create and attach a volume.
     ...                2. Write a large amount of data to the volume.
@@ -135,7 +136,7 @@ V1 Replica Rebuilding
     ...                - the rebuilding progress in UI page looks good.
     ...                - the data content is correct after rebuilding.
     ...                - volume r/w works fine.
-    Given Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v1
+    Given Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
 
@@ -144,7 +145,8 @@ V1 Replica Rebuilding
     And Disable node 1 scheduling
     And Disable node 1 default disk
 
-    When Crash volume 0 replica process on node 1
+    When Record volume 0 replica name on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 1
     Then Wait volume 0 replica on node 1 stopped
     And Wait for volume 0 degraded
 

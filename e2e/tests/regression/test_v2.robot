@@ -85,33 +85,6 @@ Test V2 Snapshot
 
     And Check volume 0 data is data 1
 
-Test V2 Replica Rebuilding
-    Given Create volume 0 with    size=10Gi    numberOfReplicas=3    dataEngine=v2
-    And Attach volume 0 to node 0
-    And Wait for volume 0 healthy
-    And Write 1 GB data to volume 0
-
-    When Disable node 1 scheduling
-    And Disable disk block-disk scheduling on node 1
-    And Delete v2 instance manager on node 1
-
-    # for a v2 volume, when a replica process crashed or an instance manager deleted,
-    # the corresponding replica running state won't be set to false,
-    # but the replica will be directly deleted
-    Then Wait for volume 0 replica on node 1 to be deleted
-    And Wait for volume 0 degraded
-
-    When Enable disk block-disk scheduling on node 1
-    Then Check volume 0 kept in degraded
-
-    When Enable node 1 scheduling
-    # since the replica has been deleted, no replica will be reused on node 1
-    Then Wait until volume 0 replica rebuilding started on node 1
-    And Wait for volume 0 healthy
-
-    And Check volume 0 data is intact
-    And Check volume 0 works
-
 Degraded Volume Replica Rebuilding
     [Tags]    coretest
     Given Disable node 2 scheduling
@@ -133,7 +106,7 @@ Degraded Volume Replica Rebuilding
 
 V2 Volume Should Block Trim When Volume Is Degraded
     [Tags]    cluster
-    Given Set setting auto-salvage to true
+    Given Setting auto-salvage is set to true
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
@@ -284,7 +257,7 @@ Test V2 Instance Manager Deletion On Volume Attached Node With Inactivated Data 
     When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
     And Delete v2 instance manager on node 2
     Then Check v2 instance manager is not running on node 2
-    And Check volume 0 kept in attaching
+    And Wait for volume 0 detached
 
     When Label node 2 with node.longhorn.io/disable-v2-data-engine-
     Then Check v2 instance manager is running on node 2

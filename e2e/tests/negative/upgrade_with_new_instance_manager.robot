@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    upgrade    negative
+Test Tags    2-stage-upgrade    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -27,12 +27,12 @@ Test System Upgrade with New Instance Manager
         Fail    Environment variable LONGHORN_TRANSIENT_VERSION is not set
     END
 
-    Given Set setting deleting-confirmation-flag to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version
-    And Set setting guaranteed-instance-manager-cpu to 40
+    And Setting guaranteed-instance-manager-cpu is set to {"v1":"40","v2":"40"}
     And Check v1 instance manager pods recreated
     And Create volume vol1 with    dataEngine=v1
     And Attach volume vol1

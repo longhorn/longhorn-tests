@@ -49,6 +49,12 @@ class backupstore_keywords:
     def create_dummy_backup_from_file(self, file_name):
         self.backupstore.create_dummy_backup(file_name)
 
+    def set_backupstore(self):
+        self.backupstore.set_backupstore()
+
+    def reset_backupstore(self):
+        self.backupstore.reset_backupstore()
+
     def set_backupstore_poll_interval(self, poll_interval):
         self.backupstore.set_backupstore_poll_interval(poll_interval)
 

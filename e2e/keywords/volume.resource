@@ -204,6 +204,13 @@ Assert volume ${volume_id} remains detached for at least ${period} seconds
         Sleep    1
     END
 
+Assert volume ${volume_id} remains attached for at least ${period} seconds
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${period}
+        wait_for_volume_attached    ${volume_name}
+        Sleep    1
+    END
+
 Wait for volume ${volume_id} faulted
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_faulted    ${volume_name}
@@ -340,14 +347,20 @@ Crash volume ${volume_id} replica processes
 Crash volume ${volume_id} replica process on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${crashed_replica_name} =     crash_node_replica_process    ${volume_name}    ${node_name}
-    Set Test Variable    ${crashed_replica_name}
+    ${original_replica_name} =     crash_node_replica_process    ${volume_name}    ${node_name}
+    Set Test Variable    ${original_replica_name}
+
+Record volume ${volume_id} replica name on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${original_replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
+    Set Test Variable    ${original_replica_name}
 
 Check volume ${volume_id} crashed replica reused on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${current_replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
-    Should Be Equal    ${crashed_replica_name}    ${current_replica_name}
+    Should Be Equal    ${original_replica_name}    ${current_replica_name}
 
 Wait volume ${volume_id} replica on node ${node_id} stopped
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

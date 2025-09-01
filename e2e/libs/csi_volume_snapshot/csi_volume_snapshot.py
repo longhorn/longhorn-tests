@@ -6,6 +6,7 @@ from kubernetes.client.rest import ApiException
 
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+from utility.utility import subprocess_exec_cmd
 
 class CSIVolumeSnapshot:
 
@@ -184,3 +185,11 @@ class CSIVolumeSnapshot:
                     assert delete_exception.status == 404
         except ApiException as list_exception:
             assert list_exception.status == 404
+
+    def force_delete_volumesnapshot(self, snapshot_name):
+        cmd = (
+            f"kubectl patch volumesnapshot {snapshot_name} --type=merge "
+            f"-p '{{\"metadata\":{{\"finalizers\":[]}}}}' "
+            f"| kubectl delete volumesnapshot {snapshot_name}"
+        )
+        return subprocess_exec_cmd(cmd)

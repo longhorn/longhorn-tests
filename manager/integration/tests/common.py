@@ -218,9 +218,6 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
     "snapshot-data-integrity-immediate-check-after-snapshot-creation"
 SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
-SETTING_V2_SNAPSHOT_DATA_INTEGRITY = "v2-data-engine-snapshot-data-integrity"
-SETTING_V2_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = \
-    "v2-data-engine-fast-replica-rebuilding"
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     "concurrent-volume-backup-restore-per-node-limit"
 SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
@@ -333,6 +330,7 @@ HOST_PROC_DIR = "/host/proc"
 BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
 BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
                                   "failed to list backup volumes in",
+                                  "failed to list system backups in",
                                   "error listing backup volume names"]
 
 FAILED_DELETING_REASONE = "FailedDeleting"
@@ -2901,7 +2899,7 @@ def wait_for_nvme_device():
             output = subprocess.check_output(["nvme", "list"], text=True)
             print(f"nvme list output =\n {output}")
             for line in output.splitlines():
-                if line.startswith("/dev/nvme"):
+                if "SPDK bdev Controller" in line:
                     dev_path = line.split()[0]
                     return dev_path
         except subprocess.CalledProcessError as e:
@@ -4368,6 +4366,18 @@ def create_storage_class(sc_manifest, data_engine=DATA_ENGINE):
     api.create_storage_class(
         body=sc_manifest)
 
+    sc_name = sc_manifest['metadata']['name']
+    for i in range(RETRY_COUNTS):
+        try:
+            sc = api.read_storage_class(sc_name)
+            return sc
+        except ApiException as e:
+            if e.status != 404:
+                raise
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, f"Failed to wait for sc {sc_name} to be created"
+
 
 def delete_storage_class(sc_name):
     api = get_storage_api_client()
@@ -5553,7 +5563,7 @@ def wait_for_pods_volume_delete(client, pod_list,  # NOQA
 
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
                                            state, desire=True):
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         im = client.by_id_instance_manager(im_name)
         try:
             pod = core_api.read_namespaced_pod(name=im_name,

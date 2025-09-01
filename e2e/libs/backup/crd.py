@@ -10,7 +10,7 @@ class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, volume_name, backup_id, wait):
+    def create(self, volume_name, backup_id, wait, snapshot_id=None):
         return NotImplemented
 
     def get(self, backup_id, volume_name):
@@ -88,6 +88,3 @@ class CRD(Base):
             except Exception as e:
                 if e.reason != "Not Found":
                     Exception(f"Deleting backup failed: {e}")
-
-    def cleanup_system_backups(self):
-        return NotImplemented

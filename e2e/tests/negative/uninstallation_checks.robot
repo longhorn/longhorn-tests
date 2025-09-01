@@ -54,13 +54,13 @@ Uninstallation Checks
     Then Verify backup list contains no error for volume 0
     And Verify backup list contains backup 0 of volume 0
 
-    Then Set setting deleting-confirmation-flag to true
+    Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     # Assume this is another Longhorn cluster
     Then Install Longhorn
-    And set_backupstore
+    And Set default backupstore
     And Check backup synced from backupstore
     When Create DR volume 0 from backup 0 in another cluster
     And Wait for volume 0 restoration from backup 0 in another cluster completed

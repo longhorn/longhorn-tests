@@ -27,11 +27,6 @@ create_admin_service_account(){
 }
 
 
-install_iscsi(){
-  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-installation.yaml"
-}
-
-
 install_cluster_autoscaler(){
   curl -o "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml" "https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml"
   CLUSTER_NAME=$(kubectl config current-context)

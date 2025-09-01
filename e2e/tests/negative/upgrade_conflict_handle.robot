@@ -11,8 +11,8 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/backupstore.resource
 Resource    ../keywords/recurringjob.resource
-Library     DateTime
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -22,11 +22,6 @@ ${NUM_VOLUMES}    100
 ${NUM_VOLUMES_DETACH}    20
 
 *** Keywords ***
-Get test start time
-    ${test_start_time}=    Get Current Date    result_format=datetime
-    Log    ${test_start_time}
-    Set Test Variable    ${test_start_time}
-
 Perform recurring job workflow under load
     When Get test start time
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    
@@ -59,12 +54,12 @@ Test Upgrade Stability with Large Workload
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
     END
     
-    Given Set setting deleting-confirmation-flag to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version    
-    And set_backupstore
+    And Set default backupstore
 
     When Perform recurring job workflow under load    
     And Upgrade Longhorn to custom version
