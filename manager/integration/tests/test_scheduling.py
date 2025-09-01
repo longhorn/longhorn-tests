@@ -83,7 +83,7 @@ from common import SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import VOLUME_FIELD_ROBUSTNESS
 from common import VOLUME_ROBUSTNESS_HEALTHY
-from common import VOLUME_FRONTEND_BLOCKDEV, SNAPSHOT_DATA_INTEGRITY_IGNORED
+from common import VOLUME_FRONTEND_BLOCKDEV
 from common import VOLUME_ROBUSTNESS_DEGRADED, RETRY_COUNTS_SHORT
 from common import SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME
 from common import SIZE, CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
@@ -1902,7 +1902,7 @@ def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQ
                          numberOfReplicas=3,
                          backingImage="",
                          frontend=VOLUME_FRONTEND_BLOCKDEV,
-                         snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
+                         snapshotDataIntegrity="ignored",
                          replicaSoftAntiAffinity="enabled",
                          dataEngine=DATA_ENGINE)
 
@@ -1955,7 +1955,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
                          numberOfReplicas=3,
                          backingImage="",
                          frontend=VOLUME_FRONTEND_BLOCKDEV,
-                         snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
+                         snapshotDataIntegrity="ignored",
                          replicaSoftAntiAffinity="disabled",
                          dataEngine=DATA_ENGINE)
 
