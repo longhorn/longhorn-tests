@@ -8,6 +8,7 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backing_image.resource
 Resource    ../keywords/backup_backing_image.resource
+Resource    ../keywords/backing_image_data_source.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
@@ -61,21 +62,25 @@ Test Backup Backing Image
     Then Wait for backing image backup for backing image bi ready
 
 Test Backing Image Download Timeout
-    [Tags]    robot:skip
     [Documentation]    Test the backing image context timeout is enlarged to 30 sec
-    ...
-    ...    1. Given a backing image file ready for download
-    ...    2. And create a backing image CR to download the given image
-    ...    3. And wait for backing image data source pod get launched
-    ...    4  When temporary block the download connection for 5 second
-    ...    5. And resume the download connection
-    ...    6. Then the backing image data source should be able to download the image without timeout error
-    ...    7. When create a backing image CR to download the given image
-    ...    8. And wait for backing image data source pod get launched
-    ...    9  When temporary block the download connection for 35 second
-    ...    10. And resume the download connection
-    ...    11. Then the backing image data source should fail to download the image
-    Skip
+    ...                Issue: https://github.com/longhorn/longhorn/issues/11309
+    ...                       https://github.com/longhorn/longhorn/issues/11622
+    # use a backing image with a larger size
+    Given Create backing image k3os    url=https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso    minNumberOfCopies=1    wait=False
+    And Wait for backing image data source k3os created
+    When Disconnect backing image data source k3os network for 5 seconds
+    Then Backing image data source k3os should not be in state failed-and-cleanup
+    And Wait for backing image data source k3os state ready
+
+    Given Create backing image k3os-2    url=https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso    minNumberOfCopies=1    wait=False
+    And Wait for backing image data source k3os-2 created
+    When Disconnect backing image data source k3os-2 network for 35 seconds
+    # It is not guaranteed that the test code can catch the moment when the backing image data source becomes failed-and-cleanup.
+    # We only ensure that it eventually becomes ready.
+    Then Wait for backing image data source k3os-2 state ready
+    When Create volume 0 with    backingImage=k3os-2
+    And Attach volume 0
+    And Wait for volume 0 healthy
 
 Test Evict Two Replicas Volume With Backing Image
     [Documentation]    Validates that the Longhorn manager does not restart when evicting a replica

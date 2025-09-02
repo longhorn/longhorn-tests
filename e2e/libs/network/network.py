@@ -9,6 +9,7 @@ from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 import utility.constant as constant
 from utility.utility import pod_exec
+from utility.utility import logging
 
 from workload.pod import create_pod
 from workload.pod import delete_pod
@@ -51,6 +52,7 @@ def cleanup_control_plane_network_latency():
 
 
 async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
+    logging(f"Disconnect node {node_name} network for {disconnection_time_in_sec} seconds")
     ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
     ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
@@ -67,6 +69,7 @@ async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     delete_pod(pod_name)
 
 def disconnect_node_network_without_waiting_completion(node_name, disconnection_time_in_sec=10):
+    logging(f"Disconnect node {node_name} network for {disconnection_time_in_sec} seconds")
     ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
     ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
