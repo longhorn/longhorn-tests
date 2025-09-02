@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.10.0 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.10.0/</link>
+    <description>Recent content in v1.10.0 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.10.0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Support Bundle Collects Logs From Path Specified In Setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.10.0/test-support-bundle-log-path-collection/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.10.0/test-support-bundle-log-path-collection/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/11522
+Test Given V2 data engine is enabled
+And /tmp/longhorn/logs/ directory exists on all cluster nodes
+And log-path setting is set to /tmp/longhorn/logs/
+And V2 instance manager pods have restarted
+When A support bundle is generated
+Then Files from the host&amp;rsquo;s log-path directory exist under &amp;lt;NODE&amp;gt;/log in the support bundle</description>
+    </item>
+    
+  </channel>
+</rss>

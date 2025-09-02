@@ -60,9 +60,6 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
@@ -287,9 +284,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
   
     <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/">Checksum enabled large volume with multiple rebuilding</a></li>
-  
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
   
@@ -583,6 +577,17 @@
 
   
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.10.0/">v1.10.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.10.0/test-support-bundle-log-path-collection/">Support Bundle Collects Logs From Path Specified In Setting</a></li>
+  
+
+</ul>
+
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
   
     <ul>
@@ -809,6 +814,12 @@
   
     <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-crd-v1beta2-migration/">Test Migrate v1beta1 To v1beta2</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-orphaned-instance/">Test Orphaned Instance Handling</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-support-bundle-extended-collection/">Test Support Bundle Extended Collection</a></li>
   
 
@@ -841,38 +852,326 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1279">#1279</a> DR volume live upgrade and rebuild</h1>
+  <h1 id="title">Test Orphaned Instance Handling</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Launch Longhorn at the previous version.</li>
-<li>Launch a pod with Longhorn volume.</li>
-<li>Write data to the volume and take the 1st backup.</li>
-<li>Create 2 DR volumes from the 1st backup.</li>
-<li>Shutdown the pod and wait for the original volume detached.</li>
-<li>Expand the original volume and wait for the expansion complete.</li>
-<li>Write data to the original volume and take the 2nd backup. (Make sure the total data size is larger than the original volume size so that there is date written to the expanded part.)</li>
-<li>Trigger incremental restore for the DR volumes by listing the backup volumes, and wait for restore complete.</li>
-<li>Upgrade Longhorn to the latest version.</li>
-<li>Crash one random replica for the 1st DR volume .</li>
-<li>Verify the 1st DR volume rebuild replicas and state change from <code>Degraded</code> to <code>Healthy</code>.</li>
-<li>Write data to the original volume and take the 3rd backup.</li>
-<li>Trigger incremental restore for the DR volumes, and wait for restore complete.</li>
-<li>Do live upgrade for the 1st DR volume. This live upgrade call should success.</li>
-<li>Activate the 1st DR volume.</li>
-<li>Launch a pod for the 1st activated volume, and verify the restored data is correct.</li>
-<li>Do live upgrade for the original volume and the 2nd DR volumes.</li>
-<li>Crash one random replica for the 2nd DR volume.</li>
-<li>Wait for the restore &amp; rebuild complete.</li>
-<li>Delete one replica for the 2nd DR volume, then activate the DR volume before the rebuild complete.</li>
-<li>Verify the DR volume will be auto detached after the rebuild complete.</li>
-<li>Launch a pod for the 2nd activated volume, and verify the restored data is correct.</li>
-<li>Crash one replica for the 2nd activated volume.</li>
-<li>Wait for the rebuild complete, then verify the volume still works fine by reading/writing more data.</li>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/6764">https://github.com/longhorn/longhorn/issues/6764</a></p>
+<h2 id="test-orphan-auto-cleanup-settings-replacement">Test Orphan Auto Cleanup Settings Replacement</h2>
+<p><strong>Given</strong> A cluster with Longhorn v1.8.x ready</p>
+<p><strong>And</strong> Enable orphaned replica data auto deletion</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system edit settings.longhorn.io orphan-auto-deletion
+</code></pre></div><p>And set the value to <code>true</code></p>
+<p><strong>When</strong> Upgrade to Longhorn v1.9.0</p>
+<p><strong>Then</strong> The new setting <code>orphan-resource-auto-deletion</code> is initialized with replica data enabled</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get settings.longhorn.io orphan-resource-auto-deletion -o jsonpath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{.value}&#39;</span>
+
+replicaData
+</code></pre></div><p><strong>And</strong> The old setting <code>orphan-auto-deletion</code> is removed</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get settings.longhorn.io orphan-auto-deletion
+
+Error from server <span style="color:#f92672">(</span>NotFound<span style="color:#f92672">)</span>: settings.longhorn.io <span style="color:#e6db74">&#34;orphan-auto-deletion&#34;</span> not found
+</code></pre></div><h2 id="test-orphaned-instance-detection">Test Orphaned Instance Detection</h2>
+<p><strong>Given</strong> A cluster with Longhorn v1.9.0 ready</p>
+<p><strong>And</strong> The orphan auto deletion is disabled for all kinds of orphans</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get settings.longhorn.io orphan-resource-auto-deletion
+
+NAME                            VALUE   AGE
+orphan-resource-auto-deletion           2d1h
+</code></pre></div><p>The value should be empty.</p>
+<p><strong>And</strong> Create orphaned engine and replica instances</p>
+<ol>
+<li>Create a volume</li>
+<li>Attach the volume to a node</li>
+<li>There is an engine running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get engine -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME         DATA ENGINE   STATE     NODE                         INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-e-0   v1            running   libvirt-ubuntu-k3s-worker1   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>There is a replica running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get replica -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME                DATA ENGINE   STATE     NODE                         DISK                                   INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-r-e7106826   v1            running   libvirt-ubuntu-k3s-worker1   a6338052-9852-4c59-b878-bfc4db32b00e   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>Suspend the node to simulate the temporary network outage</li>
+<li>Wait for the node unavailable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   False   true              True          26h
+</code></pre></div></li>
+<li>Detach and delete the volume</li>
+<li>Resume the node to simulate the network resume</li>
+<li>Wait for the node ready
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   True    true              True          26h
+</code></pre></div></li>
 </ol>
+<p><strong>Then</strong> The <code>engine-instance</code> and <code>replica-instance</code> orphan CRs are created</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan -l <span style="color:#e6db74">&#34;longhorn.io/orphan-type in (engine-instance,replica-instance)&#34;</span>
+
+NAME                                                                      TYPE               NODE
+orphan-d09e9176343f60b2aad39683b1781fd1d9bb29e3e986e36bc9f65d43d91db764   replica-instance   libvirt-ubuntu-k3s-worker1
+orphan-e3b484438aab83100726528c226b09990e9a0b2d0730f2f3489d14242175f9ca   engine-instance    libvirt-ubuntu-k3s-worker1
+</code></pre></div><p><strong>And</strong> The spec of engine orphan CR matches the engine instance</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system describe orphan orphan-e3b484438aab83100726528c226b09990e9a0b2d0730f2f3489d14242175f9ca
+
+Name:         orphan-e3b484438aab83100726528c226b09990e9a0b2d0730f2f3489d14242175f9ca
+Kind:         Orphan
+Spec:
+  Data Engine:  v1
+  Node ID:      &lt;instance node ID&gt;
+  Orphan Type:  engine-instance
+  Parameters:
+    Instance Manager:  &lt;instance manager ID&gt;
+    Instance Name:     orphan-engine-01-e-0
+...
+</code></pre></div><ul>
+<li><code>Name</code>: <code>orphan-&lt;sha256&gt;</code></li>
+<li><code>Spec.OrphanType</code>: <code>engine-instance</code></li>
+<li><code>Spec.NodeID</code>: instance&rsquo;s node ID</li>
+<li><code>Spec.DataEngine</code>: instance&rsquo;s engine type, <code>v1</code> or <code>v2</code></li>
+<li><code>Spec.Parameters.InstanceName</code>: instance&rsquo;s name</li>
+<li><code>Spec.Parameters.InstanceManager</code>: instance manager ID</li>
+</ul>
+<p><strong>And</strong> The spec of replica orphan CR matches the replica instance</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system describe orphan orphan-d09e9176343f60b2aad39683b1781fd1d9bb29e3e986e36bc9f65d43d91db764
+
+Name:         orphan-d09e9176343f60b2aad39683b1781fd1d9bb29e3e986e36bc9f65d43d91db764
+Spec:
+  Data Engine:  v1
+  Node ID:      &lt;instance node ID&gt;
+  Orphan Type:  replica-instance
+  Parameters:
+    Instance Manager:  &lt;instance manager ID&gt;
+    Instance Name:     orphan-replica-01-r-0
+...
+</code></pre></div><ul>
+<li><code>Name</code>: <code>orphan-&lt;sha256&gt;</code></li>
+<li><code>Spec.OrphanType</code>: <code>replica-instance</code></li>
+<li><code>Spec.NodeID</code>: instance&rsquo;s node ID</li>
+<li><code>Spec.DataEngine</code>: instance&rsquo;s engine type, <code>v1</code> or <code>v2</code></li>
+<li><code>Spec.Parameters.InstanceName</code>: instance&rsquo;s name</li>
+<li><code>Spec.Parameters.InstanceManager</code>: instance manager ID</li>
+</ul>
+<p><strong>When</strong> Delete the instance orphans</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system delete orphan -l <span style="color:#e6db74">&#34;longhorn.io/orphan-type in (engine-instance,replica-instance)&#34;</span>
+
+orphan.longhorn.io <span style="color:#e6db74">&#34;orphan-d09e9176343f60b2aad39683b1781fd1d9bb29e3e986e36bc9f65d43d91db764&#34;</span> deleted
+orphan.longhorn.io <span style="color:#e6db74">&#34;orphan-e3b484438aab83100726528c226b09990e9a0b2d0730f2f3489d14242175f9ca&#34;</span> deleted
+</code></pre></div><p><strong>Then</strong> The instances are cleanup from the instance manager</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system describe instancemanager &lt;instance manager ID&gt;
+</code></pre></div><p>And the orphaned instances are removed from <code>Status.InstanceEngines</code> and <code>Status.InstanceReplicas</code>.</p>
+<h2 id="test-orphaned-instance-auto-detection">Test Orphaned Instance Auto Detection</h2>
+<p><strong>Given</strong> A cluster with Longhorn v1.9.0 ready</p>
+<p><strong>And</strong> Create orphaned engine and replica instances</p>
+<ol>
+<li>Create a volume</li>
+<li>Attach the volume to a node</li>
+<li>There is an engine running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get engine -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME         DATA ENGINE   STATE     NODE                         INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-e-0   v1            running   libvirt-ubuntu-k3s-worker1   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>There is a replica running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get replica -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME                DATA ENGINE   STATE     NODE                         DISK                                   INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-r-e7106826   v1            running   libvirt-ubuntu-k3s-worker1   a6338052-9852-4c59-b878-bfc4db32b00e   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>Suspend the node to simulate the temporary network outage</li>
+<li>Wait for the node unavailable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   False   true              True          26h
+</code></pre></div></li>
+<li>Detach and delete the volume</li>
+<li>Resume the node to simulate the network resume</li>
+<li>Wait for the node ready
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   True    true              True          26h
+</code></pre></div></li>
+</ol>
+<p><strong>And</strong> The <code>engine-instance</code> and <code>replica-instance</code> orphan CRs are created</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan -l <span style="color:#e6db74">&#34;longhorn.io/orphan-type in (engine-instance,replica-instance)&#34;</span>
+
+NAME                                                                      TYPE               NODE
+orphan-d09e9176343f60b2aad39683b1781fd1d9bb29e3e986e36bc9f65d43d91db764   replica-instance   libvirt-ubuntu-k3s-worker1
+orphan-e3b484438aab83100726528c226b09990e9a0b2d0730f2f3489d14242175f9ca   engine-instance    libvirt-ubuntu-k3s-worker1
+</code></pre></div><p><strong>When</strong> Enable orphan auto deletion for engine and replica instances</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system edit settings.longhorn.io orphan-resource-auto-deletion
+</code></pre></div><p>Set the value to <code>instance</code></p>
+<p><strong>Then</strong> The orphans should be deleted in 90 seconds</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan
+
+No resources found in longhorn-system namespace.
+</code></pre></div><p><strong>When</strong> Create orphaned engine and replica instances again</p>
+<ol>
+<li>Create a volume</li>
+<li>Attach the volume to a node</li>
+<li>There is an engine running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get engine -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME         DATA ENGINE   STATE     NODE                         INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-e-0   v1            running   libvirt-ubuntu-k3s-worker1   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>There is a replica running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get replica -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME                DATA ENGINE   STATE     NODE                         DISK                                   INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-r-e7106826   v1            running   libvirt-ubuntu-k3s-worker1   a6338052-9852-4c59-b878-bfc4db32b00e   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>Suspend the node to simulate the temporary network outage</li>
+<li>Wait for the node unavailable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   False   true              True          26h
+</code></pre></div></li>
+<li>Detach and delete the volume</li>
+<li>Resume the node to simulate the network resume</li>
+<li>Wait for the node ready
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   True    true              True          26h
+</code></pre></div></li>
+</ol>
+<p><strong>Then</strong> The orphaned instances should be deleted automatically in 90 seconds</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system describe instancemanager &lt;instance manager ID&gt;
+</code></pre></div><p>And the orphaned instances are removed from <code>Status.InstanceEngines</code> and <code>Status.InstanceReplicas</code>.</p>
+<p><strong>And</strong> No <code>engine-instance</code> or <code>replica-instance</code> orphan CR exists</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan -l <span style="color:#e6db74">&#34;longhorn.io/orphan-type in (engine-instance,replica-instance)&#34;</span>
+
+No resources found in longhorn-system namespace.
+</code></pre></div><h2 id="test-orphan-deletion-when-evicting-node">Test Orphan Deletion When Evicting Node</h2>
+<p><strong>Given</strong> A cluster with Longhorn v1.9.0 ready</p>
+<p><strong>And</strong> The orphan auto deletion is disabled for all kinds of orphans</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get settings.longhorn.io orphan-resource-auto-deletion
+
+NAME                            VALUE   AGE
+orphan-resource-auto-deletion           2d1h
+</code></pre></div><p>The value should be empty.</p>
+<p><strong>And</strong> Create orphaned engine and replica instances again</p>
+<ol>
+<li>Create a volume</li>
+<li>Attach the volume to a node</li>
+<li>There is an engine running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get engine -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME         DATA ENGINE   STATE     NODE                         INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-e-0   v1            running   libvirt-ubuntu-k3s-worker1   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>There is a replica running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get replica -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME                DATA ENGINE   STATE     NODE                         DISK                                   INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-r-e7106826   v1            running   libvirt-ubuntu-k3s-worker1   a6338052-9852-4c59-b878-bfc4db32b00e   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>Suspend the node to simulate the temporary network outage</li>
+<li>Wait for the node unavailable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   False   true              True          26h
+</code></pre></div></li>
+<li>Detach and delete the volume</li>
+<li>Resume the node to simulate the network resume</li>
+<li>Wait for the node ready
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   True    true              True          26h
+</code></pre></div></li>
+</ol>
+<p><strong>When</strong> Evict the orphaned instances' node</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system edit lhn &lt;node&gt;
+</code></pre></div><ul>
+<li>Disable <code>spec.allowScheduling</code></li>
+<li>Enable <code>spec.evictionRequested</code></li>
+</ul>
+<p><strong>And</strong> Orphaned engine and replica should be deleted in 90 seconds</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan -l <span style="color:#e6db74">&#34;longhornnode=&lt;node&gt;&#34;</span>
+
+No resources found in longhorn-system namespace.
+</code></pre></div><p><strong>Finally</strong> Cancel node eviction</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system edit lhn &lt;node&gt;
+</code></pre></div><ul>
+<li>Enable <code>spec.allowScheduling</code></li>
+<li>Disable <code>spec.evictionRequested</code></li>
+</ul>
+<h2 id="test-orphan-instance-cr-is-tracking-node-status">Test Orphan Instance CR Is Tracking Node Status</h2>
+<p><strong>Given</strong> A cluster with Longhorn v1.9.0 ready</p>
+<p><strong>And</strong> The orphan auto deletion is disabled for all kinds of orphans</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get settings.longhorn.io orphan-resource-auto-deletion
+
+NAME                            VALUE   AGE
+orphan-resource-auto-deletion           2d1h
+</code></pre></div><p>The value should be empty.</p>
+<p><strong>And</strong> Create orphaned engine and replica instances again</p>
+<ol>
+<li>Create a volume</li>
+<li>Attach the volume to a node</li>
+<li>There is an engine running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get engine -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME         DATA ENGINE   STATE     NODE                         INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-e-0   v1            running   libvirt-ubuntu-k3s-worker1   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>There is a replica running on given node
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get replica -l <span style="color:#e6db74">&#34;longhornnode=libvirt-ubuntu-k3s-worker1&#34;</span>
+
+NAME                DATA ENGINE   STATE     NODE                         DISK                                   INSTANCEMANAGER                                     IMAGE                               AGE
+vol-01-r-e7106826   v1            running   libvirt-ubuntu-k3s-worker1   a6338052-9852-4c59-b878-bfc4db32b00e   instance-manager-b87f10b867cec1dca2b814f5e78bcc90   longhornio/longhorn-engine:v1.9.0   24m
+</code></pre></div></li>
+<li>Suspend the node to simulate the temporary network outage</li>
+<li>Wait for the node unavailable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   False   true              True          26h
+</code></pre></div></li>
+<li>Detach and delete the volume</li>
+<li>Resume the node to simulate the network resume</li>
+<li>Wait for the node ready
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   True    true              True          26h
+</code></pre></div></li>
+</ol>
+<p><strong>And</strong> The <code>engine-instance</code> and <code>replica-instance</code> orphan CRs are created</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan -l <span style="color:#e6db74">&#34;longhorn.io/orphan-type in (engine-instance,replica-instance)&#34;</span>
+
+NAME                                                                      TYPE               NODE
+orphan-d09e9176343f60b2aad39683b1781fd1d9bb29e3e986e36bc9f65d43d91db764   replica-instance   libvirt-ubuntu-k3s-worker1
+orphan-e3b484438aab83100726528c226b09990e9a0b2d0730f2f3489d14242175f9ca   engine-instance    libvirt-ubuntu-k3s-worker1
+</code></pre></div><p><strong>When</strong> The orphaned instances' node disconnects from the cluster</p>
+<ol>
+<li>Suspend the node to simulate the temporary network outage</li>
+<li>Wait for the node unavailable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get lhn libvirt-ubuntu-k3s-worker1
+
+NAME                         READY   ALLOWSCHEDULING   SCHEDULABLE   AGE
+libvirt-ubuntu-k3s-worker1   False   true              True          26h
+</code></pre></div></li>
+</ol>
+<p><strong>Then</strong> All orphans are removed from the cluster</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl -n longhorn-system get orphan -l <span style="color:#e6db74">&#34;longhorn.io/orphan-type in (engine-instance,replica-instance)&#34;</span>
+
+No resources found in longhorn-system namespace.
+</code></pre></div><p><strong>Finally</strong> Resume all nodes, and delete the workload, the volume, and any rest orphan CRs</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.9.0/test-orphaned-instance.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

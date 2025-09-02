@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.0">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>tests.test_upgrade API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -33,64 +44,669 @@ hljs.highlightAll();
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="tests.test_upgrade.flux_helm_chart_url"><code class="name flex">
-<span>def <span class="ident">flux_helm_chart_url</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.flux_helm_chart_version"><code class="name flex">
-<span>def <span class="ident">flux_helm_chart_version</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.longhorn_install_method"><code class="name flex">
-<span>def <span class="ident">longhorn_install_method</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.longhorn_repo"><code class="name flex">
-<span>def <span class="ident">longhorn_repo</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="tests.test_upgrade.longhorn_upgrade"><code class="name flex">
-<span>def <span class="ident">longhorn_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, longhorn_repo_url, longhorn_repo_branch, longhorn_manager_image, longhorn_engine_image, longhorn_instance_manager_image, longhorn_share_manager_image, longhorn_backing_image_manager_image)</span>
+<span>def <span class="ident">longhorn_upgrade</span></span>(<span>upgrade_to_transient_version=False)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.rancher_access_key"><code class="name flex">
-<span>def <span class="ident">rancher_access_key</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.rancher_chart_install_version"><code class="name flex">
-<span>def <span class="ident">rancher_chart_install_version</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.rancher_hostname"><code class="name flex">
-<span>def <span class="ident">rancher_hostname</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.rancher_secret_key"><code class="name flex">
-<span>def <span class="ident">rancher_secret_key</span></span>(<span>request)</span>
-</code></dt>
-<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def longhorn_upgrade(upgrade_to_transient_version=False):
+
+    if upgrade_to_transient_version:
+        upgrade_function = &#34;install_longhorn_transient&#34;
+    else:
+        upgrade_function = &#34;install_longhorn_custom&#34;
+
+    longhorn_install_method = os.getenv(&#39;LONGHORN_INSTALL_METHOD&#39;, &#39;manifest&#39;)
+
+    if longhorn_install_method == &#34;manifest&#34;:
+        if os.getenv(&#39;APPCO_TEST&#39;) == &#34;true&#34;:
+            command = &#34;./pipelines/appco/scripts/longhorn_manifest.sh&#34;
+        else:
+            command = &#34;./pipelines/utilities/longhorn_manifest.sh&#34;
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+    elif longhorn_install_method == &#34;helm&#34;:
+        if os.getenv(&#39;APPCO_TEST&#39;) == &#34;true&#34;:
+            command = &#34;./pipelines/appco/scripts/longhorn_helm_chart.sh&#34;
+        else:
+            command = &#34;./pipelines/utilities/longhorn_helm_chart.sh&#34;
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+    elif longhorn_install_method == &#34;rancher&#34;:
+        command = &#34;./pipelines/utilities/longhorn_rancher_chart.sh&#34;
+        upgrade_function = &#34;upgrade_longhorn_transient&#34; \
+            if upgrade_to_transient_version else &#34;upgrade_longhorn_custom&#34;
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+    elif longhorn_install_method == &#34;flux&#34;:
+        command = &#34;./pipelines/utilities/flux.sh&#34;
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+    elif longhorn_install_method == &#34;argocd&#34;:
+        command = &#34;./pipelines/utilities/argocd.sh&#34;
+        upgrade_function = &#34;upgrade_longhorn_transient&#34; \
+            if upgrade_to_transient_version else &#34;upgrade_longhorn_custom&#34;
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+    elif longhorn_install_method == &#34;fleet&#34;:
+        command = &#34;./pipelines/utilities/fleet.sh&#34;
+        process = subprocess.Popen([command, upgrade_function],
+                                   shell=False)
+
+    process.wait()
+    if process.returncode == 0:
+        longhorn_upgraded = True
+
+    else:
+        longhorn_upgraded = False
+
+    return longhorn_upgraded</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_upgrade.test_upgrade"><code class="name flex">
-<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, upgrade_longhorn_transient_version, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class, make_deployment_with_pvc)</span>
+<span>def <span class="ident">test_upgrade</span></span>(<span>client,<br>core_api,<br>volume_name,<br>csi_pv,<br>pvc,<br>pod_make,<br>statefulset,<br>rwx_statefulset,<br>storage_class,<br>make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.upgrade  # NOQA
+def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
+                 pvc, pod_make, statefulset, rwx_statefulset, storage_class, # NOQA
+                 make_deployment_with_pvc): # NOQA
+    &#34;&#34;&#34;
+    Test Longhorn upgrade
+
+    TODO
+    The test will cover both volume has revision counter enabled and
+    disabled cases.
+
+    Prerequisite:
+      - Disable Auto Salvage Setting
+
+    0. Add block disks
+    1. Find the upgrade image tag
+    2. Create a volume, generate and write data into the volume.
+        1. Create vol_revision_enabled with revision counter enabled case.
+        2. Create vol_revision_disabled with revision counter disabled case.
+        3. Create vol_rebuild for replica rebuilding after system upgrade
+           &amp; engine live upgrade
+        4. Create strict local volume strict_local_vol
+        5. Create vol_detached, never attached before upgrade
+        6. Create vol_detached_with_data
+        7. Create v2 volumes
+            1. Create vol_v2
+            2. Create vol_detached_v2, never attached before upgrade
+            3. Dynamic provisioned a v2 volume with deployment
+    3. Create a Pod using a volume, generate and write data
+    4. Create a StatefulSet with 2 replicas
+       generate and write data to their volumes
+    5. Keep all volumes attached, except vol_detached, vol_detached_with_data,
+       vol_v2_detached, vol_v2.
+    6. Create custom resources
+       1. v2 data engine custom resources
+           1. backup
+           2. backing image
+    7. Upgrade Longhorn system.
+    8. Check Pod and StatefulSet, v1 instance manager pod didn&#39;t restart after
+       system upgrade
+    9. Check all volumes data
+    10. Write all volumes data after system upgrade
+    11. Check data written to all volumes after system upgrade
+    12. Detach the vol_revision_enabled &amp; vol_revision_disabled,
+        and Delete Pod, and StatefulSet to detach theirvolumes
+    13. Upgrade all volumes engine images
+    14. Attach the volume, and recreate Pod, and StatefulSet
+    15. Verify the volume&#39;s engine image has been upgraded
+    16. Check All volumes data
+    17. Delete one replica for vol_rebuild to trigger the rebuilding
+    18. Verify the vol_rebuild is still healthy
+    &#34;&#34;&#34;
+    v2_data_engine_crs_before_upgrade = \
+        v2_data_engine_cr_supported(client)
+    if v2_data_engine_crs_before_upgrade:
+        # This test case is always executed in the pipeline, and the pipeline
+        # environment is guaranteed to have block devices.
+        # Therefore, forcefully add block disks here regardless of the value
+        # of the RUN_V2_TEST environment variable to test Longhorn upgrade
+        # with v2 volume exist.
+        update_setting(client, SETTING_V2_DATA_ENGINE, &#34;true&#34;)
+        reset_disks_for_all_nodes(client, add_block_disks=True)
+
+    host_id = get_self_host_id()
+    pod_data_path = &#34;/data/test&#34;
+    instance_managers_shoud_not_restart = []
+
+    # Disable Auto Salvage Setting
+    update_setting(client, SETTING_AUTO_SALVAGE, &#34;false&#34;)
+
+    # 2-1 Create vol_revision_enabled with revision counter enabled
+    # attached to a node
+    update_setting(client, SETTING_DISABLE_REVISION_COUNTER, &#34;false&#34;)
+    vol_revision_enabled_name = &#39;vol-revision-enabled&#39;
+    vol_revision_enabled, vol_revision_enabled_data_before_sys_upgrade = \
+        create_volume_and_write_data(client, vol_revision_enabled_name,
+                                     data_engine=&#34;v1&#34;)
+
+    # 2-2 Create vol_revision_disabled with revision counter disable
+    # attached to a node
+    update_setting(client, SETTING_DISABLE_REVISION_COUNTER, &#34;true&#34;)
+    vol_revision_disabled_name = &#39;vol-revision-disabled&#39;
+    vol_revision_disabled, vol_revision_disabled_data_before_sys_upgrade = \
+        create_volume_and_write_data(client, vol_revision_disabled_name,
+                                     data_engine=&#34;v1&#34;)
+
+    # 2-3 Create vol_rebuild for replica rebuilding after system upgrade
+    # &amp; engine live upgrade
+    vol_rebuild_name = &#39;vol-rebuild&#39;
+    vol_rebuild, vol_rebuild_data_before_sys_upgrade = \
+        create_volume_and_write_data(client, vol_rebuild_name,
+                                     data_engine=&#34;v1&#34;)
+
+    # Create vol_detached_with_data
+    vol_detached_with_data_name = &#34;vol-detached-with-data&#34;
+    vol_detached_with_data, vol_detached_data_before_sys_upgrade = \
+        create_volume_and_write_data(client, vol_detached_with_data_name,
+                                     data_engine=&#34;v1&#34;)
+    vol_detached_with_data.detach()
+    vol_detached_with_data = \
+        wait_for_volume_detached(client,
+                                 vol_detached_with_data_name)
+
+    # Create Volume used by Pod
+    pod_volume_name = &#39;lh-vol-pod-test&#39;
+    test_pod_pvc = copy.deepcopy(pvc)
+    pod_name, pv_name, pvc_name, pod_md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, test_pod_pvc,
+                                    pod_make, pod_volume_name,
+                                    data_path=pod_data_path,
+                                    add_liveness_probe=False,
+                                    data_engine=&#34;v1&#34;)
+
+    # Create multiple volumes used by StatefulSet
+    statefulset_name = &#39;statefulset-upgrade-test&#39;
+    update_statefulset_manifests(statefulset,
+                                 storage_class,
+                                 statefulset_name)
+    create_storage_class(storage_class, data_engine=&#34;v1&#34;)
+    create_and_wait_statefulset(statefulset)
+    statefulset_pod_info = get_statefulset_pod_info(core_api, statefulset)
+
+    for sspod_info in statefulset_pod_info:
+        sspod_info[&#39;data&#39;] = generate_random_data(VOLUME_RWTEST_SIZE)
+        write_pod_volume_data(core_api,
+                              sspod_info[&#39;pod_name&#39;],
+                              sspod_info[&#39;data&#39;])
+
+    # get all v1 instance manager pod names
+    instance_manager_names =  \
+        get_instance_manager_names(client, data_engine=&#34;v1&#34;)
+    instance_managers_shoud_not_restart.extend(instance_manager_names)
+
+    # Create strict-local volume
+    strict_local_vol_name = &#39;vol-strict-local&#39;
+    strict_local_vol = client.create_volume(
+        name=strict_local_vol_name,
+        size=str(2 * Gi),
+        numberOfReplicas=1,
+        dataLocality=&#34;strict-local&#34;)
+    strict_local_vol = wait_for_volume_detached(client, strict_local_vol_name)
+    strict_local_vol.attach(hostId=host_id)
+    strict_local_vol = wait_for_volume_healthy(client, strict_local_vol_name)
+    strict_local_vol_data_before_sys_upgrade = \
+        write_volume_random_data(strict_local_vol)
+
+    # create custom resources
+    # orphan
+    create_orphaned_directories_on_host(
+        client.by_id_volume(pod_volume_name),
+        [DEFAULT_DISK_PATH],
+        1)
+    # snapshot and backup
+    backup_stores = get_backupstores()
+    if backup_stores[0] == &#34;s3&#34;:
+        set_backupstore_s3(client)
+    elif backup_stores[0] == &#34;nfs&#34;:
+        set_backupstore_nfs(client)
+        mount_nfs_backupstore(client)
+    backup_vol_name = &#34;backup-vol&#34;
+    backup_vol = create_and_check_volume(client, backup_vol_name,
+                                         num_of_replicas=2,
+                                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                                         data_engine=&#34;v1&#34;)
+    backup_vol.attach(hostId=host_id)
+    backup_vol = wait_for_volume_healthy(client, backup_vol_name)
+    data0 = {&#39;pos&#39;: 0, &#39;len&#39;: BACKUP_BLOCK_SIZE,
+             &#39;content&#39;: generate_random_data(BACKUP_BLOCK_SIZE)}
+    _, backup, _, _ = create_backup(client, backup_vol_name, data0)
+
+    # system backup
+    if system_backup_feature_supported(client):
+        system_backup_name = &#34;test-system-backup&#34;
+        client.create_system_backup(Name=system_backup_name)
+        system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    # Create vol_detached, never attached before upgrade
+    # system backup will attach the volume, create volume here to avoid attach
+    vol_detached_name = &#34;vol-detached&#34;
+    vol_detached = create_and_check_volume(client, vol_detached_name,
+                                           data_engine=&#34;v1&#34;)
+
+    # support bundle
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    name = resp[&#39;name&#39;]
+    wait_for_support_bundle_state(&#34;ReadyForDownload&#34;, node_id, name, client)
+    # backing image
+    create_backing_image_with_matching_url(
+        client,
+        BACKING_IMAGE_NAME,
+        BACKING_IMAGE_QCOW2_URL)
+
+    # recurring job
+    job_name = &#34;snapshot1&#34;
+    recurring_jobs = {
+        job_name: {
+            &#34;task&#34;: &#34;snapshot&#34;,
+            &#34;groups&#34;: [],
+            &#34;cron&#34;: &#34;* * * * *&#34;,
+            &#34;retain&#34;: 2,
+            &#34;concurrency&#34;: 1,
+            &#34;labels&#34;: {},
+        }
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    backup_vol.recurringJobAdd(name=job_name, isGroup=False)
+    wait_for_volume_recurring_job_update(backup_vol,
+                                         jobs=[job_name],
+                                         groups=[&#34;default&#34;])
+    # share manager
+    rwx_statefulset_name = rwx_statefulset[&#39;metadata&#39;][&#39;name&#39;]
+    create_and_wait_statefulset(rwx_statefulset)
+    rwx_statefulset_pod_name = rwx_statefulset_name + &#39;-0&#39;
+    rwx_pvc_name = \
+        rwx_statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;]\
+        + &#39;-&#39; + rwx_statefulset_name + &#39;-0&#39;
+    rwx_pv_name = get_volume_name(core_api, rwx_pvc_name)
+    rwx_test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, rwx_statefulset_pod_name,
+                          rwx_test_data, filename=&#39;test1&#39;)
+
+    # v2 data engine CRs
+    if v2_data_engine_crs_before_upgrade:
+        v2_backing_image_name = BACKING_IMAGE_NAME + &#34;-v2&#34;
+        create_backing_image_with_matching_url(
+            client,
+            v2_backing_image_name,
+            BACKING_IMAGE_QCOW2_URL,
+            dataEngine=&#34;v2&#34;)
+
+        vol_detached_v2_name = &#34;vol-detached-v2&#34;
+        vol_detached_v2 = create_and_check_volume(client, vol_detached_v2_name,
+                                                  data_engine=&#34;v2&#34;)
+
+        vol_v2_name = &#34;vol-v2&#34;
+        vol_v2, vol_v2_data_before_sys_upgrade = \
+            create_volume_and_write_data(client, vol_v2_name, data_engine=&#34;v2&#34;)
+        vol_v2.detach()
+        vol_v2 = wait_for_volume_detached(client, vol_v2_name)
+
+        v2_data_sc_name = &#34;longhorn-v2-data-engine-test&#34;
+        v2_storage_class = copy.deepcopy(storage_class)
+        v2_storage_class[&#39;metadata&#39;][&#39;name&#39;] = v2_data_sc_name
+        create_storage_class(v2_storage_class, data_engine=&#34;v2&#34;)
+
+        v2_pv_name = &#39;v2-volume-test-pv&#39;
+        v2_pvc_name = &#39;v2-volume-test-pvc&#39;
+        v2_pvc = copy.deepcopy(pvc)
+        v2_pvc[&#39;metadata&#39;][&#39;name&#39;] = v2_pvc_name
+        v2_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = \
+            v2_storage_class[&#39;metadata&#39;][&#39;name&#39;]
+
+        v2_deployment_name = v2_pvc_name + &#34;-dep&#34;
+        core_api.create_namespaced_persistent_volume_claim(
+            body=v2_pvc, namespace=&#39;default&#39;)
+        v2_deployment = make_deployment_with_pvc(v2_deployment_name,
+                                                 v2_pvc_name)
+        apps_api = get_apps_api_client()
+        create_and_wait_deployment(apps_api, v2_deployment)
+
+        pod_names = get_deployment_pod_names(core_api, v2_deployment)
+        write_pod_volume_random_data(core_api, pod_names[0], &#34;/data/test&#34;,
+                                     DATA_SIZE_IN_MB_1)
+        v2_dep_data = read_volume_data(core_api, pod_names[0], &#39;default&#39;)
+
+        v2_deployment[&#39;spec&#39;][&#39;replicas&#39;] = 0
+        apps_api.patch_namespaced_deployment(body=v2_deployment,
+                                             namespace=&#39;default&#39;,
+                                             name=v2_deployment[&#34;metadata&#34;][&#34;name&#34;]) # NOQA
+
+        v2_pv_name = get_volume_name(core_api, v2_pvc_name)
+        wait_for_volume_detached(client, v2_pv_name)
+
+        # Create v2 volume backup
+        backup_vol_v2_name = &#34;backup-vol-v2&#34;
+        backup_vol_v2 = create_and_check_volume(client, backup_vol_v2_name,
+                                                num_of_replicas=2,
+                                                size=str(DEFAULT_VOLUME_SIZE * Gi), # NOQA
+                                                data_engine=&#34;v2&#34;)
+        backup_vol_v2.attach(hostId=host_id)
+        backup_vol_v2 = wait_for_volume_healthy(client, backup_vol_v2_name)
+        data2 = {&#39;pos&#39;: 0, &#39;len&#39;: BACKUP_BLOCK_SIZE,
+                 &#39;content&#39;: generate_random_data(BACKUP_BLOCK_SIZE)}
+        _, backup2, _, _ = create_backup(client, backup_vol_v2_name, data2)
+
+        backup_vol_v2.detach()
+        backup_vol_v2 = wait_for_volume_detached(client, backup_vol_v2_name)
+
+    longhorn_transient_version = os.getenv(&#39;LONGHORN_TRANSIENT_VERSION&#39;, &#39;&#39;)
+    if longhorn_transient_version and len(longhorn_transient_version) &gt; 0:
+        # upgrade Longhorn manager to transient version
+        assert longhorn_upgrade(upgrade_to_transient_version=True)
+
+        # wait for 1 minute before checking pod restarts
+        time.sleep(60)
+
+    # upgrade Longhorn manager
+    assert longhorn_upgrade()
+
+    client = get_longhorn_api_client()
+
+    # wait for 1 minute before checking pod restarts
+    time.sleep(60)
+
+    # restore backup after upgrade
+    restore_vol_name = &#34;restore-vol&#34;
+    client.create_volume(name=restore_vol_name,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         fromBackup=backup.url)
+    wait_for_volume_creation(client, restore_vol_name)
+    monitor_restore_progress(client, restore_vol_name)
+    wait_for_volume_detached(client, restore_vol_name)
+
+    # read rwx volume data
+    assert rwx_test_data == \
+        read_volume_data(
+            core_api,
+            rwx_statefulset_pod_name,
+            filename=&#39;test1&#39;), \
+        f&#34;assert rwx statefulset {rwx_statefulset_pod_name} data intact&#34;
+
+    # delete orphan
+    delete_orphans(client)
+
+    # delete system backup
+    if system_backup_feature_supported(client):
+        system_backups_cleanup(client)
+
+    # Check Pod and StatefulSet didn&#39;t restart after upgrade
+    pod = core_api.read_namespaced_pod(name=pod_name,
+                                       namespace=&#39;default&#39;)
+    assert pod.status.container_statuses[0].restart_count == 0, \
+        f&#34;assert pod {pod_name} didn&#39;t restart after upgrade&#34;
+
+    for sspod_info in statefulset_pod_info:
+        sspod = core_api.read_namespaced_pod(name=sspod_info[&#39;pod_name&#39;],
+                                             namespace=&#39;default&#39;)
+        assert sspod.status.container_statuses[0].restart_count == 0, \
+            f&#34;assert pod {sspod_info[&#39;pod_name&#39;]} didn&#39;t restart after upgrade&#34;
+
+    # check instance manager should not restart after upgrade
+    for instance_manager_name in instance_managers_shoud_not_restart:
+        pod = core_api.read_namespaced_pod(name=instance_manager_name,
+                                           namespace=LONGHORN_NAMESPACE)
+        assert pod.status.container_statuses[0].restart_count == 0, \
+            f&#34;assert pod {instance_manager_name} didn&#39;t restart after upgrade&#34;
+
+    # Attach all detached volume after system upgrade
+    vol_detached = client.by_id_volume(vol_detached_name)
+    vol_detached.attach(hostId=host_id)
+    vol_detached = wait_for_volume_healthy(client, vol_detached_name)
+
+    vol_detached_with_data = client.by_id_volume(vol_detached_with_data_name)
+    vol_detached_with_data.attach(hostId=host_id)
+    vol_detached_with_data = \
+        wait_for_volume_healthy(client, vol_detached_with_data_name)
+
+    # Check all volumes data after system upgrade
+    check_volume_data(vol_revision_enabled,
+                      vol_revision_enabled_data_before_sys_upgrade)
+    check_volume_data(vol_revision_disabled,
+                      vol_revision_disabled_data_before_sys_upgrade)
+    check_volume_data(vol_rebuild,
+                      vol_rebuild_data_before_sys_upgrade)
+    check_volume_data(strict_local_vol,
+                      strict_local_vol_data_before_sys_upgrade)
+    check_volume_data(vol_detached_with_data,
+                      vol_detached_data_before_sys_upgrade)
+
+    for sspod_info in statefulset_pod_info:
+        resp = read_volume_data(core_api, sspod_info[&#39;pod_name&#39;])
+        assert resp == sspod_info[&#39;data&#39;], \
+            f&#34;assert pod {sspod_info[&#39;pod_name&#39;]} data intact after upgrade&#34;
+
+    res_pod_md5sum = get_pod_data_md5sum(core_api, pod_name, pod_data_path)
+    assert res_pod_md5sum == pod_md5sum, \
+        f&#34;assert pod {pod_name} data intact after upgrade&#34;
+
+    # Write data to all volumes after system upgrade
+    for sspod_info in statefulset_pod_info:
+        sspod_info[&#39;data&#39;] = generate_random_data(VOLUME_RWTEST_SIZE)
+        write_pod_volume_data(core_api,
+                              sspod_info[&#39;pod_name&#39;],
+                              sspod_info[&#39;data&#39;])
+
+    vol_revision_enabled_data_after_sys_upgrade = \
+        write_volume_random_data(vol_revision_enabled)
+    vol_revision_disabled_data_after_sys_upgrade = \
+        write_volume_random_data(vol_revision_disabled)
+    vol_rebuild_data_after_sys_upgrade = \
+        write_volume_random_data(vol_rebuild)
+    strict_local_vol_data_after_sys_upgrade = \
+        write_volume_random_data(strict_local_vol)
+    vol_detached_data_after_sys_upgrade = \
+        write_volume_random_data(vol_detached_with_data)
+
+    # Check data written to all volumes
+    for sspod_info in statefulset_pod_info:
+        resp = read_volume_data(core_api, sspod_info[&#39;pod_name&#39;])
+        assert resp == sspod_info[&#39;data&#39;], \
+            f&#34;assert data can be written to {sspod_info[&#39;pod_name&#39;]} \
+              after upgrade&#34;
+
+    check_volume_data(vol_revision_enabled,
+                      vol_revision_enabled_data_after_sys_upgrade)
+    check_volume_data(vol_revision_disabled,
+                      vol_revision_disabled_data_after_sys_upgrade)
+    check_volume_data(vol_rebuild,
+                      vol_rebuild_data_after_sys_upgrade)
+    check_volume_data(vol_detached_with_data,
+                      vol_detached_data_after_sys_upgrade)
+    # Check data written to strict-local volume
+    check_volume_data(strict_local_vol,
+                      strict_local_vol_data_after_sys_upgrade)
+
+    # Detach the vol_revision_enabled &amp; vol_revision_disabled,
+    # and Delete Pod, and StatefulSet to detach their volumes
+
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 0
+    apps_api = get_apps_api_client()
+
+    apps_api.patch_namespaced_stateful_set(
+        name=statefulset_name,
+        namespace=&#39;default&#39;,
+        body={
+            &#39;spec&#39;: {
+                &#39;replicas&#39;: replicas
+            }
+        })
+
+    delete_and_wait_pod(core_api, pod_name)
+
+    # Upgrade all volumes engine images
+    volumes = client.list_volume()
+    for v in volumes:
+        if v.name != vol_rebuild_name and \
+           v.name != backup_vol_name and \
+           v.name != rwx_pv_name and \
+           v.dataEngine != &#34;v2&#34;:
+            print(f&#34;Detaching volume {v.name}&#34;)
+            volume = client.by_id_volume(v.name)
+            volume.detach()
+            # when upgrading from v1.4.x to v1.5.x, attached volumes without
+            # any workload pod will be automatically added the volumeAttachment
+            # ticket with the ID &#34;longhorn-ui&#34;. Therefore, we need to use that
+            # ticket ID for detach call here
+            volume.detach(attachmentID=&#34;longhorn-ui&#34;)
+            wait_for_volume_detached(client, v.name)
+            print(f&#34;Detached volume {v.name}&#34;)
+
+    engineimages = client.list_engine_image()
+    # the longhorn engine image to be upgraded to
+    # it should be defined,
+    # so os.environ is used to throw error if it&#39;s not found
+    if os.getenv(&#39;AIR_GAP_INSTALLATION&#39;) == &#34;true&#34;:
+        longhorn_engine_image = os.environ[&#39;REGISTRY_URL&#39;] + &#34;/&#34; + \
+                                os.environ[&#39;CUSTOM_LONGHORN_ENGINE_IMAGE&#39;]
+    else:
+        longhorn_engine_image = os.environ[&#39;CUSTOM_LONGHORN_ENGINE_IMAGE&#39;]
+    print(f&#34;target longhorn engine image = {longhorn_engine_image}&#34;)
+    print(&#34;listing available longhorn engine images:&#34;)
+    for ei in engineimages:
+        print(f&#34;{ei.image}&#34;)
+        if ei.image == longhorn_engine_image:
+            new_ei = ei
+
+    for v in volumes:
+        if v.name != restore_vol_name and \
+           v.dataEngine != &#34;v2&#34;:
+            volume = client.by_id_volume(v.name)
+            volume.engineUpgrade(image=new_ei.image)
+            print(f&#34;Upgrading volume {v.name} engine image&#34;)
+
+    # Recreate Pod, and StatefulSet
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 2
+    apps_api = get_apps_api_client()
+
+    apps_api.patch_namespaced_stateful_set(
+        name=statefulset_name,
+        namespace=&#39;default&#39;,
+        body={
+            &#39;spec&#39;: {
+                &#39;replicas&#39;: replicas
+            }
+        })
+
+    wait_statefulset(statefulset)
+
+    pod = pod_make(name=pod_name)
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    # Attach the volume
+    volumes_to_attach = [vol_revision_enabled_name,
+                         vol_revision_disabled_name,
+                         strict_local_vol_name,
+                         vol_detached_with_data_name,
+                         vol_detached_name]
+    for v in volumes:
+        if v.name in volumes_to_attach:
+            volume = client.by_id_volume(v.name)
+            volume.attach(hostId=host_id)
+            wait_for_volume_healthy(client, v.name)
+
+    # Verify volume&#39;s engine image has been upgraded
+    for v in volumes:
+        if v.name != restore_vol_name and \
+           v.dataEngine != &#34;v2&#34;:
+            wait_for_engine_image_upgraded(client, v.name, new_ei.image)
+
+    # Check All volumes data
+    for sspod_info in statefulset_pod_info:
+        resp = read_volume_data(core_api, sspod_info[&#39;pod_name&#39;])
+        assert resp == sspod_info[&#39;data&#39;]
+
+    res_pod_md5sum = get_pod_data_md5sum(core_api, pod_name, pod_data_path)
+    assert res_pod_md5sum == pod_md5sum, \
+        f&#34;assert pod {pod_name} data intact after engine upgrade&#34;
+
+    check_volume_data(vol_revision_enabled,
+                      vol_revision_enabled_data_after_sys_upgrade)
+    check_volume_data(vol_revision_disabled,
+                      vol_revision_disabled_data_after_sys_upgrade)
+    check_volume_data(vol_rebuild,
+                      vol_rebuild_data_after_sys_upgrade)
+    check_volume_data(strict_local_vol,
+                      strict_local_vol_data_after_sys_upgrade)
+    check_volume_data(vol_detached_with_data,
+                      vol_detached_data_after_sys_upgrade)
+
+    def test_replica_rebuilding(client, volume_name):
+        # Delete one healthy replica for vol_rebuild to trigger the rebuilding
+        delete_replica_on_test_node(client, volume_name)
+        # Make sure vol_rebuild replica is deleted
+        replica_count = 2
+        vol_rebuild = wait_for_volume_replica_count(client, volume_name,
+                                                    replica_count)
+        # vol_rebuild will become degraded and start replica rebuilding
+        # Wait for replica rebuilding to complete
+        # Verify the vol_rebuild is still healthy
+        vol_rebuild = wait_for_volume_degraded(client, volume_name)
+        assert vol_rebuild.robustness == &#34;degraded&#34;, \
+            f&#34;assert volume {volume_name} degraded after replica deleted&#34;
+        vol_rebuild = wait_for_volume_healthy(client, volume_name)
+        assert vol_rebuild.robustness == &#34;healthy&#34;, \
+            f&#34;assert volume {volume_name} rebuilt and recovered to healthy&#34;
+        assert len(vol_rebuild.replicas) == 3, \
+            f&#34;assert volume {volume_name} replica count = 3&#34;
+
+    test_replica_rebuilding(client, vol_rebuild_name)
+
+    # v2 data engine CRs
+    if v2_data_engine_crs_before_upgrade:
+        restore_vol_v2_name = &#34;restore-vol-v2&#34;
+        client.create_volume(name=restore_vol_v2_name,
+                             size=str(DEFAULT_VOLUME_SIZE * Gi),
+                             numberOfReplicas=2,
+                             fromBackup=backup2.url,
+                             dataEngine=&#34;v2&#34;)
+        wait_for_volume_creation(client, restore_vol_v2_name)
+        monitor_restore_progress(client, restore_vol_v2_name)
+        wait_for_volume_detached(client, restore_vol_v2_name)
+
+        vol_detached_v2 = client.by_id_volume(vol_detached_v2_name)
+        vol_detached_v2.attach(hostId=host_id)
+        vol_detached_v2 = wait_for_volume_healthy(client, vol_detached_v2_name)
+
+        vol_v2 = client.by_id_volume(vol_v2_name)
+        vol_v2.attach(hostId=host_id)
+        vol_v2 = wait_for_volume_healthy(client, vol_v2_name)
+
+        check_volume_data(vol_v2,
+                          vol_v2_data_before_sys_upgrade)
+
+        vol_v2_data_after_sys_upgrade = write_volume_random_data(vol_v2)
+        check_volume_data(vol_v2, vol_v2_data_after_sys_upgrade)
+
+        # Scale up deployment v2 and check data
+        v2_deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
+        apps_api.patch_namespaced_deployment(body=v2_deployment,
+                                             namespace=&#39;default&#39;,
+                                             name=v2_deployment_name)
+        wait_deployment_replica_ready(apps_api, v2_deployment_name, 1)
+        pod_names = get_deployment_pod_names(core_api, v2_deployment)
+        assert read_volume_data(core_api, pod_names[0], &#39;default&#39;)\
+            == v2_dep_data
+
+        test_replica_rebuilding(client, vol_v2_name)</code></pre>
+</details>
 <div class="desc"><p>Test Longhorn upgrade</p>
 <p>TODO
 The test will cover both volume has revision counter enabled and
@@ -151,6 +767,24 @@ and Delete Pod, and StatefulSet to detach theirvolumes</li>
 <span>def <span class="ident">test_upgrade_with_auto_upgrade_latest_engine_enabled</span></span>(<span>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_upgrade_with_auto_upgrade_latest_engine_enabled():
+    &#34;&#34;&#34;
+    1. Deploy Longhorn stable version
+    2. Set Concurrent Automatic Engine Upgrade Per Node Limit to &gt; 0
+    3. Create a volume and attach it
+    4. Deploy longhornio/longhorn-engine:master-head and wait for it
+       to be deployed. This step is to make sure to expose the race condition
+       that Longhorn tries auto engine upgrade while the new default IM is
+       still starting
+    5. Upgrade Longhorn to master-head
+    6. Observe volume engine image upgrade success.
+    &#34;&#34;&#34;</code></pre>
+</details>
 <div class="desc"><ol>
 <li>Deploy Longhorn stable version</li>
 <li>Set Concurrent Automatic Engine Upgrade Per Node Limit to &gt; 0</li>
@@ -163,52 +797,63 @@ still starting</li>
 <li>Observe volume engine image upgrade success.</li>
 </ol></div>
 </dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_backing_image_manager_image"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_backing_image_manager_image</span></span>(<span>request)</span>
+<dt id="tests.test_upgrade.wait_for_engine_image_upgraded"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_upgraded</span></span>(<span>client, volume_name, engine_image_name)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_engine_image"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_engine_image</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_instance_manager_image"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_instance_manager_image</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_manager_image"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_manager_image</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_repo_branch"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_repo_branch</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_repo_url"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_repo_url</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_share_manager_image"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_share_manager_image</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_transient_version"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_transient_version</span></span>(<span>request)</span>
-</code></dt>
-<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_engine_image_upgraded(client, volume_name, engine_image_name): # NOQA
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    if hasattr(engine, &#39;engineImage&#39;):
+        upgraded = False
+        for i in range(RETRY_COUNTS):
+            print(f&#34;Waiting for {volume_name} ei &#39;{engine.engineImage}&#39; \
+                  upgraded to {engine_image_name} ... ({i})&#34;)
+            if engine.engineImage == engine_image_name:
+                upgraded = True
+                break
+            else:
+                time.sleep(RETRY_INTERVAL)
+                volume = client.by_id_volume(volume_name)
+                engine = get_volume_engine(volume)
+        assert upgraded, \
+               f&#34;assert volume {volume_name} engine image upgraded to \
+                 {engine_image_name}, but it&#39;s {engine.engineImage}&#34;
+    else:
+        upgraded = False
+        for i in range(RETRY_COUNTS):
+            print(f&#34;Waiting for {volume_name} engine image &#39;{engine.image}&#39; \
+                  upgraded to {engine_image_name} ... ({i})&#34;)
+            if engine.image == engine_image_name:
+                upgraded = True
+                break
+            else:
+                time.sleep(RETRY_INTERVAL)
+                volume = client.by_id_volume(volume_name)
+                engine = get_volume_engine(volume)
+        assert upgraded, \
+               f&#34;assert volume {volume_name} engine image upgraded to \
+                 {engine_image_name}, but it&#39;s {engine.image}&#34;
+    upgraded = False
+    for i in range(RETRY_COUNTS):
+        print(f&#34;Waiting for {volume_name} current image \
+                &#39;{engine.currentImage}&#39; \
+                upgraded to {engine_image_name} ... ({i})&#34;)
+        if engine.currentImage == engine_image_name:
+            upgraded = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            volume = client.by_id_volume(volume_name)
+            engine = get_volume_engine(volume)
+    assert upgraded, \
+           f&#34;assert volume {volume_name} current image upgraded to \
+             {engine_image_name}, but it&#39;s {engine.currentImage}&#34;</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -228,32 +873,17 @@ still starting</li>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="tests.test_upgrade.flux_helm_chart_url" href="#tests.test_upgrade.flux_helm_chart_url">flux_helm_chart_url</a></code></li>
-<li><code><a title="tests.test_upgrade.flux_helm_chart_version" href="#tests.test_upgrade.flux_helm_chart_version">flux_helm_chart_version</a></code></li>
-<li><code><a title="tests.test_upgrade.longhorn_install_method" href="#tests.test_upgrade.longhorn_install_method">longhorn_install_method</a></code></li>
-<li><code><a title="tests.test_upgrade.longhorn_repo" href="#tests.test_upgrade.longhorn_repo">longhorn_repo</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_upgrade" href="#tests.test_upgrade.longhorn_upgrade">longhorn_upgrade</a></code></li>
-<li><code><a title="tests.test_upgrade.rancher_access_key" href="#tests.test_upgrade.rancher_access_key">rancher_access_key</a></code></li>
-<li><code><a title="tests.test_upgrade.rancher_chart_install_version" href="#tests.test_upgrade.rancher_chart_install_version">rancher_chart_install_version</a></code></li>
-<li><code><a title="tests.test_upgrade.rancher_hostname" href="#tests.test_upgrade.rancher_hostname">rancher_hostname</a></code></li>
-<li><code><a title="tests.test_upgrade.rancher_secret_key" href="#tests.test_upgrade.rancher_secret_key">rancher_secret_key</a></code></li>
 <li><code><a title="tests.test_upgrade.test_upgrade" href="#tests.test_upgrade.test_upgrade">test_upgrade</a></code></li>
 <li><code><a title="tests.test_upgrade.test_upgrade_with_auto_upgrade_latest_engine_enabled" href="#tests.test_upgrade.test_upgrade_with_auto_upgrade_latest_engine_enabled">test_upgrade_with_auto_upgrade_latest_engine_enabled</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_backing_image_manager_image" href="#tests.test_upgrade.upgrade_longhorn_backing_image_manager_image">upgrade_longhorn_backing_image_manager_image</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_engine_image" href="#tests.test_upgrade.upgrade_longhorn_engine_image">upgrade_longhorn_engine_image</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_instance_manager_image" href="#tests.test_upgrade.upgrade_longhorn_instance_manager_image">upgrade_longhorn_instance_manager_image</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_manager_image" href="#tests.test_upgrade.upgrade_longhorn_manager_image">upgrade_longhorn_manager_image</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_repo_branch" href="#tests.test_upgrade.upgrade_longhorn_repo_branch">upgrade_longhorn_repo_branch</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_repo_url" href="#tests.test_upgrade.upgrade_longhorn_repo_url">upgrade_longhorn_repo_url</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_share_manager_image" href="#tests.test_upgrade.upgrade_longhorn_share_manager_image">upgrade_longhorn_share_manager_image</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_transient_version" href="#tests.test_upgrade.upgrade_longhorn_transient_version">upgrade_longhorn_transient_version</a></code></li>
+<li><code><a title="tests.test_upgrade.wait_for_engine_image_upgraded" href="#tests.test_upgrade.wait_for_engine_image_upgraded">wait_for_engine_image_upgraded</a></code></li>
 </ul>
 </li>
 </ul>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

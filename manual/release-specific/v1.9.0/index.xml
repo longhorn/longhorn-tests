@@ -7,6 +7,37 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Test Migrate v1beta1 To v1beta2</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-crd-v1beta2-migration/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-crd-v1beta2-migration/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/10250
+Test Steps Given A single-server K3s cluster
+ Ref: https://docs.k3s.io/architecture?_highlight=single&amp;amp;_highlight=server#single-server-setup-with-an-embedded-db Example: https://github.com/k3s-io/vagrant-k3s
+ And Install necessary command line tools on master node
+sudo zypper in jq sqlite3 sudo snap install kubectl --classic And Longhorn v1.2.x installed
+And Create a RWX volume
+kubectl apply -f - &amp;lt;&amp;lt;EOF apiVersion: v1 kind: PersistentVolumeClaim metadata: name: longhorn-share spec: accessModes: - ReadWriteMany resources: requests: storage: 5Mi storageClassName: longhorn --- apiVersion: apps/v1 kind: Deployment metadata: name: hello-world labels: app: hello-world spec: replicas: 1 selector: matchLabels: app: hello-world template: metadata: labels: app: hello-world spec: containers: - name: hello-world image: busybox command: [&amp;#39;sh&amp;#39;, &amp;#39;-c&amp;#39;, &amp;#39;while true ; do now=$(date +%s) ; echo $now ; echo $now &amp;gt;&amp;gt;/mnt/data/share/log || echo $now &amp;gt;/mnt/data/share/log ; ls -l /mnt/data/share/log ; sleep 1 ; done&amp;#39;] volumeMounts: - mountPath: /mnt/data/share name: share volumes: - name: share persistentVolumeClaim: claimName: longhorn-share EOF And Create a backup target</description>
+    </item>
+    
+    <item>
+      <title>Test Orphaned Instance Handling</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-orphaned-instance/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-orphaned-instance/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6764
+Test Orphan Auto Cleanup Settings Replacement Given A cluster with Longhorn v1.8.x ready
+And Enable orphaned replica data auto deletion
+$ kubectl -n longhorn-system edit settings.longhorn.io orphan-auto-deletion And set the value to true
+When Upgrade to Longhorn v1.9.0
+Then The new setting orphan-resource-auto-deletion is initialized with replica data enabled
+$ kubectl -n longhorn-system get settings.longhorn.io orphan-resource-auto-deletion -o jsonpath=&amp;#39;{.value}&amp;#39; replicaData And The old setting orphan-auto-deletion is removed
+$ kubectl -n longhorn-system get settings.</description>
+    </item>
+    
+    <item>
       <title>Test Support Bundle Extended Collection</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.9.0/test-support-bundle-extended-collection/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.0">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>tests.test_system_backup_restore API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -37,6 +48,37 @@ hljs.highlightAll();
 <span>def <span class="ident">test_system_backup_and_restore</span></span>(<span>client, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_and_restore(client, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test system backup and restore
+
+    Issue: https://github.com/longhorn/longhorn/issues/1455
+
+    Given setup backup target
+    When create system backup
+    Then system backup should be in state Ready
+
+    When restore system backup
+    Then system restore should be in state Completed
+
+    &#34;&#34;&#34;
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name)
+
+    system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    system_restore_name = system_restore_random_name()
+    client.create_system_restore(Name=system_restore_name,
+                                 SystemBackup=system_backup_name)
+
+    system_restore_wait_for_state(&#34;Completed&#34;, system_restore_name, client)</code></pre>
+</details>
 <div class="desc"><p>Scenario: test system backup and restore</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/1455">https://github.com/longhorn/longhorn/issues/1455</a></p>
 <p>Given setup backup target
@@ -49,6 +91,87 @@ Then system restore should be in state Completed</p></div>
 <span>def <span class="ident">test_system_backup_and_restore_volume_with_backingimage</span></span>(<span>client, core_api, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_and_restore_volume_with_backingimage(client, core_api, volume_name, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test system backup and restore volume with backingimage
+
+    Issue: https://github.com/longhorn/longhorn/issues/5085
+           https://github.com/longhorn/longhorn/issues/10057
+
+    Given a backingimage
+    And a volume created with the backingimage
+    And a PVC for the volume
+    And a PV for the volume
+    And data written to volume
+    When system backup created
+    Then system backup in state Ready
+
+    When volume deleted
+    And backingimage deleted
+    And restore system backup
+    Then system restore should be in state Completed
+    And wait for backingimage restoration to complete
+    And wait for volume restoration to complete
+    And wait for PVC restoration to complete
+    And wait for PV restoration to complete
+    And volume should be detached
+
+    When attach volume
+    Then volume should be healthy
+    And volume data should exist
+    &#34;&#34;&#34;
+
+    host_id = get_self_host_id()
+
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, BACKING_IMAGE_RAW_URL)
+
+    volume = create_and_check_volume(
+        client, volume_name, backing_image=BACKING_IMAGE_NAME)
+    pvc_name = volume_name + &#34;-pvc&#34;
+    pv_name = volume_name + &#34;-pv&#34;
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    data = write_volume_random_data(volume)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name)
+
+    system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    cleanup_volume(client, volume)
+    cleanup_all_backing_images(client)
+
+    system_restore_name = system_restore_random_name()
+    client.create_system_restore(Name=system_restore_name,
+                                 SystemBackup=system_backup_name)
+
+    system_restore_wait_for_state(&#34;Completed&#34;, system_restore_name, client)
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_RESTORE
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 3, &#34;ready&#34;)
+
+    restored_volume = client.by_id_volume(volume_name)
+    wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
+    assert check_pvc_existence(core_api, pvc_name)
+    assert check_pv_existence(core_api, pv_name)
+
+    restored_volume.attach(hostId=host_id)
+    restored_volume = wait_for_volume_healthy(client, volume_name)
+
+    check_volume_data(volume, data)</code></pre>
+</details>
 <div class="desc"><p>Scenario: test system backup and restore volume with backingimage</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5085">https://github.com/longhorn/longhorn/issues/5085</a>
 <a href="https://github.com/longhorn/longhorn/issues/10057">https://github.com/longhorn/longhorn/issues/10057</a></p>
@@ -76,6 +199,66 @@ And volume data should exist</p></div>
 <span>def <span class="ident">test_system_backup_and_restore_volume_with_data</span></span>(<span>client, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_and_restore_volume_with_data(client, volume_name, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test system backup and restore volume with data
+
+    Issue: https://github.com/longhorn/longhorn/issues/1455
+
+    Given volume created
+    And data written to volume
+    And volume backup created
+    And system backup created
+    And system backup in state Ready
+    And volume deleted
+
+    When restore system backup
+    Then system restore should be in state Completed
+
+    When wait for volume restoration to complete
+    And volume detached
+
+    Then attach volume
+    And volume should be healthy
+    And volume data should exist
+
+    &#34;&#34;&#34;
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    _, _, _, data = create_backup(client, volume_name)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name)
+
+    system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    cleanup_volume(client, volume)
+
+    system_restore_name = system_restore_random_name()
+    client.create_system_restore(Name=system_restore_name,
+                                 SystemBackup=system_backup_name)
+
+    system_restore_wait_for_state(&#34;Completed&#34;, system_restore_name, client)
+
+    restored_volume = client.by_id_volume(volume_name)
+    wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
+
+    restored_volume.attach(hostId=host_id)
+    restored_volume = wait_for_volume_healthy(client, volume_name)
+
+    check_volume_data(restored_volume, data)</code></pre>
+</details>
 <div class="desc"><p>Scenario: test system backup and restore volume with data</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/1455">https://github.com/longhorn/longhorn/issues/1455</a></p>
 <p>Given volume created
@@ -96,6 +279,47 @@ And volume data should exist</p></div>
 <span>def <span class="ident">test_system_backup_delete_when_other_system_backup_using_name_as_prefix</span></span>(<span>client, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_delete_when_other_system_backup_using_name_as_prefix(client, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test deleting system backup when there are other system backups
+              using the name as prefix
+
+    Issue: https://github.com/longhorn/longhorn/issues/6045
+
+    Given setup backup target.
+    And setting (backupstore-poll-interval) is (10 seconds).
+    When create 3 system backups (aa, aaa, aaaa)
+    Then system backups should be in state Ready
+
+    When delete system backup (aa)
+    And wait 60 seconds
+    Then system backups should exists (aaa, aaaa)
+    &#34;&#34;&#34;
+    set_backupstore_poll_interval(client, &#34;10&#34;)
+
+    system_backup_names = [&#34;aa&#34;, &#34;aaa&#34;, &#34;aaaa&#34;]
+    for name in system_backup_names:
+        client.create_system_backup(Name=name)
+
+    for name in system_backup_names:
+        system_backup_wait_for_state(&#34;Ready&#34;, name, client)
+
+    aa_system_backup = client.by_id_system_backup(&#34;aa&#34;)
+    client.delete(aa_system_backup)
+
+    time.sleep(60)
+    system_backups = client.list_system_backup()
+    assert len(system_backups) == 2
+
+    for system_backup in client.list_system_backup():
+        assert system_backup[&#34;name&#34;] in [&#34;aaa&#34;, &#34;aaaa&#34;]</code></pre>
+</details>
 <div class="desc"><p>Scenario: test deleting system backup when there are other system backups
 using the name as prefix</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/6045">https://github.com/longhorn/longhorn/issues/6045</a></p>
@@ -111,6 +335,70 @@ Then system backups should exists (aaa, aaaa)</p></div>
 <span>def <span class="ident">test_system_backup_with_volume_backup_policy_always</span></span>(<span>client, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_with_volume_backup_policy_always(client, volume_name, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: system backup with volume backup policy (always) should always
+              create volume backup, regardless of their existing backups.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5011
+
+    Given a volume is created.
+    And volume has backup count (1).
+    And create a DR volume from backup
+    And wait for DR volume to restore from backup
+
+    When system backup (system-backup) has volume backup policy (always).
+    And system backup (system-backup) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (2).
+    And system backup (system-backup) deleted.
+
+    When system backup (system-backup) has volume backup policy (always).
+    And system backup (system-backup) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (3).
+    &#34;&#34;&#34;
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    _, backup, _, _ = create_backup(client, volume_name)
+
+    # System backup should skip creating DR volume backup.
+    dr_volume_name = volume_name + &#34;-dr&#34;
+    client.create_volume(name=dr_volume_name, size=SIZE,
+                         numberOfReplicas=1, fromBackup=backup.url,
+                         frontend=&#34;&#34;, standby=True,
+                         dataEngine=DATA_ENGINE)
+    wait_for_backup_restore_completed(client, dr_volume_name, backup.name)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name,
+                                VolumeBackupPolicy=ALWAYS)
+
+    system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    backup_volume = find_backup_volume(client, volume_name)
+    wait_for_backup_count(backup_volume, 2)
+
+    system_backups_cleanup(client)
+
+    client.create_system_backup(Name=system_backup_name,
+                                VolumeBackupPolicy=ALWAYS)
+
+    system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    backup_volume = find_backup_volume(client, volume_name)
+    wait_for_backup_count(backup_volume, 3)</code></pre>
+</details>
 <div class="desc"><p>Scenario: system backup with volume backup policy (always) should always
 create volume backup, regardless of their existing backups.</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5011">https://github.com/longhorn/longhorn/issues/5011</a></p>
@@ -132,6 +420,41 @@ And volume has backup count (3).</p></div>
 <span>def <span class="ident">test_system_backup_with_volume_backup_policy_disabled</span></span>(<span>client, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_with_volume_backup_policy_disabled(client, volume_name, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: system backup with volume backup policy (disabled) should not
+              create volume backup.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5011
+
+    Given a volume is created.
+
+    When system backup (system-backup) has volume backup policy (disabled).
+    And system backup (system-backup) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (0).
+    &#34;&#34;&#34;
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name,
+                                VolumeBackupPolicy=DISABLED)
+
+    system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+    backup_volume = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(backup_volume, 0)</code></pre>
+</details>
 <div class="desc"><p>Scenario: system backup with volume backup policy (disabled) should not
 create volume backup.</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5011">https://github.com/longhorn/longhorn/issues/5011</a></p>
@@ -145,6 +468,69 @@ And volume has backup count (0).</p></div>
 <span>def <span class="ident">test_system_backup_with_volume_backup_policy_if_not_present</span></span>(<span>client, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_name, set_random_backupstore):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: system backup with volume backup policy (if-not-present) should
+              create volume backup when no backup exists for the volume or when
+              the last backup is outdated.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5011
+           https://github.com/longhorn/longhorn/issues/6027
+
+    Given a volume is created.
+
+    When system backup (system-backup-1) has no volume backup policy.
+    And system backup (system-backup-1) created.
+    Then system backup has volume backup policy (if-not-present).
+    And system backup is in state (Ready).
+    And volume has backup count (1).
+
+    When system backup (system-backup-2) has volume backup policy
+         (if-not-present).
+    And system backup (system-backup-2) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (1).
+
+    When system backup (system-backup-3) has volume backup policy
+         (if-not-present).
+    And write data to volume.
+    And system backup (system-backup-3) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (2).
+    &#34;&#34;&#34;
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    def create_system_backup_and_assert_volume_backup_count(count):
+        system_backup_name = system_backup_random_name()
+        client.create_system_backup(Name=system_backup_name,
+                                    VolumeBackupPolicy=IF_NOT_PRESENT)
+
+        system_backup = client.by_id_system_backup(system_backup_name)
+        assert system_backup.volumeBackupPolicy == IF_NOT_PRESENT
+
+        system_backup_wait_for_state(&#34;Ready&#34;, system_backup_name, client)
+
+        backup_volume = find_backup_volume(client, volume_name)
+        wait_for_backup_count(backup_volume, count)
+        check_volume_last_backup(client,
+                                 volume_name,
+                                 backup_volume.lastBackupName)
+
+    create_system_backup_and_assert_volume_backup_count(1)
+    create_system_backup_and_assert_volume_backup_count(1)
+    write_volume_random_data(volume)
+    create_system_backup_and_assert_volume_backup_count(2)</code></pre>
+</details>
 <div class="desc"><p>Scenario: system backup with volume backup policy (if-not-present) should
 create volume backup when no backup exists for the volume or when
 the last backup is outdated.</p>
@@ -198,7 +584,7 @@ And volume has backup count (2).</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

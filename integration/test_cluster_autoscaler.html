@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.0">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>tests.test_cluster_autoscaler API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -37,30 +48,154 @@ hljs.highlightAll();
 <span>def <span class="ident">annotate_safe_to_evict_to_namespace_pods</span></span>(<span>core_api, namespace)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def annotate_safe_to_evict_to_namespace_pods(core_api, namespace):  # NOQA
+    payload = {
+        &#34;metadata&#34;: {
+            &#34;annotations&#34;: {
+                K8S_CLUSTER_AUTOSCALER_EVICT_KEY: &#34;true&#34;
+            }
+        }
+    }
+    pods = core_api.list_namespaced_pod(namespace=namespace)
+    for pod in pods.items:
+        meta = pod.metadata
+        try:
+            key = K8S_CLUSTER_AUTOSCALER_EVICT_KEY
+            if key in meta.annotations and \
+                    meta.annotations[key] == &#34;true&#34;:
+                continue
+        # we dont mind type error for different cloudproviders.
+        except TypeError:
+            pass
+
+        core_api.patch_namespaced_pod(
+            meta.name, meta.namespace, payload
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_cluster_autoscaler.configure_node_scale_down"><code class="name flex">
 <span>def <span class="ident">configure_node_scale_down</span></span>(<span>core_api, nodes, disable)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def configure_node_scale_down(core_api, nodes, disable):  # NOQA
+    payload = {
+        &#34;metadata&#34;: {
+            &#34;annotations&#34;: {
+                K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY: disable,
+            }
+        }
+    }
+    for node in nodes:
+        core_api.patch_node(node.id, body=payload)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_cluster_autoscaler.get_new_nodes"><code class="name flex">
 <span>def <span class="ident">get_new_nodes</span></span>(<span>client, old_nodes)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_new_nodes(client, old_nodes):  # NOQA
+    old_nodes_name = [n.name for n in old_nodes]
+    nodes = client.list_node()
+    return [n for n in nodes if not (n.name in old_nodes_name)]</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_cluster_autoscaler.get_replica_count_to_scale_up"><code class="name flex">
 <span>def <span class="ident">get_replica_count_to_scale_up</span></span>(<span>core_api, node_number, cpu_request)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_replica_count_to_scale_up(core_api, node_number, cpu_request):  # NOQA
+    host_id = get_self_host_id()
+    host_kb_node = core_api.read_node(host_id)
+    if host_kb_node.status.allocatable[&#34;cpu&#34;].endswith(&#39;m&#39;):
+        allocatable_millicpu = int(host_kb_node.status.allocatable[&#34;cpu&#34;][:-1])
+    else:
+        allocatable_millicpu = int(host_kb_node.status.allocatable[&#34;cpu&#34;])*1000
+    return 10 * math.ceil(allocatable_millicpu/cpu_request*node_number/10)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_cluster_autoscaler.test_cluster_autoscaler"><code class="name flex">
 <span>def <span class="ident">test_cluster_autoscaler</span></span>(<span>client, core_api, apps_api, make_deployment_cpu_request, request)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.cluster_autoscaler  # NOQA
+def test_cluster_autoscaler(client, core_api, apps_api, make_deployment_cpu_request, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: Test CA
+
+    Given Cluster with Kubernetes cluster-autoscaler.
+    And Longhorn installed.
+    And Set `kubernetes-cluster-autoscaler-enabled` to `true`.
+    And Create deployment with cpu request.
+
+    When Trigger CA to scale-up by increase deployment replicas.
+         (double the node number, not including host node)
+    Then Cluster should have double the node number.
+
+    When Trigger CA to scale-down by decrease deployment replicas.
+    Then Cluster should scale-down to original node number.
+    &#34;&#34;&#34;
+    # Cleanup
+    def finalizer():
+        configure_node_scale_down(core_api, client.list_node(), disable=&#34;&#34;)
+    request.addfinalizer(finalizer)
+
+    host_id = get_self_host_id()
+    host_node = client.by_id_node(host_id)
+    configure_node_scale_down(core_api, [host_node], disable=&#34;true&#34;)
+    set_node_cordon(core_api, host_id, True)
+
+    update_setting(client, SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED, &#34;true&#34;)
+
+    nodes = client.list_node()
+    scale_size = len(nodes)-1
+
+    scale_up_replica = get_replica_count_to_scale_up(
+        core_api, scale_size, CPU_REQUEST
+    )
+
+    deployment_name = &#34;ca-scaling-control&#34;
+    deployment = make_deployment_cpu_request(deployment_name, CPU_REQUEST)
+    create_and_wait_deployment(apps_api, deployment)
+
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = scale_up_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+
+    wait_cluster_autoscale_up(client, nodes, scale_size)
+
+    scale_down_replica = 0
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = scale_down_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+    nodes = client.list_node()
+    client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)</code></pre>
+</details>
 <div class="desc"><p>Scenario: Test CA</p>
 <p>Given Cluster with Kubernetes cluster-autoscaler.
 And Longhorn installed.
@@ -76,6 +211,117 @@ Then Cluster should scale-down to original node number.</p></div>
 <span>def <span class="ident">test_cluster_autoscaler_all_nodes_with_volume_replicas</span></span>(<span>client, core_api, apps_api, make_deployment_cpu_request, volume_name, pod_make, request)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.cluster_autoscaler  # NOQA
+def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, apps_api, make_deployment_cpu_request, volume_name, pod_make, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: Test CA scale down all nodes with volume replicas
+
+    Given Cluster with Kubernetes cluster-autoscaler.
+    And Longhorn installed.
+    And Set `kubernetes-cluster-autoscaler-enabled` to `true`.
+    And Create volume.
+    And Attach the volume.
+    And Write some data to volume.
+    And Detach the volume.
+    And Create deployment with cpu request.
+
+    When Trigger CA to scale-up by increase deployment replicas.
+         (double the node number, not including host node)
+    Then Cluster should have double the node number.
+
+    When Annotate new nodes with
+         `cluster-autoscaler.kubernetes.io/scale-down-disabled`.
+         (this ensures scale-down only the old nodes)
+    And Trigger CA to scale-down by decrease deployment replicas.
+    Then Cluster should have original node number + 1 blocked node.
+
+    When Attach the volume to a new node. This triggers replica rebuild.
+    And Volume data should be the same.
+    And Detach the volume.
+    Then Cluster should scale-down to original node number.
+    And Volume data should be the same.
+    &#34;&#34;&#34;
+    # Cleanup
+    def finalizer():
+        configure_node_scale_down(core_api, client.list_node(), disable=&#34;&#34;)
+    request.addfinalizer(finalizer)
+
+    host_id = get_self_host_id()
+    host_node = client.by_id_node(host_id)
+    configure_node_scale_down(core_api, [host_node], disable=&#34;true&#34;)
+    set_node_cordon(core_api, host_id, True)
+
+    update_setting(client, SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL, &#34;0&#34;)
+    update_setting(client, SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED, &#34;true&#34;)
+
+    nodes = client.list_node()
+    scale_size = len(nodes)-1
+
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=scale_size)
+    create_pv_for_volume(client, core_api, volume, volume.name)
+    create_pvc_for_volume(client, core_api, volume, volume.name)
+
+    pod_manifest = pod_make()
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(volume.name)]
+    pod_name = pod_manifest[&#39;metadata&#39;][&#39;name&#39;]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    data = generate_random_data(16*Ki)
+    write_pod_volume_data(core_api, pod_name, data)
+    delete_and_wait_pod(core_api, pod_name)
+    volume = wait_for_volume_detached(client, volume.name)
+
+    scale_up_replica = get_replica_count_to_scale_up(
+        core_api, scale_size, CPU_REQUEST
+    )
+
+    deployment_name = &#34;autoscale-control&#34;
+    deployment = make_deployment_cpu_request(deployment_name, CPU_REQUEST)
+    create_and_wait_deployment(apps_api, deployment)
+
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = scale_up_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+
+    wait_cluster_autoscale_up(client, nodes, scale_size)
+
+    new_nodes = get_new_nodes(client, old_nodes=nodes)
+    configure_node_scale_down(core_api, new_nodes, disable=&#34;true&#34;)
+
+    scale_down_replica = 0
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = scale_down_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+    nodes = client.list_node()
+    is_blocked = False
+    try:
+        client = wait_cluster_autoscale_down(client, core_api, nodes,
+                                             scale_size)
+    except AssertionError:
+        client = wait_cluster_autoscale_down(client, core_api, nodes,
+                                             scale_size-1)
+        is_blocked = True
+    assert is_blocked
+
+    configure_node_scale_down(core_api, [new_nodes[0]], disable=&#34;&#34;)
+
+    volume = client.by_id_volume(volume.name)
+    volume = volume.attach(hostId=new_nodes[0].id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume.detach()
+
+    client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)
+    create_and_wait_pod(core_api, pod_manifest)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == data</code></pre>
+</details>
 <div class="desc"><p>Scenario: Test CA scale down all nodes with volume replicas</p>
 <p>Given Cluster with Kubernetes cluster-autoscaler.
 And Longhorn installed.
@@ -103,6 +349,91 @@ And Volume data should be the same.</p></div>
 <span>def <span class="ident">test_cluster_autoscaler_backing_image</span></span>(<span>client, core_api, apps_api, make_deployment_cpu_request, request)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.cluster_autoscaler  # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_cluster_autoscaler_backing_image(client, core_api, apps_api, make_deployment_cpu_request, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: Test CA scale down with backing image
+
+    Given Cluster with Kubernetes cluster-autoscaler.
+    And Longhorn installed.
+    And Set `kubernetes-cluster-autoscaler-enabled` to `true`.
+    And Create backing image.
+    And Create deployment with cpu request.
+
+    When Trigger CA to scale-up by increase deployment replicas.
+         (double the node number, not including host node)
+    Then Cluster should have double the node number.
+
+    When Annotate new nodes with
+         `cluster-autoscaler.kubernetes.io/scale-down-disabled`.
+         (this ensures scale-down only the old nodes)
+    And Trigger CA to scale-down by decrease deployment replicas.
+    Then Cluster should have original node number + 1 blocked node.
+
+    When Remove backing image.
+    Then Cluster should scale-down to original node number.
+    &#34;&#34;&#34;
+    # Cleanup
+    def finalizer():
+        configure_node_scale_down(core_api, client.list_node(), disable=&#34;&#34;)
+    request.addfinalizer(finalizer)
+
+    host_id = get_self_host_id()
+    host_node = client.by_id_node(host_id)
+    configure_node_scale_down(core_api, [host_node], disable=&#34;true&#34;)
+    set_node_cordon(core_api, host_id, True)
+
+    update_setting(client, SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL, &#34;0&#34;)
+    update_setting(client, SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED, &#34;true&#34;)
+
+    nodes = client.list_node()
+    scale_size = len(nodes)-1
+
+    create_backing_image_with_matching_url(
+            client, BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL)
+
+    scale_up_replica = get_replica_count_to_scale_up(
+        core_api, scale_size, CPU_REQUEST
+    )
+
+    deployment_name = &#34;autoscale-control&#34;
+    deployment = make_deployment_cpu_request(deployment_name, CPU_REQUEST)
+    create_and_wait_deployment(apps_api, deployment)
+
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = scale_up_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+
+    wait_cluster_autoscale_up(client, nodes, scale_size)
+
+    new_nodes = get_new_nodes(client, old_nodes=nodes)
+    configure_node_scale_down(core_api, new_nodes, disable=&#34;true&#34;)
+
+    scale_down_replica = 0
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = scale_down_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+    nodes = client.list_node()
+    is_blocked = False
+    try:
+        client = wait_cluster_autoscale_down(client, core_api, nodes,
+                                             scale_size)
+    except AssertionError:
+        client = wait_cluster_autoscale_down(client, core_api, nodes,
+                                             scale_size-1)
+        is_blocked = True
+    assert is_blocked
+
+    cleanup_all_backing_images(client)
+    client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)</code></pre>
+</details>
 <div class="desc"><p>Scenario: Test CA scale down with backing image</p>
 <p>Given Cluster with Kubernetes cluster-autoscaler.
 And Longhorn installed.
@@ -124,12 +455,55 @@ Then Cluster should scale-down to original node number.</p></div>
 <span>def <span class="ident">wait_cluster_autoscale_down</span></span>(<span>client, core_api, nodes, diff)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_cluster_autoscale_down(client, core_api, nodes, diff):  # NOQA
+    for _ in range(RETRY_AUTOSCALER_COUNTS):
+        time.sleep(RETRY_AUTOSCALER_INTERVAL)
+
+        # Sometimes CA gets blocked by kube-system components
+        annotate_safe_to_evict_to_namespace_pods(core_api, &#34;kube-system&#34;)
+
+        try:
+            check_nodes = client.list_node()
+        except requests.exceptions.ConnectionError:
+            client = get_longhorn_api_client()
+            continue
+
+        removed = len(nodes) - len(check_nodes)
+        if removed &gt;= diff:
+            return client
+
+    assert False, \
+        f&#34;cluster autoscaler failed to scaled down.\n&#34; \
+        f&#34;Expect scale={diff}\n&#34; \
+        f&#34;Got scale={removed}&#34;</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_cluster_autoscaler.wait_cluster_autoscale_up"><code class="name flex">
 <span>def <span class="ident">wait_cluster_autoscale_up</span></span>(<span>client, nodes, diff)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_cluster_autoscale_up(client, nodes, diff):  # NOQA
+    for _ in range(RETRY_AUTOSCALER_COUNTS):
+        time.sleep(RETRY_AUTOSCALER_INTERVAL)
+        check_nodes = client.list_node()
+        added = len(check_nodes) - len(nodes)
+        if added &gt;= diff:
+            return
+
+    assert False, \
+        f&#34;cluster autoscaler failed to scaled up.\n&#34; \
+        f&#34;Expect scale={diff}\n&#34; \
+        f&#34;Got scale={added}&#34;</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -164,7 +538,7 @@ Then Cluster should scale-down to original node number.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

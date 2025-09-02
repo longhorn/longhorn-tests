@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.0">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>tests.test_rwx API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -34,9 +45,59 @@ hljs.highlightAll();
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="tests.test_rwx.test_encrypted_rwx_volume"><code class="name flex">
-<span>def <span class="ident">test_encrypted_rwx_volume</span></span>(<span>client, core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc)</span>
+<span>def <span class="ident">test_encrypted_rwx_volume</span></span>(<span>client,<br>core_api,<br>statefulset,<br>storage_class,<br>crypto_secret,<br>pvc,<br>make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_encrypted_rwx_volume(client, core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test creating encrypted rwx volume and use the secret in
+    non longhorn-system namespace.
+
+    1. Create crypto secret in non longhorn-system namespace.
+    2. Create a storage class.
+    3. Create a deployment with a PVC and the pods should be able to running.
+    &#34;&#34;&#34;
+
+    namespace = &#39;default&#39;
+    # Create crypto secret
+    secret = crypto_secret(namespace)
+    create_crypto_secret(secret, namespace)
+
+    # Create storage class
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;encrypted&#39;] = &#39;true&#39;
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = &#39;pvc-deployment-with-encrypted-rwx-volume&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;pvc-deployment-with-encrypted-rwx-volume&#39;, pvc_name, replicas=3)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
+    delete_and_wait_pvc(core_api, pvc_name)</code></pre>
+</details>
 <div class="desc"><p>Test creating encrypted rwx volume and use the secret in
 non longhorn-system namespace.</p>
 <ol>
@@ -46,9 +107,75 @@ non longhorn-system namespace.</p>
 </ol></div>
 </dd>
 <dt id="tests.test_rwx.test_restore_rwo_volume_to_rwx"><code class="name flex">
-<span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc)</span>
+<span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>set_random_backupstore,<br>client,<br>core_api,<br>volume_name,<br>pvc,<br>csi_pv,<br>pod_make,<br>make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test restoring a rwo to a rwx volume.
+
+    1. Create a volume with &#39;accessMode&#39; rwo.
+    2. Create a PV and a PVC with access mode &#39;readwriteonce&#39; and attach to the
+       volume.
+    3. Create a pod and attach to the PVC.
+    4. Write some data into the pod and compute md5sum.
+    5. Take a backup of the volume.
+    6. Restore the backup with &#39;accessMode&#39; rwx.
+    7. Create PV and PVC and attach to 2 pods.
+    8. Verify the data.
+    &#34;&#34;&#34;
+
+    data_path = &#34;/data/test&#34;
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_path=data_path)
+
+    snap = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    bv, b1 = find_backup(client, volume_name, snap.name)
+
+    restore_volume_name = &#39;restored-rwx-volume&#39;
+    restore_pv_name = restore_volume_name + &#34;-pv&#34;
+    restore_pvc_name = restore_volume_name + &#34;-pvc&#34;
+
+    client.create_volume(name=restore_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         accessMode=&#39;rwx&#39;,
+                         dataEngine=DATA_ENGINE)
+    wait_for_volume_creation(client, restore_volume_name)
+    restore_volume = wait_for_volume_detached(client, restore_volume_name)
+    create_pv_for_volume(client, core_api, restore_volume, restore_pv_name)
+    create_pvc_for_volume(client, core_api, restore_volume, restore_pvc_name)
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-multi-pods-test&#39;, restore_pvc_name, replicas=2)
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    deployment_label_selector = \
+        &#34;name=&#34; + deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    pod_name_1 = deployment_pod_list.items[0].metadata.name
+    pod_name_2 = deployment_pod_list.items[1].metadata.name
+
+    md5sum_pod1 = get_pod_data_md5sum(core_api, pod_name_1, data_path)
+    md5sum_pod2 = get_pod_data_md5sum(core_api, pod_name_2, data_path)
+
+    assert md5sum == md5sum_pod1 == md5sum_pod2</code></pre>
+</details>
 <div class="desc"><p>Test restoring a rwo to a rwx volume.</p>
 <ol>
 <li>Create a volume with 'accessMode' rwo.</li>
@@ -66,6 +193,70 @@ volume.</li>
 <span>def <span class="ident">test_rwx_delete_share_manager_pod</span></span>(<span>client, core_api, statefulset, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_delete_share_manager_pod(client, core_api, statefulset, storage_class):  # NOQA
+    &#34;&#34;&#34;
+    Test moving of Share manager pod from one node to another.
+
+    1. Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet to come up healthy.
+    3. Write data and compute md5sum.
+    4. Delete the share manager pod.
+    5. The workload pod should still be functioning
+       and the volume should remain attached.
+    6. Check the data md5sum in statefulSet.
+    7. Write more data to it and compute md5sum.
+    8. Check the data md5sum in share manager volume.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    statefulset_name = &#39;statefulset-delete-share-manager-pods-test&#39;
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
+        = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;accessModes&#39;] \
+        = [&#39;ReadWriteMany&#39;]
+
+    create_and_wait_statefulset(statefulset)
+
+    pod_name = statefulset_name + &#39;-&#39; + &#39;0&#39;
+    pvc_name = \
+        statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;] \
+        + &#39;-&#39; + statefulset_name + &#39;-0&#39;
+    pv_name = get_volume_name(core_api, pvc_name)
+    share_manager_name = &#39;share-manager-&#39; + pv_name
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data, filename=&#39;test1&#39;)
+
+    delete_and_wait_pod(core_api, share_manager_name,
+                        namespace=LONGHORN_NAMESPACE)
+
+    wait_for_pod_remount(core_api, pod_name)
+
+    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data_2, filename=&#39;test2&#39;)
+
+    command1 = &#39;cat /export/&#39; + pv_name + &#39;/test1&#39;
+    share_manager_data_1 = exec_command_in_pod(
+        core_api, command1, share_manager_name, LONGHORN_NAMESPACE)
+    assert test_data == share_manager_data_1
+
+    command2 = &#39;cat /export/&#39; + pv_name + &#39;/test2&#39;
+    share_manager_data_2 = exec_command_in_pod(
+        core_api, command2, share_manager_name, LONGHORN_NAMESPACE)
+    assert test_data_2 == share_manager_data_2</code></pre>
+</details>
 <div class="desc"><p>Test moving of Share manager pod from one node to another.</p>
 <ol>
 <li>Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
@@ -84,6 +275,72 @@ and the volume should remain attached.</li>
 <span>def <span class="ident">test_rwx_deployment_with_multi_pods</span></span>(<span>client, core_api, pvc, make_deployment_with_pvc, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_deployment_with_multi_pods(client, core_api, pvc, make_deployment_with_pvc, storage_class):  # NOQA
+    &#34;&#34;&#34;
+    Test deployment of 2 pods with same PVC.
+
+    1. Create a volume with &#39;accessMode&#39; rwx.
+    2. Create a PV and a PVC with access mode &#39;readwritemany&#39; and attach to the
+       volume.
+    3. Create a deployment of 2 pods with PVC created
+    4. Wait for 2 pods to come up healthy.
+    5. Write data in both pods and compute md5sum.
+    6. Check the data md5sum in the share manager pod.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    pvc_name = &#39;pvc-deployment-multi-pods-test&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-multi-pods-test&#39;, pvc_name, replicas=2)
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    pv_name = get_volume_name(core_api, pvc_name)
+    share_manager_name = &#39;share-manager-&#39; + pv_name
+    deployment_label_selector = &#34;name=&#34; + \
+                                deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 2
+
+    pod_name_1 = deployment_pod_list.items[0].metadata.name
+    test_data_1 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name_1, test_data_1, filename=&#39;test1&#39;)
+
+    pod_name_2 = deployment_pod_list.items[1].metadata.name
+    command = &#39;cat /data/test1&#39;
+    pod_data_2 = exec_command_in_pod(core_api, command, pod_name_2, &#39;default&#39;)
+
+    assert test_data_1 == pod_data_2
+
+    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name_2, test_data_2, filename=&#39;test2&#39;)
+
+    command = &#39;cat /export&#39; + &#39;/&#39; + pv_name + &#39;/&#39; + &#39;test1&#39;
+    share_manager_data_1 = exec_command_in_pod(
+        core_api, command, share_manager_name, LONGHORN_NAMESPACE)
+    assert test_data_1 == share_manager_data_1
+
+    command = &#39;cat /export&#39; + &#39;/&#39; + pv_name + &#39;/&#39; + &#39;test2&#39;
+    share_manager_data_2 = exec_command_in_pod(
+        core_api, command, share_manager_name, LONGHORN_NAMESPACE)
+
+    assert test_data_2 == share_manager_data_2</code></pre>
+</details>
 <div class="desc"><p>Test deployment of 2 pods with same PVC.</p>
 <ol>
 <li>Create a volume with 'accessMode' rwx.</li>
@@ -99,6 +356,74 @@ volume.</li>
 <span>def <span class="ident">test_rwx_multi_statefulset_with_same_pvc</span></span>(<span>client, core_api, pvc, statefulset, pod, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_multi_statefulset_with_same_pvc(client, core_api, pvc, statefulset, pod, storage_class):  # NOQA
+    &#34;&#34;&#34;
+    Test writing of data into a volume from multiple pods using same PVC
+
+    1. Create a volume with &#39;accessMode&#39; rwx.
+    2. Create a PV and a PVC with access mode &#39;readwritemany&#39; and attach to the
+       volume.
+    3. Deploy a StatefulSet of 2 pods with the existing PVC above created.
+    4. Wait for both pods to come up.
+    5. Create a pod with the existing PVC above created.
+    6. Wait for StatefulSet to come up healthy.
+    7. Write data all three pods and compute md5sum.
+    8. Check the data md5sum in the share manager pod.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    pvc_name = &#39;pvc-multi-pods-test&#39;
+    statefulset_name = &#39;statefulset-rwx-same-pvc-test&#39;
+    pod_name = &#39;pod-rwx-same-pvc-test&#39;
+
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;volumes&#39;] = \
+        [create_pvc_spec(pvc_name)]
+    del statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;]
+
+    create_and_wait_statefulset(statefulset)
+
+    pv_name = get_volume_name(core_api, pvc_name)
+    share_manager_name = &#39;share-manager-&#39; + pv_name
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, statefulset_name + &#39;-0&#39;,
+                          test_data, filename=&#39;test1&#39;)
+    assert test_data == read_volume_data(core_api, statefulset_name + &#39;-1&#39;,
+                                         filename=&#39;test1&#39;)
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    assert test_data == read_volume_data(core_api, pod_name, filename=&#39;test1&#39;)
+
+    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data_2, filename=&#39;test2&#39;)
+
+    command1 = &#39;cat /export&#39; + &#39;/&#39; + pv_name + &#39;/&#39; + &#39;test1&#39;
+    command2 = &#39;cat /export&#39; + &#39;/&#39; + pv_name + &#39;/&#39; + &#39;test2&#39;
+
+    assert test_data == exec_command_in_pod(
+        core_api, command1, share_manager_name, LONGHORN_NAMESPACE)
+    assert test_data_2 == exec_command_in_pod(
+        core_api, command2, share_manager_name, LONGHORN_NAMESPACE)</code></pre>
+</details>
 <div class="desc"><p>Test writing of data into a volume from multiple pods using same PVC</p>
 <ol>
 <li>Create a volume with 'accessMode' rwx.</li>
@@ -116,6 +441,100 @@ volume.</li>
 <span>def <span class="ident">test_rwx_offline_expansion</span></span>(<span>client, core_api, pvc, make_deployment_with_pvc, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, storage_class): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Attach it to a workload (deployment) and write some data.
+    - Scale down the workload, wait volume detached
+    - Share manager pod will terminate automatically
+    - Expand the volume to 4 Gi, wait exoansion complete
+
+    When
+    - Scale up workload
+
+    Then
+    - Share manager pod created
+    - Volume healthy
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    pvc_name = &#39;pvc-deployment-rwx-expand-test&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = str(1 * Gi)
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-rwx-expand-test&#39;, pvc_name, replicas=1)
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    pv_name = get_volume_name(core_api, pvc_name)
+    deployment_label_selector = &#34;name=&#34; + \
+                                deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    pod_name = deployment_pod_list.items[0].metadata.name
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data, filename=&#39;test&#39;)
+
+    deployment[&#39;spec&#39;][&#39;replicas&#39;] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment[&#34;metadata&#34;][&#34;name&#34;])
+
+    wait_for_volume_detached(client, pv_name)
+    expand_and_wait_for_pvc(core_api, pvc, EXPANDED_VOLUME_SIZE*Gi)
+    wait_for_volume_expansion(client, pv_name)
+    wait_for_volume_detached(client, pv_name)
+
+    deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment[&#34;metadata&#34;][&#34;name&#34;])
+    wait_deployment_replica_ready(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;], 1)
+    wait_for_volume_healthy(client, pv_name)
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+    pod_name = deployment_pod_list.items[0].metadata.name
+
+    # check data written before expansion
+    resp = read_volume_data(core_api, pod_name, &#34;test&#34;)
+    assert resp == test_data
+
+    data_size_in_mb = 1536
+    write_pod_volume_random_data(core_api, pod_name, &#34;/data/test2&#34;,
+                                 data_size_in_mb)
+    command = &#39;stat -c \&#34;%s\&#34; /data/test2&#39;
+    data_size_in_pod = exec_command_in_pod(core_api, command,
+                                           pod_name,
+                                           &#39;default&#39;)
+    assert int(data_size_in_pod)/1024/1024 == data_size_in_mb</code></pre>
+</details>
 <div class="desc"><p>Related issue :
 <a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
 <a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
@@ -140,6 +559,38 @@ test steps."</p>
 <span>def <span class="ident">test_rwx_online_expansion</span></span>(<span>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rwx_online_expansion(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Attach it to a workload (deployment) and write some data.
+
+    When
+    - Expand the volume to 5 Gi
+
+    Then
+    - Expansion of volume is completed.
+    - Share manager pod not restart
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Related issue :
 <a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
 <a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
@@ -161,6 +612,75 @@ test steps."</p>
 <span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>client, core_api, statefulset, pod, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_parallel_writing(client, core_api, statefulset, pod, storage_class):  # NOQA
+    &#34;&#34;&#34;
+    Test parallel writing of data
+
+    1. Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet to come up healthy.
+    3. Create another statefulSet with same pvc which got created with first
+       statefulSet.
+    4. Wait for statefulSet to come up healthy.
+    5. Start writing 800 MB data in first statefulSet `file 1` and start
+       writing 500 MB data in second statefulSet `file 2`.
+    6. Compute md5sum.
+    7. Check the data md5sum in share manager pod volume
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    statefulset_name = &#39;statefulset-rwx-parallel-writing-test&#39;
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
+        = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;accessModes&#39;] \
+        = [&#39;ReadWriteMany&#39;]
+
+    create_and_wait_statefulset(statefulset)
+    statefulset_pod_name = statefulset_name + &#39;-0&#39;
+
+    pvc_name = \
+        statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;] \
+        + &#39;-&#39; + statefulset_name + &#39;-0&#39;
+    pv_name = get_volume_name(core_api, pvc_name)
+    share_manager_name = &#39;share-manager-&#39; + pv_name
+
+    pod_name = &#39;pod-parallel-write-test&#39;
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    with Pool(2) as p:
+        p.map(write_data_into_pod, [statefulset_pod_name + &#39;:/data/test1&#39;,
+                                    pod_name + &#39;:/data/test2&#39;])
+
+    md5sum1 = get_pod_data_md5sum(core_api, statefulset_pod_name, &#39;data/test1&#39;)
+    md5sum2 = get_pod_data_md5sum(core_api, pod_name, &#39;data/test2&#39;)
+
+    command1 = &#39;md5sum /export&#39; + &#39;/&#39; + pv_name + &#39;/&#39; + &#39;test1&#39; + \
+               &#34; | awk &#39;{print $1}&#39;&#34;
+    share_manager_data1 = exec_command_in_pod(core_api, command1,
+                                              share_manager_name,
+                                              LONGHORN_NAMESPACE)
+    assert md5sum1 == share_manager_data1
+
+    command2 = &#39;md5sum /export&#39; + &#39;/&#39; + pv_name + &#39;/&#39; + &#39;test2&#39; + \
+               &#34; | awk &#39;{print $1}&#39;&#34;
+    share_manager_data2 = exec_command_in_pod(core_api, command2,
+                                              share_manager_name,
+                                              LONGHORN_NAMESPACE)
+    assert md5sum2 == share_manager_data2</code></pre>
+</details>
 <div class="desc"><p>Test parallel writing of data</p>
 <ol>
 <li>Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
@@ -179,6 +699,117 @@ writing 500 MB data in second statefulSet <code>file 2</code>.</li>
 <span>def <span class="ident">test_rwx_statefulset_scale_down_up</span></span>(<span>client, core_api, statefulset, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_statefulset_scale_down_up(client, core_api, statefulset, storage_class):  # NOQA
+    &#34;&#34;&#34;
+    Test Scaling up and down of pods attached to rwx volume.
+
+    1. Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet pods to come up healthy.
+    3. Write data and compute md5sum in the both pods.
+    4. Delete the pods.
+    5. Wait for the pods to be terminated.
+    6. Verify the share manager pods are no longer available and the volume is
+       detached.
+    6. Recreate the pods
+    7. Wait for new pods to come up.
+    8. Check the data md5sum in new pods.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    statefulset_name = &#39;statefulset-rwx-scale-down-up-test&#39;
+    share_manager_name = []
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
+        = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;accessModes&#39;] \
+        = [&#39;ReadWriteMany&#39;]
+
+    create_and_wait_statefulset(statefulset)
+
+    for i in range(2):
+        pvc_name = \
+            statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;]\
+            + &#39;-&#39; + statefulset_name + &#39;-&#39; + str(i)
+        pv_name = get_volume_name(core_api, pvc_name)
+
+        assert pv_name is not None
+
+        share_manager_name.append(&#39;share-manager-&#39; + pv_name)
+
+        check_pod_existence(core_api, share_manager_name[i],
+                            namespace=LONGHORN_NAMESPACE)
+
+    md5sum_pod = []
+    for i in range(2):
+        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
+        test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+        write_pod_volume_data(core_api, test_pod_name, test_data)
+        md5sum_pod.append(test_data)
+
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 0
+    apps_api = get_apps_api_client()
+    apps_api.patch_namespaced_stateful_set(
+        name=statefulset_name,
+        namespace=&#39;default&#39;,
+        body={
+            &#39;spec&#39;: {
+                &#39;replicas&#39;: replicas
+            }
+        })
+    for i in range(DEFAULT_STATEFULSET_TIMEOUT):
+        s_set = apps_api.read_namespaced_stateful_set(
+            name=statefulset[&#39;metadata&#39;][&#39;name&#39;],
+            namespace=&#39;default&#39;)
+        # s_set is none if statefulset is not yet created
+        if s_set is not None and s_set.status.ready_replicas == replicas or \
+                (replicas == 0 and not s_set.status.ready_replicas):
+            break
+        time.sleep(DEFAULT_STATEFULSET_INTERVAL)
+
+    found = True
+    for i in range(RETRY_COUNTS):
+        pods = core_api.list_namespaced_pod(namespace=LONGHORN_NAMESPACE)
+        pod_names = []
+        for item in pods.items:
+            pod_names.append(item.metadata.name)
+        if share_manager_name[0] not in pod_names and  \
+                share_manager_name[1] not in pod_names:
+            found = False
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert not found
+
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 2
+    apps_api = get_apps_api_client()
+    apps_api.patch_namespaced_stateful_set(
+        name=statefulset_name,
+        namespace=&#39;default&#39;,
+        body={
+            &#39;spec&#39;: {
+                &#39;replicas&#39;: replicas
+            }
+        })
+    wait_statefulset(statefulset)
+
+    for i in range(2):
+        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
+        command = &#39;cat /data/test&#39;
+        pod_data = exec_command_in_pod(core_api, command, test_pod_name,
+                                       &#39;default&#39;)
+
+        assert pod_data == md5sum_pod[i]</code></pre>
+</details>
 <div class="desc"><p>Test Scaling up and down of pods attached to rwx volume.</p>
 <ol>
 <li>Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
@@ -198,6 +829,72 @@ detached.</li>
 <span>def <span class="ident">test_rwx_volume_mount_options</span></span>(<span>client, core_api, storage_class, pvc, make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_volume_mount_options(client, core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test creating rwx volume with custom mount options
+    non longhorn-system namespace.
+
+    1. Create a storage class with nfsOptions parameter.
+    2. Create a deployment with a PVC and the pods should be able to run.
+    3. Check the mounts on the deployment pods.
+    &#34;&#34;&#34;
+
+    # Create storage class
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    storage_class[&#39;parameters&#39;][&#39;nfsOptions&#39;] = &#39;vers=4.2,soft,noresvport,timeo=600,retrans=4&#39;  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = &#39;pvc-deployment-with-custom-mount-options-volume&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-with-custom-mount-options-volume&#39;, pvc_name, replicas=2)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Check mount options on deployment pods
+    deployment_label_selector = &#34;name=&#34; + \
+                                deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 2
+
+    pod_name_1 = deployment_pod_list.items[0].metadata.name
+    pod_name_2 = deployment_pod_list.items[1].metadata.name
+
+    command = &#34;cat /proc/mounts | grep &#39;nfs&#39;&#34;
+    mount_options_1 = exec_command_in_pod(core_api, command,
+                                          pod_name_1,
+                                          &#39;default&#39;)
+    mount_options_2 = exec_command_in_pod(core_api, command,
+                                          pod_name_2,
+                                          &#39;default&#39;)
+
+    # print(f&#39;mount_options_1={mount_options_1}&#39;)
+    # print(f&#39;mount_options_2={mount_options_2}&#39;)
+
+    assert &#34;vers=4.2&#34; in mount_options_1
+    assert &#34;vers=4.2&#34; in mount_options_2
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
+    delete_and_wait_pvc(core_api, pvc_name)</code></pre>
+</details>
 <div class="desc"><p>Test creating rwx volume with custom mount options
 non longhorn-system namespace.</p>
 <ol>
@@ -210,6 +907,76 @@ non longhorn-system namespace.</p>
 <span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>client, core_api, statefulset, storage_class)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_rwx_with_statefulset_multi_pods(client, core_api, statefulset, storage_class):  # NOQA
+    &#34;&#34;&#34;
+    Test creation of share manager pod and rwx volumes from 2 pods.
+
+    1. Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for both pods to come up running.
+    3. Verify there are two share manager pods created in the longhorn
+       namespace and they have the directory with the PV name in the
+       path `/export`
+    4. Write data in both pods and compute md5sum.
+    5. Compare md5sum of the data with the data written the share manager.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    statefulset_name = &#39;statefulset-rwx-multi-pods-test&#39;
+    share_manager_name = []
+    volumes_name = []
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
+        = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;accessModes&#39;] \
+        = [&#39;ReadWriteMany&#39;]
+
+    create_and_wait_statefulset(statefulset)
+
+    for i in range(2):
+        pvc_name = \
+            statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;]\
+            + &#39;-&#39; + statefulset_name + &#39;-&#39; + str(i)
+        pv_name = get_volume_name(core_api, pvc_name)
+
+        assert pv_name is not None
+
+        volumes_name.append(pv_name)
+        share_manager_name.append(&#39;share-manager-&#39; + pv_name)
+
+        check_pod_existence(core_api, share_manager_name[i],
+                            namespace=LONGHORN_NAMESPACE)
+
+    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
+
+    assert exec_command_in_pod(
+        core_api, command, share_manager_name[0], LONGHORN_NAMESPACE) == &#39;1&#39;
+    assert exec_command_in_pod(
+        core_api, command, share_manager_name[1], LONGHORN_NAMESPACE) == &#39;1&#39;
+
+    md5sum_pod = []
+    for i in range(2):
+        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
+        test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+        write_pod_volume_data(core_api, test_pod_name, test_data)
+        md5sum_pod.append(test_data)
+
+    for i in range(2):
+        command = &#39;cat /export&#39; + &#39;/&#39; + volumes_name[i] + &#39;/&#39; + &#39;test&#39;
+        pod_data = exec_command_in_pod(
+            core_api, command, share_manager_name[i], LONGHORN_NAMESPACE)
+
+        assert pod_data == md5sum_pod[i]</code></pre>
+</details>
 <div class="desc"><p>Test creation of share manager pod and rwx volumes from 2 pods.</p>
 <ol>
 <li>Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
@@ -226,6 +993,16 @@ path <code>/export</code></li>
 <span>def <span class="ident">write_data_into_pod</span></span>(<span>pod_name_and_data_path)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_data_into_pod(pod_name_and_data_path):
+    pod_info = pod_name_and_data_path.split(&#39;:&#39;)
+    core_api = get_core_api_client()  # NOQA
+    write_pod_volume_random_data(core_api, pod_info[0], pod_info[1],
+                                 DATA_SIZE_IN_MB_3)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -263,7 +1040,7 @@ path <code>/export</code></li>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

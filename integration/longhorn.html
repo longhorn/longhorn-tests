@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.0">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>tests.longhorn API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -37,24 +48,104 @@ hljs.highlightAll();
 <span>def <span class="ident">echo</span></span>(<span>fn)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def echo(fn):
+    def wrapped(*args, **kw):
+        ret = fn(*args, **kw)
+        print(fn.__name__, repr(ret))
+        return ret
+    return wrapped</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.from_env"><code class="name flex">
 <span>def <span class="ident">from_env</span></span>(<span>prefix='CATTLE_', **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def from_env(prefix=&#39;CATTLE_&#39;, **kw):
+    return gdapi_from_env(prefix=prefix, factory=Client, **kw)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.gdapi_from_env"><code class="name flex">
 <span>def <span class="ident">gdapi_from_env</span></span>(<span>prefix='LONGHORN_', factory=tests.longhorn.GdapiClient, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gdapi_from_env(prefix=PREFIX + &#39;_&#39;, factory=GdapiClient, **kw):
+    args = dict((x, None) for x in [&#39;access_key&#39;, &#39;secret_key&#39;, &#39;url&#39;, &#39;cache&#39;,
+                                    &#39;cache_time&#39;, &#39;strict&#39;])
+    args.update(kw)
+    if not prefix.endswith(&#39;_&#39;):
+        prefix += &#39;_&#39;
+    prefix = prefix.upper()
+    return _from_env(prefix=prefix, factory=factory, **args)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.indent"><code class="name flex">
-<span>def <span class="ident">indent</span></span>(<span>rows, hasHeader=False, headerChar='-', delim=' | ', justify='left', separateRows=False, prefix='', postfix='', wrapfunc=&lt;function &lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">indent</span></span>(<span>rows,<br>hasHeader=False,<br>headerChar='-',<br>delim=' | ',<br>justify='left',<br>separateRows=False,<br>prefix='',<br>postfix='',<br>wrapfunc=&lt;function &lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def indent(rows, hasHeader=False, headerChar=&#39;-&#39;, delim=&#39; | &#39;, justify=&#39;left&#39;,
+           separateRows=False, prefix=&#39;&#39;, postfix=&#39;&#39;, wrapfunc=lambda x: x):
+    &#39;&#39;&#39;Indents a table by column.
+         - rows: A sequence of sequences of items, one sequence per row.
+         - hasHeader: True if the first row consists of the columns&#39; names.
+         - headerChar: Character to be used for the row separator line
+             (if hasHeader==True or separateRows==True).
+         - delim: The column delimiter.
+         - justify: Determines how are data justified in their column.
+             Valid values are &#39;left&#39;,&#39;right&#39; and &#39;center&#39;.
+         - separateRows: True if rows are to be separated by a line
+             of &#39;headerChar&#39;s.
+         - prefix: A string prepended to each printed row.
+         - postfix: A string appended to each printed row.
+         - wrapfunc: A function f(text) for wrapping text; each element in
+             the table is first wrapped by this function.&#39;&#39;&#39;
+    # closure for breaking logical rows to physical, using wrapfunc
+    def rowWrapper(row):
+        newRows = [wrapfunc(item).split(&#39;\n&#39;) for item in row]
+        return [[substr or &#39;&#39; for substr in item] for item in map(None, *newRows)]  # NOQA
+    # break each logical row into one or more physical ones
+    logicalRows = [rowWrapper(row) for row in rows]
+    # columns of physical rows
+    columns = map(None, *reduce(operator.add, logicalRows))
+    # get the maximum of each column by the string length of its items
+    maxWidths = [max([len(str(item)) for item in column])
+                 for column in columns]
+    rowSeparator = headerChar * (len(prefix) + len(postfix) +
+                                 sum(maxWidths) +
+                                 len(delim)*(len(maxWidths)-1))
+    # select the appropriate justify method
+    justify = {&#39;center&#39;: str.center, &#39;right&#39;: str.rjust, &#39;left&#39;: str.ljust}[justify.lower()]  # NOQA
+    output = StringIO()
+    if separateRows:
+        print(rowSeparator, file=output)
+    for physicalRows in logicalRows:
+        for row in physicalRows:
+            print(prefix
+                  + delim.join([justify(str(item), width) for (item, width) in zip(row, maxWidths)]) + postfix,  # NOQA
+                  file=output)
+        if separateRows or hasHeader:
+            print(rowSeparator, file=output)
+            hasHeader = False
+    return output.getvalue()</code></pre>
+</details>
 <div class="desc"><p>Indents a table by column.
 - rows: A sequence of sequences of items, one sequence per row.
 - hasHeader: True if the first row consists of the columns' names.
@@ -74,6 +165,22 @@ the table is first wrapped by this function.</p></div>
 <span>def <span class="ident">timed_url</span></span>(<span>fn)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def timed_url(fn):
+    def wrapped(*args, **kw):
+        if TIME:
+            start = time.time()
+            ret = fn(*args, **kw)
+            delta = time.time() - start
+            print(delta, args[1], fn.__name__)
+            return ret
+        else:
+            return fn(*args, **kw)
+    return wrapped</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -86,7 +193,6 @@ the table is first wrapped by this function.</p></div>
 <span>(</span><span>obj, status_code)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -104,6 +210,7 @@ the table is first wrapped by this function.</p></div>
         except Exception:
             super(ApiError, self).__init__(self, &#39;API Error&#39;)</code></pre>
 </details>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.Exception</li>
@@ -115,7 +222,6 @@ the table is first wrapped by this function.</p></div>
 <span>(</span><span>*args, **kw)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -149,6 +255,7 @@ the table is first wrapped by this function.</p></div>
 
         return obj</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="tests.longhorn.GdapiClient" href="#tests.longhorn.GdapiClient">GdapiClient</a></li>
@@ -159,12 +266,45 @@ the table is first wrapped by this function.</p></div>
 <span>def <span class="ident">wait_success</span></span>(<span>self, obj, timeout=-1)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_success(self, obj, timeout=-1):
+    obj = self.wait_transitioning(obj, timeout)
+    if obj.transitioning != &#39;no&#39;:
+        raise ClientApiError(obj.transitioningMessage)
+    return obj</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.Client.wait_transitioning"><code class="name flex">
 <span>def <span class="ident">wait_transitioning</span></span>(<span>self, obj, timeout=-1, sleep=0.01)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_transitioning(self, obj, timeout=-1, sleep=0.01):
+    timeout = _get_timeout(timeout)
+    start = time.time()
+    obj = self.reload(obj)
+    while obj.transitioning == &#39;yes&#39;:
+        time.sleep(sleep)
+        sleep *= 2
+        if sleep &gt; 2:
+            sleep = 2
+        obj = self.reload(obj)
+        delta = time.time() - start
+        if delta &gt; timeout:
+            msg = \
+                &#39;Timeout waiting for [{}:{}] to be done after {} seconds&#39;.\
+                format(obj.type, obj.id, delta)
+            raise Exception(msg)
+
+    return obj</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -174,7 +314,6 @@ the table is first wrapped by this function.</p></div>
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -182,6 +321,7 @@ the table is first wrapped by this function.</p></div>
 <pre><code class="python">class ClientApiError(Exception):
     pass</code></pre>
 </details>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.Exception</li>
@@ -190,10 +330,9 @@ the table is first wrapped by this function.</p></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient"><code class="flex name class">
 <span>class <span class="ident">GdapiClient</span></span>
-<span>(</span><span>access_key='', secret_key='', url=None, cache=False, cache_time=86400, strict=False, headers={'Accept': 'application/json'}, **kw)</span>
+<span>(</span><span>access_key='',<br>secret_key='',<br>url=None,<br>cache=False,<br>cache_time=86400,<br>strict=False,<br>headers={'Accept': 'application/json'},<br>**kw)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -583,6 +722,7 @@ the table is first wrapped by this function.</p></div>
 
         return None</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="tests.longhorn.Client" href="#tests.longhorn.Client">Client</a></li>
@@ -593,72 +733,228 @@ the table is first wrapped by this function.</p></div>
 <span>def <span class="ident">action</span></span>(<span>self, obj, action_name, *args, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def action(self, obj, action_name, *args, **kw):
+    url = getattr(obj.actions, action_name)
+    return self._post_and_retry(url, *args, **kw)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.by_id"><code class="name flex">
 <span>def <span class="ident">by_id</span></span>(<span>self, type, id, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def by_id(self, type, id, **kw):
+    id = str(id)
+    url = self.schema.types[type].links.collection
+    if url.endswith(&#39;/&#39;):
+        url += id
+    else:
+        url = &#39;/&#39;.join([url, id])
+    try:
+        return self._get(url, self._to_dict(**kw))
+    except ApiError as e:
+        if e.error.code == 404:
+            return None
+        else:
+            raise e</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.create"><code class="name flex">
 <span>def <span class="ident">create</span></span>(<span>self, type, *args, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create(self, type, *args, **kw):
+    collection_url = self.schema.types[type].links.collection
+    return self._post(collection_url, data=self._to_dict(*args, **kw))</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.delete"><code class="name flex">
 <span>def <span class="ident">delete</span></span>(<span>self, *args)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete(self, *args):
+    for i in args:
+        if isinstance(i, RestObject):
+            return self._delete(i.links.self)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.list"><code class="name flex">
 <span>def <span class="ident">list</span></span>(<span>self, type, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list(self, type, **kw):
+    if type not in self.schema.types:
+        raise ClientApiError(type + &#39; is not a valid type&#39;)
+
+    self._validate_list(type, **kw)
+    collection_url = self.schema.types[type].links.collection
+    return self._get(collection_url, data=self._to_dict(**kw))</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.object_hook"><code class="name flex">
 <span>def <span class="ident">object_hook</span></span>(<span>self, obj)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def object_hook(self, obj):
+    if isinstance(obj, list):
+        return [self.object_hook(x) for x in obj]
+
+    if isinstance(obj, dict):
+        result = RestObject()
+
+        for k, v in six.iteritems(obj):
+            setattr(result, k, self.object_hook(v))
+
+        for link in [&#39;next&#39;, &#39;prev&#39;]:
+            try:
+                url = getattr(result.pagination, link)
+                if url is not None:
+                    setattr(result, link, lambda url=url: self._get(url))
+            except AttributeError:
+                pass
+
+        if hasattr(result, &#39;type&#39;) and isinstance(getattr(result, &#39;type&#39;),
+                                                  six.string_types):
+            if hasattr(result, &#39;links&#39;):
+                for link_name, link in six.iteritems(result.links):
+                    def cb(_link=link, **kw):
+                        return self._get(_link, data=kw)
+                    if hasattr(result, link_name):
+                        setattr(result, link_name + &#39;_link&#39;, cb)
+                    else:
+                        setattr(result, link_name, cb)
+
+            if hasattr(result, &#39;actions&#39;):
+                for link_name, link in six.iteritems(result.actions):
+                    def cb(_link_name=link_name,
+                           _result=result, *args, **kw):
+                        return self.action(_result, _link_name,
+                                           *args, **kw)
+                    if hasattr(result, link_name):
+                        setattr(result, link_name + &#39;_action&#39;, cb)
+                    else:
+                        setattr(result, link_name, cb)
+
+        return result
+
+    return obj</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.object_pairs_hook"><code class="name flex">
 <span>def <span class="ident">object_pairs_hook</span></span>(<span>self, pairs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def object_pairs_hook(self, pairs):
+    ret = collections.OrderedDict()
+    for k, v in pairs:
+        ret[k] = v
+    return self.object_hook(ret)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.reload"><code class="name flex">
 <span>def <span class="ident">reload</span></span>(<span>self, obj)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reload(self, obj):
+    return self.by_id(obj.type, obj.id)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.reload_schema"><code class="name flex">
 <span>def <span class="ident">reload_schema</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reload_schema(self):
+    self._load_schemas(force=True)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.update"><code class="name flex">
 <span>def <span class="ident">update</span></span>(<span>self, obj, *args, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self, obj, *args, **kw):
+    url = obj.links.self
+    return self._put_and_retry(url, *args, **kw)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.update_by_id"><code class="name flex">
 <span>def <span class="ident">update_by_id</span></span>(<span>self, type, id, *args, **kw)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_by_id(self, type, id, *args, **kw):
+    url = self.schema.types[type].links.collection
+    if url.endswith(&#39;/&#39;):
+        url = url + id
+    else:
+        url = &#39;/&#39;.join([url, id])
+
+    return self._put_and_retry(url, *args, **kw)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.GdapiClient.valid"><code class="name flex">
 <span>def <span class="ident">valid</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def valid(self):
+    return self._url is not None and self.schema is not None</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -667,7 +963,6 @@ the table is first wrapped by this function.</p></div>
 <span>class <span class="ident">RestObject</span></span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -735,13 +1030,13 @@ the table is first wrapped by this function.</p></div>
             return iter(self.data)
         return iter(self.__dict__)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="tests.longhorn.Schema"><code class="flex name class">
 <span>class <span class="ident">Schema</span></span>
 <span>(</span><span>text, obj)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -792,6 +1087,7 @@ the table is first wrapped by this function.</p></div>
     def __repr(self):
         return repr(self.text)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 </section>
@@ -859,7 +1155,7 @@ the table is first wrapped by this function.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>
