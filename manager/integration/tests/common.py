@@ -245,10 +245,10 @@ BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
 BACKUP_COMPRESSION_METHOD_GZIP = "gzip"
 BACKUP_COMPRESSION_METHOD_NONE = "none"
 
-SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
-SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
-SNAPSHOT_DATA_INTEGRITY_ENABLED = "enabled"
-SNAPSHOT_DATA_INTEGRITY_FAST_CHECK = "fast-check"
+SNAPSHOT_DATA_INTEGRITY_DISABLED = "{\"v1\":\"disabled\",\"v2\":\"disabled\"}"
+SNAPSHOT_DATA_INTEGRITY_ENABLED = "{\"v1\":\"enabled\",\"v2\":\"enabled\"}"
+SNAPSHOT_DATA_INTEGRITY_FAST_CHECK = \
+    "{\"v1\":\"fast-check\",\"v2\":\"fast-check\"}"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -557,7 +557,7 @@ def delete_backup_backing_image(client, backing_image_name):
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            snapshot_data_integrity="ignored",
                             access_mode=ACCESS_MODE_RWO, data_engine=DATA_ENGINE):  # NOQA
     """
     Create a new volume with the specified parameters. Assert that the new
@@ -2899,7 +2899,7 @@ def wait_for_nvme_device():
             output = subprocess.check_output(["nvme", "list"], text=True)
             print(f"nvme list output =\n {output}")
             for line in output.splitlines():
-                if line.startswith("/dev/nvme"):
+                if "SPDK bdev Controller" in line:
                     dev_path = line.split()[0]
                     return dev_path
         except subprocess.CalledProcessError as e:

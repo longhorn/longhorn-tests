@@ -25,7 +25,6 @@ from common import SETTING_SNAPSHOT_DATA_INTEGRITY
 from common import SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION  # NOQA
 from common import SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB
 from common import SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
-from common import SNAPSHOT_DATA_INTEGRITY_IGNORED
 from common import SNAPSHOT_DATA_INTEGRITY_ENABLED
 from common import SNAPSHOT_DATA_INTEGRITY_FAST_CHECK
 from common import SNAPSHOT_DATA_INTEGRITY_DISABLED
@@ -50,8 +49,7 @@ def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, s
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"true","v2":"true"}')
-    check_hashed_and_with_immediate_hash(client, volume_name,
-                                         SNAPSHOT_DATA_INTEGRITY_IGNORED)
+    check_hashed_and_with_immediate_hash(client, volume_name, "ignored")
 
 
 def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -64,8 +62,7 @@ def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
-    check_hashed_and_without_immediate_hash(client, volume_name,
-                                            SNAPSHOT_DATA_INTEGRITY_IGNORED)
+    check_hashed_and_without_immediate_hash(client, volume_name, "ignored")
 
 
 def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -81,7 +78,7 @@ def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name
                                        '{"v1":"true","v2":"true"}')
     check_hashed_and_with_immediate_hash(client,
                                          volume_name,
-                                         SNAPSHOT_DATA_INTEGRITY_IGNORED)
+                                         "ignored")
 
 
 def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -95,7 +92,7 @@ def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_n
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
     check_hashed_and_without_immediate_hash(client, volume_name,
-                                            SNAPSHOT_DATA_INTEGRITY_IGNORED)  # NOQA
+                                            "ignored")
 
 
 @pytest.mark.v2_volume_test  # NOQA
@@ -112,8 +109,7 @@ def test_snapshot_hash_global_disabled_with_immediate_hash(client, volume_name, 
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"true","v2":"true"}')
-    check_per_volume_hash_disable(client, volume_name,
-                                  SNAPSHOT_DATA_INTEGRITY_IGNORED)
+    check_per_volume_hash_disable(client, volume_name, "ignored")
 
 
 @pytest.mark.v2_volume_test  # NOQA
@@ -130,8 +126,7 @@ def test_snapshot_hash_global_disabled_without_immediate_hash(client, volume_nam
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
-    check_per_volume_hash_disable(client, volume_name,
-                                  SNAPSHOT_DATA_INTEGRITY_IGNORED)
+    check_per_volume_hash_disable(client, volume_name, "ignored")
 
 
 def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -146,8 +141,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"true","v2":"true"}')
-    check_hashed_and_with_immediate_hash(client, volume_name,
-                                         SNAPSHOT_DATA_INTEGRITY_ENABLED)
+    check_hashed_and_with_immediate_hash(client, volume_name, "enabled")
 
 
 def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -161,8 +155,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immedi
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
-    check_hashed_and_without_immediate_hash(client, volume_name,
-                                            SNAPSHOT_DATA_INTEGRITY_ENABLED)
+    check_hashed_and_without_immediate_hash(client, volume_name, "enabled")
 
 
 def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -177,8 +170,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immedi
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"true","v2":"true"}')
-    check_hashed_and_with_immediate_hash(client, volume_name,
-                                         SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+    check_hashed_and_with_immediate_hash(client, volume_name, "fast-check")
 
 
 def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -192,8 +184,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_imm
                                        SNAPSHOT_DATA_INTEGRITY_DISABLED,
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
-    check_hashed_and_without_immediate_hash(client, volume_name,
-                                            SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+    check_hashed_and_without_immediate_hash(client, volume_name, "fast-check")
 
 
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -207,8 +198,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"true","v2":"true"}')
-    check_per_volume_hash_disable(client, volume_name,
-                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+    check_per_volume_hash_disable(client, volume_name, "disabled")
 
 
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
@@ -222,8 +212,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immedia
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
-    check_per_volume_hash_disable(client, volume_name,
-                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+    check_per_volume_hash_disable(client, volume_name, "disabled")
 
 
 @pytest.mark.v2_volume_test  # NOQA
@@ -238,8 +227,7 @@ def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immedia
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"true","v2":"true"}')
-    check_per_volume_hash_disable(client, volume_name,
-                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+    check_per_volume_hash_disable(client, volume_name, "disabled")
 
 
 @pytest.mark.v2_volume_test  # NOQA
@@ -254,8 +242,7 @@ def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_imme
                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
                                        '{"v1":"false","v2":"false"}',
                                        '{"v1":"true","v2":"true"}')
-    check_per_volume_hash_disable(client, volume_name,
-                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+    check_per_volume_hash_disable(client, volume_name, "disabled")
 
 
 @pytest.mark.long_running
@@ -270,7 +257,7 @@ def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_n
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"false","v2":"false"}')
     detect_and_repair_corrupted_replica(client, volume_name,
-                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                        "enabled",
                                         retry_count=SNAPSHOT_CHECK_PERIOD * 2)
 
 
@@ -286,7 +273,7 @@ def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volum
                                        '{"v1":"true","v2":"true"}',
                                        '{"v1":"false","v2":"false"}')
     detect_and_repair_corrupted_replica(client, volume_name,
-                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                        "fast-check",
                                         retry_count=SNAPSHOT_CHECK_PERIOD * 2)
 
 
