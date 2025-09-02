@@ -8,8 +8,8 @@ class backing_image_keywords:
     def __init__(self):
         self.backing_image = BackingImage()
 
-    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True, parameters=None):
-        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
+    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, parameters=None, wait=True):
+        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, parameters, wait)
 
     def update_min_number_of_copies(self, name, minNumberOfCopies):
         self.backing_image.update(name, "minNumberOfCopies", minNumberOfCopies)

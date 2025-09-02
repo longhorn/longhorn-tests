@@ -13,7 +13,7 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters):
+    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, parameters, wait=True):
         logging(f"Creating backing image {name}")
 
         if parameters is None:
@@ -28,7 +28,7 @@ class Rest(Base):
             dataEngine=dataEngine
         )
 
-        if not check_creation:
+        if not wait:
             return
 
         bi = None
