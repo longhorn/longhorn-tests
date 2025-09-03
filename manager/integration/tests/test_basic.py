@@ -4932,8 +4932,8 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap3_offset1, snap_data_size_in_mb)
     snap3_offset2 = random.randrange(
-        int(SIZE)/Mi + snap_data_size_in_mb,
-        int(EXPAND_SIZE)/Mi - snap_data_size_in_mb, 1)
+        int(int(SIZE)/Mi + snap_data_size_in_mb),
+        int(int(EXPAND_SIZE)/Mi - snap_data_size_in_mb), 1)
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap3_offset2, snap_data_size_in_mb)
     cksum_before = get_device_checksum(volume_endpoint)
@@ -4956,8 +4956,9 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     snap3_before_size = int(snap3_before.size)
 
     # Prepare and write snap4_data which has no overlapping part with snap3.
-    snap4_offset = random.randrange(snap3_offset1 + snap_data_size_in_mb,
-                                    int(SIZE)/Mi + snap_data_size_in_mb, 1)
+    snap4_offset = random.randrange(
+        snap3_offset1 + snap_data_size_in_mb,
+        int(int(SIZE)/Mi + snap_data_size_in_mb), 1)
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap4_offset, snap_data_size_in_mb)
     cksum_before = get_device_checksum(volume_endpoint)
@@ -4977,7 +4978,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
 
     # We don't care the exact content of snap5
     snap5_offset = random.randrange(
-        0, int(EXPAND_SIZE)/Mi - snap_data_size_in_mb, 1)
+        0, int(int(EXPAND_SIZE)/Mi - snap_data_size_in_mb), 1)
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap5_offset, snap_data_size_in_mb)
     create_snapshot(client, volume_name)
