@@ -82,7 +82,7 @@ Check pod ${pod_id} file ${file_name} has checksum ${expected_checksum}
 
 Check file ${file_name} exists in pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
-    ${result}=    check_pod_data_exists    ${pod_name}    ${file_name}
+    ${result}=    check_workload_pod_data_exists    ${pod_name}    ${file_name}
     Should Be True    ${result}
 
 Check pod ${pod_id} works
