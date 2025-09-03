@@ -1155,6 +1155,7 @@ def replica_auto_balance_with_data_locality_test(client, volume_name):  # NOQA
             f"Got={volume.replicas[0]['hostId']}\n"
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):  # NOQA
     """
     Scenario: replica should auto-balance individual volume when
@@ -1870,6 +1871,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
         assert replica.diskID == expect_scheduled_disk[hostId].diskUUID
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQA
     """
     Test the global setting will be overwrite
@@ -1921,6 +1923,7 @@ def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQ
     check_volume_data(volume, data)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NOQA
     """
     Test the global setting will be overwrite
