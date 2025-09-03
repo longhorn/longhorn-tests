@@ -111,7 +111,7 @@ class Node:
         self.update_disks(node_name, node.disks)
 
     def is_accessing_node_by_index(self, node):
-        p = re.compile('node (\d)')
+        p = re.compile(r'node (\d)')
         if m := p.match(node):
             return m.group(1)
         else:

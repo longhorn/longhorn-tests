@@ -184,7 +184,10 @@ def run_commands_in_pod(pod_name, commands):
     if exit_code != 0:
         raise RuntimeError(f"Failed to run commands {commands} in pod {pod_name}: {output}")
 
-def get_pod_data_checksum(pod_name, file_name, data_directory="/data"):
+def get_workload_pod_data_checksum(workload_name, file_name, data_directory="/data"):
+
+    pod_name = get_workload_pod_names(workload_name)[0]
+
     file_path = f"{data_directory}/{file_name}"
     api = client.CoreV1Api()
     cmd_get_file_checksum = [
@@ -198,14 +201,15 @@ def get_pod_data_checksum(pod_name, file_name, data_directory="/data"):
         tty=False)
     return actual_checksum
 
-def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directory="/data"):
-
-    wait_for_pod_status(pod_name, "Running")
+def check_workload_pod_data_checksum(expected_checksum, workload_name, file_name, data_directory="/data"):
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
     for _ in range(retry_count):
         try:
+            pod_name = get_workload_pod_names(workload_name)[0]
+            wait_for_pod_status(pod_name, "Running")
+
             file_path = f"{data_directory}/{file_name}"
             api = client.CoreV1Api()
             cmd_get_file_checksum = [
@@ -234,10 +238,11 @@ def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directo
     assert False, f"Checking pod {pod_name} data checksum failed"
 
 
-def check_pod_data_exists(pod_name, file_name, data_directory="/data"):
+def check_workload_pod_data_exists(workload_name, file_name, data_directory="/data"):
 
-    logging(f"Checking if file {file_name} exists in pod {pod_name}")
+    logging(f"Checking if file {file_name} exists in workload {workload_name}")
 
+    pod_name = get_workload_pod_names(workload_name)[0]
     wait_for_pod_status(pod_name, "Running")
 
     try:

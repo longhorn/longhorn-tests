@@ -12,9 +12,9 @@ from workload.pod import delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.pod import check_pod_did_not_restart
-from workload.workload import get_pod_data_checksum
-from workload.workload import check_pod_data_checksum
-from workload.workload import check_pod_data_exists
+from workload.workload import get_workload_pod_data_checksum
+from workload.workload import check_workload_pod_data_checksum
+from workload.workload import check_workload_pod_data_exists
 from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
@@ -64,16 +64,12 @@ class workload_keywords:
     def cleanup_pods(self):
         cleanup_pods()
 
-    def get_pod_data_checksum(self, pod_name, file_name):
-        logging(f'Checksum for file {file_name} in pod {pod_name}')
-        return get_pod_data_checksum(pod_name, file_name)
+    def get_workload_pod_data_checksum(self, workload_name, file_name):
+        logging(f'Getting checksum for file {file_name} in workload {workload_name}')
+        return get_workload_pod_data_checksum(workload_name, file_name)
 
-    def check_pod_data_checksum(self, expected_checksum, pod_name, file_name):
-        logging(f'Checking checksum for file {file_name} in pod {pod_name}')
-        check_pod_data_checksum(expected_checksum, pod_name, file_name)
-
-    def check_pod_data_exists(self, pod_name, file_name):
-        return check_pod_data_exists(pod_name, file_name)
+    def check_workload_pod_data_exists(self, workload_name, file_name):
+        return check_workload_pod_data_exists(workload_name, file_name)
 
     def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default", label_selector="", wait=True):
         pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
@@ -115,18 +111,14 @@ class workload_keywords:
         self.volume.set_data_checksum(volume_name, file_name, checksum)
         self.volume.set_last_data_checksum(volume_name, checksum)
 
-    def get_workload_pod_data_checksum(self, workload_name, file_name):
-        pod_name = get_workload_pod_names(workload_name)[0]
-        return get_pod_data_checksum(pod_name, file_name)
-
     def check_workload_pod_data_checksum(self, workload_name, file_name, expected_checksum=""):
         pod_name = get_workload_pod_names(workload_name)[0]
         volume_name = get_volume_name_by_pod(pod_name)
         if not expected_checksum:
             expected_checksum = self.volume.get_data_checksum(volume_name, file_name)
 
-        logging(f'Checking checksum for file {file_name} in pod {pod_name}')
-        check_pod_data_checksum(expected_checksum, pod_name, file_name)
+        logging(f'Checking checksum for file {file_name} in workload {workload_name}')
+        check_workload_pod_data_checksum(expected_checksum, workload_name, file_name)
 
     def keep_writing_workload_pod_data(self, workload_name):
         pod_name = get_workload_pod_names(workload_name)[0]
