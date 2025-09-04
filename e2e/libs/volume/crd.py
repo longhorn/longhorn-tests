@@ -13,6 +13,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
 from utility.utility import convert_size_to_bytes
+from utility.utility import get_longhorn_client
 
 from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
@@ -28,6 +29,8 @@ class CRD(Base):
         self.engine = Engine()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize):
+        longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
+        version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
         backupBlockSize = str(convert_size_to_bytes(backupBlockSize))
         accessMode = accessMode.lower()
@@ -59,7 +62,7 @@ class CRD(Base):
                 "diskSelector": diskSelector
             }
         }
-        if not Standby:
+        if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize
         try:
             self.obj_api.create_namespaced_custom_object(
@@ -79,7 +82,8 @@ class CRD(Base):
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             if not Standby:
                 assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
-                assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
+                if not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
+                    assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
             assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
             assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
