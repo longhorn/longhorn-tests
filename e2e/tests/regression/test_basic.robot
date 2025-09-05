@@ -174,3 +174,15 @@ Test File Ownership And Permission By Executing Git Clone
     When Run commands in deployment 0    commands=git clone https://github.com/longhorn/longhorn.git
     And Run commands in deployment 1    commands=git clone https://github.com/longhorn/longhorn.git
     Then Test should pass
+
+Test Rapid Volume Detachment
+    Given Setting orphan-resource-auto-deletion is set to instance
+    And Setting orphan-resource-auto-deletion-grace-period is set to 60
+    And Create volume 0 with    dataEngine=${DATA_ENGINE}
+
+    FOR    ${i}    IN RANGE    100
+        When Attach volume 0 to node 0    wait=False
+        And Detach volume 0
+        And Wait for volume 0 detached
+        Then Wait for engine instances in ${DATA_ENGINE} instance manager CR on node 0 to be cleaned up
+    END

@@ -72,9 +72,10 @@ Update volume ${volume_id} replica count to ${replica_count}
     update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
 
 Attach volume ${volume_id} to node ${node_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    attach_volume    ${volume_name}    ${node_name}
+    attach_volume    ${volume_name}    ${node_name}    &{config}
 
 Volume ${volume_id} should be attached to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -90,12 +91,9 @@ Volume ${volume_id} should not be attached to node ${node_id}
     Should Be Equal    ${res}    False
 
 Attach volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    attach_volume    ${volume_name}
-
-Attach volume ${volume_id} without waiting for attachment
-    ${volume_name}=    Generate Name With Suffix    volume    ${volume_id}
-    attach_volume    ${volume_name}    wait_volume_attached=False
+    attach_volume    ${volume_name}    &{config}
 
 Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
