@@ -1,4 +1,5 @@
 import time
+import json
 from kubernetes import client
 
 from node import Node
@@ -6,6 +7,7 @@ from node import Node
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
 from workload.pod import delete_pod
 from workload.pod import list_pods
 from datetime import datetime, timezone, timedelta
@@ -117,3 +119,14 @@ class InstanceManager:
             logging(f"Deleting {engine_type} instance manager on node {node_name} error: {e}")
 
         assert False, f"Failed to delete {engine_type} instance manager on node {node_name}"
+
+    def wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up(self, node_name, engine_type="v1"):
+        cmd = f"kubectl get instancemanager -l longhorn.io/node={node_name},longhorn.io/data-engine={engine_type} -n longhorn-system -ojson"
+        for i in range(self.retry_count):
+            logging(f"Waiting for engine instances in {engine_type} instance manager on node {node_name} to be cleaned up ... ({i})")
+            cr = json.loads(subprocess_exec_cmd(cmd))['items'][0]
+            if "instanceEngines" in cr["status"] and cr['status']['instanceEngines']:
+                time.sleep(self.retry_interval)
+            else:
+                return
+        assert False, f"Failed to clean up engine instances in {engine_type} instance manager on node {node_name}: {cr}"

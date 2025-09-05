@@ -24,3 +24,6 @@ class instancemanager_keywords:
 
     def delete_instance_manager_on_node(self, node_name, engine_type):
         self.instancemanager.delete_instance_manager_on_node(node_name, engine_type)
+
+    def wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up(self, node_name, engine_type):
+        self.instancemanager.wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up(node_name, engine_type)

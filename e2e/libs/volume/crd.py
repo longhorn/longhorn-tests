@@ -111,43 +111,48 @@ class CRD(Base):
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
-    def attach(self, volume_name, node_name, disable_frontend, wait_volume_attached):
+    def attach(self, volume_name, node_name, disable_frontend, wait):
 
         migratable = self.get(volume_name)['spec']['migratable']
         type = "longhorn-api" if not migratable else "csi-attacher"
 
-        try:
-            body = get_cr(
-                group="longhorn.io",
-                version="v1beta2",
-                namespace="longhorn-system",
-                plural="volumeattachments",
-                name=volume_name
-            )
-            body['spec']['attachmentTickets'][node_name] = {
-                "id": node_name,
-                "nodeID": node_name,
-                "parameters": {
-                    "disableFrontend": "true" if disable_frontend else "false",
-                    "lastAttachedBy": ""
-                },
+        patched = False
+        for i in range(self.retry_count):
+            logging(f"Attaching volume {volume_name} to node {node_name} ... ({i})")
+            try:
+                body = get_cr(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace="longhorn-system",
+                    plural="volumeattachments",
+                    name=volume_name
+                )
+                body['spec']['attachmentTickets'][node_name] = {
+                    "id": node_name,
+                    "nodeID": node_name,
+                    "parameters": {
+                        "disableFrontend": "true" if disable_frontend else "false",
+                        "lastAttachedBy": ""
+                    },
                     "type": type
-            }
+                }
 
-            self.obj_api.patch_namespaced_custom_object(
-                group="longhorn.io",
-                version="v1beta2",
-                namespace="longhorn-system",
-                plural="volumeattachments",
-                name=volume_name,
-                body=body
-            )
-        except Exception as e:
-            # new CRD: volumeattachments was added since from 1.5.0
-            # https://github.com/longhorn/longhorn/issues/3715
-            if e.reason != "Not Found":
-                Exception(f'exception for creating volumeattachments:', e)
-        if wait_volume_attached:
+                self.obj_api.patch_namespaced_custom_object(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace="longhorn-system",
+                    plural="volumeattachments",
+                    name=volume_name,
+                    body=body
+                )
+                patched = True
+                break
+            except Exception as e:
+                logging(f"Failed to attach volume {volume_name} to node {node_name}: {e}")
+            time.sleep(self.retry_interval)
+        assert patched, f"Failed to attach volume {volume_name} to node {node_name}"
+
+        if wait:
             self.wait_for_volume_state(volume_name, "attached")
             self.wait_for_volume_status(volume_name, "frontendDisabled", disable_frontend)
 
@@ -155,29 +160,31 @@ class CRD(Base):
         return Rest().is_attached_to(volume_name, node_name)
 
     def detach(self, volume_name, node_name):
-        try:
-            body = get_cr(
-                group="longhorn.io",
-                version="v1beta2",
-                namespace="longhorn-system",
-                plural="volumeattachments",
-                name=volume_name
-            )
-            del body['spec']['attachmentTickets'][node_name]
+        for i in range(self.retry_count):
+            logging(f"Detaching volume {volume_name} from node {node_name} ... ({i})")
+            try:
+                body = get_cr(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace="longhorn-system",
+                    plural="volumeattachments",
+                    name=volume_name
+                )
+                del body['spec']['attachmentTickets'][node_name]
 
-            self.obj_api.replace_namespaced_custom_object(
-                group="longhorn.io",
-                version="v1beta2",
-                namespace="longhorn-system",
-                plural="volumeattachments",
-                name=volume_name,
-                body=body
-            )
-        except Exception as e:
-            # new CRD: volumeattachments was added since from 1.5.0
-            # https://github.com/longhorn/longhorn/issues/3715
-            if e.reason != "Not Found":
-                Exception(f'exception for patching volumeattachments:', e)
+                self.obj_api.replace_namespaced_custom_object(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace="longhorn-system",
+                    plural="volumeattachments",
+                    name=volume_name,
+                    body=body
+                )
+                return
+            except Exception as e:
+                logging(f"Failed to detach volume {volume_name} from node {node_name}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to detach volume {volume_name} from node {node_name}"
 
     def get(self, volume_name):
         return self.obj_api.get_namespaced_custom_object(
@@ -242,7 +249,7 @@ class CRD(Base):
                     name=volume_name
                 )
             except Exception as e:
-                if e.reason == 'Not Found':
+                if isinstance(e, ApiException) and e.reason == 'Not Found':
                     logging(f"Deleted volume {volume_name}")
                     return
                 else:
