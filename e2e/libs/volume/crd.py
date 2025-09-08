@@ -676,7 +676,7 @@ class CRD(Base):
             f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
-        return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
+        return Rest().trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         return Rest().update_offline_replica_rebuild(volume_name, rebuild_type)
