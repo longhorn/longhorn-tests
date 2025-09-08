@@ -41,9 +41,6 @@ Power Off Node With Anti-Affinity Settings
     And Setting replica-disk-soft-anti-affinity is set to ${disk_affinity}
     And Setting replica-soft-anti-affinity is set to ${node_affinity}
     And Setting replica-zone-soft-anti-affinity is set to ${zone_affinity}
-    IF    "${DATA_ENGINE}" == "v2"
-        And Setting v2-data-engine-fast-replica-rebuilding is set to true
-    END
 
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
