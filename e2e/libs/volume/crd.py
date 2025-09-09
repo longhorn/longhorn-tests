@@ -12,6 +12,8 @@ from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
+from utility.utility import convert_size_to_bytes
+from utility.utility import get_longhorn_client
 
 from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
@@ -26,11 +28,11 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector):
-        size_suffix = size[-2:]
-        size_number = size[:-2]
-        size_unit = MEBIBYTE if size_suffix == "Mi" else GIBIBYTE
-        size = str(int(size_number) * size_unit)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize):
+        longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
+        version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
+        size = str(convert_size_to_bytes(size))
+        backupBlockSize = str(convert_size_to_bytes(backupBlockSize))
         accessMode = accessMode.lower()
         body = {
             "apiVersion": "longhorn.io/v1beta2",
@@ -60,6 +62,8 @@ class CRD(Base):
                 "diskSelector": diskSelector
             }
         }
+        if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
+            body["spec"]["backupBlockSize"] = backupBlockSize
         try:
             self.obj_api.create_namespaced_custom_object(
                 group="longhorn.io",
@@ -78,6 +82,8 @@ class CRD(Base):
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             if not Standby:
                 assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
+                if not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
+                    assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
             assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
             assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
@@ -663,12 +669,14 @@ class CRD(Base):
         return Rest().wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
 
     def validate_volume_setting(self, volume_name, setting_name, value):
+        if isinstance(value, str) and value[-2:] in ("Gi", "Mi"):
+            value = str(convert_size_to_bytes(value))
         volume = self.get(volume_name)
         assert str(volume["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
-        return Rest(self).trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
+        return Rest().trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
 
     def update_offline_replica_rebuild(self, volume_name, rebuild_type):
         return Rest().update_offline_replica_rebuild(volume_name, rebuild_type)
