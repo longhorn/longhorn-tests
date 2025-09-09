@@ -1672,7 +1672,8 @@ be forbidden, resulting in "Degraded" state.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Scenario: replica should auto-balance individual volume when
               global setting `replica-auto-balance` is `disabled` and
@@ -2884,7 +2885,8 @@ redundancy.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NOQA
     &#34;&#34;&#34;
     Test the global setting will be overwrite
     if the volume disable the Soft Anti-Affinity
@@ -2976,7 +2978,8 @@ resulting in "Degraded" state.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQA
     &#34;&#34;&#34;
     Test the global setting will be overwrite
     if the volume enable the Soft Anti-Affinity
