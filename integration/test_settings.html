@@ -190,12 +190,16 @@ el.replaceWith(d);
         for im in instance_managers:
             pod = core_api.read_namespaced_pod(name=im.name,
                                                namespace=LONGHORN_NAMESPACE)
-            if pod.metadata.labels[&#34;longhorn.io/data-engine&#34;] == &#34;v1&#34;:
+            if pod.metadata.labels[&#34;longhorn.io/data-engine&#34;] == DATA_ENGINE:
                 if cpu_val:
                     assert (pod.spec.containers[0].resources.requests[&#39;cpu&#39;] ==
                             cpu_val)
                 else:
-                    assert (not pod.spec.containers[0].resources.requests)</code></pre>
+                    if DATA_ENGINE == &#34;v1&#34;:
+                        assert (not pod.spec.containers[0].resources.requests)
+                    else:
+                        assert &#34;cpu&#34; not in \
+                                pod.spec.containers[0].resources.requests</code></pre>
 </details>
 <div class="desc"><p>We check if instance managers are in the desired state with
 correct setting
@@ -363,7 +367,8 @@ if they are normal volumes or DR volumes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     &#34;&#34;&#34;
     Test if the CPU requests of instance manager pods are controlled by
     the settings and the node specs correctly.
@@ -390,7 +395,12 @@ if they are normal volumes or DR volumes.</p></div>
 
     Note: use fixture to restore the setting into the original state
     &#34;&#34;&#34;
-
+    def set_guarantee_cpu_setting(value):
+        if DATA_ENGINE == &#34;v1&#34;:
+            setting = &#39;{{&#34;v1&#34;:&#34;{}&#34;,&#34;v2&#34;:&#34;12&#34;}}&#39;.format(value)
+        elif DATA_ENGINE == &#34;v2&#34;:
+            setting = &#39;{{&#34;v1&#34;:&#34;12&#34;,&#34;v2&#34;:&#34;{}&#34;}}&#39;.format(value)
+        return setting
     instance_managers = client.list_instance_manager()
 
     host_node_name = get_self_host_id()
@@ -415,15 +425,18 @@ if they are normal volumes or DR volumes.</p></div>
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, [im_on_host], &#34;Running&#34;, True, &#34;150m&#34;)
 
+    guarantee_cpu_setting = set_guarantee_cpu_setting(10)
+    print(guarantee_cpu_setting)
     update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
-                   &#39;{&#34;v1&#34;:&#34;10&#34;,&#34;v2&#34;:&#34;10&#34;}&#39;)
+                   guarantee_cpu_setting)
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, &#34;Running&#34;, True,
         str(int(allocatable_millicpu*10/100)) + &#34;m&#34;)
 
+    guarantee_cpu_setting = set_guarantee_cpu_setting(0)
     update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
-                   &#39;{&#34;v1&#34;:&#34;0&#34;,&#34;v2&#34;:&#34;0&#34;}&#39;)
+                   guarantee_cpu_setting)
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, &#34;Running&#34;, True, &#34;&#34;)
@@ -438,8 +451,9 @@ if they are normal volumes or DR volumes.</p></div>
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, &#34;Running&#34;, True, &#34;&#34;)
 
+    guarantee_cpu_setting = set_guarantee_cpu_setting(20)
     update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
-                   &#39;{&#34;v1&#34;:&#34;20&#34;,&#34;v2&#34;:&#34;20&#34;}&#39;)
+                   guarantee_cpu_setting)
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, &#34;Running&#34;, True,
@@ -450,6 +464,10 @@ if they are normal volumes or DR volumes.</p></div>
         client.update(setting, value=&#34;41&#34;)
     assert &#34;should be less than or equal to 40&#34; in \
            str(e.value)
+
+    if DATA_ENGINE == &#34;v2&#34;:
+        # wait block disks ready
+        wait_for_all_nodes_disks_schedulable(client)
 
     # Create a volume to test
     vol_name = generate_volume_name()

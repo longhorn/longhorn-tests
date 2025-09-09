@@ -7081,6 +7081,40 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_all_nodes_disks_schedulable"><code class="name flex">
+<span>def <span class="ident">wait_for_all_nodes_disks_schedulable</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_all_nodes_disks_schedulable(client):
+    for _ in range(RETRY_COUNTS):
+        nodes = client.list_node()
+        all_disks_ready = True
+        for node in nodes:
+            node_name = getattr(node, &#34;name&#34;, &#34;&lt;unknown&gt;&#34;)
+            disk_statuses = getattr(node, &#34;disks&#34;, {})
+            for disk_name, disk_status in disk_statuses.items():
+                schedulable = False
+                conditions = disk_status.get(&#34;conditions&#34;, {})
+                sched_status = conditions.get(&#34;Schedulable&#34;, {}).get(&#34;status&#34;)
+                if sched_status == &#34;True&#34;:
+                    schedulable = True
+                if not schedulable:
+                    print(f&#34;&#39;{disk_name}&#39; on &#39;{node_name}&#39; is not schedulable&#34;)
+                    all_disks_ready = False
+        if all_disks_ready:
+            return
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    raise TimeoutError(
+        f&#34;Not all disks across all nodes reached Schedulable=True &#34;
+        f&#34;after {RETRY_COUNTS * RETRY_INTERVAL}s&#34;)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_backing_image_delete"><code class="name flex">
 <span>def <span class="ident">wait_for_backing_image_delete</span></span>(<span>client, name)</span>
 </code></dt>
@@ -10287,6 +10321,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_delete_volume_attachment" href="#tests.common.wait_delete_volume_attachment">wait_delete_volume_attachment</a></code></li>
 <li><code><a title="tests.common.wait_deployment_replica_ready" href="#tests.common.wait_deployment_replica_ready">wait_deployment_replica_ready</a></code></li>
 <li><code><a title="tests.common.wait_for_all_instance_manager_running" href="#tests.common.wait_for_all_instance_manager_running">wait_for_all_instance_manager_running</a></code></li>
+<li><code><a title="tests.common.wait_for_all_nodes_disks_schedulable" href="#tests.common.wait_for_all_nodes_disks_schedulable">wait_for_all_nodes_disks_schedulable</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_delete" href="#tests.common.wait_for_backing_image_delete">wait_for_backing_image_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_in_disk_fail" href="#tests.common.wait_for_backing_image_in_disk_fail">wait_for_backing_image_in_disk_fail</a></code></li>
