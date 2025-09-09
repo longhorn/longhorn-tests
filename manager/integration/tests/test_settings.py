@@ -47,7 +47,8 @@ from common import (  # NOQA
     get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
     SETTING_DEGRADED_AVAILABILITY,
     delete_replica_on_test_node,
-    DATA_ENGINE, SETTING_V2_DATA_ENGINE
+    DATA_ENGINE, SETTING_V2_DATA_ENGINE,
+    wait_for_all_nodes_disks_schedulable
 )
 
 from backupstore import (  # NOQA
@@ -371,6 +372,7 @@ def check_tolerations_set(current_toleration_list, expected_tolerations,
     return len(expected_tolerations) == found and unexpected == 0
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     """
     Test if the CPU requests of instance manager pods are controlled by
@@ -398,7 +400,12 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
 
     Note: use fixture to restore the setting into the original state
     """
-
+    def set_guarantee_cpu_setting(value):
+        if DATA_ENGINE == "v1":
+            setting = '{{"v1":"{}","v2":"12"}}'.format(value)
+        elif DATA_ENGINE == "v2":
+            setting = '{{"v1":"12","v2":"{}"}}'.format(value)
+        return setting
     instance_managers = client.list_instance_manager()
 
     host_node_name = get_self_host_id()
@@ -423,15 +430,18 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, [im_on_host], "Running", True, "150m")
 
+    guarantee_cpu_setting = set_guarantee_cpu_setting(10)
+    print(guarantee_cpu_setting)
     update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
-                   '{"v1":"10","v2":"10"}')
+                   guarantee_cpu_setting)
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, "Running", True,
         str(int(allocatable_millicpu*10/100)) + "m")
 
+    guarantee_cpu_setting = set_guarantee_cpu_setting(0)
     update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
-                   '{"v1":"0","v2":"0"}')
+                   guarantee_cpu_setting)
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, "Running", True, "")
@@ -446,8 +456,9 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, "Running", True, "")
 
+    guarantee_cpu_setting = set_guarantee_cpu_setting(20)
     update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
-                   '{"v1":"20","v2":"20"}')
+                   guarantee_cpu_setting)
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, "Running", True,
@@ -458,6 +469,10 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
         client.update(setting, value="41")
     assert "should be less than or equal to 40" in \
            str(e.value)
+
+    if DATA_ENGINE == "v2":
+        # wait block disks ready
+        wait_for_all_nodes_disks_schedulable(client)
 
     # Create a volume to test
     vol_name = generate_volume_name()
@@ -491,12 +506,16 @@ def guaranteed_instance_manager_cpu_setting_check(  # NOQA
         for im in instance_managers:
             pod = core_api.read_namespaced_pod(name=im.name,
                                                namespace=LONGHORN_NAMESPACE)
-            if pod.metadata.labels["longhorn.io/data-engine"] == "v1":
+            if pod.metadata.labels["longhorn.io/data-engine"] == DATA_ENGINE:
                 if cpu_val:
                     assert (pod.spec.containers[0].resources.requests['cpu'] ==
                             cpu_val)
                 else:
-                    assert (not pod.spec.containers[0].resources.requests)
+                    if DATA_ENGINE == "v1":
+                        assert (not pod.spec.containers[0].resources.requests)
+                    else:
+                        assert "cpu" not in \
+                                pod.spec.containers[0].resources.requests
 
 
 @pytest.mark.v2_volume_test  # NOQA

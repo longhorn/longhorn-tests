@@ -232,6 +232,7 @@ SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
+SETTING_DATA_ENGINE_INTERRUPT_MODE = "data-engine-interrupt-mode-enabled"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -3882,6 +3883,16 @@ def reset_settings(client):
                     print(e)
                 continue
 
+        if setting_name == SETTING_DATA_ENGINE_INTERRUPT_MODE:
+            if os.environ.get('RUN_V2_INTERRUPT_MODE') == "true":
+                setting = client.by_id_setting(setting_name)
+                try:
+                    client.update(setting, value='{"v2": "true"}')
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to true")
+                    print(e)
+                continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
@@ -6793,3 +6804,28 @@ def wait_for_replica_count(client, volume_name, replica_count):
 
     volume = client.by_id_volume(volume_name)
     assert len(volume.replicas) == replica_count
+
+
+def wait_for_all_nodes_disks_schedulable(client):
+    for _ in range(RETRY_COUNTS):
+        nodes = client.list_node()
+        all_disks_ready = True
+        for node in nodes:
+            node_name = getattr(node, "name", "<unknown>")
+            disk_statuses = getattr(node, "disks", {})
+            for disk_name, disk_status in disk_statuses.items():
+                schedulable = False
+                conditions = disk_status.get("conditions", {})
+                sched_status = conditions.get("Schedulable", {}).get("status")
+                if sched_status == "True":
+                    schedulable = True
+                if not schedulable:
+                    print(f"'{disk_name}' on '{node_name}' is not schedulable")
+                    all_disks_ready = False
+        if all_disks_ready:
+            return
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    raise TimeoutError(
+        f"Not all disks across all nodes reached Schedulable=True "
+        f"after {RETRY_COUNTS * RETRY_INTERVAL}s")
