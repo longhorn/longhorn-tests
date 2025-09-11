@@ -286,7 +286,7 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
                                  for i in range(0, 30, period_in_minute)])
     hours = str(now.hour) + "," + str((now.hour + 1) % 24)
 
-    cronjob = f"{minutes} {hours} * * *"
+    cronjob = '{{"v1":"{0}","v2":"{0}"}}'.format(f"{minutes} {hours} * * *")
 
     snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
     snapshot_fast_data_rebuild_enabled_setting = \
