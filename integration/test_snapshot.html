@@ -576,7 +576,7 @@ with the values from the api</li>
                                  for i in range(0, 30, period_in_minute)])
     hours = str(now.hour) + &#34;,&#34; + str((now.hour + 1) % 24)
 
-    cronjob = f&#34;{minutes} {hours} * * *&#34;
+    cronjob = &#39;{{&#34;v1&#34;:&#34;{0}&#34;,&#34;v2&#34;:&#34;{0}&#34;}}&#39;.format(f&#34;{minutes} {hours} * * *&#34;)
 
     snapshot_data_integrity_setting = SETTING_SNAPSHOT_DATA_INTEGRITY
     snapshot_fast_data_rebuild_enabled_setting = \
