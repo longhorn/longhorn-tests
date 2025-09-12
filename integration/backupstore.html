@@ -1552,6 +1552,12 @@ def set_random_backupstore(request, client):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_for_default_backup_target_available(client):
+    longhorn_version = client.by_id_setting(&#39;current-longhorn-version&#39;).value
+    version_doesnt_support = [&#39;v1.7&#39;]
+    if any(_version in longhorn_version for
+            _version in version_doesnt_support):
+        return
+
     for i in range(RETRY_COUNTS):
         print(f&#34;waiting for default backup target available ... ({i})&#34;)
         bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
