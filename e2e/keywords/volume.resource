@@ -83,13 +83,6 @@ Volume ${volume_id} should be attached to node ${node_id}
     ${res} =    is_attached_to    ${volume_name}    ${node_name}
     Should Be True    ${res}
 
-Volume ${volume_id} should not be attached to node ${node_id}
-    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${node_name} =    get_node_by_index    ${node_id}
-    ${res} =    is_attached_to    ${volume_name}    ${node_name}
-    ${res} =  Convert To String  ${res}
-    Should Be Equal    ${res}    False
-
 Attach volume ${volume_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -101,6 +94,11 @@ Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${node_name} =    get_volume_node    ${workload_volume_name}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}    ${node_name}
+
+Attach volume ${volume_id} to node ${node_id} should fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    Run Keyword And Expect Error    *    attach_volume    ${volume_name}    ${node_name}    wait=False    retry=False
 
 Attach volume ${volume_id} in maintenance mode
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

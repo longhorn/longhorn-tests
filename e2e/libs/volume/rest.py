@@ -51,7 +51,7 @@ class Rest(Base):
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, backupBlockSize):
         return NotImplemented
 
-    def attach(self, volume_name, node_name, disable_frontend, wait):
+    def attach(self, volume_name, node_name, disable_frontend, wait, retry):
         return NotImplemented
 
     def is_attached_to(self, volume_name, node_name):
