@@ -194,15 +194,20 @@ class Rest(Base):
                       )
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
+        synced = False
         for i in range(self.retry_count):
             time.sleep(self.retry_interval)
             try:
                 current_backups = self.list_all()
-                assert len(current_backups["items"]) == len(backups_before_uninstall["items"])
+                current_backup_count = len(current_backups["items"])
+                original_backup_count = len(backups_before_uninstall["items"])
+                assert current_backup_count == original_backup_count, f"current backup count ({current_backup_count}) != original backup count ({original_backup_count})"
+                synced = True
                 break
             except Exception as e:
-                logging(f"{e}")
-                continue
+                logging(f"Failed to check backups after re-installation: {e}")
+
+        assert synced, f"Failed to sync backups after re-installation"
 
         target_backup_names = {(item["metadata"]["name"]) for item in backups_before_uninstall["items"]}
         for item in current_backups["items"]:
