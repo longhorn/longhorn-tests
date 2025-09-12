@@ -39,20 +39,20 @@ class volume_keywords:
         logging(f'Deleting volume {volume_name}')
         self.volume.delete(volume_name)
 
-    def attach_volume(self, volume_name, node_name=None, wait=True):
+    def attach_volume(self, volume_name, node_name=None, wait=True, retry=True):
         if not node_name:
             node_name = self.node.get_node_by_index(0)
         logging(f'Attaching volume {volume_name} to node {node_name}')
-        self.volume.attach(volume_name, node_name, disable_frontend=False, wait=wait)
+        self.volume.attach(volume_name, node_name, disable_frontend=False, wait=wait, retry=retry)
 
     def is_attached_to(self, volume_name, node_name):
         return self.volume.is_attached_to(volume_name, node_name)
 
-    def attach_volume_in_maintenance_mode(self, volume_name, node_name=None, wait=True):
+    def attach_volume_in_maintenance_mode(self, volume_name, node_name=None, wait=True, retry=True):
         if not node_name:
             node_name = self.node.get_node_by_index(0)
         logging(f'Attaching volume {volume_name} to node {node_name} in maintenance mode')
-        self.volume.attach(volume_name, node_name, disable_frontend=True, wait=wait)
+        self.volume.attach(volume_name, node_name, disable_frontend=True, wait=wait, retry=retry)
 
     def detach_volume(self, volume_name, node_name=None):
         if not node_name:
