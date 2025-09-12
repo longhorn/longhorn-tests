@@ -203,7 +203,7 @@ def wait_for_pod_status(name, status, namespace='default'):
                 is_running = True
                 break
         except Exception as e:
-            logging(e)
+            logging(f"Waiting for pod {name} status {status} error: {e}")
 
         time.sleep(retry_interval)
 
