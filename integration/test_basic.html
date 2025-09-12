@@ -4103,7 +4103,8 @@ check if size round up '2000683008/1908Mi'</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+@pytest.mark.coretest   # NOQA
 def test_expansion_basic(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test volume expansion using Longhorn API
@@ -4580,7 +4581,8 @@ those of the case test_running_volume_with_scheduling_failure().</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     test expand longhorn volume
 
