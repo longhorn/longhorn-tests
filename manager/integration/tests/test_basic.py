@@ -2427,6 +2427,7 @@ def test_storage_class_from_backup(set_random_backupstore, volume_name, pvc_name
     assert test_data == restored_data
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest   # NOQA
 def test_expansion_basic(client, volume_name):  # NOQA
     """
@@ -2531,6 +2532,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
+@pytest.mark.v2_volume_test
 def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     """
     test expand longhorn volume
