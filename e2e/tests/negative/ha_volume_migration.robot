@@ -397,8 +397,7 @@ Attempt To Attach To Three Nodes
     And Volume 0 should be attached to node 0
     When Attach volume 0 to node 1
     And Volume 0 should be attached to node 1
-    When Attach volume 0 to node 2
-    And Volume 0 should not be attached to node 2
+    When Attach volume 0 to node 2 should fail
 
 Heavy Writing Between Migration And Confirmation
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
