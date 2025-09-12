@@ -325,6 +325,12 @@ def set_backupstore_poll_interval_by_setting(client, poll_interval):
 
 
 def wait_for_default_backup_target_available(client):
+    longhorn_version = client.by_id_setting('current-longhorn-version').value
+    version_doesnt_support = ['v1.7']
+    if any(_version in longhorn_version for
+            _version in version_doesnt_support):
+        return
+
     for i in range(RETRY_COUNTS):
         print(f"waiting for default backup target available ... ({i})")
         bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
