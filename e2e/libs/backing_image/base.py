@@ -8,7 +8,7 @@ class Base(ABC):
     BACKING_IMAGE_STATE_READY = "ready"
 
     @abstractmethod
-    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies):
+    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, wait):
         return NotImplemented
 
     @abstractmethod
