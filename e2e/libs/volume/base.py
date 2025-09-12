@@ -65,7 +65,7 @@ class Base(ABC):
             return ""
 
     @abstractmethod
-    def attach(self, volume_name, node_name, disable_frontend, wait):
+    def attach(self, volume_name, node_name, disable_frontend, wait, retry):
         return NotImplemented
 
     @abstractmethod
