@@ -445,7 +445,8 @@ volume.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, storage_class): # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, storage_class): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/2181

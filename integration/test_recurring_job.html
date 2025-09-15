@@ -2099,7 +2099,8 @@ volume <code>test-job-2</code> should have 3 snapshots after scheduled time.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.recurring_job  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+@pytest.mark.recurring_job  # NOQA
 def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Scenario: test recurring job snapshot-cleanup
