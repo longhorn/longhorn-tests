@@ -407,6 +407,7 @@ def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_man
     wait_delete_dm_device(core_api, pv_name)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
@@ -494,6 +495,7 @@ def md5sum_thread(pod_name, destination_in_pod):
     return resp.strip().split(" ")[0]
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
 def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
@@ -576,6 +578,7 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
     assert pod_dev_md5 == volume_dev_md5
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
 def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
@@ -732,6 +735,7 @@ def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     create_and_wait_pod(core_api, pod_manifest)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.coretest  # NOQA
 def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
     """
