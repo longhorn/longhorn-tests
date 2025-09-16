@@ -29,8 +29,10 @@ class CRD(Base):
         self.engine = Engine()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize):
+        
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
+
         size = str(convert_size_to_bytes(size))
         backupBlockSize = str(convert_size_to_bytes(backupBlockSize))
         accessMode = accessMode.lower()
@@ -669,6 +671,8 @@ class CRD(Base):
         return Rest().wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)
 
     def validate_volume_setting(self, volume_name, setting_name, value):
+        if isinstance(value, str) and value[-2:] in ("Gi", "Mi"):
+            value = str(convert_size_to_bytes(value))
         volume = self.get(volume_name)
         assert str(volume["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
