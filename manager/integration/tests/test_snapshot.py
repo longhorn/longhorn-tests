@@ -38,6 +38,8 @@ SNAPSHOT_CHECK_PERIOD = 300
 # so put a toleration here and check if the time elapsed is expected.
 SNAPSHOT_CHECK_TOLERATION_DELAY = 60
 
+
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are immediately calculated when the snapshots
@@ -52,6 +54,7 @@ def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, s
     check_hashed_and_with_immediate_hash(client, volume_name, "ignored")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are calculated by the periodic checksum check
@@ -65,6 +68,7 @@ def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name
     check_hashed_and_without_immediate_hash(client, volume_name, "ignored")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are immediately calculated when the snapshots
@@ -81,6 +85,7 @@ def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name
                                          "ignored")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are calculated by the periodic checksum check
@@ -129,6 +134,7 @@ def test_snapshot_hash_global_disabled_without_immediate_hash(client, volume_nam
     check_per_volume_hash_disable(client, volume_name, "ignored")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are immediately calculated when the snapshots
@@ -144,6 +150,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate
     check_hashed_and_with_immediate_hash(client, volume_name, "enabled")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are calculated by the periodic checksum check
@@ -158,6 +165,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immedi
     check_hashed_and_without_immediate_hash(client, volume_name, "enabled")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are immediately calculated when the snapshots
@@ -173,6 +181,7 @@ def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immedi
     check_hashed_and_with_immediate_hash(client, volume_name, "fast-check")
 
 
+@pytest.mark.v2_volume_test
 def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are calculated by the periodic checksum check
