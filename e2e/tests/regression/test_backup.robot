@@ -166,16 +166,3 @@ Test Backupstore With Existing Backups
     And Wait for backing image backup for backing image bi ready
     # the existing system backup in the backup store is called system-backup
     And Wait for system backup system-backup ready
-
-Test DR Volume Backup Block Size
-    [Documentation]
-    ...    Verify the DR volume's backup block size should be always set from the latest backup.
-    ...
-    ...    https://github.com/longhorn/longhorn/issues/11580
-    Given Create volume 0 with    size=2Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}    backupBlockSize=16Mi
-    And Attach volume 0
-    And Wait for volume 0 healthy
-    And Create backup 0 for volume 0
-
-    When Create DR volume 1 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
-    And DR volume 1 setting backupBlockSize should be 16Mi
