@@ -104,15 +104,16 @@ def clone_pvc(request):
 <div class="desc"></div>
 </dd>
 <dt id="tests.test_cloning.test_cloning_basic"><code class="name flex">
-<span>def <span class="ident">test_cloning_basic</span></span>(<span>client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class_name='longhorn')</span>
+<span>def <span class="ident">test_cloning_basic</span></span>(<span>client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.cloning  # NOQA
-def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class_name=&#39;longhorn&#39;):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+@pytest.mark.cloning  # NOQA
+def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     &#34;&#34;&#34;
     1. Create a PVC:
         ```yaml
@@ -157,9 +158,11 @@ def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod, storage
        becomes healthy
     &#34;&#34;&#34;
     # Step-1
+    create_storage_class(storage_class)
+
     source_pvc_name = &#39;source-pvc&#39; + generate_random_suffix()
     pvc[&#39;metadata&#39;][&#39;name&#39;] = source_pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
     wait_for_pvc_phase(core_api, source_pvc_name, &#34;Bound&#34;)
@@ -178,7 +181,7 @@ def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod, storage
     # Step-4
     clone_pvc_name = &#39;clone-pvc&#39; + generate_random_suffix()
     clone_pvc[&#39;metadata&#39;][&#39;name&#39;] = clone_pvc_name
-    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class_name
+    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     clone_pvc[&#39;spec&#39;][&#39;dataSource&#39;] = {
         &#39;name&#39;: source_pvc_name,
         &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;
@@ -251,7 +254,7 @@ becomes healthy</li>
 </ol></div>
 </dd>
 <dt id="tests.test_cloning.test_cloning_interrupted"><code class="name flex">
-<span>def <span class="ident">test_cloning_interrupted</span></span>(<span>client, core_api, pvc, pod, clone_pvc, clone_pod)</span>
+<span>def <span class="ident">test_cloning_interrupted</span></span>(<span>client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -259,7 +262,7 @@ becomes healthy</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.cloning  # NOQA
-def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod):  # NOQA
+def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     &#34;&#34;&#34;
     1. Create a PVC:
         ```yaml
@@ -306,9 +309,11 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod): 
         eventually becomes healthy.
     &#34;&#34;&#34;
     # Step-1
+    create_storage_class(storage_class)
+
     source_pvc_name = &#39;source-pvc&#39; + generate_random_suffix()
     pvc[&#39;metadata&#39;][&#39;name&#39;] = source_pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
     wait_for_pvc_phase(core_api, source_pvc_name, &#34;Bound&#34;)
@@ -329,7 +334,7 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod): 
     # Step-4
     clone_pvc_name = &#39;clone-pvc&#39; + generate_random_suffix()
     clone_pvc[&#39;metadata&#39;][&#39;name&#39;] = clone_pvc_name
-    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     clone_pvc[&#39;spec&#39;][&#39;dataSource&#39;] = {
         &#39;name&#39;: source_pvc_name,
         &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;
@@ -361,7 +366,7 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod): 
     # Step-9
     clone_pvc_name = &#39;clone-pvc-2&#39; + generate_random_suffix()
     clone_pvc[&#39;metadata&#39;][&#39;name&#39;] = clone_pvc_name
-    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     clone_pvc[&#39;spec&#39;][&#39;dataSource&#39;] = {
         &#39;name&#39;: source_pvc_name,
         &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;
@@ -440,7 +445,8 @@ eventually becomes healthy.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.cloning  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+@pytest.mark.cloning  # NOQA
 def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     &#34;&#34;&#34;
     1. Deploy a storage class that has backing image parameter
@@ -468,18 +474,61 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
     &#34;&#34;&#34;
 
     # Create storage class with backing image
+    bi_storage_class = copy.deepcopy(storage_class)
     backing_img_storage_class_name = &#39;longhorn-bi-parrot&#39;
-    storage_class[&#39;metadata&#39;][&#39;name&#39;] = backing_img_storage_class_name
-    storage_class[&#39;parameters&#39;][&#39;backingImage&#39;] = &#39;bi-parrot&#39;
-    storage_class[&#39;parameters&#39;][&#39;backingImageDataSourceType&#39;] = &#39;download&#39;
-    storage_class[&#39;parameters&#39;][&#39;backingImageDataSourceParameters&#39;] = (
+    bi_storage_class[&#39;metadata&#39;][&#39;name&#39;] = backing_img_storage_class_name
+    bi_storage_class[&#39;parameters&#39;][&#39;backingImage&#39;] = &#39;bi-parrot&#39;
+    bi_storage_class[&#39;parameters&#39;][&#39;backingImageDataSourceType&#39;] = &#39;download&#39;
+    bi_storage_class[&#39;parameters&#39;][&#39;backingImageDataSourceParameters&#39;] = (
         &#39;{&#34;url&#34;: &#34;https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/&#39;  # NOQA
         &#39;parrot.qcow2&#34;}&#39;)
-    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    bi_storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+
+    create_storage_class(bi_storage_class)
+
+    source_pvc_name = &#39;source-pvc&#39; + generate_random_suffix()
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = source_pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = bi_storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+    wait_for_pvc_phase(core_api, source_pvc_name, &#34;Bound&#34;)
+
+    pod_name = &#39;source-pod&#39; + generate_random_suffix()
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(source_pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    write_pod_volume_random_data(core_api, pod_name,
+                                 &#39;/data/test&#39;, DATA_SIZE_IN_MB_2)
+    source_data = get_pod_data_md5sum(core_api, pod_name, &#39;/data/test&#39;)
 
     create_storage_class(storage_class)
-    test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod,
-                       storage_class_name=backing_img_storage_class_name)</code></pre>
+    clone_pvc_name = &#39;clone-pvc&#39; + generate_random_suffix()
+    clone_pvc[&#39;metadata&#39;][&#39;name&#39;] = clone_pvc_name
+    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    clone_pvc[&#39;spec&#39;][&#39;dataSource&#39;] = {
+        &#39;name&#39;: source_pvc_name,
+        &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;
+    }
+    core_api.create_namespaced_persistent_volume_claim(
+        body=clone_pvc, namespace=&#39;default&#39;)
+    wait_for_pvc_phase(core_api, clone_pvc_name, &#34;Bound&#34;)
+
+    clone_volume_name = get_volume_name(core_api, clone_pvc_name)
+    wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
+                                 VOLUME_FIELD_CLONE_COMPLETED)
+
+    wait_for_volume_detached(client, clone_volume_name)
+
+    clone_pod_name = &#39;clone-pod&#39; + generate_random_suffix()
+    clone_pod[&#39;metadata&#39;][&#39;name&#39;] = clone_pod_name
+    clone_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(clone_pvc_name)]
+    create_and_wait_pod(core_api, clone_pod)
+    clone_data = get_pod_data_md5sum(core_api, clone_pod_name, &#39;/data/test&#39;)
+
+    assert source_data == clone_data
+
+    wait_for_volume_healthy(client, clone_volume_name)</code></pre>
 </details>
 <div class="desc"><ol>
 <li>Deploy a storage class that has backing image parameter
@@ -507,15 +556,16 @@ backing_image_data_source_parameters = (
 </ol></div>
 </dd>
 <dt id="tests.test_cloning.test_cloning_with_detached_source_volume"><code class="name flex">
-<span>def <span class="ident">test_cloning_with_detached_source_volume</span></span>(<span>client, core_api, pvc, clone_pvc)</span>
+<span>def <span class="ident">test_cloning_with_detached_source_volume</span></span>(<span>client, core_api, pvc, clone_pvc, storage_class)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.cloning
-def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+@pytest.mark.cloning
+def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc, storage_class):  # NOQA
     &#34;&#34;&#34;
         1. Create a PVC:
             ```yaml
@@ -560,9 +610,11 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
         11. Verify snapshot created in `source-pvc` volume because of the clone
     &#34;&#34;&#34;
     # Step-1
+    create_storage_class(storage_class)
+
     source_pvc_name = &#39;source-pvc&#39; + generate_random_suffix()
     pvc[&#39;metadata&#39;][&#39;name&#39;] = source_pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
     wait_for_pvc_phase(core_api, source_pvc_name, &#34;Bound&#34;)
@@ -584,7 +636,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     # Step-5
     clone_pvc_name = &#39;clone-pvc&#39; + generate_random_suffix()
     clone_pvc[&#39;metadata&#39;][&#39;name&#39;] = clone_pvc_name
-    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+    clone_pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
     clone_pvc[&#39;spec&#39;][&#39;dataSource&#39;] = {
         &#39;name&#39;: source_pvc_name,
         &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;
