@@ -561,6 +561,7 @@ def test_rwx_online_expansion(): # NOQA
     pass
 
 
+@pytest.mark.v2_volume_test
 def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, storage_class): # NOQA
     """
     Related issue :

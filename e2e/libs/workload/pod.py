@@ -186,7 +186,7 @@ def get_pod(name, namespace='default'):
         core_api = client.CoreV1Api()
         return core_api.read_namespaced_pod(name=name, namespace=namespace)
     except Exception as e:
-        if isinstance(e, ApiException) and e.reason == 'Not Found':
+        if isinstance(e, rest.ApiException) and e.reason == 'Not Found':
             return None
         raise e
 
@@ -203,7 +203,7 @@ def wait_for_pod_status(name, status, namespace='default'):
                 is_running = True
                 break
         except Exception as e:
-            logging(e)
+            logging(f"Waiting for pod {name} status {status} error: {e}")
 
         time.sleep(retry_interval)
 
