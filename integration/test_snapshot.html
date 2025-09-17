@@ -766,7 +766,8 @@ def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volum
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are immediately calculated when the snapshots
     check when
@@ -794,7 +795,8 @@ check when
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are calculated by the periodic checksum check
     - global data-integrity is set to disabled
@@ -820,7 +822,8 @@ check when
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are immediately calculated when the snapshots
     check when
@@ -848,7 +851,8 @@ check when
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are calculated by the periodic checksum check
     - global data-integrity is set to disabled
@@ -988,7 +992,8 @@ global setting</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are immediately calculated when the snapshots
     are created
@@ -1014,7 +1019,8 @@ are created
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are calculated by the periodic checksum check
     - global data-integrity is set to enabled
@@ -1092,7 +1098,8 @@ def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_imme
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are immediately calculated when the snapshots
     are created
@@ -1120,7 +1127,8 @@ are created
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     &#34;&#34;&#34;
     Check snapshots&#39; checksums are calculated by the periodic checksum check
     - global data-integrity is set to fast-check
