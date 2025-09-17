@@ -11,11 +11,11 @@ IMAGES=(
   "${CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE}"
   "${CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE}"
   "${CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE}"
-    "${CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE}"
-    "${CUSTOM_LONGHORN_CSI_RESIZER_IMAGE}"
-    "${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE}"
-    "${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE}"
-  )
+  "${CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE}"
+  "${CUSTOM_LONGHORN_CSI_RESIZER_IMAGE}"
+  "${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE}"
+  "${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE}"
+)
 
 STABLE_VERSION_IMAGES=(
   "${STABLE_MANAGER_IMAGE}"
@@ -49,6 +49,34 @@ TRANSIENT_VERSION_IMAGES=(
   "${TRANSIENT_CSI_LIVENESSPROBE_IMAGE}"
 )
 
+tag_and_push_custom_image() {
+  local image="$1"
+  local target_image=""
+
+  target_image="${image/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
+  target_image="${REGISTRY_URL}/${target_image}"
+
+  echo "Tagging ${image} to ${target_image}"
+  docker tag "${image}" "${target_image}"
+
+  echo "Pushing ${target_image}"
+  docker push "${target_image}"
+}
+
+tag_and_push_upgrade_image() {
+  local image="$1"
+  local target_image=""
+    
+  target_image="${REGISTRY_URL}/${image}"
+
+  echo "Tagging ${image} to ${target_image}"
+  docker tag "${image}" "${target_image}"
+
+  echo "Pushing ${target_image}"
+  docker push "${target_image}"
+}
+
+
 mirror_longhorn_images(){
   # Login to AppCo
   echo "${APPCO_PASSWORD}" | docker login dp.apps.rancher.io --username "${APPCO_USERNAME}" --password-stdin
@@ -59,63 +87,35 @@ mirror_longhorn_images(){
     docker pull --platform linux/${TF_VAR_arch} "${image}"
   done
 
-  # Tag images
-  for image in "${IMAGES[@]}"; do
-    echo "Tagging ${image} to ${REGISTRY_URL}/${image}"
-    docker tag "${image}" "${REGISTRY_URL}/${image}"
-  done
-
-  # Login
+  # Login to target registry
   echo "Logging into ${REGISTRY_URL}"
   docker login "${REGISTRY_URL}" -u "${REGISTRY_USERNAME}" -p "${REGISTRY_PASSWORD}"
 
-  # Push images
+  # Tag & Push images
   for image in "${IMAGES[@]}"; do
-    echo "Pushing ${REGISTRY_URL}/${image}"
-    docker push "${REGISTRY_URL}/${image}"
+    tag_and_push_custom_image "$image"
   done
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     if [[ -n "$LONGHORN_STABLE_VERSION" ]]; then
-      # Pull stable version images
       for image in "${STABLE_VERSION_IMAGES[@]}"; do
         echo "Pulling ${image}"
         docker pull --platform linux/${TF_VAR_arch} "${image}"
       done
-
-      # Tag stable version images
       for image in "${STABLE_VERSION_IMAGES[@]}"; do
-        echo "Tagging ${image} to ${REGISTRY_URL}/${image}"
-        docker tag "${image}" "${REGISTRY_URL}/${image}"
-      done
-
-      # Push stable version images
-      for image in "${STABLE_VERSION_IMAGES[@]}"; do
-        echo "Pushing ${REGISTRY_URL}/${image}"
-        docker push "${REGISTRY_URL}/${image}"
+        tag_and_push_upgrade_image "$image"
       done
     fi
     if [[ -n "$LONGHORN_TRANSIENT_VERSION" ]]; then
-      # Pull transient version images
       for image in "${TRANSIENT_VERSION_IMAGES[@]}"; do
         echo "Pulling ${image}"
         docker pull --platform linux/${TF_VAR_arch} "${image}"
       done
-
-      # Tag transient version images
       for image in "${TRANSIENT_VERSION_IMAGES[@]}"; do
-        echo "Tagging ${image} to ${REGISTRY_URL}/${image}"
-        docker tag "${image}" "${REGISTRY_URL}/${image}"
-      done
-
-      # Push transient version images
-      for image in "${TRANSIENT_VERSION_IMAGES[@]}"; do
-        echo "Pushing ${REGISTRY_URL}/${image}"
-        docker push "${REGISTRY_URL}/${image}"
+        tag_and_push_upgrade_image "$image"
       done
     fi
   fi
 }
 
 mirror_longhorn_images
-
