@@ -24,8 +24,8 @@ class Volume(Base):
     def wait_for_volume_deleted(self, volume_name):
         return self.volume.wait_for_volume_deleted(volume_name)
 
-    def attach(self, volume_name, node_name, disable_frontend, wait):
-        return self.volume.attach(volume_name, node_name, disable_frontend, wait)
+    def attach(self, volume_name, node_name, disable_frontend, wait, retry):
+        return self.volume.attach(volume_name, node_name, disable_frontend, wait, retry)
 
     def is_attached_to(self, volume_name, node_name):
         return self.volume.is_attached_to(volume_name, node_name)
