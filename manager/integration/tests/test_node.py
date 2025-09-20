@@ -14,7 +14,7 @@ from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
     DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY, \
     NODE_CONDITION_SCHEDULABLE
 from common import get_core_api_client, get_longhorn_api_client, \
-    get_self_host_id
+    get_self_host_id, get_apps_api_client
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
@@ -3089,13 +3089,35 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
     client.update(setting, value="block-for-eviction")
 
     # Step 2, 3, 4
-    volume, pod, checksum, _ = create_deployment_and_write_data(client,
-                                                                core_api,
-                                                                make_deployment_with_pvc, # NOQA
-                                                                volume_name,
-                                                                str(1 * Gi),
-                                                                3,
-                                                                DATA_SIZE_IN_MB_3, host_id) # NOQA
+    # Create strict-local volume to block the eviction`
+    client.create_volume(
+        name=volume_name,
+        size=SIZE,
+        numberOfReplicas=1,
+        dataLocality="strict-local")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pvc_name = volume_name + "-pvc"
+    common.create_pv_for_volume(client, core_api, volume, volume_name)
+    common.create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment["spec"]["template"]["spec"]["nodeSelector"] \
+        = {"kubernetes.io/hostname": evict_source_node.id}
+
+    apps_api = get_apps_api_client()
+    common.create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    data_path = '/data/test'
+    common.write_pod_volume_random_data(core_api,
+                                        pod_names[0],
+                                        data_path,
+                                        DATA_SIZE_IN_MB_2)
+    expected_test_data_checksum = get_pod_data_md5sum(core_api,
+                                                      pod_names[0],
+                                                      data_path)
 
     # Step 5
     executor = ThreadPoolExecutor(max_workers=5)
@@ -3111,11 +3133,14 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
     # Step 8
     set_node_cordon(core_api, evict_source_node.id, False)
     wait_for_volume_healthy(client, volume_name)
-    data_path = '/data/test'
+    deployment_pod = common.wait_and_get_any_deployment_pod(core_api,
+                                                            deployment_name)
+
     test_data_checksum = get_pod_data_md5sum(core_api,
-                                             pod,
+                                             deployment_pod.metadata.name,
                                              data_path)
-    assert checksum == test_data_checksum
+
+    assert expected_test_data_checksum == test_data_checksum
 
 
 @pytest.mark.v2_volume_test  # NOQA
