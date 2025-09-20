@@ -202,6 +202,8 @@ Pre-release Checks
         # upgrading Longhorn with attached v2 volumes is not allowed
         And Detach volume v2
         And Wait for volume v2 detached
+        And Delete pod vol-pod-bi-v2
+        And Wait for volume vol-bi-v2 detached
         And Scale down deployment deploy-v2-upgrade to detach volume
 
     END
@@ -386,6 +388,8 @@ Pre-release Checks
         And Check deployment deploy-v2-upgrade works
 
         # (4) check the data integrity of the volume with a backing image
+        When Create pod vol-pod-bi-v2 using volume vol-bi-v2
+        And Wait for pod vol-pod-bi-v2 running
         And Check file guests/catparrot.gif exists in pod vol-pod-bi-v2
         And Check pod vol-pod-bi-v2 data in file data.txt is intact
         And Check pod vol-pod-bi-v2 works
