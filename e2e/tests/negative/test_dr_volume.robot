@@ -166,7 +166,7 @@ Test DR Volume Live Upgrade And Rebuild
     And Enable v2 data engine and add block disks
 
     # Scenario 1: Create initial deployment and backups
-    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    Given Create storageclass longhorn-test with    dataEngine=v1
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test    storage_size=1GiB
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
