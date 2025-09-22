@@ -41,8 +41,15 @@ Test system upgrade with a new storage class being default
     And Wait for volume of deployment 1 healthy
     And Write 100 MB data to file data.bin in deployment 0
     And Write 100 MB data to file data.bin in deployment 1
+    And Scale down deployment 0 to detach volume
+    And Scale down deployment 1 to detach volume
 
     When Upgrade Longhorn to custom version
+    And Scale up deployment 0 to attach volume
+    And Scale up deployment 1 to attach volume
+    And Wait for volume of deployment 0 healthy
+    And Wait for volume of deployment 1 healthy
+    And Wait for workloads pods stable    deployment 0    deployment 1
     And Assert storageClass longhorn-rep-2 is default storageclass
     And Create persistentvolumeclaim 2    volume_type=RWO    sc_name=longhorn-rep-2
     And Create persistentvolumeclaim 3    volume_type=RWX    sc_name=longhorn
