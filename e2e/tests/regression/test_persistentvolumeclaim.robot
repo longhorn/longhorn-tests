@@ -5,6 +5,7 @@ Test Tags    regression
 
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/workload.resource
@@ -28,7 +29,8 @@ Test PersistentVolumeClaim Expand More Than Storage Maximum Size Should Fail
     ...                Issue: https://github.com/longhorn/longhorn/issues/6633
 
     Given Setting storage-over-provisioning-percentage is set to 100
-    And Create persistentvolumeclaim 0    volume_type=RWX volume    storage_size=2GiB
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    storage_size=2GiB    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 10 MB data to file data.txt in deployment 0
 
