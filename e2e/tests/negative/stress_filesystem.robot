@@ -5,6 +5,7 @@ Test Tags    negative    stress
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/stress.resource
@@ -16,7 +17,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Stress Volume Node Filesystem When Replica Is Rebuilding
-    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Write data to volume 0
     And Stress filesystem of volume 0 volume node
@@ -30,7 +31,7 @@ Stress Volume Node Filesystem When Replica Is Rebuilding
     END
 
 Stress Volume Node Filesystem When Volume Is Detaching and Attaching
-    Given Create volume 0 with    size=5Gi    numberOfReplicas=3
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Write data to volume 0
     And Stress filesystem of volume 0 volume node
@@ -44,7 +45,8 @@ Stress Volume Node Filesystem When Volume Is Detaching and Attaching
     END
 
 Stress Volume Node Filesystem When Volume Is Online Expanding
-    Given Create statefulset 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Write 1024 MB data to file data.txt in statefulset 0
     And Stress filesystem of statefulset 0 volume node
 
@@ -56,7 +58,8 @@ Stress Volume Node Filesystem When Volume Is Online Expanding
     END
 
 Stress Volume Node Filesystem When Volume Is Offline Expanding
-    Given Create statefulset 0 using RWO volume
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Write 1024 MB data to file data.txt in statefulset 0
     And Stress filesystem of all worker nodes
 
