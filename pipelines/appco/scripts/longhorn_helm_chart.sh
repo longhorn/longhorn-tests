@@ -13,7 +13,7 @@ set_secret_args() {
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     if [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}"
-    elif [[ -z "${APPCO_LONGHORN_COMPONENT_REGISTRY}" ]]; then
+    elif [[ -z "${APPCO_LONGHORN_COMPONENT_REGISTRY}" || "${chart_uri}" == *"dp.apps.rancher.io"* ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}/dp.apps.rancher.io"
     else
       FINAL_REGISTRY_URL="${REGISTRY_URL}/${APPCO_LONGHORN_COMPONENT_REGISTRY}"
