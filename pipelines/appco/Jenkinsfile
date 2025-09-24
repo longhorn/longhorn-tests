@@ -92,7 +92,8 @@ node {
                 sh """ docker exec \
                         --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
                         --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                        --env APPCO_LONGHORN_COMPOMENT_REGISTRY=${APPCO_LONGHORN_COMPOMENT_REGISTRY} \
+                        --env APPCO_LONGHORN_COMPONENT_REGISTRY=${APPCO_LONGHORN_COMPONENT_REGISTRY} \
+                        --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
                         --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                         --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
                         --env LONGHORN_STABLE_VERSION_CHART_URI=${LONGHORN_STABLE_VERSION_CHART_URI} \
@@ -167,7 +168,8 @@ node {
                             --env APPCO_PASSWORD=${APPCO_PASSWORD} \
                             --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
                             --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                            --env APPCO_LONGHORN_COMPOMENT_REGISTRY=${APPCO_LONGHORN_COMPOMENT_REGISTRY} \
+                            --env APPCO_LONGHORN_COMPONENT_REGISTRY=${APPCO_LONGHORN_COMPONENT_REGISTRY} \
+                            --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
                             --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                             --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
                             --env LONGHORN_STABLE_VERSION_CHART_URI=${LONGHORN_STABLE_VERSION_CHART_URI} \
@@ -196,7 +198,8 @@ node {
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
                                        --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                                       --env APPCO_LONGHORN_COMPOMENT_REGISTRY=${APPCO_LONGHORN_COMPOMENT_REGISTRY} \
+                                       --env APPCO_LONGHORN_COMPONENT_REGISTRY=${APPCO_LONGHORN_COMPONENT_REGISTRY} \
+                                       --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
                                        --env APPCO_USERNAME=${APPCO_USERNAME} \
                                        --env APPCO_PASSWORD=${APPCO_PASSWORD} \
                                        --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
