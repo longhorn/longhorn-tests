@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 source test_framework/scripts/kubeconfig.sh
 source pipelines/utilities/longhorn_ui.sh
 
@@ -25,6 +23,7 @@ download_support_bundle(){
   # wait for support bundle url available
   SUPPORT_BUNDLE_URL_READY=false
   CURL_CMD="curl -s -GET ${LONGHORN_CLIENT_URL}/v1/supportbundles/${NODE_ID}/${NAME} -H 'Accept: application/json' -H 'Accept-Encoding: gzip, deflate'"
+  echo ${CURL_CMD}
   MAX_RETRY=100
   RETRY=0
   while [[ ${SUPPORT_BUNDLE_URL_READY} == false ]] && [[ ${RETRY} -lt ${MAX_RETRY} ]]; do

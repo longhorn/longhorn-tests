@@ -24,9 +24,19 @@ class Base(ABC):
         return NotImplemented
 
     def check_longhorn_crd_removed(self):
-        all_crd = k8s.get_all_custom_resources()
-        for crd in all_crd.items:
-            assert "longhorn.io" not in crd.metadata.name
+        for i in range(self.retry_count):
+            logging(f"Waiting for all longhorn crds removed ... ({i})")
+            removed = True
+            all_crd = k8s.get_all_custom_resources()
+            for crd in all_crd.items:
+                if "longhorn.io" in crd.metadata.name:
+                    logging(f"Found longhorn crd: {crd.metadata.name}")
+                    removed = False
+                    break
+            if removed:
+                return
+            time.sleep(self.retry_interval)
+        assert removed, "Failed to wait for all longhorn crds removed"
 
     def check_longhorn_uninstall_pod_log(self):
         logs = k8s.get_latest_pod_logs(LONGHORN_NAMESPACE, LONGHORN_UNINSTALL_JOB_LABEL)

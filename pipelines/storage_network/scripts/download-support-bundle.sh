@@ -22,11 +22,16 @@ CURL_CMD="curl -XPOST ${LONGHORN_CLIENT_URL}/v1/supportbundles -H 'Accept: appli
 SUPPORT_BUNDLE_URL=`kubectl exec -n longhorn-system svc/longhorn-frontend -- bash -c "${CURL_CMD}"  | jq -r '.links.self + "/" + .name'`
 
 SUPPORT_BUNDLE_READY=false
-while [[ ${SUPPORT_BUNDLE_READY} == false ]]; do
-    PERCENT=`kubectl exec -n longhorn-system svc/longhorn-frontend -- curl -H 'Accept: application/json' ${SUPPORT_BUNDLE_URL} | jq -r '.progressPercentage' || true`
+MAX_RETRY=100
+RETRY=0
+while [[ ${SUPPORT_BUNDLE_READY} == false ]] && [[ ${RETRY} -lt ${MAX_RETRY} ]]; do
+    PERCENT=`kubectl exec -n longhorn-system svc/longhorn-frontend -- curl -s -H 'Accept: application/json' ${SUPPORT_BUNDLE_URL} | jq -r '.progressPercentage' || true`
     echo ${PERCENT}
 
     if [[ ${PERCENT} == 100 ]]; then SUPPORT_BUNDLE_READY=true; fi
+
+    RETRY=$((RETRY+1))
+    sleep 3s
 done
 
 kubectl exec -n longhorn-system svc/longhorn-frontend -- curl -H 'Accept-Encoding: gzip, deflate' ${SUPPORT_BUNDLE_URL}/download > ${SUPPORT_BUNDLE_FILE_NAME}

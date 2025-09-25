@@ -21,6 +21,7 @@ resource "rancher2_catalog_v2" "longhorn_repo" {
   git_branch = var.rancher_chart_git_branch
 }
 
+# wait for longhorn repo synced before fetching the longhorn chart
 resource "time_sleep" "wait_60_seconds" {
   depends_on = [
     rancher2_catalog_v2.longhorn_repo
@@ -29,9 +30,30 @@ resource "time_sleep" "wait_60_seconds" {
   create_duration = "60s"
 }
 
-resource "rancher2_app_v2" "longhorn_app" {
+resource "null_resource" "wait_for_rancher_webhook" {
   depends_on = [
     time_sleep.wait_60_seconds
+  ]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      set -e
+      echo "Waiting for Rancher webhook to be ready..."
+      # Wait for deployment to exist
+      until kubectl get deploy -n cattle-system rancher-webhook >/dev/null 2>&1; do
+        echo "rancher-webhook deployment not found, retrying..."
+        sleep 5
+      done
+      # Wait for deployment to be available
+      kubectl rollout status deploy/rancher-webhook -n cattle-system --timeout=300s
+      echo "Rancher webhook is ready."
+    EOT
+  }
+}
+
+resource "rancher2_app_v2" "longhorn_app" {
+  depends_on = [
+    null_resource.wait_for_rancher_webhook
   ]
 
   cluster_id = "local"

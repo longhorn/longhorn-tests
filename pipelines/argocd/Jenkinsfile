@@ -89,12 +89,6 @@ node {
                 sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/argocd/scripts/longhorn-setup.sh"
             }
 
-            stage ('download support bundle') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/download_support_bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
-				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
-			}
-
             stage ('report generation') {
                 if (params.TEST_TYPE == 'robot') {
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/log.html ."
@@ -115,6 +109,12 @@ node {
                     }
                 }
             }
+
+            stage ('download support bundle') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/download_support_bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
+			}
 
         } catch (e) {
             currentBuild.result = "FAILED"
