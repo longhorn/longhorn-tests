@@ -859,13 +859,35 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
     client.update(setting, value=&#34;block-for-eviction&#34;)
 
     # Step 2, 3, 4
-    volume, pod, checksum, _ = create_deployment_and_write_data(client,
-                                                                core_api,
-                                                                make_deployment_with_pvc, # NOQA
-                                                                volume_name,
-                                                                str(1 * Gi),
-                                                                3,
-                                                                DATA_SIZE_IN_MB_3, host_id) # NOQA
+    # Create strict-local volume to block the eviction`
+    client.create_volume(
+        name=volume_name,
+        size=SIZE,
+        numberOfReplicas=1,
+        dataLocality=&#34;strict-local&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pvc_name = volume_name + &#34;-pvc&#34;
+    common.create_pv_for_volume(client, core_api, volume, volume_name)
+    common.create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    deployment_name = volume_name + &#34;-dep&#34;
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;nodeSelector&#34;] \
+        = {&#34;kubernetes.io/hostname&#34;: evict_source_node.id}
+
+    apps_api = get_apps_api_client()
+    common.create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    data_path = &#39;/data/test&#39;
+    common.write_pod_volume_random_data(core_api,
+                                        pod_names[0],
+                                        data_path,
+                                        DATA_SIZE_IN_MB_2)
+    expected_test_data_checksum = get_pod_data_md5sum(core_api,
+                                                      pod_names[0],
+                                                      data_path)
 
     # Step 5
     executor = ThreadPoolExecutor(max_workers=5)
@@ -881,11 +903,14 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
     # Step 8
     set_node_cordon(core_api, evict_source_node.id, False)
     wait_for_volume_healthy(client, volume_name)
-    data_path = &#39;/data/test&#39;
+    deployment_pod = common.wait_and_get_any_deployment_pod(core_api,
+                                                            deployment_name)
+
     test_data_checksum = get_pod_data_md5sum(core_api,
-                                             pod,
+                                             deployment_pod.metadata.name,
                                              data_path)
-    assert checksum == test_data_checksum</code></pre>
+
+    assert expected_test_data_checksum == test_data_checksum</code></pre>
 </details>
 <div class="desc"><p>Test drain never completes with node-drain-policy block-for-eviction</p>
 <ol>
