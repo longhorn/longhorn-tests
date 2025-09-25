@@ -17,6 +17,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Migration Confirmation After Migration Node Down
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -41,6 +42,7 @@ Migration Confirmation After Migration Node Down
     And Check volume 0 data is intact
 
 Migration Rollback After Migration Node Down
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -60,6 +62,7 @@ Migration Rollback After Migration Node Down
     And Check volume 0 data is intact
 
 Migration Confirmation After Original Node Down
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -81,6 +84,7 @@ Migration Confirmation After Original Node Down
     And Check volume 0 data is intact
 
 Migration Rollback After Original Node Down
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -108,6 +112,7 @@ Migration Rollback After Original Node Down
     And Check volume 0 data is intact
 
 Migration Confirmation After Migration Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -127,6 +132,7 @@ Migration Confirmation After Migration Engine Crash
     And Check volume 0 data is intact
 
 Migration Confirmation Before Migration Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -147,6 +153,7 @@ Migration Confirmation Before Migration Engine Crash
     And Check volume 0 data is intact
 
 Migration Rollback After Migration Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -166,6 +173,7 @@ Migration Rollback After Migration Engine Crash
     And Check volume 0 data is intact
 
 Migration Rollback Before Migration Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -186,6 +194,7 @@ Migration Rollback Before Migration Engine Crash
     And Check volume 0 data is intact
 
 Migration Confirmation After Original Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -205,6 +214,7 @@ Migration Confirmation After Original Engine Crash
     And Check volume 0 data is intact
 
 Migration Confirmation Before Original Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -225,6 +235,7 @@ Migration Confirmation Before Original Engine Crash
     And Check volume 0 data is intact
 
 Migration Rollback After Original Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -244,6 +255,7 @@ Migration Rollback After Original Engine Crash
     And Check volume 0 data is intact
 
 Migration Rollback Before Original Engine Crash
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -264,6 +276,7 @@ Migration Rollback Before Original Engine Crash
     And Check volume 0 data is intact
 
 Original Engine Crash During Migration
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -284,6 +297,7 @@ Original Engine Crash During Migration
     And Check volume 0 data is intact
 
 Migration Engine Crash During Migration
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -298,6 +312,7 @@ Migration Engine Crash During Migration
     Then Wait for volume 0 migration to be ready
 
 All Engines Crash During Migration
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -320,6 +335,7 @@ All Engines Crash During Migration
     And Check volume 0 data is intact
 
 Volume Degraded Before Migration And Confirmation
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Cordon node 2
     And Delete ${DATA_ENGINE} instance manager on node 2
     And Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
@@ -338,6 +354,7 @@ Volume Degraded Before Migration And Confirmation
     And Check volume 0 data is intact
 
 Volume Degraded Before Migration And Rollback
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Cordon node 2
     And Delete ${DATA_ENGINE} instance manager on node 2
     And Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
@@ -356,6 +373,7 @@ Volume Degraded Before Migration And Rollback
     And Check volume 0 data is intact
 
 Volume Degraded Between Migration And Confirmation
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -374,6 +392,7 @@ Volume Degraded Between Migration And Confirmation
     And Check volume 0 data is intact
 
 Volume Degraded Between Migration And Rollback
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -392,6 +411,7 @@ Volume Degraded Between Migration And Rollback
     And Check volume 0 data is intact
 
 Attempt To Attach To Three Nodes
+    [Documentation]    Issue: https://github.com/longhorn/longhorn-tests/pull/1948/
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 0
     And Volume 0 should be attached to node 0
@@ -401,6 +421,7 @@ Attempt To Attach To Three Nodes
     And Volume 0 should not be attached to node 2
 
 Heavy Writing Between Migration And Confirmation
+    [Documentation]    https://github.com/longhorn/longhorn/issues/9905#issuecomment-2529676284
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -414,6 +435,7 @@ Heavy Writing Between Migration And Confirmation
     And Check volume 0 works
 
 Heavy Writing Between Migration And Rollback
+    [Documentation]    https://github.com/longhorn/longhorn/issues/9905#issuecomment-2529676284
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
