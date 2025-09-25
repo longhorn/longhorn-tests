@@ -30,6 +30,10 @@ class LonghornDeploy(Base):
             self.longhorn = LonghornArgocd()
 
     def uninstall(self, is_stable_version):
+        # for uninstall Longhorn by rancher
+        # the .terraform.lock.hcl file may need some time to sync
+        # otherwise the terraform destroy command may fail with Inconsistent dependency lock file error
+        time.sleep(60)
         logging(f"Uninstalling Longhorn")
         self.longhorn.uninstall(is_stable_version)
         logging(f"Uninstalled Longhorn")

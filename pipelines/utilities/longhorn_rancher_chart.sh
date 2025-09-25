@@ -126,6 +126,10 @@ uninstall_longhorn() {
   fi
 }
 
+uninstall_longhorn_crd(){
+  helm uninstall --namespace=longhorn-system longhorn-crd
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"

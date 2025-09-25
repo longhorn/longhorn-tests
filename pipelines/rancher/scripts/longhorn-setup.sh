@@ -11,6 +11,7 @@ source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_rancher_chart.sh
+source pipelines/utilities/longhorn_ui.sh
 if [[ ${TEST_TYPE} == "robot" ]]; then
   source pipelines/utilities/run_longhorn_e2e_test.sh
 else
@@ -49,6 +50,8 @@ main(){
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_stable
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     if [[ ${TEST_TYPE} == "pytest" ]]; then
       run_longhorn_upgrade_test
@@ -56,6 +59,8 @@ main(){
     run_longhorn_test
   else
     install_longhorn_custom
+    setup_longhorn_ui_nodeport
+    export_longhorn_ui_url
     run_longhorn_test
   fi
 }

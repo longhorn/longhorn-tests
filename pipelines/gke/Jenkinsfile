@@ -63,12 +63,6 @@ node {
                 sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/gke/scripts/longhorn-setup.sh"
             }
 
-            stage ('download support bundle') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/gke/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
-				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
-			}
-
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
 
@@ -80,6 +74,12 @@ node {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
             }
+
+            stage ('download support bundle') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/gke/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
+			}
 
         } catch (e) {
             currentBuild.result = "FAILED"
