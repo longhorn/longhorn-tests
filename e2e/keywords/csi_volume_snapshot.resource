@@ -23,3 +23,7 @@ Delete csi volume snapshot ${snapshot_id}
 Wait for csi volume snapshot ${snapshot_id} to be ready
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${snapshot_id}
     wait_for_csi_volume_snapshot_to_be_ready    ${csi_volume_snapshot_name}
+
+Delete CSI volume snapshot ${snapshot_id} forcibly
+    ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${snapshot_id}
+    force_delete_volumesnapshot    ${csi_volume_snapshot_name}
