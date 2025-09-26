@@ -96,7 +96,7 @@ class CRD(Base):
             assert volume['spec']['nodeSelector'] == nodeSelector, f"expect volume nodeSelector is {nodeSelector}, but it's {volume['spec']['nodeSelector']}"
             assert volume['spec']['diskSelector'] == diskSelector, f"expect volume diskSelector is {diskSelector}, but it's {volume['spec']['diskSelector']}"
         except ApiException as e:
-            logging(e)
+            logging(f"Failed to create volume {volume_name} with parameters {body}: {e}")
 
     def delete(self, volume_name):
         try:

@@ -404,7 +404,7 @@ class Rest(Base):
                 if hasattr(volume, 'pvCreate'):
                     break
             except Exception as e:
-                logging(e)
+                logging(f"Failed to get pvCreate method for volume {volume_name}: {e}")
             time.sleep(self.retry_interval)
         else:
             raise AttributeError
@@ -428,7 +428,7 @@ class Rest(Base):
                 if hasattr(volume, 'pvcCreate'):
                     break
             except Exception as e:
-                logging(e)
+                logging(f"Failed to get pvcCreate method for volume {volume_name}: {e}")
             time.sleep(self.retry_interval)
         else:
             raise AttributeError

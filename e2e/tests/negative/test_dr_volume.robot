@@ -166,7 +166,7 @@ Test DR Volume Live Upgrade And Rebuild
     And Enable v2 data engine and add block disks
 
     # Scenario 1: Create initial deployment and backups
-    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    Given Create storageclass longhorn-test with    dataEngine=v1
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test    storage_size=1GiB
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
@@ -246,3 +246,52 @@ Test DR Volume Live Upgrade And Rebuild
     And Check pod 2 file data1 checksum matches checksum 1
     And Check pod 2 file data2 checksum matches checksum 2
     And Check pod 2 works
+
+Test DR Volume Incremental Restore After Source Volume Expansion
+    [Tags]    manual    negative    dr-volume-expansion
+    [Documentation]    - Test DR Volume Incremental Restore After Source Volume Expansion
+    ...                Related Issue:
+    ...                https://github.com/longhorn/longhorn/issues/11767
+    ...                - Manual test plan - 
+    ...                - Launch a Pod with a Longhorn volume.
+    ...                - Write 1st data to the volume, take the 1st backup, and create DR volumes from the 1st backup.
+    ...                - Shutdown the Pod and expand the original volume and wait for the expansion complete.
+    ...                - Write 2nd data that exceeds the original volume size, then take the 2nd backup.
+    ...                - Trigger incremental restore for the DR volumes and wait for the restoration to complete.
+    ...                - Activate the 1st DR volume and launch a Pod for the activated DR volume, then verify the restored data is correct.
+
+    # Scenario 1: Create initial deployment and backups
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test    storage_size=1GiB
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    When Write 512 MB data to file data0 in deployment 0
+    Then Record file data0 checksum in deployment 0 as checksum 0
+
+    When Create backup 0 for deployment 0 volume
+    Then Verify backup list contains backup 0 of deployment 0 volume
+    And Create DR volume 1 from backup 0 of deployment 0 volume    dataEngine=${DATA_ENGINE}
+
+    # Scenario 2: Volume expansion and data restoration
+    Given Scale deployment 0 to 0
+    And Wait for volume of deployment 0 detached
+    When Expand deployment 0 volume to 3 GiB
+    Then Wait for deployment 0 volume size expanded
+    When Scale deployment 0 to 1
+    Then Wait for volume of deployment 0 attached
+    And Wait for volume of deployment 0 healthy
+    When Write 1024 MB data to file data1 in deployment 0
+    Then Record file data1 checksum in deployment 0 as checksum 1
+
+    When Create backup 1 for deployment 0 volume
+    And Wait for volume 1 restoration from backup 1 of deployment 0 volume completed
+
+    # Scenario 3: Volume data verification
+    And Activate DR volume 1
+    Then Wait for volume 1 detached
+    And Create persistentvolume for volume 1
+    And Create persistentvolumeclaim for volume 1
+    And Create pod 1 using volume 1
+    Then Wait for pod 1 running
+    And Check pod 1 file data0 checksum matches checksum 0
+    And Check pod 1 file data1 checksum matches checksum 1

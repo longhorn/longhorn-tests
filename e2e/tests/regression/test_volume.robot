@@ -7,6 +7,7 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/workload.resource
@@ -32,7 +33,8 @@ Test RWX Volume Data Integrity After CSI Plugin Pod Restart
     ...                Issue: https://github.com/longhorn/longhorn/issues/8184
 
     Given Setting auto-delete-pod-when-volume-detached-unexpectedly is set to true
-    And Create persistentvolumeclaim 0    volume_type=RWX
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0 with max replicaset
     And Write 10 MB data to file data.txt in deployment 0
 
