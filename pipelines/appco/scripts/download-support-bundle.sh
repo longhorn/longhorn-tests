@@ -35,12 +35,17 @@ SUPPORT_BUNDLE_URL_RAW=$(run_curl_in_pod "${CURL_CMD}")
 SUPPORT_BUNDLE_URL=$(echo "$SUPPORT_BUNDLE_URL_RAW" | jq -r '.links.self + "/" + .name')
 
 SUPPORT_BUNDLE_READY=false
-while [[ ${SUPPORT_BUNDLE_READY} == false ]]; do
+MAX_RETRY=100
+RETRY=0
+while [[ ${SUPPORT_BUNDLE_READY} == false ]] && [[ ${RETRY} -lt ${MAX_RETRY} ]]; do
     PERCENT_RAW=$(run_curl_in_pod "curl -s -H 'Accept: application/json' ${SUPPORT_BUNDLE_URL}")
     PERCENT=$(echo "$PERCENT_RAW" | jq -r '.progressPercentage' || true)
     echo "${PERCENT}"
 
     if [[ ${PERCENT} == 100 ]]; then SUPPORT_BUNDLE_READY=true; fi
+
+    RETRY=$((RETRY+1))
+    sleep 3s
 done
 
 run_curl_in_pod "curl -sSLf ${SUPPORT_BUNDLE_URL}/download -o /tmp/support-bundle.zip"

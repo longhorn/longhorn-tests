@@ -12,6 +12,7 @@ import time
 class LonghornRancherChart(Base):
 
     def uninstall(self, is_stable_version):
+        # destroy longhorn rancher2_app_v2 terraform resource
         command = "./pipelines/utilities/longhorn_rancher_chart.sh"
         process = subprocess.Popen([command, "uninstall_longhorn"],
                                    shell=False)
@@ -20,6 +21,21 @@ class LonghornRancherChart(Base):
             logging(f"Uninstall longhorn failed")
             time.sleep(self.retry_count)
             assert False, "Uninstall longhorn failed"
+
+        # (in terraform-provider-rancher2 8.1.0)
+        # when installing longhorn with `terraform apply`
+        # longhorn-crd is also automatically installed under the hood
+        # but when uninstalling longhorn with `terraform destroy`
+        # longhorn-crd is left behind and only longhorn itself is uninstalled
+        # so we need to manually uninstall longhorn-crd
+        process = subprocess.Popen([command, "uninstall_longhorn_crd"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Uninstall longhorn crd failed")
+            time.sleep(self.retry_count)
+            assert False, "Uninstall longhorn crd failed"
+
         k8s.delete_namespace(namespace=LONGHORN_NAMESPACE)
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
