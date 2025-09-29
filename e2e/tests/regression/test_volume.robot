@@ -81,3 +81,24 @@ Test Volume Attached at Maximum Snapshot Count
     And Detach volume 0
     Then Attach volume 0
     And Wait for volume 0 healthy
+
+Test RWX Volume Automatic Online Expansion
+    [Tags]    rwx    volume-expansion
+    [Documentation]    Test automatic online filesystem resize for RWX volumes
+    ...                Related issues:
+    ...                - https://github.com/longhorn/longhorn/issues/8118
+    ...                - https://github.com/longhorn/longhorn/issues/9736
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test    storage_size=1Gi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 50 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+
+    When Expand deployment 0 volume to 2Gi
+    Then Wait for deployment 0 volume size expanded
+    And Check deployment 0 pods did not restart
+    # Verify share manager pod did not restart during expansion
+    And Write 100 MB data to file data2.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+    And Check deployment 0 data in file data2.txt is intact

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 6.1.1 (Python 3.12.3 on linux)" generated="20250929 05:40:16.626" rpa="false" schemaversion="4">
+<suite id="s1" name="Test Volume" source="/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot">
+<test id="s1-t1" name="Test RWX Volume Data Integrity After CSI Plugin Pod Restart" line="29">
+<kw name="Set up test environment" type="SETUP">
+<msg timestamp="20250929 05:40:16.647" level="FAIL">No keyword with name 'Set up test environment' found.</msg>
+<status status="FAIL" starttime="20250929 05:40:16.647" endtime="20250929 05:40:16.647"/>
+</kw>
+<kw name="Cleanup test resources" type="TEARDOWN">
+<msg timestamp="20250929 05:40:16.648" level="FAIL">No keyword with name 'Cleanup test resources' found.</msg>
+<status status="FAIL" starttime="20250929 05:40:16.648" endtime="20250929 05:40:16.648">No keyword with name 'Cleanup test resources' found.</status>
+</kw>
+<doc>Test RWX volume data directory is accessible after Longhorn CSI plugin pod restart.
+
+Issue: https://github.com/longhorn/longhorn/issues/8184</doc>
+<tag>regression</tag>
+<tag>rwx</tag>
+<tag>storage-network</tag>
+<tag>volume</tag>
+<status status="FAIL" starttime="20250929 05:40:16.646" endtime="20250929 05:40:16.648">Setup failed:
+No keyword with name 'Set up test environment' found.
+
+Also teardown failed:
+No keyword with name 'Cleanup test resources' found.</status>
+</test>
+<test id="s1-t2" name="Test RWX Volume Without Migratable Should Be Incompatible With Strict-Local" line="63">
+<doc>Test RWX volume is incompatible in strict-local mode without migratable
+
+Issue: https://github.com/longhorn/longhorn/issues/6735</doc>
+<tag>regression</tag>
+<tag>robot:exit</tag>
+<tag>rwx</tag>
+<tag>volume</tag>
+<status status="FAIL" starttime="20250929 05:40:16.648" endtime="20250929 05:40:16.649">Failure occurred and exit-on-failure mode is in use.</status>
+</test>
+<test id="s1-t3" name="Test RWX Volume Automatic Online Expansion" line="85">
+<doc>Test automatic online filesystem resize for RWX volumes
+Related issues:
+- https://github.com/longhorn/longhorn/issues/8118
+- https://github.com/longhorn/longhorn/issues/9736</doc>
+<tag>regression</tag>
+<tag>robot:exit</tag>
+<tag>rwx</tag>
+<tag>volume-expansion</tag>
+<status status="FAIL" starttime="20250929 05:40:16.649" endtime="20250929 05:40:16.649">Failure occurred and exit-on-failure mode is in use.</status>
+</test>
+<doc>Volume Test Cases</doc>
+<status status="FAIL" starttime="20250929 05:40:16.627" endtime="20250929 05:40:16.650"/>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="3" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat pass="0" fail="1" skip="0" info="combined" combined="NOT robot:exit">NOT robot:exit</stat>
+<stat pass="0" fail="3" skip="0">regression</stat>
+<stat pass="0" fail="3" skip="0">rwx</stat>
+<stat pass="0" fail="1" skip="0">storage-network</stat>
+<stat pass="0" fail="2" skip="0">volume</stat>
+<stat pass="0" fail="1" skip="0">volume-expansion</stat>
+</tag>
+<suite>
+<stat pass="0" fail="3" skip="0" id="s1" name="Test Volume">Test Volume</stat>
+</suite>
+</statistics>
+<errors>
+<msg timestamp="20250929 05:40:16.644" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 6: Resource file '../keywords/variables.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.644" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 7: Resource file '../keywords/common.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.644" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 8: Resource file '../keywords/deployment.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.644" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 9: Resource file '../keywords/longhorn.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.644" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 10: Resource file '../keywords/storageclass.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.645" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 11: Resource file '../keywords/persistentvolumeclaim.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.645" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 12: Resource file '../keywords/setting.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.645" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 13: Resource file '../keywords/workload.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.645" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 14: Resource file '../keywords/node.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.645" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 15: Resource file '../keywords/snapshot.resource' does not exist.</msg>
+<msg timestamp="20250929 05:40:16.645" level="ERROR">Error in file '/home/runner/work/longhorn-tests/longhorn-tests/e2e/tests/regression/test_volume.robot' on line 16: Resource file '../keywords/volume.resource' does not exist.</msg>
+</errors>
+</robot>
