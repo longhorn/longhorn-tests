@@ -111,13 +111,14 @@ class CRD(Base):
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
-    def attach(self, volume_name, node_name, disable_frontend, wait):
+    def attach(self, volume_name, node_name, disable_frontend, wait, retry):
 
         migratable = self.get(volume_name)['spec']['migratable']
         type = "longhorn-api" if not migratable else "csi-attacher"
 
         patched = False
-        for i in range(self.retry_count):
+        retry_count = self.retry_count if retry else 1
+        for i in range(retry_count):
             logging(f"Attaching volume {volume_name} to node {node_name} ... ({i})")
             try:
                 body = get_cr(

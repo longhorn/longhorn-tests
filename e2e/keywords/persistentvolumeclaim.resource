@@ -13,9 +13,10 @@ Create persistentvolumeclaim ${claim_id}
     create_persistentvolumeclaim    ${claim_name}    &{config}
 
 Create persistentvolumeclaim ${cloned_claim_id} from persistentvolumeclaim ${source_claim_id}
+    [Arguments]    &{config}
     ${cloned_claim_name} =    generate_name_with_suffix    claim    ${cloned_claim_id}
     ${source_claim_name} =    generate_name_with_suffix    claim    ${source_claim_id}
-    create_persistentvolumeclaim    ${cloned_claim_name}    dataSourceName=${source_claim_name}    dataSourceKind=PersistentVolumeClaim
+    create_persistentvolumeclaim    ${cloned_claim_name}    dataSourceName=${source_claim_name}    dataSourceKind=PersistentVolumeClaim    &{config}
 
 Create persistentvolumeclaim ${claim_id} from csi volume snapshot ${csi_volume_snapshot_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
