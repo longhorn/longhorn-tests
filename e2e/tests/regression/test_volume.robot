@@ -85,6 +85,7 @@ Test Volume Attached at Maximum Snapshot Count
 Test RWX Volume Automatic Online Expansion
     [Tags]    rwx    volume-expansion
     [Documentation]    Test automatic online filesystem resize for RWX volumes
+    ...                Ref: https://github.com/longhorn/longhorn/issues/8119
     ...                Related issues:
     ...                - https://github.com/longhorn/longhorn/issues/8118
     ...                - https://github.com/longhorn/longhorn/issues/9736
