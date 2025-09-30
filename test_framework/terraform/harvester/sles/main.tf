@@ -73,7 +73,7 @@ ssh_authorized_keys:
   - ${var.custom_ssh_public_key}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
-  - zypper install -y qemu-guest-agent iptables
+  - zypper install -y qemu-guest-agent iptables samba cifs-utils
   - - systemctl
     - enable
     - '--now'
@@ -132,7 +132,7 @@ write_files:
       : ""}
 runcmd:
   - SUSEConnect -r ${var.registration_code}
-  - zypper install -y qemu-guest-agent iptables open-iscsi nfs-client cryptsetup device-mapper
+  - zypper install -y qemu-guest-agent iptables open-iscsi nfs-client cryptsetup device-mapper samba cifs-utils
   - zypper -n install --force-resolution kernel-default
   - - systemctl
     - enable
