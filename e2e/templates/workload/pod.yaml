@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
     - name: sleep
-      image: busybox
+      image: public.ecr.aws/docker/library/busybox:1.34.1
       imagePullPolicy: IfNotPresent
       args: ["/bin/sh", "-c", "while true;do date;sleep 5; done"]
       volumeMounts:
