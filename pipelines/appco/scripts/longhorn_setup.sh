@@ -14,6 +14,7 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/longhornctl.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/create_registry_secret.sh
+source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]]; then
   source pipelines/appco/scripts/longhorn_manifest.sh
@@ -56,14 +57,6 @@ wait_longhorn_status_running(){
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
   done
 
-}
-
-
-install_backupstores(){
-  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
-  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
-  kubectl create -f ${MINIO_BACKUPSTORE_URL} \
-               -f ${NFS_BACKUPSTORE_URL}
 }
 
 create_appco_secret(){
