@@ -102,8 +102,10 @@ node {
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration coce: $REGISTRATION_CODE_ID"
 
-                if (RUN_V2_TEST) {
-                    CUSTOM_TEST_OPTIONS += " -m v2_volume_test"
+                // If RUN_V2_TEST is enabled but no -m marker is provided,
+                // append "-m v2_volume_test" so v2 tests are included by default.
+                if (RUN_V2_TEST && !CUSTOM_TEST_OPTIONS.contains("-m")) {
+                        CUSTOM_TEST_OPTIONS += " -m v2_volume_test"
                 }
 
                 sh "test_framework/scripts/build.sh"
