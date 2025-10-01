@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pull Backup From Another Longhorn
 
-Test Tags    upgrade    negative
+Test Tags    upgrade    negative    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

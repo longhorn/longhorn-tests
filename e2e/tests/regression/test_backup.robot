@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Backup Test Cases
 
-Test Tags    regression
+Test Tags    regression    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
