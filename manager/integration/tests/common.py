@@ -90,11 +90,11 @@ ISCSI_PROCESS = "iscsid"
 
 if os.uname().machine == "x86_64":
     if os.environ.get("CLOUDPROVIDER") == "harvester":
-        BLOCK_DEV_PATH = "/dev/vdc"
+        BLOCK_DEV_PATH = "0000:09:00.0"
     else:
-        BLOCK_DEV_PATH = "/dev/xvdh"
+        BLOCK_DEV_PATH = "0000:00:1f.0"
 else:
-    BLOCK_DEV_PATH = "/dev/nvme1n1"
+    BLOCK_DEV_PATH = "0000:00:1f.0"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
