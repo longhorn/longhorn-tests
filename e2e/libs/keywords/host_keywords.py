@@ -6,6 +6,7 @@ from host import Harvester, Aws, Vagrant
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
 
 from node import Node
+from node_exec import NodeExec
 
 from utility.utility import logging
 
@@ -68,3 +69,6 @@ class host_keywords:
 
     def cleanup_vm_snapshots(self):
         self.host.cleanup_snapshots()
+
+    def execute_command_on_node(self, cmd, node_name):
+        NodeExec(node_name).issue_cmd(cmd)

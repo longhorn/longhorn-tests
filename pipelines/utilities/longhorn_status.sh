@@ -15,7 +15,11 @@ wait_longhorn_status_running(){
     sleep ${RETRY_INTERVAL}
     RETRIES=$((RETRIES+1))
 
-    if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
+    if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then
+      echo "Error: longhorn installation timeout"
+      kubectl get pods -n ${LONGHORN_NAMESPACE} -owide
+      exit 1
+    fi
   done
 
 }
