@@ -42,6 +42,8 @@ from common import SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES
 from common import storage_class # NOQA
 from common import create_storage_class
 from common import DEFAULT_STORAGECLASS_NAME
+from common import DATA_ENGINE
+from common import DEFAULT_DEPLOYMENT_TIMEOUT
 
 CSI_SNAPSHOT_TYPE_SNAP = "snap"
 CSI_SNAPSHOT_TYPE_BAK = "bak"
@@ -854,6 +856,8 @@ def test_csi_snapshot_create_csi_snapshot(set_random_backupstore, # NOQA
                             namespace='default',
                             ready_to_use=True)
 
+
+@pytest.mark.v2_volume_test  # NOQA
 def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                                       client, # NOQA
                                       make_deployment_with_pvc, # NOQA
@@ -863,7 +867,8 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                                       csi_pv, # NOQA
                                       pvc, # NOQA
                                       core_api, # NOQA
-                                      pod_make): # NOQA
+                                      pod_make, # NOQA
+                                      storage_class): # NOQA
     """
     Context:
 
@@ -928,7 +933,10 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
 
     # Step 1 Test create new volume from CSI snapshot
     # Source volume is attached && Longhorn snapshot exist
-    pvc['spec']['storageClassName'] = 'longhorn'
+    storage_class['parameters']['disableRevisionCounter'] = "true"
+    create_storage_class(storage_class)
+
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
     pvc['spec']['dataSource'] = {
         'name': csivolsnap["metadata"]["name"],
         'kind': 'VolumeSnapshot',
@@ -950,7 +958,13 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                                   common.VOLUME_FIELD_STATE,
                                   common.VOLUME_STATE_ATTACHED)
     data_path = "/data/test"
-    pod = common.wait_and_get_any_deployment_pod(core_api, new_deployment_name)
+    timeout_cnt = (
+        DEFAULT_DEPLOYMENT_TIMEOUT * 2
+        if DATA_ENGINE == "v2"
+        else DEFAULT_DEPLOYMENT_TIMEOUT
+    )
+    pod = common.wait_and_get_any_deployment_pod(core_api, new_deployment_name,
+                                                 timeout_cnt=timeout_cnt)
     created_md5sum = get_pod_data_md5sum(core_api, pod.metadata.name,
                                          data_path)
 
@@ -967,6 +981,7 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
 
     new_pvc1 = pvc
     new_pvc1['metadata']['name'] = pvc['metadata']['name'] + "new-pvc1"
+    new_pvc1['spec']['storageClassName'] = storage_class['metadata']['name']
     create_pvc(new_pvc1)
 
     wait_for_pvc_phase(core_api, new_pvc1['metadata']['name'], "Bound")
@@ -986,7 +1001,8 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                                   common.VOLUME_STATE_ATTACHED)
     data_path = "/data/test"
     pod = common.wait_and_get_any_deployment_pod(core_api,
-                                                 new_deployment_name_2)
+                                                 new_deployment_name_2,
+                                                 timeout_cnt=timeout_cnt)
     created_md5sum_2 = get_pod_data_md5sum(core_api, pod.metadata.name,
                                            data_path)
 
@@ -1015,6 +1031,7 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
 
     new_pvc2 = pvc
     new_pvc2['metadata']['name'] = pvc['metadata']['name'] + "new-pvc2"
+    new_pvc2['spec']['storageClassName'] = storage_class['metadata']['name']
     create_pvc(new_pvc2)
     check_pvc_in_specific_status(core_api,
                                  new_pvc2['metadata']['name'], "Pending")
@@ -1521,6 +1538,7 @@ def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
     request.addfinalizer(finalizer)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.parametrize("bi_url, bi_checksum", [(BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_QCOW2_CHECKSUM), (BACKING_IMAGE_RAW_URL, BACKING_IMAGE_RAW_CHECKSUM)]) # NOQA
 def test_csi_volumesnapshot_restore_pre_provision_backing_image(bi_url, # NOQA
                                                                 bi_checksum, # NOQA
@@ -1531,7 +1549,8 @@ def test_csi_volumesnapshot_restore_pre_provision_backing_image(bi_url, # NOQA
                                                                 request, # NOQA
                                                                 volumesnapshotclass, # NOQA
                                                                 volumesnapshotcontent, # NOQA
-                                                                volumesnapshot): # NOQA
+                                                                volumesnapshot, # NOQA
+                                                                storage_class): # NOQA
     """
     Test Restore Volume from CSI VolumeSnapshot with existing BackingImage
 
@@ -1614,15 +1633,20 @@ def test_csi_volumesnapshot_restore_pre_provision_backing_image(bi_url, # NOQA
     - A Volume is created using the BackingImage `test-bi`
     - Verify the data (Directories of the backing images) exists in the mount point.
     """
+    create_storage_class(storage_class)
     create_backing_image_with_matching_url(client, BACKING_IMAGE_NAME, bi_url)
 
+    # v2 backing image will convert qcow to raw, in the end the checksum
+    # will be BACKING_IMAGE_RAW_CHECKSUM
+    if DATA_ENGINE == "v2":
+        bi_checksum = BACKING_IMAGE_RAW_CHECKSUM
     csivolsnap, csivolsnap_name = prepare_bi_type_test(bi_checksum,
                                                        bi_url,
                                                        volumesnapshotclass,
                                                        volumesnapshotcontent,
                                                        volumesnapshot)
 
-    pvc['spec']['storageClassName'] = "longhorn"
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
     pvc['spec']['dataSource'] = {
         'name': csivolsnap["metadata"]["name"],
         'kind': 'VolumeSnapshot',
@@ -1648,7 +1672,8 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image(bi_url, # NOQA
                                                             request, # NOQA
                                                             volumesnapshotclass, # NOQA
                                                             volumesnapshotcontent, # NOQA
-                                                            volumesnapshot): # NOQA
+                                                            volumesnapshot, # NOQA
+                                                            storage_class): # NOQA
     """
     Test Restore Volume from CSI VolumeSnapshot with on-demand BackingImage
 
@@ -1731,13 +1756,14 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image(bi_url, # NOQA
     - Verify the data (Directories of the backing images) exists in the mount point.
     """
     update_setting(client, SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES, "1")
+    create_storage_class(storage_class)
     csivolsnap, csivolsnap_name = prepare_bi_type_test(bi_checksum,
                                                        bi_url,
                                                        volumesnapshotclass,
                                                        volumesnapshotcontent,
                                                        volumesnapshot)
 
-    pvc['spec']['storageClassName'] = "longhorn"
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
     pvc['spec']['dataSource'] = {
         'name': csivolsnap["metadata"]["name"],
         'kind': 'VolumeSnapshot',
