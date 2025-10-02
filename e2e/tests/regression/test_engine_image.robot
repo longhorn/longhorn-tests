@@ -25,3 +25,11 @@ Test Replica Rebuilding After Engine Upgrade
     And Wait until volume 0 replica rebuilding completed on node 1
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Engine Upgrade With Extra Replicas
+    Given Create compatible engine image
+    And Create volume 0    numberOfReplicas=3
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    When Update volume 0 replica count to 2
+    Then Upgrade volume 0 engine to compatible engine image
