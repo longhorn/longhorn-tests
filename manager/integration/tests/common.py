@@ -5237,7 +5237,8 @@ def create_and_wait_deployment(apps_api, deployment_manifest):
 
 
 def wait_and_get_any_deployment_pod(core_api, deployment_name,
-                                    is_phase="Running"):
+                                    is_phase="Running",
+                                    timeout_cnt=DEFAULT_DEPLOYMENT_TIMEOUT):
     """
     Add mechanism to wait for a stable running pod when deployment restarts its
     workload, since Longhorn manager could create/delete the new workload pod
@@ -5248,7 +5249,7 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
     stable_pod = None
     wait_for_stable_retry = 0
 
-    for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+    for _ in range(timeout_cnt):
         label_selector = "name=" + deployment_name
         pods = core_api.list_namespaced_pod(namespace="default",
                                             label_selector=label_selector)
