@@ -1,6 +1,8 @@
 import time
 import asyncio
 import os
+import json
+import yaml
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -243,3 +245,79 @@ def wait_for_namespace_pods_running(namespace):
             return
 
     assert False, f"wait all pod in namespace {namespace} running failed"
+
+def deploy_system_upgrade_controller():
+    logging(f"Deploying system upgrade controller")
+    cmd = "kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml -f https://raw.githubusercontent.com/yangchiu/longhorn-tests/refs/heads/k8s-upgrade-test/e2e/templates/system_upgrade_controller/system_upgrade_controller.yaml"
+    subprocess_exec_cmd(cmd)
+
+def upgrade_k8s_to_latest_version(drain=False):
+    logging(f"Upgrading K8s to latest version")
+    k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
+
+    filepath = "./templates/system_upgrade_controller/k8s_upgrade_plan.yaml"
+    with open(filepath, 'r') as f:
+        yaml_content = f.read()
+
+    yaml_content = yaml_content.replace("k3s", k8s_distro)
+    if drain:
+        yaml_docs = list(yaml.safe_load_all(yaml_content))
+        yaml_docs[1]["spec"]["drain"] = {
+            "force": True,
+            "disableEviction": True
+        }
+        yaml_content = yaml.safe_dump_all(yaml_docs, sort_keys=False)
+
+    logging(yaml_content)
+
+    cmd = f"kubectl apply -f -"
+    subprocess_exec_cmd(cmd, input=yaml_content)
+
+    wait_for_k8s_upgrade_completed()
+
+def wait_for_k8s_upgrade_completed():
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    cmd = "kubectl -n system-upgrade get plan server-plan -ojson"
+    completed = False
+    for i in range(retry_count):
+        logging(f"Waiting for k8s upgrade server plan completed ... ({i})")
+        try:
+            plan = json.loads(subprocess_exec_cmd(cmd, verbose=False))
+            plan_conditions = plan.get("status", {}).get("conditions", {})
+            for condition in plan_conditions:
+                if condition.get("type") == "Complete" and condition.get("status") == "True":
+                    completed = True
+                    break
+        except Exception as e:
+            logging(f"Waiting for k8s upgrade server plan completed error: {e}")
+        if completed:
+            break
+        time.sleep(retry_interval)
+
+    if not completed:
+        logging(f"Failed to wait for k8s upgrade server plan completed")
+        time.sleep(retry_count)
+    assert completed, f"Failed to wait for k8s upgrade server plan completed"
+
+    cmd = "kubectl -n system-upgrade get plan agent-plan -ojson"
+    completed = False
+    for i in range(retry_count):
+        logging(f"Waiting for k8s upgrade agent plan completed ... ({i})")
+        try:
+            plan = json.loads(subprocess_exec_cmd(cmd, verbose=False))
+            plan_conditions = plan.get("status", {}).get("conditions", {})
+            for condition in plan_conditions:
+                if condition.get("type") == "Complete" and condition.get("status") == "True":
+                    completed = True
+                    break
+        except Exception as e:
+            logging(f"Waiting for k8s upgrade agent plan completed error: {e}")
+        if completed:
+            break
+        time.sleep(retry_interval)
+
+    if not completed:
+        logging(f"Failed to wait for k8s upgrade agent plan completed")
+        time.sleep(retry_count)
+    assert completed, f"Failed to wait for k8s upgrade agent plan completed"
