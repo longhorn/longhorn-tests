@@ -10,6 +10,7 @@ from robot.libraries.BuiltIn import BuiltIn
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import pod_exec
+from utility.utility import logging
 
 from workload.pod import create_pod
 from workload.pod import delete_pod
@@ -47,12 +48,13 @@ def cleanup_control_plane_network_latency():
             assert res, "cleanup control plane network failed"
 
 async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
+    logging(f"Disconnect node {node_name} network for {disconnection_time_in_sec} seconds")
     ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
     ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
         command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
-        args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
+        args=["-c", f"sleep 3 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
         node_name=node_name
     )
     pod_name = manifest['metadata']['name']
@@ -63,12 +65,13 @@ async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     delete_pod(pod_name)
 
 def disconnect_node_network_without_waiting_completion(node_name, disconnection_time_in_sec=10):
+    logging(f"Disconnect node {node_name} network for {disconnection_time_in_sec} seconds")
     ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
     ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
         command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
-        args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
+        args=["-c", f"sleep 3 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
         node_name=node_name,
         labels = {LABEL_TEST: LABEL_TEST_VALUE}
     )
