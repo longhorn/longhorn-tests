@@ -1,4 +1,4 @@
-from backupstore import Nfs, S3
+from backupstore import Nfs, S3, Cifs
 
 import os
 
@@ -13,6 +13,8 @@ class backupstore_keywords:
             self.backupstore = S3()
         elif backupstore.startswith("nfs"):
             self.backupstore = Nfs()
+        elif backupstore.startswith("cifs"):
+            self.backupstore = Cifs()
 
     def create_dummy_in_progress_backup(self, volume_name):
 

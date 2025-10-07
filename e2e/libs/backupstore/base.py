@@ -60,6 +60,9 @@ class Base(ABC):
     def is_backupTarget_nfs(self, s):
         return s.startswith("nfs://")
 
+    def is_backupTarget_cifs(self, s):
+        return s.startswith("cifs://")
+
     def backup_volume_path(self, volume_name):
         volume_name_sha512 = \
             hashlib.sha512(volume_name.encode('utf-8')).hexdigest()
