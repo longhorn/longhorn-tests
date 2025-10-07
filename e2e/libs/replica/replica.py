@@ -19,6 +19,9 @@ class Replica(Base):
     def get(self, volume_name, node_name, disk_uuid=None):
         return self.replica.get(volume_name, node_name, disk_uuid)
 
+    def wait_for_disk_replica_count(self, volume_name, node_name, disk_uuid=None, count=None):
+        return self.replica.wait_for_disk_replica_count(volume_name, node_name, disk_uuid, count)
+
     def get_replica_names(self, volume_name, numberOfReplicas):
         return self.replica.get_replica_names(volume_name, numberOfReplicas)
 
