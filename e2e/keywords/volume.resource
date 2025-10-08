@@ -568,6 +568,10 @@ Volume ${volume_id} setting ${setting_name} should be ${setting_value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_volume_setting    ${volume_name}    ${setting_name}    ${setting_value}
 
+DR volume ${volume_id} setting ${setting_name} should be ${setting_value}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    validate_volume_setting    ${volume_name}    ${setting_name}    ${setting_value}
+
 Assert DM device for volume ${volume_id} ${condition} exist on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}

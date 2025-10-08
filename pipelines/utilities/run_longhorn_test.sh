@@ -158,6 +158,8 @@ run_longhorn_upgrade_test(){
         yq e -i 'select(.kind == "Pod").spec.containers[0].volumeMounts += {"name": "ca-cert-volume", "mountPath": "/etc/pki/trust/anchors", "readOnly": true}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
         yq e -i 'select(.kind == "Pod").spec.volumes += {"name": "ca-cert-volume", "hostPath": {"path": "/etc/pki/trust/anchors", "type": "DirectoryOrCreate"}}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
         yq e -i '( . | select(.kind=="Pod") | .spec.containers[0].lifecycle ).postStart = {"exec":{"command":["sh","-c","update-ca-certificates"]}}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+        yq e -i 'select(.spec.containers[0] != null).spec.dnsPolicy = "None"' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+        yq e -i 'select(.spec.containers[0] != null).spec.dnsConfig.nameservers = ["10.113.53.53", "8.8.8.8", "1.1.1.1"]' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       fi
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_URL", "value": "'${REGISTRY_URL}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "AIR_GAP_INSTALLATION", "value": "'${AIR_GAP_INSTALLATION}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
@@ -185,9 +187,12 @@ run_longhorn_upgrade_test(){
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_TRANSIENT_VERSION_CHART_URI", "value": "'${LONGHORN_TRANSIENT_VERSION_CHART_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_STABLE_VERSION_CHART_URI", "value": "'${LONGHORN_STABLE_VERSION_CHART_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_CHART_URI", "value": "'${LONGHORN_CHART_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_LONGHORN_COMPOMENT_REGISTRY", "value": "'${APPCO_LONGHORN_COMPOMENT_REGISTRY}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_LONGHORN_COMPONENT_REGISTRY", "value": "'${APPCO_LONGHORN_COMPONENT_REGISTRY}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_VERSION", "value": "'${LONGHORN_VERSION}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
       yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_NAMESPACE", "value": "'${LONGHORN_NAMESPACE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_USERNAME", "value": "'${APPCO_USERNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_PASSWORD", "value": "'${APPCO_PASSWORD}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_COMPONENT_TAG", "value": "'${LONGHORN_COMPONENT_TAG}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     fi
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_HOSTNAME", "value": "'${RANCHER_HOSTNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
