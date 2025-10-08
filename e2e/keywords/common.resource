@@ -30,6 +30,14 @@ Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 
 *** Keywords ***
+Run command and expect output
+    [Arguments]    ${command}    ${expected_output}
+    execute_command_and_expect_output    ${command}    ${expected_output}
+
+Run command and not expect output
+    [Arguments]    ${command}    ${unexpected_output}
+    execute_command_and_not_expect_output    ${command}    ${unexpected_output}
+
 Test should pass
     No Operation
 
@@ -80,7 +88,8 @@ Cleanup test resources
     END
     uncordon_all_nodes
     cleanup_control_plane_network_latency
-    reset_node_schedule
+    reset_disk_eviction_and_scheduling
+    reset_node_scheduling
     cleanup_node_exec
     cleanup_stress_helper
     cleanup_recurringjobs

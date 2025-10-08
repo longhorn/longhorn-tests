@@ -318,8 +318,7 @@ Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk 
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_node_by_index    ${node_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
-    ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
-    Should Be True    len(${replicas}) > 0
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
 
 Expand ${workload_kind} ${workload_id} volume to ${size}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

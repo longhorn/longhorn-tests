@@ -55,6 +55,22 @@ Enable disk ${disk_name} scheduling on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     enable_disk    ${node_name}    ${disk_name}
 
+Request eviction on default disk of node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    request_eviction_on_default_disk    ${node_name}
+
+Cancel eviction on default disk of node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    cancel_eviction_on_default_disk    ${node_name}
+
+Request eviction on disk ${disk_name} of node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    request_eviction_on_disk    ${node_name}    ${disk_name}
+
+Cancel eviction on disk ${disk_name} of node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    cancel_eviction_on_disk    ${node_name}    ${disk_name}
+
 Check node ${node_id} disk ${disk_name} is in pressure
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_disk_in_pressure    ${node_name}    ${disk_name}
