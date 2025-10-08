@@ -56,3 +56,9 @@ class RecurringJob(Base):
 
     def wait_for_pod_completion_without_error(self, job_name):
         return self.recurringjob.wait_for_pod_completion_without_error(job_name)
+
+    def check_recurringjob_concurrency(self, job_name, concurrency):
+        return self.recurringjob.check_recurringjob_concurrency(job_name, concurrency)
+
+    def update_recurringjob(self, job_name, groups, cron, concurrency, labels, parameters):
+        self.recurringjob.update_recurringjob(job_name, groups, cron, concurrency, labels, parameters)
