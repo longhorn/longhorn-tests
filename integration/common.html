@@ -6817,7 +6817,7 @@ def volume_name(request):
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_and_get_any_deployment_pod"><code class="name flex">
-<span>def <span class="ident">wait_and_get_any_deployment_pod</span></span>(<span>core_api, deployment_name, is_phase='Running')</span>
+<span>def <span class="ident">wait_and_get_any_deployment_pod</span></span>(<span>core_api, deployment_name, is_phase='Running', timeout_cnt=240)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -6825,7 +6825,8 @@ def volume_name(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_and_get_any_deployment_pod(core_api, deployment_name,
-                                    is_phase=&#34;Running&#34;):
+                                    is_phase=&#34;Running&#34;,
+                                    timeout_cnt=DEFAULT_DEPLOYMENT_TIMEOUT):
     &#34;&#34;&#34;
     Add mechanism to wait for a stable running pod when deployment restarts its
     workload, since Longhorn manager could create/delete the new workload pod
@@ -6836,7 +6837,7 @@ def volume_name(request):
     stable_pod = None
     wait_for_stable_retry = 0
 
-    for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+    for _ in range(timeout_cnt):
         label_selector = &#34;name=&#34; + deployment_name
         pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
                                             label_selector=label_selector)
