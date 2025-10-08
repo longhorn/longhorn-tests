@@ -6,6 +6,11 @@ sudo systemctl restart guestregister # Sometimes registration fails on first boo
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client cryptsetup device-mapper samba
+
+sudo mkdir -p /etc/certs
+sudo ln -s /var/lib/ca-certificates/ca-bundle.pem /etc/certs/ca-certificates.crt
+sudo ln -s /var/lib/ca-certificates/pem /etc/ssl/certs
+
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 

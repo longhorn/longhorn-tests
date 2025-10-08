@@ -15,6 +15,8 @@ from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
 from k8s.k8s import get_longhorn_node_condition_status
 from k8s.k8s import set_k8s_node_zone
+from k8s.k8s import deploy_system_upgrade_controller
+from k8s.k8s import upgrade_k8s_to_latest_version
 
 from node import Node
 
@@ -106,3 +108,9 @@ class k8s_keywords:
 
     def get_longhorn_node_condition_status(self, node_name, type):
         return get_longhorn_node_condition_status(node_name, type)
+
+    def deploy_system_upgrade_controller(self):
+        return deploy_system_upgrade_controller()
+
+    def upgrade_k8s_to_latest_version(self, drain=False):
+        return upgrade_k8s_to_latest_version(drain)

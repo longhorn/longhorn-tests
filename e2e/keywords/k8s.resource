@@ -146,3 +146,10 @@ The drain process completed
 Check PDB not exist
     [Arguments]    ${instance_manager}
     check_instance_manager_pdb_not_exist    ${instance_manager}
+
+Install system upgrade controller
+    deploy_system_upgrade_controller
+
+Upgrade kubernetes to latest version
+    [Arguments]    &{config}
+    upgrade_k8s_to_latest_version    &{config}
