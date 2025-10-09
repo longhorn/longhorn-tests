@@ -48,6 +48,9 @@ class RecurringJob(Base):
     def check_jobs_work(self, volume_name):
         return self.recurringjob.check_jobs_work(volume_name)
 
+    def check_recurringjob_work_for_volume(self, job_name, job_task, volume_name):
+        self.recurringjob.check_recurringjob_work_for_volume(job_name, job_task, volume_name)
+
     def wait_for_systembackup_state(self, job_name, expected_state):
         return self.recurringjob.wait_for_systembackup_state(job_name, expected_state)
 
