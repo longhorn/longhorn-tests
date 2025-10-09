@@ -22,6 +22,7 @@ class CRD(Base):
 
     def all_disk_file_status_are_ready(self, bi_name):
         return NotImplemented
+
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         return NotImplemented
 
@@ -92,3 +93,9 @@ class CRD(Base):
                 return
 
         assert False, f"Wait backing image manager {name} restart failed ..."
+
+    def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
+        return NotImplemented
+
+    def check_disk_file_map_contain_specific_message(self, bi_name, expected_message):
+        return NotImplemented

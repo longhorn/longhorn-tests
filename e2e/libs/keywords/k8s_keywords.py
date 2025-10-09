@@ -15,6 +15,7 @@ from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
 from k8s.k8s import get_longhorn_node_condition_status
 from k8s.k8s import set_k8s_node_zone
+from k8s.k8s import verify_pod_log_after_time_contains
 
 from node import Node
 
@@ -106,3 +107,6 @@ class k8s_keywords:
 
     def get_longhorn_node_condition_status(self, node_name, type):
         return get_longhorn_node_condition_status(node_name, type)
+
+    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace="longhorn-system"):
+        return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
