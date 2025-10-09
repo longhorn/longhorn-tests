@@ -103,3 +103,12 @@ class node_keywords:
 
     def list_volume_devices_on_node(self, node_name):
         return self.node.list_volume_devices(node_name)
+
+    def remove_backing_image_files_on_node(self, bi_name, node_name):
+        return self.node.remove_backing_image_files_on_node(bi_name, node_name)
+
+    def set_backing_image_folder_immutable_on_node(self, bi_name, node_name):
+        return self.node.set_backing_image_folder_immutable_on_node(bi_name, node_name)
+
+    def set_backing_image_folder_mutable_on_node(self, bi_name, node_name):
+        return self.node.set_backing_image_folder_mutable_on_node(bi_name, node_name)

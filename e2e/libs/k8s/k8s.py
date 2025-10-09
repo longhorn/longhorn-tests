@@ -20,6 +20,7 @@ from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 
+from datetime import datetime, timezone
 
 async def restart_kubelet(node_name, downtime_in_sec=10):
     k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
@@ -243,3 +244,19 @@ def wait_for_namespace_pods_running(namespace):
             return
 
     assert False, f"wait all pod in namespace {namespace} running failed"
+
+def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace):
+    # Convert test_start_time to UTC and format it for kubectl --since-time use
+    test_start_time = test_start_time.astimezone(timezone.utc)
+    test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    exec_cmd = [
+        "kubectl", "logs", pod_name,
+        "-n", namespace,
+        f"--since-time={test_start_time}"
+    ]
+
+    pod_log = subprocess_exec_cmd(exec_cmd)
+    logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
+
+    assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
