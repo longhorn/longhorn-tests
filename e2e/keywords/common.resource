@@ -30,6 +30,14 @@ Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 
 *** Keywords ***
+Run command and expect output
+    [Arguments]    ${command}    ${expected_output}
+    execute_command_and_expect_output    ${command}    ${expected_output}
+
+Run command and not expect output
+    [Arguments]    ${command}    ${unexpected_output}
+    execute_command_and_not_expect_output    ${command}    ${unexpected_output}
+
 Test should pass
     No Operation
 
