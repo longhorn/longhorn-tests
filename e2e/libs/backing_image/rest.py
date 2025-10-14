@@ -68,6 +68,65 @@ class Rest(Base):
                 continue
         assert False, f"not all backingimages diks are ready"
 
+    def disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        """
+        Check if backing image disk file status matches expected counts
+        """
+        expected_ready_count = int(expected_ready_count)
+        expected_unknown_count = int(expected_unknown_count)
+        expected_total_disks = expected_ready_count + expected_unknown_count
+
+        bi = self.get(bi_name)
+        ready_count = 0
+        unknown_count = 0
+        other_count = 0
+
+        for disk_id, status in bi.diskFileStatusMap.items():
+            if status.state == self.BACKING_IMAGE_STATE_READY:
+                ready_count += 1
+            elif status.state == self.BACKING_IMAGE_STATE_UNKNOWN:
+                unknown_count += 1
+            else:
+                other_count += 1
+        actual_total = len(bi.diskFileStatusMap)
+
+        if actual_total != expected_total_disks:
+            assert False, f"Total disk count mismatch: expected {expected_total_disks}, got {actual_total}. Details: {bi.diskFileStatusMap}"
+        if ready_count != expected_ready_count:
+            assert False, f"Ready disk count mismatch: expected {expected_ready_count}, got {ready_count}. Details: {bi.diskFileStatusMap}"
+        if unknown_count != expected_unknown_count:
+            assert False, f"Unknown disk count mismatch: expected {expected_unknown_count}, got {unknown_count}. Details: {bi.diskFileStatusMap}"
+        if other_count > 0:
+            assert False, f"Unexpected disk states found: {other_count} disks in non-ready/unknown states. Details: {bi.diskFileStatusMap}"
+
+    def wait_for_disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        for i in range(self.retry_count):
+            try:
+                self.disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
+                return
+            except Exception as e:
+                if i == self.retry_count - 1:
+                    bi = self.get(bi_name)
+                    current_ready = 0
+                    current_unknown = 0
+
+                    for status in bi.diskFileStatusMap.values():
+                        if status.state == self.BACKING_IMAGE_STATE_READY:
+                            current_ready += 1
+                        elif status.state == self.BACKING_IMAGE_STATE_UNKNOWN:
+                            current_unknown += 1
+                    current_other = len(bi.diskFileStatusMap) - current_ready - current_unknown
+
+                    error_msg = f"Backing image {bi_name} status mismatch after {self.retry_count} retries:\n"
+                    error_msg += f"  • Expected: {expected_ready_count} ready, {expected_unknown_count} unknown\n"
+                    error_msg += f"  • Actual: {current_ready} ready, {current_unknown} unknown, {current_other} other states\n"
+                    error_msg += f"  • Disk details:\n"
+                    for disk_id, status in bi.diskFileStatusMap.items():
+                        error_msg += f"    - {disk_id}: {status.state}\n"
+
+                    assert False, error_msg
+                time.sleep(self.retry_interval)
+
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         bi = self.get(bi_name)
         disk_ids = list(bi.diskFileStatusMap.keys())

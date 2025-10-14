@@ -15,6 +15,12 @@ class backing_image_keywords:
     def wait_for_all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.wait_for_all_disk_file_status_are_ready(bi_name)
 
+    def disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        self.backing_image.disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
+
+    def wait_for_disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        self.backing_image.wait_for_disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
+
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         self.backing_image.clean_up_backing_image_from_a_random_disk(bi_name)
 
