@@ -764,7 +764,7 @@ def test_rwx_volume_mount_options(client, core_api, storage_class, pvc, make_dep
 
 
 @pytest.mark.v2_volume_test  # NOQA
-def test_sm_pod_recreate_backoff(client, core_api, statefulset):  # NOQA
+def test_sm_pod_recreate_backoff(client, core_api, statefulset, storage_class):  # NOQA
     """
     Related to https://github.com/longhorn/longhorn/issues/11939
 
@@ -780,8 +780,11 @@ def test_sm_pod_recreate_backoff(client, core_api, statefulset):  # NOQA
     5. Verify the longhorn-manager pod hasn't crashed by checking its restart
        count.
     """
+    create_storage_class(storage_class)
     statefulset_name = statefulset['metadata']['name']
     statefulset['spec']['replicas'] = 1
+    statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
+        = storage_class['metadata']['name']
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['accessModes'] \
         = ['ReadWriteMany']
 
