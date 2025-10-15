@@ -1,10 +1,16 @@
 import ast
+import time
 
 from recurringjob import RecurringJob
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
+from utility.utility import list_namespaced_pod
+from utility.utility import get_retry_count_and_interval
+
+from datetime import datetime
+from datetime import timezone
 
 
 class recurringjob_keywords:
@@ -58,8 +64,27 @@ class recurringjob_keywords:
         logging(f'Waiting for recurringjob {job_name} pod completion without error')
         self.recurringjob.wait_for_pod_completion_without_error(job_name)
 
+    def wait_for_recurringjob_pod_completion(self, job_name):
+        logging(f'Waiting for recurringjob {job_name} pod completion')
+        self.recurringjob.wait_for_recurringjob_pod_completion(job_name)
+
     def check_recurringjob_concurrency(self, job_name, concurrency):
         self.recurringjob.check_recurringjob_concurrency(job_name, concurrency)
 
     def update_recurringjob(self, job_name, groups=None, cron=None, concurrency=None, labels=None, parameters=None):
         self.recurringjob.update_recurringjob(job_name, groups, cron, concurrency, labels, parameters)
+
+    def wait_for_recurringjob_pod_create(self, job_name):
+        logging(f'Waiting for recurringjob {job_name} pod start')
+        start_time = datetime.now(timezone.utc)
+        retry_count, retry_interval = get_retry_count_and_interval()
+
+        for i in range(retry_count):
+            pods = list_namespaced_pod("longhorn-system", f"recurring-job.longhorn.io={job_name}")
+            for pod in pods:
+                if pod.metadata.creation_timestamp and pod.metadata.creation_timestamp > start_time:
+                    logging(f"Pod {pod.metadata.name} created at {pod.metadata.creation_timestamp}")
+                    return
+            time.sleep(retry_interval)
+
+        assert False, f"No new pod of {job_name} is created after {start_time}"

@@ -118,3 +118,6 @@ class Rest(Base):
 
     def wait_for_pod_completion_without_error(self, job_name, namespace=LONGHORN_NAMESPACE):
         return NotImplemented
+
+    def wait_for_recurringjob_pod_completion(self, job_name, namespace=LONGHORN_NAMESPACE):
+        return NotImplemented

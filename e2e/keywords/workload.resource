@@ -214,6 +214,13 @@ Wait for volume of ${workload_kind} ${workload_id} attached to another node and 
     ${volume_node} =    get_volume_node    ${volume_name}
     Should Not Be Equal    ${last_volume_node}    ${volume_node}
 
+Wait for volume of ${workload_kind} ${workload_id} attached to another node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_attached    ${volume_name}
+    ${volume_node} =    get_volume_node    ${volume_name}
+    Should Not Be Equal    ${last_volume_node}    ${volume_node}
+
 Delete replica of ${workload_kind} ${workload_id} volume on ${replica_locality}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
