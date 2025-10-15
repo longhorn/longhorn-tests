@@ -100,7 +100,7 @@ def get_backupstore():
     return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
 
-def subprocess_exec_cmd(cmd, input=None, timeout=None):
+def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
     logging(f"Executing command {cmd}")
     if isinstance(cmd, str):
         res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True)
@@ -109,7 +109,8 @@ def subprocess_exec_cmd(cmd, input=None, timeout=None):
     else:
         raise ValueError("Command must be a string or list")
 
-    logging(f"Executed command {cmd} with result {res}")
+    if verbose:
+        logging(f"Executed command {cmd} with result {res}")
     return res
 
 
