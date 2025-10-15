@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+from kubernetes import client
 
 class Base(ABC):
 
@@ -45,4 +45,12 @@ class Base(ABC):
 
     @abstractmethod
     def wait_backing_image_manager_restart(self, name, last_creation_time):
+        return NotImplemented
+
+    @abstractmethod
+    def wait_all_disk_file_status_are_at_state(bi_name, expected_state):
+        return NotImplemented
+
+    @abstractmethod
+    def check_disk_file_map_contain_specific_message(bi_name, expect_message):
         return NotImplemented

@@ -13,7 +13,7 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies):
+    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation):
         logging(f"Creating backing image {name}")
         get_longhorn_client().create_backing_image(
             name=name,
@@ -25,6 +25,9 @@ class Rest(Base):
             minNumberOfCopies=minNumberOfCopies,
             dataEngine=dataEngine
         )
+
+        if not check_creation:
+            return
 
         bi = None
         ready_copies = 0
@@ -140,3 +143,27 @@ class Rest(Base):
     def list_backing_image_manager(self):
         # delegate it to CRD since it doesn't have a REST implementation
         return CRD().list_backing_image_manager()
+
+    def all_disk_file_status_are_at_state(self, bi_name, expected_state):
+        bi = self.get(bi_name)
+        for disk_id, status in bi.diskFileStatusMap.items():
+            logging(f"backingimage {bi_name} current state is {status.state}")
+            assert status.state == expected_state, f"expect backing image on disk {disk_id} {expected_state}, but it's {status}"
+
+    def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
+        for i in range(self.retry_count):
+            logging(f"waiting backingimage {bi_name} in state {expected_state}")
+            try:
+                self.all_disk_file_status_are_at_state(bi_name, expected_state)
+                return
+            except Exception:
+                time.sleep(self.retry_interval)
+                continue
+        assert False, f"not all backingimages diks are {expected_state}"
+
+    def check_disk_file_map_contain_specific_message(self, bi_name, expected_message):
+        bi = self.get(bi_name)
+        for disk_id, status in bi.diskFileStatusMap.items():
+            msg = status.message
+            logging(f"backingimage {bi_name} on disk {disk_id} has message: {msg}")
+            assert expected_message in msg, f"'{expected_message}' not in backing image {bi_name} disk {disk_id} message"
