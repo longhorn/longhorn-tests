@@ -67,6 +67,10 @@ Wait for ${job_task} recurringjob ${job_id} to complete without error
     ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
     wait_for_recurringjob_pod_completion_without_error    ${job_name}
 
+Wait for ${job_task} recurringjob ${job_id} complete
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    wait_for_recurringjob_pod_completion    ${job_name}
+
 There should be ${concurrency} jobs created concurrently for ${job_task} recurringjob ${job_id}
     ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
     check_recurringjob_concurrency    ${job_name}    ${concurrency}
@@ -75,3 +79,10 @@ Update ${job_task} recurringjob ${job_id}
     [Arguments]    &{args}
     ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
     update_recurringjob    ${job_name}    &{args}
+Wait for ${job_task} recurringjob ${job_id} started
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    ${job_pod_name} =   wait_for_recurringjob_pod_create    ${job_name}
+
+Wait until new pod for ${job_task} recurringjob ${job_id} is created
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    wait_for_recurringjob_pod_create    ${job_name}
