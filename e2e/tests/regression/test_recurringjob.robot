@@ -71,3 +71,26 @@ Recurring Job Pod Should Not Crash
         And Log To Console    "Waiting for snapshot recurringjob 0 to complete... (${i+1}/${LOOP_COUNT})"
         And Wait for snapshot recurringjob 0 to complete without error
     END
+
+Test Recurring Job Concurrency
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/467
+    ...    1. Create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups
+    ...    2. Create and attach more than 5 volumes to test the recurring job concurrency
+    ...    3. Monitor the cron job pod log. There should be 2 jobs created concurrently
+    ...    4. Update the snapshot recurring job concurrency to 3
+    ...    5. Monitor the cron job pod log. There should be 3 jobs created concurrently
+    Given Create snapshot recurringjob 0
+    ...    groups=["default"]
+    ...    cron=* * * * *
+    ...    concurrency=2
+
+    FOR   ${i}    IN RANGE    10
+        When Create volume ${i} with    size=128Mi    dataEngine=${DATA_ENGINE}
+        And Attach volume ${i}
+        And Wait for volume ${i} healthy
+    END
+
+    Then There should be 2 jobs created concurrently for snapshot recurringjob 0
+
+    When Update snapshot recurringjob 0    concurrency=3
+    Then There should be 3 jobs created concurrently for snapshot recurringjob 0
