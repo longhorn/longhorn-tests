@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Manual Test Cases
-Test Tags    negative
+Test Tags    negative    upgrade    recurring-job
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -60,6 +60,7 @@ Test Upgrade Stability with Large Workload
 
     When Install Longhorn stable version    
     And Set default backupstore
+    And Enable v2 data engine and add block disks
 
     When Perform recurring job workflow under load    
     And Upgrade Longhorn to custom version
