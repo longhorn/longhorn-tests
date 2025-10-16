@@ -14,6 +14,7 @@ Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/backing_image.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -121,3 +122,55 @@ Test Node Down Pod Deletion Policy Set To delete-deployment-pod And Longhorn For
 
 Test Node Down Pod Deletion Policy Set To delete-both-statefulset-and-deployment-pod And Longhorn Force Delete Terminating Deployment Pod
     Power Off Node And Longhorn Force Delete Terminating Deployment Pod    delete-both-statefulset-and-deployment-pod
+
+Test Backing Image On Two Nodes Down
+    [Tags]    backing-image
+    [Documentation]    Test backing image behavior when two nodes are powered off.
+    ...                Related Issue:
+    ...                https://github.com/longhorn/longhorn/issues/2006
+    ...                https://github.com/longhorn/longhorn/issues/2295
+    ...                https://github.com/longhorn/longhorn/issues/2530
+    ...                - Disable node soft anti-affinity and set replica-replenishment-wait-interval to a large value.
+    ...                - Create a backing image and wait for it to be ready on the first disk.
+    ...                - Create two volumes using the backing image and attach them to two different nodes.
+    ...                - Verify the backing image disk state map contains disks of all replicas and are running.
+    ...                - Verify backing image content and write random data to both volumes.
+    ...                - Power off two nodes: one containing a volume engine, another with the other volume's replicas.
+    ...                - Verify related backing image disk file state becomes Unknown for the down node, one volume is Degraded but serving, the other becomes Unknown.
+    ...                - Power on the node with the engine and verify recovery, data integrity and backing image reuse.
+    ...
+    ...                Available test backing image URLs:
+    ...                - https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    ...                - https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
+    ...                - https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
+    ...                - https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso
+    Given Setting replica-replenishment-wait-interval is set to 600
+    And Setting replica-soft-anti-affinity is set to false
+
+    When Create backing image bi-down with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+    And Create volume 0 with    backingImage=bi-down    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Create volume 1 with    backingImage=bi-down    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Attach volume 0 to node 0
+    And Attach volume 1 to node 1
+    And Wait for volume 0 healthy
+    And Wait for volume 1 healthy
+    Then Verify all disk file status of backing image bi-down are ready
+    And Write data to volume 0
+    And Write data to volume 1
+
+    When Power off volume 0 volume node
+    And Power off node 2
+    Then Wait for disk file status of backing image bi-down are expected    expected_ready_count=1    expected_unknown_count=2
+    And Wait for volume 0 attached and unknown
+    And Wait for volume 1 degraded
+    And Check volume 1 data is intact
+
+    When Power on off nodes
+    Then Wait for volume 0 healthy
+    And Wait for volume 1 healthy
+    And Check volume 0 data is intact
+    And Check volume 1 data is intact
+    And Wait backing image managers running
+    And Delete volume 0
+    And Delete volume 1
+    And Delete backing image bi-down

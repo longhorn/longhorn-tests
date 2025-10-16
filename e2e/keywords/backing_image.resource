@@ -14,6 +14,14 @@ Verify all disk file status of backing image ${backing_image_name} are ready
 Wait for all disk file status of backing image ${backing_image_name} are ready
     wait_for_all_disk_file_status_are_ready    ${backing_image_name}
 
+Verify disk file status of backing image ${backing_image_name} are expected
+    [Arguments]    &{config}
+    disk_file_status_match_expected    ${backing_image_name}    &{config}
+
+Wait for disk file status of backing image ${backing_image_name} are expected
+    [Arguments]    &{config}
+    wait_for_disk_file_status_match_expected    ${backing_image_name}    &{config}
+
 Verify clean up backing image ${backing_image_name} from a disk will fail
     Run Keyword And Expect Error    *    clean_up_backing_image_from_a_random_disk    ${backing_image_name}
 
