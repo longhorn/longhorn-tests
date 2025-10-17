@@ -53,7 +53,7 @@ tag_and_push_custom_image() {
   local image="$1"
   local target_image=""
 
-  target_image="${image/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
+  target_image="${image/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}}"
   target_image="${REGISTRY_URL}/${target_image}"
 
   echo "Tagging ${image} to ${target_image}"
@@ -63,7 +63,8 @@ tag_and_push_custom_image() {
   docker push "${target_image}"
 }
 
-tag_and_push_upgrade_image() {
+#tag_and_push_upgrade_image() {
+tag_and_push_image() {
   local image="$1"
   local target_image=""
     
@@ -93,7 +94,8 @@ mirror_longhorn_images(){
 
   # Tag & Push images
   for image in "${IMAGES[@]}"; do
-    tag_and_push_custom_image "$image"
+    #tag_and_push_custom_image "$image"
+    tag_and_push_image "$image"
   done
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
@@ -103,7 +105,8 @@ mirror_longhorn_images(){
         docker pull --platform linux/${TF_VAR_arch} "${image}"
       done
       for image in "${STABLE_VERSION_IMAGES[@]}"; do
-        tag_and_push_upgrade_image "$image"
+        #tag_and_push_upgrade_image "$image"
+        tag_and_push_image "$image"
       done
     fi
     if [[ -n "$LONGHORN_TRANSIENT_VERSION" ]]; then
@@ -112,7 +115,8 @@ mirror_longhorn_images(){
         docker pull --platform linux/${TF_VAR_arch} "${image}"
       done
       for image in "${TRANSIENT_VERSION_IMAGES[@]}"; do
-        tag_and_push_upgrade_image "$image"
+        #tag_and_push_upgrade_image "$image"
+        tag_and_push_image "$image"
       done
     fi
   fi
