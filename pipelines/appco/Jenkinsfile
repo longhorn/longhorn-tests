@@ -92,8 +92,15 @@ node {
                 sh """ docker exec \
                         --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
                         --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                        --env APPCO_LONGHORN_COMPONENT_REGISTRY=${APPCO_LONGHORN_COMPONENT_REGISTRY} \
+                        --env APPCO_LONGHORN_COMPONENT_IMAGE_PATH=${APPCO_LONGHORN_COMPONENT_IMAGE_PATH} \
                         --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
+                        --env  CSI_ATTACHER_TAG=${CSI_ATTACHER_TAG} \
+                        --env  CSI_PROVISIONER_TAG=${CSI_PROVISIONER_TAG} \
+                        --env  CSI_RESIZER_TAG=${CSI_RESIZER_TAG} \
+                        --env  CSI_SNAPSHOTTER_TAG=${CSI_SNAPSHOTTER_TAG} \
+                        --env  CSI_LIVENESSPROBE_TAG=${CSI_LIVENESSPROBE_TAG} \
+                        --env  CSI_REGISTRAR_TAG=${CSI_REGISTRAR_TAG} \
+                        --env  SUPPORT_BUNDLE_TAG=${SUPPORT_BUNDLE_TAG} \
                         --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                         --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
                         --env LONGHORN_STABLE_VERSION_CHART_URI=${LONGHORN_STABLE_VERSION_CHART_URI} \
@@ -168,7 +175,7 @@ node {
                             --env APPCO_PASSWORD=${APPCO_PASSWORD} \
                             --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
                             --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                            --env APPCO_LONGHORN_COMPONENT_REGISTRY=${APPCO_LONGHORN_COMPONENT_REGISTRY} \
+                            --env APPCO_LONGHORN_COMPONENT_IMAGE_PATH=${APPCO_LONGHORN_COMPONENT_IMAGE_PATH} \
                             --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
                             --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                             --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
@@ -198,8 +205,15 @@ node {
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
                                        --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                                       --env APPCO_LONGHORN_COMPONENT_REGISTRY=${APPCO_LONGHORN_COMPONENT_REGISTRY} \
+                                       --env APPCO_LONGHORN_COMPONENT_IMAGE_PATH=${APPCO_LONGHORN_COMPONENT_IMAGE_PATH} \
                                        --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
+                                       --env  CSI_ATTACHER_TAG=${CSI_ATTACHER_TAG} \
+                                       --env  CSI_PROVISIONER_TAG=${CSI_PROVISIONER_TAG} \
+                                       --env  CSI_RESIZER_TAG=${CSI_RESIZER_TAG} \
+                                       --env  CSI_SNAPSHOTTER_TAG=${CSI_SNAPSHOTTER_TAG} \
+                                       --env  CSI_LIVENESSPROBE_TAG=${CSI_LIVENESSPROBE_TAG} \
+                                       --env  CSI_REGISTRAR_TAG=${CSI_REGISTRAR_TAG} \
+                                       --env  SUPPORT_BUNDLE_TAG=${SUPPORT_BUNDLE_TAG} \
                                        --env APPCO_USERNAME=${APPCO_USERNAME} \
                                        --env APPCO_PASSWORD=${APPCO_PASSWORD} \
                                        --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \

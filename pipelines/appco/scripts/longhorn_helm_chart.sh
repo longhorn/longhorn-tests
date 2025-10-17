@@ -13,10 +13,10 @@ set_secret_args() {
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     if [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}"
-    elif [[ -z "${APPCO_LONGHORN_COMPONENT_REGISTRY}" || "${chart_uri}" == *"dp.apps.rancher.io"* ]]; then
+    elif [[ -z "${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}" || "${chart_uri}" == *"dp.apps.rancher.io"* ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}/dp.apps.rancher.io"
     else
-      FINAL_REGISTRY_URL="${REGISTRY_URL}/${APPCO_LONGHORN_COMPONENT_REGISTRY}"
+      FINAL_REGISTRY_URL="${REGISTRY_URL}/${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}"
     fi
 
     SECRET_ARGS+=(
@@ -35,6 +35,46 @@ helm_login_appco(){
     --password "${APPCO_PASSWORD}"
 }
 
+set_longhorn_registry_args() {
+  REGISTRY_ARGS=(
+      --set image.longhorn.engine.registry=""
+      --set image.longhorn.manager.registry=""
+      --set image.longhorn.ui.registry=""
+      --set image.longhorn.instanceManager.registry=""
+      --set image.longhorn.shareManager.registry=""
+      --set image.longhorn.backingImageManager.registry=""
+      --set image.longhorn.supportBundleKit.registry=""
+      --set image.csi.attacher.registry=""
+      --set image.csi.provisioner.registry=""
+      --set image.csi.nodeDriverRegistrar.registry=""
+      --set image.csi.resizer.registry=""
+      --set image.csi.snapshotter.registry=""
+      --set image.csi.livenessProbe.registry=""
+    )
+}
+
+set_longhorn_repository_args() {
+  # Put the full image path into the repository field instead of splitting registry/repository.
+  # This avoids issues where global.privateRegistry.registryUrl overrides image.registry
+  # and produces incorrect image URLs, especially in air-gap environments.
+  DP_IMAGE_PATH="dp.apps.rancher.io/containers"
+  REPOSITORY_ARGS=(
+      --set image.longhorn.engine.repository="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-engine"
+      --set image.longhorn.manager.repository="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-manager"
+      --set image.longhorn.ui.repository="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-ui"
+      --set image.longhorn.instanceManager.repository="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-instance-manager"
+      --set image.longhorn.shareManager.repository="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-share-manager"
+      --set image.longhorn.backingImageManager.repository="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-backing-image-manager"
+      --set image.longhorn.supportBundleKit.repository="${DP_IMAGE_PATH}/rancher-support-bundle-kit"
+      --set image.csi.attacher.repository="${DP_IMAGE_PATH}/kubernetes-csi-external-attacher"
+      --set image.csi.provisioner.repository="${DP_IMAGE_PATH}/kubernetes-csi-external-provisioner"
+      --set image.csi.nodeDriverRegistrar.repository="${DP_IMAGE_PATH}/kubernetes-csi-node-driver-registrar"
+      --set image.csi.resizer.repository="${DP_IMAGE_PATH}/kubernetes-csi-external-resizer"
+      --set image.csi.snapshotter.repository="${DP_IMAGE_PATH}/kubernetes-csi-external-snapshotter"
+      --set image.csi.livenessProbe.repository="${DP_IMAGE_PATH}/kubernetes-csi-livenessprobe"
+    )
+}
+
 set_longhorn_tag_args() {
   if [[ -n "${LONGHORN_COMPONENT_TAG}" ]]; then
     TAG_ARGS=(
@@ -44,47 +84,37 @@ set_longhorn_tag_args() {
       --set image.longhorn.instanceManager.tag="${LONGHORN_COMPONENT_TAG}"
       --set image.longhorn.shareManager.tag="${LONGHORN_COMPONENT_TAG}"
       --set image.longhorn.backingImageManager.tag="${LONGHORN_COMPONENT_TAG}"
+      --set image.longhorn.supportBundleKit.tag="${SUPPORT_BUNDLE_TAG}"
+      --set image.csi.attacher.tag="${CSI_ATTACHER_TAG}"
+      --set image.csi.provisioner.tag="${CSI_PROVISIONER_TAG}"
+      --set image.csi.nodeDriverRegistrar.tag="${CSI_REGISTRAR_TAG}"
+      --set image.csi.resizer.tag="${CSI_RESIZER_TAG}"
+      --set image.csi.snapshotter.tag="${CSI_SNAPSHOTTER_TAG}"
+      --set image.csi.livenessProbe.tag="${CSI_LIVENESSPROBE_TAG}"
     )
   fi
 }
 
 install_longhorn_custom(){
+  # set debugging mode off to avoid leaking appco secrets to the logs.
+  # DON'T REMOVE!
+  set +x
+  helm_login_appco
+  set -x
+  set_longhorn_registry_args
+  set_longhorn_repository_args
+  set_longhorn_tag_args
   set_secret_args "${LONGHORN_CHART_URI}"
-  if [[ "${LONGHORN_CHART_URI}" == "longhorn/longhorn" ]]; then
-    helm repo add longhorn https://charts.longhorn.io
-    helm repo update
-    helm upgrade --install longhorn longhorn/longhorn \
-      --namespace "${LONGHORN_NAMESPACE}" \
-      --version "${LONGHORN_VERSION}" \
-      "${SECRET_ARGS[@]}"
-  else
-    # set debugging mode off to avoid leaking appco secrets to the logs.
-    # DON'T REMOVE!
-    set +x
-    helm_login_appco
-    set -x
-    set_longhorn_tag_args
-
-    if [[ -z "${APPCO_LONGHORN_COMPONENT_REGISTRY}" ]]; then
-      helm upgrade --install longhorn "${LONGHORN_CHART_URI}" \
-        --version "${LONGHORN_VERSION}" \
-        --namespace "${LONGHORN_NAMESPACE}" \
-        "${SECRET_ARGS[@]}"
-    else
-      helm upgrade --install longhorn "${LONGHORN_CHART_URI}" \
-        --version "${LONGHORN_VERSION}" \
-        --namespace "${LONGHORN_NAMESPACE}" \
-        --set image.longhorn.engine.registry="${APPCO_LONGHORN_COMPONENT_REGISTRY}" \
-        --set image.longhorn.manager.registry="${APPCO_LONGHORN_COMPONENT_REGISTRY}" \
-        --set image.longhorn.ui.registry="${APPCO_LONGHORN_COMPONENT_REGISTRY}" \
-        --set image.longhorn.instanceManager.registry="${APPCO_LONGHORN_COMPONENT_REGISTRY}" \
-        --set image.longhorn.shareManager.registry="${APPCO_LONGHORN_COMPONENT_REGISTRY}" \
-        --set image.longhorn.backingImageManager.registry="${APPCO_LONGHORN_COMPONENT_REGISTRY}" \
-        --set privateRegistry.registryUrl="" \
-        "${TAG_ARGS[@]}" \
-        "${SECRET_ARGS[@]}"
-    fi
-  fi
+  
+  helm repo add longhorn https://charts.longhorn.io
+  helm repo update
+  helm upgrade --install longhorn longhorn/longhorn \
+    --namespace "${LONGHORN_NAMESPACE}" \
+    --version "${LONGHORN_VERSION}" \
+    "${REGISTRY_ARGS[@]}" \
+    "${REPOSITORY_ARGS[@]}" \
+    "${TAG_ARGS[@]}" \
+    "${SECRET_ARGS[@]}"
   wait_longhorn_status_running
 }
 
