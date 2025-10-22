@@ -7,7 +7,6 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
-Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/migration.resource
