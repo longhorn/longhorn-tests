@@ -4,6 +4,7 @@ Documentation    RecurringJob Keywords
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/recurringjob_keywords.py
+Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create ${job_task} recurringjob ${job_id}
@@ -23,6 +24,21 @@ Create recurringjob for volume ${volume_id} with
 Check recurringjobs for volume ${volume_id} work
     ${volume_name} =   generate_name_with_suffix    volume    ${volume_id}
     check_recurringjobs_work    ${volume_name}
+
+Check volume of ${workload_kind} ${workload_id} has recurringjob ${job_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    check_volume_has_recurringjob    ${volume_name}    ${job_name}
+
+Check volume of ${workload_kind} ${workload_id} has recurringjob group ${job_group_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    check_volume_has_recurringjob_group    ${volume_name}    ${job_group_name}
+
+Check ${job_task} recurringjob ${job_name} work for volume of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    check_recurringjob_work_for_volume    ${job_name}    ${job_task}    ${volume_name}
 
 Create system-backup recurringjob ${job_id}
     [Arguments]    &{config}

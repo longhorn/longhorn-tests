@@ -196,3 +196,9 @@ class Volume(Base):
 
     def update_data_locality(self, volume_name, data_locality):
         return self.volume.update_data_locality(volume_name, data_locality)
+
+    def check_volume_has_recurringjob(self, volume_name, job_name):
+        self.volume.check_volume_has_recurringjob(volume_name, job_name)
+
+    def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
+        self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)

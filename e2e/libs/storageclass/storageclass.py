@@ -11,7 +11,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, secretName, secretNamespace):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, secretName, secretNamespace, recurringJobSelector):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -25,6 +25,8 @@ class StorageClass():
             manifest_dict['parameters']['fromBackup'] = fromBackup
             manifest_dict['parameters']['nfsOptions'] = nfsOptions
             manifest_dict['parameters']['dataEngine'] = dataEngine
+            if recurringJobSelector:
+                manifest_dict['parameters']['recurringJobSelector'] = recurringJobSelector
 
             if encrypted == "true":
                 manifest_dict['parameters']['encrypted'] = encrypted
