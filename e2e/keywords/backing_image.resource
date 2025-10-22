@@ -47,9 +47,8 @@ Wait backimg image ${backing_image_name} data source pod created
     ${creation_time} =    wait_backing_image_data_source_pod_created    ${backing_image_name}
     [Return]    ${creation_time}
 
-Wait backimg image data source pod terminated
-    ${ds_count}=     get_backing_image_data_source_pod_count
-    Should Be Equal    ${ds_count}     ${0}
+Wait backing image data source pod terminated
+    wait_for_no_backing_image_data_source_pod_exist
 
 Disk file message of backing image ${backing_image_name} should contain ${message}
     check_disk_file_map_contain_specific_message    ${backing_image_name}    ${message}
