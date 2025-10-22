@@ -16,6 +16,8 @@ from k8s.k8s import wait_for_namespace_pods_running
 from k8s.k8s import get_longhorn_node_condition_status
 from k8s.k8s import set_k8s_node_zone
 from k8s.k8s import verify_pod_log_after_time_contains
+from k8s.k8s import deploy_system_upgrade_controller
+from k8s.k8s import upgrade_k8s_to_latest_version
 
 from node import Node
 
@@ -110,3 +112,8 @@ class k8s_keywords:
 
     def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace="longhorn-system"):
         return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
+    def deploy_system_upgrade_controller(self):
+        return deploy_system_upgrade_controller()
+
+    def upgrade_k8s_to_latest_version(self, drain=False):
+        return upgrade_k8s_to_latest_version(drain)

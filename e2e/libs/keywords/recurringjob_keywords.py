@@ -54,3 +54,9 @@ class recurringjob_keywords:
     def wait_for_recurringjob_pod_completion_without_error(self, job_name):
         logging(f'Waiting for recurringjob {job_name} pod completion without error')
         self.recurringjob.wait_for_pod_completion_without_error(job_name)
+
+    def check_recurringjob_concurrency(self, job_name, concurrency):
+        self.recurringjob.check_recurringjob_concurrency(job_name, concurrency)
+
+    def update_recurringjob(self, job_name, groups=None, cron=None, concurrency=None, labels=None, parameters=None):
+        self.recurringjob.update_recurringjob(job_name, groups, cron, concurrency, labels, parameters)

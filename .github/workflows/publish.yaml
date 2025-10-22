@@ -19,7 +19,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Install pdoc3
         run: |

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     rancher2 = {
       source  = "rancher/rancher2"
-      version = "~> 8.1.0"
+      version = "~> 8.2.0"
     }
   }
 }
