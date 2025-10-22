@@ -9,7 +9,6 @@ Library    ../libs/keywords/volume_keywords.py
 *** Keywords ***
 Create ${job_task} recurringjob ${job_id}
     [Arguments]    &{args}
-
     ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
     create_recurringjob    ${job_name}    ${job_task}    &{args}
 
@@ -67,3 +66,12 @@ Assert recurringjob ${job_id} ${created_condition} backup for volume ${volume_id
 Wait for ${job_task} recurringjob ${job_id} to complete without error
     ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
     wait_for_recurringjob_pod_completion_without_error    ${job_name}
+
+There should be ${concurrency} jobs created concurrently for ${job_task} recurringjob ${job_id}
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    check_recurringjob_concurrency    ${job_name}    ${concurrency}
+
+Update ${job_task} recurringjob ${job_id}
+    [Arguments]    &{args}
+    ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
+    update_recurringjob    ${job_name}    &{args}

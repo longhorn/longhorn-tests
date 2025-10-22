@@ -1,6 +1,8 @@
 import time
 import json
 from datetime import datetime
+import re
+from collections import Counter
 
 from kubernetes import client
 from kubernetes import watch
@@ -365,3 +367,48 @@ class CRD(Base):
 
         w.stop()
         raise Exception(f"Recurring job {job_name} did not complete successfully within the timeout ({timeout_seconds} seconds).")
+
+    def check_recurringjob_concurrency(self, job_name, concurrency):
+        # monitor the recurring job for 5 minutes to confirm the concurrency
+        # the log looks like:
+        # time="2025-10-08T03:58:00.800807962Z" level=info msg="Creating volume job"
+        pattern = re.compile(r'time="[^T]+T(\d{2}:\d{2}:\d{2})\.\d+Z".*Creating volume job')
+        cmd = f"kubectl logs -l recurring-job.longhorn.io={job_name} -n longhorn-system"
+        checked = False
+        timestamps = None
+        for i in range(60):
+            try:
+                logs = subprocess_exec_cmd(cmd)
+            except Exception as e:
+                logging(f"Failed to get {job_name} logs: {e}")
+            timestamps = pattern.findall(logs)
+            if not timestamps:
+                logging(f"No job created for {job_name}")
+            else:
+                counts = Counter(timestamps)
+                for timestamp, count in sorted(counts.items()):
+                    logging(f"{count} jobs created at {timestamp} for {job_name}")
+                    if count == int(concurrency):
+                        checked = True
+                    elif count > int(concurrency):
+                        logging(f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently")
+                        time.sleep(self.retry_count)
+                        assert False, f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently"
+            time.sleep(5)
+        assert checked, f"Recurring job {job_name} concurrency is {concurrency}, but can't find {concurrency} jobs created concurrently"
+
+    def update_recurringjob(self, job_name, groups, cron, concurrency, labels, parameters):
+        patch_data = {"spec": {}}
+        if groups is not None:
+            patch_data["spec"]["groups"] = groups
+        if cron is not None:
+            patch_data["spec"]["cron"] = cron
+        if concurrency is not None:
+            patch_data["spec"]["concurrency"] = int(concurrency)
+        if labels is not None:
+            patch_data["spec"]["labels"] = labels
+        if parameters is not None:
+            patch_data["spec"]["parameters"] = parameters
+        patch_json = json.dumps(patch_data)
+        cmd = f"kubectl -n longhorn-system patch recurringjob {job_name} --type merge -p '{patch_json}'"
+        subprocess_exec_cmd(cmd)
