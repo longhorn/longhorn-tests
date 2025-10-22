@@ -377,3 +377,18 @@ class Node:
         cmd = "ls /dev/longhorn/"
         res = NodeExec(node_name).issue_cmd(cmd)
         return res
+
+    def remove_backing_image_files_on_node(self, bi_name, node_name):
+        cmd = f"rm /var/lib/longhorn/backing-images/{bi_name}-*/backing*"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
+
+    def set_backing_image_folder_immutable_on_node(self, bi_name, node_name):
+        cmd = f"chattr +i /var/lib/longhorn/backing-images/{bi_name}-*/"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
+
+    def set_backing_image_folder_mutable_on_node(self, bi_name, node_name):
+        cmd = f"chattr -i /var/lib/longhorn/backing-images/{bi_name}-*/"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
