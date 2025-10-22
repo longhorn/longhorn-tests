@@ -30,7 +30,7 @@ class CRD(Base):
             plural="replicas",
             label_selector=label_selector
         )
-        logging(f"Got {len(replicas["items"])} replicas with labels {label_selector}")
+        logging(f"Got {len(replicas['items'])} replicas with labels {label_selector}")
         return replicas["items"]
 
     def wait_for_disk_replica_count(self, volume_name=None, node_name=None, disk_uuid=None, count=None):
