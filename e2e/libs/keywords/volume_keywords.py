@@ -35,9 +35,9 @@ class volume_keywords:
         logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize)
 
-    def delete_volume(self, volume_name):
+    def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
-        self.volume.delete(volume_name)
+        self.volume.delete(volume_name, wait)
 
     def attach_volume(self, volume_name, node_name=None, wait=True, retry=True):
         if not node_name:
