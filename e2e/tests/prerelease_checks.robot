@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pre-release Checks Test Case
 
-Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release
+Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job
 
 Library    OperatingSystem
 

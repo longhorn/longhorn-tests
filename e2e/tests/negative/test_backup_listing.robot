@@ -16,7 +16,6 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
-Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/snapshot.resource
