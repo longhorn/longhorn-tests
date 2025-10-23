@@ -88,18 +88,20 @@ Test Setting Concurrent Rebuild Limit
     Then Check volume 0 data is intact
     And Check volume 1 data is intact
 
-Test Setting Storage Network For RWX Volume Enabled
-    [Tags]    setting    volume    rwx    storage-network
-    [Documentation]    Test if setting Storage Network For RWX Volume Enabled works correctly.
+Test Setting Network For RWX Volume Endpoint
+    [Tags]    setting    volume    rwx    network
+    [Documentation]    Test if setting endpoint-network-for-rwx-volume works correctly.
     ...
-    ...                Issue: https://github.com/longhorn/longhorn/issues/8184
+    ...                Issues:
+    ...                    - https://github.com/longhorn/longhorn/issues/10269
+    ...                    - https://github.com/longhorn/longhorn/issues/8184
     ...
-    ...                Precondition: Storage network configured.
+    ...                Precondition: NAD network configured.
 
-    Given Setting storage-network-for-rwx-volume-enabled is set to false
+    Given Setting endpoint-network-for-rwx-volume is set to ${EMPTY}
     When Create persistentvolumeclaim 0    volume_type=RWX
     And Create deployment 0 with persistentvolumeclaim 0 with max replicaset
-    Then Check Longhorn workload pods not annotated with k8s.v1.cni.cncf.io/networks
+    Then Check Longhorn workload pods not running with CNI interface lhnet2
         ...    longhorn-csi-plugin
         ...    longhorn-share-manager
     And Check sharemanager not using headless service
@@ -108,10 +110,10 @@ Test Setting Storage Network For RWX Volume Enabled
     And Delete persistentvolumeclaim 0
     And Wait for all sharemanager to be deleted
 
-    When Setting storage-network-for-rwx-volume-enabled is set to true
+    When Setting endpoint-network-for-rwx-volume is set to kube-system/demo-172-16-0-0
     And Create persistentvolumeclaim 1    volume_type=RWX
     And Create deployment 1 with persistentvolumeclaim 1 with max replicaset
-    Then Check Longhorn workload pods is annotated with k8s.v1.cni.cncf.io/networks
+    Then Check Longhorn workload pods is running with CNI interface lhnet2
         ...    longhorn-csi-plugin
         ...    longhorn-share-manager
     And Check sharemanager is using headless service
