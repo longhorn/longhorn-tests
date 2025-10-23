@@ -19,6 +19,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
+    [Tags]    recurring-job
     [Documentation]    -- Manual test plan --
     ...                - Enable the setting `Snapshot Data Integrity` and `Immediate Snapshot Data Integrity Check After Creating a Snapshot`
     ...                - Create a 50 Gi volume. write around 30 Gi data into it.

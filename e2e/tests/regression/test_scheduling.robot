@@ -266,3 +266,33 @@ Test Data Locality With Failed Scheduled Replica
     And Volume 0 should have 1 running replicas on node 0
     And Volume 0 should have 1 running replicas on node 1
     And Volume 0 should have 0 replicas on node 2
+
+Test No Transient Error In Engine Status During Eviction
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/4294
+    ...    1. Create and attach a multi-replica volume.
+    ...    2. Prepare one extra disk for a node that contains at least one volume replica.
+    ...    3. Evicting the old disk for node. Verify that there is no transient error in
+    ...       engine Status during evictionKeep monitoring the engine YAML.
+    ...       e.g., watch -n "kubectl -n longhorn-system get lhe <engine name>".
+    Given Create volume 0    size=256Mi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 1
+    And Wait for volume 0 healthy
+
+    IF    "${DATA_ENGINE}" == "v1"
+        When Create 1 Gi filesystem type disk local-disk-0 on node 0
+        And Disable node 0 default disk
+        And Request eviction on default disk of node 0
+        Then There should be 1 replicas of volume 0 on node 0 disk local-disk-0
+        And There should be no replica of volume 0 on node 0 disk default
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        When Create 1 Gi block type disk local-disk-0 on node 0
+        And Disable disk block-disk scheduling on node 0
+        And Request eviction on disk block-disk of node 0
+        Then There should be 1 replicas of volume 0 on node 0 disk local-disk-0
+        And There should be no replica of volume 0 on node 0 disk block-disk
+    END
+
+    And Wait for volume 0 healthy
+    And Run command and not expect output
+    ...    kubectl get lhe -n longhorn-system -oyaml
+    ...    TransientFailure

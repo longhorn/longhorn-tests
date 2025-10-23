@@ -1,4 +1,5 @@
 import time
+import yaml
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -14,6 +15,7 @@ from utility.utility import logging
 from utility.utility import get_cr
 from utility.utility import convert_size_to_bytes
 from utility.utility import get_longhorn_client
+from utility.utility import subprocess_exec_cmd
 
 from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
@@ -691,3 +693,33 @@ class CRD(Base):
 
     def update_data_locality(self, volume_name, data_locality):
         return Rest().update_data_locality(volume_name, data_locality)
+
+    def get_volume_recurringjobs(self, volume_name):
+        cmd = f"kubectl get volumes -n longhorn-system {volume_name} -o yaml"
+        res = yaml.safe_load(subprocess_exec_cmd(cmd))
+        labels = res.get("metadata", {}).get("labels", {})
+        jobs = [key.split("/")[1] for key in labels.keys() if key.startswith("recurring-job.longhorn.io/")]
+        return jobs
+
+    def check_volume_has_recurringjob(self, volume_name, job_name):
+        logging(f"Checking volume {volume_name} has recurring job {job_name}")
+        jobs = self.get_volume_recurringjobs(volume_name)
+        if job_name not in jobs:
+            logging(f"Failed to find recurring job {job_name} for volume {volume_name}")
+            time.sleep(self.retry_interval)
+            assert False, f"Failed to find recurring job {job_name} for volume {volume_name}"
+
+    def get_volume_recurringjob_groups(self, volume_name):
+        cmd = f"kubectl get volumes -n longhorn-system {volume_name} -o yaml"
+        res = yaml.safe_load(subprocess_exec_cmd(cmd))
+        labels = res.get("metadata", {}).get("labels", {})
+        job_groups = [key.split("/")[1] for key in labels.keys() if key.startswith("recurring-job-group.longhorn.io/")]
+        return job_groups
+
+    def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
+        logging(f"Checking volume {volume_name} has recurring job group {job_group_name}")
+        job_groups = self.get_volume_recurringjob_groups(volume_name)
+        if job_group_name not in job_groups:
+            logging(f"Failed to find recurring job group {job_group_name} for volume {volume_name}")
+            time.sleep(self.retry_interval)
+            assert False, f"Failed to find recurring job group {job_group_name} for volume {volume_name}"
