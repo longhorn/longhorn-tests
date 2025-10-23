@@ -257,7 +257,7 @@ Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Wr
     END
 
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
-    [Tags]    recurring_job
+    [Tags]    recurring-job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     And Create volume 1 with    size=2Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Create volume 2 with    size=2Gi    numberOfReplicas=3    accessMode=RWX    dataEngine=${DATA_ENGINE}
@@ -444,7 +444,7 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
     Then Check statefulset 0 data in file data is intact
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
-    [Tags]    recurring_job
+    [Tags]    recurring-job
     Given Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
     And Create volume 1 with    size=2Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Create volume 2 with    size=2Gi    numberOfReplicas=3    accessMode=RWX    dataEngine=${DATA_ENGINE}

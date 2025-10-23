@@ -13,5 +13,21 @@ Volume ${volume_id} replica ${setting_name} should be ${setting_value}
 There should be running replicas on node ${node_id} disk ${disk_name}
     ${node_name} =    get_node_by_index    ${node_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
-    ${replicas} =    get_replicas    volume_name=    node_name=${node_name}    disk_uuid=${disk_uuid}
-    Should Be True    len(${replicas}) > 0
+    wait_for_disk_replica_count    volume_name=    node_name=${node_name}    disk_uuid=${disk_uuid}
+
+There should be no replica on node ${node_id} disk ${disk_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0
+
+There should be ${replica_count} replicas of volume ${volume_id} on node ${node_id} disk ${disk_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=${replica_count}
+
+There should be no replica of volume ${volume_id} on node ${node_id} disk ${disk_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0

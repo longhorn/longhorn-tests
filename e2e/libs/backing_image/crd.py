@@ -99,3 +99,9 @@ class CRD(Base):
                 return
 
         assert False, f"Wait backing image manager {name} restart failed ..."
+
+    def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
+        return NotImplemented
+
+    def check_disk_file_map_contain_specific_message(self, bi_name, expected_message):
+        return NotImplemented

@@ -66,13 +66,33 @@ class node_keywords:
     def enable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=True)
 
+    def request_eviction_on_default_disk(self, node_name):
+        self.node.set_default_disk_eviction_requested(node_name, evictionRequested=True)
+
+    def cancel_eviction_on_default_disk(self, node_name):
+        self.node.set_default_disk_eviction_requested(node_name, evictionRequested=False)
+
+    def request_eviction_on_disk(self, node_name, disk_name):
+        self.node.set_disk_eviction_requested(node_name, disk_name, evictionRequested=True)
+
+    def cancel_eviction_on_disk(self, node_name, disk_name):
+        self.node.set_disk_eviction_requested(node_name, disk_name, evictionRequested=False)
+
     def disable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=False)
 
     def enable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=True)
 
-    def reset_node_schedule(self):
+    def reset_disk_eviction_and_scheduling(self):
+        nodes = self.node.list_node_names_by_role("worker")
+        for node_name in nodes:
+            disks = self.node.list_disks_by_node_name(node_name)
+            for disk_name in disks:
+                self.node.set_disk_eviction_requested(node_name, disk_name, evictionRequested=False)
+                self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=True)
+
+    def reset_node_scheduling(self):
         nodes = self.node.list_node_names_by_role("worker")
         for node_name in nodes:
             self.enable_node_scheduling(node_name)
@@ -103,3 +123,12 @@ class node_keywords:
 
     def list_volume_devices_on_node(self, node_name):
         return self.node.list_volume_devices(node_name)
+
+    def remove_backing_image_files_on_node(self, bi_name, node_name):
+        return self.node.remove_backing_image_files_on_node(bi_name, node_name)
+
+    def set_backing_image_folder_immutable_on_node(self, bi_name, node_name):
+        return self.node.set_backing_image_folder_immutable_on_node(bi_name, node_name)
+
+    def set_backing_image_folder_mutable_on_node(self, bi_name, node_name):
+        return self.node.set_backing_image_folder_mutable_on_node(bi_name, node_name)
