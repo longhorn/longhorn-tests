@@ -61,6 +61,9 @@ class backing_image_keywords:
                     f"but expected '{image_name}'"
                 )
 
+    def wait_for_no_backing_image_data_source_pod_exist(self):
+        return self.backing_image.wait_for_no_backing_image_data_source_pod_exist()
+
     def get_backing_image_data_source_pod_count(self):
         response = self.backing_image.list_backing_image_data_source_pod()
         return len(response)

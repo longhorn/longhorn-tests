@@ -90,3 +90,10 @@ class BackingImage(Base):
             label_selector=f"longhorn.io/component=backing-image-manager,longhorn.io/node={node_name}"
         )
         return pods[0].metadata.name
+
+    def wait_for_no_backing_image_data_source_pod_exist(self):
+        for i in range(self.retry_count):
+            response = self.list_backing_image_data_source_pod()
+            if len(response) == 0:
+                return
+        assert False, f"{len(response)} backing image data source pod exist"
