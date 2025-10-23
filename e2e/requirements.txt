@@ -8,3 +8,4 @@ boto3==1.40.55
 pyyaml==6.0.3
 minio==5.0.10
 robotframework-retryfailed
+prometheus_client
