@@ -23,6 +23,12 @@ class CRD(Base):
     def all_disk_file_status_are_ready(self, bi_name):
         return NotImplemented
 
+    def disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        return NotImplemented
+
+    def wait_for_disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        return NotImplemented
+
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         return NotImplemented
 
