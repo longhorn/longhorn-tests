@@ -52,8 +52,6 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.8.0/test-backups-and-system-backups-removed-during-uninstalling/</loc>
