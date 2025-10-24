@@ -43,7 +43,7 @@ System upgrade with compatible backing image manager image
     END
 
     IF    '${DATA_ENGINE}' == 'v2'
-        Fail    Test case not support for v2 data engine
+        Skip    Test case not support for v2 data engine
     END
 
     ${BACKING_IMAGE_MANAGER_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE
@@ -132,7 +132,7 @@ System upgrade with the same backing image manager image
     ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/
     ${BACKING_IMAGE_MANAGER_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE
     IF    '${DATA_ENGINE}' == 'v2'
-        Fail    Test case not support for v2 data engine
+        Skip    Test case not support for v2 data engine
     END
 
     When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=1
