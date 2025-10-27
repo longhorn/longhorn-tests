@@ -40,6 +40,23 @@ class InstanceManager:
 
         assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
 
+    def wait_for_all_instance_manager_removed(self):
+        longhorn_client = get_longhorn_client()
+
+        for i in range(self.retry_count):
+            try:
+                instance_managers = longhorn_client.list_instance_manager()
+                if len(instance_managers) == 0:
+                    logging(f"All instance managers have been removed")
+                    return
+            except Exception as e:
+                logging(f"Getting instance manager state error: {e}")
+
+            logging(f"Waiting for all instance managers to be removed, retry ({i}) ... current count: {len(instance_managers)}")
+            time.sleep(self.retry_interval)
+
+        assert False, f"Expected all instance managers to be removed, but still found {len(instance_managers)} instance managers: {instance_managers}"
+
     def wait_all_instance_managers_recreated(self):
         retry_count, retry_interval = get_retry_count_and_interval()
         core_api = client.CoreV1Api()
