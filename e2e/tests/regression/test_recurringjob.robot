@@ -11,6 +11,9 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/snapshot.resource
+
+Library    random
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -30,6 +33,39 @@ Test Recurring Job Assignment Using StorageClass
     And Check volume of deployment 0 has recurringjob group backup-job-group
     And Check snapshot recurringjob snapshot-job work for volume of deployment 0
     And Check backup recurringjob backup-job work for volume of deployment 0
+
+Test Volume Deletion During Recurring Job Execution
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11925
+    ...    1. Create multiple volumes, write data, create a system-created snapshot (via rebuilding) then create a regular snapshot.
+    ...    2. Launch a snapshot-cleanup recurring job for all volumes. Make sure the concurrency is 1. (So that the job will be executed for a long time and we have a chance to remove a volume.)
+    ...    3. Wait for the recurring job to trigger and monitor its log.
+    ...    4. When log Found %v volumes with recurring job %v is printed, remove one volume that has not been purged by the job immediately.
+    FOR   ${i}    IN RANGE    10
+        Given Create volume ${i} with    size=64Mi    dataEngine=${DATA_ENGINE}
+        And Attach volume ${i}
+        And Wait for volume ${i} healthy
+        And Write 32 Mi data to volume ${i}
+        # create system-created snapshots by triggering replica rebuilding
+        # for further snapshot-cleanup recurring job
+        And Delete volume ${i} replica on node 0
+    END
+    FOR   ${i}    IN RANGE    10
+        And Wait for volume ${i} healthy
+        And Create snapshot ${i} of volume ${i}
+    END
+    When Create snapshot-cleanup recurringjob snapshot-cleanup-job    groups=["default"]    cron=2 minutes from now
+    And Run command and wait for output
+    ...    kubectl logs -l recurring-job.longhorn.io=snapshot-cleanup-job -n longhorn-system
+    ...    volumes with recurring job
+    # we have a total of 10 volumes
+    # randomly delete 4 of them
+    ${randoms}=    Evaluate    random.sample(range(0, 10), 4)    random
+    FOR   ${i}    IN    @{randoms}
+        Then Delete volume ${i}    wait=False
+    END
+    And Run command and not expect output
+    ...    kubectl logs -l recurring-job.longhorn.io=snapshot-cleanup-job -n longhorn-system -f
+    ...    panic
 
 Test System Backup Recurring Job When volume-backup-policy is disabled
     [Tags]    system-backup-recurring-job

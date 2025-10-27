@@ -6,6 +6,8 @@ mkdir -p "${TMP_DIR}"
 rm -rf "${TMP_DIR:?}/"*
 cd ${TMP_DIR}
 
+DP_IMAGE_PATH="dp.apps.rancher.io/containers"
+
 parse_appco_chart(){
   chart_uri="$1"
   chart_version="$2"
@@ -37,37 +39,19 @@ parse_appco_chart(){
 }
 
 get_test_images(){
-  file_name="longhorn-images.txt"
-  if [[ "${LONGHORN_CHART_URI}" == "longhorn/longhorn" ]]; then
-    wget https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_VERSION#v}/deploy/longhorn-images.txt -O "${file_name}"
-  else
-    target_dir=appco-${LONGHORN_VERSION}
-    parse_appco_chart "${LONGHORN_CHART_URI}" "${LONGHORN_VERSION}" "${file_name}"
-  fi
-
-  CUSTOM_LONGHORN_ENGINE_IMAGE=$(grep 'longhorn-engine:' "${file_name}" || true)
-  CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=$(grep 'longhorn-instance-manager:' "${file_name}" || true)
-  CUSTOM_LONGHORN_MANAGER_IMAGE=$(grep 'longhorn-manager:' "${file_name}" || true)
-  CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=$(grep 'longhorn-share-manager:' "${file_name}" || true)
-  CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=$(grep 'backing-image-manager:' "${file_name}" || true)
-  CUSTOM_LONGHORN_UI_IMAGE=$(grep 'longhorn-ui:' "${file_name}" || true)
-  CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE=$(grep 'support-bundle-kit:' "${file_name}" || true)
-  CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE=$(grep 'attacher:' "${file_name}" || true)
-  CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE=$(grep 'provisioner:' "${file_name}" || true)
-  CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE=$(grep 'node-driver-registrar:' "${file_name}" || true)
-  CUSTOM_LONGHORN_CSI_RESIZER_IMAGE=$(grep 'resizer:' "${file_name}" || true)
-  CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE=$(grep 'snapshotter:' "${file_name}" || true)
-  CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE=$(grep 'livenessprobe:' "${file_name}" || true)
-
-  # Replace dp.apps.rancher.io to APPCO_LONGHORN_COMPONENT_REGISTRY
-  if [[ -n "$APPCO_LONGHORN_COMPONENT_REGISTRY" && "${LONGHORN_CHART_URI}" != "longhorn/longhorn" ]]; then
-    CUSTOM_LONGHORN_ENGINE_IMAGE="${CUSTOM_LONGHORN_ENGINE_IMAGE/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
-    CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
-    CUSTOM_LONGHORN_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
-    CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
-    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
-    CUSTOM_LONGHORN_UI_IMAGE="${CUSTOM_LONGHORN_UI_IMAGE/dp.apps.rancher.io/${APPCO_LONGHORN_COMPONENT_REGISTRY}}"
-  fi
+  CUSTOM_LONGHORN_ENGINE_IMAGE="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-engine:${LONGHORN_COMPONENT_TAG}"
+  CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-instance-manager:${LONGHORN_COMPONENT_TAG}"
+  CUSTOM_LONGHORN_MANAGER_IMAGE="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-manager:${LONGHORN_COMPONENT_TAG}"
+  CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-share-manager:${LONGHORN_COMPONENT_TAG}"
+  CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-backing-image-manager:${LONGHORN_COMPONENT_TAG}"
+  CUSTOM_LONGHORN_UI_IMAGE="${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-ui:${LONGHORN_COMPONENT_TAG}"
+  CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE="${DP_IMAGE_PATH}/rancher-support-bundle-kit:${SUPPORT_BUNDLE_TAG}"
+  CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE="${DP_IMAGE_PATH}/kubernetes-csi-external-attacher:${CSI_ATTACHER_TAG}"
+  CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE="${DP_IMAGE_PATH}/kubernetes-csi-external-provisioner:${CSI_PROVISIONER_TAG}"
+  CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE="${DP_IMAGE_PATH}/kubernetes-csi-node-driver-registrar:${CSI_REGISTRAR_TAG}"
+  CUSTOM_LONGHORN_CSI_RESIZER_IMAGE="${DP_IMAGE_PATH}/kubernetes-csi-external-resizer:${CSI_RESIZER_TAG}"
+  CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE="${DP_IMAGE_PATH}/kubernetes-csi-external-snapshotter:${CSI_SNAPSHOTTER_TAG}"
+  CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE="${DP_IMAGE_PATH}/kubernetes-csi-livenessprobe:${CSI_LIVENESSPROBE_TAG}"
 }
 
 get_stable_upgrade_images(){
@@ -168,15 +152,6 @@ init_image_arrays() {
 }
 
 write_longhorn_env_vars(){
-  if [[ -n "${LONGHORN_COMPONENT_TAG}" ]]; then
-    CUSTOM_LONGHORN_ENGINE_IMAGE="${CUSTOM_LONGHORN_ENGINE_IMAGE%:*}:${LONGHORN_COMPONENT_TAG}"
-    CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE="${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE%:*}:${LONGHORN_COMPONENT_TAG}"
-    CUSTOM_LONGHORN_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE%:*}:${LONGHORN_COMPONENT_TAG}"
-    CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE="${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE%:*}:${LONGHORN_COMPONENT_TAG}"
-    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE="${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE%:*}:${LONGHORN_COMPONENT_TAG}"
-    CUSTOM_LONGHORN_UI_IMAGE="${CUSTOM_LONGHORN_UI_IMAGE%:*}:${LONGHORN_COMPONENT_TAG}"
-  fi
-
   # For Jenkins source and use those images
   cat <<EOF > /tmp/longhorn_env_vars.sh
 export CUSTOM_LONGHORN_ENGINE_IMAGE="${CUSTOM_LONGHORN_ENGINE_IMAGE}"

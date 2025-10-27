@@ -20,6 +20,7 @@ from utility.utility import filter_cr
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+from utility.utility import get_cron_after
 
 
 class CRD(Base):
@@ -32,6 +33,9 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, name, task, groups, cron, retain, concurrency, label, parameters):
+        if "minutes from now" in cron:
+            minutes = int(cron.split()[0])
+            cron = get_cron_after(minutes)
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "RecurringJob",

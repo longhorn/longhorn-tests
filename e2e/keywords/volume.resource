@@ -130,8 +130,9 @@ Detach volume ${volume_id} from attached node
     detach_volume    ${volume_name}    ${node_name}
 
 Delete volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    delete_volume    ${volume_name}
+    delete_volume    ${volume_name}    &{config}
 
 Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -141,6 +142,11 @@ Write data to volume ${volume_id}
 Write ${size} GB data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${checksum} =    write_volume_random_data   ${volume_name}    ${${size} * 1024}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
+
+Write ${size} Mi data to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${checksum} =    write_volume_random_data   ${volume_name}    ${size}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write data ${data_id} to volume ${volume_id}
