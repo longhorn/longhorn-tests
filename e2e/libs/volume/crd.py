@@ -100,7 +100,7 @@ class CRD(Base):
         except ApiException as e:
             logging(f"Failed to create volume {volume_name} with parameters {body}: {e}")
 
-    def delete(self, volume_name):
+    def delete(self, volume_name, wait):
         try:
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
@@ -109,7 +109,8 @@ class CRD(Base):
                 plural="volumes",
                 name=volume_name
             )
-            self.wait_for_volume_deleted(volume_name)
+            if wait:
+                self.wait_for_volume_deleted(volume_name)
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
