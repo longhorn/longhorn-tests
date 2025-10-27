@@ -15,6 +15,13 @@ Verify all disk file status of backing image ${backing_image_name} are ready
 Wait for all disk file status of backing image ${backing_image_name} are ready
     wait_for_all_disk_file_status_are_ready    ${backing_image_name}
 
+Verify disk file status of backing image ${backing_image_name} are expected
+    [Arguments]    &{config}
+    disk_file_status_match_expected    ${backing_image_name}    &{config}
+
+Wait for disk file status of backing image ${backing_image_name} are expected
+    [Arguments]    &{config}
+    wait_for_disk_file_status_match_expected    ${backing_image_name}    &{config}
 Wait for all disk file status of backing image ${backing_image_name} are failed
     wait_all_disk_file_status_are_at_state    ${backing_image_name}    failed
 
