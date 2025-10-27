@@ -58,7 +58,7 @@ Backing image with sync failure
     ...                - Monitor the backing-image-manager pod log. Verify the backoff works for the sync retry as well.
     ...                - Unset the immutable flag for the backing image directory. Then the retry should succeed, and the volume should become healthy
     IF    '${DATA_ENGINE}' == 'v2'
-        Fail    Test case not support for v2 data engine
+        Skip    Test case not support for v2 data engine
     END
 
     Given Create backing image bi-test with    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
