@@ -250,6 +250,14 @@ class Node:
                 disk.allowScheduling = allowScheduling
         self.update_disks(node_name, node.disks)
 
+    def set_default_disk_eviction_requested(self, node_name, evictionRequested):
+        node = get_longhorn_client().by_id_node(node_name)
+
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                disk.evictionRequested = evictionRequested
+        self.update_disks(node_name, node.disks)
+
     def set_disk_scheduling(self, node_name, disk_name, allowScheduling):
         logging(f"Setting node {node_name} disk {disk_name} allowScheduling to {allowScheduling}")
         node = get_longhorn_client().by_id_node(node_name)
@@ -257,6 +265,15 @@ class Node:
         for name, disk in iter(node.disks.items()):
             if name == disk_name:
                 disk.allowScheduling = allowScheduling
+        self.update_disks(node_name, node.disks)
+
+    def set_disk_eviction_requested(self, node_name, disk_name, evictionRequested):
+        logging(f"Setting node {node_name} disk {disk_name} evictionRequested to {evictionRequested}")
+        node = get_longhorn_client().by_id_node(node_name)
+
+        for name, disk in iter(node.disks.items()):
+            if name == disk_name:
+                disk.evictionRequested = evictionRequested
         self.update_disks(node_name, node.disks)
 
     def label_node(self, node_name, label):
@@ -313,9 +330,18 @@ class Node:
 
     def get_disk_uuid(self, node_name, disk_name):
         node = get_longhorn_client().by_id_node(node_name)
+        if disk_name == "default":
+            for key, value in node["disks"].items():
+                if "default" in key:
+                    disk_name = key
+                    break
         uuid = node["disks"][disk_name]["diskUUID"]
         logging(f"Got node {node_name} disk {disk_name} uuid = {uuid}")
         return uuid
+
+    def list_disks_by_node_name(self, node_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        return [key for key in node["disks"].keys()]
 
     def wait_for_node_down(self, node_name):
         for i in range(self.retry_count):
@@ -349,5 +375,20 @@ class Node:
 
     def list_volume_devices(self, node_name):
         cmd = "ls /dev/longhorn/"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
+
+    def remove_backing_image_files_on_node(self, bi_name, node_name):
+        cmd = f"rm /var/lib/longhorn/backing-images/{bi_name}-*/backing*"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
+
+    def set_backing_image_folder_immutable_on_node(self, bi_name, node_name):
+        cmd = f"chattr +i /var/lib/longhorn/backing-images/{bi_name}-*/"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        return res
+
+    def set_backing_image_folder_mutable_on_node(self, bi_name, node_name):
+        cmd = f"chattr -i /var/lib/longhorn/backing-images/{bi_name}-*/"
         res = NodeExec(node_name).issue_cmd(cmd)
         return res

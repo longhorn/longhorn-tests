@@ -17,8 +17,8 @@ class recurringjob_keywords:
             label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}"
         )
 
-        logging(f'Cleaning up {len(recurringjobs["items"])} recurringjobs')
-        for recurringjob in recurringjobs['items']:
+        logging(f'Cleaning up {len(recurringjobs)} recurringjobs')
+        for recurringjob in recurringjobs:
             self.recurringjob.delete(recurringjob['metadata']['name'])
 
     def create_recurringjob(self, job_name, task, groups="[]", cron="*/2 * * * *", concurrency=1, labels="{}"):
@@ -39,6 +39,9 @@ class recurringjob_keywords:
         logging(f'Checking recurringjobs work for volume {volume_name}')
         self.recurringjob.check_jobs_work(volume_name)
 
+    def check_recurringjob_work_for_volume(self, job_name, job_task, volume_name):
+        self.recurringjob.check_recurringjob_work_for_volume(job_name, job_task, volume_name)
+
     def create_system_backup_recurringjob(self, job_name, parameters={'volume-backup-policy': 'if-not-present'}):
         logging(f'Creating system-backup recurringjob {job_name} with parameters {parameters}')
         self.recurringjob.create(job_name, task="system-backup", parameters=parameters)
@@ -54,3 +57,9 @@ class recurringjob_keywords:
     def wait_for_recurringjob_pod_completion_without_error(self, job_name):
         logging(f'Waiting for recurringjob {job_name} pod completion without error')
         self.recurringjob.wait_for_pod_completion_without_error(job_name)
+
+    def check_recurringjob_concurrency(self, job_name, concurrency):
+        self.recurringjob.check_recurringjob_concurrency(job_name, concurrency)
+
+    def update_recurringjob(self, job_name, groups=None, cron=None, concurrency=None, labels=None, parameters=None):
+        self.recurringjob.update_recurringjob(job_name, groups, cron, concurrency, labels, parameters)

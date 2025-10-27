@@ -1,7 +1,7 @@
 import time
 
 from node import Node
-from metrics.metrics import get_node_metrics
+from metrics.metrics import get_node_metrics, check_longhorn_metric
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
@@ -47,3 +47,5 @@ class metrics_keywords:
             time.sleep(self.retry_count)
             assert False, f"Node {node_name} is under memory pressure"
 
+    def check_longhorn_metric(self, metric_name, node_name=None, metric_label=None, expected_value=None):
+        check_longhorn_metric(metric_name, node_name, metric_label, expected_value)
