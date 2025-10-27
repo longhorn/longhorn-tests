@@ -19,6 +19,5 @@ class Base(ABC):
     def add_to_volume(self, job_name, volume_name):
         return NotImplemented
 
-    @abstractmethod
     def check_jobs_work(self, volume_name):
         return NotImplemented

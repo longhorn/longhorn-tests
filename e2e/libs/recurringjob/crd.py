@@ -1,4 +1,8 @@
 import time
+import json
+from datetime import datetime
+import re
+from collections import Counter
 
 from kubernetes import client
 from kubernetes import watch
@@ -7,6 +11,7 @@ from recurringjob.base import Base
 from recurringjob.constant import RETRY_COUNTS
 from recurringjob.constant import RETRY_INTERVAL
 from recurringjob.rest import Rest
+from volume.crd import CRD as VolumeCRD
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
@@ -14,6 +19,7 @@ from utility.constant import LONGHORN_NAMESPACE
 from utility.utility import filter_cr
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
 
 
 class CRD(Base):
@@ -71,30 +77,169 @@ class CRD(Base):
             return False
 
     def get(self, name):
-        return self.obj_api.get_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace="longhorn-system",
-            plural="recurringjobs",
-            name=name,
-        )
+        cmd = f"kubectl get recurringjobs -n longhorn-system {name} -ojson"
+        return json.loads(subprocess_exec_cmd(cmd))
 
     def list(self, label_selector=None):
-        return self.obj_api.list_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace="longhorn-system",
-            plural="recurringjobs",
-            label_selector=label_selector
-        )
+        label_selector = f"-l {label_selector}" if label_selector else ""
+        cmd = f"kubectl get recurringjobs -n longhorn-system {label_selector} -ojson"
+        return json.loads(subprocess_exec_cmd(cmd))["items"]
 
     def add_to_volume(self, job_name, volume_name):
         logging("Delegating the add_to_volume call to API because there is no CRD implementation")
         return self.rest.add_to_volume(job_name, volume_name)
 
+    def get_volume_recurringjobs_and_groups(self, volume_name):
+        for i in range(self.retry_count):
+            try:
+                jobs = VolumeCRD().get_volume_recurringjobs(volume_name)
+                groups = VolumeCRD().get_volume_recurringjob_groups(volume_name)
+                return jobs, groups
+            except Exception as e:
+                logging(f"Getting volume {volume_name} recurring jobs and groups error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get volume {volume_name} recurring jobs and groups"
+
     def check_jobs_work(self, volume_name):
-        logging("Delegating the check_jobs_work call to API because there is no CRD implementation")
-        return self.rest.check_jobs_work(volume_name)
+        jobs, groups = self.get_volume_recurringjobs_and_groups(volume_name)
+        # handle jobs
+        for job_name in jobs:
+            job = self.get(job_name)
+            logging(f"Checking recurring job {job}")
+            if job['spec']['task'] == 'snapshot':
+                self.check_volume_snapshot_created_by_recurringjob(volume_name, job_name)
+            elif job['spec']['task'] == 'backup':
+                self.check_volume_backup_created_by_recurringjob(volume_name, job_name)
+            else:
+                assert False, f"Unhandled recurring job {job}"
+        # handle groups
+        all_jobs = self.list()
+        group_jobs = []
+        for job in all_jobs:
+            if any(g in job['spec']['groups'] for g in groups):
+                group_jobs.append(job['spec']['name'])
+        for job_name in group_jobs:
+            job = self.get(job_name)
+            logging(f"Checking recurring job {job}")
+            if job['spec']['task'] == 'snapshot':
+                self.check_volume_snapshot_created_by_recurringjob(volume_name, job_name)
+            elif job['spec']['task'] == 'backup':
+                self.check_volume_backup_created_by_recurringjob(volume_name, job_name)
+            else:
+                assert False, f"Unhandled recurring job {job}"
+
+    def check_recurringjob_work_for_volume(self, job_name, job_task, volume_name):
+        logging(f"Checking {job_task} is created for volume {volume_name} by recurring job {job_name}")
+        if job_task == 'snapshot':
+            self.check_volume_snapshot_created_by_recurringjob(volume_name, job_name)
+        elif job_task == 'backup':
+            self.check_volume_backup_created_by_recurringjob(volume_name, job_name)
+        else:
+            assert False, f"Unhandled recurring job task {job_task}"
+
+    def check_volume_snapshot_created_by_recurringjob(self, volume_name, job_name):
+        # check snapshot can be created by the recurringjob
+        current_time = datetime.utcnow()
+        current_timestamp = current_time.timestamp()
+        label_selector=f"longhornvolume={volume_name}"
+        snapshot_timestamp = 0
+        for i in range(self.retry_count):
+            self.delete_expired_pending_recurringjob_pod(job_name)
+
+            logging(f"Waiting for {volume_name} new snapshot created ({i}) ...")
+            snapshot_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "snapshots", label_selector=label_selector)
+            try:
+                if len(snapshot_list['items']) > 0:
+                    for item in snapshot_list['items']:
+                        # this snapshot can be created by snapshot or backup recurringjob
+                        # but job_name is in spec.labels.RecurringJob
+                        # and crd doesn't support field selector
+                        # so need to filter by ourselves
+                        if item['spec']['labels'] and 'RecurringJob' in item['spec']['labels'] and \
+                            item['spec']['labels']['RecurringJob'] == job_name and \
+                            item['status']['readyToUse'] == True:
+                            snapshot_time = item['metadata']['creationTimestamp']
+                            snapshot_time = datetime.strptime(snapshot_time, '%Y-%m-%dT%H:%M:%SZ')
+                            snapshot_timestamp = snapshot_time.timestamp()
+                        if snapshot_timestamp > current_timestamp:
+                            logging(f"Got snapshot {item}, create time = {snapshot_time}, timestamp = {snapshot_timestamp}")
+                            return
+            except Exception as e:
+                logging(f"Iterating snapshot list error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"since {current_time},\
+                        there's no new snapshot created by recurringjob \
+                        {snapshot_list}"
+
+    def check_volume_backup_created_by_recurringjob(self, volume_name, job_name, retry_count=-1):
+        if retry_count == -1:
+            retry_count = self.retry_count
+
+        # check backup can be created by the recurringjob
+        current_time = datetime.utcnow()
+        current_timestamp = current_time.timestamp()
+        label_selector=f"backup-volume={volume_name}"
+        backup_timestamp = 0
+        for i in range(retry_count):
+            self.delete_expired_pending_recurringjob_pod(job_name)
+
+            logging(f"Waiting for {volume_name} new backup created ({i}) ...")
+            backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "backups", label_selector=label_selector)
+            try:
+                if len(backup_list['items']) > 0:
+                    for item in backup_list['items']:
+                        state = item['status']['state']
+                        if state != "Completed":
+                            continue
+                        backup_time = item['metadata']['creationTimestamp']
+                        backup_time = datetime.strptime(backup_time, '%Y-%m-%dT%H:%M:%SZ')
+                        backup_timestamp = backup_time.timestamp()
+                        if backup_timestamp > current_timestamp:
+                            logging(f"Got backup {item}, create time = {backup_time}, timestamp = {backup_timestamp}")
+                            return
+            except Exception as e:
+                logging(f"Iterating backup list error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"since {current_time},\
+                        there's no new backup created by recurringjob \
+                        {backup_list}"
+
+    def delete_expired_pending_recurringjob_pod(self, job_name, namespace=LONGHORN_NAMESPACE, expiration_seconds=5 * 60):
+        """
+        Deletes expired pending recurring job pods in the specified namespace.
+
+        This method lists all pods in the given namespace with the label
+        `recurring-job.longhorn.io={job_name}` and status `Pending`.
+        It calculates the age of each pod and deletes those that have been
+        pending for longer than the specified expiration time.
+
+        This is a workaround for an upstream issue where CronJob pods may remain
+        stuck in the `Pending` state indefinitely after a node reboot.
+        Issue: https://github.com/longhorn/longhorn/issues/7956
+        """
+        try:
+            pod_list = self.core_v1_api.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=f"recurring-job.longhorn.io={job_name}"
+            )
+            for pod in pod_list.items:
+                if pod.status.phase != "Pending":
+                    continue
+
+                pod_age = time.time() - pod.metadata.creation_timestamp.timestamp()
+                if pod_age > expiration_seconds:
+                    logging(f"Deleting expired pending recurringjob pod {pod.metadata.name}")
+                    self.core_v1_api.delete_namespaced_pod(
+                        name=pod.metadata.name,
+                        namespace=namespace,
+                        grace_period_seconds=0
+                    )
+                    logging(f"Deleted pod {pod.metadata.name}")
+                else:
+                    logging(f"Recurringjob pod {pod.metadata.name} in Pending state,\
+                        age {pod_age:.2f} < expiration {expiration_seconds}s")
+        except Exception as e:
+            logging(f"Failed to delete expired pending recurringjob pods: {e}")
 
     def wait_for_cron_job_create(self, job_name):
         is_created = False
@@ -133,8 +278,7 @@ class CRD(Base):
         assert False, f"Waiting for systembackup created by job {job_name} to reach state {expected_state} failed"
 
     def assert_volume_backup_created(self, volume_name, job_name, retry_count=-1):
-        logging("Delegating the assert_volume_backup_created call to API because there is no CRD implementation")
-        return self.rest.assert_volume_backup_created(volume_name, job_name, retry_count=retry_count)
+        self.check_volume_backup_created_by_recurringjob(volume_name, job_name, retry_count=retry_count)
 
     def wait_for_pod_completion_without_error(self, job_name, namespace=LONGHORN_NAMESPACE):
         """
@@ -223,3 +367,48 @@ class CRD(Base):
 
         w.stop()
         raise Exception(f"Recurring job {job_name} did not complete successfully within the timeout ({timeout_seconds} seconds).")
+
+    def check_recurringjob_concurrency(self, job_name, concurrency):
+        # monitor the recurring job for 5 minutes to confirm the concurrency
+        # the log looks like:
+        # time="2025-10-08T03:58:00.800807962Z" level=info msg="Creating volume job"
+        pattern = re.compile(r'time="[^T]+T(\d{2}:\d{2}:\d{2})\.\d+Z".*Creating volume job')
+        cmd = f"kubectl logs -l recurring-job.longhorn.io={job_name} -n longhorn-system"
+        checked = False
+        timestamps = None
+        for i in range(60):
+            try:
+                logs = subprocess_exec_cmd(cmd)
+            except Exception as e:
+                logging(f"Failed to get {job_name} logs: {e}")
+            timestamps = pattern.findall(logs)
+            if not timestamps:
+                logging(f"No job created for {job_name}")
+            else:
+                counts = Counter(timestamps)
+                for timestamp, count in sorted(counts.items()):
+                    logging(f"{count} jobs created at {timestamp} for {job_name}")
+                    if count == int(concurrency):
+                        checked = True
+                    elif count > int(concurrency):
+                        logging(f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently")
+                        time.sleep(self.retry_count)
+                        assert False, f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently"
+            time.sleep(5)
+        assert checked, f"Recurring job {job_name} concurrency is {concurrency}, but can't find {concurrency} jobs created concurrently"
+
+    def update_recurringjob(self, job_name, groups, cron, concurrency, labels, parameters):
+        patch_data = {"spec": {}}
+        if groups is not None:
+            patch_data["spec"]["groups"] = groups
+        if cron is not None:
+            patch_data["spec"]["cron"] = cron
+        if concurrency is not None:
+            patch_data["spec"]["concurrency"] = int(concurrency)
+        if labels is not None:
+            patch_data["spec"]["labels"] = labels
+        if parameters is not None:
+            patch_data["spec"]["parameters"] = parameters
+        patch_json = json.dumps(patch_data)
+        cmd = f"kubectl -n longhorn-system patch recurringjob {job_name} --type merge -p '{patch_json}'"
+        subprocess_exec_cmd(cmd)

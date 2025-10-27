@@ -6,14 +6,20 @@ class backing_image_keywords:
     def __init__(self):
         self.backing_image = BackingImage()
 
-    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1):
-        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies)
+    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True):
+        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation)
 
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)
 
     def wait_for_all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.wait_for_all_disk_file_status_are_ready(bi_name)
+
+    def disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        self.backing_image.disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
+
+    def wait_for_disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+        self.backing_image.wait_for_disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
 
     def clean_up_backing_image_from_a_random_disk(self, bi_name):
         self.backing_image.clean_up_backing_image_from_a_random_disk(bi_name)
@@ -58,3 +64,16 @@ class backing_image_keywords:
     def get_backing_image_data_source_pod_count(self):
         response = self.backing_image.list_backing_image_data_source_pod()
         return len(response)
+
+    def wait_backing_image_data_source_pod_created(self, bi_name):
+        create_time = self.backing_image.wait_backing_image_data_source_pod_created(bi_name)
+        return create_time
+
+    def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
+        self.backing_image.wait_all_disk_file_status_are_at_state(bi_name, expected_state)
+
+    def check_disk_file_map_contain_specific_message(self, bi_name, expect_message):
+        self.backing_image.check_disk_file_map_contain_specific_message(bi_name, expect_message)
+
+    def get_backing_image_manager_pod_on_node(self, node_name):
+        return self.backing_image.get_backing_image_manager_pod_on_node(node_name)
