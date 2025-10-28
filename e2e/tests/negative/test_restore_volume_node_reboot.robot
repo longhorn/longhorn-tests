@@ -48,7 +48,7 @@ Restore volume attached node is down
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Create volume 1 from backup 0 of volume 0  dataEngine=${DATA_ENGINE}  encrypted=${encrypted}
         And Wait for volume 1 restoration from backup 0 of volume 0 start
-        And Power off volume 1 volume node without waiting
+        And Power off volume 1 volume node
         Then Wait for volume 1 restoration to complete
 
         When Attach volume 1 to healthy node
