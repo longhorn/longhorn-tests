@@ -4784,6 +4784,23 @@ def wait_for_snapshot_count(volume, number,
         f"Got count={count}"
 
 
+def wait_for_system_snapshot_count(volume, number, retry_counts=120):
+    for _ in range(retry_counts):
+        count = 0
+        for snapshot in volume.snapshotList():
+            if not snapshot.usercreated and snapshot.name != VOLUME_HEAD_NAME:
+                count += 1
+
+        if count == number:
+            return
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+
+    assert False, \
+        f"failed to wait for system snapshot.\n" \
+        f"Expect count={number}\n" \
+        f"Got count={count}"
+
+
 def wait_and_get_pv_for_pvc(api, pvc_name):
     found = False
     for i in range(RETRY_COUNTS):
