@@ -83,7 +83,7 @@ variable "block_device_size_worker" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.32.4"
+  default     = "v1.34.1"
 }
 
 variable "use_hdd" {
