@@ -174,6 +174,12 @@ class workload_keywords:
         logging(f'Waiting for workload {workload_name} volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
 
+    def wait_for_workload_volume_attached(self, workload_name):
+        volume_name = get_workload_volume_name(workload_name)
+
+        logging(f'Waiting for workload {workload_name} volume {volume_name} to be attached')
+        self.volume.wait_for_volume_attached(volume_name)
+
     def wait_for_workload_volume_detached(self, workload_name):
         volume_name = get_workload_volume_name(workload_name)
 

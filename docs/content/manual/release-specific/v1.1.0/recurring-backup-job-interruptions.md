@@ -44,6 +44,4 @@ https://github.com/longhorn/longhorn/issues/1882
 2. Enable ```Allow Recurring Job While Volume Is Detached```
 3. Attach a volume to pod of a statefulSet, write data into it and set a recurring backup.
 4. The attached node to volume is powered down when the recurring job backup was in progress.
-5. The backup is in error state.
-6. After 7 min the cron job takes over the creation of another pod of stateful set and the volume gets auto attached to another node, completes the backup and gets detached.
-7. Verify the statefulSet pod successfully reattaches to the volume after sometime.
+5. After 7 min the cron job takes over the creation of another pod of stateful set and the volume gets auto attached to another node, completes the backup and gets detached.

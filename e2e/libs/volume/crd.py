@@ -453,6 +453,7 @@ class CRD(Base):
 
     def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         complete = False
+        engines = None
         for i in range(self.retry_count):
             logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} to complete ({i}) ...")
             try:
@@ -463,7 +464,7 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume_name} engines error: {e}")
             time.sleep(self.retry_interval)
-        assert complete
+        assert complete, f"Failed to wait for volume {volume_name} restoration from backup {backup_name} to complete: {engines}"
 
         volume = self.get(volume_name)
         if not volume['status']['isStandby']:
