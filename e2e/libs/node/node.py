@@ -171,12 +171,15 @@ class Node:
         all_nodes = sorted(filter_nodes(nodes, lambda node: True))
 
         control_plane_labels = {
-            "node-role.kubernetes.io/master": "true",
-            "node-role.kubernetes.io/control-plane": "true",
-            "node-role.kubernetes.io/control-plane": "",
-            "talos.dev/owned-labels": "[\"node-role.kubernetes.io/control-plane\"]"
+            "node-role.kubernetes.io/master": ["true"],
+            "node-role.kubernetes.io/control-plane": ["true", ""],
+            "talos.dev/owned-labels": ["[\"node-role.kubernetes.io/control-plane\"]"]
         }
-        condition = lambda node: any(label in node.metadata.labels.keys() and node.metadata.labels[label] == value for label, value in control_plane_labels.items())
+
+        condition = lambda node: any(
+            label in node.metadata.labels and node.metadata.labels[label] in values
+            for label, values in control_plane_labels.items()
+        )
         control_plane_nodes = sorted(filter_nodes(nodes, condition))
 
         worker_nodes = sorted([node for node in all_nodes if node not in control_plane_nodes])
