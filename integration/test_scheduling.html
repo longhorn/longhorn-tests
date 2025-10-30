@@ -3057,62 +3057,123 @@ redundancy.</p>
 <pre><code class="python">@pytest.mark.csi  # NOQA
 def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
-    Test that kube-scheduler is aware of storage capacity available on each
+    Test that kube-scheduler is aware of schedulable storage on each
     node when scheduling pods using a StorageClass with volumeBindingMode set
     to &#39;WaitForFirstConsumer&#39;.
 
-    1. Reduce the schedulable storage on all nodes (except the current node)
-       to 4Gi.
-    2. Create a new StorageClass with volumeBindingMode set
+    1. Update &#39;storage-over-provisioning-percentage&#39; to 400.
+    2. Reduce the schedulable storage on all nodes (except the current node)
+       to 1Gi.
+    3. Compute max schedulable storage on the current node taking into account
+       the &#39;storage-over-provisioning-percentage&#39; setting.
+    4. Create a new StorageClass with volumeBindingMode set
        to &#39;WaitForFirstConsumer&#39;.
-    3. Deploy a StatefulSet with 3 replicas, each requesting a 5Gi PVC using
-       the StorageClass from step 2.
-    4. Verify that all pods are scheduled onto the current node (since it’s the
-       only one with sufficient storage).
+    5. Create a StatefulSet with 2 replicas, each requesting the max
+       schedulable storage size.
+    6. Verify pod 0 is scheduled to the current node and volume 0 is attached
+       to the current node.
+    7. Verify pod 1 is not scheduled because there is no node with sufficient
+       storage and that its PVC is in Pending state.
     &#34;&#34;&#34;
+    # Set storage over-provisioning to 400%
+    over_provisioning_percentage = 400
+    update_setting(client,
+                   SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
+                   str(over_provisioning_percentage))
 
+    # Calculate max schedulable storage on current node
+    # and limit other nodes to 1Gi
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
+    max_schedulable_storage = 0
     for node in nodes:
-        if node.id != lht_hostId:
+        if node.id == lht_hostId:
             disks = node.disks
             for _, disk in disks.items():
-                disk.storageReserved = disk.storageMaximum - 4 * Gi
+                disk_max = disk.storageMaximum - disk.storageReserved
+                over_provision_limit = \
+                    disk_max * over_provisioning_percentage / 100
+                schedulable_storage = \
+                    over_provision_limit - disk.storageScheduled
+                max_schedulable_storage = \
+                    max(max_schedulable_storage, schedulable_storage)
+        else:
+            disks = node.disks
+            for _, disk in disks.items():
+                disk.storageReserved = disk.storageMaximum - 1 * Gi
             update_disks = get_update_disks(disks)
             update_node_disks(client, node.name, disks=update_disks,
                               retry=True)
 
+    # Create StorageClass with WaitForFirstConsumer
     sc_name = &#39;longhorn-wait-for-first-consumer&#39;
     storage_class[&#39;metadata&#39;][&#39;name&#39;] = sc_name
     storage_class[&#39;volumeBindingMode&#39;] = &#39;WaitForFirstConsumer&#39;
     storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#39;1&#39;
     create_storage_class(storage_class)
 
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 3
+    # Wait for CSIStorageCapacity objects to get updated
+    sleep(10)
+
+    # Create StatefulSet with 2 replicas
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 2
     volume_claim_template = statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0]
     volume_claim_template[&#39;spec&#39;][&#39;storageClassName&#39;] = sc_name
-    volume_claim_template[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = &#39;5Gi&#39;
-    create_and_wait_statefulset(statefulset)
+    volume_claim_template[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;]\
+        = size_to_string(int(max_schedulable_storage))
+    create_statefulset(statefulset)
 
+    # Verify pod 0 is scheduled to the current node
     pod_namespace = statefulset[&#34;metadata&#34;][&#34;namespace&#34;]
-    for i in range(statefulset[&#39;spec&#39;][&#39;replicas&#39;]):
-        pod_name = statefulset[&#34;metadata&#34;][&#34;name&#34;] + &#39;-&#39; + str(i)
-        sts_pod = core_api.read_namespaced_pod(
-            name=pod_name, namespace=pod_namespace)
-        assert sts_pod.spec.node_name == lht_hostId</code></pre>
+    pod_0_name = statefulset[&#34;metadata&#34;][&#34;name&#34;] + &#39;-0&#39;
+    wait_pod(pod_0_name)
+    pod_0 = core_api.read_namespaced_pod(name=pod_0_name,
+                                         namespace=pod_namespace)
+    assert pod_0.spec.node_name == lht_hostId
+
+    # Verify volume 0 is attached to the current node
+    pvc_0_name = volume_claim_template[&#39;metadata&#39;][&#39;name&#39;] + &#39;-&#39; + \
+        statefulset[&#34;metadata&#34;][&#34;name&#34;] + &#39;-0&#39;
+    pvc_0 = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_0_name, namespace=pod_namespace)
+    volume_0_name = pvc_0.spec.volume_name
+    volume_0 = wait_for_volume_healthy(client, volume_0_name)
+    assert volume_0.replicas[0][&#39;hostId&#39;] == lht_hostId
+
+    # Verify pod 1 is not scheduled (insufficient storage)
+    pod_1_name = statefulset[&#34;metadata&#34;][&#34;name&#34;] + &#39;-1&#39;
+    with pytest.raises(AssertionError):
+        wait_pod(pod_1_name)
+    pod_1 = core_api.read_namespaced_pod(name=pod_1_name,
+                                         namespace=pod_namespace)
+    assert pod_1.spec.node_name is None
+    assert pod_1.status.phase == &#39;Pending&#39;
+
+    # Verify PVC 1 is pending because pod is not scheduled
+    pvc_1_name = volume_claim_template[&#39;metadata&#39;][&#39;name&#39;] + &#39;-&#39; + \
+        statefulset[&#34;metadata&#34;][&#34;name&#34;] + &#39;-1&#39;
+    pvc_1 = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_1_name, namespace=pod_namespace)
+    assert pvc_1.spec.volume_name is None
+    assert pvc_1.status.phase == &#34;Pending&#34;</code></pre>
 </details>
-<div class="desc"><p>Test that kube-scheduler is aware of storage capacity available on each
+<div class="desc"><p>Test that kube-scheduler is aware of schedulable storage on each
 node when scheduling pods using a StorageClass with volumeBindingMode set
 to 'WaitForFirstConsumer'.</p>
 <ol>
+<li>Update 'storage-over-provisioning-percentage' to 400.</li>
 <li>Reduce the schedulable storage on all nodes (except the current node)
-to 4Gi.</li>
+to 1Gi.</li>
+<li>Compute max schedulable storage on the current node taking into account
+the 'storage-over-provisioning-percentage' setting.</li>
 <li>Create a new StorageClass with volumeBindingMode set
 to 'WaitForFirstConsumer'.</li>
-<li>Deploy a StatefulSet with 3 replicas, each requesting a 5Gi PVC using
-the StorageClass from step 2.</li>
-<li>Verify that all pods are scheduled onto the current node (since it’s the
-only one with sufficient storage).</li>
+<li>Create a StatefulSet with 2 replicas, each requesting the max
+schedulable storage size.</li>
+<li>Verify pod 0 is scheduled to the current node and volume 0 is attached
+to the current node.</li>
+<li>Verify pod 1 is not scheduled because there is no node with sufficient
+storage and that its PVC is in Pending state.</li>
 </ol></div>
 </dd>
 <dt id="tests.test_scheduling.test_volume_disk_soft_anti_affinity"><code class="name flex">
