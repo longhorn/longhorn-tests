@@ -39,7 +39,7 @@ Backing image with an invalid URL schema
     ${creation_time}=     Wait backimg image bi-test data source pod created
     And Wait for all disk file status of backing image bi-test are failed
     And Wait for all disk file status of backing image bi-test are failed-and-cleanup
-    And Wait backimg image data source pod terminated
+    And Wait backing image data source pod terminated
 
     FOR    ${i}    IN RANGE    3
         ${recreation_time}=    Wait backimg image bi-test data source pod created
@@ -47,7 +47,7 @@ Backing image with an invalid URL schema
         And Wait for all disk file status of backing image bi-test are failed
         And Wait for all disk file status of backing image bi-test are failed-and-cleanup
         And Disk file message of backing image bi-test should contain failed to process sync file
-        And Wait backimg image data source pod terminated
+        And Wait backing image data source pod terminated
         ${creation_time}=    Set Variable    ${recreation_time}
     END
 
@@ -58,7 +58,7 @@ Backing image with sync failure
     ...                - Monitor the backing-image-manager pod log. Verify the backoff works for the sync retry as well.
     ...                - Unset the immutable flag for the backing image directory. Then the retry should succeed, and the volume should become healthy
     IF    '${DATA_ENGINE}' == 'v2'
-        Fail    Test case not support for v2 data engine
+        Skip    Test case not support for v2 data engine
     END
 
     Given Create backing image bi-test with    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
@@ -68,9 +68,10 @@ Backing image with sync failure
 
     When Get test start time
     And Remove backing image bi-test files and set immutable on node 1
-    And Wait for volume 0 degraded    
+    And Wait for volume 0 degraded
+    And Sleep    5
     And Verify backing image manager log on node 1 contain failed to process sync file after test start
-    And Verify backing image manager log on node 1 contain prepare to sync backing image after test start    
+    And Verify backing image manager log on node 1 contain prepare to sync backing image after test start
 
     When Unset backing image bi-test folder immutable on node 1    
     And Wait for volume 0 healthy

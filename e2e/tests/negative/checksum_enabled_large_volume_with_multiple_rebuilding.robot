@@ -52,6 +52,10 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     ...                - Fail one of the replica (node down or network partition) and wait for the replica becomes failed.
     ...                - Power on node (or recover network)
     ...                - Rebuilding (expect faster than without the two settings enabled)
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volume won't pass this test case due to issue: https://github.com/longhorn/longhorn/issues/11833
+    END
+
     Given Create volume 0 with    size=50Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy

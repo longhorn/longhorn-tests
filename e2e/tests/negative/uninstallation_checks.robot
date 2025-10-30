@@ -68,3 +68,52 @@ Uninstallation Checks
     And Attach volume 0
     And Wait for volume 0 healthy
     Then Check volume 0 data is backup 0 created in another cluster
+
+Uninstall Longhorn After Disabling V1 And V2 Data Engines
+    [Documentation]    Test uninstalling Longhorn after disabling both v1 and v2 data engines
+    ...    Related Issue:
+    ...    https://github.com/longhorn/longhorn/issues/11934
+    ...
+    ...    Prerequisites
+    ...    - Have a setup of Longhorn installed on a kubernetes cluster.
+    ...
+    ...    Test steps
+    ...    - 1. Create volume, write data, and take backup.
+    ...    - 2. Detach volume
+    ...    - 3. Disable v1 data engine by setting v1-data-engine to false.
+    ...    - 4. Disable v2 data engine by setting v2-data-engine to false.
+    ...    - 5. Wait for all instance managers to be removed.
+    ...    - 6. Set deleting-confirmation-flag to true.
+    ...    - 7. Uninstall Longhorn.
+    ...    - 8. Check all the components of Longhorn from the namespace longhorn-system are uninstalled.
+    ...    - 9. Check all the CRDs are removed.
+    ...    - 10. Reinstall Longhorn to verify the system can be installed again.
+    ...
+    ...    Expected behavior
+    ...    - Longhorn should be uninstalled successfully without being stuck at removing backup target.
+    ...    - All Longhorn components and CRDs should be removed.
+    ...    - Longhorn can be reinstalled successfully after uninstallation.
+
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data 0 300 MB to volume 0
+
+    When Create backup 0 for volume 0
+    Then Verify backup list contains no error for volume 0
+    And Verify backup list contains backup 0 of volume 0
+    And Detach volume 0
+    And Setting v1-data-engine is set to false
+    And Setting v2-data-engine is set to false
+
+    # Wait for all instance managers to be removed after disabling data engines
+    When Wait for all instance managers removed
+
+    # Set deleting confirmation flag and uninstall Longhorn
+    Then Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    # Verify Longhorn can be reinstalled
+    And Install Longhorn
+    And Wait for Longhorn components all running

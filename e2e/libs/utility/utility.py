@@ -8,6 +8,7 @@ import signal
 import subprocess
 import shlex
 import json
+from datetime import datetime, timedelta, timezone
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
@@ -397,3 +398,8 @@ def is_json_object(s):
     if isinstance(parsed, dict):
         return parsed
     raise ValueError(f"input {s} is not a valid json object")
+
+
+def get_cron_after(minutes):
+    future = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    return f"{future.minute} {future.hour} * * *"
