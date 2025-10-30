@@ -94,6 +94,18 @@ Cordon ${workload_kind} ${workload_id} volume node
     cordon_node    ${volume_node}
     check_node_is_not_schedulable    ${volume_node}
 
+Cordon all other nodes beside ${workload_kind} ${workload_id} volume node
+    ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name}=      get_workload_volume_name    ${workload_name}
+    ${volume_node}=      get_volume_node    ${volume_name}
+    FOR    ${node_id}    IN RANGE    0    3
+        ${node_name}=    get_node_by_index    ${node_id}
+        Run Keyword Unless    '${node_name}' == '${volume_node}'    cordon_node    ${node_name}
+    END
+
+Uncordon nodes
+    uncordon_all_nodes
+
 Force drain all nodes
     FOR    ${node_id}    IN RANGE    0    3
         ${node_name} =    get_node_by_index    ${node_id}

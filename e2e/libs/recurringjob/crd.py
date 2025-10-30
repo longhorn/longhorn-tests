@@ -372,6 +372,29 @@ class CRD(Base):
         w.stop()
         raise Exception(f"Recurring job {job_name} did not complete successfully within the timeout ({timeout_seconds} seconds).")
 
+    def wait_for_recurringjob_pod_completion(self, job_name, namespace=LONGHORN_NAMESPACE):
+        timeout_seconds = 30 * 60   # 30 minutes timeout
+
+        w = watch.Watch()
+        for event in w.stream(
+            self.core_v1_api.list_namespaced_pod,
+            namespace=namespace,
+            label_selector=f"recurring-job.longhorn.io={job_name}",
+            timeout_seconds=timeout_seconds
+        ):
+            pod = event['object']
+            pod_name = pod.metadata.name
+            status = pod.status.phase
+            logging(f"Pod {pod_name} status: {status}")
+
+            if status == "Succeeded":
+                logging(f"Pod {pod_name} for recurring job {job_name} completed successfully (Succeeded).")
+                w.stop()
+                return
+
+        w.stop()
+        raise Exception(f"Recurring job {job_name} did not succeed within the timeout ({timeout_seconds} seconds).")
+
     def check_recurringjob_concurrency(self, job_name, concurrency):
         # monitor the recurring job for 5 minutes to confirm the concurrency
         # the log looks like:
