@@ -898,9 +898,7 @@
 <li>Enable <code>Allow Recurring Job While Volume Is Detached</code></li>
 <li>Attach a volume to pod of a statefulSet, write data into it and set a recurring backup.</li>
 <li>The attached node to volume is powered down when the recurring job backup was in progress.</li>
-<li>The backup is in error state.</li>
 <li>After 7 min the cron job takes over the creation of another pod of stateful set and the volume gets auto attached to another node, completes the backup and gets detached.</li>
-<li>Verify the statefulSet pod successfully reattaches to the volume after sometime.</li>
 </ol>
 
     </article>
