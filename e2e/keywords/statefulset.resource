@@ -61,6 +61,10 @@ Wait for statefulset ${statefulset_id} volume detached
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     wait_for_workload_volume_detached    ${statefulset_name}
 
+Wait for statefulset ${statefulset_id} volume attached
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_workload_volume_attached    ${statefulset_name}
+
 Wait for statefulset ${statefulset_id} pods stable
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     wait_for_workload_pods_stable   ${statefulset_name}
