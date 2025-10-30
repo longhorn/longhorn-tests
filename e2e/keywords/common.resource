@@ -34,6 +34,10 @@ Run command and expect output
     [Arguments]    ${command}    ${expected_output}
     execute_command_and_expect_output    ${command}    ${expected_output}
 
+Run command and wait for output
+    [Arguments]    ${command}    ${expected_output}
+    execute_command_and_wait_for_output    ${command}    ${expected_output}
+
 Run command and not expect output
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_and_not_expect_output    ${command}    ${unexpected_output}
@@ -87,6 +91,7 @@ Cleanup test resources
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
     uncordon_all_nodes
+    cleanup_node_labels
     cleanup_control_plane_network_latency
     reset_disk_eviction_and_scheduling
     reset_node_scheduling
@@ -107,7 +112,6 @@ Cleanup test resources
     cleanup_system_restores
     delete_orphans
     cleanup_backing_images
-    cleanup_node_labels
     cleanup_disks
     cleanup_engine_images
     reset_backupstore

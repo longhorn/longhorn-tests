@@ -68,7 +68,7 @@ variable "lh_aws_instance_type_worker" {
 
 variable "block_device_size_controlplane" {
   type        = number
-  default     = 40
+  default     = 64
 }
 
 variable "aws_ssh_public_key_file_path" {

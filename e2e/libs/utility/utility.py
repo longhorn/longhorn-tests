@@ -8,6 +8,7 @@ import signal
 import subprocess
 import shlex
 import json
+from datetime import datetime, timedelta, timezone
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
@@ -105,9 +106,15 @@ def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
         logging(f"Executing command {cmd}")
 
     if isinstance(cmd, str):
-        res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True)
+        try:
+            res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            res = e.output
     elif isinstance(cmd, list):
-        res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True)
+        try:
+            res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            res = e.output
     else:
         raise ValueError("Command must be a string or list")
 
@@ -391,3 +398,8 @@ def is_json_object(s):
     if isinstance(parsed, dict):
         return parsed
     raise ValueError(f"input {s} is not a valid json object")
+
+
+def get_cron_after(minutes):
+    future = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    return f"{future.minute} {future.hour} * * *"

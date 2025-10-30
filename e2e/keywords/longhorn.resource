@@ -24,6 +24,9 @@ Library             ../libs/keywords/engine_keywords.py
 Wait for longhorn ready
     wait_for_all_instance_manager_running
 
+Wait for all instance managers removed
+    wait_for_all_instance_manager_removed
+
 Wait for Longhorn workloads pods stable
     [Arguments]    @{args}
     @{workload_list} =    Create List
