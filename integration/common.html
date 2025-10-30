@@ -4512,6 +4512,22 @@ greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.is_json_object"><code class="name flex">
+<span>def <span class="ident">is_json_object</span></span>(<span>s)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_json_object(s):
+    parsed = json.loads(s)
+    if isinstance(parsed, dict):
+        return parsed
+    raise ValueError(f&#34;input {s} is not a valid json object&#34;)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.is_k8s_node_gke_cos"><code class="name flex">
 <span>def <span class="ident">is_k8s_node_gke_cos</span></span>(<span>core_api)</span>
 </code></dt>
@@ -6713,8 +6729,22 @@ def sts_name(request):
             print(e)
             time.sleep(RETRY_INTERVAL)
     value = &#34;&#34; if value is None else value
-    assert setting.value == value, \
-        f&#34;expect update setting {name} to be {value}, but it&#39;s {setting.value}&#34;</code></pre>
+
+    try:
+        updated_setting = is_json_object(setting.value)
+        try:
+            value = is_json_object(value)
+            assert updated_setting == value, \
+                f&#34;Failed to update setting {name} to {value}, \
+                    current value is {updated_setting}&#34;
+        except ValueError:
+            assert all(v == value for v in updated_setting.values()), \
+                f&#34;Failed to update setting {name} to {value}, \
+                    current value is {updated_setting}&#34;
+    except ValueError:
+        assert setting.value == value, \
+            f&#34;Failed to update setting {name} to {value}, \
+                current value is {setting.value}&#34;</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -10285,6 +10315,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.is_backupTarget_cifs" href="#tests.common.is_backupTarget_cifs">is_backupTarget_cifs</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_nfs" href="#tests.common.is_backupTarget_nfs">is_backupTarget_nfs</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_s3" href="#tests.common.is_backupTarget_s3">is_backupTarget_s3</a></code></li>
+<li><code><a title="tests.common.is_json_object" href="#tests.common.is_json_object">is_json_object</a></code></li>
 <li><code><a title="tests.common.is_k8s_node_gke_cos" href="#tests.common.is_k8s_node_gke_cos">is_k8s_node_gke_cos</a></code></li>
 <li><code><a title="tests.common.is_k8s_node_label" href="#tests.common.is_k8s_node_label">is_k8s_node_label</a></code></li>
 <li><code><a title="tests.common.is_replica_available" href="#tests.common.is_replica_available">is_replica_available</a></code></li>
