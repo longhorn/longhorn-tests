@@ -3344,6 +3344,10 @@ def test_delete_backup_during_restoring_volume(set_random_backupstore, client): 
        And &#34;status&#34; of volume restore condition should be &#34;False&#34;,
        And &#34;reason&#34; of volume restore condition should be &#34;RestoreFailure&#34;
     &#34;&#34;&#34;
+    if DATA_ENGINE == &#34;v2&#34;:
+        pytest.skip(&#34;Skipping test: unresolved known issue: \
+            https://github.com/longhorn/longhorn/issues/11828&#34;)
+
     # Step 1
     vol_v1_name = &#34;vol-v1&#34;
     vol_v1 = create_and_check_volume(client, vol_v1_name, size=str(512 * Mi))

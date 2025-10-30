@@ -8816,6 +8816,32 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_system_snapshot_count"><code class="name flex">
+<span>def <span class="ident">wait_for_system_snapshot_count</span></span>(<span>volume, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_system_snapshot_count(volume, number, retry_counts=120):
+    for _ in range(retry_counts):
+        count = 0
+        for snapshot in volume.snapshotList():
+            if not snapshot.usercreated and snapshot.name != VOLUME_HEAD_NAME:
+                count += 1
+
+        if count == number:
+            return
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+
+    assert False, \
+        f&#34;failed to wait for system snapshot.\n&#34; \
+        f&#34;Expect count={number}\n&#34; \
+        f&#34;Got count={count}&#34;</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_tainted_node_engine_image_undeployed"><code class="name flex">
 <span>def <span class="ident">wait_for_tainted_node_engine_image_undeployed</span></span>(<span>client, img_name, tainted_node)</span>
 </code></dt>
@@ -10407,6 +10433,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
 <li><code><a title="tests.common.wait_for_support_bundle_cleanup" href="#tests.common.wait_for_support_bundle_cleanup">wait_for_support_bundle_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_support_bundle_state" href="#tests.common.wait_for_support_bundle_state">wait_for_support_bundle_state</a></code></li>
+<li><code><a title="tests.common.wait_for_system_snapshot_count" href="#tests.common.wait_for_system_snapshot_count">wait_for_system_snapshot_count</a></code></li>
 <li><code><a title="tests.common.wait_for_tainted_node_engine_image_undeployed" href="#tests.common.wait_for_tainted_node_engine_image_undeployed">wait_for_tainted_node_engine_image_undeployed</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_attached" href="#tests.common.wait_for_volume_attached">wait_for_volume_attached</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_clone_status" href="#tests.common.wait_for_volume_clone_status">wait_for_volume_clone_status</a></code></li>
