@@ -52,6 +52,9 @@ Test Uninstall When Backing Image Exists
     END
 
 Test Backup Backing Image
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    backing up a backing image for a v2 backing image isn't supported yet: https://github.com/longhorn/longhorn/issues/9992
+    END
     Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
     When Create backup backing image bi-backup for backing image bi
     Then Wait for backing image backup for backing image bi ready
