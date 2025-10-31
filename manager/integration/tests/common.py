@@ -4784,6 +4784,23 @@ def wait_for_snapshot_count(volume, number,
         f"Got count={count}"
 
 
+def wait_for_system_snapshot_count(volume, number, retry_counts=120):
+    for _ in range(retry_counts):
+        count = 0
+        for snapshot in volume.snapshotList():
+            if not snapshot.usercreated and snapshot.name != VOLUME_HEAD_NAME:
+                count += 1
+
+        if count == number:
+            return
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+
+    assert False, \
+        f"failed to wait for system snapshot.\n" \
+        f"Expect count={number}\n" \
+        f"Got count={count}"
+
+
 def wait_and_get_pv_for_pvc(api, pvc_name):
     found = False
     for i in range(RETRY_COUNTS):
@@ -5828,6 +5845,13 @@ def get_engine_image_status_value(client, ei_name):
         return "ready"
 
 
+def is_json_object(s):
+    parsed = json.loads(s)
+    if isinstance(parsed, dict):
+        return parsed
+    raise ValueError(f"input {s} is not a valid json object")
+
+
 def update_setting(client, name, value):
     for _ in range(RETRY_COUNTS):
         try:
@@ -5838,8 +5862,22 @@ def update_setting(client, name, value):
             print(e)
             time.sleep(RETRY_INTERVAL)
     value = "" if value is None else value
-    assert setting.value == value, \
-        f"expect update setting {name} to be {value}, but it's {setting.value}"
+
+    try:
+        updated_setting = is_json_object(setting.value)
+        try:
+            value = is_json_object(value)
+            assert updated_setting == value, \
+                f"Failed to update setting {name} to {value}, \
+                    current value is {updated_setting}"
+        except ValueError:
+            assert all(v == value for v in updated_setting.values()), \
+                f"Failed to update setting {name} to {value}, \
+                    current value is {updated_setting}"
+    except ValueError:
+        assert setting.value == value, \
+            f"Failed to update setting {name} to {value}, \
+                current value is {setting.value}"
 
 
 def update_persistent_volume_claim(core_api, name, namespace, claim):
