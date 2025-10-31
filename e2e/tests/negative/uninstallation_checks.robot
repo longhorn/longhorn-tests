@@ -93,8 +93,12 @@ Uninstall Longhorn After Disabling V1 And V2 Data Engines
     ...    - Longhorn should be uninstalled successfully without being stuck at removing backup target.
     ...    - All Longhorn components and CRDs should be removed.
     ...    - Longhorn can be reinstalled successfully after uninstallation.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    it's not possible to uninstall longhorn with v2 volumes or block disks when v2-data-engine is disabled. \
+        it fails with error "The disk disk-1(/dev/nvme1n1) is a block device, but the SPDK feature is not enabled"
+    END
 
-    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    Given Create volume 0
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data 0 300 MB to volume 0
