@@ -21,3 +21,8 @@ e2e/bin
 e2e/lib
 e2e/lib64
 pyvenv.cfg
+
+# Robot Framework output files
+*.html
+*.xml
+/tmp/test-report/
