@@ -25,6 +25,7 @@ def REGISTRY_URL = ""
 def RUN_V2_INTERRUPT_MODE = params.RUN_V2_INTERRUPT_MODE ? params.RUN_V2_INTERRUPT_MODE : false
 
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
+def DISABLE_V1_DATA_ENGINE = params.DISABLE_V1_DATA_ENGINE ? params.DISABLE_V1_DATA_ENGINE : false
 
 // parameter for mTls
 def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
@@ -145,6 +146,7 @@ node {
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
+                                       --env DISABLE_V1_DATA_ENGINE=${DISABLE_V1_DATA_ENGINE} \
                                        --env RUN_V2_INTERRUPT_MODE=${RUN_V2_INTERRUPT_MODE} \
                                        --env CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
