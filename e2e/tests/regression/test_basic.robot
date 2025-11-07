@@ -82,8 +82,10 @@ Test V1 Snapshot
     And Wait for volume 0 detached
     And Attach volume 0 in maintenance mode
     And Wait for volume 0 healthy
+    And Create snapshot 3 of volume 0
+    Then Validate snapshot 3 is parent of volume-head in volume 0 snapshot list
 
-    And Revert volume 0 to snapshot 1
+    When Revert volume 0 to snapshot 1
     And Detach volume 0
     And Wait for volume 0 detached
     And Attach volume 0
