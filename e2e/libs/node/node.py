@@ -321,11 +321,23 @@ class Node:
             exec_cmd = ["kubectl", "label", "node", node_name, "node.longhorn.io/disable-v2-data-engine-"]
             res = subprocess_exec_cmd(exec_cmd)
 
+    def cleanup_node_taints(self):
+        nodes = self.list_node_names_by_role("worker")
+        for node_name in nodes:
+            logging(f"Cleaning up node {node_name} taints")
+            exec_cmd = f"kubectl taint nodes {node_name} node-role.kubernetes.io/worker=true:NoExecute-"
+            subprocess_exec_cmd(exec_cmd)
+            self.check_node_schedulable(node_name, "True")
+
     def check_node_schedulable(self, node_name, schedulable):
-        node = get_longhorn_client().by_id_node(node_name)
-        for _ in range(self.retry_count):
-            if node["conditions"]["Schedulable"]["status"] == schedulable:
-                break
+        for i in range(self.retry_count):
+            try:
+                logging(f"Waiting for node {node_name} schedulable={schedulable} ... ({i})")
+                node = get_longhorn_client().by_id_node(node_name)
+                if node["conditions"]["Schedulable"]["status"] == schedulable:
+                    break
+            except Exception as e:
+                logging(f"Waiting for node {node_name} schedulable={schedulable} error: {e}")
             time.sleep(self.retry_interval)
         assert node["conditions"]["Schedulable"]["status"] == schedulable
 

@@ -30,6 +30,10 @@ Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 
 *** Keywords ***
+Run command
+    [Arguments]    ${command}
+    execute_command    ${command}
+
 Run command and expect output
     [Arguments]    ${command}    ${expected_output}
     execute_command_and_expect_output    ${command}    ${expected_output}
@@ -98,6 +102,7 @@ Cleanup test resources
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
     uncordon_all_nodes
+    cleanup_node_taints
     cleanup_node_labels
     cleanup_control_plane_network_latency
     reset_disk_eviction_and_scheduling

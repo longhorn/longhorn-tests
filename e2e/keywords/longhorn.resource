@@ -99,7 +99,8 @@ Check all Longhorn CRD removed
     check_longhorn_crd_removed
 
 Install Longhorn
-    install_longhorn_system
+    [Arguments]    &{config}
+    install_longhorn_system    &{config}
 
 Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
