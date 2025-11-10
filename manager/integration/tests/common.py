@@ -3883,6 +3883,16 @@ def reset_settings(client):
                     print(e)
                 continue
 
+        if setting_name == SETTING_V1_DATA_ENGINE:
+            setting = client.by_id_setting(setting_name)
+            if os.environ.get('DISABLE_V1_DATA_ENGINE') == "true":
+                try:
+                    client.update(setting, value="false")
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to false")
+                    print(e)
+                continue
+
         if setting_name == SETTING_DATA_ENGINE_INTERRUPT_MODE:
             if os.environ.get('RUN_V2_INTERRUPT_MODE') == "true":
                 setting = client.by_id_setting(setting_name)
