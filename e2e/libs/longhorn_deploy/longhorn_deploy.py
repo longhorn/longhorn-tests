@@ -41,13 +41,13 @@ class LonghornDeploy(Base):
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
 
-    def install(self, install_stable_version):
+    def install(self, custom_cmd, install_stable_version):
         logging(f"Installing Longhorn {'stable' if install_stable_version else 'the latest'} version")
         self.longhorn.create_longhorn_namespace()
         self.longhorn.install_backupstores()
         self.longhorn.create_registry_secret()
         self.longhorn.create_aws_secret()
-        installed = self.longhorn.install(install_stable_version)
+        installed = self.longhorn.install(custom_cmd, install_stable_version)
         if not installed:
             logging(f"Installing Longhorn failed")
             time.sleep(self.retry_count)

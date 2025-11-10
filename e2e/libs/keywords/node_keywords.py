@@ -60,6 +60,9 @@ class node_keywords:
     def cleanup_node_labels(self):
         self.node.cleanup_node_labels()
 
+    def cleanup_node_taints(self):
+        self.node.cleanup_node_taints()
+
     def disable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False)
 

@@ -10,7 +10,7 @@ wait_longhorn_status_running(){
   sleep 2m
   while [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep csi-` ]] || \
     [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep engine-image-` ]] || \
-    [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v "Running\|Completed"` ]]; do
+    [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v "Running\|Completed\|Pending"` ]]; do
     echo "Longhorn is still installing ... re-checking in 1m"
     sleep ${RETRY_INTERVAL}
     RETRIES=$((RETRIES+1))
