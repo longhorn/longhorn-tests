@@ -50,6 +50,7 @@ def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
     ]
     pvc['spec']['storageClassName'] = DEFAULT_STORAGECLASS_NAME
     storage_class['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
+    storage_class['parameters']['dataEngine'] = DATA_ENGINE
     volume_size = DEFAULT_VOLUME_SIZE * Gi
 
     create_storage(core_api, storage_class, pvc)
@@ -153,6 +154,7 @@ def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
     ]
     pvc['spec']['storageClassName'] = DEFAULT_STORAGECLASS_NAME
     storage_class['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
+    storage_class['parameters']['dataEngine'] = DATA_ENGINE
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
     create_storage(core_api, storage_class, pvc)
@@ -253,6 +255,7 @@ def test_provisioner_fs_format(client, core_api, storage_class, # NOQA
     pod['spec']['nodeName'] = get_self_host_id()
     pvc['spec']['storageClassName'] = DEFAULT_STORAGECLASS_NAME
     storage_class['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
+    storage_class['parameters']['dataEngine'] = DATA_ENGINE
     storage_class['parameters']['mkfsParams'] = \
         "-I {} -b {} -O ^metadata_csum,^64bit".format(inode_size, block_size)
 

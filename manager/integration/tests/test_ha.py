@@ -963,7 +963,6 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     backupstore_cleanup(client)
 
 
-@pytest.mark.v2_volume_test
 def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
@@ -1036,7 +1035,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     dr_volume_name = volume_name + "-dr"
     client.create_volume(name=dr_volume_name, size=str(1 * Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
-                         frontend="", standby=True)
+                         frontend="", standby=True, dataEngine=DATA_ENGINE)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_healthy_no_frontend(client, dr_volume_name)
     wait_for_backup_restore_completed(client, dr_volume_name, b1.name)

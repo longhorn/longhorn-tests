@@ -3094,7 +3094,8 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
         name=volume_name,
         size=SIZE,
         numberOfReplicas=1,
-        dataLocality="strict-local")
+        dataLocality="strict-local",
+        dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
 
     pvc_name = volume_name + "-pvc"
