@@ -39,6 +39,18 @@ Enable node ${node_id} scheduling
     ${node_name} =    get_node_by_index    ${node_id}
     enable_node_scheduling    ${node_name}
 
+Evict node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${evicted_node} =    Set Variable    ${node_name}
+    Append to list    ${evicted_nodes}    ${evicted_node}
+    evict_node    ${node_name}
+
+Unevict evicted nodes
+    FOR    ${evicted_node}    IN    @{evicted_nodes}
+        Run keyword And Ignore Error    unevict_node    ${evicted_node}
+        Remove Values From List    ${evicted_nodes}    ${evicted_node}
+    END
+
 Disable node ${node_id} default disk
     ${node_name} =    get_node_by_index    ${node_id}
     disable_default_disk    ${node_name}

@@ -245,6 +245,30 @@ class Node:
             time.sleep(self.retry_interval)
         assert False, f"Setting node {node_name} allowScheduling to {allowScheduling} failed"
 
+    def evict_node(self, node_name):
+        logging(f"Evicting node {node_name}")
+        exec_cmd = f"""
+            kubectl patch nodes.longhorn.io {node_name} -n longhorn-system --type=merge -p '{{
+                \"spec\": {{
+                    \"evictionRequested\": true,
+                    \"allowScheduling\": false
+                }}
+            }}'
+        """
+        subprocess_exec_cmd(exec_cmd)
+
+    def unevict_node(self, node_name):
+        logging(f"Unevicting node {node_name}")
+        exec_cmd = f"""
+            kubectl patch nodes.longhorn.io {node_name} -n longhorn-system --type=merge -p '{{
+                \"spec\": {{
+                    \"evictionRequested\": false,
+                    \"allowScheduling\": true
+                }}
+            }}'
+        """
+        subprocess_exec_cmd(exec_cmd)
+
     def set_default_disk_scheduling(self, node_name, allowScheduling):
         node = get_longhorn_client().by_id_node(node_name)
 

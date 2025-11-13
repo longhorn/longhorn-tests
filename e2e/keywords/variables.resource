@@ -14,3 +14,5 @@ ${VOLUME_STATE_CHECK_TIMEOUT}    120
 @{powered_off_nodes}=
 
 &{volume_checksums}=
+
+@{evicted_nodes}=
