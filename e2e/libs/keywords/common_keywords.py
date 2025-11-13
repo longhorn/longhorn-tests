@@ -44,6 +44,9 @@ class common_keywords:
     def pod_exec(self, pod_name, namespace, cmd):
         return pod_exec(pod_name, namespace, cmd)
 
+    def execute_command(self, cmd):
+        subprocess_exec_cmd(cmd)
+
     def execute_command_and_expect_output(self, cmd, output):
         res = subprocess_exec_cmd(cmd)
         retry_count, _ = get_retry_count_and_interval()

@@ -23,6 +23,13 @@ get_longhorn_repo(){
 }
 
 generate_longhorn_yaml_manifest() {
+
+  local custom_cmd="$1"
+  if [[ -n "$custom_cmd" ]]; then
+    custom_cmd="${custom_cmd//longhorn.yaml/$LONGHORN_MANIFEST_PATH}"
+    eval "$custom_cmd"
+  fi
+
   # get longhorn default images from yaml manifest
   LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${LONGHORN_MANIFEST_PATH}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
   LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${LONGHORN_MANIFEST_PATH}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
@@ -105,7 +112,7 @@ install_longhorn_transient(){
 
 install_longhorn_custom(){
   get_longhorn_repo
-  generate_longhorn_yaml_manifest
+  generate_longhorn_yaml_manifest "$@"
   customize_longhorn_manifest_registry
   install_longhorn
 }

@@ -36,7 +36,7 @@ class LonghornFleet(Base):
 
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
-    def install(self, install_stable_version):
+    def install(self, custom_cmd, install_stable_version):
         if install_stable_version:
             install_function = "install_longhorn_stable"
         else:

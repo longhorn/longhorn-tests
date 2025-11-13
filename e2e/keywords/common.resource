@@ -30,6 +30,10 @@ Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 
 *** Keywords ***
+Run command
+    [Arguments]    ${command}
+    execute_command    ${command}
+
 Run command and expect output
     [Arguments]    ${command}    ${expected_output}
     execute_command_and_expect_output    ${command}    ${expected_output}
@@ -76,10 +80,17 @@ Enable v2 data engine and add block disks
         add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
     END
 
+Init worker node variables
+    ${worker_nodes}=    get_worker_nodes
+    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
+    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
+    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
+
 Set up test environment
     init_k8s_api_client
     setup_control_plane_network_latency
     set_backupstore
+    Init worker node variables
     IF     "${DATA_ENGINE}" == "v2"
         Enable v2 data engine and add block disks
     END
@@ -91,6 +102,7 @@ Cleanup test resources
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
     uncordon_all_nodes
+    cleanup_node_taints
     cleanup_node_labels
     cleanup_control_plane_network_latency
     reset_disk_eviction_and_scheduling
