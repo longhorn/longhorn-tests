@@ -5,12 +5,26 @@ set -x
 install_backupstores(){
   MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml"
   NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
-  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml"
+  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/cifs-backupstore.yaml"
   AZURITE_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml"
   kubectl apply -f ${MINIO_BACKUPSTORE_URL} \
                  -f ${NFS_BACKUPSTORE_URL} \
                  -f ${CIFS_BACKUPSTORE_URL} \
                  -f ${AZURITE_BACKUPSTORE_URL}
+}
+
+install_backupstores_from_lh_repo(){
+  set +x  
+  export AWS_ACCESS_KEY_ID="${MINIO_ACCESS_KEY_ID}"
+  export AWS_SECRET_ACCESS_KEY="${MINIO_SECRET_ACCESS_KEY}"
+  export AWS_ENDPOINTS="${MINIO_ENDPOINTS}"
+  export AWS_CERT="${MINIO_CERT}"
+  export AWS_CERT_KEY="${MINIO_CERT_KEY}"
+  set -x
+
+  git clone https://github.com/longhorn/longhorn.git
+  ./longhorn/scripts/generate-backupstore-credentials.sh all --no-encode
+  kubectl apply -k ./longhorn/deploy/backupstores/overlays/generated-credentials/all/
 }
 
 setup_azurite_backup_store(){
