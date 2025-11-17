@@ -380,3 +380,40 @@ def is_workload_pods_has_annotations(workload_name, annotation_key, namespace="d
         if not (pod.metadata.annotations and annotation_key in pod.metadata.annotations):
             return False
     return True
+<<<<<<< HEAD
+=======
+
+
+def is_workload_pods_has_cni_interface(workload_name, interface_name, namespace="default", label_selector=""):
+    """Return True if all pods for the workload have a network entry with the given interface in
+    the 'k8s.v1.cni.cncf.io/network-status' annotation.
+
+    The annotation value is expected to be a JSON array (string). If parsing fails or the
+    annotation is missing / no matching interface is found for any pod, return False.
+    """
+    CNI_NETWORK_STATUS_ANNOTATION = 'k8s.v1.cni.cncf.io/network-status'
+    pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
+    for pod in pods:
+        annotations = getattr(pod.metadata, 'annotations', None)
+        if not annotations or CNI_NETWORK_STATUS_ANNOTATION not in annotations:
+            return False
+
+        net_status_raw = annotations.get(CNI_NETWORK_STATUS_ANNOTATION)
+        try:
+            networks = json.loads(net_status_raw)
+        except Exception as e:
+            logging(f"Failed to parse network-status for pod {pod.metadata.name}: {e}")
+            return False
+
+        found = False
+        for net in networks:
+            if isinstance(net, dict) and net.get('interface') == interface_name:
+                found = True
+                logging(f"Found CNI interface {interface_name} for pod {pod.metadata.name}")
+                break
+
+        if not found:
+            return False
+
+    return True
+>>>>>>> e20b9571 (test(robot): enable running robot test on storage-network pipeline, add 2nd nad for testing rwx volumes, and add rwx volume endpoint network test cases)
