@@ -26,9 +26,7 @@ Test IPv4 Only Environment
     And Run command on node    2
     ...    sudo sed -i 's/^GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="ipv6.disable=1 /' /etc/default/grub && sudo update-grub || sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     # reboot to make updated grub take effect
-    And Reboot node 0
-    And Reboot node 1
-    And Reboot node 2
+    And Restart all worker nodes
 
     When Install Longhorn
     Then Wait for Longhorn components all running
@@ -42,6 +40,4 @@ Test IPv4 Only Environment
     And Run command on node    2
     ...    sudo sed -i 's/ipv6\.disable=1 //g' /etc/default/grub && sudo update-grub || sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     # reboot to make reverted grub take effect
-    And Reboot node 0
-    And Reboot node 1
-    And Reboot node 2
+    And Restart all worker nodes

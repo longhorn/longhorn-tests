@@ -1,3 +1,9 @@
+#!/bin/bash
+
+set -x
+
+source pipelines/utilities/longhorn_status.sh
+
 if [[ "${TF_VAR_network_stack}" == "ipv6" ]]; then
   NAD_NAME="demo-fd00-168-0-0"
 else
@@ -5,6 +11,19 @@ else
 fi
 
 echo "Using NAD: $NAD_NAME"
+
+create_nad_without_storage_network(){
+  kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.0.2/deployments/multus-daemonset.yml
+  kubectl apply -f - <<EOF
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: demo-172-16-0-0
+  namespace: kube-system
+spec:
+  config: '{"cniVersion":"0.3.1","type":"cluster"}'
+EOF
+}
 
 deploy_multus_thin_plugin_daemonset(){
   curl -O "https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/${TF_VAR_multus_version}/deployments/multus-daemonset.yml"
@@ -79,6 +98,63 @@ spec:
     }'
 EOF
 kubectl apply -f nad-fd00-168-0-0.yaml
+
+# for testing endpoint-network-for-rwx-volume
+# create a second nad that reuses the same flannel overlay as nad1
+# just with a different nad name
+cat << EOF > nad-172-16-0-0.yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: demo-172-16-0-0
+  namespace: kube-system
+spec:
+  config: '{
+      "cniVersion": "0.3.1",
+      "type": "flannel",
+      "subnetFile": "/run/flannel/multus-subnet-192.168.0.0.env",
+      "dataDir": "/var/lib/cni/multus-subnet-192.168.0.0",
+      "delegate": {
+        "type": "ipvlan",
+        "master": "eth1",
+        "mode": "l3",
+          "capabilities": {
+            "ips": true
+        }
+      },
+      "kubernetes": {
+          "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
+      }
+    }'
+EOF
+kubectl apply -f nad-172-16-0-0.yaml
+
+cat << EOF > nad-fd00-172-16-0.yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: demo-fd00-172-16-0
+  namespace: kube-system
+spec:
+  config: '{
+      "cniVersion": "0.3.1",
+      "type": "flannel",
+      "subnetFile": "/run/flannel/multus-subnet-fd00:168.0.0.env",
+      "dataDir": "/var/lib/cni/multus-subnet-fd00.168.0.0",
+      "delegate": {
+        "type": "ipvlan",
+        "master": "eth1",
+        "mode": "l3",
+          "capabilities": {
+            "ips": true
+        }
+      },
+      "kubernetes": {
+          "kubeconfig": "/etc/cni/net.d/multus.d/multus.kubeconfig"
+      }
+    }'
+EOF
+kubectl apply -f nad-fd00-172-16-0.yaml
 }
 
 update_storage_network_setting(){
@@ -106,3 +182,19 @@ validate_storage_network_setting_taking_effect(){
     exit 1
   fi
 }
+
+enable_storage_network_setting(){
+  LONGHORN_NAMESPACE="longhorn-system"
+  update_storage_network_setting
+  wait_longhorn_status_running
+  validate_storage_network_setting_taking_effect
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  if declare -f "$1" > /dev/null; then
+    "$@"
+  else
+    echo "Function '$1' not found"
+    exit 1
+  fi
+fi
