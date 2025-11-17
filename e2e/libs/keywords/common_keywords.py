@@ -15,9 +15,6 @@ from utility.utility import get_retry_count_and_interval
 class common_keywords:
 
     def __init__(self):
-        pass
-
-    def init_k8s_api_client(self):
         init_k8s_api_client()
 
     def generate_name_with_suffix(self, kind, suffix):
