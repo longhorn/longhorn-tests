@@ -78,12 +78,11 @@ Enable v2 data engine and add block disks
 
 Init worker node variables
     ${worker_nodes}=    get_worker_nodes
-    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
-    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
-    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
+    Run Keyword And Ignore Error    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
+    Run Keyword And Ignore Error    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
+    Run Keyword And Ignore Error    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
 
 Set up test environment
-    init_k8s_api_client
     setup_control_plane_network_latency
     set_backupstore
     Init worker node variables

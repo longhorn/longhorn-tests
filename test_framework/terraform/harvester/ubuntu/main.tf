@@ -48,7 +48,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-kkkjv",
+            "imageName": "longhorn-qa/image-zrzpd",
             "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
@@ -98,7 +98,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-kkkjv",
+            "imageName": "longhorn-qa/image-zrzpd",
             "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
