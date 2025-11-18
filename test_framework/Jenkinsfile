@@ -50,6 +50,13 @@ node {
         string(credentialsId: 'AZURE_SUBSCRIPTION_ID', variable: 'AZURE_SUBSCRIPTION_ID'),
         string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
         file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),
+        // For backup store use
+        usernamePassword(credentialsId: 'AZBLOB_CREDS', passwordVariable: 'AZBLOB_ACCOUNT_KEY', usernameVariable: 'AZBLOB_ACCOUNT_NAME'),
+        string(credentialsId: 'AZBLOB_ENDPOINT', variable: 'AZBLOB_ENDPOINT'),
+        usernamePassword(credentialsId: 'CIFS_CREDS', passwordVariable: 'CIFS_PASSWORD', usernameVariable: 'CIFS_USERNAME'),
+        usernamePassword(credentialsId: 'MINIO_CREDS', passwordVariable: 'MINIO_SECRET_ACCESS_KEY', usernameVariable: 'MINIO_ACCESS_KEY_ID'),
+        string(credentialsId: 'MINIO_ENDPOINTS', variable: 'MINIO_ENDPOINTS'),
+        usernamePassword(credentialsId: 'MINIO_CERT_CREDS', passwordVariable: 'MINIO_CERT_KEY', usernameVariable: 'MINIO_CERT'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -170,6 +177,16 @@ node {
                                        --env QASE_TOKEN=${QASE_TOKEN} \
                                        --env QASE_PROJECT=LH \
                                        --env TF_VAR_network_stack="${NETWORK_STACK}" \
+                                       --env AZBLOB_ACCOUNT_NAME="${AZBLOB_ACCOUNT_NAME}" \
+                                       --env AZBLOB_ACCOUNT_KEY="${AZBLOB_ACCOUNT_KEY}" \
+                                       --env AZBLOB_ENDPOINT="${AZBLOB_ENDPOINT}" \
+                                       --env CIFS_USERNAME="${CIFS_USERNAME}" \
+                                       --env CIFS_PASSWORD="${CIFS_PASSWORD}" \
+                                       --env MINIO_SECRET_ACCESS_KEY="${MINIO_SECRET_ACCESS_KEY}" \
+                                       --env MINIO_ACCESS_KEY_ID="${MINIO_ACCESS_KEY_ID}" \
+                                       --env MINIO_ENDPOINTS="${MINIO_ENDPOINTS}" \
+                                       --env MINIO_CERT_KEY="${MINIO_CERT_KEY}" \
+                                       --env MINIO_CERT="${MINIO_CERT}" \
                                        ${imageName}
                 """
 
