@@ -76,10 +76,17 @@ Enable v2 data engine and add block disks
         add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
     END
 
+Init worker node variables
+    ${worker_nodes}=    get_worker_nodes
+    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
+    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
+    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
+
 Set up test environment
     init_k8s_api_client
     setup_control_plane_network_latency
     set_backupstore
+    Init worker node variables
     IF     "${DATA_ENGINE}" == "v2"
         Enable v2 data engine and add block disks
     END
