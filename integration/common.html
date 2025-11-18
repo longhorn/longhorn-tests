@@ -5752,6 +5752,16 @@ def random_labels():
                     print(e)
                 continue
 
+        if setting_name == SETTING_V1_DATA_ENGINE:
+            setting = client.by_id_setting(setting_name)
+            if os.environ.get(&#39;DISABLE_V1_DATA_ENGINE&#39;) == &#34;true&#34;:
+                try:
+                    client.update(setting, value=&#34;false&#34;)
+                except Exception as e:
+                    print(f&#34;\nException setting {setting_name} to false&#34;)
+                    print(e)
+                continue
+
         if setting_name == SETTING_DATA_ENGINE_INTERRUPT_MODE:
             if os.environ.get(&#39;RUN_V2_INTERRUPT_MODE&#39;) == &#34;true&#34;:
                 setting = client.by_id_setting(setting_name)
