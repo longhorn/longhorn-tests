@@ -2646,8 +2646,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test
-def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
+<pre><code class="python">def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -2719,7 +2718,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     dr_volume_name = volume_name + &#34;-dr&#34;
     client.create_volume(name=dr_volume_name, size=str(1 * Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
-                         frontend=&#34;&#34;, standby=True)
+                         frontend=&#34;&#34;, standby=True, dataEngine=DATA_ENGINE)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_healthy_no_frontend(client, dr_volume_name)
     wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
