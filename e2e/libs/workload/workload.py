@@ -10,6 +10,7 @@ from utility.utility import list_namespaced_pod
 
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 from workload.constant import WAIT_FOR_POD_KEPT_IN_STATE_TIME
+from workload.constant import CNI_NETWORK_STATUS_ANNOTATION
 from workload.pod import is_pod_terminated_by_kubelet
 from workload.pod import wait_for_pod_status
 

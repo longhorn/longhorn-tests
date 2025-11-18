@@ -187,8 +187,13 @@ Wait for volume ${volume_id} attached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_attached    ${volume_name}
 
+Wait for volume ${volume_id} unknown
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_unknown    ${volume_name}
+
 Wait for volume ${volume_id} attached and unknown
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     wait_for_volume_unknown    ${volume_name}
 
 Wait for volume ${volume_id} detached
@@ -511,7 +516,7 @@ Create single replica volume ${volume_id} with replica on node ${node_id}
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 1
     Delete volume ${volume_id} replica on all replica node
-    Detach volume ${volume_id}
+    Detach volume ${volume_id} from node ${node_id}
     Wait for volume ${volume_id} detached
 
 Create volume ${volume_id} attached to node ${attach_node_id} with 2 replicas excluding node ${replica_excluding_node_id}
