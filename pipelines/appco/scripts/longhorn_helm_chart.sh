@@ -5,6 +5,7 @@ set -x
 source pipelines/utilities/longhorn_status.sh
 TAG_ARGS=()
 SECRET_ARGS=()
+LONGHORN_NAMESPACE="longhorn-system"
 
 set_secret_args() {
   local chart_uri="$1"

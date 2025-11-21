@@ -92,3 +92,13 @@ class Base(ABC):
             logging(f"Setting up Longhorn UI nodeport failed")
             time.sleep(self.retry_count)
             assert False, "Setting up Longhorn UI nodeport failed"
+
+    def create_appco_secret(self):
+        command = "./pipelines/utilities/create_appco_secret.sh"
+        process = subprocess.Popen([command, "create_appco_secret"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Creating AppCo secret failed")
+            time.sleep(self.retry_count)
+            assert False, "Creating AppCo secret failed"
