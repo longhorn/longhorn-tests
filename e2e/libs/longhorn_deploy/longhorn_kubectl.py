@@ -48,13 +48,13 @@ class LonghornKubectl(Base):
 
         k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
 
-    def install(self, install_stable_version):
+    def install(self, custom_cmd, install_stable_version):
         if install_stable_version:
             install_function = "install_longhorn_stable"
         else:
             install_function = "install_longhorn_custom"
         command = "./pipelines/utilities/longhorn_manifest.sh"
-        process = subprocess.Popen([command, install_function],
+        process = subprocess.Popen([command, install_function, custom_cmd],
                                    shell=False)
         process.wait()
         return True if process.returncode == 0 else False
