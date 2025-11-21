@@ -15,6 +15,9 @@ def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONG
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def REGISTRY_URL = ""
 
+def TEST_TYPE = params.TEST_TYPE ? params.TEST_TYPE : "pytest"
+def BLOCK_DEVICE_SIZE = params.TEST_TYPE == "robot" ? 80 : 40
+
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
@@ -52,6 +55,7 @@ node {
                                        --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
                                        --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
                                        --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
+                                       --env TEST_TYPE="${TEST_TYPE}" \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                        --env DISTRO=${DISTRO} \
                                        --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
@@ -74,6 +78,7 @@ node {
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                        --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_block_device_size_worker=${BLOCK_DEVICE_SIZE} \
                                        --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
                                        --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
                                        --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
@@ -100,14 +105,23 @@ node {
             }
 
             stage ('report generation') {
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
-
-                if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else {
-                    summary = junit 'longhorn-test-junit-report.xml'
+                if (params.TEST_TYPE == 'robot') {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/log.html ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/output.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/junit.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/report.html ."
+                    robot outputPath: '.',
+                          passThreshold: 100.0,
+                          unstableThreshold: 0.0
+                } else {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
+                    if(params.LONGHORN_UPGRADE_TEST) {
+                        sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-junit-report.xml ."
+                        summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
+                    }
+                    else {
+                        summary = junit 'longhorn-test-junit-report.xml'
+                    }
                 }
             }
 
