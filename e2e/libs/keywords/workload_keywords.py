@@ -20,6 +20,7 @@ from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
 from workload.workload import is_workload_pods_has_annotations
+from workload.workload import is_workload_pods_has_cni_interface
 from workload.workload import keep_writing_pod_data
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
@@ -226,6 +227,17 @@ class workload_keywords:
                 label_selector = f"{LABEL_LONGHORN_COMPONENT}=share-manager"
 
             if not is_workload_pods_has_annotations(workload_name, annotation_key, namespace=namespace, label_selector=label_selector):
+                return False
+        return True
+
+    def is_workloads_pods_has_cni_interface(self, workload_names, interface_name, namespace="longhorn-system"):
+        for workload_name in workload_names:
+
+            label_selector = ""
+            if workload_name == "longhorn-share-manager":
+                label_selector = f"{LABEL_LONGHORN_COMPONENT}=share-manager"
+
+            if not is_workload_pods_has_cni_interface(workload_name, interface_name, namespace=namespace, label_selector=label_selector):
                 return False
         return True
 

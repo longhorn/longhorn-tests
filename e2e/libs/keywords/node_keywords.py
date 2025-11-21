@@ -87,6 +87,12 @@ class node_keywords:
     def enable_node_scheduling(self, node_name):
         self.node.set_node_scheduling(node_name, allowScheduling=True)
 
+    def evict_node(self, node_name):
+        self.node.evict_node(node_name)
+
+    def unevict_node(self, node_name):
+        self.node.unevict_node(node_name)
+
     def reset_disk_eviction_and_scheduling(self):
         nodes = self.node.list_node_names_by_role("worker")
         for node_name in nodes:

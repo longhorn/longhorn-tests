@@ -52,6 +52,23 @@ Check Longhorn workload pods ${condition} annotated with ${key}
     ...    ELSE IF    '${condition}' == 'is'    Should Be True    ${is_annotated}
     ...    ELSE    Fail    Invalid condition ${condition}
 
+Check Longhorn workload pods ${condition} running with CNI interface ${interface}
+    [Arguments]    @{args}
+    @{workload_list} =    Create List
+    FOR    ${workload_name}    IN    @{args}
+        Append To List    ${workload_list}    ${workload_name}
+    END
+
+    ${has_interface} =    is_workloads_pods_has_cni_interface    ${workload_list}    ${interface}
+
+    # Check if workloads have interface based on condition.
+    # If condition is "not", then check if workloads do not have CNI interface.
+    # If condition is "is", then check if workloads have CNI interface.
+    # Otherwise, fail the test.
+    Run Keyword IF    '${condition}' == 'not'    Should Not Be True    ${has_interface}
+    ...    ELSE IF    '${condition}' == 'is'    Should Be True    ${has_interface}
+    ...    ELSE    Fail    Invalid condition ${condition}
+
 Check ${engine_type} instance manager is not running on drained node
     check_instance_manager_existence_on_node    ${drained_node}    ${engine_type}    ${False}
 
