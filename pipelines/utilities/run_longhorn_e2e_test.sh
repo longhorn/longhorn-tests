@@ -1,3 +1,5 @@
+source pipelines/utilities/appco_env.sh
+
 S3_BACKUP_STORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
 NFS_BACKUP_STORE='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
 CIFS_BACKUP_STORE='cifs://longhorn-test-cifs-svc.default/backupstore$cifs-secret'
@@ -63,6 +65,9 @@ run_longhorn_test(){
   # add k8s distro for kubelet restart
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "K8S_DISTRO", "value": "'${TF_VAR_k8s_distro_name}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  ## for appco test
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   # upgrade test parameters
   if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]] || [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_URI", "value": "'${LONGHORN_REPO_URI}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -72,6 +77,9 @@ run_longhorn_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+    if [[ "${APPCO_TEST}" = "true" ]]; then
+      inject_appco_env_vars "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+    fi
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_HOSTNAME", "value": "'${RANCHER_HOSTNAME}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_ACCESS_KEY", "value": "'${RANCHER_ACCESS_KEY}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
