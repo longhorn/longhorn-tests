@@ -38,6 +38,11 @@ Wait for volume of persistentvolumeclaim ${claim_id} healthy
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     wait_for_volume_healthy    ${volume_name}
 
+Wait for volume of persistentvolumeclaim ${claim_id} degraded
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_degraded    ${volume_name}
+
 Wait for volume of persistentvolumeclaim ${claim_id} detached
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
