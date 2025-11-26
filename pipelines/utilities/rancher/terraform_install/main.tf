@@ -92,7 +92,7 @@ image:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}longhorn-manager
     shareManager:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}longhorn-share-manager
-    supportBundleManager:
+    supportBundleKit:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}support-bundle-kit
     ui:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}longhorn-ui
