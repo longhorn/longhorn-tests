@@ -13,7 +13,7 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation):
+    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, wait=True):
         logging(f"Creating backing image {name}")
         get_longhorn_client().create_backing_image(
             name=name,
@@ -26,7 +26,7 @@ class Rest(Base):
             dataEngine=dataEngine
         )
 
-        if not check_creation:
+        if not wait:
             return
 
         bi = None
