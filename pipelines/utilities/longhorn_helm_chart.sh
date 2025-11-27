@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/longhorn_namespace.sh
 
 get_longhorn_chart(){
   CHART_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
@@ -67,7 +68,7 @@ customize_longhorn_chart(){
 }
 
 install_longhorn(){
-  LONGHORN_NAMESPACE="longhorn-system"
+  get_longhorn_namespace
   helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
   wait_longhorn_status_running
 }
@@ -92,7 +93,7 @@ install_longhorn_custom(){
 }
 
 uninstall_longhorn(){
-  LONGHORN_NAMESPACE="longhorn-system"
+  get_longhorn_namespace
   helm uninstall longhorn --namespace "${LONGHORN_NAMESPACE}"
   kubectl delete ns "${LONGHORN_NAMESPACE}"
 }

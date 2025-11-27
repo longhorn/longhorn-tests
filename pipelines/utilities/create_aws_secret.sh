@@ -1,6 +1,10 @@
 #!/bin/bash
 
+source pipelines/utilities/longhorn_namespace.sh
+
 create_aws_secret(){
+  get_longhorn_namespace
+
   AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-${TF_VAR_lh_aws_access_key}}"
   AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-${TF_VAR_lh_aws_secret_key}}"
   AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-${TF_VAR_aws_region}}
@@ -14,7 +18,7 @@ create_aws_secret(){
   yq e -i '.data.AWS_DEFAULT_REGION |= "'${AWS_DEFAULT_REGION_BASE64}'"' "pipelines/templates/host_provider_cred_secrets.yml"
 
   kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml"
-  kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml" -n longhorn-system
+  kubectl apply -f "pipelines/templates/host_provider_cred_secrets.yml" -n "${LONGHORN_NAMESPACE}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

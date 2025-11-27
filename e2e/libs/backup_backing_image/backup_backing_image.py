@@ -4,6 +4,7 @@ import json
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 
 class BackupBackingImage:
 
@@ -16,7 +17,7 @@ apiVersion: longhorn.io/v1beta2
 kind: BackupBackingImage
 metadata:
   name: {backup_backing_image_name}
-  namespace: longhorn-system
+  namespace: {constant.LONGHORN_NAMESPACE}
 spec:
   backingImage: {backing_image_name}
   backupTargetName: default
@@ -27,7 +28,7 @@ spec:
         self.wait_for_backup_backing_image_ready(backup_backing_image_name)
 
     def get_by_name(self, backup_backing_image_name):
-        cmd = f"kubectl get backupbackingimage {backup_backing_image_name} -n longhorn-system -ojson"
+        cmd = f"kubectl get backupbackingimage {backup_backing_image_name} -n {constant.LONGHORN_NAMESPACE} -ojson"
         try:
             return json.loads(subprocess_exec_cmd(cmd))
         except Exception as e:
@@ -35,7 +36,7 @@ spec:
             return None
 
     def get_by_backing_image_name(self, backing_image_name):
-        cmd = f"kubectl get backupbackingimages -n longhorn-system -o json | jq '.items | map(select(.spec.backingImage == \"{backing_image_name}\")) | first'"
+        cmd = f"kubectl get backupbackingimages -n {constant.LONGHORN_NAMESPACE} -o json | jq '.items | map(select(.spec.backingImage == \"{backing_image_name}\")) | first'"
         try:
             return json.loads(subprocess_exec_cmd(cmd))
         except Exception as e:
@@ -62,5 +63,5 @@ spec:
 
     def cleanup_backup_backing_images(self):
         logging(f"Cleaning up backup backing images")
-        cmd = f"kubectl delete backupbackingimage --all -n longhorn-system"
+        cmd = f"kubectl delete backupbackingimage --all -n {constant.LONGHORN_NAMESPACE}"
         subprocess_exec_cmd(cmd)

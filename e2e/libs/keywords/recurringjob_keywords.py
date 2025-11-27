@@ -5,6 +5,7 @@ from recurringjob import RecurringJob
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+import utility.constant as constant
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
 from utility.utility import get_retry_count_and_interval
@@ -80,7 +81,7 @@ class recurringjob_keywords:
         retry_count, retry_interval = get_retry_count_and_interval()
 
         for i in range(retry_count):
-            pods = list_namespaced_pod("longhorn-system", f"recurring-job.longhorn.io={job_name}")
+            pods = list_namespaced_pod(constant.LONGHORN_NAMESPACE, f"recurring-job.longhorn.io={job_name}")
             for pod in pods:
                 if pod.metadata.creation_timestamp and pod.metadata.creation_timestamp > start_time:
                     logging(f"Pod {pod.metadata.name} created at {pod.metadata.creation_timestamp}")

@@ -6,6 +6,7 @@ from longhorn_deploy.longhorn_flux import LonghornFlux
 from longhorn_deploy.longhorn_fleet import LonghornFleet
 from longhorn_deploy.longhorn_argocd import LonghornArgocd
 from utility.utility import logging
+import utility.utility
 import os
 import time
 
@@ -41,8 +42,10 @@ class LonghornDeploy(Base):
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
 
-    def install(self, custom_cmd, install_stable_version):
+    def install(self, custom_cmd, install_stable_version, longhorn_namespace):
         logging(f"Installing Longhorn {'stable' if install_stable_version else 'the latest'} version")
+        utility.utility.set_longhorn_namespace(longhorn_namespace)
+        self.longhorn.set_longhorn_namespace(longhorn_namespace)
         self.longhorn.create_longhorn_namespace()
         self.longhorn.install_backupstores()
         self.longhorn.create_registry_secret()

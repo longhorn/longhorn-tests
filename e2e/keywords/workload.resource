@@ -295,26 +295,30 @@ Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
     ELSE
         ${label_selector} =    Set Variable    ${EMPTY}
     END
-    delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    ${label_selector}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}    ${label_selector}
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes
     ${node_names} =    list_node_names_by_role    worker
 
+    ${longhorn_namespace} =    get_longhorn_namespace
     FOR    ${node_name}    IN    @{node_names}
-        delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
+        delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}
     END
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes simultaneously
     ${node_names} =    list_node_names_by_role    worker
 
+    ${longhorn_namespace} =    get_longhorn_namespace
     FOR    ${node_name}    IN    @{node_names}
-        delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    wait=${False}
+        delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}    wait=${False}
     END
 
 Delete Longhorn ${workload_kind} ${workload_name} pod
-    ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${pod_name} =    get_workload_pod_name    ${workload_name}    ${longhorn_namespace}
     Log    ${pod_name}
-    delete_pod    ${pod_name}     longhorn-system
+    delete_pod    ${pod_name}     ${longhorn_namespace}
 
 Force delete ${workload_kind} ${workload_id} pod on the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

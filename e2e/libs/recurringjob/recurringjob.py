@@ -4,8 +4,6 @@ from recurringjob.rest import Rest
 
 from strategy import LonghornOperationStrategy
 
-from utility.constant import LONGHORN_NAMESPACE
-
 
 class RecurringJob(Base):
 

@@ -4,6 +4,7 @@ from datetime import datetime
 from sharemanager.base import Base
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
 import time
 
 class CRD(Base):
@@ -16,7 +17,7 @@ class CRD(Base):
         return self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="sharemanagers",
             label_selector=label_selector
         )
@@ -25,7 +26,7 @@ class CRD(Base):
         return self.obj_api.get_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="sharemanagers",
             name=name
         )
@@ -35,7 +36,7 @@ class CRD(Base):
         return self.obj_api.delete_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="sharemanagers",
             name=name
         )

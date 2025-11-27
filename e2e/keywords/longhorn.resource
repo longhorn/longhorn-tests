@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       Longhorn Keywords
 
+Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/instancemanager_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
@@ -33,7 +34,8 @@ Wait for Longhorn workloads pods stable
     FOR    ${workload_name}    IN    @{args}
         Append To List    ${workload_list}    ${workload_name}
     END
-    wait_for_workloads_pods_stably_running    ${workload_list}    longhorn-system
+    ${longhorn_namespace} =    get_longhorn_namespace
+    wait_for_workloads_pods_stably_running    ${workload_list}    ${longhorn_namespace}
 
 Check Longhorn workload pods ${condition} annotated with ${key}
     [Arguments]    @{args}
@@ -118,10 +120,12 @@ Delete ${engine_type} instance manager of deployment ${deployment_id} volume
     delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
 Wait for Longhorn components all running
-    wait_for_namespace_pods_running    longhorn-system
+    ${longhorn_namespace} =    get_longhorn_namespace
+    wait_for_namespace_pods_running    ${longhorn_namespace}
 
 Install Longhorn stable version
-    install_longhorn_system    install_stable_version=True
+    [Arguments]    &{config}
+    install_longhorn_system    install_stable_version=True    &{config}
 
 Uninstall Longhorn stable version
     ${backups_before_uninstall} =     list_all_backups
@@ -154,7 +158,8 @@ Check Longhorn node ${type} state on power off node is ${expect_state}
     Should Be Equal    ${status}    ${expect_state}
 
 Check longhorn manager pods not restarted after test start
-    check_pod_not_restart_after_specific_time    longhorn-system    app=longhorn-manager    ${test_start_time}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    check_pod_not_restart_after_specific_time    ${longhorn_namespace}    app=longhorn-manager    ${test_start_time}
 
 Check longhorn backing image manager image is ${expected_image}
     check_backing_image_manager_images    ${expected_image}
@@ -170,5 +175,6 @@ Assert disk size in instance manager pod for ${workload_kind} ${workload_id} is 
 Check disk size in instance manager pod
     [Arguments]    ${instance_manager_name}    ${volume_name}    ${expected_size}
     ${cmd}=    Set Variable    fdisk -l | grep /dev/mapper/${volume_name}
-    ${result}=    pod_exec    ${instance_manager_name}    longhorn-system    ${cmd}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}

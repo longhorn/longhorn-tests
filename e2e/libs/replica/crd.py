@@ -6,6 +6,7 @@ from replica.rest import Rest
 
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
 
 
 class CRD(Base):
@@ -26,7 +27,7 @@ class CRD(Base):
         replicas = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             label_selector=label_selector
         )
@@ -68,7 +69,7 @@ class CRD(Base):
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="replicas",
                 name=replica_name
             )

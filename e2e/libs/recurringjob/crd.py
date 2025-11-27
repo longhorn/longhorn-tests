@@ -15,7 +15,7 @@ from volume.crd import CRD as VolumeCRD
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import filter_cr
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
@@ -59,7 +59,7 @@ class CRD(Base):
         self.obj_api.create_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="recurringjobs",
             body=body
         )
@@ -71,7 +71,7 @@ class CRD(Base):
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="recurringjobs",
                 name=recurringjob_name,
                 body=client.V1DeleteOptions(),
@@ -81,12 +81,12 @@ class CRD(Base):
             return False
 
     def get(self, name):
-        cmd = f"kubectl get recurringjobs -n longhorn-system {name} -ojson"
+        cmd = f"kubectl get recurringjobs -n {constant.LONGHORN_NAMESPACE} {name} -ojson"
         return json.loads(subprocess_exec_cmd(cmd))
 
     def list(self, label_selector=None):
         label_selector = f"-l {label_selector}" if label_selector else ""
-        cmd = f"kubectl get recurringjobs -n longhorn-system {label_selector} -ojson"
+        cmd = f"kubectl get recurringjobs -n {constant.LONGHORN_NAMESPACE} {label_selector} -ojson"
         return json.loads(subprocess_exec_cmd(cmd))["items"]
 
     def add_to_volume(self, job_name, volume_name):
@@ -151,7 +151,7 @@ class CRD(Base):
             self.delete_expired_pending_recurringjob_pod(job_name)
 
             logging(f"Waiting for {volume_name} new snapshot created ({i}) ...")
-            snapshot_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "snapshots", label_selector=label_selector)
+            snapshot_list = filter_cr("longhorn.io", "v1beta2", constant.LONGHORN_NAMESPACE, "snapshots", label_selector=label_selector)
             try:
                 if len(snapshot_list['items']) > 0:
                     for item in snapshot_list['items']:
@@ -188,7 +188,7 @@ class CRD(Base):
             self.delete_expired_pending_recurringjob_pod(job_name)
 
             logging(f"Waiting for {volume_name} new backup created ({i}) ...")
-            backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "backups", label_selector=label_selector)
+            backup_list = filter_cr("longhorn.io", "v1beta2", constant.LONGHORN_NAMESPACE, "backups", label_selector=label_selector)
             try:
                 if len(backup_list['items']) > 0:
                     for item in backup_list['items']:
@@ -208,7 +208,7 @@ class CRD(Base):
                         there's no new backup created by recurringjob \
                         {backup_list}"
 
-    def delete_expired_pending_recurringjob_pod(self, job_name, namespace=LONGHORN_NAMESPACE, expiration_seconds=5 * 60):
+    def delete_expired_pending_recurringjob_pod(self, job_name, namespace=constant.LONGHORN_NAMESPACE, expiration_seconds=5 * 60):
         """
         Deletes expired pending recurring job pods in the specified namespace.
 
@@ -249,7 +249,7 @@ class CRD(Base):
         is_created = False
         for _ in range(RETRY_COUNTS):
             job = self.batch_v1_api.list_namespaced_cron_job(
-                'longhorn-system',
+                constant.LONGHORN_NAMESPACE,
                 label_selector=f"recurring-job.longhorn.io={job_name}"
             )
             if len(job.items) != 0:
@@ -263,7 +263,7 @@ class CRD(Base):
 
             time.sleep(self.retry_interval)
 
-            system_backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "systembackups",
+            system_backup_list = filter_cr("longhorn.io", "v1beta2", constant.LONGHORN_NAMESPACE, "systembackups",
                                            label_selector=f"recurring-job.longhorn.io/system-backup={job_name}")
             try:
                 if len(system_backup_list['items']) == 0:
@@ -284,7 +284,7 @@ class CRD(Base):
     def assert_volume_backup_created(self, volume_name, job_name, retry_count=-1):
         self.check_volume_backup_created_by_recurringjob(volume_name, job_name, retry_count=retry_count)
 
-    def wait_for_pod_completion_without_error(self, job_name, namespace=LONGHORN_NAMESPACE):
+    def wait_for_pod_completion_without_error(self, job_name, namespace=constant.LONGHORN_NAMESPACE):
         """
         Waits for the completion of a pod associated with a recurring job and ensures it completes without errors.
 
@@ -372,7 +372,7 @@ class CRD(Base):
         w.stop()
         raise Exception(f"Recurring job {job_name} did not complete successfully within the timeout ({timeout_seconds} seconds).")
 
-    def wait_for_recurringjob_pod_completion(self, job_name, namespace=LONGHORN_NAMESPACE):
+    def wait_for_recurringjob_pod_completion(self, job_name, namespace=constant.LONGHORN_NAMESPACE):
         timeout_seconds = 30 * 60   # 30 minutes timeout
 
         w = watch.Watch()
@@ -400,7 +400,7 @@ class CRD(Base):
         # the log looks like:
         # time="2025-10-08T03:58:00.800807962Z" level=info msg="Creating volume job"
         pattern = re.compile(r'time="[^T]+T(\d{2}:\d{2}:\d{2})\.\d+Z".*Creating volume job')
-        cmd = f"kubectl logs -l recurring-job.longhorn.io={job_name} -n longhorn-system"
+        cmd = f"kubectl logs -l recurring-job.longhorn.io={job_name} -n {constant.LONGHORN_NAMESPACE}"
         checked = False
         timestamps = None
         for i in range(60):
@@ -437,5 +437,5 @@ class CRD(Base):
         if parameters is not None:
             patch_data["spec"]["parameters"] = parameters
         patch_json = json.dumps(patch_data)
-        cmd = f"kubectl -n longhorn-system patch recurringjob {job_name} --type merge -p '{patch_json}'"
+        cmd = f"kubectl -n {constant.LONGHORN_NAMESPACE} patch recurringjob {job_name} --type merge -p '{patch_json}'"
         subprocess_exec_cmd(cmd)

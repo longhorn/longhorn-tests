@@ -12,7 +12,7 @@ from volume.constant import DEV_PATH
 from volume.constant import VOLUME_FRONTEND_BLOCKDEV
 from volume.constant import VOLUME_FRONTEND_ISCSI
 
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import get_retry_count_and_interval
 from utility.utility import get_longhorn_client
 from utility.utility import logging
@@ -228,7 +228,7 @@ class Rest(Base):
         for rm_name, r_name in replica_map.items():
             delete_command = 'longhorn-instance-manager process delete ' + \
                          '--name ' + r_name
-            pod_exec(rm_name, LONGHORN_NAMESPACE, delete_command)
+            pod_exec(rm_name, constant.LONGHORN_NAMESPACE, delete_command)
 
     def crash_node_replica_process(self, volume_name, node_name):
         logging(f"Crashing volume {volume_name} replica process on node {node_name}")
@@ -240,7 +240,7 @@ class Rest(Base):
                 r_name = r.name
                 delete_command = 'longhorn-instance-manager process delete ' + \
                              '--name ' + r_name
-                pod_exec(rm_name, LONGHORN_NAMESPACE, delete_command)
+                pod_exec(rm_name, constant.LONGHORN_NAMESPACE, delete_command)
 
         return r_name
 

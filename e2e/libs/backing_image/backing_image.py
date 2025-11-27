@@ -5,6 +5,7 @@ from backing_image.crd import CRD
 from strategy import LonghornOperationStrategy
 from utility.utility import list_namespaced_pod
 from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
 from time import sleep
 
 class BackingImage(Base):
@@ -59,7 +60,7 @@ class BackingImage(Base):
     def list_backing_image_data_source_pod(self):
         label_selector = 'longhorn.io/component=backing-image-data-source'
         return list_namespaced_pod(
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             label_selector=label_selector
         )
 
@@ -69,7 +70,7 @@ class BackingImage(Base):
     def get_backing_image_data_source_pod(self, bi_name):
         label_selector = f'longhorn.io/backing-image-data-source={bi_name}'
         return list_namespaced_pod(
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             label_selector=label_selector
         )
 
@@ -86,7 +87,7 @@ class BackingImage(Base):
 
     def get_backing_image_manager_pod_on_node(self, node_name):
         pods = list_namespaced_pod(
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             label_selector=f"longhorn.io/component=backing-image-manager,longhorn.io/node={node_name}"
         )
         return pods[0].metadata.name
