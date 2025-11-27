@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pre-release Checks Test Case
 
-Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job
+Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job    non-default-namespace
 
 Library    OperatingSystem
 
@@ -44,15 +44,23 @@ Pre-release Checks
     ...    8. Restore backups
     ...    9. Uninstall Longhorn
     ...    10. Re-install Longhorn back for subsequent tests
-    # if Longhorn stable version is provided,
-    # uninstall the existing Longhorn and install stable version of Longhorn to be upgraded
+    # if Longhorn stable version is provided or Longhorn is required to be installed in a non-default namespace,
+    # uninstall the existing Longhorn and install/configure the desired version of Longhorn
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
         Given Setting deleting-confirmation-flag is set to true
         And Uninstall Longhorn
         And Check Longhorn CRD removed
 
-        And Install Longhorn stable version
+        And Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
+        And Set default backupstore
+        And Enable v2 data engine and add block disks
+    ELSE IF    '${LONGHORN_NAMESPACE}' != 'longhorn-system'
+        Given Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check Longhorn CRD removed
+
+        And Install Longhorn    longhorn_namespace=${LONGHORN_NAMESPACE}
         And Set default backupstore
         And Enable v2 data engine and add block disks
     END

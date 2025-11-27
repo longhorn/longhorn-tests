@@ -129,7 +129,8 @@ run_longhorn_test(){
   local RETRY_COUNTS=60
   local RETRIES=0
   # wait longhorn tests pod to start running
-  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`"  ]]; do
+  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>/dev/null`" ]] &&
+    [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`" ]]; do
     echo "waiting longhorn test pod to be in running state ... rechecking in 10s"
     sleep 10s
     RETRIES=$((RETRIES+1))

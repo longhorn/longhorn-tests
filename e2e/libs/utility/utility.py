@@ -8,6 +8,7 @@ import signal
 import subprocess
 import shlex
 import json
+import utility.constant
 from datetime import datetime, timedelta, timezone
 
 from robot.api import logger
@@ -42,6 +43,14 @@ class timeout:
 
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
+
+
+def set_longhorn_namespace(ns):
+    utility.constant.LONGHORN_NAMESPACE = ns
+
+
+def get_longhorn_namespace():
+    return utility.constant.LONGHORN_NAMESPACE
 
 
 def logging(msg, also_report=False):

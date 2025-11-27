@@ -9,7 +9,7 @@ from replica import Replica
 from utility.constant import ANNOT_REPLICA_NAMES
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 
@@ -391,7 +391,7 @@ class volume_keywords:
         replica_list = self.replica.get(volume_name, node_name)
         replica = replica_list[0]
         replica_name = replica['metadata']['name']
-        node = self.node.get_node_by_name(node_name, namespace=LONGHORN_NAMESPACE)
+        node = self.node.get_node_by_name(node_name, namespace=constant.LONGHORN_NAMESPACE)
         for diskName in node.disks:
             disk = node.disks[diskName]
 

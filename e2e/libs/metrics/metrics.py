@@ -10,6 +10,7 @@ from node import Node
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import convert_size_to_bytes
+import utility.constant as constant
 
 
 def get_node_metrics(node_name, metrics_name):
@@ -30,7 +31,7 @@ def get_node_metrics(node_name, metrics_name):
 
 def get_longhorn_metrics(node_name):
     core_api = client.CoreV1Api()
-    pods = core_api.list_namespaced_pod(namespace="longhorn-system", label_selector="app=longhorn-manager")
+    pods = core_api.list_namespaced_pod(namespace=constant.LONGHORN_NAMESPACE, label_selector="app=longhorn-manager")
     for pod in pods.items:
         if pod.spec.node_name == node_name:
             manager_ip = pod.status.pod_ip

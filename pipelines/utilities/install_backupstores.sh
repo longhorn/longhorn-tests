@@ -2,18 +2,36 @@
 
 set -x
 
+source pipelines/utilities/longhorn_namespace.sh
+
 install_backupstores(){
+  get_longhorn_namespace
+
   MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml"
+  wget "${MINIO_BACKUPSTORE_URL}" -O minio-backupstore.yaml
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" minio-backupstore.yaml
+
   NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
+  wget "${NFS_BACKUPSTORE_URL}" -O nfs-backupstore.yaml
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" nfs-backupstore.yaml
+
   CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/cifs-backupstore.yaml"
+  wget "${CIFS_BACKUPSTORE_URL}" -O cifs-backupstore.yaml
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" cifs-backupstore.yaml
+
   AZURITE_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/azurite-backupstore.yaml"
-  kubectl apply -f ${MINIO_BACKUPSTORE_URL} \
-                 -f ${NFS_BACKUPSTORE_URL} \
-                 -f ${CIFS_BACKUPSTORE_URL} \
-                 -f ${AZURITE_BACKUPSTORE_URL}
+  wget "${AZURITE_BACKUPSTORE_URL}" -O azurite-backupstore.yaml
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" azurite-backupstore.yaml
+
+  kubectl apply -f minio-backupstore.yaml \
+                 -f nfs-backupstore.yaml \
+                 -f cifs-backupstore.yaml \
+                 -f azurite-backupstore.yaml
 }
 
 install_backupstores_from_lh_repo(){
+  get_longhorn_namespace
+
   set +x  
   export AWS_ACCESS_KEY_ID="${MINIO_ACCESS_KEY_ID}"
   export AWS_SECRET_ACCESS_KEY="${MINIO_SECRET_ACCESS_KEY}"
@@ -28,6 +46,8 @@ install_backupstores_from_lh_repo(){
 }
 
 setup_azurite_backup_store(){
+  get_longhorn_namespace
+
   RETRY=0
   MAX_RETRY=60
   until (kubectl get pods | grep 'longhorn-test-azblob' | grep 'Running'); do
@@ -40,7 +60,7 @@ setup_azurite_backup_store(){
   done
 
   AZBLOB_ENDPOINT=$(echo -n "http://$(kubectl get svc azblob-service -o jsonpath='{.spec.clusterIP}'):10000/" | base64)
-  kubectl -n longhorn-system patch secret azblob-secret \
+  kubectl -n "${LONGHORN_NAMESPACE}" patch secret azblob-secret \
     --type=json \
     -p="[{'op': 'replace', 'path': '/data/AZBLOB_ENDPOINT', 'value': \"${AZBLOB_ENDPOINT}\"}]"
 
