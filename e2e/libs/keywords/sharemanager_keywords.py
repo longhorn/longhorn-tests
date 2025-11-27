@@ -8,6 +8,7 @@ from sharemanager.constant import LABEL_SHAREMANAGER
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_pod, delete_pod
+import utility.constant as constant
 
 class sharemanager_keywords:
 
@@ -51,14 +52,14 @@ class sharemanager_keywords:
 
     def delete_sharemanager_pod_and_wait_for_recreation(self, name):
         sharemanager_pod_name = "share-manager-" + name
-        sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+        sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
         last_creation_time = sharemanager_pod.metadata.creation_timestamp
-        delete_pod(sharemanager_pod_name, "longhorn-system")
+        delete_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
 
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
             time.sleep(retry_interval)
-            sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
             if sharemanager_pod == None:
                 continue
             creation_time = sharemanager_pod.metadata.creation_timestamp
@@ -69,14 +70,14 @@ class sharemanager_keywords:
 
     def wait_for_sharemanager_pod_restart(self, name):
         sharemanager_pod_name = "share-manager-" + name
-        sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+        sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
         last_creation_time = sharemanager_pod.metadata.creation_timestamp
 
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
             logging(f"Waiting for sharemanager for volume {name} restart ... ({i})")
             time.sleep(retry_interval)
-            sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
             if sharemanager_pod == None:
                 continue
             creation_time = sharemanager_pod.metadata.creation_timestamp
@@ -91,7 +92,7 @@ class sharemanager_keywords:
         sharemanager_pod_name = "share-manager-" + name
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
-            sharemanager_pod = get_pod(sharemanager_pod_name, "longhorn-system")
+            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
             logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
             if sharemanager_pod.status.phase == "Running":
                 return

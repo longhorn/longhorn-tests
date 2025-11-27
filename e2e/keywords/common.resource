@@ -133,3 +133,4 @@ Cleanup test resources
     cleanup_k8s_node_zone
     cleanup_csi_volume_snapshots
     cleanup_csi_volume_snapshot_classes
+    reset_longhorn_namespace

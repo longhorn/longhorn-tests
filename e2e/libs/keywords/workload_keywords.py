@@ -34,6 +34,7 @@ from workload.workload import run_commands_in_pod
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
+import utility.constant as constant
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
@@ -219,7 +220,7 @@ class workload_keywords:
     def get_pod_node(self, pod):
         return get_pod_node(pod)
 
-    def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace="longhorn-system"):
+    def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace=constant.LONGHORN_NAMESPACE):
         for workload_name in workload_names:
 
             label_selector = ""
@@ -230,7 +231,7 @@ class workload_keywords:
                 return False
         return True
 
-    def is_workloads_pods_has_cni_interface(self, workload_names, interface_name, namespace="longhorn-system"):
+    def is_workloads_pods_has_cni_interface(self, workload_names, interface_name, namespace=constant.LONGHORN_NAMESPACE):
         for workload_name in workload_names:
 
             label_selector = ""

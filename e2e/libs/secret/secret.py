@@ -4,6 +4,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from utility.utility import logging
+import utility.constant as constant
 
 
 class Secret():
@@ -17,9 +18,9 @@ class Secret():
 
         with open(filepath, 'r') as f:
             manifest_dict = yaml.safe_load(f)
-            namespace = manifest_dict['metadata']['namespace']
+            manifest_dict['metadata']['namespace'] = constant.LONGHORN_NAMESPACE
             logging(f"Creating secret {manifest_dict['metadata']['name']}")
-            self.api.create_namespaced_secret(namespace, body=manifest_dict)
+            self.api.create_namespaced_secret(constant.LONGHORN_NAMESPACE, body=manifest_dict)
 
     def delete(self, name, namespace):
         try:

@@ -6,8 +6,8 @@ from kubernetes import client
 from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import DISK_BEING_SYNCING
-from utility.constant import LONGHORN_NAMESPACE
 from utility.constant import NODE_UPDATE_RETRY_INTERVAL
+import utility.constant as constant
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
@@ -124,7 +124,7 @@ class Node:
     def get_node_by_name(self, node_name, namespace="kube-system"):
         logging(f"Getting node by name {node_name} in namespace {namespace}")
         try:
-            if namespace == LONGHORN_NAMESPACE:
+            if namespace == constant.LONGHORN_NAMESPACE:
                 return get_longhorn_client().by_id_node(node_name)
             else:
                 core_api = client.CoreV1Api()
@@ -248,7 +248,7 @@ class Node:
     def evict_node(self, node_name):
         logging(f"Evicting node {node_name}")
         exec_cmd = f"""
-            kubectl patch nodes.longhorn.io {node_name} -n longhorn-system --type=merge -p '{{
+            kubectl patch nodes.longhorn.io {node_name} -n {constant.LONGHORN_NAMESPACE} --type=merge -p '{{
                 \"spec\": {{
                     \"evictionRequested\": true,
                     \"allowScheduling\": false
@@ -260,7 +260,7 @@ class Node:
     def unevict_node(self, node_name):
         logging(f"Unevicting node {node_name}")
         exec_cmd = f"""
-            kubectl patch nodes.longhorn.io {node_name} -n longhorn-system --type=merge -p '{{
+            kubectl patch nodes.longhorn.io {node_name} -n {constant.LONGHORN_NAMESPACE} --type=merge -p '{{
                 \"spec\": {{
                     \"evictionRequested\": false,
                     \"allowScheduling\": true

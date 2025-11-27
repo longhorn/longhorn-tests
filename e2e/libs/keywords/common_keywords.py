@@ -10,6 +10,8 @@ from utility.utility import pod_exec
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
 from utility.utility import get_retry_count_and_interval
+from utility.utility import set_longhorn_namespace
+from utility.utility import get_longhorn_namespace
 
 
 class common_keywords:
@@ -28,6 +30,15 @@ class common_keywords:
 
     def get_control_plane_node(self):
         return Node().list_node_names_by_role("control-plane")[0]
+
+    def set_longhorn_namespace(self, ns):
+        set_longhorn_namespace(ns)
+
+    def reset_longhorn_namespace(self):
+        set_longhorn_namespace('longhorn-system')
+
+    def get_longhorn_namespace(self):
+        return get_longhorn_namespace()
 
     def get_node_by_index(self, node_id):
         return Node().get_node_by_index(node_id)

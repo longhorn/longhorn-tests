@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from k8s import k8s
-from utility.constant import LONGHORN_NAMESPACE
 from utility.constant import LONGHORN_UNINSTALL_JOB_LABEL
 from utility.constant import LONGHORN_INSTALL_SCRIPT_PATH
 from utility.constant import LONGHORN_INSTALL_TIMEOUT
@@ -39,12 +38,27 @@ class Base(ABC):
         assert removed, "Failed to wait for all longhorn crds removed"
 
     def check_longhorn_uninstall_pod_log(self):
-        logs = k8s.get_latest_pod_logs(LONGHORN_NAMESPACE, LONGHORN_UNINSTALL_JOB_LABEL)
-        assert "level=error" not in logs, f"find string 'level=error' in uninstall log {logs}"
-        assert "level=fatal" not in logs, f"find string 'level=fatal' in uninstall log {logs}"
+        command = "./pipelines/utilities/longhorn_manifest.sh"
+        process = subprocess.Popen([command, "check_uninstall_log"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Found error|fatal logs in uninstall pod log")
+            time.sleep(self.retry_count)
+            assert False, "Found error|fatal logs in uninstall pod log"
+
+    def set_longhorn_namespace(self, longhorn_namespace):
+        command = "./pipelines/utilities/longhorn_namespace.sh"
+        process = subprocess.Popen([command, "set_longhorn_namespace", longhorn_namespace],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Setting longhorn namespace failed")
+            time.sleep(self.retry_count)
+            assert False, "Setting longhorn namespace failed"
 
     def create_longhorn_namespace(self):
-        command = "./pipelines/utilities/create_longhorn_namespace.sh"
+        command = "./pipelines/utilities/longhorn_namespace.sh"
         process = subprocess.Popen([command, "create_longhorn_namespace"],
                                    shell=False)
         process.wait()

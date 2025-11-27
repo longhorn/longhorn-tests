@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from utility.utility import set_annotation
 from utility.utility import get_annotation_value
 from utility.utility import logging
+import utility.constant as constant
 
 
 class Base(ABC):
@@ -22,7 +23,7 @@ class Base(ABC):
         set_annotation(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             name=volume_name,
             annotation_key=f"{self.ANNOT_DATA_CHECKSUM}{data_id}",
@@ -33,7 +34,7 @@ class Base(ABC):
         return get_annotation_value(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             name=volume_name,
             annotation_key=f"{self.ANNOT_DATA_CHECKSUM}{data_id}",
@@ -43,7 +44,7 @@ class Base(ABC):
         set_annotation(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             name=volume_name,
             annotation_key=self.ANNOT_LAST_CHECKSUM,
@@ -55,7 +56,7 @@ class Base(ABC):
             return get_annotation_value(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="volumes",
                 name=volume_name,
                 annotation_key=self.ANNOT_LAST_CHECKSUM,

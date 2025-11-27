@@ -10,6 +10,7 @@ ${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 ${RWX_VOLUME_FAST_FAILOVER}    false
 ${DATA_ENGINE}    v1
 ${VOLUME_STATE_CHECK_TIMEOUT}    120
+${LONGHORN_NAMESPACE}    longhorn-system
 
 @{powered_off_nodes}=
 

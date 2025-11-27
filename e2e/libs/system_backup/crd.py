@@ -6,6 +6,7 @@ import json
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 
 
 class CRD(Base):
@@ -20,7 +21,7 @@ class CRD(Base):
         return NotImplemented
 
     def get_by_name(self, backup_name):
-        cmd = f"kubectl get systembackup {backup_name} -n longhorn-system -ojson"
+        cmd = f"kubectl get systembackup {backup_name} -n {constant.LONGHORN_NAMESPACE} -ojson"
         try:
             return json.loads(subprocess_exec_cmd(cmd))
         except Exception as e:

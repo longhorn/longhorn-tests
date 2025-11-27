@@ -4,6 +4,7 @@ from kubernetes import client
 from backup.base import Base
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 
 class CRD(Base):
 
@@ -27,7 +28,7 @@ class CRD(Base):
     # since a backup is bound to a backupvolume (/v1/backup/vol-name) or
     # a volume (/v1/volumes/vol-name) in REST API
     def get_by_name(self, backup_name):
-        cmd = f"kubectl get backups {backup_name} -n longhorn-system -ojson"
+        cmd = f"kubectl get backups {backup_name} -n {constant.LONGHORN_NAMESPACE} -ojson"
         try:
             return json.loads(subprocess_exec_cmd(cmd))
         except Exception as e:
@@ -75,14 +76,14 @@ class CRD(Base):
         # Because backup in error state does not have backup volume
         backups = self.obj_api.list_namespaced_custom_object("longhorn.io",
                                                              "v1beta2",
-                                                             "longhorn-system",
+                                                             constant.LONGHORN_NAMESPACE,
                                                              "backups")
         for backup in backups['items']:
             logging(f"Deleting backup {backup['metadata']['name']}")
             try:
                 self.obj_api.delete_namespaced_custom_object("longhorn.io",
                                                              "v1beta2",
-                                                             "longhorn-system",
+                                                             constant.LONGHORN_NAMESPACE,
                                                              "backups",
                                                              backup['metadata']['name'])
             except Exception as e:

@@ -2,6 +2,7 @@ from kubernetes import client
 
 from engine.base import Base
 from utility.utility import logging
+import utility.constant as constant
 
 
 class CRD(Base):
@@ -23,7 +24,7 @@ class CRD(Base):
         api_response = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="engines",
             label_selector=",".join(label_selector)
         )
@@ -48,7 +49,7 @@ class CRD(Base):
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="engines",
                 name=engine_name
             )
