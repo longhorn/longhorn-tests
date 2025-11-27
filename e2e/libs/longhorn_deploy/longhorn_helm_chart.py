@@ -28,7 +28,7 @@ class LonghornHelmChart(Base):
         else:
             install_function = "install_longhorn_custom"
         command = "./pipelines/utilities/longhorn_helm_chart.sh"
-        process = subprocess.Popen([command, install_function],
+        process = subprocess.Popen([command, install_function, custom_cmd],
                                    shell=False)
         process.wait()
         return True if process.returncode == 0 else False

@@ -67,8 +67,17 @@ customize_longhorn_chart(){
 }
 
 install_longhorn(){
+
+  local custom_cmd="$1"
+  if [[ -n "$custom_cmd" ]]; then
+    eval "$custom_cmd"
+    CUSTOM_HELM_INSTALLATION="-f values.yaml --reuse-values"
+  else
+    CUSTOM_HELM_INSTALLATION=""
+  fi
+
   LONGHORN_NAMESPACE="longhorn-system"
-  helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
+  helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}" ${CUSTOM_HELM_INSTALLATION}
   wait_longhorn_status_running
 }
 
@@ -88,7 +97,7 @@ install_longhorn_custom(){
   get_longhorn_chart
   customize_longhorn_chart_registry
   customize_longhorn_chart
-  install_longhorn
+  install_longhorn "$@"
 }
 
 uninstall_longhorn(){
