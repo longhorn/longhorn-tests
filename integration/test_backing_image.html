@@ -342,8 +342,7 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_basic_operation(client, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
@@ -364,8 +363,7 @@ def test_backing_image_basic_operation(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 def test_backing_image_cleanup(core_api, client):  # NOQA
     &#34;&#34;&#34;
     1. Create multiple backing image.
@@ -399,8 +397,7 @@ is using the same the backing image namings.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backing_image_content(client, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
@@ -421,8 +418,7 @@ def test_backing_image_content(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 def test_backing_image_disk_eviction(client): # NOQA
     &#34;&#34;&#34;
     Test Disk Eviction
@@ -479,8 +475,7 @@ because every node has only one disk
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 def test_backing_image_min_number_of_replicas(client): # NOQA
     &#34;&#34;&#34;
     Test the backing image minNumberOfCopies
@@ -546,8 +541,7 @@ def test_backing_image_min_number_of_replicas(client): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 def test_backing_image_node_eviction(client): # NOQA
     &#34;&#34;&#34;
     Test Node Eviction
@@ -591,8 +585,7 @@ def test_backing_image_node_eviction(client): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 def test_backing_image_selector_setting(client, volume_name): # NOQA
     &#34;&#34;&#34;
     - Set node1 with nodeTag = [node1], diskTag = [node1]
@@ -672,8 +665,7 @@ def test_backing_image_selector_setting(client, volume_name): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 def test_backing_image_unable_eviction(client): # NOQA
     &#34;&#34;&#34;
     - Set node1 nodeTag = [node1], diskTag = [node1]
@@ -819,8 +811,7 @@ the disk path is updated.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 @pytest.mark.parametrize(&#34;bi_url&#34;, [BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL]) # NOQA
 def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
 
@@ -846,8 +837,7 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_backup_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
@@ -869,8 +859,7 @@ def test_backup_labels_with_backing_image(set_random_backupstore, client, random
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.parametrize(&#34;volume_size&#34;, [str(BACKING_IMAGE_EXT4_SIZE), SIZE]) # NOQA
 def test_backup_with_backing_image(set_random_backupstore, client, volume_name, volume_size):  # NOQA
@@ -893,8 +882,7 @@ def test_backup_with_backing_image(set_random_backupstore, client, volume_name, 
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest  # NOQA
+<pre><code class="python">@pytest.mark.coretest  # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_backup_with_backing_image(set_random_backupstore, client, core_api, csi_pv, pvc, pod_make):  # NOQA
@@ -917,8 +905,7 @@ def test_csi_backup_with_backing_image(set_random_backupstore, client, core_api,
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_io_with_backing_image(client, core_api, csi_pv_backingimage, pvc_backingimage, pod_make):  # NOQA
@@ -940,8 +927,7 @@ def test_csi_io_with_backing_image(client, core_api, csi_pv_backingimage, pvc_ba
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_mount_with_backing_image(client, core_api, csi_pv_backingimage, pvc_backingimage, pod_make):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
@@ -1161,8 +1147,7 @@ def test_ha_salvage_with_backing_image(client, core_api, disable_auto_salvage, v
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_ha_simple_recovery_with_backing_image(client, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
@@ -1184,8 +1169,7 @@ def test_ha_simple_recovery_with_backing_image(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.backing_image  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
@@ -1270,8 +1254,7 @@ def test_snapshot_with_backing_image(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_volume_basic_with_backing_image(client, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
