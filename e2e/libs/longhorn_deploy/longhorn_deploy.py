@@ -68,3 +68,7 @@ class LonghornDeploy(Base):
             time.sleep(60)
         logging(f"Upgraded Longhorn")
         return upgraded
+
+    def enable_storage_network_setting(self):
+        logging(f"Enabling storage network setting")
+        self.longhorn.enable_storage_network_setting()

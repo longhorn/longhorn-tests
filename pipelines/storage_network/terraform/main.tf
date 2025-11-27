@@ -194,7 +194,7 @@ resource "aws_instance" "aws_instance" {
 
   root_block_device {
     delete_on_termination = true
-    volume_size = var.aws_instance_root_block_device_size
+    volume_size = var.block_device_size_worker
   }
 
   key_name = aws_key_pair.aws_pair_key.key_name
