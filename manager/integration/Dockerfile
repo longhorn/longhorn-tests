@@ -2,12 +2,13 @@
 
 FROM registry.suse.com/bci/python:3.13
 
-ARG TARGETPLATFORM
-RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/arm64" ]; then \
-    echo "Error: Unsupported TARGETPLATFORM: $TARGETPLATFORM" && \
-    exit 1; \
-    fi
-ENV ARCH ${TARGETPLATFORM#linux/}
+#ARG TARGETPLATFORM
+#RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/arm64" ]; then \
+#    echo "Error: Unsupported TARGETPLATFORM: $TARGETPLATFORM" && \
+#    exit 1; \
+#    fi
+#ENV ARCH ${TARGETPLATFORM#linux/}
+ENV ARCH amd64
 
 ARG KUBECTL_VERSION=v1.30.0
 ARG YQ_VERSION=v4.24.2
