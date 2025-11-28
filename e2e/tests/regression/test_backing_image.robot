@@ -11,6 +11,7 @@ Resource    ../keywords/backup_backing_image.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -92,3 +93,20 @@ Test Evict Two Replicas Volume With Backing Image
     And Volume 0 should have 1 running replicas on node 2
     And Volume 0 should have 0 running replicas on node 1
     And Check longhorn manager pods not restarted after test start
+
+Test backing image handle node disk deleting events
+    [Documentation]   Validates that the backing image manager and backing image disk files
+    ...               are removed after a broken disk is removed from Longhorn node.
+    ...
+    ...               Issue: https://github.com/longhorn/longhorn/issues/10983
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1    minNumberOfCopies=3
+    Then Record node 0 default disk uuid
+    When Run command on node    0
+    ...    rm /var/lib/longhorn/longhorn-disk.cfg
+    Then Wait for node 0 default disk broken
+    And Wait for backing image manager on node 0 unknown
+
+    When Disable node 0 default disk
+    And Delete node 0 default disk
+    And Wait for backing image manager on node 0 terminated
+    And Backing image bi should not have the removed disk in its DiskFileSpecMap
