@@ -138,3 +138,15 @@ class node_keywords:
 
     def set_backing_image_folder_mutable_on_node(self, bi_name, node_name):
         return self.node.set_backing_image_folder_mutable_on_node(bi_name, node_name)
+
+    def wait_default_disk_file_system_changed(self, node_name):
+        return self.node.wait_default_disk_file_system_changed(node_name)
+
+    def wait_default_disk_unschedulable(self, node_name):
+        return self.node.wait_default_disk_unschedulable(node_name)
+
+    def delete_default_disk(self, node_name):
+        self.node.delete_default_disk(node_name)
+
+    def get_default_disk_uuid_on_node(self, node_name):
+        return self.node.get_default_disk_uuid_on_node(node_name)
