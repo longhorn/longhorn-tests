@@ -47,3 +47,43 @@ Test Volume Snapshot Checksum Skipped When Less Than 2 Healthy Replicas
 
     Then Validate snapshot 0 is in volume 0 snapshot list
     And Validate snapshot 0 checksum of volume 0 is skipped for 60 seconds
+
+Test Concurrent Job Limit For Snapshot Purge
+    [Tags]    snapshot-purge
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11635
+    ...    This test case only supports v1 volumes: https://github.com/longhorn/longhorn/issues/11635#issuecomment-3588360359
+    ...    1. Set snapshot-heavy-task-concurrent-limit to 1
+    ...    2. Set disable-snapshot-purge to false
+    ...    3. Create and Attach a volume
+    ...    4. Write data to the volume and take snapshot 1
+    ...    5. Write data to the volume and take snapshot 2
+    ...    6. Write data to the volume and take snapshot 3
+    ...    7. Remove snapshot 2, trigger snapshot purge
+    ...    8. During the snapshot deletion, try to trigger snapshot purge again manually
+    ...    curl -X POST \
+    ...    'http://localhost:8080/v1/volumes/<volume-name>?action=snapshotPurge' \
+    ...    -H 'Accept: application/json'
+    ...    9. It fails with an error: cannot start snapshot purge: concurrent snapshot purge limit reached
+    ...    10. Once the snapshot deletion is complete, execute the curl request again. It should succeed
+    Given Setting snapshot-heavy-task-concurrent-limit is set to 1
+    And Setting disable-snapshot-purge is set to false
+    And Create volume 0    dataEngine=v1
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create snapshot 0 of volume 0
+    And Write data to volume 0
+    And Create snapshot 1 of volume 0
+    And Write data to volume 0
+    And Create snapshot 2 of volume 0
+
+    When Delete snapshot 1 of volume 0
+    And Purge volume 0 snapshot    wait=False
+    And Wait for snapshot purge for volume 0 start
+    # manually trigger another snapshot purge will fail
+    # because snapshot-heavy-task-concurrent-limit is set to 1
+    Then Purge volume 0 snapshot should fail
+    ...    expected_error_message=concurrent snapshot purge limit reached
+
+    When Wait for snapshot purge for volume 0 completed
+    Then Purge volume 0 snapshot
