@@ -226,3 +226,11 @@ class Rest(Base):
             msg = status.message
             logging(f"backingimage {bi_name} on disk {disk_id} has message: {msg}")
             assert expected_message in msg, f"'{expected_message}' not in backing image {bi_name} disk {disk_id} message"
+
+    def get_backing_image_disk_uuids(self, bi_name):
+        bi = self.get(bi_name)
+        uuids = []
+        for disk_id, status in bi.diskFileStatusMap.items():
+          uuids.append(disk_id)
+        logging(f"backing image {bi_name} currently have disks files on: {uuids}")
+        return uuids
