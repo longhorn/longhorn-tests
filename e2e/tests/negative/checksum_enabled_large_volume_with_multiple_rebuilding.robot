@@ -40,6 +40,7 @@ Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
     And Check volume 0 data is intact
 
 Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Integrity
+    [Tags]    snapshot-purge
     [Documentation]    -- Manual test plan --
     ...                - Create a 50 Gi volume. write around 30 Gi data into it.
     ...                - Fail one of the replica (node down or network partition) and wait for the replica becomes failed.
