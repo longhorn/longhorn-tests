@@ -45,6 +45,12 @@ class Snapshot(Base):
     def purge(self, volume_name):
         return self.snapshot.purge(volume_name)
 
+    def wait_for_snapshot_purge_completed(self, volume_name):
+        return self.snapshot.wait_for_snapshot_purge_completed(volume_name)
+
+    def wait_for_snapshot_purge_start(self, volume_name):
+        return self.snapshot.wait_for_snapshot_purge_start(volume_name)
+
     def is_parent_of(self, volume_name, parent_id, child_id):
         return self.snapshot.is_parent_of(volume_name, parent_id, child_id)
 
