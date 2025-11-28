@@ -102,3 +102,17 @@ Create ${disk_size} Gi ${disk_type} type disk ${disk_name} on node ${node_id}
         ${mount_path} =    Set Variable    /dev/longhorn/${disk_name}
     END
     add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+
+Wait for node ${node_id} default disk broken
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_default_disk_file_system_changed    ${node_name}
+    wait_default_disk_unschedulable    ${node_name}
+
+Delete node ${node_id} default disk
+    ${node_name} =    get_node_by_index    ${node_id}
+    delete_default_disk    ${node_name}
+
+Record node ${node_id} default disk uuid
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${recorded_disk_uuid} =    get_default_disk_uuid_on_node    ${node_name}
+    Set Test Variable    ${recorded_disk_uuid}

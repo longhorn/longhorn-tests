@@ -11,6 +11,7 @@ Resource    ../keywords/backup_backing_image.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
