@@ -35,6 +35,7 @@ Test Recurring Job Assignment Using StorageClass
     And Check backup recurringjob backup-job work for volume of deployment 0
 
 Test Volume Deletion During Recurring Job Execution
+    [Tags]    snapshot-purge
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11925
     ...    1. Create multiple volumes, write data, create a system-created snapshot (via rebuilding) then create a regular snapshot.
     ...    2. Launch a snapshot-cleanup recurring job for all volumes. Make sure the concurrency is 1. (So that the job will be executed for a long time and we have a chance to remove a volume.)

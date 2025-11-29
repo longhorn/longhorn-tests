@@ -39,8 +39,19 @@ Purge volume ${volume_id} snapshot
     purge_snapshot    ${volume_name}
 
 Purge volume ${volume_id} snapshot should fail
+    [Arguments]    ${expected_error_message}=None
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    Run Keyword And Expect Error    *    purge_snapshot    ${volume_name}
+    ${err} =    Run Keyword And Expect Error    *    purge_snapshot    ${volume_name}
+    Run Keyword If    '${expected_error_message}' != 'None'
+    ...    Should Contain    ${err}    ${expected_error_message}
+
+Wait for snapshot purge for volume ${volume_id} start
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_snapshot_purge_start    ${volume_name}
+
+Wait for snapshot purge for volume ${volume_id} completed
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_snapshot_purge_completed    ${volume_name}
 
 Validate snapshot ${parent_id} is parent of snapshot ${child_id} in volume ${volume_id} snapshot list
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
