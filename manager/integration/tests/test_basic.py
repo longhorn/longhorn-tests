@@ -4332,6 +4332,7 @@ def test_volume_metafile_deleted_when_writing_data(client, core_api, volume_name
     )
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     """
     test expand longhorn volume with pvc
