@@ -117,3 +117,26 @@ Test Setting Network For RWX Volume Endpoint
         ...    longhorn-csi-plugin
         ...    longhorn-share-manager
     And Check sharemanager is using headless service
+
+Test Setting Csi Components Resource Limits
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12224
+    When Setting system-managed-csi-components-resource-limits is set to {"csi-attacher":{"requests":{"cpu":"100m","memory":"128Mi"},"limits":{"cpu":"200m","memory":"256Mi"}},"node-driver-registrar":{"requests":{"cpu":"100m","memory":"128Mi"},"limits":{"cpu":"200m","memory":"256Mi"}},"longhorn-csi-plugin":{"requests":{"cpu":"150m","memory":"128Mi"},"limits":{"cpu":"250m","memory":"256Mi"}}}
+    And Wait for Longhorn components all running
+    Then Run command and wait for output
+    ...    kubectl get pod -l app=csi-attacher -o jsonpath='{.items[0].spec.containers[*].resources.requests}' -n longhorn-system
+    ...    {"cpu":"100m","memory":"128Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=csi-attacher -o jsonpath='{.items[0].spec.containers[*].resources.limits}' -n longhorn-system
+    ...    {"cpu":"200m","memory":"256Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-csi-plugin -o jsonpath='{.items[0].spec.containers[0].resources.requests}' -n longhorn-system
+    ...    {"cpu":"100m","memory":"128Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-csi-plugin -o jsonpath='{.items[0].spec.containers[0].resources.limits}' -n longhorn-system
+    ...    {"cpu":"200m","memory":"256Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-csi-plugin -o jsonpath='{.items[0].spec.containers[2].resources.requests}' -n longhorn-system
+    ...    {"cpu":"150m","memory":"128Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-csi-plugin -o jsonpath='{.items[0].spec.containers[2].resources.limits}' -n longhorn-system
+    ...    {"cpu":"250m","memory":"256Mi"}
