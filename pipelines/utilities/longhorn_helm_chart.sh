@@ -30,6 +30,8 @@ customize_longhorn_chart_registry(){
 }
 
 customize_longhorn_chart(){
+  # remove hard-coded .global.imageRegistry=docker.io
+  yq -i '.global.imageRegistry=""' "${LONGHORN_REPO_DIR}/chart/values.yaml"
   # customize longhorn components repository and tag (version) in chart/values.yaml
   OLD_IFS=$IFS
   IFS=':'
