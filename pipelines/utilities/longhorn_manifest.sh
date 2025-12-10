@@ -23,6 +23,9 @@ get_longhorn_repo(){
 }
 
 generate_longhorn_yaml_manifest() {
+  # remove docker.io prefix for each image
+  sed -i 's|docker\.io/||g' "${LONGHORN_MANIFEST_PATH}"
+
   # get longhorn default images from yaml manifest
   LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${LONGHORN_MANIFEST_PATH}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
   LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${LONGHORN_MANIFEST_PATH}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
