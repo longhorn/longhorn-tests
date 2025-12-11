@@ -14,7 +14,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Test Tag Scheduling
-    [Tags]    coretest
+    [Tags]    coretest    replica
     [Documentation]    Test scheduling with tags
     Given Setting replica-soft-anti-affinity is set to true
     And Set node 0 tags    main    storage

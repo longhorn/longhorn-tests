@@ -262,7 +262,6 @@ class Rest(Base):
 
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         condition_met = False
-        mode = "RW" if running else ""
         for i in range(self.retry_count):
             running_replica_count = 0
             volume = get_longhorn_client().by_id_volume(volume_name)
@@ -271,12 +270,12 @@ class Rest(Base):
                     # if running == True, it collects running replicas
                     # if running == False, it collects stopped replicas
                     # if running == None, it collects all replicas
-                    if running is not None and r.running == running and r.mode == mode:
+                    if running is not None and r.running == running:
                         running_replica_count += 1
                     elif running is None:
                         running_replica_count += 1
                 elif not node_name:
-                    if running is not None and r.running == running and r.mode == mode:
+                    if running is not None and r.running == running:
                         running_replica_count += 1
                     elif running is None:
                         running_replica_count += 1
