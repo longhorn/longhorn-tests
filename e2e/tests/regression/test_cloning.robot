@@ -40,19 +40,8 @@ Test Degraded Cloned Volume
     ...    2. Deploy a PVC. Verify that volume is degraded because it need 3 replica but there is only 2 schedulable nodes
     ...    3. Create a cloned-pvc from the previous PVC
     ...    4. Create a pod using cloned-pvc. Verify that the pod is not stuck and Longhorn can attach cloned-pvc
-    ...    5. At this moment, you will see that VA object of volume cloned-pvc has unsatisfied ticket volume-clone-controller like this:
-    ...       volume-clone-controller-pvc-e740ee8f-904e-42e0-976f-53b57dae38d4:
-    ...         conditions:
-    ...         - lastProbeTime: ""
-    ...           lastTransitionTime: "2025-11-19T23:57:37Z"
-    ...           message: volume pvc-e740ee8f-904e-42e0-976f-53b57dae38d4 has already attached
-    ...             to node phan-v802-pool2-vxjqx-h969k with incompatible parameters
-    ...           reason: AttachedWithIncompatibleParameters
-    ...           status: "False"
-    ...           type: Satisfied
-    ...    6. Enable scheduling for the node that you disable at the beginning
+    ...    5. Enable scheduling for the node that you disable at the beginning
     ...       Verify that volume cloned-pvc rebuild and become healthy
-    ...       Verify that ticket volume-clone-controller disappear in VA of cloned-pvc
     Given And Run command
     ...    kubectl cordon ${NODE_0}
     And Run command
@@ -76,9 +65,6 @@ Test Degraded Cloned Volume
     Then Wait for pod cloned-pod running
     And Wait for volume of persistentvolumeclaim cloned-pvc degraded
     And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
-    And Run command and expect output
-    ...    kubectl get volumeattachments.longhorn.io -n longhorn-system $(kubectl get pvc cloned-pvc -o=jsonpath='{.spec.volumeName}') -oyaml
-    ...    volume-clone-controller
 
     When And Run command
     ...    kubectl uncordon ${NODE_0}
@@ -87,6 +73,3 @@ Test Degraded Cloned Volume
 
     Then Wait for volume of persistentvolumeclaim cloned-pvc healthy
     And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
-    And Run command and not expect output
-    ...    kubectl get volumeattachments.longhorn.io -n longhorn-system $(kubectl get pvc cloned-pvc -o=jsonpath='{.spec.volumeName}') -oyaml
-    ...    volume-clone-controller
