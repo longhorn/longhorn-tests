@@ -188,3 +188,15 @@ Test Rapid Volume Detachment
         And Wait for volume 0 detached
         Then Wait for engine instances in ${DATA_ENGINE} instance manager CR on node 0 to be cleaned up
     END
+
+Test Deploy V2 Volume With Disabled V1 Data Engine
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test case not support for v1 data engine
+    END
+    Given Setting v1-data-engine is set to false
+    And Create volume 0 with    size=2Gi    numberOfReplicas=3    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    When Write data to volume 0
+    Then Check volume 0 data is intact
