@@ -99,11 +99,11 @@ variable "k8s_distro_name" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.33.0+k3s1"
+  default     = "v1.34.2+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
-    k3s: (default: v1.33.0+k3s1)
-    rke2: (default: v1.33.0+rke2r1)
+    k3s: (default: v1.34.2+k3s1)
+    rke2: (default: v1.34.2+rke2r1)
   EOT
 }
 
