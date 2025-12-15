@@ -445,8 +445,7 @@ eventually becomes healthy.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test
-@pytest.mark.cloning  # NOQA
+<pre><code class="python">@pytest.mark.cloning  # NOQA
 def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     &#34;&#34;&#34;
     1. Deploy a storage class that has backing image parameter
