@@ -4001,7 +4001,8 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     test expand longhorn volume with pvc
 
