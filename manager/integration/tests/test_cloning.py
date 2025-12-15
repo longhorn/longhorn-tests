@@ -275,7 +275,6 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc, s
     wait_for_snapshot_count(source_volume, 2)
 
 
-@pytest.mark.v2_volume_test
 @pytest.mark.cloning  # NOQA
 def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     """
