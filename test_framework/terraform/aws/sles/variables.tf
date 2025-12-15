@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "15-sp6"
+  default     = "16-0"
 }
 
 variable "aws_ami_sles_account_number" {
