@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "1.11.3"
+  default     = "1.11.5"
 }
 
 variable "aws_ami_talos_account_number" {
