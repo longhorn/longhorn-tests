@@ -1,5 +1,6 @@
 #!/bin/bash
 
+sudo dnf install kernel-modules-extra-$(uname -r) -y
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup device-mapper nc samba
