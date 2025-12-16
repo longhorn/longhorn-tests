@@ -19,7 +19,13 @@ class Node:
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
 
+    all_nodes = None
+    control_plane_nodes = None
+    worker_nodes = None
+
     def __init__(self):
+        if not Node.all_nodes:
+            self.init_node_list()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def mount_disk(self, disk_name, node_name):
@@ -162,13 +168,21 @@ class Node:
         if role not in ["all", "control-plane", "worker"]:
             raise ValueError("Role must be one of 'all', 'master' or 'worker'")
 
+        if role == "all":
+            return Node.all_nodes
+        elif role == "control-plane":
+            return Node.control_plane_nodes
+        elif role == "worker":
+            return Node.worker_nodes
+
+    def init_node_list(self):
+
         def filter_nodes(nodes, condition):
             return [node.metadata.name for node in nodes if condition(node)]
 
         core_api = client.CoreV1Api()
         nodes = core_api.list_node().items
-
-        all_nodes = sorted(filter_nodes(nodes, lambda node: True))
+        Node.all_nodes = sorted(filter_nodes(nodes, lambda node: True))
 
         control_plane_labels = {
             "node-role.kubernetes.io/master": ["true"],
@@ -180,16 +194,14 @@ class Node:
             label in node.metadata.labels and node.metadata.labels[label] in values
             for label, values in control_plane_labels.items()
         )
-        control_plane_nodes = sorted(filter_nodes(nodes, condition))
+        Node.control_plane_nodes = sorted(filter_nodes(nodes, condition))
 
-        worker_nodes = sorted([node for node in all_nodes if node not in control_plane_nodes])
+        def has_no_schedule_taint(node):
+            if not node.spec.taints:
+                return False
+            return any(taint.effect == "NoSchedule" for taint in node.spec.taints)
 
-        if role == "all":
-            return all_nodes
-        elif role == "control-plane":
-            return control_plane_nodes
-        elif role == "worker":
-            return worker_nodes
+        Node.worker_nodes = sorted([node.metadata.name for node in nodes if not has_no_schedule_taint(node)])
 
     def set_node(self, node_name: str, allowScheduling: bool, evictionRequested: bool) -> object:
         for _ in range(self.retry_count):

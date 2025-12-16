@@ -391,6 +391,7 @@ def is_workload_pods_has_cni_interface(workload_name, interface_name, namespace=
     The annotation value is expected to be a JSON array (string). If parsing fails or the
     annotation is missing / no matching interface is found for any pod, return False.
     """
+    CNI_NETWORK_STATUS_ANNOTATION = 'k8s.v1.cni.cncf.io/network-status'
     pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
     for pod in pods:
         annotations = getattr(pod.metadata, 'annotations', None)

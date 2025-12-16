@@ -84,7 +84,7 @@ class k8s_keywords:
         wait_all_pods_evicted(node_name)
 
     def uncordon_all_nodes(self):
-        nodes = Node.list_node_names_by_role("worker")
+        nodes = Node().list_node_names_by_role("worker")
 
         for node_name in nodes:
             uncordon_node(node_name)

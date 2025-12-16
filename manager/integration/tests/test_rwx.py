@@ -223,14 +223,16 @@ def test_rwx_parallel_writing(client, core_api, statefulset, pod, storage_class)
     md5sum2 = get_pod_data_md5sum(core_api, pod_name, 'data/test2')
 
     command1 = 'md5sum /export' + '/' + pv_name + '/' + 'test1' + \
-               " | awk '{print $1}'"
+               " | cut -d' ' -f1"
+
     share_manager_data1 = exec_command_in_pod(core_api, command1,
                                               share_manager_name,
                                               LONGHORN_NAMESPACE)
     assert md5sum1 == share_manager_data1
 
     command2 = 'md5sum /export' + '/' + pv_name + '/' + 'test2' + \
-               " | awk '{print $1}'"
+               " | cut -d' ' -f1"
+
     share_manager_data2 = exec_command_in_pod(core_api, command2,
                                               share_manager_name,
                                               LONGHORN_NAMESPACE)
