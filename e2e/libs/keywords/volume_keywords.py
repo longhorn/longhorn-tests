@@ -65,7 +65,7 @@ class volume_keywords:
         return self.volume.list_names(dataEngine=dataEngine)
 
     def wait_for_volume_expand_to_size(self, volume_name, size):
-        logging(f'Waiting for volume {volume_name} expand to {size}')
+        logging(f'Waiting for volume {volume_name} to expand to {size}')
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
     def get_replica_node(self, volume_name):
@@ -302,8 +302,8 @@ class volume_keywords:
         self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)
 
     def wait_for_volume_clone_status_completed(self, volume_name):
-        logging(f'Waiting for volume {volume_name} clone status to be completed')
-        self.volume.wait_for_volume_clone_status(volume_name, "completed")
+        logging(f'Waiting for volume {volume_name} clone status to be copy-completed-awaiting-healthy')
+        self.volume.wait_for_volume_clone_status(volume_name, "copy-completed-awaiting-healthy")
 
     def wait_for_volume_migration_to_be_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
