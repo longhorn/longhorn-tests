@@ -17,6 +17,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import get_longhorn_client
 from utility.utility import logging
 from utility.utility import pod_exec
+from utility.utility import convert_size_to_bytes
 
 
 class Rest(Base):
@@ -504,3 +505,14 @@ class Rest(Base):
     def update_data_locality(self, volume_name, data_locality):
         volume = self.get(volume_name)
         volume.updateDataLocality(dataLocality=data_locality)
+
+    def expand(self, volume_name, size):
+        logging(f"Expanding volume {volume_name} to {size}")
+        size_byte = str(convert_size_to_bytes(size))
+        volume = self.get(volume_name)
+        try:
+            volume.expand(size=size_byte)
+        except Exception as e:
+            logging(f"Expanding volume {volume_name} failed: {e}")
+            raise
+        logging(f"Expanded volume {volume_name} to {size}")

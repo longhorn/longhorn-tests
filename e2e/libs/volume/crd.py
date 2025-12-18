@@ -494,10 +494,13 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert started
 
+    def expand(self, volume_name, size):
+        return Rest().expand(volume_name, size)
+
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None
         engine_current_size = 0
-        engine_expected_size = int(expected_size)
+        engine_expected_size = convert_size_to_bytes(expected_size)
         engine_operation = Engine()
         for i in range(self.retry_count):
             engine = engine_operation.get_engine(volume_name)
