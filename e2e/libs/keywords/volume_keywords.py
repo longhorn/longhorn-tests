@@ -418,3 +418,6 @@ class volume_keywords:
 
     def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
         self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)
+
+    def expand_volume(self, volume_name, size):
+        self.volume.expand(volume_name, size)
