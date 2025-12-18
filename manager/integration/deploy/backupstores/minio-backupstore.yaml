@@ -84,7 +84,7 @@ spec:
       containers:
       - name: minio
         image: quay.io/minio/minio:RELEASE.2022-02-01T18-00-14Z
-        command: ["sh", "-c", "mkdir -p /storage/backupbucket && mkdir -p /storage/.minio/certs && ln -s /tmp/certs/private.key /storage/.minio/certs/private.key && ln -s /tmp/certs/public.crt /storage/.minio/certs/public.crt && exec minio server /storage --certs-dir /storage/.minio/certs"]
+        command: ["sh", "-c", "mkdir -p /storage/backupbucket && mkdir -p /storage/.minio/certs && ln -sf /tmp/certs/private.key /storage/.minio/certs/private.key && ln -sf /tmp/certs/public.crt /storage/.minio/certs/public.crt && exec minio server /storage --certs-dir /storage/.minio/certs"]
         env:
         - name: HOME
           value: "/storage"
