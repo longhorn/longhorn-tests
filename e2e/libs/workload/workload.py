@@ -343,6 +343,12 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
 
 
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
+    def is_in_crashloopbackoff(pod):
+        for container_status in pod.status.container_statuses:
+            if hasattr(container_status.state, 'waiting') and container_status.state.waiting:
+                if container_status.state.waiting.reason == "CrashLoopBackOff":
+                    return True
+        return False
     def count_pod_in_specifc_state_duration(count_pod_in_state_duration, pods, expect_state):
         for pod in pods:
             pod_name = pod.metadata.name
@@ -350,7 +356,8 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
                 count_pod_in_state_duration[pod_name] = 0
             elif (expect_state == "ContainerCreating" and pod.status.phase == "Pending") or \
                 ((expect_state == "Terminating" and hasattr(pod.metadata, "deletion_timestamp") and pod.status.phase == "Running")) or \
-                (expect_state == "Running" and pod.status.phase == "Running"):
+                (expect_state == "Running" and pod.status.phase == "Running") or \
+                (expect_state == "CrashLoopBackOff" and is_in_crashloopbackoff(pod)):
                 count_pod_in_state_duration[pod_name] += 1
             else:
                 count_pod_in_state_duration[pod_name] = 0
