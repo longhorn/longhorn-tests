@@ -213,7 +213,7 @@ class workload_keywords:
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
 
     def wait_for_pod_kept_in_state(self, workload_name, expect_state, namespace="default"):
-        assert expect_state in ["Terminating", "ContainerCreating", "Running"], f"Unknown expected pod state: {expect_state}: "
+        assert expect_state in ["Terminating", "ContainerCreating", "Running", "CrashLoopBackOff"], f"Unknown expected pod state: {expect_state}: "
         return wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace=namespace)
 
     def get_pod_node(self, pod):

@@ -31,3 +31,6 @@ class instancemanager_keywords:
 
     def wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up(self, node_name, engine_type):
         self.instancemanager.wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up(node_name, engine_type)
+
+    def kill_engine_process(self, instance_manager_name, volume_name):
+        self.instancemanager.kill_engine_process(instance_manager_name, volume_name)
