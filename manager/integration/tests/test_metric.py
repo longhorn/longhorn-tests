@@ -61,19 +61,19 @@ SCHEDULE_1MIN = "* * * * *"
 # prometheus_client is in float type.
 # https://github.com/longhorn/longhorn-tests/pull/1531#issuecomment-1833349994
 longhorn_volume_state = {
-    "creating": 1.0,
-    "attached": 2.0,
-    "detached": 3.0,
-    "attaching": 4.0,
-    "detaching": 5.0,
-    "deleting": 6.0,
+    "creating": 1,
+    "attached": 1,
+    "detached": 1,
+    "attaching": 1,
+    "detaching": 1,
+    "deleting": 1,
     }
 
 longhorn_volume_robustness = {
-    "unknown": 0.0,
-    "healthy": 1.0,
-    "degraded": 2.0,
-    "faulted": 3.0,
+    "unknown": 1,
+    "healthy": 1,
+    "degraded": 1,
+    "faulted": 1,
 }
 
 
@@ -163,6 +163,43 @@ def check_metric(core_api, metric_name, metric_labels, expected_value=None, metr
             break
 
     assert found_metric is not None
+
+    examine_metric_value(found_metric, metric_labels, expected_value)
+
+
+def check_metric_with_state(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
+    """
+    Some metrics share the same name but have multiple samples with
+    different labels.
+
+    Example: `longhorn_volume_robustness` has 4 samples distinguished
+    by `state` (healthy/degraded/faulted/unknown), so we must find the
+    sample by matching the labels (especially `state`), not just take
+    the first one.
+    """
+    metric_data = get_metrics(core_api, metric_node_id)
+
+    def labels_match(sample, expected_labels):
+        for k, v in expected_labels.items():
+            if isinstance(v, (float, int)):
+                continue
+            if sample.labels.get(k) != v:
+                return False
+        return True
+
+    found_metric = None
+    for family in metric_data:
+        for sample in family.samples:
+            if sample.name != metric_name:
+                continue
+            if labels_match(sample, metric_labels):
+                found_metric = sample
+                break
+        if found_metric:
+            break
+
+    assert found_metric is not None, \
+        f"Cannot find metric={metric_name} with labels={metric_labels}"
 
     examine_metric_value(found_metric, metric_labels, expected_value)
 
@@ -399,36 +436,42 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     # degraded, faulted or unknown
     volume.detach()
     volume = wait_for_volume_detached_unknown(client, volume_name)
-    check_metric(core_api, "longhorn_volume_robustness",
-                 metric_labels, longhorn_volume_robustness["unknown"])
+    labels = dict(metric_labels, state="unknown")
+    check_metric_with_state(core_api, "longhorn_volume_robustness",
+                            labels, longhorn_volume_robustness["unknown"])
 
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    check_metric(core_api, "longhorn_volume_robustness",
-                 metric_labels, longhorn_volume_robustness["healthy"])
+    labels = dict(metric_labels, state="healthy")
+    check_metric_with_state(core_api, "longhorn_volume_robustness",
+                            labels, longhorn_volume_robustness["healthy"])
 
     volume.updateReplicaCount(replicaCount=4)
     volume = wait_for_volume_degraded(client, volume_name)
-    check_metric(core_api, "longhorn_volume_robustness",
-                 metric_labels, longhorn_volume_robustness["degraded"])
+    labels = dict(metric_labels, state="degraded")
+    check_metric_with_state(core_api, "longhorn_volume_robustness",
+                            labels, longhorn_volume_robustness["degraded"])
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
     delete_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
-    check_metric(core_api, "longhorn_volume_robustness",
-                 metric_labels, longhorn_volume_robustness["faulted"])
+    labels = dict(metric_labels, state="faulted")
+    check_metric_with_state(core_api, "longhorn_volume_robustness",
+                            labels, longhorn_volume_robustness["faulted"])
 
     # verify longhorn_volume_state when volume is attached or detached
     volume = wait_for_volume_healthy(client, volume_name)
-    check_metric(core_api, "longhorn_volume_state",
-                 metric_labels, longhorn_volume_state["attached"])
+    labels = dict(metric_labels, state="attached")
+    check_metric_with_state(core_api, "longhorn_volume_state",
+                            labels, longhorn_volume_state["attached"])
 
     volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
-    check_metric(core_api, "longhorn_volume_state",
-                 metric_labels, longhorn_volume_state["detached"])
+    labels = dict(metric_labels, state="detached")
+    check_metric_with_state(core_api, "longhorn_volume_state",
+                            labels, longhorn_volume_state["detached"])
 
 
 def test_metric_longhorn_volume_file_system_read_only(client, core_api, volume_name, pod): # NOQA

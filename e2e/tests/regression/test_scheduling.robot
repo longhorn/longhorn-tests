@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Scheduling Test Cases
 
-Test Tags    regression
+Test Tags    regression    replica
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

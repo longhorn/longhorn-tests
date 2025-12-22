@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    ha-migration    negative
+Test Tags    ha-migration    negative    replica
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -294,6 +294,39 @@ Original Engine Crash During Migration
     When Detach volume 0 from node 0
     Then Wait for volume 0 to migrate to node 1
     And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
+Original Engine Crash Before Migration
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12311
+    ...    1. Create a migratable volume
+    ...    2. Attach it to a node
+    ...    3. Crash one instance manager pod (so that there is one replica containing non-empty spec.lastFailedAt).
+    ...    4. Wait for the failed replica recovery
+    ...    5. Start migration by attachig it to the second node
+    ...    6. The new replica in the restarted instance manager pod should not get stuck
+    ...       All new replicas should be ready for migration
+    ...    7. Detach the volume from the original node to confirm the migration
+    Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    # crash the engine on the original node by killing its instance-manager pod
+    When Delete ${DATA_ENGINE} instance manager on node 0
+    And Wait for volume 0 degraded
+    And Wait for volume 0 healthy
+
+    Then Attach volume 0 to node 1
+    And Wait for volume 0 migration to be ready
+    # there won't be additional replicas created during migration for v2 volumes
+    IF     "${DATA_ENGINE}" == "v1"
+        And Volume 0 should have 6 running replicas
+    END
+
+    And Detach volume 0 from node 0
+    And Wait for volume 0 to migrate to node 1
+    And Wait for volume 0 healthy
+    And Volume 0 should have 3 running replicas
     And Check volume 0 data is intact
 
 Migration Engine Crash During Migration
