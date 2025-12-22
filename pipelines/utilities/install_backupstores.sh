@@ -39,15 +39,22 @@ setup_azurite_backup_store(){
     RETRY=$((RETRY+1))
   done
 
-  AZBLOB_ENDPOINT=$(echo -n "http://$(kubectl get svc azblob-service -o jsonpath='{.spec.clusterIP}'):10000/" | base64)
+  CONTROL_PLANE_PUBLIC_IP=$(cat /tmp/controlplane_public_ip)
+  AZBLOB_ENDPOINT=$(echo -n "http://${CONTROL_PLANE_PUBLIC_IP}:31000/" | base64)
   kubectl -n longhorn-system patch secret azblob-secret \
     --type=json \
     -p="[{'op': 'replace', 'path': '/data/AZBLOB_ENDPOINT', 'value': \"${AZBLOB_ENDPOINT}\"}]"
 
-  CONTROL_PLANE_PUBLIC_IP=$(cat /tmp/controlplane_public_ip)
-  # port forward and az container create need to be run on control node
-  ssh ec2-user@${CONTROL_PLANE_PUBLIC_IP} "nohup kubectl port-forward --address 0.0.0.0 service/azblob-service 20001:10000 > /dev/null 2>&1 &"
-  ssh ec2-user@${CONTROL_PLANE_PUBLIC_IP} "az storage container create -n longhorn-test-azurite --connection-string 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://0.0.0.0:20001/devstoreaccount1;'"
+  kubectl run az-cli \
+  --image=mcr.microsoft.com/azure-cli \
+  --restart=Never \
+  -- az storage container create \
+     -n longhorn-test-azurite \
+     --connection-string \
+     "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://${CONTROL_PLANE_PUBLIC_IP}:31000/devstoreaccount1;"
+  kubectl wait --for=condition=Ready pod/az-cli --timeout=60s
+  kubectl logs az-cli
+  kubectl delete pod az-cli --ignore-not-found
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

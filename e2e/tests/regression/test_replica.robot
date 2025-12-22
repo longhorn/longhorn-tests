@@ -150,3 +150,26 @@ Test Delete Instance Manager Of Single Replica Volume
     And Wait for volume 0 unknown
     And Wait for volume 0 healthy
     Then Check volume 0 data is intact
+
+Test Offline Replica Rebuilding Volume Status Condition
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11246
+    Given Setting offline-replica-rebuilding is set to true
+    And Create volume vol with    dataEngine=${DATA_ENGINE}
+    And Attach volume vol
+    And Wait for volume vol healthy
+    And Write data to volume vol
+    And Run command and not expect output
+    ...    kubectl get volumes vol -n longhorn-system -oyaml
+    ...    OfflineRebuildingInProgress
+    And Detach volume vol
+    And Wait for volume vol detached
+
+    When Delete volume vol replica on replica node
+    Then Run command and wait for output
+    ...    kubectl get volumes vol -n longhorn-system -oyaml
+    ...    OfflineRebuildingInProgress
+    And Wait until volume vol replica rebuilding completed on replica node
+    And Wait for volume vol detached
+    And Run command and not expect output
+    ...    kubectl get volumes vol -n longhorn-system -oyaml
+    ...    OfflineRebuildingInProgress

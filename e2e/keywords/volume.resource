@@ -620,3 +620,15 @@ Ignore volume ${volume_id} offline replica rebuilding
 Update volume ${volume_id} data locality to ${data_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_data_locality    ${volume_name}    ${data_locality}
+
+Wait for volume ${volume_id} size to be ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_expand_to_size    ${volume_name}    ${size}
+
+Expand volume ${volume_id} to ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    expand_volume    ${volume_name}    ${size}
+
+Expand volume ${volume_id} to ${size} should fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    expand_volume    ${volume_name}    ${size}

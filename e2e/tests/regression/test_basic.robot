@@ -55,7 +55,7 @@ Test Volume Basic
     And Delete volume 0
 
 Test V1 Snapshot
-    [Tags]    coretest
+    [Tags]    coretest    snapshot-purge
     [Documentation]    Test snapshot operations
     Given Create volume 0 with    dataEngine=v1
     When Attach volume 0

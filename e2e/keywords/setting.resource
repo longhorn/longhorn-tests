@@ -22,3 +22,7 @@ Update Setting To Valid Value And Verify
     update_setting    ${setting_key}    ${setting_value}
     ${value} =    get_setting    ${setting_key}
     Should Be Equal    ${value}    ${expected_value}
+
+Setting ${setting_key} should be ${setting_value}
+    ${current_value} =    get_setting    ${setting_key}
+    Should Be Equal    ${current_value}    ${setting_value}

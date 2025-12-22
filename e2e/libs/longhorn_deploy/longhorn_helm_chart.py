@@ -27,8 +27,12 @@ class LonghornHelmChart(Base):
             install_function = "install_longhorn_stable"
         else:
             install_function = "install_longhorn_custom"
-        command = "./pipelines/utilities/longhorn_helm_chart.sh"
-        process = subprocess.Popen([command, install_function],
+
+        if os.getenv('APPCO_TEST') == "true":
+            command = "./pipelines/appco/scripts/longhorn_helm_chart.sh"
+        else:
+            command = "./pipelines/utilities/longhorn_helm_chart.sh"
+        process = subprocess.Popen([command, install_function, custom_cmd],
                                    shell=False)
         process.wait()
         return True if process.returncode == 0 else False
@@ -38,7 +42,11 @@ class LonghornHelmChart(Base):
             upgrade_function = "install_longhorn_transient"
         else:
             upgrade_function = "install_longhorn_custom"
-        command = "./pipelines/utilities/longhorn_helm_chart.sh"
+
+        if os.getenv('APPCO_TEST') == "true":
+            command = "./pipelines/appco/scripts/longhorn_helm_chart.sh"
+        else:
+            command = "./pipelines/utilities/longhorn_helm_chart.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
         try:

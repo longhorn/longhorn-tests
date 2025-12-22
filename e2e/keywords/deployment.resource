@@ -14,6 +14,11 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     create_deployment    ${deployment_name}    ${claim_name}
 
+Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} and liveness probe
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_deployment    ${deployment_name}    ${claim_name}    enable_pvc_io_and_liveness_probe=${True}
+
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with max replicaset
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
