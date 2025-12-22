@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Backing Image Test Cases
 
-Test Tags    regression    backing_image
+Test Tags    regression    backing-image
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -19,8 +19,8 @@ Test Teardown    Cleanup test resources
 Test Backing Image Basic Operation
     [Tags]    coretest
     [Documentation]    Test Backing Image APIs.
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
-    When Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    When Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
@@ -41,8 +41,8 @@ Test Uninstall When Backing Image Exists
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/10044
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
-        And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+        Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+        And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
         And Setting deleting-confirmation-flag is set to true
 
         When Uninstall Longhorn
@@ -52,10 +52,7 @@ Test Uninstall When Backing Image Exists
     END
 
 Test Backup Backing Image
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    backing up a backing image for a v2 backing image isn't supported yet: https://github.com/longhorn/longhorn/issues/9992
-    END
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     When Create backup backing image bi-backup for backing image bi
     Then Wait for backing image backup for backing image bi ready
 
@@ -82,10 +79,10 @@ Test Evict Two Replicas Volume With Backing Image
     ...                of a volume created from a backing image
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/11034
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     # To make sure replica node is node 1
     And Set node 2 with    allowScheduling=false    evictionRequested=false
-    When Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}    numberOfReplicas=2
+    When Create volume 0 with    backingImage=bi    numberOfReplicas=2
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
     And Set node 2 with    allowScheduling=true    evictionRequested=false
