@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Scheduling Test Cases
 
-Test Tags    regression
+Test Tags    regression    replica
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -104,6 +104,62 @@ Test Replica Auto Balance Disk In Pressure
     And Check statefulset 0 data in file data.bin is intact
     And Check statefulset 1 data in file data.bin is intact
     And Check statefulset 2 data in file data.bin is intact
+
+Test Replica Auto Balance Disk In Pressure With Stopped Volume Should Not Block
+    [Tags]    auto-balance
+    [Documentation]    Verify that stopped volumes with alphabetically smaller names
+    ...    no not block auto-balancing of running volumes when the disk is under
+    ...    pressure.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/10837
+
+    Given Setting replica-soft-anti-affinity is set to false
+
+    IF    "${DATA_ENGINE}" == "v1"
+        And Create 1 Gi filesystem type disk local-disk-0 on node 0
+        And Create 1 Gi filesystem type disk local-disk-1 on node 0
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        And Create 1 Gi block type disk local-disk-0 on node 0
+        And Create 1 Gi block type disk local-disk-1 on node 0
+    END
+    And Disable disk local-disk-1 scheduling on node 0
+    And Disable disk block-disk scheduling on node 0
+    And Disable node 0 default disk
+    And Disable node 1 scheduling
+    And Disable node 2 scheduling
+
+    # Disable auto balance disk pressure initially
+    And Setting replica-auto-balance-disk-pressure-percentage is set to 0
+
+    # Create two volumes with single replica on disk 0
+    And Create volume aaa with    size=450Mi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume aaa to node 0
+    And Wait for volume aaa healthy
+    And Create volume bbb with    size=450Mi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume bbb to node 0
+    And Wait for volume bbb healthy
+
+    # Write data to trigger disk pressure
+    And Write 400 Mi data to volume aaa
+    And Write 400 Mi data to volume bbb
+
+    # Stop the alphabetically first volume (aaa)
+    When Detach volume aaa from attached node
+    And Wait for volume aaa detached
+
+    # Enable auto-balance under disk pressure
+    And Setting replica-auto-balance-disk-pressure-percentage is set to 70
+    And Enable disk local-disk-1 scheduling on node 0
+    And Setting replica-auto-balance is set to best-effort
+
+    # The running replica (bbb) should be auto-balanced to disk 1,
+    # ignoring the stopped volume (aaa).
+    Then Check node 0 disk local-disk-1 is not in pressure
+    And There should be 1 replicas of volume aaa on node 0 disk local-disk-0
+    And There should be 1 replicas of volume bbb on node 0 disk local-disk-1
+
+    And Wait for volume bbb healthy
+    And Check volume bbb data is intact
 
 Test Replica Auto Balance Node Least Effort
     [Tags]    coretest

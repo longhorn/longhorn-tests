@@ -17,6 +17,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import get_longhorn_client
 from utility.utility import logging
 from utility.utility import pod_exec
+from utility.utility import convert_size_to_bytes
 
 
 class Rest(Base):
@@ -262,7 +263,6 @@ class Rest(Base):
 
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         condition_met = False
-        mode = "RW" if running else ""
         for i in range(self.retry_count):
             running_replica_count = 0
             volume = get_longhorn_client().by_id_volume(volume_name)
@@ -271,12 +271,12 @@ class Rest(Base):
                     # if running == True, it collects running replicas
                     # if running == False, it collects stopped replicas
                     # if running == None, it collects all replicas
-                    if running is not None and r.running == running and r.mode == mode:
+                    if running is not None and r.running == running:
                         running_replica_count += 1
                     elif running is None:
                         running_replica_count += 1
                 elif not node_name:
-                    if running is not None and r.running == running and r.mode == mode:
+                    if running is not None and r.running == running:
                         running_replica_count += 1
                     elif running is None:
                         running_replica_count += 1
@@ -504,3 +504,14 @@ class Rest(Base):
     def update_data_locality(self, volume_name, data_locality):
         volume = self.get(volume_name)
         volume.updateDataLocality(dataLocality=data_locality)
+
+    def expand(self, volume_name, size):
+        logging(f"Expanding volume {volume_name} to {size}")
+        size_byte = str(convert_size_to_bytes(size))
+        volume = self.get(volume_name)
+        try:
+            volume.expand(size=size_byte)
+        except Exception as e:
+            logging(f"Expanding volume {volume_name} failed: {e}")
+            raise
+        logging(f"Expanded volume {volume_name} to {size}")

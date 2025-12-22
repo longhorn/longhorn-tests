@@ -47,6 +47,8 @@ class LonghornDeploy(Base):
         self.longhorn.install_backupstores()
         self.longhorn.create_registry_secret()
         self.longhorn.create_aws_secret()
+        if os.getenv('APPCO_TEST') == "true":
+            self.longhorn.create_appco_secret()
         installed = self.longhorn.install(custom_cmd, install_stable_version)
         if not installed:
             logging(f"Installing Longhorn failed")
@@ -68,3 +70,7 @@ class LonghornDeploy(Base):
             time.sleep(60)
         logging(f"Upgraded Longhorn")
         return upgraded
+
+    def enable_storage_network_setting(self):
+        logging(f"Enabling storage network setting")
+        self.longhorn.enable_storage_network_setting()

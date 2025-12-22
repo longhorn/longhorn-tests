@@ -8,6 +8,7 @@ from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import DATA_SIZE_IN_MB_2, wait_for_volume_healthy, get_volume_name
 from common import wait_for_volume_clone_status, VOLUME_FIELD_STATE
 from common import VOLUME_FIELD_CLONE_COMPLETED, wait_for_pvc_phase
+from common import VOLUME_FIELD_CLONE_COPY_COMPLETED_AWAITING_HEALTHY
 from common import get_self_host_id, write_volume_random_data
 from common import wait_for_volume_detached, check_volume_data
 from common import crash_replica_processes
@@ -145,7 +146,7 @@ def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod, storage
     # Step-5
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
-                                 VOLUME_FIELD_CLONE_COMPLETED)
+                                 VOLUME_FIELD_CLONE_COPY_COMPLETED_AWAITING_HEALTHY) # NOQA
 
     # Step-6
     wait_for_volume_detached(client, clone_volume_name)
@@ -249,7 +250,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc, s
     # Step-6
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
-                                 VOLUME_FIELD_CLONE_COMPLETED)
+                                 VOLUME_FIELD_CLONE_COPY_COMPLETED_AWAITING_HEALTHY) # NOQA
     wait_for_volume_detached(client, clone_volume_name)
 
     # Step-7
@@ -344,7 +345,7 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
 
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
-                                 VOLUME_FIELD_CLONE_COMPLETED)
+                                 VOLUME_FIELD_CLONE_COPY_COMPLETED_AWAITING_HEALTHY) # NOQA
 
     wait_for_volume_detached(client, clone_volume_name)
 

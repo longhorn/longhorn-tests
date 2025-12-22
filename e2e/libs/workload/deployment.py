@@ -12,7 +12,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -29,6 +29,31 @@ def create_deployment(name, claim_name, replicaset=1):
 
         # correct claim name
         manifest_dict['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = claim_name
+
+        if enable_pvc_io_and_liveness_probe:
+            container = manifest_dict['spec']['template']['spec']['containers'][0]
+            container['command'] = ["/bin/sh", "-c"]
+            container['args'] = [
+                "set -e; "
+                "while true; do "
+                "  date >> /data/date.log; "
+                "  sync; "
+                "  sleep 1; "
+                "done"
+            ]
+            container['livenessProbe'] = {
+                "exec": {
+                    "command": [
+                        "sh",
+                        "-c",
+                        "ls /data && tail -n1 /data/date.log > /dev/null"
+                    ]
+                },
+                "initialDelaySeconds": 5,
+                "periodSeconds": 5,
+                "failureThreshold": 3
+            }
+
         api = client.AppsV1Api()
 
         deployment = api.create_namespaced_deployment(

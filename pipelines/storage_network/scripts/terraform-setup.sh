@@ -11,5 +11,6 @@ for id in ${NETWORK_INTERFACE_IDS}; do
 done
 
 terraform -chdir=pipelines/storage_network/terraform output -raw controlplane_public_ip > /tmp/controlplane_public_ip
+terraform -chdir=pipelines/storage_network/terraform output -raw instance_mapping | jq 'map({(.name | split(".")[0]): .id}) | add' | jq -s add > /tmp/instance_mapping
 
 exit $?

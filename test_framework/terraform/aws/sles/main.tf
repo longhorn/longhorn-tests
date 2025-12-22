@@ -169,6 +169,22 @@ resource "aws_security_group" "lh_aws_secgrp" {
   }
 
   ingress {
+    description = "Allow azurite nodeport"
+    from_port   = 31000
+    to_port     = 31000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "Allow azurite nodeport over IPv6"
+    from_port        = 31000
+    to_port          = 31000
+    protocol         = "tcp"
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
     description = "Allow TCP connection for longhorn-webhooks"
     from_port   = 0
     to_port     = 65535
