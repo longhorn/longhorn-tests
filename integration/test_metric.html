@@ -233,6 +233,57 @@ metric longhorn_disk_status have conditions
 - schedulable
 Use this function to get specific condition of a mertic</p></div>
 </dd>
+<dt id="tests.test_metric.check_metric_with_state"><code class="name flex">
+<span>def <span class="ident">check_metric_with_state</span></span>(<span>core_api, metric_name, metric_labels, expected_value=None, metric_node_id=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_metric_with_state(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
+    &#34;&#34;&#34;
+    Some metrics share the same name but have multiple samples with
+    different labels.
+
+    Example: `longhorn_volume_robustness` has 4 samples distinguished
+    by `state` (healthy/degraded/faulted/unknown), so we must find the
+    sample by matching the labels (especially `state`), not just take
+    the first one.
+    &#34;&#34;&#34;
+    metric_data = get_metrics(core_api, metric_node_id)
+
+    def labels_match(sample, expected_labels):
+        for k, v in expected_labels.items():
+            if isinstance(v, (float, int)):
+                continue
+            if sample.labels.get(k) != v:
+                return False
+        return True
+
+    found_metric = None
+    for family in metric_data:
+        for sample in family.samples:
+            if sample.name != metric_name:
+                continue
+            if labels_match(sample, metric_labels):
+                found_metric = sample
+                break
+        if found_metric:
+            break
+
+    assert found_metric is not None, \
+        f&#34;Cannot find metric={metric_name} with labels={metric_labels}&#34;
+
+    examine_metric_value(found_metric, metric_labels, expected_value)</code></pre>
+</details>
+<div class="desc"><p>Some metrics share the same name but have multiple samples with
+different labels.</p>
+<p>Example: <code>longhorn_volume_robustness</code> has 4 samples distinguished
+by <code>state</code> (healthy/degraded/faulted/unknown), so we must find the
+sample by matching the labels (especially <code>state</code>), not just take
+the first one.</p></div>
+</dd>
 <dt id="tests.test_metric.examine_metric_value"><code class="name flex">
 <span>def <span class="ident">examine_metric_value</span></span>(<span>found_metric, metric_labels, expected_value=None)</span>
 </code></dt>
@@ -847,36 +898,42 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     # degraded, faulted or unknown
     volume.detach()
     volume = wait_for_volume_detached_unknown(client, volume_name)
-    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                 metric_labels, longhorn_volume_robustness[&#34;unknown&#34;])
+    labels = dict(metric_labels, state=&#34;unknown&#34;)
+    check_metric_with_state(core_api, &#34;longhorn_volume_robustness&#34;,
+                            labels, longhorn_volume_robustness[&#34;unknown&#34;])
 
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                 metric_labels, longhorn_volume_robustness[&#34;healthy&#34;])
+    labels = dict(metric_labels, state=&#34;healthy&#34;)
+    check_metric_with_state(core_api, &#34;longhorn_volume_robustness&#34;,
+                            labels, longhorn_volume_robustness[&#34;healthy&#34;])
 
     volume.updateReplicaCount(replicaCount=4)
     volume = wait_for_volume_degraded(client, volume_name)
-    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                 metric_labels, longhorn_volume_robustness[&#34;degraded&#34;])
+    labels = dict(metric_labels, state=&#34;degraded&#34;)
+    check_metric_with_state(core_api, &#34;longhorn_volume_robustness&#34;,
+                            labels, longhorn_volume_robustness[&#34;degraded&#34;])
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
     delete_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
-    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                 metric_labels, longhorn_volume_robustness[&#34;faulted&#34;])
+    labels = dict(metric_labels, state=&#34;faulted&#34;)
+    check_metric_with_state(core_api, &#34;longhorn_volume_robustness&#34;,
+                            labels, longhorn_volume_robustness[&#34;faulted&#34;])
 
     # verify longhorn_volume_state when volume is attached or detached
     volume = wait_for_volume_healthy(client, volume_name)
-    check_metric(core_api, &#34;longhorn_volume_state&#34;,
-                 metric_labels, longhorn_volume_state[&#34;attached&#34;])
+    labels = dict(metric_labels, state=&#34;attached&#34;)
+    check_metric_with_state(core_api, &#34;longhorn_volume_state&#34;,
+                            labels, longhorn_volume_state[&#34;attached&#34;])
 
     volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
-    check_metric(core_api, &#34;longhorn_volume_state&#34;,
-                 metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
+    labels = dict(metric_labels, state=&#34;detached&#34;)
+    check_metric_with_state(core_api, &#34;longhorn_volume_state&#34;,
+                            labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
 </details>
 <div class="desc"><p><a href="https://longhorn.io/docs/master/monitoring/metrics/#volume">https://longhorn.io/docs/master/monitoring/metrics/#volume</a></p>
 <p>The goal of this test case is to verify that the accuracy
@@ -1005,6 +1062,7 @@ prometheus_client to validate the return value.</p></div>
 <li><code><a title="tests.test_metric.check_metric_count_all_nodes" href="#tests.test_metric.check_metric_count_all_nodes">check_metric_count_all_nodes</a></code></li>
 <li><code><a title="tests.test_metric.check_metric_sum_on_all_nodes" href="#tests.test_metric.check_metric_sum_on_all_nodes">check_metric_sum_on_all_nodes</a></code></li>
 <li><code><a title="tests.test_metric.check_metric_with_condition" href="#tests.test_metric.check_metric_with_condition">check_metric_with_condition</a></code></li>
+<li><code><a title="tests.test_metric.check_metric_with_state" href="#tests.test_metric.check_metric_with_state">check_metric_with_state</a></code></li>
 <li><code><a title="tests.test_metric.examine_metric_value" href="#tests.test_metric.examine_metric_value">examine_metric_value</a></code></li>
 <li><code><a title="tests.test_metric.find_metric" href="#tests.test_metric.find_metric">find_metric</a></code></li>
 <li><code><a title="tests.test_metric.find_metrics" href="#tests.test_metric.find_metrics">find_metrics</a></code></li>
