@@ -50,7 +50,7 @@ Test Migration Rollback
     And Check volume 0 data is intact
 
 Test Snapshot Purge Rejection While Migration
-    [Tags]    coretest    migration
+    [Tags]    coretest    migration    snapshot-purge
     [Documentation]    Test that a snapshot purge request is rejected while migration is in progress.
 
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}

@@ -9,6 +9,7 @@ Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/host_keywords.py
 Library    ../libs/keywords/k8s_keywords.py
 Library    ../libs/keywords/replica_keywords.py
+Library    ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
 Create pod ${pod_id} using volume ${volume_id}
@@ -256,6 +257,10 @@ Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on the ori
     ${node_name} =    get_pod_node    ${pod}
     Should Be Equal    ${node_name}    ${last_volume_node}
 
+Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
@@ -384,3 +389,9 @@ Assert pod UIDs of ${workload_kind} ${workload_id} remain unchanged
         Should Be Equal As Strings    ${pod_uids}    ${recorded_pod_uids}
         Sleep    1
     END
+
+Kill volume engine process for ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${instance_manager_name} =    get_volume_instance_manager    ${volume_name}
+    kill_engine_process    ${instance_manager_name}    ${volume_name}

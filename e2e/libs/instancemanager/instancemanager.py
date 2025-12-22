@@ -148,3 +148,15 @@ class InstanceManager:
             else:
                 return
         assert False, f"Failed to clean up engine instances in {engine_type} instance manager on node {node_name}: {cr}"
+
+    def kill_engine_process(self, instance_manager_name, volume_name):
+        exec_cmd = [
+            "kubectl", "exec",
+            "-n", "longhorn-system",
+            instance_manager_name,
+            "--",
+            "sh", "-c",
+            f'kill -9 $(pgrep -f "controller {volume_name}")'
+        ]
+
+        subprocess_exec_cmd(exec_cmd)
