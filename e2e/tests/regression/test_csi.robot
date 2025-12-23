@@ -31,7 +31,7 @@ Test CSI Storage Capacity Without DataEngine Parameter
     ...    csisc
 
 Test CSI Pod Soft Anti Affinity
-    [Tags]    custom-setting
+    [Tags]    custom-setting    uninstall
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11617
     ...    1. Create a single node cluster by cordoning and tainting the rest of worker nodes with NoExecute
     ...    2. Edit deployment YAML. Add the environment variable CSI_POD_ANTI_AFFINITY_PRESET = soft
@@ -85,7 +85,7 @@ Test CSI Pod Soft Anti Affinity
     And Wait for Longhorn components all running
 
 Test CSI Pod Hard Anti Affinity
-    [Tags]    custom-setting
+    [Tags]    custom-setting    uninstall
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11617
     ...    1. Create a single node cluster by cordoning and tainting the rest of worker nodes with NoExecute
     ...    2. Edit deployment YAML. Add the environment variable CSI_POD_ANTI_AFFINITY_PRESET = hard
@@ -179,7 +179,7 @@ Test CSI Pod Hard Anti Affinity
     And Wait for Longhorn components all running
 
 Test CSI Pod Anti Affinity Update
-    [Tags]    custom-setting
+    [Tags]    custom-setting    uninstall
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12100
     ...    1. Create a single node cluster by cordoning and tainting the rest of worker nodes with NoExecute
     ...    2. Edit deployment YAML. Add the environment variable CSI_POD_ANTI_AFFINITY_PRESET = soft
