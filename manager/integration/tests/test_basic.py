@@ -2525,6 +2525,11 @@ def test_expansion_basic(client, volume_name):  # NOQA
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
+    for i in range(RETRY_COUNTS_SHORT):
+        snaps = volume.snapshotList()
+        if len(snaps) == 5:
+            break
+        time.sleep(RETRY_INTERVAL)
     volume.snapshotRevert(name=snap1.name)
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
