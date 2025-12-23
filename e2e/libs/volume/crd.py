@@ -10,6 +10,7 @@ from node_exec import NodeExec
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+import utility.constant as constant
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
@@ -102,6 +103,18 @@ class CRD(Base):
 
     def delete(self, volume_name, wait):
         try:
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="volumes",
+                name=volume_name,
+                body={
+                    "metadata": {
+                        "finalizers": []
+                    }
+                }
+            )
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
