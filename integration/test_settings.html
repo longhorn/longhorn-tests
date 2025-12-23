@@ -1741,6 +1741,10 @@ The invalid settings SETTING_TAINT_TOLERATION will be updated
     node = get_self_host_id()
     wait_for_node_up_longhorn(node, client)
 
+    if DATA_ENGINE == &#34;v2&#34;:
+        # wait block disks ready
+        wait_for_all_nodes_disks_schedulable(client)
+
     return client, node</code></pre>
 </details>
 <div class="desc"></div>
