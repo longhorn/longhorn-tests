@@ -114,6 +114,10 @@ def wait_for_longhorn_node_ready():
     node = get_self_host_id()
     wait_for_node_up_longhorn(node, client)
 
+    if DATA_ENGINE == "v2":
+        # wait block disks ready
+        wait_for_all_nodes_disks_schedulable(client)
+
     return client, node
 
 
