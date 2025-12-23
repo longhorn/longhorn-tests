@@ -164,7 +164,7 @@ Test Backing Image On Two Nodes Down
     When Power off volume 0 volume node
     And Power off node 2
     Then Wait for disk file status of backing image bi-down are expected    expected_ready_count=1    expected_unknown_count=2
-    And Wait for volume 0 attached and unknown
+    And Wait for volume 0 unknown
     And Wait for volume 1 degraded
     And Check volume 1 data is intact
 
