@@ -1,0 +1,59 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  # Purpose: Allow ingress traffic to the NFS BackupStore
+  name: allow-backupstore-nfs-ingress
+  namespace: default
+spec:
+  # Target: Apply to pods with label app: longhorn-test-nfs
+  podSelector:
+    matchLabels:
+      app: longhorn-test-nfs
+  policyTypes:
+  - Ingress
+  ingress:
+  # Rule 1: Allow traffic from the longhorn-system namespace (Production Backup Traffic)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: longhorn-system
+  # Rule 2: Allow traffic from the Test Client Pod within the SAME namespace (Test Traffic)
+  # Note: A podSelector without a namespaceSelector implies the current namespace.
+  - from:
+    - podSelector:
+        matchLabels:
+          longhorn-test: test-job  # Matches the specific label of the longhorn-test pod
+    ports:
+    - protocol: TCP
+      port: 2049 # NFS port
+    - protocol: TCP
+      port: 111  # RPCBind port
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  # Purpose: Allow ingress traffic to the MinIO BackupStore
+  name: allow-backupstore-minio-ingress
+  namespace: default
+spec:
+  # Target: Apply to pods with label app: longhorn-test-minio
+  podSelector:
+    matchLabels:
+      app: longhorn-test-minio
+  policyTypes:
+  - Ingress
+  ingress:
+  # Rule 1: Allow traffic from the longhorn-system namespace (Production Backup Traffic)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: longhorn-system
+  # Rule 2: Allow traffic from the Test Client Pod within the SAME namespace (Test Traffic)
+  - from:
+    - podSelector:
+        matchLabels:
+          longhorn-test: test-job  # Matches the specific label of the longhorn-test pod
+    ports:
+    - protocol: TCP
+      port: 9000 # MinIO API port

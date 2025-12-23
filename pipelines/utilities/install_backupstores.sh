@@ -77,6 +77,11 @@ setup_azurite_backup_store(){
   kubectl delete pod az-cli --ignore-not-found
 }
 
+install_backupstores_networkpolicy(){
+  BACKUPSTORE_NETWORK_POLICY_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/backupstore-networkpolicy.yaml"
+  kubectl create -f ${BACKUPSTORE_NETWORK_POLICY_URL}
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   if declare -f "$1" > /dev/null; then
     "$@"
