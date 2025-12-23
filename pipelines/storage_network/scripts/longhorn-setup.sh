@@ -58,6 +58,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  install_backupstores_networkpolicy
   setup_azurite_backup_store
   install_csi_snapshotter
 

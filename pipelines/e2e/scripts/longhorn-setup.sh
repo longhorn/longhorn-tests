@@ -44,6 +44,7 @@ main(){
   create_instance_mapping_configmap
 
   install_backupstores
+  install_backupstores_networkpolicy
   setup_azurite_backup_store
   install_csi_snapshotter
   create_nad_without_storage_network
