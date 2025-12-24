@@ -9,6 +9,7 @@ from utility.utility import logging
 from utility.utility import get_all_crs
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
 
 from volume import Rest as RestVolume
 
@@ -189,7 +190,7 @@ class Rest(Base):
     def list_all(self):
         return get_all_crs(group="longhorn.io",
                       version="v1beta2",
-                      namespace="longhorn-system",
+                      namespace=constant.LONGHORN_NAMESPACE,
                       plural="backups",
                       )
 

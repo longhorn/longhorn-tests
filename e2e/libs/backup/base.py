@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from utility.utility import set_annotation
 from utility.utility import get_annotation_value
+import utility.constant as constant
 
 
 class Base(ABC):
@@ -17,7 +18,7 @@ class Base(ABC):
         set_annotation(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="backups",
             name=backup_name,
             annotation_key=self.ANNOT_ID,
@@ -28,7 +29,7 @@ class Base(ABC):
         return get_annotation_value(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="backups",
             name=backup_name,
             annotation_key=self.ANNOT_ID
@@ -38,7 +39,7 @@ class Base(ABC):
         set_annotation(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="backups",
             name=backup_name,
             annotation_key=self.ANNOT_DATA_CHECKSUM,
@@ -49,7 +50,7 @@ class Base(ABC):
         return get_annotation_value(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="backups",
             name=backup_name,
             annotation_key=self.ANNOT_DATA_CHECKSUM,
