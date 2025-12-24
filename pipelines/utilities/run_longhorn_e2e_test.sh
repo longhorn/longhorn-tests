@@ -188,6 +188,7 @@ run_longhorn_test_out_of_cluster(){
   eval "ROBOT_COMMAND_ARGS=($CUSTOM_TEST_OPTIONS)"
 
   cat /tmp/instance_mapping
+  cat /tmp/controlplane_public_ip
   cp "${KUBECONFIG}" /tmp/kubeconfig
   CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
   docker run --pull=always \
