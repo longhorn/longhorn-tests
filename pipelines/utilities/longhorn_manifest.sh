@@ -129,6 +129,7 @@ uninstall_longhorn(){
   wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml" -O uninstall.yaml
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" uninstall.yaml
   kubectl create -f uninstall.yaml
+  kubectl patch job longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --type=json -p='[{"op":"remove","path":"/spec/activeDeadlineSeconds"}]'
 
   kubectl wait --for=condition=complete job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --timeout=10m
   exit_code=$?
