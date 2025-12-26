@@ -103,6 +103,18 @@ class CRD(Base):
 
     def delete(self, volume_name, wait):
         try:
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="volumes",
+                name=volume_name,
+                body={
+                    "metadata": {
+                        "finalizers": []
+                    }
+                }
+            )
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
