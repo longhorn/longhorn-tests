@@ -6,8 +6,8 @@ from kubernetes import client
 from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import DISK_BEING_SYNCING
-from utility.constant import LONGHORN_NAMESPACE
 from utility.constant import NODE_UPDATE_RETRY_INTERVAL
+import utility.constant as constant
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
@@ -44,9 +44,9 @@ class Node:
         logging(f"Updating node {node_name} disks {disks}")
         for _ in range(self.retry_count):
             try:
-                node.diskUpdate(disks=disks)
+                node = node.diskUpdate(disks=disks)
                 self.wait_for_disk_update(node_name, len(disks))
-                return
+                return node
             except Exception as e:
                 logging(f"Failed to update node {node_name} disk: {e}")
             time.sleep(self.retry_interval)
@@ -90,6 +90,19 @@ class Node:
     def reset_disks(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
 
+        # add default back if not exist
+        if not any(disk.path == self.DEFAULT_DISK_PATH for disk in node.disks.values()):
+            logging(f"Default disk with path {self.DEFAULT_DISK_PATH} not found on node {node_name}, re-adding it")
+
+            default_disk = {
+                "default-disk": {
+                    "path": self.DEFAULT_DISK_PATH,
+                    "diskType": "filesystem",
+                    "allowScheduling": True
+                }
+            }
+            node = self.update_disks(node_name, default_disk)
+
         for disk_name, disk in iter(node.disks.items()):
             if disk.path != self.DEFAULT_DISK_PATH:
                 disk.allowScheduling = False
@@ -130,7 +143,7 @@ class Node:
     def get_node_by_name(self, node_name, namespace="kube-system"):
         logging(f"Getting node by name {node_name} in namespace {namespace}")
         try:
-            if namespace == LONGHORN_NAMESPACE:
+            if namespace == constant.LONGHORN_NAMESPACE:
                 return get_longhorn_client().by_id_node(node_name)
             else:
                 core_api = client.CoreV1Api()
@@ -260,7 +273,7 @@ class Node:
     def evict_node(self, node_name):
         logging(f"Evicting node {node_name}")
         exec_cmd = f"""
-            kubectl patch nodes.longhorn.io {node_name} -n longhorn-system --type=merge -p '{{
+            kubectl patch nodes.longhorn.io {node_name} -n {constant.LONGHORN_NAMESPACE} --type=merge -p '{{
                 \"spec\": {{
                     \"evictionRequested\": true,
                     \"allowScheduling\": false
@@ -272,7 +285,7 @@ class Node:
     def unevict_node(self, node_name):
         logging(f"Unevicting node {node_name}")
         exec_cmd = f"""
-            kubectl patch nodes.longhorn.io {node_name} -n longhorn-system --type=merge -p '{{
+            kubectl patch nodes.longhorn.io {node_name} -n {constant.LONGHORN_NAMESPACE} --type=merge -p '{{
                 \"spec\": {{
                     \"evictionRequested\": false,
                     \"allowScheduling\": true
@@ -443,3 +456,58 @@ class Node:
         cmd = f"chattr -i /var/lib/longhorn/backing-images/{bi_name}-*/"
         res = NodeExec(node_name).issue_cmd(cmd)
         return res
+
+    def get_default_file_system_disk_name(self, node_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                return disk_name
+        assert False, f"no disk no {node_name} use disk path {self.DEFAULT_DISK_PATH}"
+
+    def wait_default_disk_file_system_changed(self, node_name):
+        disk_name = self.get_default_file_system_disk_name(node_name)
+        for i in range(self.retry_count):
+            is_disk_file_system_changed = self.is_disk_file_system_changed(node_name, disk_name)
+            logging(f"Waiting for disk {disk_name} on node {node_name} in file system changed ... ({i})")
+            if is_disk_file_system_changed:
+                break
+            time.sleep(self.retry_interval)
+        assert self.is_disk_file_system_changed(node_name, disk_name), f"Waiting for node {node_name} disk {disk_name} file system change failed: {get_longhorn_client().by_id_node(node_name)}"
+
+    def wait_default_disk_unschedulable(self, node_name):
+        disk_name = self.get_default_file_system_disk_name(node_name)
+
+        for i in range(self.retry_count):
+            is_disk_unschedulable = self.is_disk_unschedulable(node_name, disk_name)
+            logging(f"Waiting for disk {disk_name} on node {node_name} unschedulable ... ({i})")
+            if is_disk_unschedulable:
+                break
+            time.sleep(self.retry_interval)
+        assert self.is_disk_unschedulable(node_name, disk_name), f"Waiting for node {node_name} disk {disk_name} unschedulable failed: {get_longhorn_client().by_id_node(node_name)}"
+
+    def is_disk_file_system_changed(self, node_name, disk_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        return node["disks"][disk_name]["conditions"]["Ready"]["reason"] == "DiskFilesystemChanged"
+
+    def is_disk_unschedulable(self, node_name, disk_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        return node["disks"][disk_name]["conditions"]["Schedulable"]["status"] == "False"
+
+    def delete_default_disk(self, node_name):
+        node = get_longhorn_client().by_id_node(node_name)
+
+        disks = {}
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                logging(f"Deleting disk {disk_name} (path={disk.path}) from node {node_name}")
+                continue
+            logging(f"Keeping disk {disk_name} (path={disk.path}) on node {node_name}")
+            disks[disk_name] = disk
+        self.update_disks(node_name, disks)
+
+    def get_default_disk_uuid_on_node(self, node_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                return self.get_disk_uuid(node_name, disk_name)
+        assert False, f"No disk is using path {self.DEFAULT_DISK_PATH}"

@@ -14,6 +14,7 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
 from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
 from utility.constant import DRAIN_TIMEOUT
+import utility.constant as constant
 
 from node import Node
 
@@ -48,7 +49,7 @@ async def restart_kubelet(node_name, downtime_in_sec=10):
 def get_longhorn_node_condition_status(node_name, type):
     jsonpath = f"jsonpath={{.status.conditions[?(@.type=='{type}')].status}}"
     exec_cmd = [
-        "kubectl", "-n", "longhorn-system", "get",
+        "kubectl", "-n", constant.LONGHORN_NAMESPACE, "get",
         "nodes.longhorn.io", node_name, "-o", jsonpath]
     return subprocess_exec_cmd(exec_cmd)
 
@@ -84,7 +85,7 @@ def uncordon_node(node_name):
 
 def get_all_pods_on_node(node_name):
     api = client.CoreV1Api()
-    all_pods = api.list_namespaced_pod(namespace='longhorn-system', field_selector='spec.nodeName=' + node_name)
+    all_pods = api.list_namespaced_pod(namespace=constant.LONGHORN_NAMESPACE, field_selector='spec.nodeName=' + node_name)
     user_pods = [p for p in all_pods.items if (p.metadata.namespace != 'kube-system')]
     return user_pods
 
@@ -135,7 +136,7 @@ def get_instance_manager_on_node(node_name):
     return None
 
 def check_instance_manager_pdb_not_exist(instance_manager):
-    exec_cmd = ["kubectl", "get", "pdb", "-n", "longhorn-system"]
+    exec_cmd = ["kubectl", "get", "pdb", "-n", constant.LONGHORN_NAMESPACE]
     res = subprocess_exec_cmd(exec_cmd)
     assert instance_manager not in res
 

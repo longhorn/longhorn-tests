@@ -5,6 +5,8 @@ from backing_image.crd import CRD
 from strategy import LonghornOperationStrategy
 from utility.utility import list_namespaced_pod
 from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
+from utility.utility import logging
 from time import sleep
 
 class BackingImage(Base):
@@ -59,7 +61,7 @@ class BackingImage(Base):
     def list_backing_image_data_source_pod(self):
         label_selector = 'longhorn.io/component=backing-image-data-source'
         return list_namespaced_pod(
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             label_selector=label_selector
         )
 
@@ -69,7 +71,7 @@ class BackingImage(Base):
     def get_backing_image_data_source_pod(self, bi_name):
         label_selector = f'longhorn.io/backing-image-data-source={bi_name}'
         return list_namespaced_pod(
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             label_selector=label_selector
         )
 
@@ -86,7 +88,7 @@ class BackingImage(Base):
 
     def get_backing_image_manager_pod_on_node(self, node_name):
         pods = list_namespaced_pod(
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             label_selector=f"longhorn.io/component=backing-image-manager,longhorn.io/node={node_name}"
         )
         return pods[0].metadata.name
@@ -97,3 +99,30 @@ class BackingImage(Base):
             if len(response) == 0:
                 return
         assert False, f"{len(response)} backing image data source pod exist"
+
+    def wait_for_backing_image_manager_on_node_unknown(self, node_name):
+        for i in range(self.retry_count):
+            backing_image_managers = self.backing_image.list_backing_image_manager()
+            for bim in backing_image_managers["items"]:
+                if bim["metadata"]["labels"]["longhorn.io/node"] == node_name and \
+                    bim["status"]["currentState"] == "unknown":
+                    return
+                continue
+            sleep(self.retry_interval)
+        assert False, f"Waiting backing image manager no node {node_name} timeout"
+
+    def wait_for_backing_image_manager_on_node_terminated(self, node_name):
+        for i in range(self.retry_count):
+            backing_image_managers = self.backing_image.list_backing_image_manager()
+            bim_found = False
+            for bim in backing_image_managers["items"]:
+                if bim["metadata"]["labels"]["longhorn.io/node"] == node_name:
+                    bim_found = True
+                    break
+            if not bim_found:
+                return
+            sleep(self.retry_interval)
+        assert False, f"Waiting for backing image manager on node {node_name} to not exist timeout"
+
+    def get_backing_image_disk_uuids(self, bi_name):
+        return self.backing_image.get_backing_image_disk_uuids(bi_name)

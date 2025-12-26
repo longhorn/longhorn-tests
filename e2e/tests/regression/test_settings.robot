@@ -13,6 +13,8 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/sharemanager.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/workload.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -334,3 +336,24 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Dis
         ...    longhorn-share-manager
     And Write 100 MB data to file data.txt in deployment 0
     And Check deployment 0 data in file data.txt is intact
+
+Test Setting Blacklist For Auto Delete Pod
+    [Tags]    setting
+    [Documentation]    Test if setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly works correctly.
+    ...                Issues:
+    ...                    - https://github.com/longhorn/longhorn/issues/12120
+    ...                    - https://github.com/longhorn/longhorn/issues/12121
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Test case not support for v2 data engine
+    END
+
+    Given Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/ReplicaSet;apps/DaemonSet
+    When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0 and liveness probe
+
+    When Kill volume engine process for deployment 0
+    And Wait for deployment 0 pod stuck in CrashLoopBackOff
+
+    When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
+    And Wait for deployment 0 pods stable

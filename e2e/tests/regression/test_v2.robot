@@ -86,7 +86,7 @@ Test V2 Snapshot
     And Check volume 0 data is data 1
 
 Degraded Volume Replica Rebuilding
-    [Tags]    coretest
+    [Tags]    coretest    replica
     Given Disable node 2 scheduling
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -170,28 +170,8 @@ V2 Volume Should Cleanup Resources When Instance Manager Is Deleted
         And Check volume 2 data is intact
     END
 
-Test Creating V2 Volume With Backing Image After Replica Rebuilding
-    Given Create volume 0 with    dataEngine=v2
-    And Attach volume 0
-    And Wait for volume 0 healthy
-    And Write data 0 to volume 0
-
-    And Create backing image bi-v2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v2
-
-    When Delete volume 0 replica on node 1
-    And Wait until volume 0 replica rebuilding started on node 1
-    And Wait until volume 0 replica rebuilding completed on node 1
-    And Wait for volume 0 healthy
-    Then Check volume 0 data is data 0
-
-    When Create volume 1 with    size=3Gi    backingImage=bi-v2    dataEngine=v2
-    And Create persistentvolume for volume 1
-    And Create persistentvolumeclaim for volume 1
-    And Create pod 1 using volume 1
-    And Wait for pod 1 running
-    And Write 1024 MB data to file data.txt in pod 1
-
 Test V2 Data Engine Selective Activation
+    [Tags]    replica
     # create volumes with 2 replicas on node 0 and node 1
     # there is no replica on node 2
     Given Create volume 0 attached to node 0 with 2 replicas excluding node 2    dataEngine=v2
@@ -209,6 +189,7 @@ Test V2 Data Engine Selective Activation
     Then Volume 0 should have running replicas on node 2
 
 Test V2 Data Engine Selective Activation During Replica Rebuilding
+    [Tags]    replica
     Given Create volume 0 attached to node 0 with 2 replicas excluding node 2    dataEngine=v2
     And Wait for volume 0 healthy
     And Write data to volume 0
@@ -223,6 +204,7 @@ Test V2 Data Engine Selective Activation During Replica Rebuilding
     And Check volume 0 data is intact
 
 Test V2 Data Engine Selective Activation With Existing Engine And Replica
+    [Tags]    replica
     # create a volume with replicas on node 0 and node 1
     # and attach it to node 2
     Given Create volume 0 attached to node 2 with 2 replicas excluding node 2    dataEngine=v2

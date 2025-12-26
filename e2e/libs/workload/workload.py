@@ -84,7 +84,8 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
-    for attempt in range(retry_count):
+    for i in range(retry_count):
+        logging(f"Writing random data to pod {pod_name} ... ({i})")
         try:
             data_path = f"{data_directory}/{file_name}"
             api = client.CoreV1Api()
@@ -100,8 +101,8 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
                 command=write_data_cmd, stderr=True, stdin=False, stdout=True,
                 tty=False)
 
-            if "Input/output error" in resp or "Read-only file system" in resp:
-                raise RuntimeError(f"Attempt {attempt+1}: Command failed in pod {pod_name}. Output: {resp}")
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
 
             return resp
         except Exception as e:
@@ -116,7 +117,8 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
-    for _ in range(retry_count):
+    for i in range(retry_count):
+        logging(f"Writing large data to pod {pod_name} ... ({i})")
         try:
             data_path = f"{data_directory}/{file_name}"
             api = client.CoreV1Api()
@@ -127,12 +129,17 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
                 sync;\
                 md5sum {data_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
-            return stream(
+            resp = stream(
                 api.connect_get_namespaced_pod_exec, pod_name, 'default',
                 command=write_data_cmd, stderr=True, stdin=False, stdout=True,
                 tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return resp
         except Exception as e:
-            logging(f"Writing random data to pod {pod_name} failed with error {e}")
+            logging(f"Writing large data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
 
 
@@ -343,6 +350,12 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
 
 
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
+    def is_in_crashloopbackoff(pod):
+        for container_status in pod.status.container_statuses:
+            if hasattr(container_status.state, 'waiting') and container_status.state.waiting:
+                if container_status.state.waiting.reason == "CrashLoopBackOff":
+                    return True
+        return False
     def count_pod_in_specifc_state_duration(count_pod_in_state_duration, pods, expect_state):
         for pod in pods:
             pod_name = pod.metadata.name
@@ -350,7 +363,8 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
                 count_pod_in_state_duration[pod_name] = 0
             elif (expect_state == "ContainerCreating" and pod.status.phase == "Pending") or \
                 ((expect_state == "Terminating" and hasattr(pod.metadata, "deletion_timestamp") and pod.status.phase == "Running")) or \
-                (expect_state == "Running" and pod.status.phase == "Running"):
+                (expect_state == "Running" and pod.status.phase == "Running") or \
+                (expect_state == "CrashLoopBackOff" and is_in_crashloopbackoff(pod)):
                 count_pod_in_state_duration[pod_name] += 1
             else:
                 count_pod_in_state_duration[pod_name] = 0

@@ -75,3 +75,17 @@ spec:
       targetPort: 10000
       protocol: TCP
   sessionAffinity: ClientIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azblob-nodeport
+  namespace: default
+spec:
+  selector:
+    app: longhorn-test-azblob
+  type: NodePort
+  ports:
+    - port: 10000
+      targetPort: 10000
+      nodePort: 31000

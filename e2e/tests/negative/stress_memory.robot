@@ -46,6 +46,7 @@ Stress Volume Node Memory When Volume Is Detaching and Attaching
     END
 
 Stress Volume Node Memory When Volume Is Online Expanding
+    [Tags]    expansion
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Write 1024 MB data to file 0.txt in statefulset 0
@@ -60,6 +61,7 @@ Stress Volume Node Memory When Volume Is Online Expanding
     END
 
 Stress Volume Node Memory When Volume Is Offline Expanding
+    [Tags]    expansion
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     And Write 1024 MB data to file 0.txt in statefulset 0
