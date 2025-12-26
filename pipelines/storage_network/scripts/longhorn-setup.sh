@@ -19,6 +19,7 @@ if [[ ${TEST_TYPE} == "robot" ]]; then
 else
   source pipelines/utilities/run_longhorn_test.sh
 fi
+source pipelines/utilities/create_controlplane_ip_configmap.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -45,6 +46,7 @@ main(){
   create_aws_secret
   set -x
   create_instance_mapping_configmap
+  create_controlplane_public_ip_configmap
 
   if [[ "${TF_VAR_thick_plugin}" == true ]]; then
     deploy_multus_thick_plugin_daemonset

@@ -131,6 +131,9 @@ spec:
     - name: instance-mapping
       mountPath: /tmp/instance_mapping
       subPath: instance_mapping
+    - name: controlplane-public-ip
+      mountPath: /tmp/controlplane_public_ip
+      subPath: controlplane_public_ip
   - name: longhorn-test-report
     image: public.ecr.aws/docker/library/busybox:1.34.1
     securityContext:
@@ -162,5 +165,8 @@ spec:
   - name: instance-mapping
     configMap:
       name: instance-mapping
+  - name: controlplane-public-ip
+    configMap:
+      name: controlplane-public-ip
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account

@@ -11,6 +11,7 @@ source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_helm_chart.sh
 source pipelines/utilities/longhorn_ui.sh
+source pipelines/utilities/create_controlplane_ip_configmap.sh
 if [[ ${TEST_TYPE} == "robot" ]]; then
   source pipelines/utilities/run_longhorn_e2e_test.sh
 else
@@ -51,6 +52,7 @@ main(){
   create_registry_secret
   set -x
   create_instance_mapping_configmap
+  create_controlplane_public_ip_configmap
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     get_longhorn_chart "${LONGHORN_STABLE_VERSION}"

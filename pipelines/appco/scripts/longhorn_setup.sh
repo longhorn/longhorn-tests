@@ -23,6 +23,7 @@ source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/create_appco_secret.sh
+source pipelines/utilities/create_controlplane_ip_configmap.sh
 if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]]; then
   source pipelines/appco/scripts/longhorn_manifest.sh
 elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
@@ -80,6 +81,7 @@ main(){
   create_harvester_secret
   set -x
   create_instance_mapping_configmap
+  create_controlplane_public_ip_configmap
 
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores

@@ -19,6 +19,7 @@ source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/run_longhorn_e2e_test.sh
 source pipelines/utilities/coredns.sh
 source pipelines/utilities/longhornctl.sh
+source pipelines/utilities/create_controlplane_ip_configmap.sh
 
 LONGHORN_INSTALL_METHOD="manifest"
 
@@ -42,6 +43,7 @@ main(){
   create_harvester_secret
   set -x
   create_instance_mapping_configmap
+  create_controlplane_public_ip_configmap
 
   install_backupstores
   install_backupstores_networkpolicy
