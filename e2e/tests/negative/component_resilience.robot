@@ -35,6 +35,7 @@ Delete ${engine_type} instance manager of deployment ${deployment_id} volume and
 
 *** Test Cases ***
 Test Longhorn Components Recovery
+    [Tags]    backing-image
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -58,8 +59,8 @@ Test Longhorn Components Recovery
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data.txt in deployment 0
 
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
-    And Create volume 1 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    And Create volume 1 with    backingImage=bi
     And Attach volume 1
     And Wait for volume 1 healthy
     And Write data to volume 1
@@ -112,6 +113,7 @@ Test Longhorn Volume Recovery
     Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
 
 Test Longhorn Backing Image Volume Recovery
+    [Tags]    backing-image
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -124,16 +126,16 @@ Test Longhorn Backing Image Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.    
     ...                    Delete the backing image manager pod and verify the pod gets recreated.
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
-    And Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    And Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
-    Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
+    Then Delete v1 instance manager of volume 0 and wait for recover
 
     When Delete volume 0 replica on replica node
     And Wait until volume 0 replica rebuilding started on replica node
-    Then Delete ${DATA_ENGINE} instance manager of volume 0 and wait for recover
+    Then Delete v1 instance manager of volume 0 and wait for recover
 
     When Delete backing image managers and wait for recreation
     Then Wait backing image managers running

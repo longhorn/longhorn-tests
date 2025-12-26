@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Backing Image Test Cases
 
-Test Tags    manual    backing_image
+Test Tags    manual    backing-image
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -35,7 +35,7 @@ Backing image with an invalid URL schema
     ...                - The corresponding and only entry in the disk file status should be failed. 
     ...                  The error message in this entry should explain why the downloading or the pod becomes failed.
     ...                - Check if there is a backoff window for the downloading retry. The initial duration is 1 minute. The max interval is 5 minute.
-    Given Create backing image bi-test with    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3    check_creation=False
+    Given Create backing image bi-test with    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3    check_creation=False
     ${creation_time}=     Wait backimg image bi-test data source pod created
     And Wait for all disk file status of backing image bi-test are failed
     And Wait for all disk file status of backing image bi-test are failed-and-cleanup
@@ -57,12 +57,8 @@ Backing image with sync failure
     ...                - Exec into one of the worker node, remove the files in that backing image directory and set the directory as immutable
     ...                - Monitor the backing-image-manager pod log. Verify the backoff works for the sync retry as well.
     ...                - Unset the immutable flag for the backing image directory. Then the retry should succeed, and the volume should become healthy
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    Test case not support for v2 data engine
-    END
-
-    Given Create backing image bi-test with    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
-    When Create volume 0 with    backingImage=bi-test    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    Given Create backing image bi-test with    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    When Create volume 0 with    backingImage=bi-test    numberOfReplicas=3
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
 
