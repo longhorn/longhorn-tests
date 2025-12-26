@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -49,6 +49,16 @@ class StorageClass():
 
             if volumeBindingMode:
                 manifest_dict['volumeBindingMode'] = volumeBindingMode
+
+            if allowedTopologies:
+                data = json.loads(allowedTopologies)
+                key, value = next(iter(data.items()))
+                manifest_dict.setdefault("allowedTopologies", []).append({
+                    "matchLabelExpressions": [{
+                        "key": key,
+                        "values": [value]
+                    }]
+                })
 
             self.api.create_storage_class(body=manifest_dict)
 
