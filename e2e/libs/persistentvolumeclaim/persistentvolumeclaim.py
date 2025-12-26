@@ -25,7 +25,7 @@ class PersistentVolumeClaim():
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volume_mode="Filesystem"):
         storage_size_bytes = convert_size_to_bytes(storage_size)
 
         filepath = "./templates/workload/pvc.yaml"
@@ -56,6 +56,9 @@ class PersistentVolumeClaim():
                 }
                 if dataSourceKind == 'VolumeSnapshot':
                     manifest_dict['spec']['dataSource']['apiGroup'] = 'snapshot.storage.k8s.io'
+
+            if volume_mode == 'Block':
+                manifest_dict['spec']['volumeMode'] = 'Block'
 
             logging(f"yaml = {manifest_dict}")
 
