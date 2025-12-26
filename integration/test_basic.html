@@ -544,7 +544,11 @@ the default disk.</li>
     assert sb_engine2.lastRestoredBackup == backup0.name
     assert sb_engine2.requestedBackupRestore == backup0.name
 
-    sb0_snaps = sb_volume0.snapshotList()
+    for i in range(RETRY_COUNTS_SHORT):
+        sb0_snaps = sb_volume0.snapshotList()
+        if len(sb0_snaps) == 2:
+            break
+        time.sleep(RETRY_INTERVAL)
     assert len(sb0_snaps) == 2
     for s in sb0_snaps:
         if s.name != &#34;volume-head&#34;:
@@ -4197,6 +4201,11 @@ def test_expansion_basic(client, volume_name):  # NOQA
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
+    for i in range(RETRY_COUNTS_SHORT):
+        snaps = volume.snapshotList()
+        if len(snaps) == 5:
+            break
+        time.sleep(RETRY_INTERVAL)
     volume.snapshotRevert(name=snap1.name)
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
