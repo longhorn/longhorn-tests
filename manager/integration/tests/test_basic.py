@@ -108,6 +108,7 @@ from common import wait_scheduling_failure
 from common import DATA_ENGINE
 from common import SETTING_BACKUP_TARGET
 from common import nvmf_login, nvmf_logout
+from common import RETRY_COUNTS_SHORT
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -1614,7 +1615,11 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     assert sb_engine2.lastRestoredBackup == backup0.name
     assert sb_engine2.requestedBackupRestore == backup0.name
 
-    sb0_snaps = sb_volume0.snapshotList()
+    for i in range(RETRY_COUNTS_SHORT):
+        sb0_snaps = sb_volume0.snapshotList()
+        if len(sb0_snaps) == 2:
+            break
+        time.sleep(RETRY_INTERVAL)
     assert len(sb0_snaps) == 2
     for s in sb0_snaps:
         if s.name != "volume-head":
@@ -2520,6 +2525,11 @@ def test_expansion_basic(client, volume_name):  # NOQA
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
+    for i in range(RETRY_COUNTS_SHORT):
+        snaps = volume.snapshotList()
+        if len(snaps) == 5:
+            break
+        time.sleep(RETRY_INTERVAL)
     volume.snapshotRevert(name=snap1.name)
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)

@@ -76,6 +76,7 @@ main(){
       fi
       setup_azurite_backup_store
   fi
+  install_backupstores_networkpolicy
   install_csi_snapshotter
   if [[ "${TF_VAR_enable_mtls}" == true ]]; then
     enable_mtls

@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       ShareManager Keywords
 
+Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 
 *** Variables ***
@@ -48,5 +49,6 @@ Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_i
 Check encrypted disk size in sharemanager pod
     [Arguments]    ${sharemanager_pod}    ${volume_name}    ${expected_size}
     ${cmd}=    Set Variable    fdisk -l | grep /dev/mapper/${volume_name}
-    ${result}=    pod_exec    ${sharemanager_pod}    longhorn-system    ${cmd}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${result}=    pod_exec    ${sharemanager_pod}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}
