@@ -27,3 +27,8 @@ LONGHORN_INSTALL_TIMEOUT = 600
 LONGHORN_UNINSTALL_TIMEOUT = 900
 
 DEFAULT_BACKUPSTORE="s3://backupbucket@us-east-1/backupstore$minio-secret"
+
+BLOCK_PVC_VOLUME_DEVICE_NAME = "longhorn-testblk"
+BLOCK_PVC_VOLUME_DEVICE_DIR = "/dev/longhorn"
+# This path is used in the deployment template for block volume
+BLOCK_PVC_VOLUME_DEVICE_PATH = BLOCK_PVC_VOLUME_DEVICE_DIR + "/" + BLOCK_PVC_VOLUME_DEVICE_NAME

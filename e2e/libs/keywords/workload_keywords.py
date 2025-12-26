@@ -22,6 +22,8 @@ from workload.workload import get_workload_volume_name
 from workload.workload import is_workload_pods_has_annotations
 from workload.workload import is_workload_pods_has_cni_interface
 from workload.workload import keep_writing_pod_data
+from workload.workload import make_block_device_filesystem_in_workload_pod
+from workload.workload import mount_block_device_in_workload_pod
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
 from workload.workload import wait_for_workload_pods_container_creating
@@ -88,6 +90,18 @@ class workload_keywords:
 
     def get_workload_volume_name(self, workload_name):
         return get_workload_volume_name(workload_name)
+
+    def make_block_device_filesystem_in_workload_pod(self, workload_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Making file system on block device in pod {pod_name}')
+        make_block_device_filesystem_in_workload_pod(pod_name)
+
+    def mount_block_device_in_workload_pod(self, workload_name, mount_point):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Mounting block device on {mount_point} in pod {pod_name}')
+        mount_block_device_in_workload_pod(pod_name, mount_point)
 
     def write_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
