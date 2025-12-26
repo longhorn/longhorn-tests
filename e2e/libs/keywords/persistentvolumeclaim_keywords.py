@@ -24,9 +24,9 @@ class persistentvolumeclaim_keywords:
             self.delete_persistentvolumeclaim(claim.metadata.name)
             self.volume.wait_for_volume_deleted(claim.spec.volume_name)
 
-    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB", dataSourceName=None, dataSourceKind=None):
+    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volume_mode="Filesystem"):
         logging(f'Creating {volume_type} persistentvolumeclaim {name} with {sc_name} storageclass')
-        return self.claim.create(name, volume_type, sc_name, storage_size, dataSourceName, dataSourceKind)
+        return self.claim.create(name, volume_type, sc_name, storage_size, dataSourceName, dataSourceKind, volume_mode)
 
     def delete_persistentvolumeclaim(self, name):
         logging(f'Deleting persistentvolumeclaim {name}')
