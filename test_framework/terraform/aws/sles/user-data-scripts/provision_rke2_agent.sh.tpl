@@ -84,7 +84,9 @@ EOF
     systemctl restart systemd-sysctl
     useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
     cat << EOF >> /etc/rancher/rke2/config.yaml
-profile: "cis-1.23"
+profile: "cis"
+kube-apiserver-arg:
+  - 'service-account-extend-token-expiration=false'
 EOF
 fi
 
