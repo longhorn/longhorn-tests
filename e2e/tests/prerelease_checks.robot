@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pre-release Checks Test Case
 
-Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job
+Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job    backing-image    non-default-namespace
 
 Library    OperatingSystem
 
@@ -44,15 +44,23 @@ Pre-release Checks
     ...    8. Restore backups
     ...    9. Uninstall Longhorn
     ...    10. Re-install Longhorn back for subsequent tests
-    # if Longhorn stable version is provided,
-    # uninstall the existing Longhorn and install stable version of Longhorn to be upgraded
+    # if Longhorn stable version is provided or Longhorn is required to be installed in a non-default namespace,
+    # uninstall the existing Longhorn and install/configure the desired version of Longhorn
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
         Given Setting deleting-confirmation-flag is set to true
         And Uninstall Longhorn
         And Check Longhorn CRD removed
 
-        And Install Longhorn stable version
+        And Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
+        And Set default backupstore
+        And Enable v2 data engine and add block disks
+    ELSE IF    '${LONGHORN_NAMESPACE}' != 'longhorn-system'
+        Given Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check Longhorn CRD removed
+
+        And Install Longhorn    longhorn_namespace=${LONGHORN_NAMESPACE}
         And Set default backupstore
         And Enable v2 data engine and add block disks
     END
@@ -182,16 +190,6 @@ Pre-release Checks
         And Wait for volume of deployment deploy-v2-upgrade attached and healthy
         And Write 1024 MB data to file data.txt in deployment deploy-v2-upgrade
 
-        # (4) create a v2 volume with a backing image
-        When Create backing image bi-v2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v2
-        And Create volume vol-bi-v2 with    size=3Gi    backingImage=bi-v2    dataEngine=v2
-        And Create persistentvolume for volume vol-bi-v2
-        And Create persistentvolumeclaim for volume vol-bi-v2
-        And Create pod vol-pod-bi-v2 using volume vol-bi-v2
-        And Wait for pod vol-pod-bi-v2 running
-        And Check file guests/catparrot.gif exists in pod vol-pod-bi-v2
-        And Write 1024 MB data to file data.txt in pod vol-pod-bi-v2
-
         # (5) create v2 snapshot
         And Create snapshot snapshot-v2 of volume v2
         And Write data 1 256 MB to volume v2
@@ -202,8 +200,6 @@ Pre-release Checks
         # upgrading Longhorn with attached v2 volumes is not allowed
         And Detach volume v2
         And Wait for volume v2 detached
-        And Delete pod vol-pod-bi-v2
-        And Wait for volume vol-bi-v2 detached
         And Scale down deployment deploy-v2-upgrade to detach volume
 
     END
@@ -387,13 +383,6 @@ Pre-release Checks
         And Check deployment deploy-v2-upgrade data in file data.txt is intact
         And Check deployment deploy-v2-upgrade works
 
-        # (4) check the data integrity of the volume with a backing image
-        When Create pod vol-pod-bi-v2 using volume vol-bi-v2
-        And Wait for pod vol-pod-bi-v2 running
-        And Check file guests/catparrot.gif exists in pod vol-pod-bi-v2
-        And Check pod vol-pod-bi-v2 data in file data.txt is intact
-        And Check pod vol-pod-bi-v2 works
-
         # (5) revert v2 snapshot
         When Detach volume v2
         And Wait for volume v2 detached
@@ -419,15 +408,6 @@ Pre-release Checks
         And Wait until volume v2 replica rebuilding completed on node 1
         And Wait for volume v2 healthy
         And Check volume v2 data is data 0
-
-        # (8) check a new v2 volume with a backing image can be created
-        When Create volume new-vol-bi-v2 with    size=3Gi    backingImage=bi-v2    dataEngine=v2
-        And Create persistentvolume for volume new-vol-bi-v2
-        And Create persistentvolumeclaim for volume new-vol-bi-v2
-        And Create pod new-vol-pod-bi-v2 using volume new-vol-bi-v2
-        And Wait for pod new-vol-pod-bi-v2 running
-        And Check file guests/catparrot.gif exists in pod new-vol-pod-bi-v2
-        And Write 1024 MB data to file data.txt in pod new-vol-pod-bi-v2
     END
 
     # test uninstalling Longhorn

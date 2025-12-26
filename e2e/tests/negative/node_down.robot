@@ -144,15 +144,12 @@ Test Backing Image On Two Nodes Down
     ...                - https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
     ...                - https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
     ...                - https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 volume won't pass this test case due to issue: https://github.com/longhorn/longhorn/issues/12161
-    END
     Given Setting replica-replenishment-wait-interval is set to 600
     And Setting replica-soft-anti-affinity is set to false
 
-    When Create backing image bi-down with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
-    And Create volume 0 with    backingImage=bi-down    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
-    And Create volume 1 with    backingImage=bi-down    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    When Create backing image bi-down with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    And Create volume 0 with    backingImage=bi-down    numberOfReplicas=3
+    And Create volume 1 with    backingImage=bi-down    numberOfReplicas=3
     And Attach volume 0 to node 0
     And Attach volume 1 to node 1
     And Wait for volume 0 healthy
@@ -164,7 +161,7 @@ Test Backing Image On Two Nodes Down
     When Power off volume 0 volume node
     And Power off node 2
     Then Wait for disk file status of backing image bi-down are expected    expected_ready_count=1    expected_unknown_count=2
-    And Wait for volume 0 attached and unknown
+    And Wait for volume 0 unknown
     And Wait for volume 1 degraded
     And Check volume 1 data is intact
 

@@ -80,3 +80,12 @@ class backing_image_keywords:
 
     def get_backing_image_manager_pod_on_node(self, node_name):
         return self.backing_image.get_backing_image_manager_pod_on_node(node_name)
+
+    def wait_for_backing_image_manager_on_node_unknown(self, node_name):
+        return self.backing_image.wait_for_backing_image_manager_on_node_unknown(node_name)
+
+    def wait_for_backing_image_manager_on_node_terminated(self, node_name):
+        return self.backing_image.wait_for_backing_image_manager_on_node_terminated(node_name)
+
+    def get_backing_image_disk_uuids(self, bi_name):
+        return self.backing_image.get_backing_image_disk_uuids(bi_name)
