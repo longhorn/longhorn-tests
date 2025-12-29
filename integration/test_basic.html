@@ -947,8 +947,18 @@ the default disk.</li>
     assert snapMap[snap3.name].parent == snap2.name
     assert snapMap[snap3.name].removed is False
 
-    volume.snapshotDelete(name=snap3.name)
-    check_volume_data(volume, snap3_data)
+    volume.snapshotCRDelete(name=snap3.name)
+
+    if DATA_ENGINE == &#34;v1&#34;:
+        check_volume_data(volume, snap3_data)
+    else:
+        wait_for_snapshot_count(volume, 3)
+        snapshots = volume.snapshotList(volume=volume_name)
+        snapMap = {}
+        for snap in snapshots:
+            snapMap[snap.name] = snap
+
+        assert snap3.name not in snapMap
 
     snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
@@ -960,20 +970,22 @@ the default disk.</li>
     assert snapMap[snap2.name].name == snap2.name
     assert snapMap[snap2.name].parent == snap1.name
     assert snapMap[snap2.name].removed is False
-    assert snapMap[snap3.name].name == snap3.name
-    assert snapMap[snap3.name].parent == snap2.name
-    assert len(snapMap[snap3.name].children) == 1
-    assert &#34;volume-head&#34; in snapMap[snap3.name].children.keys()
-    assert snapMap[snap3.name].removed is True
 
-    snap = volume.snapshotGet(name=snap3.name)
-    assert snap.name == snap3.name
-    assert snap.parent == snap3.parent
-    assert len(snap3.children) == 1
-    assert len(snap.children) == 1
-    assert &#34;volume-head&#34; in snap3.children.keys()
-    assert &#34;volume-head&#34; in snap.children.keys()
-    assert snap.removed is True
+    if DATA_ENGINE == &#34;v1&#34;:
+        assert snapMap[snap3.name].name == snap3.name
+        assert snapMap[snap3.name].parent == snap2.name
+        assert len(snapMap[snap3.name].children) == 1
+        assert &#34;volume-head&#34; in snapMap[snap3.name].children.keys()
+        assert snapMap[snap3.name].removed is True
+
+        snap = volume.snapshotGet(name=snap3.name)
+        assert snap.name == snap3.name
+        assert snap.parent == snap3.parent
+        assert len(snap3.children) == 1
+        assert len(snap.children) == 1
+        assert &#34;volume-head&#34; in snap3.children.keys()
+        assert &#34;volume-head&#34; in snap.children.keys()
+        assert snap.removed is True
 
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -1010,33 +1022,46 @@ the default disk.</li>
     assert snapMap[snap2.name].name == snap2.name
     assert snapMap[snap2.name].parent == snap1.name
     assert &#34;volume-head&#34; in snapMap[snap2.name].children.keys()
-    assert snap3.name in snapMap[snap2.name].children.keys()
+    if DATA_ENGINE == &#34;v1&#34;:
+        assert snap3.name in snapMap[snap2.name].children.keys()
     assert snapMap[snap2.name].removed is False
-    assert snapMap[snap3.name].name == snap3.name
-    assert snapMap[snap3.name].parent == snap2.name
-    assert len(snapMap[snap3.name].children) == 0
-    assert snapMap[snap3.name].removed is True
+
+    if DATA_ENGINE == &#34;v1&#34;:
+        assert snapMap[snap3.name].name == snap3.name
+        assert snapMap[snap3.name].parent == snap2.name
+        assert len(snapMap[snap3.name].children) == 0
+        assert snapMap[snap3.name].removed is True
 
     volume.snapshotDelete(name=snap1.name)
     volume.snapshotDelete(name=snap2.name)
 
     volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name, snap1.name,
-                                     snap3.name)
+    if DATA_ENGINE == &#34;v1&#34;:
+        volume = wait_for_snapshot_purge(client, volume_name, snap1.name,
+                                         snap3.name)
 
-    snapshots = volume.snapshotList(volume=volume_name)
-    snapMap = {}
-    for snap in snapshots:
-        snapMap[snap.name] = snap
-    assert snap1.name not in snapMap
-    assert snap3.name not in snapMap
+        snapshots = volume.snapshotList(volume=volume_name)
+        snapMap = {}
+        for snap in snapshots:
+            snapMap[snap.name] = snap
+        assert snap1.name not in snapMap
+        assert snap3.name not in snapMap
 
-    # it&#39;s the parent of volume-head, so it cannot be purged at this time
-    assert snapMap[snap2.name].name == snap2.name
-    assert snapMap[snap2.name].parent == &#34;&#34;
-    assert &#34;volume-head&#34; in snapMap[snap2.name].children.keys()
-    assert snapMap[snap2.name].removed is True
-    check_volume_data(volume, snap2_data)
+        # it&#39;s the parent of volume-head, so it cannot be purged at this time
+        assert snapMap[snap2.name].name == snap2.name
+        assert snapMap[snap2.name].parent == &#34;&#34;
+        assert &#34;volume-head&#34; in snapMap[snap2.name].children.keys()
+        assert snapMap[snap2.name].removed is True
+        check_volume_data(volume, snap2_data)
+    else:
+        snapshots = volume.snapshotList(volume=volume_name)
+        snapMap = {}
+        for snap in snapshots:
+            snapMap[snap.name] = snap
+
+        assert snap1.name not in snapMap
+        assert snap2.name not in snapMap
+        assert snap3.name not in snapMap
 
     cleanup_volume(client, volume)</code></pre>
 </details>
@@ -6182,7 +6207,8 @@ def test_settings(client):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.coretest   # NOQA
 def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     &#34;&#34;&#34;
     Test snapshot operations
@@ -6192,8 +6218,13 @@ def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     3. Generate and write data `snap2_data`, then create `snap2`
     4. Generate and write data `snap3_data`, then create `snap3`
     5. List snapshot. Validate the snapshot chain relationship
-    6. Mark `snap3` as removed. Make sure volume&#39;s data didn&#39;t change
-    7. List snapshot. Make sure `snap3` is marked as removed
+        6. Delete `snap3` Snapshot CR.
+             - v1 data engine: `snap3` remains in the snapshot list and is
+                 marked
+                 as removed.
+                 Make sure volume&#39;s data didn&#39;t change.
+             - v2 data engine: `snap3` is removed from the snapshot list.
+        7. List snapshot and validate the expected `snap3` state/visibility
     8. Detach and reattach the volume in maintenance mode.
     9. Make sure the volume frontend is still `blockdev` but disabled
     10. Revert to `snap2`
@@ -6202,8 +6233,11 @@ def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     13. List snapshot. Make sure `volume-head` is now `snap2`&#39;s child
     14. Delete `snap1` and `snap2`
     15. Purge the snapshot.
-    16. List the snapshot, make sure `snap1` and `snap3`
-    are gone. `snap2` is marked as removed.
+        16. List the snapshots:
+             - v1 data engine: `snap1` and `snap3` are gone; `snap2` remains
+                 and
+                 is marked as removed (it&#39;s the parent of `volume-head`).
+             - v2 data engine: `snap1`, `snap2`, and `snap3` are all gone.
     17. Check volume data, make sure it&#39;s still `snap2_data`.
     &#34;&#34;&#34;
     snapshot_test(client, volume_name, backing_image)</code></pre>
@@ -6214,9 +6248,18 @@ def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
 <li>Create the empty snapshot <code>snap1</code></li>
 <li>Generate and write data <code>snap2_data</code>, then create <code>snap2</code></li>
 <li>Generate and write data <code>snap3_data</code>, then create <code>snap3</code></li>
-<li>List snapshot. Validate the snapshot chain relationship</li>
-<li>Mark <code>snap3</code> as removed. Make sure volume's data didn't change</li>
-<li>List snapshot. Make sure <code>snap3</code> is marked as removed</li>
+<li>List snapshot. Validate the snapshot chain relationship<ol>
+<li>Delete <code>snap3</code> Snapshot CR.<ul>
+<li>v1 data engine: <code>snap3</code> remains in the snapshot list and is
+marked
+as removed.
+Make sure volume's data didn't change.</li>
+<li>v2 data engine: <code>snap3</code> is removed from the snapshot list.</li>
+</ul>
+</li>
+<li>List snapshot and validate the expected <code>snap3</code> state/visibility</li>
+</ol>
+</li>
 <li>Detach and reattach the volume in maintenance mode.</li>
 <li>Make sure the volume frontend is still <code>blockdev</code> but disabled</li>
 <li>Revert to <code>snap2</code></li>
@@ -6224,9 +6267,16 @@ def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
 <li>Make sure volume's data is <code>snap2_data</code></li>
 <li>List snapshot. Make sure <code>volume-head</code> is now <code>snap2</code>'s child</li>
 <li>Delete <code>snap1</code> and <code>snap2</code></li>
-<li>Purge the snapshot.</li>
-<li>List the snapshot, make sure <code>snap1</code> and <code>snap3</code>
-are gone. <code>snap2</code> is marked as removed.</li>
+<li>Purge the snapshot.<ol>
+<li>List the snapshots:<ul>
+<li>v1 data engine: <code>snap1</code> and <code>snap3</code> are gone; <code>snap2</code> remains
+and
+is marked as removed (it's the parent of <code>volume-head</code>).</li>
+<li>v2 data engine: <code>snap1</code>, <code>snap2</code>, and <code>snap3</code> are all gone.</li>
+</ul>
+</li>
+</ol>
+</li>
 <li>Check volume data, make sure it's still <code>snap2_data</code>.</li>
 </ol></div>
 </dd>
