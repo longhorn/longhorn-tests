@@ -4059,6 +4059,7 @@ def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupst
     assert src_md5sum == dst_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test Cleanup System Generated Snapshots
@@ -4086,7 +4087,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
         volume = client.by_id_volume(volume_name)
         # For the below assertion, the number of snapshots is compared with 2
         # as the list of snapshot have the volume-head too.
-        assert len(volume.snapshotList()) == 2
+        wait_for_snapshot_count(volume, 2, count_removed=True)
 
     read_md5sum1 = get_pod_data_md5sum(core_api, pod_name, "/data/test")
     assert md5sum1 == read_md5sum1
