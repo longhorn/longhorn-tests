@@ -4138,9 +4138,13 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
 
-    volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name,
-                                     snap[101].name, snap[100].name)
+    # TODO: engine doesn't have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == "v1":
+        volume.snapshotPurge()
+        volume = wait_for_snapshot_purge(client, volume_name,
+                                         snap[101].name, snap[100].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "False")
