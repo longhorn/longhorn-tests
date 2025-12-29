@@ -22,6 +22,7 @@ from k8s.k8s import upgrade_k8s_to_latest_version
 from node import Node
 
 from utility.utility import logging
+import utility.constant as constant
 
 
 class k8s_keywords:
@@ -110,7 +111,7 @@ class k8s_keywords:
     def get_longhorn_node_condition_status(self, node_name, type):
         return get_longhorn_node_condition_status(node_name, type)
 
-    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace="longhorn-system"):
+    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
         return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
     def deploy_system_upgrade_controller(self):
         return deploy_system_upgrade_controller()

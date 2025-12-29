@@ -43,6 +43,11 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
             }, {
                 'key': 'node-role.kubernetes.io/etcd',
                 'effect': 'NoExecute'
+            }, {
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 600
             }],
             'nodeName': node_name,
             'restartPolicy': 'Never',

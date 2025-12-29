@@ -9,7 +9,9 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
+Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
@@ -352,3 +354,33 @@ Test No Transient Error In Engine Status During Eviction
     And Run command and not expect output
     ...    kubectl get lhe -n longhorn-system -oyaml
     ...    TransientFailure
+
+Test Storageclass Allowed Topologies
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12261
+    ...    1. Create storage class with allowedTopologies:
+    ...    allowedTopologies:
+    ...    - matchLabelExpressions:
+    ...      - key: kubernetes.io/hostname
+    ...        values:
+    ...          - <node-name>
+    ...    2. Create a workload with the storage class
+    ...    3. Observe the created PV has the expected nodeAffinity:
+    ...    nodeAffinity:
+    ...      required:
+    ...        nodeSelectorTerms:
+    ...        - matchExpressions:
+    ...          - key: kubernetes.io/hostname
+    ...            operator: In
+    ...            values:
+    ...            - <node-name>
+    ...    4. The workload pod and the volume are created on node <node-name> as we specified
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    allowedTopologies={"kubernetes.io/hostname":"${NODE_2}"}
+    When Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    Then Run command and expect output
+    ...    kubectl get pv -ojsonpath='{.items[0].spec.nodeAffinity.required.nodeSelectorTerms[*].matchExpressions[*].values[*]}'
+    ...    ${NODE_2}
+    And Run command and expect output
+    ...    kubectl get volumes -n longhorn-system -ojsonpath='{.items[0].spec.nodeID}'
+    ...    ${NODE_2}

@@ -4,7 +4,7 @@ from kubernetes import client
 
 from recurringjob.base import Base
 
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import filter_cr
 from utility.utility import get_longhorn_client
 from utility.utility import logging
@@ -85,7 +85,7 @@ class Rest(Base):
         created = False
         for _ in range(self.retry_count):
             job = self.batch_v1_api.list_namespaced_cron_job(
-                'longhorn-system',
+                constant.LONGHORN_NAMESPACE,
                 label_selector=f"recurring-job.longhorn.io={job_name}")
             if len(job.items) != 0:
                 created = True
@@ -97,7 +97,7 @@ class Rest(Base):
         deleted = False
         for _ in range(self.retry_count):
             job = self.batch_v1_api.list_namespaced_cron_job(
-                'longhorn-system',
+                constant.LONGHORN_NAMESPACE,
                 label_selector=f"recurring-job.longhorn.io={job_name}")
             if len(job.items) == 0:
                 deleted = True
@@ -116,8 +116,8 @@ class Rest(Base):
     def wait_for_systembackup_state(self, job_name, expected_state):
         return NotImplemented
 
-    def wait_for_pod_completion_without_error(self, job_name, namespace=LONGHORN_NAMESPACE):
+    def wait_for_pod_completion_without_error(self, job_name, namespace=constant.LONGHORN_NAMESPACE):
         return NotImplemented
 
-    def wait_for_recurringjob_pod_completion(self, job_name, namespace=LONGHORN_NAMESPACE):
+    def wait_for_recurringjob_pod_completion(self, job_name, namespace=constant.LONGHORN_NAMESPACE):
         return NotImplemented

@@ -71,7 +71,7 @@ class CRD(Base):
             self.obj_api.create_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="volumes",
                 body=body
             )
@@ -118,7 +118,7 @@ class CRD(Base):
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="volumes",
                 name=volume_name
             )
@@ -140,7 +140,7 @@ class CRD(Base):
                 body = get_cr(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name
                 )
@@ -157,7 +157,7 @@ class CRD(Base):
                 self.obj_api.patch_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name,
                     body=body
@@ -183,7 +183,7 @@ class CRD(Base):
                 body = get_cr(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name
                 )
@@ -192,7 +192,7 @@ class CRD(Base):
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name,
                     body=body
@@ -207,7 +207,7 @@ class CRD(Base):
         return self.obj_api.get_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             name=volume_name
         )
@@ -216,7 +216,7 @@ class CRD(Base):
         items = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             label_selector=label_selector
         )["items"]
@@ -237,7 +237,7 @@ class CRD(Base):
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumes",
                     name=volume_name,
                     body=volume
@@ -261,7 +261,7 @@ class CRD(Base):
                 self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumes",
                     name=volume_name
                 )
@@ -517,7 +517,12 @@ class CRD(Base):
         engine_operation = Engine()
         for i in range(self.retry_count):
             engine = engine_operation.get_engine(volume_name)
-            engine_current_size = int(engine['status']['currentSize'])
+            # there is no current size for a stopped engine
+            if engine['status']['currentState'] == 'stopped':
+                engine_current_size = int(engine['spec']['volumeSize'])
+            else:
+                engine_current_size = int(engine['status']['currentSize'])
+
             if engine_current_size == engine_expected_size:
                 break
 
@@ -578,7 +583,7 @@ class CRD(Base):
         replica_list = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             label_selector=f"longhornvolume={volume_name}\
                              ,longhornnode={node_name}"
@@ -587,7 +592,7 @@ class CRD(Base):
         self.obj_api.delete_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             name=replica_list['items'][0]['metadata']['name']
         )
@@ -596,7 +601,7 @@ class CRD(Base):
         replica = self.obj_api.get_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             name=replica_name
         )
@@ -604,7 +609,7 @@ class CRD(Base):
         self.obj_api.delete_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             name=replica['metadata']['name']
         )
@@ -646,7 +651,7 @@ class CRD(Base):
         replica_list = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             label_selector=f"longhornvolume={volume_name}"
         )['items']
@@ -668,7 +673,7 @@ class CRD(Base):
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumes",
                     name=volume_name,
                     body=volume
@@ -713,7 +718,7 @@ class CRD(Base):
         return Rest().update_data_locality(volume_name, data_locality)
 
     def get_volume_recurringjobs(self, volume_name):
-        cmd = f"kubectl get volumes -n longhorn-system {volume_name} -o yaml"
+        cmd = f"kubectl get volumes -n {constant.LONGHORN_NAMESPACE} {volume_name} -o yaml"
         res = yaml.safe_load(subprocess_exec_cmd(cmd))
         labels = res.get("metadata", {}).get("labels", {})
         jobs = [key.split("/")[1] for key in labels.keys() if key.startswith("recurring-job.longhorn.io/")]
@@ -728,7 +733,7 @@ class CRD(Base):
             assert False, f"Failed to find recurring job {job_name} for volume {volume_name}"
 
     def get_volume_recurringjob_groups(self, volume_name):
-        cmd = f"kubectl get volumes -n longhorn-system {volume_name} -o yaml"
+        cmd = f"kubectl get volumes -n {constant.LONGHORN_NAMESPACE} {volume_name} -o yaml"
         res = yaml.safe_load(subprocess_exec_cmd(cmd))
         labels = res.get("metadata", {}).get("labels", {})
         job_groups = [key.split("/")[1] for key in labels.keys() if key.startswith("recurring-job-group.longhorn.io/")]
