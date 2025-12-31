@@ -133,7 +133,7 @@ DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
-DEFAULT_DEPLOYMENT_TIMEOUT = 240
+DEFAULT_DEPLOYMENT_TIMEOUT = 360
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -1892,6 +1892,38 @@ def cleanup_disks_on_node(client, node_id, *disks):  # NOQA
     # Cleanup host disks
     for disk in disks:
         cleanup_host_disks(client, disk)
+
+
+def delete_disks_on_node(client, node_id, *disks):  # NOQA
+    # Disable scheduling for the new disks on self node
+    node = client.by_id_node(node_id)
+    for name, disk in node.disks.items():
+        if name in disks:
+            disk.allowScheduling = False
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, node_id, len(update_disks))
+
+    # Remove disks on self node and enable scheduling for the available disks
+    available_disks = {}
+    for name, disk in iter(node.disks.items()):
+        if name not in disks:
+            disk.allowScheduling = True
+            available_disks[name] = disk
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=available_disks, retry=True)
+    wait_for_disk_update(client, node_id, len(available_disks))
+
+    node = client.by_id_node(node_id)
+
+    # Cleanup host disks
+    if DATA_ENGINE == "v1":
+        for disk in disks:
+            cleanup_host_disks(client, disk)
 
 
 def get_client(address_with_port):
@@ -6428,13 +6460,15 @@ def cleanup_volume_by_name(client, vol_name):
     wait_for_volume_delete(client, vol_name)
 
 
-def create_host_disk(client, vol_name, size, node_id):
+def create_host_disk(client, vol_name, size, node_id, data_engine="v1"):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
-    return disk_path
+    if data_engine == "v1":
+        disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
+        return disk_path
+    return get_volume_endpoint(volume)
 
 
 def cleanup_host_disks(client, *args):
