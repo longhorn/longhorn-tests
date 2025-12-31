@@ -94,6 +94,11 @@ class Rest(Base):
         snapshot = self.get(volume_name, snapshot_id)
         self.volume.get(volume_name).snapshotDelete(name=snapshot.name)
 
+    def delete_cr(self, volume_name, snapshot_id):
+        logging(f"Deleting volume {volume_name} snapshot {snapshot_id} CR")
+        snapshot = self.get(volume_name, snapshot_id)
+        self.volume.get(volume_name).snapshotCRDelete(name=snapshot.name)
+
     def revert(self, volume_name, snapshot_id):
         logging(f"Reverting volume {volume_name} to snapshot {snapshot_id}")
         snapshot = self.get(volume_name, snapshot_id)

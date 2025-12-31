@@ -12,6 +12,9 @@ class snapshot_keywords:
     def delete_snapshot(self, volume_name, snapshot_id):
         self.snapshot.delete(volume_name, snapshot_id)
 
+    def delete_snapshot_cr(self, volume_name, snapshot_id):
+        self.snapshot.delete_cr(volume_name, snapshot_id)
+
     def revert_snapshot(self, volume_name, snapshot_id):
         self.snapshot.revert(volume_name, snapshot_id)
 
