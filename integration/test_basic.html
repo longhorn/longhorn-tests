@@ -425,9 +425,16 @@ el.replaceWith(d);
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
     extra_disk_path = create_host_disk(client, disk_volname,
-                                       str(7 * Gi), lht_hostId)
+                                       str(7 * Gi), lht_hostId,
+                                       DATA_ENGINE)
 
-    extra_disk = {&#34;path&#34;: extra_disk_path, &#34;allowScheduling&#34;: True}
+    disk_type = &#34;filesystem&#34;
+    if DATA_ENGINE == &#34;v2&#34;:
+        disk_type = &#34;block&#34;
+
+    extra_disk = {&#34;path&#34;: extra_disk_path,
+                  &#34;allowScheduling&#34;: True,
+                  &#34;diskType&#34;: disk_type}
     update_disks = get_update_disks(node.disks)
     update_disks[&#34;extra-disk&#34;] = extra_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -3162,7 +3169,8 @@ test steps."</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test Cleanup System Generated Snapshots
 
@@ -3189,7 +3197,7 @@ test steps."</p>
         volume = client.by_id_volume(volume_name)
         # For the below assertion, the number of snapshots is compared with 2
         # as the list of snapshot have the volume-head too.
-        assert len(volume.snapshotList()) == 2
+        wait_for_snapshot_count(volume, 2, count_removed=True)
 
     read_md5sum1 = get_pod_data_md5sum(core_api, pod_name, &#34;/data/test&#34;)
     assert md5sum1 == read_md5sum1</code></pre>
@@ -6421,7 +6429,8 @@ And <code>snap4</code> is an empty snapshot.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  # NOQA
     &#34;&#34;&#34;
     Test case: the normal scenario
     1. Prepare a 7Gi volume as a node disk.
@@ -6448,9 +6457,13 @@ And <code>snap4</code> is an empty snapshot.</li>
                                     snap_offset, 3000, 10)
 
     snap2 = create_snapshot(client, volume_name)
-    volume.snapshotDelete(name=snap2.name)
+    volume.snapshotCRDelete(name=snap2.name)
     volume.snapshotPurge()
-    wait_for_snapshot_purge(client, volume_name, snap2.name)
+    # TODO: engine doesn&#39;t have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == &#34;v1&#34;:
+        wait_for_snapshot_purge(client, volume_name, snap2.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap_offset, 3000, 10)
@@ -6468,7 +6481,18 @@ And <code>snap4</code> is an empty snapshot.</li>
     actual_size = int(volume.controllers[0].actualSize)
     spec_size = int(volume.size)
 
-    assert actual_size/spec_size &lt;= 2</code></pre>
+    assert actual_size/spec_size &lt;= 2
+
+    if DATA_ENGINE == &#34;v2&#34;:
+        volume = volume.detach()
+        volume = common.wait_for_volume_detached(client, volume_name)
+        client.delete(volume)
+        wait_for_volume_delete(client, volume_name)
+
+        delete_disks_on_node(client, get_self_host_id(), &#34;extra-disk&#34;)
+        # Wait for the disk to be fully deleted in the spdk_tgt
+        time.sleep(30)
+        cleanup_volume_by_name(client, &#34;vol-disk&#34;)</code></pre>
 </details>
 <div class="desc"><p>Test case: the normal scenario
 1. Prepare a 7Gi volume as a node disk.
@@ -6490,7 +6514,8 @@ won't be greater than 2x of the volume spec size.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_name, request):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_name, request):  # NOQA
     &#34;&#34;&#34;
     Test case: worst scenario
     1. Prepare a 7Gi volume as a node disk.
@@ -6517,9 +6542,13 @@ won't be greater than 2x of the volume spec size.
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap_offset, 2000, 10)
     snap1 = create_snapshot(client, volume_name)
-    volume.snapshotDelete(name=snap1.name)
+    volume.snapshotCRDelete(name=snap1.name)
     volume.snapshotPurge()
-    wait_for_snapshot_purge(client, volume_name, snap1.name)
+    # TODO: engine doesn&#39;t have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == &#34;v1&#34;:
+        wait_for_snapshot_purge(client, volume_name, snap1.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap_offset, 2000, 10)
@@ -6539,7 +6568,18 @@ won't be greater than 2x of the volume spec size.
 
     actual_size = int(volume.controllers[0].actualSize)
     spec_size = int(volume.size)
-    assert actual_size/spec_size &lt;= 3</code></pre>
+    assert actual_size/spec_size &lt;= 3
+
+    if DATA_ENGINE == &#34;v2&#34;:
+        volume = volume.detach()
+        volume = common.wait_for_volume_detached(client, volume_name)
+        client.delete(volume)
+        wait_for_volume_delete(client, volume_name)
+
+        delete_disks_on_node(client, get_self_host_id(), &#34;extra-disk&#34;)
+        # Wait for the disk to be fully deleted in the spdk_tgt
+        time.sleep(30)
+        cleanup_volume_by_name(client, &#34;vol-disk&#34;)</code></pre>
 </details>
 <div class="desc"><p>Test case: worst scenario
 1. Prepare a 7Gi volume as a node disk.
@@ -7314,9 +7354,13 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
 
-    volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name,
-                                     snap[101].name, snap[100].name)
+    # TODO: engine doesn&#39;t have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == &#34;v1&#34;:
+        volume.snapshotPurge()
+        volume = wait_for_snapshot_purge(client, volume_name,
+                                         snap[101].name, snap[100].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                &#34;status&#34;, &#34;False&#34;)</code></pre>
