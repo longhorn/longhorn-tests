@@ -159,6 +159,7 @@ def get_default_disk_path():
     return default_disk_path
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_update_node(client):  # NOQA
