@@ -3943,6 +3943,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     assert src_md5sum == dst_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (Restore)
