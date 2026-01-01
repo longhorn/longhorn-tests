@@ -469,12 +469,11 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     assert snapMap[snap3.name].parent == snap2.name
     assert snapMap[snap3.name].removed is False
 
-    volume.snapshotCRDelete(name=snap3.name)
-
     if DATA_ENGINE == "v1":
+        volume.snapshotDelete(name=snap3.name)
         check_volume_data(volume, snap3_data)
     else:
-        wait_for_snapshot_count(volume, 3)
+        volume.snapshotCRDelete(name=snap3.name)
         snapshots = volume.snapshotList(volume=volume_name)
         snapMap = {}
         for snap in snapshots:
