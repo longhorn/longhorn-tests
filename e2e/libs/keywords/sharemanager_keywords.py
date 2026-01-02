@@ -45,7 +45,7 @@ class sharemanager_keywords:
 
             except AssertionError as e:
                 logging(f"Waiting for sharemanager deleted: {e}, retry ({i}) ...")
-                time.sleep(retry_interval)
+            time.sleep(retry_interval)
 
         assert AssertionError, f"Failed to wait for all sharemanagers to be deleted"
 
@@ -92,9 +92,13 @@ class sharemanager_keywords:
         sharemanager_pod_name = "share-manager-" + name
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
-            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-            logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
-            if sharemanager_pod.status.phase == "Running":
-                return
+            try:
+                sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
+                logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
+                if sharemanager_pod.status.phase == "Running":
+                    return
+            except Exception as e:
+                logging(f"Waiting for sharemanager for volume {name} running error: {e}")
+            time.sleep(retry_interval)
 
         assert False, f"sharemanager pod {sharemanager_pod_name} not running"
