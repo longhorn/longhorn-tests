@@ -29,7 +29,7 @@ from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import DEFAULT_POD_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import cleanup_volume, create_and_check_volume, create_backup
-from common import cleanup_volume_by_name, delete_disks_on_node
+from common import cleanup_volume_by_name, cleanup_selected_disks_on_node
 from common import DEFAULT_VOLUME_SIZE
 from common import Gi, Mi, Ki
 from common import wait_for_volume_detached
@@ -5254,7 +5254,8 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
         client.delete(volume)
         wait_for_volume_delete(client, volume_name)
 
-        delete_disks_on_node(client, get_self_host_id(), "extra-disk")
+        cleanup_selected_disks_on_node(client, get_self_host_id(),
+                                       "extra-disk")
         # Wait for the disk to be fully deleted in the spdk_tgt
         time.sleep(30)
         cleanup_volume_by_name(client, "vol-disk")
@@ -5322,7 +5323,8 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
         client.delete(volume)
         wait_for_volume_delete(client, volume_name)
 
-        delete_disks_on_node(client, get_self_host_id(), "extra-disk")
+        cleanup_selected_disks_on_node(client, get_self_host_id(),
+                                       "extra-disk")
         # Wait for the disk to be fully deleted in the spdk_tgt
         time.sleep(30)
         cleanup_volume_by_name(client, "vol-disk")
