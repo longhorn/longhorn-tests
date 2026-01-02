@@ -54,6 +54,7 @@ from common import prepare_host_disk, wait_for_volume_degraded
 from common import create_deployment_and_write_data
 from common import wait_scheduling_failure
 from common import DATA_ENGINE, BLOCK_DEV_PATH
+from common import cleanup_selected_disks_on_node
 
 from backupstore import set_random_backupstore # NOQA
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -428,6 +429,7 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
@@ -444,7 +446,10 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, "vol-small",
                                        SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        small_disk = {"path": small_disk_path, "allowScheduling": True}
+    else:
+        small_disk = {"path": small_disk_path, "allowScheduling": True, "diskType": "block"}
     update_disks = get_update_disks(node.disks)
     update_disks["small-disks"] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -504,7 +509,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     disks.pop(unexpected_disk["fsid"])
     update_disks = get_update_disks(disks)
     update_node_disks(client, node.name, disks=update_disks, retry=True)
-    cleanup_host_disks(client, 'vol-small')
+    cleanup_selected_disks_on_node(client, lht_hostId, "vol-small")
 
 
 @pytest.mark.v2_volume_test   # NOQA
