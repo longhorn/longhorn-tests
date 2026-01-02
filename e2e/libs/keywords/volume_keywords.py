@@ -380,6 +380,9 @@ class volume_keywords:
     def get_volume_checksum(self, volume_name):
         return self.volume.get_checksum(volume_name)
 
+    def get_volume_sha512sum(self, volume_name):
+        return self.volume.get_sha512sum(volume_name)
+
     def validate_volume_setting(self, volume_name, setting_name, value):
         return self.volume.validate_volume_setting(volume_name, setting_name, value)
 

@@ -29,6 +29,7 @@ from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import DEFAULT_POD_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import cleanup_volume, create_and_check_volume, create_backup
+from common import cleanup_volume_by_name, delete_disks_on_node
 from common import DEFAULT_VOLUME_SIZE
 from common import Gi, Mi, Ki
 from common import wait_for_volume_detached
@@ -399,6 +400,7 @@ def volume_iscsi_basic_test(client, volume_name, backing_image=""):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_snapshot(client, volume_name, backing_image=""):  # NOQA
     """
@@ -409,8 +411,13 @@ def test_snapshot(client, volume_name, backing_image=""):  # NOQA
     3. Generate and write data `snap2_data`, then create `snap2`
     4. Generate and write data `snap3_data`, then create `snap3`
     5. List snapshot. Validate the snapshot chain relationship
-    6. Mark `snap3` as removed. Make sure volume's data didn't change
-    7. List snapshot. Make sure `snap3` is marked as removed
+        6. Delete `snap3` Snapshot CR.
+             - v1 data engine: `snap3` remains in the snapshot list and is
+                 marked
+                 as removed.
+                 Make sure volume's data didn't change.
+             - v2 data engine: `snap3` is removed from the snapshot list.
+        7. List snapshot and validate the expected `snap3` state/visibility
     8. Detach and reattach the volume in maintenance mode.
     9. Make sure the volume frontend is still `blockdev` but disabled
     10. Revert to `snap2`
@@ -419,8 +426,11 @@ def test_snapshot(client, volume_name, backing_image=""):  # NOQA
     13. List snapshot. Make sure `volume-head` is now `snap2`'s child
     14. Delete `snap1` and `snap2`
     15. Purge the snapshot.
-    16. List the snapshot, make sure `snap1` and `snap3`
-    are gone. `snap2` is marked as removed.
+        16. List the snapshots:
+             - v1 data engine: `snap1` and `snap3` are gone; `snap2` remains
+                 and
+                 is marked as removed (it's the parent of `volume-head`).
+             - v2 data engine: `snap1`, `snap2`, and `snap3` are all gone.
     17. Check volume data, make sure it's still `snap2_data`.
     """
     snapshot_test(client, volume_name, backing_image)
@@ -459,8 +469,18 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     assert snapMap[snap3.name].parent == snap2.name
     assert snapMap[snap3.name].removed is False
 
-    volume.snapshotDelete(name=snap3.name)
-    check_volume_data(volume, snap3_data)
+    volume.snapshotCRDelete(name=snap3.name)
+
+    if DATA_ENGINE == "v1":
+        check_volume_data(volume, snap3_data)
+    else:
+        wait_for_snapshot_count(volume, 3)
+        snapshots = volume.snapshotList(volume=volume_name)
+        snapMap = {}
+        for snap in snapshots:
+            snapMap[snap.name] = snap
+
+        assert snap3.name not in snapMap
 
     snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
@@ -472,20 +492,22 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     assert snapMap[snap2.name].name == snap2.name
     assert snapMap[snap2.name].parent == snap1.name
     assert snapMap[snap2.name].removed is False
-    assert snapMap[snap3.name].name == snap3.name
-    assert snapMap[snap3.name].parent == snap2.name
-    assert len(snapMap[snap3.name].children) == 1
-    assert "volume-head" in snapMap[snap3.name].children.keys()
-    assert snapMap[snap3.name].removed is True
 
-    snap = volume.snapshotGet(name=snap3.name)
-    assert snap.name == snap3.name
-    assert snap.parent == snap3.parent
-    assert len(snap3.children) == 1
-    assert len(snap.children) == 1
-    assert "volume-head" in snap3.children.keys()
-    assert "volume-head" in snap.children.keys()
-    assert snap.removed is True
+    if DATA_ENGINE == "v1":
+        assert snapMap[snap3.name].name == snap3.name
+        assert snapMap[snap3.name].parent == snap2.name
+        assert len(snapMap[snap3.name].children) == 1
+        assert "volume-head" in snapMap[snap3.name].children.keys()
+        assert snapMap[snap3.name].removed is True
+
+        snap = volume.snapshotGet(name=snap3.name)
+        assert snap.name == snap3.name
+        assert snap.parent == snap3.parent
+        assert len(snap3.children) == 1
+        assert len(snap.children) == 1
+        assert "volume-head" in snap3.children.keys()
+        assert "volume-head" in snap.children.keys()
+        assert snap.removed is True
 
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -522,33 +544,46 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     assert snapMap[snap2.name].name == snap2.name
     assert snapMap[snap2.name].parent == snap1.name
     assert "volume-head" in snapMap[snap2.name].children.keys()
-    assert snap3.name in snapMap[snap2.name].children.keys()
+    if DATA_ENGINE == "v1":
+        assert snap3.name in snapMap[snap2.name].children.keys()
     assert snapMap[snap2.name].removed is False
-    assert snapMap[snap3.name].name == snap3.name
-    assert snapMap[snap3.name].parent == snap2.name
-    assert len(snapMap[snap3.name].children) == 0
-    assert snapMap[snap3.name].removed is True
+
+    if DATA_ENGINE == "v1":
+        assert snapMap[snap3.name].name == snap3.name
+        assert snapMap[snap3.name].parent == snap2.name
+        assert len(snapMap[snap3.name].children) == 0
+        assert snapMap[snap3.name].removed is True
 
     volume.snapshotDelete(name=snap1.name)
     volume.snapshotDelete(name=snap2.name)
 
     volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name, snap1.name,
-                                     snap3.name)
+    if DATA_ENGINE == "v1":
+        volume = wait_for_snapshot_purge(client, volume_name, snap1.name,
+                                         snap3.name)
 
-    snapshots = volume.snapshotList(volume=volume_name)
-    snapMap = {}
-    for snap in snapshots:
-        snapMap[snap.name] = snap
-    assert snap1.name not in snapMap
-    assert snap3.name not in snapMap
+        snapshots = volume.snapshotList(volume=volume_name)
+        snapMap = {}
+        for snap in snapshots:
+            snapMap[snap.name] = snap
+        assert snap1.name not in snapMap
+        assert snap3.name not in snapMap
 
-    # it's the parent of volume-head, so it cannot be purged at this time
-    assert snapMap[snap2.name].name == snap2.name
-    assert snapMap[snap2.name].parent == ""
-    assert "volume-head" in snapMap[snap2.name].children.keys()
-    assert snapMap[snap2.name].removed is True
-    check_volume_data(volume, snap2_data)
+        # it's the parent of volume-head, so it cannot be purged at this time
+        assert snapMap[snap2.name].name == snap2.name
+        assert snapMap[snap2.name].parent == ""
+        assert "volume-head" in snapMap[snap2.name].children.keys()
+        assert snapMap[snap2.name].removed is True
+        check_volume_data(volume, snap2_data)
+    else:
+        snapshots = volume.snapshotList(volume=volume_name)
+        snapMap = {}
+        for snap in snapshots:
+            snapMap[snap.name] = snap
+
+        assert snap1.name not in snapMap
+        assert snap2.name not in snapMap
+        assert snap3.name not in snapMap
 
     cleanup_volume(client, volume)
 
@@ -4025,6 +4060,7 @@ def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupst
     assert src_md5sum == dst_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test Cleanup System Generated Snapshots
@@ -4052,7 +4088,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
         volume = client.by_id_volume(volume_name)
         # For the below assertion, the number of snapshots is compared with 2
         # as the list of snapshot have the volume-head too.
-        assert len(volume.snapshotList()) == 2
+        wait_for_snapshot_count(volume, 2, count_removed=True)
 
     read_md5sum1 = get_pod_data_md5sum(core_api, pod_name, "/data/test")
     assert md5sum1 == read_md5sum1
@@ -4104,9 +4140,13 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
 
-    volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name,
-                                     snap[101].name, snap[100].name)
+    # TODO: engine doesn't have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == "v1":
+        volume.snapshotPurge()
+        volume = wait_for_snapshot_purge(client, volume_name,
+                                         snap[101].name, snap[100].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "False")
@@ -5123,9 +5163,16 @@ def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
     extra_disk_path = create_host_disk(client, disk_volname,
-                                       str(7 * Gi), lht_hostId)
+                                       str(7 * Gi), lht_hostId,
+                                       DATA_ENGINE)
 
-    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
+    disk_type = "filesystem"
+    if DATA_ENGINE == "v2":
+        disk_type = "block"
+
+    extra_disk = {"path": extra_disk_path,
+                  "allowScheduling": True,
+                  "diskType": disk_type}
     update_disks = get_update_disks(node.disks)
     update_disks["extra-disk"] = extra_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -5146,6 +5193,7 @@ def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
             break
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  # NOQA
     """
     Test case: the normal scenario
@@ -5173,9 +5221,13 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
                                     snap_offset, 3000, 10)
 
     snap2 = create_snapshot(client, volume_name)
-    volume.snapshotDelete(name=snap2.name)
+    volume.snapshotCRDelete(name=snap2.name)
     volume.snapshotPurge()
-    wait_for_snapshot_purge(client, volume_name, snap2.name)
+    # TODO: engine doesn't have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == "v1":
+        wait_for_snapshot_purge(client, volume_name, snap2.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap_offset, 3000, 10)
@@ -5195,7 +5247,19 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
 
     assert actual_size/spec_size <= 2
 
+    if DATA_ENGINE == "v2":
+        volume = volume.detach()
+        volume = common.wait_for_volume_detached(client, volume_name)
+        client.delete(volume)
+        wait_for_volume_delete(client, volume_name)
 
+        delete_disks_on_node(client, get_self_host_id(), "extra-disk")
+        # Wait for the disk to be fully deleted in the spdk_tgt
+        time.sleep(30)
+        cleanup_volume_by_name(client, "vol-disk")
+
+
+@pytest.mark.v2_volume_test  # NOQA
 def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_name, request):  # NOQA
     """
     Test case: worst scenario
@@ -5223,9 +5287,13 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap_offset, 2000, 10)
     snap1 = create_snapshot(client, volume_name)
-    volume.snapshotDelete(name=snap1.name)
+    volume.snapshotCRDelete(name=snap1.name)
     volume.snapshotPurge()
-    wait_for_snapshot_purge(client, volume_name, snap1.name)
+    # TODO: engine doesn't have purge status for v2 data engine
+    # It will be implemented in
+    # https://github.com/longhorn/longhorn/issues/11833
+    if DATA_ENGINE == "v1":
+        wait_for_snapshot_purge(client, volume_name, snap1.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap_offset, 2000, 10)
@@ -5246,6 +5314,17 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     actual_size = int(volume.controllers[0].actualSize)
     spec_size = int(volume.size)
     assert actual_size/spec_size <= 3
+
+    if DATA_ENGINE == "v2":
+        volume = volume.detach()
+        volume = common.wait_for_volume_detached(client, volume_name)
+        client.delete(volume)
+        wait_for_volume_delete(client, volume_name)
+
+        delete_disks_on_node(client, get_self_host_id(), "extra-disk")
+        # Wait for the disk to be fully deleted in the spdk_tgt
+        time.sleep(30)
+        cleanup_volume_by_name(client, "vol-disk")
 
 
 def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA

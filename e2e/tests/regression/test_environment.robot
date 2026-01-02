@@ -60,6 +60,9 @@ Test RWX Fast Failover In Non-default Longhorn Namespace
 
     When Install Longhorn    longhorn_namespace=longhorn-custom
     And Wait for Longhorn components all running
+    IF    '${DATA_ENGINE}' == 'v2'
+        And Enable v2 data engine and add block disks
+    END
     And Setting rwx-volume-fast-failover is set to true
 
     Then Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}

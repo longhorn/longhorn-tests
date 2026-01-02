@@ -103,6 +103,18 @@ class CRD(Base):
 
     def delete(self, volume_name, wait):
         try:
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="volumes",
+                name=volume_name,
+                body={
+                    "metadata": {
+                        "finalizers": []
+                    }
+                }
+            )
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
@@ -632,6 +644,14 @@ class CRD(Base):
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
+        logging(f"Calculated volume {volume_name} checksum {checksum}")
+        return checksum
+
+    def get_sha512sum(self, volume_name):
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        endpoint = self.get_endpoint(volume_name)
+        checksum = NodeExec(node_name).issue_cmd(
+            ["sh", "-c", f"sha512sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 
