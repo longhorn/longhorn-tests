@@ -1505,6 +1505,7 @@ def test_replica_datapath_cleanup(client):  # NOQA
     cleanup_host_disks(client, 'extra-disk')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  reset_disk_settings):  # NOQA
     """
@@ -1565,9 +1566,15 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 
     # Check each case.
     node = client.by_id_node(cases["disk_exists"])
-    assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path == \
-        DEFAULT_DISK_PATH
+    if DATA_ENGINE == "v1":
+        assert len(node.disks) == 1
+        assert node.disks[list(node.disks)[0]].path == \
+            DEFAULT_DISK_PATH
+    else:
+        assert len(node.disks) == 2
+        disk_paths = [disk.path for disk in node.disks.values()]
+        assert DEFAULT_DISK_PATH in disk_paths
+        assert BLOCK_DEV_PATH in disk_paths
 
     node = client.by_id_node(cases["labeled"])
     assert len(node.disks) == 1
