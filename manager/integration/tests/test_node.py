@@ -1591,6 +1591,7 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     assert len(node.disks) == 0
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_config_annotation(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
