@@ -40,13 +40,10 @@ When Drain the node with default values of Rancher UI</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/lh-hardend-rancher/</guid>
-      <description>Given Hardened Downstream (RKE2/RKE1/K3s) cluster in Rancher v2.6.x with CIS 1.6 as per Hardening guide
+      <description>Given Hardened Downstream (RKE2/K3s) cluster in Rancher v2.13.x with CIS 1.11 as per Hardening Guides and Benchmark Versions
 When Deploy Longhorn using Marketplace app
 Then Longhorn should be deployed properly
-AND Volume creation and other operations should work fine
-Given Hardened Downstream (RKE2/RKE1/K3s) cluster in Rancher v2.7.x with CIS 1.6 or 1.20 or 1.23 as per Hardending guide for Rancher 2.7
-When Deploy Longhorn using Marketplace app
-Then Longhorn should be deployed properly</description>
+AND Volume creation and other operations should work fine</description>
     </item>
     
     <item>
