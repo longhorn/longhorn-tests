@@ -53,10 +53,6 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     ...                - Fail one of the replica (node down or network partition) and wait for the replica becomes failed.
     ...                - Power on node (or recover network)
     ...                - Rebuilding (expect faster than without the two settings enabled)
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 volume won't pass this test case due to issue: https://github.com/longhorn/longhorn/issues/11833
-    END
-
     Given Create volume 0 with    size=50Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -75,7 +71,13 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     # Longhorn creates a snapshot A (data size 30 GiB) without a checksum during the first rebuild.
     # After creating snapshot 0 for volume 0, the snapshot A must be purged.
     # Once purged, snapshot 0 for volume 0 will generate a new checksum.
-    And Purge volume 0 snapshot
+    IF    "${DATA_ENGINE}" == "v1"
+        And Purge volume 0 snapshot
+    ELSE
+        # v2 volume purge status is always null
+        # so we can't monitor the purge status of a v2 volume to ensure the purge is completed
+        And Purge volume 0 snapshot    wait=False
+    END
     # Since this test involves writing 30 GB of data to the volume.
     # Based on observations on AWS, generating the snapshot checksum
     # in such cases can take up to approximately 18 minutes. 
