@@ -449,7 +449,9 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     if DATA_ENGINE == "v1":
         small_disk = {"path": small_disk_path, "allowScheduling": True}
     else:
-        small_disk = {"path": small_disk_path, "allowScheduling": True, "diskType": "block"}
+        small_disk = {"path": small_disk_path,
+                      "allowScheduling": True,
+                      "diskType": "block"}
     update_disks = get_update_disks(node.disks)
     update_disks["small-disks"] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
