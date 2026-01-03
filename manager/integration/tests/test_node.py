@@ -2051,6 +2051,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     wait_for_node_tag_update(client, node_name, ["tag3"])
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, client):  # NOQA
     """
@@ -2079,7 +2080,12 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, "vol-small",
                                        SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": False}
+    if DATA_ENGINE == "v1":
+        small_disk = {"path": small_disk_path, "allowScheduling": False}
+    else:
+        small_disk = {"path": small_disk_path,
+                      "allowScheduling": False,
+                      "diskType": "block"}
     update_disks = get_update_disks(node.disks)
     update_disks["small-disk"] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -2176,7 +2182,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
 
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
-    cleanup_host_disks(client, 'vol-small')
+    cleanup_selected_disks_on_node(client, lht_hostId, "vol-small")
 
 
 @pytest.mark.node  # NOQA
