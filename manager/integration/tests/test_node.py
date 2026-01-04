@@ -228,10 +228,20 @@ def test_node_disk_update(client):  # NOQA
     disks = node.disks
     disk_path1 = create_host_disk(client, 'vol-disk-1',
                                   str(Gi), lht_hostId)
-    disk1 = {"path": disk_path1, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        disk1 = {"path": disk_path1, "allowScheduling": True}
+    else:
+        disk1 = {"path": disk_path1,
+                 "allowScheduling": True,
+                 "diskType": "block"}
     disk_path2 = create_host_disk(client, 'vol-disk-2',
                                   str(Gi), lht_hostId)
-    disk2 = {"path": disk_path2, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        disk2 = {"path": disk_path2, "allowScheduling": True}
+    else:
+        disk2 = {"path": disk_path2,
+                 "allowScheduling": True,
+                 "diskType": "block"}
 
     update_disk = get_update_disks(disks)
     # add new disk for node
@@ -263,8 +273,10 @@ def test_node_disk_update(client):  # NOQA
                                  "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId, name,
                                  "storageReserved", SMALL_DISK_SIZE)
-            wait_for_disk_storage_available(client, lht_hostId, name,
-                                            disk_path1)
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == "v1":
+                wait_for_disk_storage_available(client, lht_hostId, name,
+                                                disk_path1)
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -273,16 +285,20 @@ def test_node_disk_update(client):  # NOQA
             assert not disk.allowScheduling
             assert disk.storageReserved == SMALL_DISK_SIZE
             assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path1)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == "v1":
+                free, total = common.get_host_disk_size(disk_path1)
+                assert disk.storageMaximum == total
+                assert disk.storageAvailable == free
         elif disk.path == disk_path2:
             assert not disk.allowScheduling
             assert disk.storageReserved == SMALL_DISK_SIZE
             assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path2)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == "v1":
+                free, total = common.get_host_disk_size(disk_path2)
+                assert disk.storageMaximum == total
+                assert disk.storageAvailable == free
 
     # delete other disks, just remain default disk
     update_disk = get_update_disks(disks)
@@ -295,7 +311,8 @@ def test_node_disk_update(client):  # NOQA
                                 len(remain_disk))
     assert len(node.disks) == len(remain_disk)
     # cleanup disks
-    cleanup_host_disks(client, 'vol-disk-1', 'vol-disk-2')
+    cleanup_selected_disks_on_node(client, lht_hostId,
+                                   'vol-disk-1', 'vol-disk-2')
 
 
 @pytest.mark.v2_volume_test   # NOQA
