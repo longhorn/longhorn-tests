@@ -23,6 +23,11 @@ Create persistentvolumeclaim ${claim_id} from csi volume snapshot ${csi_volume_s
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
     create_persistentvolumeclaim    ${claim_name}    dataSourceName=${csi_volume_snapshot_name}    dataSourceKind=VolumeSnapshot
 
+Create persistentvolumeclaim in Block volume mode ${claim_id}
+    [Arguments]    &{config}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_persistentvolumeclaim    ${claim_name}    volume_mode=Block    &{config}
+
 Wait for volume of persistentvolumeclaim ${claim_id} to be created
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}

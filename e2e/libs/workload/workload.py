@@ -12,6 +12,7 @@ from utility.utility import list_namespaced_pod
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 from workload.constant import WAIT_FOR_POD_KEPT_IN_STATE_TIME
 from workload.constant import CNI_NETWORK_STATUS_ANNOTATION
+from utility.constant import BLOCK_PVC_VOLUME_DEVICE_PATH
 from workload.pod import is_pod_terminated_by_kubelet
 from workload.pod import wait_for_pod_status
 
@@ -75,6 +76,63 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
 
     assert len(claim_names) > 0, f"Failed to get PVC names for workload {workload_name}"
     return claim_names
+
+
+def make_block_device_filesystem_in_workload_pod(pod_name):
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for i in range(retry_count):
+        logging(f"Making block device filesystem in pod {pod_name} ... ({i})")
+        try:
+            api = client.CoreV1Api()
+            make_fs_cmd = [
+                '/bin/sh',
+                '-c',
+                f"apk add e2fsprogs &&\
+                mkfs.ext4 {BLOCK_PVC_VOLUME_DEVICE_PATH}"
+            ]
+            resp = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=make_fs_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return
+        except Exception as e:
+            logging(f"Making block device filesystem in pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
+
+def mount_block_device_in_workload_pod(pod_name, mount_point):
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for i in range(retry_count):
+        logging(f"Mounting block device in pod {pod_name} ... ({i})")
+        try:
+            api = client.CoreV1Api()
+            mount_cmd = [
+                '/bin/sh',
+                '-c',
+                f"mkdir -p {mount_point} &&\
+                mount {BLOCK_PVC_VOLUME_DEVICE_PATH} {mount_point}"
+            ]
+            resp = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=mount_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return
+        except Exception as e:
+            logging(f"Mounting block device in pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
 
 
 def write_pod_random_data(pod_name, size_in_mb, file_name,
@@ -175,7 +233,7 @@ def run_commands_in_pod(pod_name, commands):
     cmd = [
         '/bin/sh',
         '-c',
-        f"cd /data && {commands}; echo {exit_code_prefix}$?"
+        f"mkdir -p /data && cd /data && {commands}; echo {exit_code_prefix}$?"
     ]
 
     output = stream(
