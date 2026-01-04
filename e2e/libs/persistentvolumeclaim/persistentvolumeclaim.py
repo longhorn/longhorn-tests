@@ -48,6 +48,8 @@ class PersistentVolumeClaim():
             # correct access mode`
             if volume_type == 'RWX':
                 manifest_dict['spec']['accessModes'][0] = 'ReadWriteMany'
+            elif volume_type == 'RWOP':
+                manifest_dict['spec']['accessModes'][0] = 'ReadWriteOncePod'
 
             if dataSourceName and dataSourceKind:
                 manifest_dict['spec']['dataSource'] = {

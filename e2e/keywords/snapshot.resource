@@ -20,6 +20,10 @@ Delete snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot    ${volume_name}    ${snapshot_id}
 
+Delete snapshot ${snapshot_id} CR of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_snapshot_cr    ${volume_name}    ${snapshot_id}
+
 Delete snapshot ${snapshot_id} of volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     Run Keyword And Expect Error    *    delete_snapshot    ${volume_name}    ${snapshot_id}

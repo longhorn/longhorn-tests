@@ -32,6 +32,8 @@ def create_statefulset(statefulset_name, volume_type, sc_name, size, node_name):
         # correct access mode`
         if volume_type == 'RWX':
             manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['accessModes'][0] = 'ReadWriteMany'
+        elif volume_type == 'RWOP':
+            manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['accessModes'][0] = 'ReadWriteOncePod'
 
         # correct request storage size
         if size:
