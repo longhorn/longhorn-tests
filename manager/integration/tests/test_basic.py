@@ -5164,8 +5164,7 @@ def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
     extra_disk_path = create_host_disk(client, disk_volname,
-                                       str(7 * Gi), lht_hostId,
-                                       DATA_ENGINE)
+                                       str(7 * Gi), lht_hostId)
 
     disk_type = "filesystem"
     if DATA_ENGINE == "v2":
