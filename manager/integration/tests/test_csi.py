@@ -1019,6 +1019,8 @@ def test_restage_volume_if_node_stage_volume_not_called():
     """
     pass
 
+
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_storage_capacity(client, storage_class): # NOQA
     """

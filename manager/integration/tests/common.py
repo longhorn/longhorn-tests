@@ -1894,7 +1894,7 @@ def cleanup_disks_on_node(client, node_id, *disks):  # NOQA
         cleanup_host_disks(client, disk)
 
 
-def delete_disks_on_node(client, node_id, *disks):  # NOQA
+def cleanup_selected_disks_on_node(client, node_id, *disks):  # NOQA
     # Disable scheduling for the new disks on self node
     node = client.by_id_node(node_id)
     for name, disk in node.disks.items():
@@ -6460,12 +6460,12 @@ def cleanup_volume_by_name(client, vol_name):
     wait_for_volume_delete(client, vol_name)
 
 
-def create_host_disk(client, vol_name, size, node_id, data_engine="v1"):
+def create_host_disk(client, vol_name, size, node_id):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
     # prepare the disk in the host filesystem
-    if data_engine == "v1":
+    if DATA_ENGINE == "v1":
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path
     return get_volume_endpoint(volume)
