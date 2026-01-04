@@ -40,10 +40,10 @@ class Node:
         return mount_path
 
     def update_disks(self, node_name, disks):
-        node = get_longhorn_client().by_id_node(node_name)
         logging(f"Updating node {node_name} disks {disks}")
         for _ in range(self.retry_count):
             try:
+                node = get_longhorn_client().by_id_node(node_name)
                 node = node.diskUpdate(disks=disks)
                 self.wait_for_disk_update(node_name, len(disks))
                 return node
@@ -90,18 +90,27 @@ class Node:
     def reset_disks(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
 
+        disks = {}
+        # copy Longhorn RestObject into a normal Python dict
+        # otherwise we got TypeError: 'RestObject' object does not support item assignment
+        for disk_name, disk in node.disks.items():
+            disks[disk_name] = {
+                "path": disk.path,
+                "diskType": disk.diskType,
+                "allowScheduling": disk.allowScheduling,
+            }
+
         # add default back if not exist
-        if not any(disk.path == self.DEFAULT_DISK_PATH for disk in node.disks.values()):
+        if not any(disk.get("path") == self.DEFAULT_DISK_PATH for disk in disks.values()):
             logging(f"Default disk with path {self.DEFAULT_DISK_PATH} not found on node {node_name}, re-adding it")
 
-            default_disk = {
-                "default-disk": {
-                    "path": self.DEFAULT_DISK_PATH,
-                    "diskType": "filesystem",
-                    "allowScheduling": True
-                }
+            disks["default-disk"] = {
+                "path": self.DEFAULT_DISK_PATH,
+                "diskType": "filesystem",
+                "allowScheduling": True
             }
-            node = self.update_disks(node_name, default_disk)
+            logging(f"updating node {node_name} with {disks}")
+            node = self.update_disks(node_name, disks)
 
         for disk_name, disk in iter(node.disks.items()):
             if disk.path != self.DEFAULT_DISK_PATH:
