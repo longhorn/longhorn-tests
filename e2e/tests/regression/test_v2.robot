@@ -57,8 +57,10 @@ Test V2 Snapshot
     Then Validate snapshot 0 is parent of snapshot 1 in volume 0 snapshot list
     And Validate snapshot 1 is parent of snapshot 2 in volume 0 snapshot list
     And Validate snapshot 2 is parent of volume-head in volume 0 snapshot list
-    # cannot delete snapshot 2 since it is the parent of volume head
-    And Delete snapshot 2 of volume 0 will fail
+
+    When Delete snapshot 2 CR of volume 0
+    Then Validate snapshot 2 is not in volume 0 snapshot list
+    And Check volume 0 data is data 2
 
     When Detach volume 0
     And Wait for volume 0 detached
@@ -73,14 +75,12 @@ Test V2 Snapshot
     Then Check volume 0 data is data 1
     And Validate snapshot 1 is parent of volume-head in volume 0 snapshot list
 
-    # cannot delete snapshot 1 since it is the parent of volume head
-    When Delete snapshot 1 of volume 0 will fail
-    And Delete snapshot 2 of volume 0
-    And Delete snapshot 0 of volume 0
+    When Delete snapshot 1 CR of volume 0
+    And Delete snapshot 0 CR of volume 0
 
     # delete a snapshot won't mark the snapshot as removed
     # but directly remove it from the snapshot list without purge
-    Then Validate snapshot 2 is not in volume 0 snapshot list
+    Then Validate snapshot 1 is not in volume 0 snapshot list
     And Validate snapshot 0 is not in volume 0 snapshot list
 
     And Check volume 0 data is data 1
