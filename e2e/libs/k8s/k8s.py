@@ -338,3 +338,69 @@ def wait_for_k8s_upgrade_completed():
         logging(f"Failed to wait for k8s upgrade agent plan completed")
         time.sleep(retry_count)
     assert completed, f"Failed to wait for k8s upgrade agent plan completed"
+
+def patch_longhorn_component_resources_limit(component_name, component_type, cpu_request, memory_request, cpu_limit, memory_limit, namespace):
+    patch_list = [
+        {
+            "op": "add",
+            "path": f"/spec/template/spec/containers/0/resources",
+            "value": {
+                "requests": {"cpu": cpu_request, "memory": memory_request},
+                "limits": {"cpu": cpu_limit, "memory": memory_limit}
+            }
+        }
+    ]
+
+    patch_json = json.dumps(patch_list)
+
+    cmd = [
+        "kubectl", "-n", namespace,
+        "patch", component_type, component_name,
+        "--type=json",
+        "--patch", patch_json
+    ]
+
+    logging(f"Patching resources limit for {component_type}/{component_name} with command: {cmd}")
+    result = subprocess_exec_cmd(cmd)
+    return result
+
+def remove_longhorn_component_resources_limit(component_name, component_type, namespace):
+    patch_list = [
+        {
+            "op": "remove",
+            "path": f"/spec/template/spec/containers/0/resources"
+        }
+    ]
+
+    patch_json = json.dumps(patch_list)
+    cmd = [
+        "kubectl", "-n", namespace,
+        "patch", component_type, component_name,
+        "--type=json",
+        "--patch", patch_json
+    ]
+
+    logging(f"Removing resources limit for {component_type}/{component_name} with command: {cmd}")
+    result = subprocess_exec_cmd(cmd)
+    logging(f"Remove resources result: {result}")
+    return result
+
+def get_longhorn_component_resources_limit(component_name, component_type, namespace):
+    cmd = [
+        "kubectl", "-n", namespace,
+        "get", component_type, component_name,
+        "-o", "json"
+    ]
+    logging(f"Getting resources limit for {component_type}/{component_name}")
+    output = subprocess_exec_cmd(cmd)
+    ds_json = json.loads(output)
+
+    containers = ds_json["spec"]["template"]["spec"]["containers"]
+    for c in containers:
+        if c["name"] == component_name:
+            resources = c.get("resources", {})
+            requests = resources.get("requests", {})
+            limits = resources.get("limits", {})
+            return {"requests": requests, "limits": limits}
+
+    assert False, f"Container {component_name} not found in {component_type}/{component_name}"

@@ -181,3 +181,18 @@ Check disk size in instance manager pod
     ${longhorn_namespace} =    get_longhorn_namespace
     ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}
+
+Patch Longhorn Manager Resources With
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+    patch_longhorn_component_resources_limit    longhorn-manager    daemonset    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+
+Check Longhorn Manager Resources Are
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+    ${resources}=    get_longhorn_component_resources_limit    longhorn-manager    daemonset
+    Should Be Equal    ${resources['requests']['cpu']}    ${cpu_request}
+    Should Be Equal    ${resources['requests']['memory']}    ${memory_request}
+    Should Be Equal    ${resources['limits']['cpu']}    ${cpu_limit}
+    Should Be Equal    ${resources['limits']['memory']}    ${memory_limit}
+
+Remove Longhorn Manager Resource Limit
+    remove_longhorn_component_resources_limit    longhorn-manager    daemonset
