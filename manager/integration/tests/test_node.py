@@ -925,7 +925,6 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
-@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk  # NOQA
