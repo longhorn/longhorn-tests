@@ -1072,6 +1072,47 @@ properly.
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.cleanup_selected_disks_on_node"><code class="name flex">
+<span>def <span class="ident">cleanup_selected_disks_on_node</span></span>(<span>client, node_id, *disks)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_selected_disks_on_node(client, node_id, *disks):  # NOQA
+    # Disable scheduling for the new disks on self node
+    node = client.by_id_node(node_id)
+    for name, disk in node.disks.items():
+        if name in disks:
+            disk.allowScheduling = False
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, node_id, len(update_disks))
+
+    # Remove disks on self node and enable scheduling for the available disks
+    available_disks = {}
+    for name, disk in iter(node.disks.items()):
+        if name not in disks:
+            disk.allowScheduling = True
+            available_disks[name] = disk
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=available_disks, retry=True)
+    wait_for_disk_update(client, node_id, len(available_disks))
+
+    node = client.by_id_node(node_id)
+
+    # Cleanup host disks
+    if DATA_ENGINE == &#34;v1&#34;:
+        for disk in disks:
+            cleanup_host_disks(client, disk)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.cleanup_storage_class"><code class="name flex">
 <span>def <span class="ident">cleanup_storage_class</span></span>(<span>)</span>
 </code></dt>
@@ -1860,19 +1901,19 @@ backup</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.create_host_disk"><code class="name flex">
-<span>def <span class="ident">create_host_disk</span></span>(<span>client, vol_name, size, node_id, data_engine='v1')</span>
+<span>def <span class="ident">create_host_disk</span></span>(<span>client, vol_name, size, node_id)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_host_disk(client, vol_name, size, node_id, data_engine=&#34;v1&#34;):
+<pre><code class="python">def create_host_disk(client, vol_name, size, node_id):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
     # prepare the disk in the host filesystem
-    if data_engine == &#34;v1&#34;:
+    if DATA_ENGINE == &#34;v1&#34;:
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path
     return get_volume_endpoint(volume)</code></pre>
@@ -2618,47 +2659,6 @@ if a nonexistent Pod is specified.</p>
         api.delete_namespaced_secret(namespace=namespace, name=name)
     except ApiException as e:
         assert e.status == 404</code></pre>
-</details>
-<div class="desc"></div>
-</dd>
-<dt id="tests.common.delete_disks_on_node"><code class="name flex">
-<span>def <span class="ident">delete_disks_on_node</span></span>(<span>client, node_id, *disks)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def delete_disks_on_node(client, node_id, *disks):  # NOQA
-    # Disable scheduling for the new disks on self node
-    node = client.by_id_node(node_id)
-    for name, disk in node.disks.items():
-        if name in disks:
-            disk.allowScheduling = False
-
-    # Update disks of self node
-    update_disks = get_update_disks(node.disks)
-    update_node_disks(client, node.name, disks=update_disks, retry=True)
-    node = wait_for_disk_update(client, node_id, len(update_disks))
-
-    # Remove disks on self node and enable scheduling for the available disks
-    available_disks = {}
-    for name, disk in iter(node.disks.items()):
-        if name not in disks:
-            disk.allowScheduling = True
-            available_disks[name] = disk
-
-    # Update disks of self node
-    update_disks = get_update_disks(node.disks)
-    update_node_disks(client, node.name, disks=available_disks, retry=True)
-    wait_for_disk_update(client, node_id, len(available_disks))
-
-    node = client.by_id_node(node_id)
-
-    # Cleanup host disks
-    if DATA_ENGINE == &#34;v1&#34;:
-        for disk in disks:
-            cleanup_host_disks(client, disk)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -10230,6 +10230,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disks" href="#tests.common.cleanup_host_disks">cleanup_host_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
+<li><code><a title="tests.common.cleanup_selected_disks_on_node" href="#tests.common.cleanup_selected_disks_on_node">cleanup_selected_disks_on_node</a></code></li>
 <li><code><a title="tests.common.cleanup_storage_class" href="#tests.common.cleanup_storage_class">cleanup_storage_class</a></code></li>
 <li><code><a title="tests.common.cleanup_test_disks" href="#tests.common.cleanup_test_disks">cleanup_test_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_volume" href="#tests.common.cleanup_volume">cleanup_volume</a></code></li>
@@ -10280,7 +10281,6 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.delete_backup_backing_image" href="#tests.common.delete_backup_backing_image">delete_backup_backing_image</a></code></li>
 <li><code><a title="tests.common.delete_backup_volume" href="#tests.common.delete_backup_volume">delete_backup_volume</a></code></li>
 <li><code><a title="tests.common.delete_crypto_secret" href="#tests.common.delete_crypto_secret">delete_crypto_secret</a></code></li>
-<li><code><a title="tests.common.delete_disks_on_node" href="#tests.common.delete_disks_on_node">delete_disks_on_node</a></code></li>
 <li><code><a title="tests.common.delete_replica_on_test_node" href="#tests.common.delete_replica_on_test_node">delete_replica_on_test_node</a></code></li>
 <li><code><a title="tests.common.delete_replica_processes" href="#tests.common.delete_replica_processes">delete_replica_processes</a></code></li>
 <li><code><a title="tests.common.delete_statefulset" href="#tests.common.delete_statefulset">delete_statefulset</a></code></li>

@@ -1236,7 +1236,8 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.csi  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+@pytest.mark.csi  # NOQA
 def test_csi_storage_capacity(client, storage_class): # NOQA
     &#34;&#34;&#34;
     Test that CSIStorageCapacity objects are properly created

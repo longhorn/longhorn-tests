@@ -1226,7 +1226,8 @@ disks) that an evicted replica of the volume can be scheduled elsewhere.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.node  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
+@pytest.mark.node  # NOQA
 def test_node_config_annotation(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     &#34;&#34;&#34;
     Test node feature: default disks/node configuration
@@ -1835,8 +1836,7 @@ def test_node_controller_sync_disk_state(client):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
-@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk  # NOQA
 def test_node_controller_sync_storage_available(client):  # NOQA
@@ -2151,7 +2151,8 @@ And wait for it becoming "Unschedulable".</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.node  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
+@pytest.mark.node  # NOQA
 def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  reset_disk_settings):  # NOQA
     &#34;&#34;&#34;
     Test node feature: create default Disk according to the node label
@@ -2211,9 +2212,15 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 
     # Check each case.
     node = client.by_id_node(cases[&#34;disk_exists&#34;])
-    assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path == \
-        DEFAULT_DISK_PATH
+    if DATA_ENGINE == &#34;v1&#34;:
+        assert len(node.disks) == 1
+        assert node.disks[list(node.disks)[0]].path == \
+            DEFAULT_DISK_PATH
+    else:
+        assert len(node.disks) == 2
+        disk_paths = [disk.path for disk in node.disks.values()]
+        assert DEFAULT_DISK_PATH in disk_paths
+        assert BLOCK_DEV_PATH in disk_paths
 
     node = client.by_id_node(cases[&#34;labeled&#34;])
     assert len(node.disks) == 1
@@ -2289,10 +2296,20 @@ def test_node_disk_update(client):  # NOQA
     disks = node.disks
     disk_path1 = create_host_disk(client, &#39;vol-disk-1&#39;,
                                   str(Gi), lht_hostId)
-    disk1 = {&#34;path&#34;: disk_path1, &#34;allowScheduling&#34;: True}
+    if DATA_ENGINE == &#34;v1&#34;:
+        disk1 = {&#34;path&#34;: disk_path1, &#34;allowScheduling&#34;: True}
+    else:
+        disk1 = {&#34;path&#34;: disk_path1,
+                 &#34;allowScheduling&#34;: True,
+                 &#34;diskType&#34;: &#34;block&#34;}
     disk_path2 = create_host_disk(client, &#39;vol-disk-2&#39;,
                                   str(Gi), lht_hostId)
-    disk2 = {&#34;path&#34;: disk_path2, &#34;allowScheduling&#34;: True}
+    if DATA_ENGINE == &#34;v1&#34;:
+        disk2 = {&#34;path&#34;: disk_path2, &#34;allowScheduling&#34;: True}
+    else:
+        disk2 = {&#34;path&#34;: disk_path2,
+                 &#34;allowScheduling&#34;: True,
+                 &#34;diskType&#34;: &#34;block&#34;}
 
     update_disk = get_update_disks(disks)
     # add new disk for node
@@ -2324,8 +2341,10 @@ def test_node_disk_update(client):  # NOQA
                                  &#34;allowScheduling&#34;, False)
             wait_for_disk_status(client, lht_hostId, name,
                                  &#34;storageReserved&#34;, SMALL_DISK_SIZE)
-            wait_for_disk_storage_available(client, lht_hostId, name,
-                                            disk_path1)
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == &#34;v1&#34;:
+                wait_for_disk_storage_available(client, lht_hostId, name,
+                                                disk_path1)
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -2334,16 +2353,20 @@ def test_node_disk_update(client):  # NOQA
             assert not disk.allowScheduling
             assert disk.storageReserved == SMALL_DISK_SIZE
             assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path1)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == &#34;v1&#34;:
+                free, total = common.get_host_disk_size(disk_path1)
+                assert disk.storageMaximum == total
+                assert disk.storageAvailable == free
         elif disk.path == disk_path2:
             assert not disk.allowScheduling
             assert disk.storageReserved == SMALL_DISK_SIZE
             assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path2)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == &#34;v1&#34;:
+                free, total = common.get_host_disk_size(disk_path2)
+                assert disk.storageMaximum == total
+                assert disk.storageAvailable == free
 
     # delete other disks, just remain default disk
     update_disk = get_update_disks(disks)
@@ -2356,7 +2379,8 @@ def test_node_disk_update(client):  # NOQA
                                 len(remain_disk))
     assert len(node.disks) == len(remain_disk)
     # cleanup disks
-    cleanup_host_disks(client, &#39;vol-disk-1&#39;, &#39;vol-disk-2&#39;)</code></pre>
+    cleanup_selected_disks_on_node(client, lht_hostId,
+                                   &#39;vol-disk-1&#39;, &#39;vol-disk-2&#39;)</code></pre>
 </details>
 <div class="desc"><p>Test update node disks</p>
 <p>The test will use Longhorn to create disks on the node.</p>
@@ -3311,7 +3335,8 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.node  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
+@pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     &#34;&#34;&#34;
@@ -3327,7 +3352,12 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, &#34;vol-small&#34;,
                                        SIZE, lht_hostId)
-    small_disk = {&#34;path&#34;: small_disk_path, &#34;allowScheduling&#34;: True}
+    if DATA_ENGINE == &#34;v1&#34;:
+        small_disk = {&#34;path&#34;: small_disk_path, &#34;allowScheduling&#34;: True}
+    else:
+        small_disk = {&#34;path&#34;: small_disk_path,
+                      &#34;allowScheduling&#34;: True,
+                      &#34;diskType&#34;: &#34;block&#34;}
     update_disks = get_update_disks(node.disks)
     update_disks[&#34;small-disks&#34;] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -3387,7 +3417,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     disks.pop(unexpected_disk[&#34;fsid&#34;])
     update_disks = get_update_disks(disks)
     update_node_disks(client, node.name, disks=update_disks, retry=True)
-    cleanup_host_disks(client, &#39;vol-small&#39;)</code></pre>
+    cleanup_selected_disks_on_node(client, lht_hostId, &#34;vol-small&#34;)</code></pre>
 </details>
 <div class="desc"><p>Test replica scheduler: not schedule a large volume to small disk</p>
 <ol>
@@ -3465,7 +3495,8 @@ def test_replica_scheduler_no_disks(client):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.node  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
+@pytest.mark.node  # NOQA
 def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, client):  # NOQA
     &#34;&#34;&#34;
     Test replica scheduler: rebuild/restore can be too big to fit a disk
@@ -3493,7 +3524,12 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, &#34;vol-small&#34;,
                                        SIZE, lht_hostId)
-    small_disk = {&#34;path&#34;: small_disk_path, &#34;allowScheduling&#34;: False}
+    if DATA_ENGINE == &#34;v1&#34;:
+        small_disk = {&#34;path&#34;: small_disk_path, &#34;allowScheduling&#34;: False}
+    else:
+        small_disk = {&#34;path&#34;: small_disk_path,
+                      &#34;allowScheduling&#34;: False,
+                      &#34;diskType&#34;: &#34;block&#34;}
     update_disks = get_update_disks(node.disks)
     update_disks[&#34;small-disk&#34;] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -3590,7 +3626,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
 
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
-    cleanup_host_disks(client, &#39;vol-small&#39;)</code></pre>
+    cleanup_selected_disks_on_node(client, lht_hostId, &#34;vol-small&#34;)</code></pre>
 </details>
 <div class="desc"><p>Test replica scheduler: rebuild/restore can be too big to fit a disk</p>
 <ol>
@@ -3925,7 +3961,8 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.coretest   # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
+@pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_update_node(client):  # NOQA
     &#34;&#34;&#34;
