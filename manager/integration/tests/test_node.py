@@ -1978,6 +1978,7 @@ def test_node_config_annotation_invalid(client, core_api, reset_default_disk_lab
     cleanup_host_disks(client, 'vol-disk-1')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_config_annotation_missing(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
@@ -2009,7 +2010,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
 
     # Case1: Disk update should work fine
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 1
+    assert len(node.disks) == 2
     update_disks = {}
     for name, disk in iter(node.disks.items()):
         disk.allowScheduling = False
@@ -2019,7 +2020,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     update_node_disks(client, node.name, disks=update_disks, retry=True)
     node = wait_for_disk_status(client, node_name, name,
                                 "storageReserved", 0)
-    assert len(node.disks) == 1
+    assert len(node.disks) == 2
     assert disk.allowScheduling is False
     assert disk.storageReserved == 0
     assert set(disk.tags) == {"original"}
