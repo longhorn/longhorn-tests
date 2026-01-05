@@ -27,15 +27,16 @@ Delete sharemanager pod of deployment ${deployment_id} and wait for recreation
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
     delete_sharemanager_pod_and_wait_for_recreation    ${volume_name}
 
-Wait for sharemanager pod of deployment ${deployment_id} restart
+Wait for sharemanager pod of deployment ${deployment_id} restart after ${creation_time}
     ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
-    wait_for_sharemanager_pod_restart    ${volume_name}
+    wait_for_sharemanager_pod_restart    ${volume_name}    ${creation_time}
 
 Wait for sharemanager pod of deployment ${deployment_id} running
     ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
-    wait_for_share_manager_pod_running    ${volume_name}
+    ${creation_time} =    wait_for_share_manager_pod_running    ${volume_name}
+    [Return]    ${creation_time}
 
 Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_id} is ${size}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
