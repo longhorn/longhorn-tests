@@ -29,7 +29,7 @@ from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import DEFAULT_POD_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import cleanup_volume, create_and_check_volume, create_backup
-from common import cleanup_volume_by_name, delete_disks_on_node
+from common import cleanup_volume_by_name, cleanup_selected_disks_on_node
 from common import DEFAULT_VOLUME_SIZE
 from common import Gi, Mi, Ki
 from common import wait_for_volume_detached
@@ -3819,6 +3819,7 @@ def test_multiple_volumes_creation_with_degraded_availability(set_random_backups
                                        retry_counts=retry_counts)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_allow_volume_creation_with_degraded_availability_restore(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (Restore)
@@ -3942,6 +3943,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     assert src_md5sum == dst_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (Restore)
@@ -5162,8 +5164,7 @@ def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
     extra_disk_path = create_host_disk(client, disk_volname,
-                                       str(7 * Gi), lht_hostId,
-                                       DATA_ENGINE)
+                                       str(7 * Gi), lht_hostId)
 
     disk_type = "filesystem"
     if DATA_ENGINE == "v2":
@@ -5252,7 +5253,8 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
         client.delete(volume)
         wait_for_volume_delete(client, volume_name)
 
-        delete_disks_on_node(client, get_self_host_id(), "extra-disk")
+        cleanup_selected_disks_on_node(client, get_self_host_id(),
+                                       "extra-disk")
         # Wait for the disk to be fully deleted in the spdk_tgt
         time.sleep(30)
         cleanup_volume_by_name(client, "vol-disk")
@@ -5320,7 +5322,8 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
         client.delete(volume)
         wait_for_volume_delete(client, volume_name)
 
-        delete_disks_on_node(client, get_self_host_id(), "extra-disk")
+        cleanup_selected_disks_on_node(client, get_self_host_id(),
+                                       "extra-disk")
         # Wait for the disk to be fully deleted in the spdk_tgt
         time.sleep(30)
         cleanup_volume_by_name(client, "vol-disk")
