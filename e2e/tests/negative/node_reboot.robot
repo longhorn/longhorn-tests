@@ -30,6 +30,7 @@ Shutdown Volume Node And Test Auto Reattach To A New Node
 
     And Create deployment 0 with persistentvolumeclaim 0
     And Create deployment 1 with persistentvolumeclaim 1
+    ${creation_time}=    Wait for sharemanager pod of deployment 1 running
 
     And Wait for volume of deployment 0 healthy
     And Wait for volume of deployment 1 healthy
@@ -40,7 +41,7 @@ Shutdown Volume Node And Test Auto Reattach To A New Node
     When Power off volume node of deployment 0 without waiting
     And Power off volume node of deployment 1 without waiting
 
-    Then Wait for sharemanager pod of deployment 1 restart
+    Then Wait for sharemanager pod of deployment 1 restart after ${creation_time}
     And Wait for sharemanager pod of deployment 1 running
 
     And Wait for volume of deployment 0 attached and degraded
