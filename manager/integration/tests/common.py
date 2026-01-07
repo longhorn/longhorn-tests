@@ -5075,7 +5075,7 @@ def wait_for_rebuild_start(client, volume_name,
             break
         time.sleep(retry_interval)
     assert started
-    return status.fromReplica, status.replica
+    return status.fromReplicaList, status.replica
 
 
 def wait_for_restoration_start(client, name):
