@@ -2,7 +2,10 @@
 
 set -e
 
-sudo systemctl restart guestregister # Sometimes registration fails on first boot.
+# Sometimes, registration fails on the first boot, which causes the default repositories to be missing from zypper,
+# preventing it from installing any packages.
+# In some cases, even manually executing systemctl restart guestregister can fail.
+sudo systemctl restart guestregister || true
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client cryptsetup device-mapper samba iptables
