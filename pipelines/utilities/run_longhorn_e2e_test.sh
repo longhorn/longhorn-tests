@@ -134,17 +134,7 @@ run_longhorn_test(){
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
-  local RETRY_COUNTS=60
-  local RETRIES=0
-  # wait longhorn tests pod to start running
-  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>/dev/null`" ]] &&
-    [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`" ]]; do
-    echo "waiting longhorn test pod to be in running state ... rechecking in 10s"
-    sleep 10s
-    RETRIES=$((RETRIES+1))
-
-    if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn test pod start timeout"; exit 1 ; fi
-  done
+  kubectl wait --for=condition=Ready pod/longhorn-test --timeout=10m
 
   if [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
     # share terraform state between jenkins job container and test pod
