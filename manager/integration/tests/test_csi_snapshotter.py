@@ -1538,7 +1538,6 @@ def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
     request.addfinalizer(finalizer)
 
 
-@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.parametrize("bi_url, bi_checksum", [(BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_QCOW2_CHECKSUM), (BACKING_IMAGE_RAW_URL, BACKING_IMAGE_RAW_CHECKSUM)]) # NOQA
 def test_csi_volumesnapshot_restore_pre_provision_backing_image(bi_url, # NOQA
                                                                 bi_checksum, # NOQA
