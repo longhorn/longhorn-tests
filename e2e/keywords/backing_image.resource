@@ -3,6 +3,8 @@ Documentation    Backing Image Keywords
 
 Library    ../libs/keywords/backing_image_keywords.py
 Library    ../libs/keywords/node_keywords.py
+Library    Collections
+Library    OperatingSystem
 
 *** Keywords ***
 Create backing image ${backing_image_name} with
@@ -74,3 +76,28 @@ Verify backing image manager log on node ${node_id} contain ${expect_log} after 
     ${pod_name} =    get_backing_image_manager_pod_on_node    ${node_name}
     Log    ${pod_name}
     verify_pod_log_after_time_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+
+Wait for backing image manager on node ${node_id} unknown
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_backing_image_manager_on_node_unknown    ${node_name}
+
+Wait for backing image manager on node ${node_id} terminated
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_backing_image_manager_on_node_terminated    ${node_name}
+
+Backing image ${bi_name} should not have the removed disk in its DiskFileSpecMap
+    # ${recorded_disk_uuid} come from `Record node ${node_id} default disk uuid` in node.resource
+    ${disk_uuids} =    get_backing_image_disk_uuids    ${bi_name}
+    List Should Not Contain Value    ${disk_uuids}    ${recorded_disk_uuid}
+Download backing image ${backing_image_name}
+    ${download_bi_checksum} =    download_backing_image    ${backing_image_name}
+    Set Test Variable    ${download_bi_checksum}
+
+Check downloaded backing image ${backing_image_name} data matches volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${sha512_checksum} =    get_volume_sha512sum    ${volume_name}
+    Should Be Equal    ${download_bi_checksum}    ${sha512_checksum}
+
+Check downloaded backing image ${backing_image_name} data matches source backingimage
+    ${bi_checksum} =  get_backing_image_checksum    ${backing_image_name}
+    Should Be Equal    ${download_bi_checksum}    ${bi_checksum}

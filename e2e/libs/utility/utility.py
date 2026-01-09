@@ -333,6 +333,34 @@ def get_mgr_ips():
     return mgr_ips
 
 
+def get_longhorn_base_url():
+    # get base url of longhorn api
+    retry_count, retry_interval = get_retry_count_and_interval()
+    if os.getenv('LONGHORN_CLIENT_URL'):
+        # for develop or debug
+        # manually expose longhorn client
+        # to access longhorn manager in local environment
+        longhorn_client_url = os.getenv('LONGHORN_CLIENT_URL')
+        return longhorn_client_url
+    else:
+        # for ci, run test in in-cluster environment
+        # directly use longhorn manager cluster ip
+        for i in range(retry_count):
+            try:
+                config.load_incluster_config()
+                ips = get_mgr_ips()
+                # check if longhorn manager port is open before calling get_client
+                for ip in ips:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    mgr_port_open = sock.connect_ex((ip, 9500))
+                    if mgr_port_open == 0:
+                        longhorn_client_url = f"http://{ip}:9500"
+                        return longhorn_client_url
+            except Exception as e:
+                logging(f"Getting longhorn client base url error: {e}, retry ({i}) ...")
+                time.sleep(retry_interval)
+
+
 def get_longhorn_client():
     retry_count, retry_interval = get_retry_count_and_interval()
     if os.getenv('LONGHORN_CLIENT_URL'):

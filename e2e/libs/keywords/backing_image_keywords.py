@@ -6,8 +6,8 @@ class backing_image_keywords:
     def __init__(self):
         self.backing_image = BackingImage()
 
-    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True):
-        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation)
+    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True, parameters=None):
+        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
 
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)
@@ -80,3 +80,18 @@ class backing_image_keywords:
 
     def get_backing_image_manager_pod_on_node(self, node_name):
         return self.backing_image.get_backing_image_manager_pod_on_node(node_name)
+
+    def wait_for_backing_image_manager_on_node_unknown(self, node_name):
+        return self.backing_image.wait_for_backing_image_manager_on_node_unknown(node_name)
+
+    def wait_for_backing_image_manager_on_node_terminated(self, node_name):
+        return self.backing_image.wait_for_backing_image_manager_on_node_terminated(node_name)
+
+    def get_backing_image_disk_uuids(self, bi_name):
+        return self.backing_image.get_backing_image_disk_uuids(bi_name)
+
+    def download_backing_image(self, bi_name):
+        return self.backing_image.download_backing_image(bi_name)
+
+    def get_backing_image_checksum(self, bi_name):
+        return self.backing_image.get_backing_image_checksum(bi_name)
