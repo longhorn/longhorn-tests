@@ -2076,8 +2076,7 @@ checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b9
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-@pytest.mark.parametrize(&#34;bi_url, bi_checksum&#34;, [(BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_QCOW2_CHECKSUM), (BACKING_IMAGE_RAW_URL, BACKING_IMAGE_RAW_CHECKSUM)]) # NOQA
+<pre><code class="python">@pytest.mark.parametrize(&#34;bi_url, bi_checksum&#34;, [(BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_QCOW2_CHECKSUM), (BACKING_IMAGE_RAW_URL, BACKING_IMAGE_RAW_CHECKSUM)]) # NOQA
 def test_csi_volumesnapshot_restore_pre_provision_backing_image(bi_url, # NOQA
                                                                 bi_checksum, # NOQA
                                                                 client, # NOQA

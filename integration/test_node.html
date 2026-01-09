@@ -1667,7 +1667,8 @@ up.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.node  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test   # NOQA
+@pytest.mark.node  # NOQA
 def test_node_config_annotation_missing(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     &#34;&#34;&#34;
     Test node labeled for configuration but no annotation
@@ -1698,7 +1699,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
 
     # Case1: Disk update should work fine
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 1
+    assert len(node.disks) == 2
     update_disks = {}
     for name, disk in iter(node.disks.items()):
         disk.allowScheduling = False
@@ -1708,7 +1709,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     update_node_disks(client, node.name, disks=update_disks, retry=True)
     node = wait_for_disk_status(client, node_name, name,
                                 &#34;storageReserved&#34;, 0)
-    assert len(node.disks) == 1
+    assert len(node.disks) == 2
     assert disk.allowScheduling is False
     assert disk.storageReserved == 0
     assert set(disk.tags) == {&#34;original&#34;}
