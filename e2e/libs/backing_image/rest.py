@@ -13,14 +13,16 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies):
+    def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters):
         logging(f"Creating backing image {name}")
+
+        if parameters is None:
+            parameters = {"url": url} if url else {}
+
         get_longhorn_client().create_backing_image(
             name=name,
             sourceType=sourceType,
-            parameters={
-                "url": url
-            },
+            parameters=parameters,
             expectedChecksum=expectedChecksum,
             minNumberOfCopies=minNumberOfCopies,
             dataEngine=dataEngine
@@ -44,7 +46,11 @@ class Rest(Base):
         if expectedChecksum:
             assert bi.currentChecksum == expectedChecksum, f"expect backing image currentChecksum {bi.currentChecksum} equal to expected checksum {expectedChecksum}"
         assert bi.sourceType == sourceType, f"expect backing image sourceType is {sourceType}, but it's {bi.sourceType}"
-        assert bi.parameters["url"] == url, f"expect backing image url is {url}, but it's {bi.parameters['url']}"
+        if sourceType == self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD:
+            assert bi.parameters["url"] == url, f"expect backing image url is {url}, but it's {bi.parameters['url']}"
+        if sourceType == self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME:
+            assert bi.parameters["volume-name"] == parameters["volume-name"], f"expect backing image volume-name is {parameters["volume-name"]}, but it's {bi.parameters['volume-name']}"
+            assert bi.parameters["export-type"] == parameters["export-type"], f"expect backing image volume-name is {parameters["export-type"]}, but it's {bi.parameters['export-type']}"
         assert not bi.deletionTimestamp, f"expect backing image deletionTimestamp is empty, but it's {bi.deletionTimestamp}"
 
         return bi

@@ -164,6 +164,9 @@ class Volume(Base):
     def get_checksum(self, volume_name):
         return self.volume.get_checksum(volume_name)
 
+    def get_sha512sum(self, volume_name):
+        return self.volume.get_sha512sum(volume_name)
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 

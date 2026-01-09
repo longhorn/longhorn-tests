@@ -616,6 +616,14 @@ class CRD(Base):
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 
+    def get_sha512sum(self, volume_name):
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        endpoint = self.get_endpoint(volume_name)
+        checksum = NodeExec(node_name).issue_cmd(
+            ["sh", "-c", f"sha512sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
+        logging(f"Calculated volume {volume_name} checksum {checksum}")
+        return checksum
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         replica_list = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",

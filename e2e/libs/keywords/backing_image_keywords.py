@@ -8,6 +8,8 @@ class backing_image_keywords:
 
     def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1):
         self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies)
+    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True, parameters=None):
+        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
 
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)
@@ -58,3 +60,31 @@ class backing_image_keywords:
     def get_backing_image_data_source_pod_count(self):
         response = self.backing_image.list_backing_image_data_source_pod()
         return len(response)
+
+    def wait_backing_image_data_source_pod_created(self, bi_name):
+        create_time = self.backing_image.wait_backing_image_data_source_pod_created(bi_name)
+        return create_time
+
+    def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
+        self.backing_image.wait_all_disk_file_status_are_at_state(bi_name, expected_state)
+
+    def check_disk_file_map_contain_specific_message(self, bi_name, expect_message):
+        self.backing_image.check_disk_file_map_contain_specific_message(bi_name, expect_message)
+
+    def get_backing_image_manager_pod_on_node(self, node_name):
+        return self.backing_image.get_backing_image_manager_pod_on_node(node_name)
+
+    def wait_for_backing_image_manager_on_node_unknown(self, node_name):
+        return self.backing_image.wait_for_backing_image_manager_on_node_unknown(node_name)
+
+    def wait_for_backing_image_manager_on_node_terminated(self, node_name):
+        return self.backing_image.wait_for_backing_image_manager_on_node_terminated(node_name)
+
+    def get_backing_image_disk_uuids(self, bi_name):
+        return self.backing_image.get_backing_image_disk_uuids(bi_name)
+
+    def download_backing_image(self, bi_name):
+        return self.backing_image.download_backing_image(bi_name)
+
+    def get_backing_image_checksum(self, bi_name):
+        return self.backing_image.get_backing_image_checksum(bi_name)
