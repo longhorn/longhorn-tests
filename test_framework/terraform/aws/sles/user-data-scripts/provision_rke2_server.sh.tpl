@@ -6,7 +6,11 @@ set -e
 # preventing it from installing any packages.
 # In some cases, even manually executing systemctl restart guestregister can fail.
 sudo systemctl restart guestregister || true
-sudo zypper ref
+if ! SUSEConnect --status 2>/dev/null | grep -q "Registered"; then
+  sudo systemctl enable guestregister.service || true
+  sudo registercloudguest --force-new || true
+fi
+sudo zypper --gpg-auto-import-keys ref
 sudo zypper install -y -t pattern devel_basis 
 sudo zypper install -y open-iscsi nfs-client jq iptables
 
