@@ -208,11 +208,7 @@ run_longhorn_upgrade_test(){
 
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
-  # wait upgrade test pod to start running
-  while [[ -n "`kubectl get pod ${LONGHORN_UPGRADE_TEST_POD_NAME} -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`"  ]]; do
-    echo "waiting upgrade test pod to be in running state ... rechecking in 10s"
-    sleep 10s
-  done
+  kubectl wait --for=condition=Ready pod/${LONGHORN_UPGRADE_TEST_POD_NAME} --timeout=10m
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     unset_kubectl_retry
