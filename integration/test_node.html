@@ -1697,9 +1697,14 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
         }
     })
 
+    if os.environ.get(&#39;RUN_V2_TEST&#39;) == &#34;true&#34;:
+        disk_count = 2
+    else:
+        disk_count = 1
+
     # Case1: Disk update should work fine
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 2
+    assert len(node.disks) == disk_count
     update_disks = {}
     for name, disk in iter(node.disks.items()):
         disk.allowScheduling = False
@@ -1709,7 +1714,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     update_node_disks(client, node.name, disks=update_disks, retry=True)
     node = wait_for_disk_status(client, node_name, name,
                                 &#34;storageReserved&#34;, 0)
-    assert len(node.disks) == 2
+    assert len(node.disks) == disk_count
     assert disk.allowScheduling is False
     assert disk.storageReserved == 0
     assert set(disk.tags) == {&#34;original&#34;}
