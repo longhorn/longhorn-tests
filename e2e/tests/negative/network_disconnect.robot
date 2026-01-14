@@ -15,8 +15,9 @@ Resource    ../keywords/setting.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
+*** Keywords ***
 Disconnect Volume Node Network While Workload Heavy Writing
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
@@ -33,6 +34,7 @@ Disconnect Volume Node Network While Workload Heavy Writing
     END
 
 Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload Heavy Writing
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
@@ -47,6 +49,19 @@ Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload
         Then Check statefulset 0 works
         And Check statefulset 1 works
     END
+
+*** Test Cases ***
+Disconnect Volume Node Network While Workload Heavy Writing With RWX Fast Failover Enabled
+    Disconnect Volume Node Network While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Disconnect Volume Node Network While Workload Heavy Writing With RWX Fast Failover Disabled
+    Disconnect Volume Node Network While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
+
+Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Enabled
+    Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Disabled
+    Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
 
 Node Disconnect And Keep Data Writing And No Replica On The Disconnected Node
     [Documentation]    -- Manual test plan --
