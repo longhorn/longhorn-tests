@@ -19,8 +19,9 @@ Resource    ../keywords/metrics.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
+*** Keywords ***
 Restart Cluster While Workload Heavy Writing
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
@@ -79,6 +80,13 @@ Restart Cluster While Workload Heavy Writing
         And Check statefulset 4 works
         And Check statefulset 5 works
     END
+
+*** Test Cases ***
+Restart Cluster While Workload Heavy Writing With RWX Fast Failover Enabled
+    Restart Cluster While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Restart Cluster While Workload Heavy Writing With RWX Fast Failover Disabled
+    Restart Cluster While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
 
 Check If Nodes Are Under Memory Pressure After Cluster Restart
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}

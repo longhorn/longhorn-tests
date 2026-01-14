@@ -19,32 +19,9 @@ Resource    ../keywords/node.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
-Test Drain RWX Volume Multiple Times
-    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12226
-    ...    1. Create a deployment with a RWX volume
-    ...    2. Write some data to the volume and get the md5sum
-    ...    3. Drain the volume node
-    ...    4. Wait for the volume being relocated to another node
-    ...    5. Uncordon the cordoned node
-    ...    6. Drain the volume node again
-    ...    7. Wait for the volume being relocated to the 3rd node
-    ...    8. Validate the volume content. The data is intact.
-    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Wait for volume of deployment 0 healthy
-    And Write 2048 MB data to file data.txt in deployment 0
-
-    When Drain volume of deployment 0 volume node
-    And Wait for volume of deployment 0 attached to another node and degraded
-    And Uncordon nodes
-
-    And Drain volume of deployment 0 volume node
-    And Wait for volume of deployment 0 attached to another node and degraded
-    Then Check deployment 0 data in file data.txt is intact
-
+*** Keywords ***
 Force Drain Volume Node While Replica Rebuilding
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -79,6 +56,7 @@ Force Drain Volume Node While Replica Rebuilding
     END
 
 Force Drain Replica Node While Replica Rebuilding
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -111,6 +89,43 @@ Force Drain Replica Node While Replica Rebuilding
         And Wait for deployment 1 pods stable
         And Check deployment 1 data in file data.txt is intact
     END
+
+*** Test Cases ***
+Test Drain RWX Volume Multiple Times
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12226
+    ...    1. Create a deployment with a RWX volume
+    ...    2. Write some data to the volume and get the md5sum
+    ...    3. Drain the volume node
+    ...    4. Wait for the volume being relocated to another node
+    ...    5. Uncordon the cordoned node
+    ...    6. Drain the volume node again
+    ...    7. Wait for the volume being relocated to the 3rd node
+    ...    8. Validate the volume content. The data is intact.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 2048 MB data to file data.txt in deployment 0
+
+    When Drain volume of deployment 0 volume node
+    And Wait for volume of deployment 0 attached to another node and degraded
+    And Uncordon nodes
+
+    And Drain volume of deployment 0 volume node
+    And Wait for volume of deployment 0 attached to another node and degraded
+    Then Check deployment 0 data in file data.txt is intact
+
+Force Drain Volume Node While Replica Rebuilding With RWX Fast Failover Enabled
+    Force Drain Volume Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=true
+
+Force Drain Volume Node While Replica Rebuilding With RWX Fast Failover Disabled
+    Force Drain Volume Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=false
+
+Force Drain Replica Node While Replica Rebuilding With RWX Fast Failover Enabled
+    Force Drain Replica Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=true
+
+Force Drain Replica Node While Replica Rebuilding With RWX Fast Failover Disabled
+    Force Drain Replica Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=false
 
 Drain Node With Force
     [Documentation]    Drain node with force
