@@ -12,6 +12,7 @@ from utility.utility import get_longhorn_base_url
 from time import sleep
 
 import os
+import subprocess
 
 class BackingImage(Base):
 
@@ -131,14 +132,42 @@ class BackingImage(Base):
     def get_backing_image_disk_uuids(self, bi_name):
         return self.backing_image.get_backing_image_disk_uuids(bi_name)
 
-    def download_backing_image(self, bi_name):
+    def download_backing_image(self, bi_name, is_async):
         longhorn_client_base_url = get_longhorn_base_url()
         cmd = f'curl -fL "{longhorn_client_base_url}/v1/backingimages/{bi_name}/download" | gunzip -c > /tmp/{bi_name}'
-        subprocess_exec_cmd(cmd)
-        cmd = f"sha512sum /tmp/{bi_name} | cut -d' ' -f1"
-        res = subprocess_exec_cmd(cmd)
-        return res.strip()
+
+        if is_async:
+            # using a .done file to check download complete and write sha512sum into this file
+            async_cmd = (
+                f'sh -c "curl -fL {longhorn_client_base_url}/v1/backingimages/{bi_name}/download | '
+                f'gunzip -c > /tmp/{bi_name} && '
+                f'sha512sum /tmp/{bi_name} | cut -d\' \' -f1 > /tmp/{bi_name}.done" & echo $!'
+            )
+            proc = subprocess.Popen(async_cmd, shell=True)
+            logging(f"Async download started. PID: {proc.pid}")
+            return f"PID:{proc.pid}"
+        else:
+            subprocess_exec_cmd(cmd)
+            cmd = f"sha512sum /tmp/{bi_name} | cut -d' ' -f1"
+            res = subprocess_exec_cmd(cmd)
+            return res.strip()
 
     def get_backing_image_checksum(self, bi_name):
         bi = self.backing_image.get(bi_name)
         return bi.currentChecksum
+
+    def wait_for_async_download_complete(self, bi_name):
+        done_file = f"/tmp/{bi_name}.done"
+        logging(f"Waiting for async download to complete: /tmp/{bi_name}")
+
+        for i in range(self.retry_count):
+            if os.path.exists(done_file):
+                with open(done_file, "r") as f:
+                    checksum = f.read().strip()
+
+                if checksum:
+                    logging(f"Async download finished. sha512={checksum}")
+                    return checksum
+
+            sleep(self.retry_interval)
+        assert False, "Download backing image {bi_name} timeout"
