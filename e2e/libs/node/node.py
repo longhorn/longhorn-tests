@@ -291,6 +291,14 @@ class Node:
         """
         subprocess_exec_cmd(exec_cmd)
 
+    def delete_node(self, node_name):
+        logging(f"Deleting longhorn node CR: {node_name}")
+        exec_cmd = [
+            "kubectl", "delete", "nodes.longhorn.io", node_name,
+            "-n", constant.LONGHORN_NAMESPACE
+        ]
+        return subprocess_exec_cmd(exec_cmd)
+
     def unevict_node(self, node_name):
         logging(f"Unevicting node {node_name}")
         exec_cmd = f"""
@@ -428,6 +436,43 @@ class Node:
                         return
             time.sleep(self.retry_interval)
         assert False, f"Waiting for node {node_name} down failed: {node}"
+
+    def wait_for_longhorn_node_down(self, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for longhorn node {node_name} down ... ({i})")
+            try:
+                node = get_longhorn_client().by_id_node(node_name)
+            except Exception as e:
+                logging(f"Get node {node_name} failed (will retry): {e}")
+                time.sleep(self.retry_interval)
+                continue
+
+            if not node:
+                return
+            else:
+                ready_condition = node.get("conditions", {}).get("Ready", {})
+
+                if ready_condition.get("status") == "False":
+                    logging(f"Node {node_name} is down (Ready: False)")
+                    return
+            time.sleep(self.retry_interval)
+
+        assert False, f"Waiting for node {node_name} down failed: {node}"
+
+    def wait_for_longhorn_node_up(self, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for longhorn node {node_name} up ... ({i})")
+            node = get_longhorn_client().by_id_node(node_name)
+
+            if node:
+                ready_condition = node.get("conditions", {}).get("Ready", {})
+                if ready_condition.get("status") == "True":
+                    logging(f"Node {node_name} is up and ready (Ready: True)")
+                    return
+
+            time.sleep(self.retry_interval)
+
+        assert False, f"Waiting for node {node_name} up failed. Last state: {node}"
 
     def wait_for_node_up(self, node_name):
         up = False

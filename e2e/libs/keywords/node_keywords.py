@@ -153,3 +153,9 @@ class node_keywords:
 
     def get_default_disk_uuid_on_node(self, node_name):
         return self.node.get_default_disk_uuid_on_node(node_name)
+
+    def wait_for_longhorn_node_down(self, node_name):
+        self.node.wait_for_longhorn_node_down(node_name)
+
+    def wait_for_longhorn_node_up(self, node_name):
+        self.node.wait_for_longhorn_node_up(node_name)
