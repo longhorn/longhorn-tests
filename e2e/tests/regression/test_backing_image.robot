@@ -12,13 +12,14 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Test Backing Image Basic Operation
-    [Tags]    coretest    backing image
+    [Tags]    coretest
     [Documentation]    Test Backing Image APIs.
     Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     When Create volume 0 with    backingImage=bi
@@ -36,7 +37,7 @@ Test Backing Image Basic Operation
     And Delete backing image bi
 
 Test Uninstall When Backing Image Exists
-    [Tags]    uninstall    backing image
+    [Tags]    uninstall
     [Documentation]    Validates the uninstallation of Longhorn when backing
     ...                image exists.
     ...
@@ -75,7 +76,6 @@ Test Backing Image Download Timeout
     Skip
 
 Test Evict Two Replicas Volume With Backing Image
-    [Tags]    backing image
     [Documentation]    Validates that the Longhorn manager does not restart when evicting a replica
     ...                of a volume created from a backing image
     ...
@@ -95,7 +95,6 @@ Test Evict Two Replicas Volume With Backing Image
     And Check longhorn manager pods not restarted after test start
 
 Test backing image handle node disk deleting events
-    [Tags]    backing image
     [Documentation]   Validates that the backing image manager and backing image disk files
     ...               are removed after a broken disk is removed from Longhorn node.
     ...
@@ -113,7 +112,6 @@ Test backing image handle node disk deleting events
     And Backing image bi should not have the removed disk in its DiskFileSpecMap
 
 Test backing image download to local
-    [Tags]    backing image
     [Documentation]    Validates backimage can download to local successfully
     ...
     ...    1. Create and attach a volume (recommended volume size > 1Gi).
@@ -138,3 +136,28 @@ Test backing image download to local
     And Wait for volume vol-1 healthy
     And Download backing image bi
     And Check downloaded backing image bi data matches source backingimage
+
+Test Node ID Change During Backing Image Creation
+    [Documentation]    Validate node ID of backing image data source node changed when new node added
+    ...    1. Delete longohorn node 0
+    ...    2. Download a large backing image
+    ...    3. While download in progress, add node 0 back
+    ...    4. The download complete.
+    ...    5. No error log "but the pod became not ready" in longhorn manager log
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/4887
+    When Get test start time
+    And Disable node 0 scheduling
+    And Evict node 0
+    And Delete Longhorn node 0
+
+    When Create backing image bi-large with    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    minNumberOfCopies=1
+    And Download backing image bi-large    is_async=${True}
+    Then Add Longhorn node 0 back
+    And Wait for Longhorn node 0 up
+    And Enable node 0 scheduling
+    And Unevict evicted nodes
+
+    When Wait backimg image bi-large download complete
+    And Check backing image bi-large download file checksum matches
+    And Verify longhorn manager logs does not contain but the pod became not ready after test start

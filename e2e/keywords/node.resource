@@ -116,3 +116,7 @@ Record node ${node_id} default disk uuid
     ${node_name} =    get_node_by_index    ${node_id}
     ${recorded_disk_uuid} =    get_default_disk_uuid_on_node    ${node_name}
     Set Test Variable    ${recorded_disk_uuid}
+
+Wait for Longhorn node ${node_id} up
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_longhorn_node_up    ${node_name}
