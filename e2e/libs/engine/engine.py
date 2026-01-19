@@ -4,6 +4,9 @@ from engine.crd import CRD
 from strategy import LonghornOperationStrategy
 
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
+
+import time
 
 
 class Engine(Base):
@@ -11,6 +14,7 @@ class Engine(Base):
     _strategy = LonghornOperationStrategy.CRD
 
     def __init__(self):
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
         if self._strategy == LonghornOperationStrategy.CRD:
             self.engine = CRD()
 
@@ -25,8 +29,18 @@ class Engine(Base):
         return engines[0]
         
     def get_engine_instance_manager_name(self, volume_name):
-        engine = self.get_engine(volume_name)
-        return engine['status']['instanceManagerName']
+        for i in range(self.retry_count):
+            logging(f"Trying to get instance manager for volume {volume_name} ... ({i})")
+            try:
+                engine = self.get_engine(volume_name)
+                if engine['status']['instanceManagerName']:
+                    return engine['status']['instanceManagerName']
+                else:
+                    raise RuntimeError(f"Unexpected empty instanceManagerName: {engine['status']}")
+            except Exception as e:
+                logging(f"Getting instance manager for volume {volume_name} error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get instance manager for volume {volume_name}"
 
     # delete engines, if input parameters are empty then will delete all
     def delete_engine(self, volume_name="", node_name=""):

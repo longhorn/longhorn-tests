@@ -1,13 +1,16 @@
 from kubernetes import client
+import time
 
 from engine.base import Base
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 import utility.constant as constant
 
 
 class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def get_engines(self, volume_name, node_name=None):
         if not node_name:
@@ -62,9 +65,14 @@ class CRD(Base):
             f"Expected volume {volume_name} engine setting {setting_name} is {value}, but it's {str(engine['spec'][setting_name])}"
 
     def get_engine_name(self, volume_name):
-        logging(f"Getting volume {volume_name} engine name")
-        engines = self.get_engines(volume_name)
-        assert len(engines) == 1, f"Expect volume {volume_name} only has one engine, but there are {engines}"
+        for i in range(self.retry_count):
+            logging(f"Getting volume {volume_name} engine name ... ({i})")
+            engines = self.get_engines(volume_name)
+            if len(engines) == 1:
+                break
+            else:
+                logging(f"Expecting volume {volume_name} only has one engine, but there are {len(engines)}")
+            time.sleep(self.retry_interval)
         engine_name = engines[0]["metadata"]["name"]
         logging(f"Got volume {volume_name} engine name {engine_name}")
         return engine_name

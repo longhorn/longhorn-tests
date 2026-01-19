@@ -68,7 +68,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 5
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 360
+RETRY_COUNTS_LONG = 600
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
@@ -133,7 +133,7 @@ DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
-DEFAULT_DEPLOYMENT_TIMEOUT = 240
+DEFAULT_DEPLOYMENT_TIMEOUT = 360
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -1894,6 +1894,38 @@ def cleanup_disks_on_node(client, node_id, *disks):  # NOQA
         cleanup_host_disks(client, disk)
 
 
+def cleanup_selected_disks_on_node(client, node_id, *disks):  # NOQA
+    # Disable scheduling for the new disks on self node
+    node = client.by_id_node(node_id)
+    for name, disk in node.disks.items():
+        if name in disks:
+            disk.allowScheduling = False
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, node_id, len(update_disks))
+
+    # Remove disks on self node and enable scheduling for the available disks
+    available_disks = {}
+    for name, disk in iter(node.disks.items()):
+        if name not in disks:
+            disk.allowScheduling = True
+            available_disks[name] = disk
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=available_disks, retry=True)
+    wait_for_disk_update(client, node_id, len(available_disks))
+
+    node = client.by_id_node(node_id)
+
+    # Cleanup host disks
+    if DATA_ENGINE == "v1":
+        for disk in disks:
+            cleanup_host_disks(client, disk)
+
+
 def get_client(address_with_port):
     # Split IP and port
     if address_with_port.count(':') > 1:
@@ -2057,7 +2089,7 @@ def wait_for_volume_detached_unknown(client, name):
     return wait_for_volume_detached(client, name)
 
 
-def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
+def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
                            VOLUME_STATE_ATTACHED, retry_count)
@@ -5043,7 +5075,7 @@ def wait_for_rebuild_start(client, volume_name,
             break
         time.sleep(retry_interval)
     assert started
-    return status.fromReplica, status.replica
+    return status.fromReplicaList, status.replica
 
 
 def wait_for_restoration_start(client, name):
@@ -6433,8 +6465,10 @@ def create_host_disk(client, vol_name, size, node_id):
     volume = create_volume(client, vol_name, size, node_id, 1)
 
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
-    return disk_path
+    if DATA_ENGINE == "v1":
+        disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
+        return disk_path
+    return get_volume_endpoint(volume)
 
 
 def cleanup_host_disks(client, *args):

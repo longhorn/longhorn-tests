@@ -45,7 +45,7 @@ class sharemanager_keywords:
 
             except AssertionError as e:
                 logging(f"Waiting for sharemanager deleted: {e}, retry ({i}) ...")
-                time.sleep(retry_interval)
+            time.sleep(retry_interval)
 
         assert AssertionError, f"Failed to wait for all sharemanagers to be deleted"
 
@@ -68,14 +68,17 @@ class sharemanager_keywords:
 
         assert False, f"sharemanager pod {sharemanager_pod_name} not recreated"
 
-    def wait_for_sharemanager_pod_restart(self, name):
+    def wait_for_sharemanager_pod_restart(self, name, after=None):
         sharemanager_pod_name = "share-manager-" + name
         sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-        last_creation_time = sharemanager_pod.metadata.creation_timestamp
+        if after is not None:
+            last_creation_time = after
+        else:
+            last_creation_time = sharemanager_pod.metadata.creation_timestamp
 
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
-            logging(f"Waiting for sharemanager for volume {name} restart ... ({i})")
+            logging(f"Waiting for sharemanager {sharemanager_pod_name} for volume {name} restart ... ({i})")
             time.sleep(retry_interval)
             sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
             if sharemanager_pod == None:
@@ -92,9 +95,13 @@ class sharemanager_keywords:
         sharemanager_pod_name = "share-manager-" + name
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
-            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-            logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
-            if sharemanager_pod.status.phase == "Running":
-                return
+            try:
+                sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
+                logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
+                if sharemanager_pod.status.phase == "Running":
+                    return sharemanager_pod.metadata.creation_timestamp
+            except Exception as e:
+                logging(f"Waiting for sharemanager for volume {name} running error: {e}")
+            time.sleep(retry_interval)
 
         assert False, f"sharemanager pod {sharemanager_pod_name} not running"

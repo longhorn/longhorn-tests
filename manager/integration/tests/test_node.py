@@ -54,6 +54,7 @@ from common import prepare_host_disk, wait_for_volume_degraded
 from common import create_deployment_and_write_data
 from common import wait_scheduling_failure
 from common import DATA_ENGINE, BLOCK_DEV_PATH
+from common import cleanup_selected_disks_on_node
 
 from backupstore import set_random_backupstore # NOQA
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -159,6 +160,7 @@ def get_default_disk_path():
     return default_disk_path
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_update_node(client):  # NOQA
@@ -226,10 +228,20 @@ def test_node_disk_update(client):  # NOQA
     disks = node.disks
     disk_path1 = create_host_disk(client, 'vol-disk-1',
                                   str(Gi), lht_hostId)
-    disk1 = {"path": disk_path1, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        disk1 = {"path": disk_path1, "allowScheduling": True}
+    else:
+        disk1 = {"path": disk_path1,
+                 "allowScheduling": True,
+                 "diskType": "block"}
     disk_path2 = create_host_disk(client, 'vol-disk-2',
                                   str(Gi), lht_hostId)
-    disk2 = {"path": disk_path2, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        disk2 = {"path": disk_path2, "allowScheduling": True}
+    else:
+        disk2 = {"path": disk_path2,
+                 "allowScheduling": True,
+                 "diskType": "block"}
 
     update_disk = get_update_disks(disks)
     # add new disk for node
@@ -261,8 +273,10 @@ def test_node_disk_update(client):  # NOQA
                                  "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId, name,
                                  "storageReserved", SMALL_DISK_SIZE)
-            wait_for_disk_storage_available(client, lht_hostId, name,
-                                            disk_path1)
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == "v1":
+                wait_for_disk_storage_available(client, lht_hostId, name,
+                                                disk_path1)
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -271,16 +285,20 @@ def test_node_disk_update(client):  # NOQA
             assert not disk.allowScheduling
             assert disk.storageReserved == SMALL_DISK_SIZE
             assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path1)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == "v1":
+                free, total = common.get_host_disk_size(disk_path1)
+                assert disk.storageMaximum == total
+                assert disk.storageAvailable == free
         elif disk.path == disk_path2:
             assert not disk.allowScheduling
             assert disk.storageReserved == SMALL_DISK_SIZE
             assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path2)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+            # TODO: support v2 disk storageAvailable check
+            if DATA_ENGINE == "v1":
+                free, total = common.get_host_disk_size(disk_path2)
+                assert disk.storageMaximum == total
+                assert disk.storageAvailable == free
 
     # delete other disks, just remain default disk
     update_disk = get_update_disks(disks)
@@ -293,7 +311,8 @@ def test_node_disk_update(client):  # NOQA
                                 len(remain_disk))
     assert len(node.disks) == len(remain_disk)
     # cleanup disks
-    cleanup_host_disks(client, 'vol-disk-1', 'vol-disk-2')
+    cleanup_selected_disks_on_node(client, lht_hostId,
+                                   'vol-disk-1', 'vol-disk-2')
 
 
 @pytest.mark.v2_volume_test   # NOQA
@@ -427,6 +446,7 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
@@ -443,7 +463,12 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, "vol-small",
                                        SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        small_disk = {"path": small_disk_path, "allowScheduling": True}
+    else:
+        small_disk = {"path": small_disk_path,
+                      "allowScheduling": True,
+                      "diskType": "block"}
     update_disks = get_update_disks(node.disks)
     update_disks["small-disks"] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -503,7 +528,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     disks.pop(unexpected_disk["fsid"])
     update_disks = get_update_disks(disks)
     update_node_disks(client, node.name, disks=update_disks, retry=True)
-    cleanup_host_disks(client, 'vol-small')
+    cleanup_selected_disks_on_node(client, lht_hostId, "vol-small")
 
 
 @pytest.mark.v2_volume_test   # NOQA
@@ -917,7 +942,6 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
-@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk  # NOQA
@@ -1499,6 +1523,7 @@ def test_replica_datapath_cleanup(client):  # NOQA
     cleanup_host_disks(client, 'extra-disk')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  reset_disk_settings):  # NOQA
     """
@@ -1559,9 +1584,15 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 
     # Check each case.
     node = client.by_id_node(cases["disk_exists"])
-    assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path == \
-        DEFAULT_DISK_PATH
+    if DATA_ENGINE == "v1":
+        assert len(node.disks) == 1
+        assert node.disks[list(node.disks)[0]].path == \
+            DEFAULT_DISK_PATH
+    else:
+        assert len(node.disks) == 2
+        disk_paths = [disk.path for disk in node.disks.values()]
+        assert DEFAULT_DISK_PATH in disk_paths
+        assert BLOCK_DEV_PATH in disk_paths
 
     node = client.by_id_node(cases["labeled"])
     assert len(node.disks) == 1
@@ -1578,6 +1609,7 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     assert len(node.disks) == 0
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_config_annotation(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
@@ -1946,6 +1978,7 @@ def test_node_config_annotation_invalid(client, core_api, reset_default_disk_lab
     cleanup_host_disks(client, 'vol-disk-1')
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_config_annotation_missing(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
@@ -1975,9 +2008,14 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
         }
     })
 
+    if os.environ.get('RUN_V2_TEST') == "true":
+        disk_count = 2
+    else:
+        disk_count = 1
+
     # Case1: Disk update should work fine
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 1
+    assert len(node.disks) == disk_count
     update_disks = {}
     for name, disk in iter(node.disks.items()):
         disk.allowScheduling = False
@@ -1987,7 +2025,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     update_node_disks(client, node.name, disks=update_disks, retry=True)
     node = wait_for_disk_status(client, node_name, name,
                                 "storageReserved", 0)
-    assert len(node.disks) == 1
+    assert len(node.disks) == disk_count
     assert disk.allowScheduling is False
     assert disk.storageReserved == 0
     assert set(disk.tags) == {"original"}
@@ -2035,6 +2073,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     wait_for_node_tag_update(client, node_name, ["tag3"])
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, client):  # NOQA
     """
@@ -2063,7 +2102,12 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, "vol-small",
                                        SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": False}
+    if DATA_ENGINE == "v1":
+        small_disk = {"path": small_disk_path, "allowScheduling": False}
+    else:
+        small_disk = {"path": small_disk_path,
+                      "allowScheduling": False,
+                      "diskType": "block"}
     update_disks = get_update_disks(node.disks)
     update_disks["small-disk"] = small_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -2160,7 +2204,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
 
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
-    cleanup_host_disks(client, 'vol-small')
+    cleanup_selected_disks_on_node(client, lht_hostId, "vol-small")
 
 
 @pytest.mark.node  # NOQA

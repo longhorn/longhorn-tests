@@ -21,43 +21,9 @@ Resource    ../keywords/secret.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
-Shutdown Volume Node And Test Auto Reattach To A New Node
-    Given Setting node-down-pod-deletion-policy is set to delete-both-statefulset-and-deployment-pod
-    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
-
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-
-    And Write 100 MB data to file data.bin in deployment 0
-    And Write 100 MB data to file data.bin in deployment 1
-
-    When Power off volume node of deployment 0 without waiting
-    And Power off volume node of deployment 1 without waiting
-
-    Then Wait for sharemanager pod of deployment 1 restart
-    And Wait for sharemanager pod of deployment 1 running
-
-    And Wait for volume of deployment 0 attached and degraded
-    And Wait for volume of deployment 1 attached and degraded
-
-    And Wait for workloads pods stable
-        ...    deployment 0    deployment 1
-
-    And Check deployment 0 data in file data.bin is intact
-    And Check deployment 1 data in file data.bin is intact
-    And Check deployment 0 works
-    And Check deployment 1 works
-
-    And Power on off nodes
-
+*** Keywords ***
 Reboot Node One By One While Workload Heavy Writing
-    [Tags]    reboot
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -98,7 +64,7 @@ Reboot Node One By One While Workload Heavy Writing
     END
 
 Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing
-    [Tags]    reboot
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -139,7 +105,7 @@ Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heav
     END
 
 Reboot All Worker Nodes While Workload Heavy Writing
-    [Tags]    reboot
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -178,7 +144,7 @@ Reboot All Worker Nodes While Workload Heavy Writing
     END
 
 Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing
-    [Tags]    reboot
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -217,7 +183,7 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot Volume Node While Workload Heavy Writing
-    [Tags]    reboot
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
@@ -237,7 +203,7 @@ Reboot Volume Node While Workload Heavy Writing
     END
 
 Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing
-    [Tags]    reboot
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
@@ -255,6 +221,78 @@ Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Wr
         And Wait for statefulset 1 pods stable
         Then Check statefulset 1 works
     END
+
+*** Test Cases ***
+Shutdown Volume Node And Test Auto Reattach To A New Node
+    Given Setting node-down-pod-deletion-policy is set to delete-both-statefulset-and-deployment-pod
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Create deployment 1 with persistentvolumeclaim 1
+    ${creation_time}=    Wait for sharemanager pod of deployment 1 running
+
+    And Wait for volume of deployment 0 healthy
+    And Wait for volume of deployment 1 healthy
+
+    And Write 100 MB data to file data.bin in deployment 0
+    And Write 100 MB data to file data.bin in deployment 1
+
+    When Power off volume node of deployment 0 without waiting
+    And Power off volume node of deployment 1 without waiting
+
+    Then Wait for sharemanager pod of deployment 1 restart after ${creation_time}
+    And Wait for sharemanager pod of deployment 1 running
+
+    And Wait for volume of deployment 0 attached and degraded
+    And Wait for volume of deployment 1 attached and degraded
+
+    And Wait for workloads pods stable
+        ...    deployment 0    deployment 1
+
+    And Check deployment 0 data in file data.bin is intact
+    And Check deployment 1 data in file data.bin is intact
+    And Check deployment 0 works
+    And Check deployment 1 works
+
+    And Power on off nodes
+
+Reboot Node One By One While Workload Heavy Writing With RWX Fast Failover Enabled
+    Reboot Node One By One While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Reboot Node One By One While Workload Heavy Writing With RWX Fast Failover Disabled
+    Reboot Node One By One While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
+
+Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Enabled
+    Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Disabled
+    Power Off Node One By One For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
+
+Reboot All Worker Nodes While Workload Heavy Writing With RWX Fast Failover Enabled
+    Reboot All Worker Nodes While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Reboot All Worker Nodes While Workload Heavy Writing With RWX Fast Failover Disabled
+    Reboot All Worker Nodes While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
+
+Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Enabled
+    Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Disabled
+    Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
+
+Reboot Volume Node While Workload Heavy Writing With RWX Fast Failover Enabled
+    Reboot Volume Node While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Reboot Volume Node While Workload Heavy Writing With RWX Fast Failover Disabled
+    Reboot Volume Node While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
+
+Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Enabled
+    Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=true
+
+Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing With RWX Fast Failover Disabled
+    Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing    RWX_VOLUME_FAST_FAILOVER=false
 
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
     [Tags]    recurring-job

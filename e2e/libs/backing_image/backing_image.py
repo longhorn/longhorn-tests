@@ -7,7 +7,11 @@ from utility.utility import list_namespaced_pod
 from utility.utility import get_retry_count_and_interval
 import utility.constant as constant
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
+from utility.utility import get_longhorn_base_url
 from time import sleep
+
+import os
 
 class BackingImage(Base):
 
@@ -18,9 +22,9 @@ class BackingImage(Base):
         if self._strategy == LonghornOperationStrategy.REST:
             self.backing_image = Rest()
 
-    def create(self, name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation):
+    def create(self, name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters):
         sourceType = self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD if url else self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
-        return self.backing_image.create(name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation)
+        return self.backing_image.create(name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
 
     def get(self, bi_name):
         return self.backing_image.get(bi_name)
@@ -126,3 +130,15 @@ class BackingImage(Base):
 
     def get_backing_image_disk_uuids(self, bi_name):
         return self.backing_image.get_backing_image_disk_uuids(bi_name)
+
+    def download_backing_image(self, bi_name):
+        longhorn_client_base_url = get_longhorn_base_url()
+        cmd = f'curl -fL "{longhorn_client_base_url}/v1/backingimages/{bi_name}/download" | gunzip -c > /tmp/{bi_name}'
+        subprocess_exec_cmd(cmd)
+        cmd = f"sha512sum /tmp/{bi_name} | cut -d' ' -f1"
+        res = subprocess_exec_cmd(cmd)
+        return res.strip()
+
+    def get_backing_image_checksum(self, bi_name):
+        bi = self.backing_image.get(bi_name)
+        return bi.currentChecksum

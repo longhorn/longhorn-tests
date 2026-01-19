@@ -30,6 +30,7 @@ class Vagrant(Base):
 
         super().__init__(mapping=node_mapping)
         self._bin = cmd_bin
+        self._vagrant_cwd = os.getenv('VAGRANT_CWD')
 
         self.snapshot_ids = []
 
@@ -84,5 +85,5 @@ class Vagrant(Base):
             logging(f"Deleted vm snapshot {snapshot_id}")
 
     def _vagrant_cmd(self, *args, **kwargs):
-        res = subprocess.check_call([self._bin]+list(args), **kwargs)
+        res = subprocess.check_call([self._bin]+list(args), cwd=self._vagrant_cwd, **kwargs)
         logging(f"Executed {[self._bin]+list(args)} with result {res}")
