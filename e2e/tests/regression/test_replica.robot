@@ -52,10 +52,10 @@ Test Offline Replica Rebuilding
     [Documentation]    Test offline replica rebuilding for a volume.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/8443
-    Given Create volume 0 with    size=6Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
-    And Write 5 GB data to volume 0
+    And Write 3 GB data to volume 0
     And Detach volume 0
     And Wait for volume 0 detached
 
@@ -67,11 +67,11 @@ Test Offline Replica Rebuilding
     And Ignore volume 0 offline replica rebuilding
 
     When Delete volume 0 replica on node 0
-    Then Setting offline-replica-rebuilding is set to {"v1":"true","v2":"true"}
+    Then Setting offline-replica-rebuilding is set to true
     And Wait until volume 0 replica rebuilding started on node 0
     And Wait for volume 0 detached
     And Volume 0 should have 3 replicas when detached
-    And Setting offline-replica-rebuilding is set to {"v1":"false","v2":"false"}
+    And Setting offline-replica-rebuilding is set to false
 
 Test Preempt Offline Replica Rebuilding By A Workload
     [Tags]    coretest    offline-rebuilding
