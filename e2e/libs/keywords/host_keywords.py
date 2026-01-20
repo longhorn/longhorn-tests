@@ -72,3 +72,6 @@ class host_keywords:
 
     def execute_command_on_node(self, cmd, node_name):
         NodeExec(node_name).issue_cmd(cmd)
+
+    def get_host_log_files(self, node_name, log_path):
+        return self.host.get_host_log_files(node_name, log_path)
