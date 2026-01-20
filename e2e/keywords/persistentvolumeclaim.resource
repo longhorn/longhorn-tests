@@ -64,3 +64,12 @@ Assert persistentvolumeclaim ${claim_id} is using storageclass ${storageclass_na
    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
    ${current_storageclass} =    get_pvc_storageclass_name    ${claim_name}
    Should Be Equal    ${current_storageclass}    ${storageclass_name}
+
+Expand persistentvolumeclaim ${claim_id} size to ${size}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    expand_persistentvolumeclaim_size_to    ${claim_name}    ${size}
+
+Wait for volume of persistentvolumeclaim ${claim_id} size to be ${size}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_expand_to_size    ${volume_name}    ${size}

@@ -121,6 +121,7 @@ class PersistentVolumeClaim():
     def expand(self, claim_name, size_in_byte, skip_retry=False):
         expanded_size = self.claim.expand(claim_name, size_in_byte, skip_retry=skip_retry)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
+        return expanded_size
 
     def expand_with_additional_bytes(self, claim_name, size_in_byte, skip_retry=False):
         pvc = self.claim.get(claim_name)

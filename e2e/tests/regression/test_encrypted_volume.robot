@@ -48,7 +48,7 @@ Test Encrypted RWX Volume Basic
         RWX
 
 Test Encrypted RWO Volume Online Expansion
-    [Tags]    rwo
+    [Tags]    rwo    expansion
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
