@@ -1,6 +1,8 @@
 import yaml
+import os
 from abc import ABC, abstractmethod
 from node.node import Node
+from node_exec import NodeExec
 
 
 class Base(ABC):
@@ -40,3 +42,8 @@ class Base(ABC):
     @abstractmethod
     def cleanup_snapshots(self):
         return NotImplemented
+
+    def get_host_log_files(self, node_name, log_path):
+        cmd = f"ls -1 {log_path}"
+        out = NodeExec(node_name).issue_cmd(cmd)
+        return [line.strip() for line in out.strip().splitlines() if line.strip()]
