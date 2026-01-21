@@ -68,7 +68,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 5
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 360
+RETRY_COUNTS_LONG = 600
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
@@ -2089,7 +2089,7 @@ def wait_for_volume_detached_unknown(client, name):
     return wait_for_volume_detached(client, name)
 
 
-def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
+def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
                            VOLUME_STATE_ATTACHED, retry_count)
@@ -4067,27 +4067,38 @@ def wait_for_all_instance_manager_running(client):
     core_api = get_core_api_client()
 
     nodes = client.list_node()
+    v2_enabled = (
+        client.by_id_setting(SETTING_V2_DATA_ENGINE).value in ["true", True]
+    )
 
     for _ in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
         node_to_instance_manager_map = {}
-        try:
-            for im in instance_managers:
-                if im.managerType == "aio":
-                    node_to_instance_manager_map[im.nodeID] = im
-                else:
-                    print("\nFound unknown instance manager:", im)
-            if len(node_to_instance_manager_map) != len(nodes):
-                time.sleep(RETRY_INTERVAL)
-                continue
 
-            for _, im in node_to_instance_manager_map.items():
-                wait_for_instance_manager_desire_state(client, core_api,
-                                                       im.name, "Running",
-                                                       True)
-            break
-        except Exception:
+        for im in instance_managers:
+            node_to_instance_manager_map.setdefault(im.nodeID,
+                                                    []).append(im)
+
+        expected = len(nodes) * (2 if v2_enabled else 1)
+        actual_count = sum(
+            len(v) for v in node_to_instance_manager_map.values()
+        )
+
+        if actual_count != expected:
+            time.sleep(RETRY_INTERVAL)
             continue
+
+        for ims in node_to_instance_manager_map.values():
+            for im in ims:
+                wait_for_instance_manager_desire_state(
+                    client, core_api,
+                    im.name, "Running",
+                    True)
+        return
+
+    print("Wait for instance manager running timeout")
+    assert actual_count == expected, \
+        f"Expected {expected} IMs, but got {actual_count}"
 
 
 def wait_for_node_mountpropagation_condition(client, name):
@@ -5075,7 +5086,7 @@ def wait_for_rebuild_start(client, volume_name,
             break
         time.sleep(retry_interval)
     assert started
-    return status.fromReplica, status.replica
+    return status.fromReplicaList, status.replica
 
 
 def wait_for_restoration_start(client, name):

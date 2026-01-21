@@ -6,13 +6,14 @@ from kubernetes.client.rest import ApiException
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+from utility.constant import BLOCK_PVC_VOLUME_DEVICE_PATH
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -29,6 +30,24 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
 
         # correct claim name
         manifest_dict['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = claim_name
+
+        if block_volume:
+            # remove volumeMounts for block volume
+            pvc_volume_name = manifest_dict['spec']['template']['spec']['volumes'][0]['name']
+            container = manifest_dict['spec']['template']['spec']['containers'][0]
+            container.pop('volumeMounts', None)
+
+            # add volumeDevices for block volume
+            container['volumeDevices'] = [
+                {
+                    "devicePath": BLOCK_PVC_VOLUME_DEVICE_PATH,
+                    "name": pvc_volume_name
+                }
+            ]
+            container['securityContext'] = {
+                "runAsUser": 0
+            }
+            manifest_dict['spec']['template']['spec']['containers'][0] = container
 
         if enable_pvc_io_and_liveness_probe:
             container = manifest_dict['spec']['template']['spec']['containers'][0]

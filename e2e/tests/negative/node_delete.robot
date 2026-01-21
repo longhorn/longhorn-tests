@@ -16,8 +16,9 @@ Resource    ../keywords/setting.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
+*** Keywords ***
 Delete Volume Node While Replica Rebuilding
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting node-down-pod-deletion-policy is set to do-nothing
     And Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -51,6 +52,7 @@ Delete Volume Node While Replica Rebuilding
     END
 
 Delete Replica Node While Replica Rebuilding
+    [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting node-down-pod-deletion-policy is set to do-nothing
     And Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -82,3 +84,16 @@ Delete Replica Node While Replica Rebuilding
         And Wait for deployment 1 pods stable
         And Check deployment 1 data in file data is intact
     END
+
+*** Test Cases ***
+Delete Volume Node While Replica Rebuilding With RWX Fast Failover Enabled
+    Delete Volume Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=true
+
+Delete Volume Node While Replica Rebuilding With RWX Fast Failover Disabled
+    Delete Volume Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=false
+
+Delete Replica Node While Replica Rebuilding With RWX Fast Failover Enabled
+    Delete Replica Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=true
+
+Delete Replica Node While Replica Rebuilding With RWX Fast Failover Disabled
+    Delete Replica Node While Replica Rebuilding    RWX_VOLUME_FAST_FAILOVER=false
