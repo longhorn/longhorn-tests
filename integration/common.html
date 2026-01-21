@@ -7151,27 +7151,38 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     core_api = get_core_api_client()
 
     nodes = client.list_node()
+    v2_enabled = (
+        client.by_id_setting(SETTING_V2_DATA_ENGINE).value in [&#34;true&#34;, True]
+    )
 
     for _ in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
         node_to_instance_manager_map = {}
-        try:
-            for im in instance_managers:
-                if im.managerType == &#34;aio&#34;:
-                    node_to_instance_manager_map[im.nodeID] = im
-                else:
-                    print(&#34;\nFound unknown instance manager:&#34;, im)
-            if len(node_to_instance_manager_map) != len(nodes):
-                time.sleep(RETRY_INTERVAL)
-                continue
 
-            for _, im in node_to_instance_manager_map.items():
-                wait_for_instance_manager_desire_state(client, core_api,
-                                                       im.name, &#34;Running&#34;,
-                                                       True)
-            break
-        except Exception:
-            continue</code></pre>
+        for im in instance_managers:
+            node_to_instance_manager_map.setdefault(im.nodeID,
+                                                    []).append(im)
+
+        expected = len(nodes) * (2 if v2_enabled else 1)
+        actual_count = sum(
+            len(v) for v in node_to_instance_manager_map.values()
+        )
+
+        if actual_count != expected:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+        for ims in node_to_instance_manager_map.values():
+            for im in ims:
+                wait_for_instance_manager_desire_state(
+                    client, core_api,
+                    im.name, &#34;Running&#34;,
+                    True)
+        return
+
+    print(&#34;Wait for instance manager running timeout&#34;)
+    assert actual_count == expected, \
+        f&#34;Expected {expected} IMs, but got {actual_count}&#34;</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
