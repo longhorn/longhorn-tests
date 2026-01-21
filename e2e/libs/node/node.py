@@ -131,6 +131,12 @@ class Node:
                 logging(f"Removing disk {disk_name} from node {node_name}")
         self.update_disks(node_name, disks)
 
+        # for block type disks added by bdf (nvme disk driver)
+        # disk deletion takes some time, wait the device show up on the host
+        # normally less than 30 seconds
+        # ref: https://github.com/longhorn/longhorn/issues/11860
+        time.sleep(30)
+
     def set_node_disks_tags(self, node_name, tags):
         node = get_longhorn_client().by_id_node(node_name)
         for disk_name, disk in iter(node.disks.items()):

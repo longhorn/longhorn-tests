@@ -46,8 +46,8 @@ variable "aws_instance_count" {
 
 variable "aws_instance_type" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
-  default     = "t2.xlarge"
+  description = "Recommended instance types t3.xlarge for amd64 & a1.2xlarge for arm64"
+  default     = "t3.xlarge"
 }
 
 variable "aws_ssh_public_key_file_path" {
