@@ -108,7 +108,7 @@ Test Replica Auto Balance Disk In Pressure
     And Check statefulset 2 data in file data.bin is intact
 
 Test Replica Auto Balance Disk In Pressure With Stopped Volume Should Not Block
-    [Tags]    auto-balance
+    [Tags]    auto-balance    single-replica
     [Documentation]    Verify that stopped volumes with alphabetically smaller names
     ...    no not block auto-balancing of running volumes when the disk is under
     ...    pressure.
@@ -219,6 +219,7 @@ Test Replica Auto Balance Node Least Effort
     And Check volume 0 data is intact
 
 Test Data Locality
+    [Tags]    single-replica
     [Documentation]    Test that Longhorn builds a local replica on the engine node
     Given Create single replica volume 0 with replica on node 0    dataLocality=disabled    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 1
@@ -259,6 +260,7 @@ Test Replica Deleting Priority With Best-effort Data Locality
     And Volume 0 should have 1 running replicas on node 1
 
 Test Unexpected Volume Detachment During Data Locality Maintenance
+    [Tags]    single-replica
     [Documentation]    Test that the volume is not corrupted if there is an unexpected
     ...                detachment during building local replica
     Given Setting replica-soft-anti-affinity is set to false
@@ -286,6 +288,7 @@ Test Unexpected Volume Detachment During Data Locality Maintenance
     And Check volume 0 data is intact
 
 Test Data Locality With Failed Scheduled Replica
+    [Tags]    single-replica
     [Documentation]    Make sure failed to schedule local replica doesn't block the
     ...                the creation of other replicas.
     Given Disable node 2 scheduling

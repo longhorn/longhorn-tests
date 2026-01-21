@@ -131,6 +131,7 @@ Test Evict Replicas Repeatedly
     ...    write: broken pipe
 
 Test Delete Instance Manager Of Single Replica Volume
+    [Tags]    single-replica
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11525
     ...    Create a v2 volume with 1 replica on node-a
     ...    Attach it to node-b
