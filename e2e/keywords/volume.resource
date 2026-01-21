@@ -71,6 +71,10 @@ Update volume ${volume_id} replica count to ${replica_count}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
 
+Update volume ${volume_id} rebuild concurrent sync limit to ${limit}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_volume_spec   ${volume_name}    rebuildConcurrentSyncLimit    ${limit}
+
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
