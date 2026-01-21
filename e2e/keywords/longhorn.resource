@@ -21,6 +21,8 @@ Library             ../libs/keywords/engine_keywords.py
 ...    longhorn-manager
 ...    longhorn-ui
 
+${LONGHORN_REPO_DIR}    /tmp/longhorn/longhorn
+
 *** Keywords ***
 Wait for longhorn ready
     wait_for_all_instance_manager_running
@@ -104,6 +106,12 @@ Install Longhorn
     [Arguments]    &{config}
     install_longhorn_system    &{config}
 
+Install Longhorn via helm with resource configuration
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}    &{config}
+    ${patch}=    Set Variable    .longhornManager.resources = {"requests":{"cpu":"${cpu_request}","memory":"${memory_request}"},"limits":{"cpu":"${cpu_limit}","memory":"${memory_limit}"}}
+    ${helm_cmd}=    Set Variable    yq eval \'${patch}\' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
+    install_longhorn_system    custom_cmd=${helm_cmd}    &{config}
+
 Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     delete_instance_manager_on_node    ${node_name}    ${engine_type}
@@ -181,3 +189,18 @@ Check disk size in instance manager pod
     ${longhorn_namespace} =    get_longhorn_namespace
     ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}
+
+Patch Longhorn Manager Resources With
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+    patch_longhorn_component_resources_limit    longhorn-manager    daemonset    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+
+Check Longhorn Manager Resources Are
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+    ${resources}=    get_longhorn_component_resources_limit    longhorn-manager    daemonset
+    Should Be Equal    ${resources['requests']['cpu']}    ${cpu_request}
+    Should Be Equal    ${resources['requests']['memory']}    ${memory_request}
+    Should Be Equal    ${resources['limits']['cpu']}    ${cpu_limit}
+    Should Be Equal    ${resources['limits']['memory']}    ${memory_limit}
+
+Remove Longhorn Manager Resource Limit
+    remove_longhorn_component_resources_limit    longhorn-manager    daemonset
