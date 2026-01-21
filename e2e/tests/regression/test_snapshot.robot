@@ -8,6 +8,8 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/volume.resource
+Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/workload.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
@@ -16,6 +18,36 @@ Test Setup   Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
+Test Snapshot During Active IO
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12140
+    ...    Concurrent snapshot/revert during active I/O
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolume for volume 0
+    And Create persistentvolumeclaim for volume 0
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+
+    # active io in the background
+    And Keep writing data to pod 0
+    # write another file for data integrity check
+    # this file won't be overwritten by the active io
+    And Write 100 MB data to file data.txt in pod 0
+    And Record file data.txt checksum in pod 0 as checksum 0
+    And Create snapshot 0 of volume 0
+    And Write 100 MB data to file data.txt in pod 0
+
+    And Delete pod 0 to detach volume 0
+    And Wait for volume 0 detached
+    And Attach volume 0 in maintenance mode
+    And Wait for volume 0 healthy
+
+    When Revert volume 0 to snapshot 0
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Create pod 1 using volume 0
+    And Wait for pod 1 running
+    Then Check pod 1 file data.txt checksum matches checksum 0
+
 Test Volume Snapshot Checksum When Healthy Replicas More Than 1
     [Tags]    volume setting snapshot
     [Documentation]
