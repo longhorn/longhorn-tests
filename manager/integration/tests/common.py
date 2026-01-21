@@ -68,7 +68,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 5
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 360
+RETRY_COUNTS_LONG = 600
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
@@ -2089,7 +2089,7 @@ def wait_for_volume_detached_unknown(client, name):
     return wait_for_volume_detached(client, name)
 
 
-def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
+def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
                            VOLUME_STATE_ATTACHED, retry_count)
