@@ -105,7 +105,7 @@ Test V1 Snapshot
     And Check volume 0 data is data 1
 
 Test Strict Local Volume Disabled Revision Counter By Default
-    [Tags]    coretest
+    [Tags]    coretest    single-replica
     [Documentation]
     ...    1. Set the global setting disable-revision-counter to false
     ...    2. Create a volume with 1 replica and strict-local data locality

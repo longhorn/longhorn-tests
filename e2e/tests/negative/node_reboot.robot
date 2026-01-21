@@ -369,6 +369,9 @@ Physical Node Reboot With Attached Statefulset
     Then Check statefulset 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Replica Node
+    [Tags]    single-replica
+    [Documentation]    Automated from manual test case Single replica node down
+    ...    https://github.com/longhorn/longhorn-tests/blob/v1.6.x/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Setting node-down-pod-deletion-policy is set to do-nothing
     When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -388,6 +391,9 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Locate On Volume Node
+    [Tags]    single-replica
+    [Documentation]    Automated from manual test case Single replica node down
+    ...    https://github.com/longhorn/longhorn-tests/blob/v1.6.x/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Setting node-down-pod-deletion-policy is set to do-nothing
     When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -406,6 +412,9 @@ Single Replica Node Down Deletion Policy do-nothing With RWO Volume Replica Loca
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Replica Node
+    [Tags]    single-replica
+    [Documentation]    Automated from manual test case Single replica node down
+    ...    https://github.com/longhorn/longhorn-tests/blob/v1.6.x/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Setting node-down-pod-deletion-policy is set to delete-deployment-pod
     When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -425,6 +434,9 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
     And Power on off nodes
 
 Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume Replica Locate On Volume Node
+    [Tags]    single-replica
+    [Documentation]    Automated from manual test case Single replica node down
+    ...    https://github.com/longhorn/longhorn-tests/blob/v1.6.x/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Setting node-down-pod-deletion-policy is set to delete-deployment-pod
     When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -445,6 +457,9 @@ Single Replica Node Down Deletion Policy delete-deployment-pod With RWO Volume R
     Then Check deployment 0 data in file data is intact
 
 Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Replica Node
+    [Tags]    single-replica
+    [Documentation]    Automated from manual test case Single replica node down
+    ...    https://github.com/longhorn/longhorn-tests/blob/v1.6.x/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Setting node-down-pod-deletion-policy is set to delete-both-statefulset-and-deployment-pod
     When Create statefulset 0 using RWO volume with longhorn-test storageclass
@@ -463,6 +478,9 @@ Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-
     And Power on off nodes
 
 Single Replica Node Down Deletion Policy delete-both-statefulset-and-deployment-pod With RWO Volume Replica Locate On Volume Node
+    [Tags]    single-replica
+    [Documentation]    Automated from manual test case Single replica node down
+    ...    https://github.com/longhorn/longhorn-tests/blob/v1.6.x/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Setting node-down-pod-deletion-policy is set to delete-both-statefulset-and-deployment-pod
     When Create statefulset 0 using RWO volume with longhorn-test storageclass

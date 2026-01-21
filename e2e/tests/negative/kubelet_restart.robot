@@ -199,11 +199,13 @@ Restart Volume Node Kubelet Immediately With RWX Fast Failover Disabled
     Kubelet Restart Immediately Test    numberOfReplicas=3    RWX_VOLUME_FAST_FAILOVER=false
 
 Restart Volume Node Kubelet Immediately On Single Node Cluster With RWX Fast Failover Enabled
+    [Tags]    single-replica
     Given Cordon node 1
     And Cordon node 2
     Then Kubelet Restart Immediately Test    numberOfReplicas=1    RWX_VOLUME_FAST_FAILOVER=true
 
 Restart Volume Node Kubelet Immediately On Single Node Cluster With RWX Fast Failover Disabled
+    [Tags]    single-replica
     Given Cordon node 1
     And Cordon node 2
     Then Kubelet Restart Immediately Test    numberOfReplicas=1    RWX_VOLUME_FAST_FAILOVER=false
@@ -215,7 +217,9 @@ Restart Volume Node Kubelet After Temporary Downtime With RWX Fast Failover Disa
     Restart Volume Node Kubelet After Temporary Downtime    RWX_VOLUME_FAST_FAILOVER=false
     
 Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster With RWX Fast Failover Enabled
+    [Tags]    single-replica
     Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster    RWX_VOLUME_FAST_FAILOVER=true
 
 Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster With RWX Fast Failover Disabled
+    [Tags]    single-replica
     Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster    RWX_VOLUME_FAST_FAILOVER=false
