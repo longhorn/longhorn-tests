@@ -18,7 +18,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Test Backing Image Basic Operation
-    [Tags]    coretest
+    [Tags]    coretest    backing image
     [Documentation]    Test Backing Image APIs.
     Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     When Create volume 0 with    backingImage=bi
@@ -95,6 +95,7 @@ Test Evict Two Replicas Volume With Backing Image
     And Check longhorn manager pods not restarted after test start
 
 Test backing image handle node disk deleting events
+    [Tags]    backing image
     [Documentation]   Validates that the backing image manager and backing image disk files
     ...               are removed after a broken disk is removed from Longhorn node.
     ...
