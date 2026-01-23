@@ -106,6 +106,9 @@ Degraded Volume Replica Rebuilding
 
 V2 Volume Should Block Trim When Volume Is Degraded
     [Tags]    cluster
+    [Documentation]    Issues:
+    ...    https://github.com/longhorn/longhorn-tests/pull/2114
+    ...    https://github.com/longhorn/longhorn/issues/8430
     Given Setting auto-salvage is set to true
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -121,6 +124,7 @@ V2 Volume Should Block Trim When Volume Is Degraded
 
         When Wait for workloads pods stable
         ...    deployment 0
+        And Wait for volume of deployment 0 healthy
         And Check deployment 0 works
         Then Trim deployment 0 volume should pass
     END
