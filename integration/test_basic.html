@@ -958,7 +958,10 @@ the default disk.</li>
         check_volume_data(volume, snap3_data)
     else:
         volume.snapshotCRDelete(name=snap3.name)
-        snapshots = volume.snapshotList(volume=volume_name)
+
+        wait_for_snapshot_cr_count(volume, 2, count_removed=True)
+
+        snapshots = volume.snapshotCRList(volume=volume_name)
         snapMap = {}
         for snap in snapshots:
             snapMap[snap.name] = snap
