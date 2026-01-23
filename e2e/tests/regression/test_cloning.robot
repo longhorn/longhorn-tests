@@ -42,7 +42,7 @@ Test Degraded Cloned Volume
     ...    4. Create a pod using cloned-pvc. Verify that the pod is not stuck and Longhorn can attach cloned-pvc
     ...    5. Enable scheduling for the node that you disable at the beginning
     ...       Verify that volume cloned-pvc rebuild and become healthy
-    Given And Run command
+    Given Run command
     ...    kubectl cordon ${NODE_0}
     And Run command
     ...    kubectl taint node ${NODE_0} node-role.kubernetes.io/worker=true:NoExecute
