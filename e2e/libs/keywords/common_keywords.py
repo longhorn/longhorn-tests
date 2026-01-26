@@ -57,10 +57,10 @@ class common_keywords:
 
     def execute_command_and_expect_output(self, cmd, output):
         res = subprocess_exec_cmd(cmd)
-        retry_count, _ = get_retry_count_and_interval()
+        _, retry_interval = get_retry_count_and_interval()
         if output not in res:
             logging(f"Failed to find {output} in {cmd} result: {res}")
-            time.sleep(retry_count)
+            time.sleep(retry_interval)
             assert False, f"Failed to find {output} in {cmd} result: {res}"
 
     def execute_command_and_wait_for_output(self, cmd, output):
@@ -78,8 +78,8 @@ class common_keywords:
 
     def execute_command_and_not_expect_output(self, cmd, output):
         res = subprocess_exec_cmd(cmd)
-        retry_count, _ = get_retry_count_and_interval()
+        _, retry_interval = get_retry_count_and_interval()
         if output in res:
             logging(f"Unexpected {output} in {cmd} result: {res}")
-            time.sleep(retry_count)
+            time.sleep(retry_interval)
             assert False, f"Unexpected {output} in {cmd} result: {res}"
