@@ -29,6 +29,7 @@ Retry interval should match expected backoff window
 
 *** Test Cases ***
 Backing image with an invalid URL schema
+    [Tags]    backing image
     [Documentation]    https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/    
     ...                - Create a backing image via a invalid download URL.
     ...                - Wait for the download start. The backing image data source pod, should be cleaned up after download fail.    
@@ -52,6 +53,7 @@ Backing image with an invalid URL schema
     END
 
 Backing image with sync failure
+    [Tags]    backing image
     [Documentation]    https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/
     ...                - Create a backing image. Then create and attach a volume using this backing image
     ...                - Exec into one of the worker node, remove the files in that backing image directory and set the directory as immutable
