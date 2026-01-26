@@ -13,7 +13,6 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
 from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
-from utility.constant import DRAIN_TIMEOUT
 
 from node import Node
 
@@ -71,8 +70,9 @@ def drain_node(node_name):
     res = subprocess_exec_cmd(exec_cmd)
 
 def force_drain_node(node_name):
+    retry_count, _ = get_retry_count_and_interval()
     exec_cmd = ["kubectl", "drain", node_name, "--force", "--ignore-daemonsets", "--delete-emptydir-data"]
-    res = subprocess_exec_cmd(exec_cmd, timeout=DRAIN_TIMEOUT)
+    res = subprocess_exec_cmd(exec_cmd, timeout=retry_count)
 
 def cordon_node(node_name):
     exec_cmd = ["kubectl", "cordon", node_name]
