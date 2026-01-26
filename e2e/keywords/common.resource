@@ -30,6 +30,10 @@ Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 
 *** Keywords ***
+Run command
+    [Arguments]    ${command}
+    execute_command    ${command}
+
 Run command and expect output
     [Arguments]    ${command}    ${expected_output}
     execute_command_and_expect_output    ${command}    ${expected_output}
