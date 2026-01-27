@@ -134,6 +134,11 @@ Test Uninstallation With Backups
 Test Cleanup Snapshot With The Global Setting After Backup Completed
     [Tags]    auto-cleanup-snapshot
     [Documentation]    Test cleanup snapshot with the global setting after backup completed
+    IF    '${DATA_ENGINE}' == 'v2'
+        # https://github.com/longhorn/longhorn/issues/12082
+        Skip    Test case need to refine for v2 data engine
+    END
+
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy

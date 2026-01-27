@@ -22,14 +22,14 @@ Test Teardown    Cleanup test resources
 Crash Instance Manager While RWO Encrypted Workload Pod Is Starting
     [Tags]    encrypted    rwo   volume
     Given Create crypto secret
-    And Create storageclass longhorn-crypto with    encrypted=true
+    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data.txt in deployment 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Delete v1 instance manager of deployment 0 volume
+        When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
         # after deleting instance manager, the workload pod will be recrated as well
         And Wait for deployment 0 pods stable
         And Wait for volume of deployment 0 healthy
@@ -42,14 +42,14 @@ Crash Instance Manager While RWO Encrypted Workload Pod Is Starting
 Crash Instance Manager While RWX Encrypted Workload Pod Is Starting
     [Tags]    encrypted    rwx    volume
     Given Create crypto secret
-    And Create storageclass longhorn-crypto with    encrypted=true
+    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-crypto
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data.txt in deployment 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Delete v1 instance manager of deployment 0 volume
+        When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
         # after deleting instance manager, the workload pod will be recrated as well
         And Wait for deployment 0 pods stable
         And Wait for volume of deployment 0 healthy
