@@ -204,3 +204,10 @@ Check Longhorn Manager Resources Are
 
 Remove Longhorn Manager Resource Limit
     remove_longhorn_component_resources_limit    longhorn-manager    daemonset
+
+Verify longhorn manager logs does not contain ${expect_log} after test start
+    ${pod_names} =    get_longhorn_manager_pods
+
+    FOR    ${pod_name}    IN    @{pod_names}
+        verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+    END

@@ -90,7 +90,8 @@ Backing image ${bi_name} should not have the removed disk in its DiskFileSpecMap
     ${disk_uuids} =    get_backing_image_disk_uuids    ${bi_name}
     List Should Not Contain Value    ${disk_uuids}    ${recorded_disk_uuid}
 Download backing image ${backing_image_name}
-    ${download_bi_checksum} =    download_backing_image    ${backing_image_name}
+    [Arguments]    &{config}
+    ${download_bi_checksum} =    download_backing_image    ${backing_image_name}     &{config}
     Set Test Variable    ${download_bi_checksum}
 
 Check downloaded backing image ${backing_image_name} data matches volume ${volume_id}
@@ -99,5 +100,13 @@ Check downloaded backing image ${backing_image_name} data matches volume ${volum
     Should Be Equal    ${download_bi_checksum}    ${sha512_checksum}
 
 Check downloaded backing image ${backing_image_name} data matches source backingimage
+    ${bi_checksum} =  get_backing_image_checksum    ${backing_image_name}
+    Should Be Equal    ${download_bi_checksum}    ${bi_checksum}
+
+Wait backimg image ${backing_image_name} download complete
+    ${download_bi_checksum} =    wait_for_async_download_complete    ${backing_image_name}
+    Set Test Variable    ${download_bi_checksum}
+
+Check backing image ${backing_image_name} download file checksum matches
     ${bi_checksum} =  get_backing_image_checksum    ${backing_image_name}
     Should Be Equal    ${download_bi_checksum}    ${bi_checksum}
