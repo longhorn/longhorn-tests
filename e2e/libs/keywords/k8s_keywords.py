@@ -64,6 +64,9 @@ class k8s_keywords:
         delete_node(replica_node)
         return replica_node
 
+    def delete_node(self, node_name):
+        delete_node(node_name)
+
     def set_k8s_node_zone(self, node_name, zone_name):
         set_k8s_node_zone(node_name, zone_name)
 
@@ -116,6 +119,7 @@ class k8s_keywords:
 
     def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
         return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
+
     def deploy_system_upgrade_controller(self):
         return deploy_system_upgrade_controller()
 

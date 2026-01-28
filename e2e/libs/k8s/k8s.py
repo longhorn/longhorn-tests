@@ -263,6 +263,7 @@ def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, na
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
 
     assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
+
 def deploy_system_upgrade_controller():
     logging(f"Deploying system upgrade controller")
     cmd = "kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml -f https://raw.githubusercontent.com/yangchiu/longhorn-tests/refs/heads/k8s-upgrade-test/e2e/templates/system_upgrade_controller/system_upgrade_controller.yaml"
