@@ -31,6 +31,10 @@ Delete volume of ${workload_kind} ${workload_id} replica node
     ${deleted_node} =    delete_replica_node    ${volume_name}
     Set Test Variable    ${deleted_node}
 
+Delete node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    delete_node    ${node_name}
+
 Add deleted node back
     reboot_node_by_name    ${deleted_node}
     IF     "${DATA_ENGINE}" == "v2"
