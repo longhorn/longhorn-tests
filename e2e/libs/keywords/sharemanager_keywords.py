@@ -97,3 +97,40 @@ class sharemanager_keywords:
                 return
 
         assert False, f"sharemanager pod {sharemanager_pod_name} not running"
+
+    def wait_for_disk_size_in_sharemanager_pod(self, share_manager_pod, volume_name, expected_size):
+        from utility.utility import pod_exec
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
+            time.sleep(retry_interval)
+            cmd = f"df -B1 /export/{volume_name} | tail -1 | awk '{{print $2}}'"
+            try:
+                result = pod_exec(share_manager_pod, "longhorn-system", cmd)
+                actual_size = result.strip()
+                logging(f"Current disk size in sharemanager pod {share_manager_pod}: {actual_size}, expected: {expected_size}")
+                if actual_size == expected_size:
+                    return
+            except Exception as e:
+                logging(f"Error checking disk size in sharemanager pod {share_manager_pod}: {e}")
+                continue
+
+        assert False, f"Disk size in sharemanager pod {share_manager_pod} is not {expected_size}"
+
+    def wait_for_encrypted_disk_size_in_sharemanager_pod(self, share_manager_pod, volume_name, expected_size):
+        from utility.utility import pod_exec
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for encrypted disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
+            time.sleep(retry_interval)
+            cmd = f"fdisk -l | grep /dev/mapper/{volume_name}"
+            try:
+                result = pod_exec(share_manager_pod, "longhorn-system", cmd)
+                logging(f"Current encrypted disk info in sharemanager pod {share_manager_pod}: {result}")
+                if expected_size in result:
+                    return
+            except Exception as e:
+                logging(f"Error checking encrypted disk size in sharemanager pod {share_manager_pod}: {e}")
+                continue
+
+        assert False, f"Encrypted disk size in sharemanager pod {share_manager_pod} does not contain {expected_size}"
