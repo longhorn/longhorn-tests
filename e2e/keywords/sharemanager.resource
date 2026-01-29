@@ -36,6 +36,15 @@ Wait for sharemanager pod of deployment ${deployment_id} running
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
     wait_for_share_manager_pod_running    ${volume_name}
 
+Assert disk size in sharemanager pod for ${workload_kind} ${workload_id} is ${size}
+    ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+
+    ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name}=    get_workload_volume_name    ${workload_name}
+    ${share_manager_pod}=    Set Variable    share-manager-${volume_name}
+    Wait Until Keyword Succeeds    ${RETRY_COUNT}    ${RETRY_INTERVAL}
+    ...    Check disk size in sharemanager pod    ${share_manager_pod}    ${volume_name}    ${expected_size_byte}
+
 Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_id} is ${size}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
 
@@ -44,6 +53,12 @@ Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_i
     ${share_manager_pod}=    Set Variable    share-manager-${volume_name}
     Wait Until Keyword Succeeds    ${RETRY_COUNT}    ${RETRY_INTERVAL}
     ...    Check encrypted disk size in sharemanager pod    ${share_manager_pod}    ${volume_name}    ${expected_size_byte}
+
+Check disk size in sharemanager pod
+    [Arguments]    ${sharemanager_pod}    ${volume_name}    ${expected_size}
+    ${cmd}=    Set Variable    df -B1 /export/${volume_name} | tail -1 | awk '{print $2}'
+    ${result}=    pod_exec    ${sharemanager_pod}    longhorn-system    ${cmd}
+    Should Be Equal As Strings    ${result.strip()}    ${expected_size}
 
 Check encrypted disk size in sharemanager pod
     [Arguments]    ${sharemanager_pod}    ${volume_name}    ${expected_size}

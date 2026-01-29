@@ -99,7 +99,8 @@ Test RWX Volume Automatic Online Expansion
     When Expand deployment 0 volume to 2Gi
     Then Wait for deployment 0 volume size expanded
     And Check deployment 0 pods did not restart
-    # Verify share manager pod did not restart during expansion
-    And Write 100 MB data to file data2.txt in deployment 0
+    And Assert disk size in sharemanager pod for deployment 0 is 2Gi
+    # Write data that covers the newly expanded blocks to verify filesystem expansion
+    And Write 1100 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
     And Check deployment 0 data in file data2.txt is intact
