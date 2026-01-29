@@ -34,3 +34,6 @@ class instancemanager_keywords:
 
     def kill_engine_process(self, instance_manager_name, volume_name):
         self.instancemanager.kill_engine_process(instance_manager_name, volume_name)
+
+    def get_instance_manager_pod_on_node(self, node_name, engine_type):
+        return self.instancemanager.get_instance_manager_pod_on_node(node_name, engine_type)

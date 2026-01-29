@@ -204,3 +204,9 @@ Check Longhorn Manager Resources Are
 
 Remove Longhorn Manager Resource Limit
     remove_longhorn_component_resources_limit    longhorn-manager    daemonset
+
+Verify ${engine_type} instance manager log on node ${node_id} contain ${expect_log} after test start
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    Log    ${pod_name}
+    verify_pod_log_after_time_contains    ${pod_name}    ${expect_log}    ${test_start_time}
