@@ -15,10 +15,17 @@ from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
 from k8s.k8s import get_longhorn_node_condition_status
 from k8s.k8s import set_k8s_node_zone
+from k8s.k8s import verify_pod_log_after_time_contains
+from k8s.k8s import deploy_system_upgrade_controller
+from k8s.k8s import upgrade_k8s_to_latest_version
+from k8s.k8s import patch_longhorn_component_resources_limit
+from k8s.k8s import get_longhorn_component_resources_limit
+from k8s.k8s import remove_longhorn_component_resources_limit
 
 from node import Node
 
 from utility.utility import logging
+import utility.constant as constant
 
 
 class k8s_keywords:
@@ -81,7 +88,7 @@ class k8s_keywords:
         wait_all_pods_evicted(node_name)
 
     def uncordon_all_nodes(self):
-        nodes = Node.list_node_names_by_role("worker")
+        nodes = Node().list_node_names_by_role("worker")
 
         for node_name in nodes:
             uncordon_node(node_name)
@@ -106,3 +113,20 @@ class k8s_keywords:
 
     def get_longhorn_node_condition_status(self, node_name, type):
         return get_longhorn_node_condition_status(node_name, type)
+
+    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+        return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
+    def deploy_system_upgrade_controller(self):
+        return deploy_system_upgrade_controller()
+
+    def upgrade_k8s_to_latest_version(self, drain=False):
+        return upgrade_k8s_to_latest_version(drain)
+
+    def patch_longhorn_component_resources_limit(self, component_name, component_type, cpu_request, memory_request, cpu_limit, memory_limit, namespace=constant.LONGHORN_NAMESPACE):
+        return patch_longhorn_component_resources_limit(component_name, component_type, cpu_request, memory_request, cpu_limit, memory_limit, namespace)
+
+    def get_longhorn_component_resources_limit(self, component_name, component_type, namespace=constant.LONGHORN_NAMESPACE):
+        return get_longhorn_component_resources_limit(component_name, component_type, namespace)
+
+    def remove_longhorn_component_resources_limit(self, component_name, component_type, namespace=constant.LONGHORN_NAMESPACE):
+        return remove_longhorn_component_resources_limit(component_name, component_type, namespace)

@@ -1,5 +1,6 @@
 import time
 import asyncio
+import json
 
 from kubernetes import client
 from kubernetes.stream import stream
@@ -10,6 +11,8 @@ from utility.utility import list_namespaced_pod
 
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 from workload.constant import WAIT_FOR_POD_KEPT_IN_STATE_TIME
+from workload.constant import CNI_NETWORK_STATUS_ANNOTATION
+from utility.constant import BLOCK_PVC_VOLUME_DEVICE_PATH
 from workload.pod import is_pod_terminated_by_kubelet
 from workload.pod import wait_for_pod_status
 
@@ -75,6 +78,63 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
     return claim_names
 
 
+def make_block_device_filesystem_in_workload_pod(pod_name):
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for i in range(retry_count):
+        logging(f"Making block device filesystem in pod {pod_name} ... ({i})")
+        try:
+            api = client.CoreV1Api()
+            make_fs_cmd = [
+                '/bin/sh',
+                '-c',
+                f"apk add e2fsprogs &&\
+                mkfs.ext4 {BLOCK_PVC_VOLUME_DEVICE_PATH}"
+            ]
+            resp = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=make_fs_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return
+        except Exception as e:
+            logging(f"Making block device filesystem in pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
+
+def mount_block_device_in_workload_pod(pod_name, mount_point):
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for i in range(retry_count):
+        logging(f"Mounting block device in pod {pod_name} ... ({i})")
+        try:
+            api = client.CoreV1Api()
+            mount_cmd = [
+                '/bin/sh',
+                '-c',
+                f"mkdir -p {mount_point} &&\
+                mount {BLOCK_PVC_VOLUME_DEVICE_PATH} {mount_point}"
+            ]
+            resp = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=mount_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return
+        except Exception as e:
+            logging(f"Mounting block device in pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
+
+
 def write_pod_random_data(pod_name, size_in_mb, file_name,
                           data_directory="/data", ):
 
@@ -82,7 +142,8 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
-    for attempt in range(retry_count):
+    for i in range(retry_count):
+        logging(f"Writing random data to pod {pod_name} ... ({i})")
         try:
             data_path = f"{data_directory}/{file_name}"
             api = client.CoreV1Api()
@@ -98,8 +159,8 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
                 command=write_data_cmd, stderr=True, stdin=False, stdout=True,
                 tty=False)
 
-            if "Input/output error" in resp or "Read-only file system" in resp:
-                raise RuntimeError(f"Attempt {attempt+1}: Command failed in pod {pod_name}. Output: {resp}")
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
 
             return resp
         except Exception as e:
@@ -114,7 +175,8 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
-    for _ in range(retry_count):
+    for i in range(retry_count):
+        logging(f"Writing large data to pod {pod_name} ... ({i})")
         try:
             data_path = f"{data_directory}/{file_name}"
             api = client.CoreV1Api()
@@ -125,12 +187,17 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
                 sync;\
                 md5sum {data_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
-            return stream(
+            resp = stream(
                 api.connect_get_namespaced_pod_exec, pod_name, 'default',
                 command=write_data_cmd, stderr=True, stdin=False, stdout=True,
                 tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return resp
         except Exception as e:
-            logging(f"Writing random data to pod {pod_name} failed with error {e}")
+            logging(f"Writing large data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
 
 
@@ -166,7 +233,7 @@ def run_commands_in_pod(pod_name, commands):
     cmd = [
         '/bin/sh',
         '-c',
-        f"cd /data && {commands}; echo {exit_code_prefix}$?"
+        f"mkdir -p /data && cd /data && {commands}; echo {exit_code_prefix}$?"
     ]
 
     output = stream(
@@ -341,6 +408,12 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
 
 
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
+    def is_in_crashloopbackoff(pod):
+        for container_status in pod.status.container_statuses:
+            if hasattr(container_status.state, 'waiting') and container_status.state.waiting:
+                if container_status.state.waiting.reason == "CrashLoopBackOff":
+                    return True
+        return False
     def count_pod_in_specifc_state_duration(count_pod_in_state_duration, pods, expect_state):
         for pod in pods:
             pod_name = pod.metadata.name
@@ -348,7 +421,8 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
                 count_pod_in_state_duration[pod_name] = 0
             elif (expect_state == "ContainerCreating" and pod.status.phase == "Pending") or \
                 ((expect_state == "Terminating" and hasattr(pod.metadata, "deletion_timestamp") and pod.status.phase == "Running")) or \
-                (expect_state == "Running" and pod.status.phase == "Running"):
+                (expect_state == "Running" and pod.status.phase == "Running") or \
+                (expect_state == "CrashLoopBackOff" and is_in_crashloopbackoff(pod)):
                 count_pod_in_state_duration[pod_name] += 1
             else:
                 count_pod_in_state_duration[pod_name] = 0
@@ -379,4 +453,38 @@ def is_workload_pods_has_annotations(workload_name, annotation_key, namespace="d
     for pod in pods:
         if not (pod.metadata.annotations and annotation_key in pod.metadata.annotations):
             return False
+    return True
+
+
+def is_workload_pods_has_cni_interface(workload_name, interface_name, namespace="default", label_selector=""):
+    """Return True if all pods for the workload have a network entry with the given interface in
+    the 'k8s.v1.cni.cncf.io/network-status' annotation.
+
+    The annotation value is expected to be a JSON array (string). If parsing fails or the
+    annotation is missing / no matching interface is found for any pod, return False.
+    """
+    CNI_NETWORK_STATUS_ANNOTATION = 'k8s.v1.cni.cncf.io/network-status'
+    pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
+    for pod in pods:
+        annotations = getattr(pod.metadata, 'annotations', None)
+        if not annotations or CNI_NETWORK_STATUS_ANNOTATION not in annotations:
+            return False
+
+        net_status_raw = annotations.get(CNI_NETWORK_STATUS_ANNOTATION)
+        try:
+            networks = json.loads(net_status_raw)
+        except Exception as e:
+            logging(f"Failed to parse network-status for pod {pod.metadata.name}: {e}")
+            return False
+
+        found = False
+        for net in networks:
+            if isinstance(net, dict) and net.get('interface') == interface_name:
+                found = True
+                logging(f"Found CNI interface {interface_name} for pod {pod.metadata.name}")
+                break
+
+        if not found:
+            return False
+
     return True

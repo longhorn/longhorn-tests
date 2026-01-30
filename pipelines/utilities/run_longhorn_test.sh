@@ -1,3 +1,5 @@
+source pipelines/utilities/appco_env.sh
+
 run_longhorn_test(){
 
   LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-manager-test:master-head"}
@@ -8,8 +10,8 @@ run_longhorn_test(){
 
   local PYTEST_COMMAND_ARGS='"-s", "--junitxml='${LONGHORN_JUNIT_REPORT_PATH}'"'
   if [[ -n ${CUSTOM_TEST_OPTIONS} ]]; then
-    CUSTOM_TEST_OPTIONS=(${CUSTOM_TEST_OPTIONS})
-    for OPT in "${CUSTOM_TEST_OPTIONS[@]}"; do
+    readarray -t OPTS < <(xargs -n1 <<< "$CUSTOM_TEST_OPTIONS")
+    for OPT in "${OPTS[@]}"; do
       PYTEST_COMMAND_ARGS=${PYTEST_COMMAND_ARGS}', "'${OPT}'"'
     done
   fi
@@ -52,6 +54,7 @@ run_longhorn_test(){
 
   ## for v2 volume test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "DISABLE_V1_DATA_ENGINE", "value": "'${DISABLE_V1_DATA_ENGINE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_INTERRUPT_MODE", "value": "'${RUN_V2_INTERRUPT_MODE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   set +x
@@ -69,21 +72,7 @@ run_longhorn_test(){
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
-  until kubectl get pod longhorn-test >/dev/null 2>&1; do
-    echo "waiting for longhorn-test pod to be created ... rechecking in 10s"
-    sleep 10s
-  done
-
-  local RETRY_COUNTS=60
-  local RETRIES=0
-  # wait longhorn tests pod to start running
-  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`"  ]]; do
-    echo "waiting longhorn test pod to be in running state ... rechecking in 10s"
-    sleep 10s
-    RETRIES=$((RETRIES+1))
-
-    if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn test pod start timeout"; exit 1 ; fi
-  done
+  kubectl wait --for=condition=Ready pod/longhorn-test --timeout=10m
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     unset_kubectl_retry
@@ -141,6 +130,7 @@ run_longhorn_upgrade_test(){
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
   ## for v2 volume test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "DISABLE_V1_DATA_ENGINE", "value": "'${DISABLE_V1_DATA_ENGINE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_INTERRUPT_MODE", "value": "'${RUN_V2_INTERRUPT_MODE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   ## for appco test
@@ -163,47 +153,8 @@ run_longhorn_upgrade_test(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-    if [[ $APPCO_TEST = "true" ]]; then
-      # Injecting SUSE CA cert and run pdate-ca-certificates"
-      if [[ "${LONGHORN_TEST_CLOUDPROVIDER}" == "harvester" ]]; then
-        yq e -i 'select(.kind == "Pod").spec.containers[0].volumeMounts += {"name": "ca-cert-volume", "mountPath": "/etc/pki/trust/anchors", "readOnly": true}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-        yq e -i 'select(.kind == "Pod").spec.volumes += {"name": "ca-cert-volume", "hostPath": {"path": "/etc/pki/trust/anchors", "type": "DirectoryOrCreate"}}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-        yq e -i '( . | select(.kind=="Pod") | .spec.containers[0].lifecycle ).postStart = {"exec":{"command":["sh","-c","update-ca-certificates"]}}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-        yq e -i 'select(.spec.containers[0] != null).spec.dnsPolicy = "None"' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-        yq e -i 'select(.spec.containers[0] != null).spec.dnsConfig.nameservers = ["10.113.53.53", "8.8.8.8", "1.1.1.1"]' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      fi
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "REGISTRY_URL", "value": "'${REGISTRY_URL}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "AIR_GAP_INSTALLATION", "value": "'${AIR_GAP_INSTALLATION}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_UI_IMAGE", "value": "'${CUSTOM_LONGHORN_UI_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE", "value": "'${CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_RESIZER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_RESIZER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE", "value": "'${CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_MANAGER_IMAGE", "value": "'${TRANSIENT_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_ENGINE_IMAGE", "value": "'${TRANSIENT_ENGINE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_INSTANCE_MANAGER_IMAGE", "value": "'${TRANSIENT_INSTANCE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_SHARE_MANAGER_IMAGE", "value": "'${TRANSIENT_SHARE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE", "value": "'${TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_UI_IMAGE", "value": "'${TRANSIENT_UI_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_SUPPORT_BUNDLE_IMAGE", "value": "'${TRANSIENT_SUPPORT_BUNDLE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_ATTACHER_IMAGE", "value": "'${TRANSIENT_CSI_ATTACHER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_PROVISIONER_IMAGE", "value": "'${TRANSIENT_CSI_PROVISIONER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_NODE_REGISTRAR_IMAGE", "value": "'${TRANSIENT_CSI_NODE_REGISTRAR_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_RESIZER_IMAGE", "value": "'${TRANSIENT_CSI_RESIZER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_SNAPSHOTTER_IMAGE", "value": "'${TRANSIENT_CSI_SNAPSHOTTER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "TRANSIENT_CSI_LIVENESSPROBE_IMAGE", "value": "'${TRANSIENT_CSI_LIVENESSPROBE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_TRANSIENT_VERSION_CHART_URI", "value": "'${LONGHORN_TRANSIENT_VERSION_CHART_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_STABLE_VERSION_CHART_URI", "value": "'${LONGHORN_STABLE_VERSION_CHART_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_CHART_URI", "value": "'${LONGHORN_CHART_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_LONGHORN_COMPONENT_REGISTRY", "value": "'${APPCO_LONGHORN_COMPONENT_REGISTRY}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_VERSION", "value": "'${LONGHORN_VERSION}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_NAMESPACE", "value": "'${LONGHORN_NAMESPACE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_USERNAME", "value": "'${APPCO_USERNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_PASSWORD", "value": "'${APPCO_PASSWORD}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
-      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_COMPONENT_TAG", "value": "'${LONGHORN_COMPONENT_TAG}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+    if [[ "${APPCO_TEST}" = "true" ]]; then
+      inject_appco_env_vars "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     fi
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "RANCHER_HOSTNAME", "value": "'${RANCHER_HOSTNAME}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
@@ -257,11 +208,7 @@ run_longhorn_upgrade_test(){
 
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
-  # wait upgrade test pod to start running
-  while [[ -n "`kubectl get pod ${LONGHORN_UPGRADE_TEST_POD_NAME} -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`"  ]]; do
-    echo "waiting upgrade test pod to be in running state ... rechecking in 10s"
-    sleep 10s
-  done
+  kubectl wait --for=condition=Ready pod/${LONGHORN_UPGRADE_TEST_POD_NAME} --timeout=10m
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     unset_kubectl_retry

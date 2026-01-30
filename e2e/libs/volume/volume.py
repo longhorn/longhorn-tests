@@ -18,8 +18,8 @@ class Volume(Base):
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize):
         return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize)
 
-    def delete(self, volume_name):
-        return self.volume.delete(volume_name)
+    def delete(self, volume_name, wait):
+        return self.volume.delete(volume_name, wait)
 
     def wait_for_volume_deleted(self, volume_name):
         return self.volume.wait_for_volume_deleted(volume_name)
@@ -102,6 +102,9 @@ class Volume(Base):
     def wait_for_volume_restoration_start(self, volume_name, backup_name):
         self.volume.wait_for_volume_restoration_start(volume_name, backup_name)
 
+    def expand(self, volume_name, size):
+        return self.volume.expand(volume_name, size)
+
     def wait_for_volume_expand_to_size(self, volume_name, size):
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
@@ -110,7 +113,6 @@ class Volume(Base):
         self.volume.wait_for_volume_robustness(volume_name, "degraded")
 
     def wait_for_volume_unknown(self, volume_name):
-        self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "unknown")
 
     def get_endpoint(self, volume_name):
@@ -164,6 +166,9 @@ class Volume(Base):
     def get_checksum(self, volume_name):
         return self.volume.get_checksum(volume_name)
 
+    def get_sha512sum(self, volume_name):
+        return self.volume.get_sha512sum(volume_name)
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
@@ -196,3 +201,9 @@ class Volume(Base):
 
     def update_data_locality(self, volume_name, data_locality):
         return self.volume.update_data_locality(volume_name, data_locality)
+
+    def check_volume_has_recurringjob(self, volume_name, job_name):
+        self.volume.check_volume_has_recurringjob(volume_name, job_name)
+
+    def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
+        self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)

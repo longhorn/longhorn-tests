@@ -48,7 +48,8 @@ from common import (  # NOQA
     SETTING_DEGRADED_AVAILABILITY,
     delete_replica_on_test_node,
     DATA_ENGINE, SETTING_V2_DATA_ENGINE,
-    wait_for_all_nodes_disks_schedulable
+    wait_for_all_nodes_disks_schedulable,
+    RETRY_COUNTS_LONG
 )
 
 from backupstore import (  # NOQA
@@ -113,6 +114,10 @@ def wait_for_longhorn_node_ready():
 
     node = get_self_host_id()
     wait_for_node_up_longhorn(node, client)
+
+    if DATA_ENGINE == "v2":
+        # wait block disks ready
+        wait_for_all_nodes_disks_schedulable(client)
 
     return client, node
 
@@ -867,8 +872,10 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     assert concourent_build is True
 
     # Step 1-8
-    wait_for_rebuild_complete(client, volume1_name)
-    wait_for_rebuild_complete(client, volume2_name)
+    wait_for_rebuild_complete(client, volume1_name,
+                              retry_count=RETRY_COUNTS_LONG)
+    wait_for_rebuild_complete(client, volume2_name,
+                              retry_count=RETRY_COUNTS_LONG)
 
     # Step 1-9
     update_setting(client,
@@ -892,6 +899,7 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     # While one volume is rebuilding, verify another volume is not
     # rebuilding and stuck in degrading state
     rebuild_started = False
+    first_rebuild = None
     for i in range(RETRY_COUNTS):
         volume1 = client.by_id_volume(volume1_name)
         volume2 = client.by_id_volume(volume2_name)
@@ -907,11 +915,23 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
         elif volume2.rebuildStatus == []:
             assert volume1.rebuildStatus[0].state == "in_progress"
             rebuild_started = True
+            first_rebuild = volume1_name
         elif volume1.rebuildStatus == []:
             assert volume2.rebuildStatus[0].state == "in_progress"
             rebuild_started = True
+            first_rebuild = volume2_name
 
         time.sleep(RETRY_INTERVAL)
+
+    # Wait for the second volume to start rebuilding.
+    # At this point, one volume has already started rebuilding in
+    # the loop above, and we want to wait until the other volume begins
+    # its rebuild as well before proceeding to wait for both rebuilds
+    # to complete.
+    if first_rebuild == volume1_name:
+        wait_for_rebuild_start(client, volume2_name)
+    else:
+        wait_for_rebuild_start(client, volume1_name)
 
     wait_for_rebuild_complete(client, volume2_name)
     wait_for_rebuild_complete(client, volume1_name)

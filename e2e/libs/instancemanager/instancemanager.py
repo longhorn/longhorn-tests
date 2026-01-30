@@ -8,6 +8,7 @@ from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 from workload.pod import delete_pod
 from workload.pod import list_pods
 from datetime import datetime, timezone, timedelta
@@ -40,6 +41,23 @@ class InstanceManager:
 
         assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
 
+    def wait_for_all_instance_manager_removed(self):
+        longhorn_client = get_longhorn_client()
+
+        for i in range(self.retry_count):
+            try:
+                instance_managers = longhorn_client.list_instance_manager()
+                if len(instance_managers) == 0:
+                    logging(f"All instance managers have been removed")
+                    return
+            except Exception as e:
+                logging(f"Getting instance manager state error: {e}")
+
+            logging(f"Waiting for all instance managers to be removed, retry ({i}) ... current count: {len(instance_managers)}")
+            time.sleep(self.retry_interval)
+
+        assert False, f"Expected all instance managers to be removed, but still found {len(instance_managers)} instance managers: {instance_managers}"
+
     def wait_all_instance_managers_recreated(self):
         retry_count, retry_interval = get_retry_count_and_interval()
         core_api = client.CoreV1Api()
@@ -52,7 +70,7 @@ class InstanceManager:
             logging(f"Checking v1 instance managers {v1_im_names} have recreated")
 
             for im_name in v1_im_names:
-                pod = core_api.read_namespaced_pod(name=im_name, namespace="longhorn-system")
+                pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
                 creation_time = pod.metadata.creation_timestamp
                 if creation_time > baseline_time:
                     recreated.append(im_name)
@@ -74,7 +92,7 @@ class InstanceManager:
 
         core_api = client.CoreV1Api()
         for im_name in v1_im_names:
-            pod = core_api.read_namespaced_pod(name=im_name, namespace="longhorn-system")
+            pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
             if pod.status.container_statuses[0].restart_count != 0:
                 logging(f"Unexpected instance manager restart: {pod}")
                 time.sleep(self.retry_count)
@@ -89,7 +107,7 @@ class InstanceManager:
             logging(f"Waiting for {engine_type} instance manager {'running' if exist else 'not running'} on node {node_name} ... ({i})")
             try:
                 label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
-                ims = list_pods("longhorn-system", label_selector)
+                ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
                 if exist:
                     if len(ims) > 0:
                         logging(f"Got {engine_type} instance manager running on node {node_name}")
@@ -110,10 +128,10 @@ class InstanceManager:
 
         try:
             label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
-            ims = list_pods("longhorn-system", label_selector)
+            ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
             for im in ims:
                 logging(f"Got {engine_type} instance manager running on node {node_name}: {im.metadata.name}")
-                delete_pod(im.metadata.name, namespace='longhorn-system', wait=False)
+                delete_pod(im.metadata.name, namespace=constant.LONGHORN_NAMESPACE, wait=False)
                 return
         except Exception as e:
             logging(f"Deleting {engine_type} instance manager on node {node_name} error: {e}")
@@ -121,7 +139,7 @@ class InstanceManager:
         assert False, f"Failed to delete {engine_type} instance manager on node {node_name}"
 
     def wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up(self, node_name, engine_type="v1"):
-        cmd = f"kubectl get instancemanager -l longhorn.io/node={node_name},longhorn.io/data-engine={engine_type} -n longhorn-system -ojson"
+        cmd = f"kubectl get instancemanager -l longhorn.io/node={node_name},longhorn.io/data-engine={engine_type} -n {constant.LONGHORN_NAMESPACE} -ojson"
         for i in range(self.retry_count):
             logging(f"Waiting for engine instances in {engine_type} instance manager on node {node_name} to be cleaned up ... ({i})")
             cr = json.loads(subprocess_exec_cmd(cmd))['items'][0]
@@ -130,3 +148,15 @@ class InstanceManager:
             else:
                 return
         assert False, f"Failed to clean up engine instances in {engine_type} instance manager on node {node_name}: {cr}"
+
+    def kill_engine_process(self, instance_manager_name, volume_name):
+        exec_cmd = [
+            "kubectl", "exec",
+            "-n", "longhorn-system",
+            instance_manager_name,
+            "--",
+            "sh", "-c",
+            f'kill -9 $(pgrep -f "controller {volume_name}")'
+        ]
+
+        subprocess_exec_cmd(exec_cmd)

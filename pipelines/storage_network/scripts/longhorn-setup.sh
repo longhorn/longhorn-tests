@@ -6,6 +6,7 @@ source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
+source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/storage_network.sh
 source pipelines/utilities/coredns.sh
@@ -13,7 +14,11 @@ source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_status.sh
 source pipelines/utilities/longhorn_ui.sh
-source pipelines/utilities/run_longhorn_test.sh
+if [[ ${TEST_TYPE} == "robot" ]]; then
+  source pipelines/utilities/run_longhorn_e2e_test.sh
+else
+  source pipelines/utilities/run_longhorn_test.sh
+fi
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -39,6 +44,7 @@ main(){
   set +x
   create_aws_secret
   set -x
+  create_instance_mapping_configmap
 
   if [[ "${TF_VAR_thick_plugin}" == true ]]; then
     deploy_multus_thick_plugin_daemonset
@@ -52,6 +58,7 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
+  install_backupstores_networkpolicy
   setup_azurite_backup_store
   install_csi_snapshotter
 

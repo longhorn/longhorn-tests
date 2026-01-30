@@ -104,3 +104,30 @@ Test RWX Volume Automatic Online Expansion
     And Write 1100 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
     And Check deployment 0 data in file data2.txt is intact
+
+Test RWOP Volume
+    [Tags]    coretest
+    [Documentation]    Test ReadWriteOncePod (RWOP) access mode
+    ...
+    ...                - 1. Create a PVC with ReadWriteOncePod access mode
+    ...                - 2. Verify the volume, PV, and PVC have correct access mode
+    ...                - 3. Create a deployment with the RWOP PVC and verify it runs
+    ...                - 4. Write and read data to verify the volume works
+    ...                - 5. Scale the deployment to 2 replicas
+    ...                - 6. Verify the second pod is stuck at pending due to RWOP restriction
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/9727
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWOP    sc_name=longhorn-test    storage_size=2Gi
+    And Wait for volume of persistentvolumeclaim 0 to be created
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Write 100 MB data to file 0 in deployment 0
+
+    When Scale deployment 0 to 2
+    And Sleep    60
+
+    Then Run command and wait for output
+    ...    kubectl get pods -l app=e2e-test-deployment-0 --field-selector=status.phase=Running --no-headers | wc -l
+    ...    1
+    And Run command and wait for output
+    ...    kubectl get pods -l app=e2e-test-deployment-0 --field-selector=status.phase=Pending --no-headers | wc -l
+    ...    1

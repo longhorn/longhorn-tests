@@ -14,6 +14,16 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     create_deployment    ${deployment_name}    ${claim_name}
 
+Create deployment ${deployment_id} with block persistentvolumeclaim ${claim_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_deployment    ${deployment_name}    ${claim_name}    block_volume=True
+
+Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} and liveness probe
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_deployment    ${deployment_name}    ${claim_name}    enable_pvc_io_and_liveness_probe=${True}
+
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with max replicaset
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
@@ -48,15 +58,27 @@ Delete deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     delete_deployment    ${deployment_name}
 
+Make block device filesystem in deployment ${deployment_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    make_block_device_filesystem_in_workload_pod    ${deployment_name}
+
+Mount block device on ${mount_point} in deployment ${deployment_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    mount_block_device_in_workload_pod    ${deployment_name}    ${mount_point}
+
 Write ${size} MB data to file ${file_name} in deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_workload_pod_random_data    ${deployment_name}    ${size}    ${file_name}
+
+And Write ${size} MB data to block device in deployment ${deployment_id} and check data is intact
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    write_and_check_workload_pod_random_data_to_block_device    ${deployment_name}    ${size}
 
 Check deployment ${deployment_id} data in file ${file_name} is intact
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     check_workload_pod_data_checksum    ${deployment_name}    ${file_name}
 
-Check deployment ${deployment_id} works
+Check deployment ${deployment_id} works    
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_workload_pod_random_data    ${deployment_name}    1024    random-data
     check_workload_pod_data_checksum    ${deployment_name}    random-data

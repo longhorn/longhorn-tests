@@ -6,6 +6,7 @@ source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/kubectl_retry.sh
 source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
+source pipelines/utilities/storage_network.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/create_registry_secret.sh
@@ -43,8 +44,10 @@ main(){
   create_instance_mapping_configmap
 
   install_backupstores
+  install_backupstores_networkpolicy
   setup_azurite_backup_store
   install_csi_snapshotter
+  create_nad_without_storage_network
 
   patch_coredns_ipv6_name_servers
   scale_up_coredns

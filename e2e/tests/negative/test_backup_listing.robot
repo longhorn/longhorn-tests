@@ -16,7 +16,6 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
-Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/snapshot.resource
@@ -126,7 +125,7 @@ Pod ${pod_id} data should same as volume ${source_volume_id} backup ${backup_id}
 
 *** Test Cases ***
 Backup Listing With More Than 1000 Backups
-    [Tags]  manual  longhorn-8355
+    [Tags]  manual  longhorn-8355    snapshot-purge
     [Documentation]    Test backup listing
     Given Create persistentvolumeclaim 0    volume_type=RWO
     And Create deployment 0 with persistentvolumeclaim 0

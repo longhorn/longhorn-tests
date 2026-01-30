@@ -1,4 +1,5 @@
 import time
+import yaml
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -9,11 +10,13 @@ from node_exec import NodeExec
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+import utility.constant as constant
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
 from utility.utility import convert_size_to_bytes
 from utility.utility import get_longhorn_client
+from utility.utility import subprocess_exec_cmd
 
 from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
@@ -68,7 +71,7 @@ class CRD(Base):
             self.obj_api.create_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="volumes",
                 body=body
             )
@@ -98,16 +101,29 @@ class CRD(Base):
         except ApiException as e:
             logging(f"Failed to create volume {volume_name} with parameters {body}: {e}")
 
-    def delete(self, volume_name):
+    def delete(self, volume_name, wait):
         try:
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="volumes",
+                name=volume_name,
+                body={
+                    "metadata": {
+                        "finalizers": []
+                    }
+                }
+            )
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="volumes",
                 name=volume_name
             )
-            self.wait_for_volume_deleted(volume_name)
+            if wait:
+                self.wait_for_volume_deleted(volume_name)
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
@@ -124,7 +140,7 @@ class CRD(Base):
                 body = get_cr(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name
                 )
@@ -141,7 +157,7 @@ class CRD(Base):
                 self.obj_api.patch_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name,
                     body=body
@@ -167,7 +183,7 @@ class CRD(Base):
                 body = get_cr(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name
                 )
@@ -176,7 +192,7 @@ class CRD(Base):
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumeattachments",
                     name=volume_name,
                     body=body
@@ -191,7 +207,7 @@ class CRD(Base):
         return self.obj_api.get_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             name=volume_name
         )
@@ -200,7 +216,7 @@ class CRD(Base):
         items = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="volumes",
             label_selector=label_selector
         )["items"]
@@ -221,7 +237,7 @@ class CRD(Base):
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumes",
                     name=volume_name,
                     body=volume
@@ -245,7 +261,7 @@ class CRD(Base):
                 self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumes",
                     name=volume_name
                 )
@@ -450,6 +466,7 @@ class CRD(Base):
 
     def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         complete = False
+        engines = None
         for i in range(self.retry_count):
             logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} to complete ({i}) ...")
             try:
@@ -460,7 +477,7 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume_name} engines error: {e}")
             time.sleep(self.retry_interval)
-        assert complete
+        assert complete, f"Failed to wait for volume {volume_name} restoration from backup {backup_name} to complete: {engines}"
 
         volume = self.get(volume_name)
         if not volume['status']['isStandby']:
@@ -490,14 +507,22 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert started
 
+    def expand(self, volume_name, size):
+        return Rest().expand(volume_name, size)
+
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None
         engine_current_size = 0
-        engine_expected_size = int(expected_size)
+        engine_expected_size = convert_size_to_bytes(expected_size)
         engine_operation = Engine()
         for i in range(self.retry_count):
             engine = engine_operation.get_engine(volume_name)
-            engine_current_size = int(engine['status']['currentSize'])
+            # there is no current size for a stopped engine
+            if engine['status']['currentState'] == 'stopped':
+                engine_current_size = int(engine['spec']['volumeSize'])
+            else:
+                engine_current_size = int(engine['status']['currentSize'])
+
             if engine_current_size == engine_expected_size:
                 break
 
@@ -558,7 +583,7 @@ class CRD(Base):
         replica_list = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             label_selector=f"longhornvolume={volume_name}\
                              ,longhornnode={node_name}"
@@ -567,7 +592,7 @@ class CRD(Base):
         self.obj_api.delete_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             name=replica_list['items'][0]['metadata']['name']
         )
@@ -576,7 +601,7 @@ class CRD(Base):
         replica = self.obj_api.get_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             name=replica_name
         )
@@ -584,7 +609,7 @@ class CRD(Base):
         self.obj_api.delete_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             name=replica['metadata']['name']
         )
@@ -622,11 +647,19 @@ class CRD(Base):
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 
+    def get_sha512sum(self, volume_name):
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        endpoint = self.get_endpoint(volume_name)
+        checksum = NodeExec(node_name).issue_cmd(
+            ["sh", "-c", f"sha512sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
+        logging(f"Calculated volume {volume_name} checksum {checksum}")
+        return checksum
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         replica_list = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             label_selector=f"longhornvolume={volume_name}"
         )['items']
@@ -648,7 +681,7 @@ class CRD(Base):
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
-                    namespace="longhorn-system",
+                    namespace=constant.LONGHORN_NAMESPACE,
                     plural="volumes",
                     name=volume_name,
                     body=volume
@@ -691,3 +724,33 @@ class CRD(Base):
 
     def update_data_locality(self, volume_name, data_locality):
         return Rest().update_data_locality(volume_name, data_locality)
+
+    def get_volume_recurringjobs(self, volume_name):
+        cmd = f"kubectl get volumes -n {constant.LONGHORN_NAMESPACE} {volume_name} -o yaml"
+        res = yaml.safe_load(subprocess_exec_cmd(cmd))
+        labels = res.get("metadata", {}).get("labels", {})
+        jobs = [key.split("/")[1] for key in labels.keys() if key.startswith("recurring-job.longhorn.io/")]
+        return jobs
+
+    def check_volume_has_recurringjob(self, volume_name, job_name):
+        logging(f"Checking volume {volume_name} has recurring job {job_name}")
+        jobs = self.get_volume_recurringjobs(volume_name)
+        if job_name not in jobs:
+            logging(f"Failed to find recurring job {job_name} for volume {volume_name}")
+            time.sleep(self.retry_interval)
+            assert False, f"Failed to find recurring job {job_name} for volume {volume_name}"
+
+    def get_volume_recurringjob_groups(self, volume_name):
+        cmd = f"kubectl get volumes -n {constant.LONGHORN_NAMESPACE} {volume_name} -o yaml"
+        res = yaml.safe_load(subprocess_exec_cmd(cmd))
+        labels = res.get("metadata", {}).get("labels", {})
+        job_groups = [key.split("/")[1] for key in labels.keys() if key.startswith("recurring-job-group.longhorn.io/")]
+        return job_groups
+
+    def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
+        logging(f"Checking volume {volume_name} has recurring job group {job_group_name}")
+        job_groups = self.get_volume_recurringjob_groups(volume_name)
+        if job_group_name not in job_groups:
+            logging(f"Failed to find recurring job group {job_group_name} for volume {volume_name}")
+            time.sleep(self.retry_interval)
+            assert False, f"Failed to find recurring job group {job_group_name} for volume {volume_name}"

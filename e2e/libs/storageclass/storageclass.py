@@ -5,13 +5,14 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from utility.utility import logging
+import utility.constant as constant
 
 class StorageClass():
 
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, secretName, secretNamespace):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -19,23 +20,45 @@ class StorageClass():
             manifest_dict = yaml.safe_load(f)
             manifest_dict['metadata']['name'] = name
 
-            manifest_dict['parameters']['numberOfReplicas'] = numberOfReplicas
-            manifest_dict['parameters']['migratable'] = migratable
-            manifest_dict['parameters']['dataLocality'] = dataLocality
-            manifest_dict['parameters']['fromBackup'] = fromBackup
-            manifest_dict['parameters']['nfsOptions'] = nfsOptions
-            manifest_dict['parameters']['dataEngine'] = dataEngine
+            if numberOfReplicas:
+                manifest_dict['parameters']['numberOfReplicas'] = numberOfReplicas
+            if migratable:
+                manifest_dict['parameters']['migratable'] = migratable
+            if dataLocality:
+                manifest_dict['parameters']['dataLocality'] = dataLocality
+            if fromBackup:
+                manifest_dict['parameters']['fromBackup'] = fromBackup
+            if nfsOptions:
+                manifest_dict['parameters']['nfsOptions'] = nfsOptions
+            if dataEngine:
+                manifest_dict['parameters']['dataEngine'] = dataEngine
 
             if encrypted == "true":
                 manifest_dict['parameters']['encrypted'] = encrypted
-                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = secretName
-                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = secretNamespace
-                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = secretName
-                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = secretNamespace
-                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = secretName
-                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = secretNamespace
-                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-name'] = secretName
-                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-namespace'] = secretNamespace
+                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = constant.LONGHORN_NAMESPACE
+                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = constant.LONGHORN_NAMESPACE
+                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = constant.LONGHORN_NAMESPACE
+                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-name'] = "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-namespace'] = constant.LONGHORN_NAMESPACE
+
+            if recurringJobSelector:
+                manifest_dict['parameters']['recurringJobSelector'] = recurringJobSelector
+
+            if volumeBindingMode:
+                manifest_dict['volumeBindingMode'] = volumeBindingMode
+
+            if allowedTopologies:
+                data = json.loads(allowedTopologies)
+                key, value = next(iter(data.items()))
+                manifest_dict.setdefault("allowedTopologies", []).append({
+                    "matchLabelExpressions": [{
+                        "key": key,
+                        "values": [value]
+                    }]
+                })
 
             self.api.create_storage_class(body=manifest_dict)
 

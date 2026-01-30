@@ -8,6 +8,8 @@ import signal
 import subprocess
 import shlex
 import json
+import utility.constant
+from datetime import datetime, timedelta, timezone
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
@@ -41,6 +43,14 @@ class timeout:
 
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
+
+
+def set_longhorn_namespace(ns):
+    utility.constant.LONGHORN_NAMESPACE = ns
+
+
+def get_longhorn_namespace():
+    return utility.constant.LONGHORN_NAMESPACE
 
 
 def logging(msg, also_report=False):
@@ -100,16 +110,25 @@ def get_backupstore():
     return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
 
-def subprocess_exec_cmd(cmd, input=None, timeout=None):
-    logging(f"Executing command {cmd}")
+def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
+    if verbose:
+        logging(f"Executing command {cmd}")
+
     if isinstance(cmd, str):
-        res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True)
+        try:
+            res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            res = e.output
     elif isinstance(cmd, list):
-        res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True)
+        try:
+            res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            res = e.output
     else:
         raise ValueError("Command must be a string or list")
 
-    logging(f"Executed command {cmd} with result {res}")
+    if verbose:
+        logging(f"Executed command {cmd} with result {res}")
     return res
 
 
@@ -323,6 +342,34 @@ def get_mgr_ips():
     return mgr_ips
 
 
+def get_longhorn_base_url():
+    # get base url of longhorn api
+    retry_count, retry_interval = get_retry_count_and_interval()
+    if os.getenv('LONGHORN_CLIENT_URL'):
+        # for develop or debug
+        # manually expose longhorn client
+        # to access longhorn manager in local environment
+        longhorn_client_url = os.getenv('LONGHORN_CLIENT_URL')
+        return longhorn_client_url
+    else:
+        # for ci, run test in in-cluster environment
+        # directly use longhorn manager cluster ip
+        for i in range(retry_count):
+            try:
+                config.load_incluster_config()
+                ips = get_mgr_ips()
+                # check if longhorn manager port is open before calling get_client
+                for ip in ips:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    mgr_port_open = sock.connect_ex((ip, 9500))
+                    if mgr_port_open == 0:
+                        longhorn_client_url = f"http://{ip}:9500"
+                        return longhorn_client_url
+            except Exception as e:
+                logging(f"Getting longhorn client base url error: {e}, retry ({i}) ...")
+                time.sleep(retry_interval)
+
+
 def get_longhorn_client():
     retry_count, retry_interval = get_retry_count_and_interval()
     if os.getenv('LONGHORN_CLIENT_URL'):
@@ -388,3 +435,8 @@ def is_json_object(s):
     if isinstance(parsed, dict):
         return parsed
     raise ValueError(f"input {s} is not a valid json object")
+
+
+def get_cron_after(minutes):
+    future = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    return f"{future.minute} {future.hour} * * *"

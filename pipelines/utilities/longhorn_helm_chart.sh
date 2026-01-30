@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/longhorn_namespace.sh
 
 get_longhorn_chart(){
   CHART_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
@@ -30,6 +31,8 @@ customize_longhorn_chart_registry(){
 }
 
 customize_longhorn_chart(){
+  # remove hard-coded .global.imageRegistry=docker.io
+  yq -i '.global.imageRegistry=""' "${LONGHORN_REPO_DIR}/chart/values.yaml"
   # customize longhorn components repository and tag (version) in chart/values.yaml
   OLD_IFS=$IFS
   IFS=':'
@@ -67,8 +70,16 @@ customize_longhorn_chart(){
 }
 
 install_longhorn(){
-  LONGHORN_NAMESPACE="longhorn-system"
-  helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
+  local custom_cmd="$1"
+  if [[ -n "$custom_cmd" ]]; then
+    eval "$custom_cmd"
+    CUSTOM_HELM_INSTALLATION="-f values.yaml --reuse-values"
+  else
+    CUSTOM_HELM_INSTALLATION=""
+  fi
+
+  get_longhorn_namespace
+  helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}" ${CUSTOM_HELM_INSTALLATION}
   wait_longhorn_status_running
 }
 
@@ -88,11 +99,11 @@ install_longhorn_custom(){
   get_longhorn_chart
   customize_longhorn_chart_registry
   customize_longhorn_chart
-  install_longhorn
+  install_longhorn "$@"
 }
 
 uninstall_longhorn(){
-  LONGHORN_NAMESPACE="longhorn-system"
+  get_longhorn_namespace
   helm uninstall longhorn --namespace "${LONGHORN_NAMESPACE}"
   kubectl delete ns "${LONGHORN_NAMESPACE}"
 }

@@ -20,7 +20,10 @@ from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
 from workload.workload import is_workload_pods_has_annotations
+from workload.workload import is_workload_pods_has_cni_interface
 from workload.workload import keep_writing_pod_data
+from workload.workload import make_block_device_filesystem_in_workload_pod
+from workload.workload import mount_block_device_in_workload_pod
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
 from workload.workload import wait_for_workload_pods_container_creating
@@ -33,6 +36,7 @@ from workload.workload import run_commands_in_pod
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
+import utility.constant as constant
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
@@ -86,6 +90,18 @@ class workload_keywords:
 
     def get_workload_volume_name(self, workload_name):
         return get_workload_volume_name(workload_name)
+
+    def make_block_device_filesystem_in_workload_pod(self, workload_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Making file system on block device in pod {pod_name}')
+        make_block_device_filesystem_in_workload_pod(pod_name)
+
+    def mount_block_device_in_workload_pod(self, workload_name, mount_point):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Mounting block device on {mount_point} in pod {pod_name}')
+        mount_block_device_in_workload_pod(pod_name, mount_point)
 
     def write_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
@@ -174,6 +190,12 @@ class workload_keywords:
         logging(f'Waiting for workload {workload_name} volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
 
+    def wait_for_workload_volume_attached(self, workload_name):
+        volume_name = get_workload_volume_name(workload_name)
+
+        logging(f'Waiting for workload {workload_name} volume {volume_name} to be attached')
+        self.volume.wait_for_volume_attached(volume_name)
+
     def wait_for_workload_volume_detached(self, workload_name):
         volume_name = get_workload_volume_name(workload_name)
 
@@ -206,13 +228,13 @@ class workload_keywords:
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
 
     def wait_for_pod_kept_in_state(self, workload_name, expect_state, namespace="default"):
-        assert expect_state in ["Terminating", "ContainerCreating", "Running"], f"Unknown expected pod state: {expect_state}: "
+        assert expect_state in ["Terminating", "ContainerCreating", "Running", "CrashLoopBackOff"], f"Unknown expected pod state: {expect_state}: "
         return wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace=namespace)
 
     def get_pod_node(self, pod):
         return get_pod_node(pod)
 
-    def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace="longhorn-system"):
+    def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace=constant.LONGHORN_NAMESPACE):
         for workload_name in workload_names:
 
             label_selector = ""
@@ -220,6 +242,17 @@ class workload_keywords:
                 label_selector = f"{LABEL_LONGHORN_COMPONENT}=share-manager"
 
             if not is_workload_pods_has_annotations(workload_name, annotation_key, namespace=namespace, label_selector=label_selector):
+                return False
+        return True
+
+    def is_workloads_pods_has_cni_interface(self, workload_names, interface_name, namespace=constant.LONGHORN_NAMESPACE):
+        for workload_name in workload_names:
+
+            label_selector = ""
+            if workload_name == "longhorn-share-manager":
+                label_selector = f"{LABEL_LONGHORN_COMPONENT}=share-manager"
+
+            if not is_workload_pods_has_cni_interface(workload_name, interface_name, namespace=namespace, label_selector=label_selector):
                 return False
         return True
 

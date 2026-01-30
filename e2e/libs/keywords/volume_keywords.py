@@ -9,7 +9,7 @@ from replica import Replica
 from utility.constant import ANNOT_REPLICA_NAMES
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 
@@ -35,9 +35,9 @@ class volume_keywords:
         logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize)
 
-    def delete_volume(self, volume_name):
+    def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
-        self.volume.delete(volume_name)
+        self.volume.delete(volume_name, wait)
 
     def attach_volume(self, volume_name, node_name=None, wait=True, retry=True):
         if not node_name:
@@ -65,7 +65,7 @@ class volume_keywords:
         return self.volume.list_names(dataEngine=dataEngine)
 
     def wait_for_volume_expand_to_size(self, volume_name, size):
-        logging(f'Waiting for volume {volume_name} expand to {size}')
+        logging(f'Waiting for volume {volume_name} to expand to {size}')
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
     def get_replica_node(self, volume_name):
@@ -302,8 +302,8 @@ class volume_keywords:
         self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)
 
     def wait_for_volume_clone_status_completed(self, volume_name):
-        logging(f'Waiting for volume {volume_name} clone status to be completed')
-        self.volume.wait_for_volume_clone_status(volume_name, "completed")
+        logging(f'Waiting for volume {volume_name} clone status to be copy-completed-awaiting-healthy')
+        self.volume.wait_for_volume_clone_status(volume_name, "copy-completed-awaiting-healthy")
 
     def wait_for_volume_migration_to_be_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
@@ -380,6 +380,9 @@ class volume_keywords:
     def get_volume_checksum(self, volume_name):
         return self.volume.get_checksum(volume_name)
 
+    def get_volume_sha512sum(self, volume_name):
+        return self.volume.get_sha512sum(volume_name)
+
     def validate_volume_setting(self, volume_name, setting_name, value):
         return self.volume.validate_volume_setting(volume_name, setting_name, value)
 
@@ -391,7 +394,7 @@ class volume_keywords:
         replica_list = self.replica.get(volume_name, node_name)
         replica = replica_list[0]
         replica_name = replica['metadata']['name']
-        node = self.node.get_node_by_name(node_name, namespace=LONGHORN_NAMESPACE)
+        node = self.node.get_node_by_name(node_name, namespace=constant.LONGHORN_NAMESPACE)
         for diskName in node.disks:
             disk = node.disks[diskName]
 
@@ -409,3 +412,12 @@ class volume_keywords:
     def update_data_locality(self, volume_name, data_locality):
         logging(f'Updating volume {volume_name} data locality {data_locality}')
         self.volume.update_data_locality(volume_name, data_locality)
+
+    def check_volume_has_recurringjob(self, volume_name, job_name):
+        self.volume.check_volume_has_recurringjob(volume_name, job_name)
+
+    def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
+        self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)
+
+    def expand_volume(self, volume_name, size):
+        self.volume.expand(volume_name, size)

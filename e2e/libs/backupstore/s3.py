@@ -15,6 +15,7 @@ from backupstore.base import Base
 from urllib.parse import urlparse
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 
 class S3(Base):
 
@@ -27,7 +28,7 @@ class S3(Base):
 
     def get_api_client(self, minio_secret_name):
         secret = self.core_api.read_namespaced_secret(name=minio_secret_name,
-                                                      namespace='longhorn-system')
+                                                      namespace=constant.LONGHORN_NAMESPACE)
 
         base64_minio_access_key = secret.data['AWS_ACCESS_KEY_ID']
         base64_minio_secret_key = secret.data['AWS_SECRET_ACCESS_KEY']

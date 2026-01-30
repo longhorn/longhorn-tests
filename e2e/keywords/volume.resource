@@ -130,8 +130,9 @@ Detach volume ${volume_id} from attached node
     detach_volume    ${volume_name}    ${node_name}
 
 Delete volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    delete_volume    ${volume_name}
+    delete_volume    ${volume_name}    &{config}
 
 Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -141,6 +142,11 @@ Write data to volume ${volume_id}
 Write ${size} GB data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${checksum} =    write_volume_random_data   ${volume_name}    ${${size} * 1024}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
+
+Write ${size} Mi data to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${checksum} =    write_volume_random_data   ${volume_name}    ${size}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write data ${data_id} to volume ${volume_id}
@@ -181,8 +187,13 @@ Wait for volume ${volume_id} attached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_attached    ${volume_name}
 
+Wait for volume ${volume_id} unknown
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_unknown    ${volume_name}
+
 Wait for volume ${volume_id} attached and unknown
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     wait_for_volume_unknown    ${volume_name}
 
 Wait for volume ${volume_id} detached
@@ -505,7 +516,7 @@ Create single replica volume ${volume_id} with replica on node ${node_id}
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 1
     Delete volume ${volume_id} replica on all replica node
-    Detach volume ${volume_id}
+    Detach volume ${volume_id} from node ${node_id}
     Wait for volume ${volume_id} detached
 
 Create volume ${volume_id} attached to node ${attach_node_id} with 2 replicas excluding node ${replica_excluding_node_id}
@@ -609,3 +620,15 @@ Ignore volume ${volume_id} offline replica rebuilding
 Update volume ${volume_id} data locality to ${data_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_data_locality    ${volume_name}    ${data_locality}
+
+Wait for volume ${volume_id} size to be ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_expand_to_size    ${volume_name}    ${size}
+
+Expand volume ${volume_id} to ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    expand_volume    ${volume_name}    ${size}
+
+Expand volume ${volume_id} to ${size} should fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    expand_volume    ${volume_name}    ${size}

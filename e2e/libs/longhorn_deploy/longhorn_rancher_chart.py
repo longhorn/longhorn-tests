@@ -2,7 +2,7 @@ from longhorn_deploy.base import Base
 from node import Node
 from node_exec import NodeExec
 from k8s import k8s
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import logging
 
 import subprocess
@@ -36,10 +36,10 @@ class LonghornRancherChart(Base):
             time.sleep(self.retry_count)
             assert False, "Uninstall longhorn crd failed"
 
-        k8s.delete_namespace(namespace=LONGHORN_NAMESPACE)
-        k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
+        k8s.delete_namespace(namespace=constant.LONGHORN_NAMESPACE)
+        k8s.wait_namespace_terminated(namespace=constant.LONGHORN_NAMESPACE)
 
-    def install(self, install_stable_version):
+    def install(self, custom_cmd, install_stable_version):
         if install_stable_version:
             install_function = "install_longhorn_stable"
         else:

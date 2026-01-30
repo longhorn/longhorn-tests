@@ -223,14 +223,16 @@ def test_rwx_parallel_writing(client, core_api, statefulset, pod, storage_class)
     md5sum2 = get_pod_data_md5sum(core_api, pod_name, 'data/test2')
 
     command1 = 'md5sum /export' + '/' + pv_name + '/' + 'test1' + \
-               " | awk '{print $1}'"
+               " | cut -d' ' -f1"
+
     share_manager_data1 = exec_command_in_pod(core_api, command1,
                                               share_manager_name,
                                               LONGHORN_NAMESPACE)
     assert md5sum1 == share_manager_data1
 
     command2 = 'md5sum /export' + '/' + pv_name + '/' + 'test2' + \
-               " | awk '{print $1}'"
+               " | cut -d' ' -f1"
+
     share_manager_data2 = exec_command_in_pod(core_api, command2,
                                               share_manager_name,
                                               LONGHORN_NAMESPACE)
@@ -761,3 +763,79 @@ def test_rwx_volume_mount_options(client, core_api, storage_class, pvc, make_dep
     # Clean up deployment and volume
     delete_and_wait_deployment(apps_api, deployment["metadata"]["name"])
     delete_and_wait_pvc(core_api, pvc_name)
+
+
+@pytest.mark.v2_volume_test  # NOQA
+def test_sm_pod_recreate_backoff(client, core_api, statefulset, storage_class):  # NOQA
+    """
+    Related to https://github.com/longhorn/longhorn/issues/11939
+
+    Test that repeatedly recreating the share manager pod doesn't cause
+    the longhorn-manager pod to fail because of nil pointer dereference.
+
+    1. Create a StatefulSet with RWX volume.
+    2. Get the share manager pod.
+    3. Find the longhorn-manager pod on the same node and store its restart
+       count.
+    4. Repeatedly delete the share manager pod to simulate pod crashes and to
+       cause longhorn-manager to recreate it.
+    5. Verify the longhorn-manager pod hasn't crashed by checking its restart
+       count.
+    """
+    create_storage_class(storage_class)
+    statefulset_name = statefulset['metadata']['name']
+    statefulset['spec']['replicas'] = 1
+    statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
+        = storage_class['metadata']['name']
+    statefulset['spec']['volumeClaimTemplates'][0]['spec']['accessModes'] \
+        = ['ReadWriteMany']
+
+    create_and_wait_statefulset(statefulset)
+
+    pvc_name = \
+        statefulset['spec']['volumeClaimTemplates'][0]['metadata']['name'] \
+        + '-' + statefulset_name + '-0'
+    pv_name = get_volume_name(core_api, pvc_name)
+    share_manager_name = 'share-manager-' + pv_name
+
+    share_manager_pod = core_api.read_namespaced_pod(
+        name=share_manager_name,
+        namespace=LONGHORN_NAMESPACE
+    )
+
+    share_manager_node = share_manager_pod.spec.node_name
+    longhorn_manager_pods = core_api.list_namespaced_pod(
+        namespace=LONGHORN_NAMESPACE,
+        label_selector="app=longhorn-manager"
+    )
+
+    longhorn_manager_pod = None
+    for lhm_pod in longhorn_manager_pods.items:
+        if lhm_pod.spec.node_name == share_manager_node:
+            longhorn_manager_pod = lhm_pod
+            break
+
+    assert longhorn_manager_pod is not None
+    lhm_pod_uid = longhorn_manager_pod.metadata.uid
+    lhm_pod_restart_count = \
+        longhorn_manager_pod.status.container_statuses[0].restart_count
+
+    for i in range(10):
+        for _ in range(RETRY_COUNTS):
+            if check_pod_existence(core_api, share_manager_name,
+                                   namespace=LONGHORN_NAMESPACE):
+                break
+            time.sleep(RETRY_INTERVAL)
+
+        delete_and_wait_pod(core_api, share_manager_name,
+                            namespace=LONGHORN_NAMESPACE)
+
+    longhorn_manager_pod = core_api.read_namespaced_pod(
+        name=longhorn_manager_pod.metadata.name,
+        namespace=LONGHORN_NAMESPACE
+    )
+
+    assert longhorn_manager_pod.metadata.uid == lhm_pod_uid
+    assert longhorn_manager_pod.status.container_statuses[0].restart_count \
+        == lhm_pod_restart_count
+    assert longhorn_manager_pod.status.phase == "Running"

@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Scheduling Test Cases
 
-Test Tags    regression
+Test Tags    regression    replica
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -9,7 +9,9 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
+Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
@@ -105,6 +107,62 @@ Test Replica Auto Balance Disk In Pressure
     And Check statefulset 1 data in file data.bin is intact
     And Check statefulset 2 data in file data.bin is intact
 
+Test Replica Auto Balance Disk In Pressure With Stopped Volume Should Not Block
+    [Tags]    auto-balance    single-replica
+    [Documentation]    Verify that stopped volumes with alphabetically smaller names
+    ...    no not block auto-balancing of running volumes when the disk is under
+    ...    pressure.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/10837
+
+    Given Setting replica-soft-anti-affinity is set to false
+
+    IF    "${DATA_ENGINE}" == "v1"
+        And Create 1 Gi filesystem type disk local-disk-0 on node 0
+        And Create 1 Gi filesystem type disk local-disk-1 on node 0
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        And Create 1 Gi block type disk local-disk-0 on node 0
+        And Create 1 Gi block type disk local-disk-1 on node 0
+    END
+    And Disable disk local-disk-1 scheduling on node 0
+    And Disable disk block-disk scheduling on node 0
+    And Disable node 0 default disk
+    And Disable node 1 scheduling
+    And Disable node 2 scheduling
+
+    # Disable auto balance disk pressure initially
+    And Setting replica-auto-balance-disk-pressure-percentage is set to 0
+
+    # Create two volumes with single replica on disk 0
+    And Create volume aaa with    size=450Mi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume aaa to node 0
+    And Wait for volume aaa healthy
+    And Create volume bbb with    size=450Mi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume bbb to node 0
+    And Wait for volume bbb healthy
+
+    # Write data to trigger disk pressure
+    And Write 400 Mi data to volume aaa
+    And Write 400 Mi data to volume bbb
+
+    # Stop the alphabetically first volume (aaa)
+    When Detach volume aaa from attached node
+    And Wait for volume aaa detached
+
+    # Enable auto-balance under disk pressure
+    And Setting replica-auto-balance-disk-pressure-percentage is set to 70
+    And Enable disk local-disk-1 scheduling on node 0
+    And Setting replica-auto-balance is set to best-effort
+
+    # The running replica (bbb) should be auto-balanced to disk 1,
+    # ignoring the stopped volume (aaa).
+    Then Check node 0 disk local-disk-1 is not in pressure
+    And There should be 1 replicas of volume aaa on node 0 disk local-disk-0
+    And There should be 1 replicas of volume bbb on node 0 disk local-disk-1
+
+    And Wait for volume bbb healthy
+    And Check volume bbb data is intact
+
 Test Replica Auto Balance Node Least Effort
     [Tags]    coretest
     [Documentation]    Scenario: replica auto-balance nodes with `least_effort`
@@ -161,6 +219,7 @@ Test Replica Auto Balance Node Least Effort
     And Check volume 0 data is intact
 
 Test Data Locality
+    [Tags]    single-replica
     [Documentation]    Test that Longhorn builds a local replica on the engine node
     Given Create single replica volume 0 with replica on node 0    dataLocality=disabled    dataEngine=${DATA_ENGINE}
     When Attach volume 0 to node 1
@@ -201,6 +260,7 @@ Test Replica Deleting Priority With Best-effort Data Locality
     And Volume 0 should have 1 running replicas on node 1
 
 Test Unexpected Volume Detachment During Data Locality Maintenance
+    [Tags]    single-replica
     [Documentation]    Test that the volume is not corrupted if there is an unexpected
     ...                detachment during building local replica
     Given Setting replica-soft-anti-affinity is set to false
@@ -228,6 +288,7 @@ Test Unexpected Volume Detachment During Data Locality Maintenance
     And Check volume 0 data is intact
 
 Test Data Locality With Failed Scheduled Replica
+    [Tags]    single-replica
     [Documentation]    Make sure failed to schedule local replica doesn't block the
     ...                the creation of other replicas.
     Given Disable node 2 scheduling
@@ -266,3 +327,63 @@ Test Data Locality With Failed Scheduled Replica
     And Volume 0 should have 1 running replicas on node 0
     And Volume 0 should have 1 running replicas on node 1
     And Volume 0 should have 0 replicas on node 2
+
+Test No Transient Error In Engine Status During Eviction
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/4294
+    ...    1. Create and attach a multi-replica volume.
+    ...    2. Prepare one extra disk for a node that contains at least one volume replica.
+    ...    3. Evicting the old disk for node. Verify that there is no transient error in
+    ...       engine Status during evictionKeep monitoring the engine YAML.
+    ...       e.g., watch -n "kubectl -n longhorn-system get lhe <engine name>".
+    Given Create volume 0    size=256Mi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 1
+    And Wait for volume 0 healthy
+
+    IF    "${DATA_ENGINE}" == "v1"
+        When Create 1 Gi filesystem type disk local-disk-0 on node 0
+        And Disable node 0 default disk
+        And Request eviction on default disk of node 0
+        Then There should be 1 replicas of volume 0 on node 0 disk local-disk-0
+        And There should be no replica of volume 0 on node 0 disk default
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        When Create 1 Gi block type disk local-disk-0 on node 0
+        And Disable disk block-disk scheduling on node 0
+        And Request eviction on disk block-disk of node 0
+        Then There should be 1 replicas of volume 0 on node 0 disk local-disk-0
+        And There should be no replica of volume 0 on node 0 disk block-disk
+    END
+
+    And Wait for volume 0 healthy
+    And Run command and not expect output
+    ...    kubectl get lhe -n longhorn-system -oyaml
+    ...    TransientFailure
+
+Test Storageclass Allowed Topologies
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12261
+    ...    1. Create storage class with allowedTopologies:
+    ...    allowedTopologies:
+    ...    - matchLabelExpressions:
+    ...      - key: kubernetes.io/hostname
+    ...        values:
+    ...          - <node-name>
+    ...    2. Create a workload with the storage class
+    ...    3. Observe the created PV has the expected nodeAffinity:
+    ...    nodeAffinity:
+    ...      required:
+    ...        nodeSelectorTerms:
+    ...        - matchExpressions:
+    ...          - key: kubernetes.io/hostname
+    ...            operator: In
+    ...            values:
+    ...            - <node-name>
+    ...    4. The workload pod and the volume are created on node <node-name> as we specified
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    allowedTopologies={"kubernetes.io/hostname":"${NODE_2}"}
+    When Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    Then Run command and expect output
+    ...    kubectl get pv -ojsonpath='{.items[0].spec.nodeAffinity.required.nodeSelectorTerms[*].matchExpressions[*].values[*]}'
+    ...    ${NODE_2}
+    And Run command and expect output
+    ...    kubectl get volumes -n longhorn-system -ojsonpath='{.items[0].spec.nodeID}'
+    ...    ${NODE_2}

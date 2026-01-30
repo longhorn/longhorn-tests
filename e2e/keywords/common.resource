@@ -30,6 +30,22 @@ Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 
 *** Keywords ***
+Run command
+    [Arguments]    ${command}
+    execute_command    ${command}
+
+Run command and expect output
+    [Arguments]    ${command}    ${expected_output}
+    execute_command_and_expect_output    ${command}    ${expected_output}
+
+Run command and wait for output
+    [Arguments]    ${command}    ${expected_output}
+    execute_command_and_wait_for_output    ${command}    ${expected_output}
+
+Run command and not expect output
+    [Arguments]    ${command}    ${unexpected_output}
+    execute_command_and_not_expect_output    ${command}    ${unexpected_output}
+
 Test should pass
     No Operation
 
@@ -64,10 +80,16 @@ Enable v2 data engine and add block disks
         add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
     END
 
+Init worker node variables
+    ${worker_nodes}=    get_worker_nodes
+    Run Keyword And Ignore Error    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
+    Run Keyword And Ignore Error    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
+    Run Keyword And Ignore Error    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
+
 Set up test environment
-    init_k8s_api_client
     setup_control_plane_network_latency
     set_backupstore
+    Init worker node variables
     IF     "${DATA_ENGINE}" == "v2"
         Enable v2 data engine and add block disks
     END
@@ -79,8 +101,11 @@ Cleanup test resources
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
     uncordon_all_nodes
+    cleanup_node_taints
+    cleanup_node_labels
     cleanup_control_plane_network_latency
-    reset_node_schedule
+    reset_disk_eviction_and_scheduling
+    reset_node_scheduling
     cleanup_node_exec
     cleanup_stress_helper
     cleanup_recurringjobs
@@ -98,7 +123,6 @@ Cleanup test resources
     cleanup_system_restores
     delete_orphans
     cleanup_backing_images
-    cleanup_node_labels
     cleanup_disks
     cleanup_engine_images
     reset_backupstore
@@ -108,3 +132,4 @@ Cleanup test resources
     cleanup_k8s_node_zone
     cleanup_csi_volume_snapshots
     cleanup_csi_volume_snapshot_classes
+    reset_longhorn_namespace

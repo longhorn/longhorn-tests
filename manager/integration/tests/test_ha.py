@@ -740,9 +740,9 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, csi_
     wait_for_volume_degraded(client, volume_name)
     # Trigger rebuild failure by
     # crashing the replica which is sending data to the rebuilding replica
-    from_replica_name, _ = wait_for_rebuild_start(client, volume_name)
+    from_replica_names, _ = wait_for_rebuild_start(client, volume_name)
     for r in replicas:
-        if r.name == from_replica_name:
+        if r.name in from_replica_names:
             from_replica = r
     assert from_replica
     crash_replica_processes(client, core_api, volume_name, [from_replica])
@@ -806,10 +806,10 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(client, core_api, vol
     crash_replica_processes(client, core_api, volume_name,
                             [original_replicas[0], original_replicas[1]])
     wait_for_volume_degraded(client, volume_name)
-    from_replica_name, rebuilding_replica_name = \
+    from_replica_names, rebuilding_replica_name = \
         wait_for_rebuild_start(client, volume_name)
-    assert from_replica_name != rebuilding_replica_name
-    assert from_replica_name == original_replicas[2].name
+    assert rebuilding_replica_name not in from_replica_names
+    assert original_replicas[2].name in from_replica_names
     assert rebuilding_replica_name == original_replicas[0].name
 
     # Wait for volume healthy and
@@ -963,7 +963,6 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     backupstore_cleanup(client)
 
 
-@pytest.mark.v2_volume_test
 def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
@@ -1036,7 +1035,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     dr_volume_name = volume_name + "-dr"
     client.create_volume(name=dr_volume_name, size=str(1 * Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
-                         frontend="", standby=True)
+                         frontend="", standby=True, dataEngine=DATA_ENGINE)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_healthy_no_frontend(client, dr_volume_name)
     wait_for_backup_restore_completed(client, dr_volume_name, b1.name)

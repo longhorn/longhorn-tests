@@ -1,14 +1,18 @@
 from kubernetes import client
+import time
 
 from replica.base import Base
 from replica.rest import Rest
 
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
 
 
 class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def get(self, volume_name=None, node_name=None, disk_uuid=None):
         label_selector = []
@@ -19,17 +23,27 @@ class CRD(Base):
         if disk_uuid:
             label_selector.append(f"longhorndiskuuid={disk_uuid}")
         label_selector = ",".join(label_selector)
-        logging(f"Getting replicas with labels {label_selector}")
 
         replicas = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
-            namespace="longhorn-system",
+            namespace=constant.LONGHORN_NAMESPACE,
             plural="replicas",
             label_selector=label_selector
         )
-        logging(f"Got replicas {replicas['items']}")
+        logging(f"Got {len(replicas['items'])} replicas with labels {label_selector}")
         return replicas["items"]
+
+    def wait_for_disk_replica_count(self, volume_name=None, node_name=None, disk_uuid=None, count=None):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} having {count} replicas running on node {node_name} disk {disk_uuid} ... ({i})")
+            current_count = len(self.get(volume_name, node_name, disk_uuid))
+            if not count and current_count > 0:
+                return
+            elif count and int(count) == current_count:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} having {count} replicas running on node {node_name} disk {disk_uuid}"
 
     def get_replica_names(self, volume_name, numberOfReplicas):
         logging(f"Getting volume {volume_name} replica names")
@@ -55,7 +69,7 @@ class CRD(Base):
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
-                namespace="longhorn-system",
+                namespace=constant.LONGHORN_NAMESPACE,
                 plural="replicas",
                 name=replica_name
             )

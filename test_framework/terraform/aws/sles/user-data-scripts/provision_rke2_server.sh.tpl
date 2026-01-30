@@ -2,10 +2,22 @@
 
 set -e
 
-sudo systemctl restart guestregister # Sometimes registration fails on first boot.
-sudo zypper ref
+# Sometimes, registration fails on the first boot, which causes the default repositories to be missing from zypper,
+# preventing it from installing any packages.
+# In some cases, even manually executing systemctl restart guestregister can fail.
+sudo systemctl restart guestregister || true
+if ! SUSEConnect --status 2>/dev/null | grep -q "Registered"; then
+  sudo systemctl enable guestregister.service || true
+  sudo registercloudguest --force-new || true
+fi
+sudo zypper --gpg-auto-import-keys ref
 sudo zypper install -y -t pattern devel_basis 
-sudo zypper install -y open-iscsi nfs-client jq azure-cli
+sudo zypper install -y open-iscsi nfs-client jq iptables
+
+sudo mkdir -p /etc/certs
+sudo ln -s /var/lib/ca-certificates/ca-bundle.pem /etc/certs/ca-certificates.crt
+sudo ln -s /var/lib/ca-certificates/pem /etc/ssl/certs
+
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
@@ -57,7 +69,9 @@ EOF
     systemctl restart systemd-sysctl
     useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
     cat << EOF >> /etc/rancher/rke2/config.yaml
-profile: "cis-1.23"
+profile: "cis"
+kube-apiserver-arg:
+  - 'service-account-extend-token-expiration=false'
 EOF
 fi
 

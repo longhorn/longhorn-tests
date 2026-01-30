@@ -5,7 +5,11 @@ set -x
 export LONGHORN_REPO_BRANCH="${LONGHORN_VERSION}"
 
 source pipelines/utilities/kubectl_retry.sh
-source pipelines/utilities/run_longhorn_test.sh
+if [[ ${TEST_TYPE} == "robot" ]]; then
+  source pipelines/utilities/run_longhorn_e2e_test.sh
+else
+  source pipelines/utilities/run_longhorn_test.sh
+fi
 source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/longhorn_ui.sh
@@ -14,7 +18,11 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/longhornctl.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/create_registry_secret.sh
+source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/install_csi_snapshotter.sh
+source pipelines/utilities/create_instance_mapping_configmap.sh
+source pipelines/utilities/create_harvester_secret.sh
+source pipelines/utilities/create_appco_secret.sh
 if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]]; then
   source pipelines/appco/scripts/longhorn_manifest.sh
 elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
@@ -32,12 +40,6 @@ LONGHORN_NAMESPACE="longhorn-system"
 apply_selinux_workaround(){
   kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_REPO_BRANCH#v}/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
 }
-
-
-enable_mtls(){
-  kubectl apply -f "${TF_VAR_tf_workspace}/templates/longhorn-grpc-tls.yml" -n ${LONGHORN_NAMESPACE}
-}
-
 
 wait_longhorn_status_running(){
   local RETRY_COUNTS=10 # in minutes
@@ -58,18 +60,6 @@ wait_longhorn_status_running(){
 
 }
 
-
-install_backupstores(){
-  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
-  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
-  kubectl create -f ${MINIO_BACKUPSTORE_URL} \
-               -f ${NFS_BACKUPSTORE_URL}
-}
-
-create_appco_secret(){
-  kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry application-collection --docker-server=dp.apps.rancher.io --docker-username="${APPCO_USERNAME}" --docker-password="${APPCO_PASSWORD}"
-}
-
 main(){
   set_kubeconfig
 
@@ -87,7 +77,9 @@ main(){
   set +x
   create_aws_secret
   create_appco_secret
+  create_harvester_secret
   set -x
+  create_instance_mapping_configmap
 
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
@@ -118,6 +110,13 @@ main(){
     install_longhorn_custom
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
+    if [[ "${TEST_TYPE}" == "robot" ]]; then
+      if [[ "${OUT_OF_CLUSTER}" == true ]]; then
+        run_longhorn_test_out_of_cluster
+      else
+        run_longhorn_test
+      fi
+    fi
     run_longhorn_test
   fi
 }

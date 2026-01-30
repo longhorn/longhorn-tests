@@ -5,6 +5,7 @@ from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
+from utility.utility import convert_size_to_bytes
 
 from volume.constant import MEBIBYTE
 
@@ -23,19 +24,20 @@ class persistentvolumeclaim_keywords:
             self.delete_persistentvolumeclaim(claim.metadata.name)
             self.volume.wait_for_volume_deleted(claim.spec.volume_name)
 
-    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB", dataSourceName=None, dataSourceKind=None):
+    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volume_mode="Filesystem"):
         logging(f'Creating {volume_type} persistentvolumeclaim {name} with {sc_name} storageclass')
-        return self.claim.create(name, volume_type, sc_name, storage_size, dataSourceName, dataSourceKind)
+        return self.claim.create(name, volume_type, sc_name, storage_size, dataSourceName, dataSourceKind, volume_mode)
 
     def delete_persistentvolumeclaim(self, name):
         logging(f'Deleting persistentvolumeclaim {name}')
         return self.claim.delete(name)
 
-    def expand_persistentvolumeclaim_size_by_mib(self, claim_name, size_in_mib):
-        size_in_byte = int(size_in_mib) * MEBIBYTE
+    def expand_persistentvolumeclaim_size_to(self, claim_name, size):
+        logging(f'Expanding persistentvolumeclaim {claim_name} to {size}')
+        size_in_byte = convert_size_to_bytes(size)
         expanded_size = self.claim.expand(claim_name, size_in_byte)
 
-        logging(f'Expanding persistentvolumeclaim {claim_name} by {size_in_mib} MiB')
+        logging(f'Expanded persistentvolumeclaim {claim_name} to {expanded_size}')
         self.claim.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
 
     def get_claim_requested_size(self, claim_name):

@@ -48,7 +48,7 @@ Test Encrypted RWX Volume Basic
         RWX
 
 Test Encrypted RWO Volume Online Expansion
-    [Tags]    rwo
+    [Tags]    rwo    expansion
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
@@ -93,3 +93,30 @@ Test Encrypted RWX Volume Online Expansion
     And Wait for volume of deployment 0 healthy
     And Wait for workloads pods stable    deployment 0
     Then Check deployment 0 data in file data.txt is intact
+
+Test Encrypted RWO Block Volume Online Expansion
+    [Tags]    rwo
+    Given Create crypto secret
+    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim in Block volume mode 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
+    And Create deployment 0 with block persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Make block device filesystem in deployment 0
+    And Mount block device on /data in deployment 0
+    And Write 10 MB data to file data1.txt in deployment 0
+    Then Check deployment 0 data in file data1.txt is intact
+
+    When Expand deployment 0 volume to 100 MiB
+    Then Wait for deployment 0 volume size expanded
+    And Check deployment 0 pods did not restart
+    # Verify the actual disk size in the sharemanager pod.
+    # NOTE: For encrypted volumes, 16MiB is reserved for the encryption header.
+    # Therefore, a 100MiB requested volume will result in an 84MiB actual disk size.
+    And Assert disk size in instance manager pod for deployment 0 is 84MiB
+    When Scale down deployment 0 to detach volume
+    And Scale up deployment 0 to attach volume
+    Then Wait for volume of deployment 0 healthy
+    And Wait for workloads pods stable    deployment 0
+    And Mount block device on /data in deployment 0
+    And Write 60 MB data to file data2.txt in deployment 0
+    Then Check deployment 0 data in file data2.txt is intact

@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Manual Test Cases
-Test Tags    upgrade    negative
+Test Tags    upgrade    negative    backing-image
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -42,10 +42,6 @@ System upgrade with compatible backing image manager image
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
-    IF    '${DATA_ENGINE}' == 'v2'
-        Fail    Test case not support for v2 data engine
-    END
-
     ${BACKING_IMAGE_MANAGER_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE
     ${ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE
 
@@ -56,9 +52,9 @@ System upgrade with compatible backing image manager image
     When Install Longhorn stable version
     And Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 3
 
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     FOR    ${i}    IN RANGE    2
-        And Create volume ${i} with    size=3Gi    backingImage=bi    dataEngine=${DATA_ENGINE}
+        And Create volume ${i} with    size=3Gi    backingImage=bi
         And Create persistentvolume for volume ${i}
         And Create persistentvolumeclaim for volume ${i}
         And Create pod vol-${i}-pod-bi using volume ${i}
@@ -67,9 +63,9 @@ System upgrade with compatible backing image manager image
         And Write 1024 MB data to file data.txt in pod vol-${i}-pod-bi
     END
 
-    When Create backing image bi-large with    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=1
+    When Create backing image bi-large with    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    minNumberOfCopies=1
     FOR    ${i}    IN RANGE    2    4
-        Then Create volume ${i} with    size=3Gi    backingImage=bi-large    dataEngine=${DATA_ENGINE}
+        Then Create volume ${i} with    size=3Gi    backingImage=bi-large
         And Create persistentvolume for volume ${i}
         And Create persistentvolumeclaim for volume ${i}
     END
@@ -131,13 +127,10 @@ System upgrade with the same backing image manager image
     ...
     ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/
     ${BACKING_IMAGE_MANAGER_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE
-    IF    '${DATA_ENGINE}' == 'v2'
-        Fail    Test case not support for v2 data engine
-    END
 
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=1
-    And Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
-    And Create volume 1 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=1
+    And Create volume 0 with    backingImage=bi
+    And Create volume 1 with    backingImage=bi
     Then Attach volume 0
     And Attach volume 1
     And Wait for volume 0 healthy

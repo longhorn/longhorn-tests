@@ -2,7 +2,7 @@ from longhorn_deploy.base import Base
 from node import Node
 from node_exec import NodeExec
 from k8s import k8s
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.constant import LONGHORN_UNINSTALL_JOB_LABEL
 from utility.utility import logging
 
@@ -46,15 +46,15 @@ class LonghornKubectl(Base):
             time.sleep(self.retry_count)
             assert False, "Deleting longhorn uninstall job failed"
 
-        k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
+        k8s.wait_namespace_terminated(namespace=constant.LONGHORN_NAMESPACE)
 
-    def install(self, install_stable_version):
+    def install(self, custom_cmd, install_stable_version):
         if install_stable_version:
             install_function = "install_longhorn_stable"
         else:
             install_function = "install_longhorn_custom"
         command = "./pipelines/utilities/longhorn_manifest.sh"
-        process = subprocess.Popen([command, install_function],
+        process = subprocess.Popen([command, install_function, custom_cmd],
                                    shell=False)
         process.wait()
         return True if process.returncode == 0 else False

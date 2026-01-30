@@ -7,7 +7,6 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
-Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/migration.resource
@@ -51,7 +50,7 @@ Test Migration Rollback
     And Check volume 0 data is intact
 
 Test Snapshot Purge Rejection While Migration
-    [Tags]    coretest    migration
+    [Tags]    coretest    migration    snapshot-purge
     [Documentation]    Test that a snapshot purge request is rejected while migration is in progress.
 
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}

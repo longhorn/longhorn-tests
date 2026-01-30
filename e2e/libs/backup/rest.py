@@ -9,6 +9,7 @@ from utility.utility import logging
 from utility.utility import get_all_crs
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+import utility.constant as constant
 
 from volume import Rest as RestVolume
 
@@ -189,7 +190,7 @@ class Rest(Base):
     def list_all(self):
         return get_all_crs(group="longhorn.io",
                       version="v1beta2",
-                      namespace="longhorn-system",
+                      namespace=constant.LONGHORN_NAMESPACE,
                       plural="backups",
                       )
 
@@ -257,7 +258,11 @@ class Rest(Base):
         expected_checksum = self.get_data_checksum(backup_name)
         actual_checksum = self.volume.get_checksum(volume_name)
         logging(f"Checked volume {volume_name}. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}")
-        assert actual_checksum == expected_checksum
+        if actual_checksum != expected_checksum:
+            message = f"Checked volume {volume_name} backup {backup_name} failed. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}"
+            logging(message)
+            time.sleep(self.retry_count)
+            assert False, message
 
     def get_restored_checksum(self, backup_name):
         expected_checksum = self.get_data_checksum(backup_name)

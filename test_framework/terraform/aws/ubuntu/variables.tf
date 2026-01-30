@@ -68,7 +68,7 @@ variable "lh_aws_instance_type_worker" {
 
 variable "block_device_size_controlplane" {
   type        = number
-  default     = 40
+  default     = 64
 }
 
 variable "aws_ssh_public_key_file_path" {
@@ -99,12 +99,11 @@ variable "k8s_distro_name" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.32.2+k3s1"
+  default     = "v1.34.2+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
-    rke: (default: v1.22.5-rancher1-1)
-    k3s: (default: v1.32.2+k3s1)
-    rke2: (default: v1.32.2+rke2r1)
+    k3s: (default: v1.34.2+k3s1)
+    rke2: (default: v1.34.2+rke2r1)
   EOT
 }
 

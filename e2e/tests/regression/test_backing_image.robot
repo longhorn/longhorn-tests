@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Backing Image Test Cases
 
-Test Tags    regression    backing_image
+Test Tags    regression    backing-image
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -11,16 +11,17 @@ Resource    ../keywords/backup_backing_image.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Test Backing Image Basic Operation
-    [Tags]    coretest
+    [Tags]    coretest    backing image
     [Documentation]    Test Backing Image APIs.
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
-    When Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    When Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0
@@ -41,8 +42,8 @@ Test Uninstall When Backing Image Exists
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/10044
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
-        And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+        Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+        And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
         And Setting deleting-confirmation-flag is set to true
 
         When Uninstall Longhorn
@@ -52,7 +53,7 @@ Test Uninstall When Backing Image Exists
     END
 
 Test Backup Backing Image
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     When Create backup backing image bi-backup for backing image bi
     Then Wait for backing image backup for backing image bi ready
 
@@ -79,10 +80,10 @@ Test Evict Two Replicas Volume With Backing Image
     ...                of a volume created from a backing image
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/11034
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=${DATA_ENGINE}    minNumberOfCopies=3
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     # To make sure replica node is node 1
     And Set node 2 with    allowScheduling=false    evictionRequested=false
-    When Create volume 0 with    backingImage=bi    dataEngine=${DATA_ENGINE}    numberOfReplicas=2
+    When Create volume 0 with    backingImage=bi    numberOfReplicas=2
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
     And Set node 2 with    allowScheduling=true    evictionRequested=false
@@ -92,3 +93,48 @@ Test Evict Two Replicas Volume With Backing Image
     And Volume 0 should have 1 running replicas on node 2
     And Volume 0 should have 0 running replicas on node 1
     And Check longhorn manager pods not restarted after test start
+
+Test backing image handle node disk deleting events
+    [Tags]    backing image
+    [Documentation]   Validates that the backing image manager and backing image disk files
+    ...               are removed after a broken disk is removed from Longhorn node.
+    ...
+    ...               Issue: https://github.com/longhorn/longhorn/issues/10983
+    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1    minNumberOfCopies=3
+    Then Record node 0 default disk uuid
+    When Run command on node    0
+    ...    rm /var/lib/longhorn/longhorn-disk.cfg
+    Then Wait for node 0 default disk broken
+    And Wait for backing image manager on node 0 unknown
+
+    When Disable node 0 default disk
+    And Delete node 0 default disk
+    And Wait for backing image manager on node 0 terminated
+    And Backing image bi should not have the removed disk in its DiskFileSpecMap
+
+Test backing image download to local
+    [Tags]    backing image
+    [Documentation]    Validates backimage can download to local successfully
+    ...
+    ...    1. Create and attach a volume (recommended volume size > 1Gi).
+    ...    2. Write some data into the file then calculate the SHA512 checksum of the volume block device.
+    ...    3. Create a backing image from the above volume. And wait for the 1st backing image file ready.
+    ...    4. Download the backing image to local via UI (Clicking button Download in Operation list of the backing image). => Verify the downloaded file checksum is the same as the volume checksum & the backing image current checksum (when Exported Backing Image Type is raw).
+    ...    5. Create and attach the volume with the backing image. Wait for the attachment complete.
+    ...    6. Re-download the backing image to local. => Verify the downloaded file checksum still matches.
+    Given Create volume vol-0 with    size=100Mi    dataEngine=v1
+    And Attach volume vol-0
+    And Wait for volume vol-0 healthy
+    And Write 50 Mi data to volume vol-0
+
+    &{bi_params} =    Create Dictionary    volume-name=vol-0   export-type=raw
+    When Create backing image bi with    url=    parameters=&{bi_params}    minNumberOfCopies=3    dataEngine=v1
+    And Download backing image bi
+    And Check downloaded backing image bi data matches source backingimage
+    And Check downloaded backing image bi data matches volume vol-0
+
+    When Create volume vol-1 with    backingImage=bi    numberOfReplicas=3
+    And Attach volume vol-1
+    And Wait for volume vol-1 healthy
+    And Download backing image bi
+    And Check downloaded backing image bi data matches source backingimage

@@ -57,8 +57,10 @@ Test V2 Snapshot
     Then Validate snapshot 0 is parent of snapshot 1 in volume 0 snapshot list
     And Validate snapshot 1 is parent of snapshot 2 in volume 0 snapshot list
     And Validate snapshot 2 is parent of volume-head in volume 0 snapshot list
-    # cannot delete snapshot 2 since it is the parent of volume head
-    And Delete snapshot 2 of volume 0 will fail
+
+    When Delete snapshot 2 CR of volume 0
+    Then Validate snapshot 2 is not in volume 0 snapshot list
+    And Check volume 0 data is data 2
 
     When Detach volume 0
     And Wait for volume 0 detached
@@ -73,20 +75,18 @@ Test V2 Snapshot
     Then Check volume 0 data is data 1
     And Validate snapshot 1 is parent of volume-head in volume 0 snapshot list
 
-    # cannot delete snapshot 1 since it is the parent of volume head
-    When Delete snapshot 1 of volume 0 will fail
-    And Delete snapshot 2 of volume 0
-    And Delete snapshot 0 of volume 0
+    When Delete snapshot 1 CR of volume 0
+    And Delete snapshot 0 CR of volume 0
 
     # delete a snapshot won't mark the snapshot as removed
     # but directly remove it from the snapshot list without purge
-    Then Validate snapshot 2 is not in volume 0 snapshot list
+    Then Validate snapshot 1 is not in volume 0 snapshot list
     And Validate snapshot 0 is not in volume 0 snapshot list
 
     And Check volume 0 data is data 1
 
 Degraded Volume Replica Rebuilding
-    [Tags]    coretest
+    [Tags]    coretest    replica
     Given Disable node 2 scheduling
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -106,6 +106,9 @@ Degraded Volume Replica Rebuilding
 
 V2 Volume Should Block Trim When Volume Is Degraded
     [Tags]    cluster
+    [Documentation]    Issues:
+    ...    https://github.com/longhorn/longhorn-tests/pull/2114
+    ...    https://github.com/longhorn/longhorn/issues/8430
     Given Setting auto-salvage is set to true
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -121,6 +124,7 @@ V2 Volume Should Block Trim When Volume Is Degraded
 
         When Wait for workloads pods stable
         ...    deployment 0
+        And Wait for volume of deployment 0 healthy
         And Check deployment 0 works
         Then Trim deployment 0 volume should pass
     END
@@ -170,28 +174,8 @@ V2 Volume Should Cleanup Resources When Instance Manager Is Deleted
         And Check volume 2 data is intact
     END
 
-Test Creating V2 Volume With Backing Image After Replica Rebuilding
-    Given Create volume 0 with    dataEngine=v2
-    And Attach volume 0
-    And Wait for volume 0 healthy
-    And Write data 0 to volume 0
-
-    And Create backing image bi-v2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v2
-
-    When Delete volume 0 replica on node 1
-    And Wait until volume 0 replica rebuilding started on node 1
-    And Wait until volume 0 replica rebuilding completed on node 1
-    And Wait for volume 0 healthy
-    Then Check volume 0 data is data 0
-
-    When Create volume 1 with    size=3Gi    backingImage=bi-v2    dataEngine=v2
-    And Create persistentvolume for volume 1
-    And Create persistentvolumeclaim for volume 1
-    And Create pod 1 using volume 1
-    And Wait for pod 1 running
-    And Write 1024 MB data to file data.txt in pod 1
-
 Test V2 Data Engine Selective Activation
+    [Tags]    replica
     # create volumes with 2 replicas on node 0 and node 1
     # there is no replica on node 2
     Given Create volume 0 attached to node 0 with 2 replicas excluding node 2    dataEngine=v2
@@ -201,78 +185,40 @@ Test V2 Data Engine Selective Activation
     Then Check v2 instance manager is not running on node 2
     And Check v1 instance manager is running on node 2
 
-    When Label node 1 with node.longhorn.io/disable-v2-data-engine=true
-    Then Check v2 instance manager is running on node 1
-    And Check v1 instance manager is running on node 1
-
-    When Detach volume 0
-    And Wait for volume 0 detached
-    Then Check v2 instance manager is not running on node 2
-    And Check v2 instance manager is not running on node 1
-    And Check v1 instance manager is running on node 2
-    And Check v1 instance manager is running on node 1
-
-    When Label node 2 with node.longhorn.io/disable-v2-data-engine-
-    And Label node 1 with node.longhorn.io/disable-v2-data-engine-
-    Then Check v2 instance manager is running on node 2
-    And Check v2 instance manager is running on node 1
-
-Test V2 Volume Creation With Inactivated Data Engine
-    Given Label node 0 with node.longhorn.io/disable-v2-data-engine=true
-    And Label node 1 with node.longhorn.io/disable-v2-data-engine=true
-    And Label node 2 with node.longhorn.io/disable-v2-data-engine=true
-
-    When Create volume 0 with    dataEngine=v2
-    Then Wait for volume 0 faulted
-
-    When Label node 0 with node.longhorn.io/disable-v2-data-engine-
-    And Label node 1 with node.longhorn.io/disable-v2-data-engine-
-    And Label node 2 with node.longhorn.io/disable-v2-data-engine-
-    Then Wait for volume 0 detached
-    And Attach volume 0 to node 0
-    And Wait for volume 0 healthy
-
-Test V2 Instance Manager Deletion With Inactivated Data Engine
-    Given Create volume 0 with    dataEngine=v2
-    And Attach volume 0 to node 0
-    And Wait for volume 0 healthy
-    And Write data to volume 0
-
-    When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
-    And Delete v2 instance manager on node 2
-    Then Check v2 instance manager is not running on node 2
-    And Wait for volume 0 degraded
-
     When Label node 2 with node.longhorn.io/disable-v2-data-engine-
     Then Check v2 instance manager is running on node 2
-    And Wait for volume 0 healthy
-    And Check volume 0 data is intact
 
-Test V2 Instance Manager Deletion On Volume Attached Node With Inactivated Data Engine
-    Given Create volume 0 with    dataEngine=v2
-    And Attach volume 0 to node 2
+    When Update volume 0 replica count to 3
     And Wait for volume 0 healthy
-    And Write data to volume 0
-
-    When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
-    And Delete v2 instance manager on node 2
-    Then Check v2 instance manager is not running on node 2
-
-    When Label node 2 with node.longhorn.io/disable-v2-data-engine-
-    Then Check v2 instance manager is running on node 2
-    And Wait for volume 0 attached
-    And Wait for volume 0 healthy
-    And Check volume 0 data is intact
+    Then Volume 0 should have running replicas on node 2
 
 Test V2 Data Engine Selective Activation During Replica Rebuilding
-    Given Create volume 0 with    dataEngine=v2
-    And Attach volume 0 to node 0
+    [Tags]    replica
+    Given Create volume 0 attached to node 0 with 2 replicas excluding node 2    dataEngine=v2
     And Wait for volume 0 healthy
     And Write data to volume 0
 
-    When Delete volume 0 replica on node 2
-    And Wait until volume 0 replica rebuilding started on node 2
-    And Label node 2 with node.longhorn.io/disable-v2-data-engine=true
-    Then Wait until volume 0 replica rebuilding completed on node 2
+    When Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+    And Delete volume 0 replica on node 0
+    And Wait until volume 0 replicas rebuilding completed
+    And Delete volume 0 replica on node 1
+    And Wait until volume 0 replicas rebuilding completed
+    Then Volume 0 should have 0 replicas on node 2
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test V2 Data Engine Selective Activation With Existing Engine And Replica
+    [Tags]    replica
+    # create a volume with replicas on node 0 and node 1
+    # and attach it to node 2
+    Given Create volume 0 attached to node 2 with 2 replicas excluding node 2    dataEngine=v2
+
+    ${node_0}=    Get Node By Index    0
+    When Run command and expect output
+    ...    kubectl label node ${node_0} node.longhorn.io/disable-v2-data-engine=true
+    ...    cannot disable v2 data engine
+
+    ${node_2}=    Get Node By Index    2
+    When Run command and expect output
+    ...    kubectl label node ${node_2} node.longhorn.io/disable-v2-data-engine=true
+    ...    cannot disable v2 data engine

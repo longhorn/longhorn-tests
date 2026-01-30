@@ -2,7 +2,7 @@ terraform {
   required_providers {
     rancher2 = {
       source  = "rancher/rancher2"
-      version = "~> 8.1.0"
+      version = "~> 8.5.0"
     }
   }
 }
@@ -92,7 +92,7 @@ image:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}longhorn-manager
     shareManager:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}longhorn-share-manager
-    supportBundleManager:
+    supportBundleKit:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}support-bundle-kit
     ui:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}longhorn-ui

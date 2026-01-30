@@ -2,7 +2,7 @@ from longhorn_deploy.base import Base
 from node import Node
 from node_exec import NodeExec
 from k8s import k8s
-from utility.constant import LONGHORN_NAMESPACE
+import utility.constant as constant
 from utility.utility import logging
 
 import subprocess
@@ -37,7 +37,7 @@ class LonghornArgocd(Base):
             time.sleep(self.retry_count)
             assert False, "Deleting longhorn CRDs failed"
 
-        k8s.wait_namespace_terminated(namespace=LONGHORN_NAMESPACE)
+        k8s.wait_namespace_terminated(namespace=constant.LONGHORN_NAMESPACE)
 
         command = "./pipelines/utilities/argocd.sh"
         process = subprocess.Popen([command, "uninstall_longhorn_app"],
@@ -48,7 +48,7 @@ class LonghornArgocd(Base):
             time.sleep(self.retry_count)
             assert False, "Uninstall argocd longhorn app failed"
 
-    def install(self, install_stable_version):
+    def install(self, custom_cmd, install_stable_version):
         if install_stable_version:
             install_function = "install_longhorn_stable"
         else:

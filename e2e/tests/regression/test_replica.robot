@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Replica Test Cases
 
-Test Tags    regression
+Test Tags    regression    replica
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -10,6 +10,8 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -50,10 +52,10 @@ Test Offline Replica Rebuilding
     [Documentation]    Test offline replica rebuilding for a volume.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/8443
-    Given Create volume 0 with    size=6Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
-    And Write 5 GB data to volume 0
+    And Write 3 GB data to volume 0
     And Detach volume 0
     And Wait for volume 0 detached
 
@@ -65,11 +67,11 @@ Test Offline Replica Rebuilding
     And Ignore volume 0 offline replica rebuilding
 
     When Delete volume 0 replica on node 0
-    Then Setting offline-replica-rebuilding is set to {"v1":"true","v2":"true"}
+    Then Setting offline-replica-rebuilding is set to true
     And Wait until volume 0 replica rebuilding started on node 0
     And Wait for volume 0 detached
     And Volume 0 should have 3 replicas when detached
-    And Setting offline-replica-rebuilding is set to {"v1":"false","v2":"false"}
+    And Setting offline-replica-rebuilding is set to false
 
 Test Preempt Offline Replica Rebuilding By A Workload
     [Tags]    coretest    offline-rebuilding
@@ -103,3 +105,72 @@ Test Preempt Offline Replica Rebuilding By A Workload
     # write some data with workload pod to check if the workload works.
     And Write 64 MB data to file data.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
+
+Test Evict Replicas Repeatedly
+    [Documentation]    https://github.com/longhorn/longhorn/issues/9780
+    ...    1. Create a pod that uses a v2 Longhorn volume.
+    ...    2. Evict one of the replica nodes.
+    ...    3. Repeat step 2.
+    Given Create volume 0 attached to node 2 with 2 replicas excluding node 2    dataEngine=${DATA_ENGINE}
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    FOR   ${i}    IN RANGE    10
+        When Evict node ${{ ${i} % 2 }}
+        # an extra replica will be created on the other node first
+        Then Volume 0 should have 3 replicas
+        # then the original replica will be evicted
+        And Volume 0 should have 2 replicas
+        And Wait for volume 0 healthy
+        And Unevict evicted nodes
+    END
+
+    And Check volume 0 data is intact
+    And Run command and not expect output
+    ...    kubectl logs -n longhorn-system -l longhorn.io/component=instance-manager,longhorn.io/node=${NODE_0},longhorn.io/data-engine=${DATA_ENGINE}
+    ...    write: broken pipe
+
+Test Delete Instance Manager Of Single Replica Volume
+    [Tags]    single-replica
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11525
+    ...    Create a v2 volume with 1 replica on node-a
+    ...    Attach it to node-b
+    ...    Crash all v2 IM pods by delete them (crashing the IM pod which has the only replica of the volume)
+    ...    Volume should recover
+    Given Create single replica volume 0 with replica on node 1    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    When Delete ${DATA_ENGINE} instance manager on node 1
+    And Wait for volume 0 unknown
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is intact
+
+    When Delete ${DATA_ENGINE} instance manager on node 0
+    And Wait for volume 0 unknown
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is intact
+
+Test Offline Replica Rebuilding Volume Status Condition
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11246
+    Given Setting offline-replica-rebuilding is set to true
+    And Create volume vol with    dataEngine=${DATA_ENGINE}
+    And Attach volume vol
+    And Wait for volume vol healthy
+    And Write data to volume vol
+    And Run command and not expect output
+    ...    kubectl get volumes vol -n longhorn-system -oyaml
+    ...    OfflineRebuildingInProgress
+    And Detach volume vol
+    And Wait for volume vol detached
+
+    When Delete volume vol replica on replica node
+    Then Run command and wait for output
+    ...    kubectl get volumes vol -n longhorn-system -oyaml
+    ...    OfflineRebuildingInProgress
+    And Wait until volume vol replica rebuilding completed on replica node
+    And Wait for volume vol detached
+    And Run command and not expect output
+    ...    kubectl get volumes vol -n longhorn-system -oyaml
+    ...    OfflineRebuildingInProgress

@@ -9,6 +9,7 @@ Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/host_keywords.py
 Library    ../libs/keywords/k8s_keywords.py
 Library    ../libs/keywords/replica_keywords.py
+Library    ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
 Create pod ${pod_id} using volume ${volume_id}
@@ -35,9 +36,17 @@ Delete pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     delete_pod    ${pod_name}
 
+Delete pod ${pod_id} to detach volume ${volume_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    delete_pod    ${pod_name}
+
 Keep writing data to pod of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     keep_writing_workload_pod_data    ${workload_name}
+
+Keep writing data to pod ${pod_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    keep_writing_workload_pod_data    ${pod_name}
 
 Write ${size} MB data to file ${file_name} in pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
@@ -214,6 +223,13 @@ Wait for volume of ${workload_kind} ${workload_id} attached to another node and 
     ${volume_node} =    get_volume_node    ${volume_name}
     Should Not Be Equal    ${last_volume_node}    ${volume_node}
 
+Wait for volume of ${workload_kind} ${workload_id} attached to another node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_attached    ${volume_name}
+    ${volume_node} =    get_volume_node    ${volume_name}
+    Should Not Be Equal    ${last_volume_node}    ${volume_node}
+
 Delete replica of ${workload_kind} ${workload_id} volume on ${replica_locality}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
@@ -248,6 +264,10 @@ Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on the ori
     ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
     ${node_name} =    get_pod_node    ${pod}
     Should Be Equal    ${node_name}    ${last_volume_node}
+
+Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
 
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -288,26 +308,30 @@ Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
     ELSE
         ${label_selector} =    Set Variable    ${EMPTY}
     END
-    delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    ${label_selector}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}    ${label_selector}
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes
     ${node_names} =    list_node_names_by_role    worker
 
+    ${longhorn_namespace} =    get_longhorn_namespace
     FOR    ${node_name}    IN    @{node_names}
-        delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system
+        delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}
     END
 
 Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes simultaneously
     ${node_names} =    list_node_names_by_role    worker
 
+    ${longhorn_namespace} =    get_longhorn_namespace
     FOR    ${node_name}    IN    @{node_names}
-        delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system    wait=${False}
+        delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}    wait=${False}
     END
 
 Delete Longhorn ${workload_kind} ${workload_name} pod
-    ${pod_name} =    get_workload_pod_name    ${workload_name}    longhorn-system
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${pod_name} =    get_workload_pod_name    ${workload_name}    ${longhorn_namespace}
     Log    ${pod_name}
-    delete_pod    ${pod_name}     longhorn-system
+    delete_pod    ${pod_name}     ${longhorn_namespace}
 
 Force delete ${workload_kind} ${workload_id} pod on the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -318,8 +342,7 @@ Check volume of ${workload_kind} ${workload_id} replica on node ${node_id} disk 
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_node_by_index    ${node_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
-    ${replicas} =    get_replicas    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
-    Should Be True    len(${replicas}) > 0
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
 
 Expand ${workload_kind} ${workload_id} volume to ${size}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -374,3 +397,9 @@ Assert pod UIDs of ${workload_kind} ${workload_id} remain unchanged
         Should Be Equal As Strings    ${pod_uids}    ${recorded_pod_uids}
         Sleep    1
     END
+
+Kill volume engine process for ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${instance_manager_name} =    get_volume_instance_manager    ${volume_name}
+    kill_engine_process    ${instance_manager_name}    ${volume_name}

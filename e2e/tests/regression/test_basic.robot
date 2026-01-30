@@ -55,7 +55,7 @@ Test Volume Basic
     And Delete volume 0
 
 Test V1 Snapshot
-    [Tags]    coretest
+    [Tags]    coretest    snapshot-purge
     [Documentation]    Test snapshot operations
     Given Create volume 0 with    dataEngine=v1
     When Attach volume 0
@@ -82,8 +82,10 @@ Test V1 Snapshot
     And Wait for volume 0 detached
     And Attach volume 0 in maintenance mode
     And Wait for volume 0 healthy
+    And Create snapshot 3 of volume 0
+    Then Validate snapshot 3 is parent of volume-head in volume 0 snapshot list
 
-    And Revert volume 0 to snapshot 1
+    When Revert volume 0 to snapshot 1
     And Detach volume 0
     And Wait for volume 0 detached
     And Attach volume 0
@@ -103,7 +105,7 @@ Test V1 Snapshot
     And Check volume 0 data is data 1
 
 Test Strict Local Volume Disabled Revision Counter By Default
-    [Tags]    coretest
+    [Tags]    coretest    single-replica
     [Documentation]
     ...    1. Set the global setting disable-revision-counter to false
     ...    2. Create a volume with 1 replica and strict-local data locality
@@ -186,3 +188,15 @@ Test Rapid Volume Detachment
         And Wait for volume 0 detached
         Then Wait for engine instances in ${DATA_ENGINE} instance manager CR on node 0 to be cleaned up
     END
+
+Test Deploy V2 Volume With Disabled V1 Data Engine
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test case not support for v1 data engine
+    END
+    Given Setting v1-data-engine is set to false
+    And Create volume 0 with    size=2Gi    numberOfReplicas=3    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    When Write data to volume 0
+    Then Check volume 0 data is intact

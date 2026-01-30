@@ -7,9 +7,9 @@ class storageclass_keywords:
     def __init__(self):
         self.storageclass = StorageClass()
 
-    def create_storageclass(self, name, numberOfReplicas="3", migratable="false", dataLocality="disabled", fromBackup="", nfsOptions="", dataEngine="v1", encrypted="false", secretName="longhorn-crypto", secretNamespace="longhorn-system"):
+    def create_storageclass(self, name, numberOfReplicas=None, migratable=None, dataLocality=None, fromBackup=None, nfsOptions=None, dataEngine=None, encrypted=None, recurringJobSelector=None, volumeBindingMode=None, allowedTopologies=None):
         logging(f'Creating storageclass with {locals()}')
-        self.storageclass.create(name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, secretName, secretNamespace)
+        self.storageclass.create(name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies)
 
     def cleanup_storageclasses(self):
         self.storageclass.cleanup()

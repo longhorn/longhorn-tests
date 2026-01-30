@@ -25,6 +25,7 @@ def REGISTRY_URL = ""
 def RUN_V2_INTERRUPT_MODE = params.RUN_V2_INTERRUPT_MODE ? params.RUN_V2_INTERRUPT_MODE : false
 
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
+def DISABLE_V1_DATA_ENGINE = params.DISABLE_V1_DATA_ENGINE ? params.DISABLE_V1_DATA_ENGINE : false
 
 // parameter for mTls
 def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
@@ -49,6 +50,13 @@ node {
         string(credentialsId: 'AZURE_SUBSCRIPTION_ID', variable: 'AZURE_SUBSCRIPTION_ID'),
         string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
         file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),
+        // For backup store use
+        usernamePassword(credentialsId: 'AZBLOB_CREDS', passwordVariable: 'AZBLOB_ACCOUNT_KEY', usernameVariable: 'AZBLOB_ACCOUNT_NAME'),
+        string(credentialsId: 'AZBLOB_ENDPOINT', variable: 'AZBLOB_ENDPOINT'),
+        usernamePassword(credentialsId: 'CIFS_CREDS', passwordVariable: 'CIFS_PASSWORD', usernameVariable: 'CIFS_USERNAME'),
+        usernamePassword(credentialsId: 'MINIO_CREDS', passwordVariable: 'MINIO_SECRET_ACCESS_KEY', usernameVariable: 'MINIO_ACCESS_KEY_ID'),
+        string(credentialsId: 'MINIO_ENDPOINTS', variable: 'MINIO_ENDPOINTS'),
+        usernamePassword(credentialsId: 'MINIO_CERT_CREDS', passwordVariable: 'MINIO_CERT_KEY', usernameVariable: 'MINIO_CERT'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -102,8 +110,10 @@ node {
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration coce: $REGISTRATION_CODE_ID"
 
-                if (RUN_V2_TEST) {
-                    CUSTOM_TEST_OPTIONS += " -m v2_volume_test"
+                // If RUN_V2_TEST is enabled but no -m marker is provided,
+                // append "-m v2_volume_test" so v2 tests are included by default.
+                if (RUN_V2_TEST && !CUSTOM_TEST_OPTIONS.contains("-m")) {
+                        CUSTOM_TEST_OPTIONS += " -m v2_volume_test"
                 }
 
                 sh "test_framework/scripts/build.sh"
@@ -136,6 +146,7 @@ node {
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
+                                       --env DISABLE_V1_DATA_ENGINE=${DISABLE_V1_DATA_ENGINE} \
                                        --env RUN_V2_INTERRUPT_MODE=${RUN_V2_INTERRUPT_MODE} \
                                        --env CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
@@ -166,6 +177,16 @@ node {
                                        --env QASE_TOKEN=${QASE_TOKEN} \
                                        --env QASE_PROJECT=LH \
                                        --env TF_VAR_network_stack="${NETWORK_STACK}" \
+                                       --env AZBLOB_ACCOUNT_NAME="${AZBLOB_ACCOUNT_NAME}" \
+                                       --env AZBLOB_ACCOUNT_KEY="${AZBLOB_ACCOUNT_KEY}" \
+                                       --env AZBLOB_ENDPOINT="${AZBLOB_ENDPOINT}" \
+                                       --env CIFS_USERNAME="${CIFS_USERNAME}" \
+                                       --env CIFS_PASSWORD="${CIFS_PASSWORD}" \
+                                       --env MINIO_SECRET_ACCESS_KEY="${MINIO_SECRET_ACCESS_KEY}" \
+                                       --env MINIO_ACCESS_KEY_ID="${MINIO_ACCESS_KEY_ID}" \
+                                       --env MINIO_ENDPOINTS="${MINIO_ENDPOINTS}" \
+                                       --env MINIO_CERT_KEY="${MINIO_CERT_KEY}" \
+                                       --env MINIO_CERT="${MINIO_CERT}" \
                                        ${imageName}
                 """
 

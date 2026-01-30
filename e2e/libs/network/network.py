@@ -9,6 +9,7 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+import utility.constant as constant
 from utility.utility import pod_exec
 
 from workload.pod import create_pod
@@ -26,7 +27,7 @@ def get_control_plane_node_network_latency_in_ms():
 def setup_control_plane_network_latency():
     latency_in_ms = get_control_plane_node_network_latency_in_ms()
     if latency_in_ms != 0:
-        control_plane_nodes = Node.list_node_names_by_role("control-plane")
+        control_plane_nodes = Node().list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             cmd = f"tc qdisc replace dev eth0 root netem delay {latency_in_ms}ms"
             res = NodeExec(control_plane_node).issue_cmd(cmd)
@@ -38,7 +39,7 @@ def setup_control_plane_network_latency():
 def cleanup_control_plane_network_latency():
     latency_in_ms = get_control_plane_node_network_latency_in_ms()
     if latency_in_ms != 0:
-        control_plane_nodes = Node.list_node_names_by_role("control-plane")
+        control_plane_nodes = Node().list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             cmd = "tc qdisc del dev eth0 root"
             res = NodeExec(control_plane_node).issue_cmd(cmd)
@@ -80,7 +81,7 @@ def disconnect_node_network_without_waiting_completion(node_name, disconnection_
 # For now, drop_pod_egress_traffic only works in "suse-like" container images. It relies on iptables userspace 
 # utilities, which must generally be installed before execution.
 def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
-    wait_for_pod_status(pod_name, "Running", namespace='longhorn-system')
+    wait_for_pod_status(pod_name, "Running", namespace=constant.LONGHORN_NAMESPACE)
 
     # Install iptables and execute the drop rule in the foreground.
     # Then, sleep and execute the undrop rule in the background.
@@ -93,4 +94,4 @@ def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
     undrop_rule = 'iptables -D OUTPUT -p tcp --sport 3260 -j ACCEPT; iptables -D OUTPUT -p tcp -j DROP;'
     full_cmd = f"{install_cmd} {drop_rule} {{ sleep {drop_time_in_sec}; {undrop_rule} }} > /dev/null 2> /dev/null &"
 
-    pod_exec(pod_name, 'longhorn-system', full_cmd)
+    pod_exec(pod_name, constant.LONGHORN_NAMESPACE, full_cmd)

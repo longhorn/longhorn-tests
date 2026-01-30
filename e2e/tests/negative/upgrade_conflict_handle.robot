@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Manual Test Cases
-Test Tags    negative
+Test Tags    negative    recurring-job
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -49,6 +49,7 @@ Test Stability of Longhorn with Large Workload
     Perform recurring job workflow under load
    
 Test Upgrade Stability with Large Workload
+    [Tags]    upgrade
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
@@ -60,6 +61,7 @@ Test Upgrade Stability with Large Workload
 
     When Install Longhorn stable version    
     And Set default backupstore
+    And Enable v2 data engine and add block disks
 
     When Perform recurring job workflow under load    
     And Upgrade Longhorn to custom version

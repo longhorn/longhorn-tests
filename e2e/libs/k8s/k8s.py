@@ -1,6 +1,8 @@
 import time
 import asyncio
 import os
+import json
+import yaml
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -11,7 +13,7 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
 from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
-from utility.constant import DRAIN_TIMEOUT
+import utility.constant as constant
 
 from node import Node
 
@@ -20,6 +22,7 @@ from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 
+from datetime import datetime, timezone
 
 async def restart_kubelet(node_name, downtime_in_sec=10):
     k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
@@ -45,7 +48,7 @@ async def restart_kubelet(node_name, downtime_in_sec=10):
 def get_longhorn_node_condition_status(node_name, type):
     jsonpath = f"jsonpath={{.status.conditions[?(@.type=='{type}')].status}}"
     exec_cmd = [
-        "kubectl", "-n", "longhorn-system", "get",
+        "kubectl", "-n", constant.LONGHORN_NAMESPACE, "get",
         "nodes.longhorn.io", node_name, "-o", jsonpath]
     return subprocess_exec_cmd(exec_cmd)
 
@@ -68,8 +71,9 @@ def drain_node(node_name):
     res = subprocess_exec_cmd(exec_cmd)
 
 def force_drain_node(node_name):
+    retry_count, _ = get_retry_count_and_interval()
     exec_cmd = ["kubectl", "drain", node_name, "--force", "--ignore-daemonsets", "--delete-emptydir-data"]
-    res = subprocess_exec_cmd(exec_cmd, timeout=DRAIN_TIMEOUT)
+    res = subprocess_exec_cmd(exec_cmd, timeout=retry_count)
 
 def cordon_node(node_name):
     exec_cmd = ["kubectl", "cordon", node_name]
@@ -81,7 +85,7 @@ def uncordon_node(node_name):
 
 def get_all_pods_on_node(node_name):
     api = client.CoreV1Api()
-    all_pods = api.list_namespaced_pod(namespace='longhorn-system', field_selector='spec.nodeName=' + node_name)
+    all_pods = api.list_namespaced_pod(namespace=constant.LONGHORN_NAMESPACE, field_selector='spec.nodeName=' + node_name)
     user_pods = [p for p in all_pods.items if (p.metadata.namespace != 'kube-system')]
     return user_pods
 
@@ -132,7 +136,7 @@ def get_instance_manager_on_node(node_name):
     return None
 
 def check_instance_manager_pdb_not_exist(instance_manager):
-    exec_cmd = ["kubectl", "get", "pdb", "-n", "longhorn-system"]
+    exec_cmd = ["kubectl", "get", "pdb", "-n", constant.LONGHORN_NAMESPACE]
     res = subprocess_exec_cmd(exec_cmd)
     assert instance_manager not in res
 
@@ -243,3 +247,160 @@ def wait_for_namespace_pods_running(namespace):
             return
 
     assert False, f"wait all pod in namespace {namespace} running failed"
+
+def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace):
+    # Convert test_start_time to UTC and format it for kubectl --since-time use
+    test_start_time = test_start_time.astimezone(timezone.utc)
+    test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    exec_cmd = [
+        "kubectl", "logs", pod_name,
+        "-n", namespace,
+        f"--since-time={test_start_time}"
+    ]
+
+    pod_log = subprocess_exec_cmd(exec_cmd)
+    logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
+
+    assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
+def deploy_system_upgrade_controller():
+    logging(f"Deploying system upgrade controller")
+    cmd = "kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml -f https://raw.githubusercontent.com/yangchiu/longhorn-tests/refs/heads/k8s-upgrade-test/e2e/templates/system_upgrade_controller/system_upgrade_controller.yaml"
+    subprocess_exec_cmd(cmd)
+
+def upgrade_k8s_to_latest_version(drain=False):
+    logging(f"Upgrading K8s to latest version")
+    k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
+
+    filepath = "./templates/system_upgrade_controller/k8s_upgrade_plan.yaml"
+    with open(filepath, 'r') as f:
+        yaml_content = f.read()
+
+    yaml_content = yaml_content.replace("k3s", k8s_distro)
+    if drain:
+        yaml_docs = list(yaml.safe_load_all(yaml_content))
+        yaml_docs[1]["spec"]["drain"] = {
+            "force": True,
+            "disableEviction": True
+        }
+        yaml_content = yaml.safe_dump_all(yaml_docs, sort_keys=False)
+
+    logging(yaml_content)
+
+    cmd = f"kubectl apply -f -"
+    subprocess_exec_cmd(cmd, input=yaml_content)
+
+    wait_for_k8s_upgrade_completed()
+
+def wait_for_k8s_upgrade_completed():
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    cmd = "kubectl -n system-upgrade get plan server-plan -ojson"
+    completed = False
+    for i in range(retry_count):
+        logging(f"Waiting for k8s upgrade server plan completed ... ({i})")
+        try:
+            plan = json.loads(subprocess_exec_cmd(cmd, verbose=False))
+            plan_conditions = plan.get("status", {}).get("conditions", {})
+            for condition in plan_conditions:
+                if condition.get("type") == "Complete" and condition.get("status") == "True":
+                    completed = True
+                    break
+        except Exception as e:
+            logging(f"Waiting for k8s upgrade server plan completed error: {e}")
+        if completed:
+            break
+        time.sleep(retry_interval)
+
+    if not completed:
+        logging(f"Failed to wait for k8s upgrade server plan completed")
+        time.sleep(retry_count)
+    assert completed, f"Failed to wait for k8s upgrade server plan completed"
+
+    cmd = "kubectl -n system-upgrade get plan agent-plan -ojson"
+    completed = False
+    for i in range(retry_count):
+        logging(f"Waiting for k8s upgrade agent plan completed ... ({i})")
+        try:
+            plan = json.loads(subprocess_exec_cmd(cmd, verbose=False))
+            plan_conditions = plan.get("status", {}).get("conditions", {})
+            for condition in plan_conditions:
+                if condition.get("type") == "Complete" and condition.get("status") == "True":
+                    completed = True
+                    break
+        except Exception as e:
+            logging(f"Waiting for k8s upgrade agent plan completed error: {e}")
+        if completed:
+            break
+        time.sleep(retry_interval)
+
+    if not completed:
+        logging(f"Failed to wait for k8s upgrade agent plan completed")
+        time.sleep(retry_count)
+    assert completed, f"Failed to wait for k8s upgrade agent plan completed"
+
+def patch_longhorn_component_resources_limit(component_name, component_type, cpu_request, memory_request, cpu_limit, memory_limit, namespace):
+    patch_list = [
+        {
+            "op": "add",
+            "path": f"/spec/template/spec/containers/0/resources",
+            "value": {
+                "requests": {"cpu": cpu_request, "memory": memory_request},
+                "limits": {"cpu": cpu_limit, "memory": memory_limit}
+            }
+        }
+    ]
+
+    patch_json = json.dumps(patch_list)
+
+    cmd = [
+        "kubectl", "-n", namespace,
+        "patch", component_type, component_name,
+        "--type=json",
+        "--patch", patch_json
+    ]
+
+    logging(f"Patching resources limit for {component_type}/{component_name} with command: {cmd}")
+    result = subprocess_exec_cmd(cmd)
+    return result
+
+def remove_longhorn_component_resources_limit(component_name, component_type, namespace):
+    patch_list = [
+        {
+            "op": "remove",
+            "path": f"/spec/template/spec/containers/0/resources"
+        }
+    ]
+
+    patch_json = json.dumps(patch_list)
+    cmd = [
+        "kubectl", "-n", namespace,
+        "patch", component_type, component_name,
+        "--type=json",
+        "--patch", patch_json
+    ]
+
+    logging(f"Removing resources limit for {component_type}/{component_name} with command: {cmd}")
+    result = subprocess_exec_cmd(cmd)
+    logging(f"Remove resources result: {result}")
+    return result
+
+def get_longhorn_component_resources_limit(component_name, component_type, namespace):
+    cmd = [
+        "kubectl", "-n", namespace,
+        "get", component_type, component_name,
+        "-o", "json"
+    ]
+    logging(f"Getting resources limit for {component_type}/{component_name}")
+    output = subprocess_exec_cmd(cmd)
+    ds_json = json.loads(output)
+
+    containers = ds_json["spec"]["template"]["spec"]["containers"]
+    for c in containers:
+        if c["name"] == component_name:
+            resources = c.get("resources", {})
+            requests = resources.get("requests", {})
+            limits = resources.get("limits", {})
+            return {"requests": requests, "limits": limits}
+
+    assert False, f"Container {component_name} not found in {component_type}/{component_name}"

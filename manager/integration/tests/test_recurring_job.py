@@ -30,7 +30,6 @@ from common import create_pvc_for_volume
 from common import create_and_check_volume
 from common import read_volume_data
 from common import wait_for_volume_detached
-from common import wait_for_volume_expansion
 from common import wait_for_volume_healthy
 from common import wait_for_volume_healthy_no_frontend
 from common import wait_for_volume_recurring_job_update
@@ -71,6 +70,10 @@ from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
 from common import wait_for_cron_job_delete
 
+from common import delete_replica_on_test_node
+from common import wait_for_rebuild_complete
+from common import wait_for_system_snapshot_count
+
 from common import ACCESS_MODE_RWO
 from common import ACCESS_MODE_RWX
 from common import JOB_LABEL
@@ -82,7 +85,6 @@ from common import RETRY_BACKUP_INTERVAL
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 from common import SIZE, Mi, Gi
 from common import SETTING_RESTORE_RECURRING_JOBS
-from common import VOLUME_HEAD_NAME
 from common import DATA_ENGINE
 
 
@@ -1872,19 +1874,18 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
     Scenario: test recurring job snapshot-cleanup
 
     Given volume created, attached, and healthy.
-    And 2 snapshot were created by system.
+    And 1 snapshot were created by system.
     And 1 snapshot were created by user.
-    And volume has 4 snapshots.
-        - 2 system-created
+    And volume has 3 snapshots.
+        - 1 system-created
         - 1 user-created
         - 1 volume-head
 
     When create a recurring job with:
          - task: system-snapshot-delete
          - retain: 1
-    Then recurring job retain mutated to 0.
 
-    When assign the recurring job to volume.
+    And assign the recurring job to volume.
     And wait for the cron job scheduled time.
     Then volume should have 2 snapshots.
          - 0 system-created
@@ -1899,29 +1900,35 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
     volume.attach(hostId=self_host)
 
     volume = wait_for_volume_healthy(client, volume_name)
-
-    expand_size = str(64 * Mi)
-    volume.expand(size=expand_size)
-    wait_for_volume_expansion(client, volume_name)
-    # - 1 new system-created snapshot
     # - 1 volume-head
-    wait_for_snapshot_count(volume, 2)
+    wait_for_system_snapshot_count(volume, 0)
 
-    expand_size = str(128 * Mi)
-    volume.expand(size=expand_size)
-    wait_for_volume_expansion(client, volume_name)
-    # - 1 new system-created snapshot
+    # create a system-created snapshot
+    # by trigger replica rebuilding
+    # unlike v1 volumes, expand a v2 volume won't
+    # create a system-created snapshot
+    # however, replica rebuilding will create
+    # a system-created snapshot
+    # for both v1 and v2 volumes
+    delete_replica_on_test_node(client, volume_name)
+    wait_for_rebuild_complete(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
+
     # - 1 system-created snapshot
     # - 1 volume-head
-    wait_for_snapshot_count(volume, 3)
+    wait_for_system_snapshot_count(volume, 1)
 
     create_snapshot(client, volume_name)
-
-    # - 1 new system-created snapshot
-    # - 1 system-created snapshot
-    # - 1 user-created snapshot
-    # - 1 volume-head
-    wait_for_snapshot_count(volume, 4)
+    volume = client.by_id_volume(volume_name)
+    if DATA_ENGINE == "v2":
+        # - 1 volume-head
+        # - 1 user-created snapshot
+        wait_for_system_snapshot_count(volume, 0)
+    else:
+        # - 1 system-created snapshot
+        # - 1 volume-head
+        # - 1 user-created snapshot
+        wait_for_system_snapshot_count(volume, 1)
 
     recurring_jobs = {
         RECURRING_JOB_NAME: {
@@ -1942,16 +1949,10 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
 
     time.sleep(60)
 
-    # - 0 system-creatd snapshot
-    # - 1 user-created snapshot
+    # - 0 system-created snapshot
     # - 1 volume-head
-    wait_for_snapshot_count(volume, 2)
-
-    system_created_count = 0
-    for snapshot in volume.snapshotList():
-        if not snapshot.usercreated and snapshot.name != VOLUME_HEAD_NAME:
-            system_created_count += 1
-    assert system_created_count == 0
+    # - 1 user-created snapshot
+    wait_for_system_snapshot_count(volume, 0)
 
 
 @pytest.mark.v2_volume_test  # NOQA

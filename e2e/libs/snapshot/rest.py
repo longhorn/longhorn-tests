@@ -37,6 +37,7 @@ class Rest(Base):
         assert snapshot_created
 
         self.set_snapshot_id(snap_name, snapshot_id)
+        logging(f"Created volume {volume_name} snapshot {snapshot_id} {snap_name}")
 
         return snapshot
 
@@ -94,16 +95,24 @@ class Rest(Base):
         snapshot = self.get(volume_name, snapshot_id)
         self.volume.get(volume_name).snapshotDelete(name=snapshot.name)
 
+    def delete_cr(self, volume_name, snapshot_id):
+        logging(f"Deleting volume {volume_name} snapshot {snapshot_id} CR")
+        snapshot = self.get(volume_name, snapshot_id)
+        self.volume.get(volume_name).snapshotCRDelete(name=snapshot.name)
+
     def revert(self, volume_name, snapshot_id):
         logging(f"Reverting volume {volume_name} to snapshot {snapshot_id}")
         snapshot = self.get(volume_name, snapshot_id)
         self.volume.get(volume_name).snapshotRevert(name=snapshot.name)
 
-    def purge(self, volume_name):
+    def purge(self, volume_name, wait):
         logging(f"Purging volume {volume_name} snapshot")
 
         volume = self.volume.get(volume_name)
         volume.snapshotPurge()
+
+        if not wait:
+            return
 
         completed = 0
         last_purge_progress = {}
@@ -129,6 +138,30 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert completed == len(purge_status)
+
+    def is_snapshot_purging(self, volume_name):
+        volume = self.volume.get(volume_name)
+        purge_status = volume.purgeStatus
+        for status in purge_status:
+            if status.isPurging:
+                return True
+        return False
+
+    def wait_for_snapshot_purge_completed(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} snapshot purge completed ... ({i})")
+            if not self.is_snapshot_purging(volume_name):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for {volume_name} snapshot purge completed"
+
+    def wait_for_snapshot_purge_start(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} snapshot purge start ... ({i})")
+            if self.is_snapshot_purging(volume_name):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for {volume_name} snapshot purge start"
 
     def is_parent_of(self, volume_name, parent_id, child_id):
         logging(f"Checking volume {volume_name} snapshot {parent_id} is parent of snapshot {child_id}")

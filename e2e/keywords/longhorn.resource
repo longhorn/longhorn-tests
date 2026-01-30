@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       Longhorn Keywords
 
+Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/instancemanager_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
@@ -20,9 +21,14 @@ Library             ../libs/keywords/engine_keywords.py
 ...    longhorn-manager
 ...    longhorn-ui
 
+${LONGHORN_REPO_DIR}    /tmp/longhorn/longhorn
+
 *** Keywords ***
 Wait for longhorn ready
     wait_for_all_instance_manager_running
+
+Wait for all instance managers removed
+    wait_for_all_instance_manager_removed
 
 Wait for Longhorn workloads pods stable
     [Arguments]    @{args}
@@ -30,7 +36,8 @@ Wait for Longhorn workloads pods stable
     FOR    ${workload_name}    IN    @{args}
         Append To List    ${workload_list}    ${workload_name}
     END
-    wait_for_workloads_pods_stably_running    ${workload_list}    longhorn-system
+    ${longhorn_namespace} =    get_longhorn_namespace
+    wait_for_workloads_pods_stably_running    ${workload_list}    ${longhorn_namespace}
 
 Check Longhorn workload pods ${condition} annotated with ${key}
     [Arguments]    @{args}
@@ -47,6 +54,23 @@ Check Longhorn workload pods ${condition} annotated with ${key}
     # Otherwise, fail the test.
     Run Keyword IF    '${condition}' == 'not'    Should Not Be True    ${is_annotated}
     ...    ELSE IF    '${condition}' == 'is'    Should Be True    ${is_annotated}
+    ...    ELSE    Fail    Invalid condition ${condition}
+
+Check Longhorn workload pods ${condition} running with CNI interface ${interface}
+    [Arguments]    @{args}
+    @{workload_list} =    Create List
+    FOR    ${workload_name}    IN    @{args}
+        Append To List    ${workload_list}    ${workload_name}
+    END
+
+    ${has_interface} =    is_workloads_pods_has_cni_interface    ${workload_list}    ${interface}
+
+    # Check if workloads have interface based on condition.
+    # If condition is "not", then check if workloads do not have CNI interface.
+    # If condition is "is", then check if workloads have CNI interface.
+    # Otherwise, fail the test.
+    Run Keyword IF    '${condition}' == 'not'    Should Not Be True    ${has_interface}
+    ...    ELSE IF    '${condition}' == 'is'    Should Be True    ${has_interface}
     ...    ELSE    Fail    Invalid condition ${condition}
 
 Check ${engine_type} instance manager is not running on drained node
@@ -79,7 +103,14 @@ Check all Longhorn CRD removed
     check_longhorn_crd_removed
 
 Install Longhorn
-    install_longhorn_system
+    [Arguments]    &{config}
+    install_longhorn_system    &{config}
+
+Install Longhorn via helm with resource configuration
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}    &{config}
+    ${patch}=    Set Variable    .longhornManager.resources = {"requests":{"cpu":"${cpu_request}","memory":"${memory_request}"},"limits":{"cpu":"${cpu_limit}","memory":"${memory_limit}"}}
+    ${helm_cmd}=    Set Variable    yq eval \'${patch}\' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
+    install_longhorn_system    custom_cmd=${helm_cmd}    &{config}
 
 Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -97,10 +128,12 @@ Delete ${engine_type} instance manager of deployment ${deployment_id} volume
     delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
 Wait for Longhorn components all running
-    wait_for_namespace_pods_running    longhorn-system
+    ${longhorn_namespace} =    get_longhorn_namespace
+    wait_for_namespace_pods_running    ${longhorn_namespace}
 
 Install Longhorn stable version
-    install_longhorn_system    install_stable_version=True
+    [Arguments]    &{config}
+    install_longhorn_system    install_stable_version=True    &{config}
 
 Uninstall Longhorn stable version
     ${backups_before_uninstall} =     list_all_backups
@@ -128,12 +161,16 @@ Upgrade Longhorn to custom version should fail
         Fail    Upgrading Longhorn succeed
     END
 
+Enable Storage Network
+    enable_storage_network_setting
+
 Check Longhorn node ${type} state on power off node is ${expect_state}
     ${status} =    get_longhorn_node_condition_status    ${last_volume_node}    ${type}
     Should Be Equal    ${status}    ${expect_state}
 
 Check longhorn manager pods not restarted after test start
-    check_pod_not_restart_after_specific_time    longhorn-system    app=longhorn-manager    ${test_start_time}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    check_pod_not_restart_after_specific_time    ${longhorn_namespace}    app=longhorn-manager    ${test_start_time}
 
 Check longhorn backing image manager image is ${expected_image}
     check_backing_image_manager_images    ${expected_image}
@@ -149,5 +186,21 @@ Assert disk size in instance manager pod for ${workload_kind} ${workload_id} is 
 Check disk size in instance manager pod
     [Arguments]    ${instance_manager_name}    ${volume_name}    ${expected_size}
     ${cmd}=    Set Variable    fdisk -l | grep /dev/mapper/${volume_name}
-    ${result}=    pod_exec    ${instance_manager_name}    longhorn-system    ${cmd}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}
+
+Patch Longhorn Manager Resources With
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+    patch_longhorn_component_resources_limit    longhorn-manager    daemonset    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+
+Check Longhorn Manager Resources Are
+    [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
+    ${resources}=    get_longhorn_component_resources_limit    longhorn-manager    daemonset
+    Should Be Equal    ${resources['requests']['cpu']}    ${cpu_request}
+    Should Be Equal    ${resources['requests']['memory']}    ${memory_request}
+    Should Be Equal    ${resources['limits']['cpu']}    ${cpu_limit}
+    Should Be Equal    ${resources['limits']['memory']}    ${memory_limit}
+
+Remove Longhorn Manager Resource Limit
+    remove_longhorn_component_resources_limit    longhorn-manager    daemonset

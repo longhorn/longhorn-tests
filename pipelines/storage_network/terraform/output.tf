@@ -6,6 +6,19 @@ output "network_interface_ids" {
   value = join(" ", concat(aws_network_interface.instance_eth0[*].id, aws_network_interface.instance_eth1[*].id))
 }
 
+output "instance_mapping" {
+  value = jsonencode(
+    concat(
+      [
+        for instance in aws_instance.aws_instance : {
+          "name" = instance.private_dns,
+          "id"   = instance.id
+        }
+      ]
+    )
+  )
+}
+
 output "controlplane_public_ip" {
   depends_on = [
     aws_eip.aws_eip,

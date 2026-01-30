@@ -25,7 +25,7 @@ class PersistentVolumeClaim():
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volume_mode="Filesystem"):
         storage_size_bytes = convert_size_to_bytes(storage_size)
 
         filepath = "./templates/workload/pvc.yaml"
@@ -48,6 +48,8 @@ class PersistentVolumeClaim():
             # correct access mode`
             if volume_type == 'RWX':
                 manifest_dict['spec']['accessModes'][0] = 'ReadWriteMany'
+            elif volume_type == 'RWOP':
+                manifest_dict['spec']['accessModes'][0] = 'ReadWriteOncePod'
 
             if dataSourceName and dataSourceKind:
                 manifest_dict['spec']['dataSource'] = {
@@ -56,6 +58,9 @@ class PersistentVolumeClaim():
                 }
                 if dataSourceKind == 'VolumeSnapshot':
                     manifest_dict['spec']['dataSource']['apiGroup'] = 'snapshot.storage.k8s.io'
+
+            if volume_mode == 'Block':
+                manifest_dict['spec']['volumeMode'] = 'Block'
 
             logging(f"yaml = {manifest_dict}")
 
@@ -121,6 +126,7 @@ class PersistentVolumeClaim():
     def expand(self, claim_name, size_in_byte, skip_retry=False):
         expanded_size = self.claim.expand(claim_name, size_in_byte, skip_retry=skip_retry)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
+        return expanded_size
 
     def expand_with_additional_bytes(self, claim_name, size_in_byte, skip_retry=False):
         pvc = self.claim.get(claim_name)

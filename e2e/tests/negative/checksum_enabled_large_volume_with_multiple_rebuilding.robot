@@ -19,6 +19,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
+    [Tags]    recurring-job
     [Documentation]    -- Manual test plan --
     ...                - Enable the setting `Snapshot Data Integrity` and `Immediate Snapshot Data Integrity Check After Creating a Snapshot`
     ...                - Create a 50 Gi volume. write around 30 Gi data into it.
@@ -39,6 +40,7 @@ Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
     And Check volume 0 data is intact
 
 Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Integrity
+    [Tags]    snapshot-purge
     [Documentation]    -- Manual test plan --
     ...                - Create a 50 Gi volume. write around 30 Gi data into it.
     ...                - Fail one of the replica (node down or network partition) and wait for the replica becomes failed.
@@ -69,7 +71,13 @@ Compare Large Volume Rebuild Performance Before and After Enabling Snapshot Inte
     # Longhorn creates a snapshot A (data size 30 GiB) without a checksum during the first rebuild.
     # After creating snapshot 0 for volume 0, the snapshot A must be purged.
     # Once purged, snapshot 0 for volume 0 will generate a new checksum.
-    And Purge volume 0 snapshot
+    IF    "${DATA_ENGINE}" == "v1"
+        And Purge volume 0 snapshot
+    ELSE
+        # v2 volume purge status is always null
+        # so we can't monitor the purge status of a v2 volume to ensure the purge is completed
+        And Purge volume 0 snapshot    wait=False
+    END
     # Since this test involves writing 30 GB of data to the volume.
     # Based on observations on AWS, generating the snapshot checksum
     # in such cases can take up to approximately 18 minutes. 
