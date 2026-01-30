@@ -107,14 +107,15 @@ class sharemanager_keywords:
         assert False, f"sharemanager pod {sharemanager_pod_name} not running"
 
     def wait_for_disk_size_in_sharemanager_pod(self, share_manager_pod, volume_name, expected_size):
-        from utility.utility import pod_exec
+        from utility.utility import pod_exec, get_longhorn_namespace
         retry_count, retry_interval = get_retry_count_and_interval()
+        longhorn_namespace = get_longhorn_namespace()
         for i in range(retry_count):
             logging(f"Waiting for disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
             time.sleep(retry_interval)
             cmd = f"blockdev --getsize64 /dev/longhorn/{volume_name}"
             try:
-                result = pod_exec(share_manager_pod, "longhorn-system", cmd)
+                result = pod_exec(share_manager_pod, longhorn_namespace, cmd)
                 actual_size = result.strip()
                 logging(f"Current disk size in sharemanager pod {share_manager_pod}: {actual_size}, expected: {expected_size}")
                 if actual_size == expected_size:
@@ -126,14 +127,15 @@ class sharemanager_keywords:
         assert False, f"Disk size in sharemanager pod {share_manager_pod} is not {expected_size}"
 
     def wait_for_encrypted_disk_size_in_sharemanager_pod(self, share_manager_pod, volume_name, expected_size):
-        from utility.utility import pod_exec
+        from utility.utility import pod_exec, get_longhorn_namespace
         retry_count, retry_interval = get_retry_count_and_interval()
+        longhorn_namespace = get_longhorn_namespace()
         for i in range(retry_count):
             logging(f"Waiting for encrypted disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
             time.sleep(retry_interval)
             cmd = f"fdisk -l | grep /dev/mapper/{volume_name}"
             try:
-                result = pod_exec(share_manager_pod, "longhorn-system", cmd)
+                result = pod_exec(share_manager_pod, longhorn_namespace, cmd)
                 logging(f"Current encrypted disk info in sharemanager pod {share_manager_pod}: {result}")
                 if expected_size in result:
                     return
