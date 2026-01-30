@@ -104,7 +104,7 @@ class sharemanager_keywords:
         for i in range(retry_count):
             logging(f"Waiting for disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
             time.sleep(retry_interval)
-            cmd = f"df -B1 /export/{volume_name} | tail -1 | awk '{{print $2}}'"
+            cmd = f"blockdev --getsize64 /dev/longhorn/{volume_name}"
             try:
                 result = pod_exec(share_manager_pod, "longhorn-system", cmd)
                 actual_size = result.strip()

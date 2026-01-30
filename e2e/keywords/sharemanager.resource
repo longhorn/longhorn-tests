@@ -51,15 +51,3 @@ Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_i
     ${volume_name}=    get_workload_volume_name    ${workload_name}
     ${share_manager_pod}=    Set Variable    share-manager-${volume_name}
     wait_for_encrypted_disk_size_in_sharemanager_pod    ${share_manager_pod}    ${volume_name}    ${expected_size_byte}
-
-Check disk size in sharemanager pod
-    [Arguments]    ${sharemanager_pod}    ${volume_name}    ${expected_size}
-    ${cmd}=    Set Variable    df -B1 /export/${volume_name} | tail -1 | awk '{print $2}'
-    ${result}=    pod_exec    ${sharemanager_pod}    longhorn-system    ${cmd}
-    Should Be Equal As Strings    ${result.strip()}    ${expected_size}
-
-Check encrypted disk size in sharemanager pod
-    [Arguments]    ${sharemanager_pod}    ${volume_name}    ${expected_size}
-    ${cmd}=    Set Variable    fdisk -l | grep /dev/mapper/${volume_name}
-    ${result}=    pod_exec    ${sharemanager_pod}    longhorn-system    ${cmd}
-    Should Contain    ${result}    ${expected_size}
