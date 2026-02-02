@@ -91,18 +91,18 @@ Test RWX Volume Automatic Online Expansion
     ...                - https://github.com/longhorn/longhorn/issues/8118
     ...                - https://github.com/longhorn/longhorn/issues/9736
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test    storage_size=1Gi
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test    storage_size=50MiB
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
-    And Write 50 MB data to file data.txt in deployment 0
+    And Write 10 MB data to file data.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
 
-    When Expand deployment 0 volume to 2Gi
+    When Expand deployment 0 volume to 100MiB
     Then Wait for deployment 0 volume size expanded
     And Check deployment 0 pods did not restart
-    And Assert disk size in sharemanager pod for deployment 0 is 2Gi
+    And Assert disk size in sharemanager pod for deployment 0 is 100MiB
     # Write data that covers the newly expanded blocks to verify filesystem expansion
-    And Write 1100 MB data to file data2.txt in deployment 0
+    And Write 60 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
     And Check deployment 0 data in file data2.txt is intact
 
