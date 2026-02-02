@@ -311,16 +311,13 @@ class workload_keywords:
             logging(f"Waiting for filesystem size in workload {workload_name} to be at least {min_acceptable_size} bytes ... ({i})")
             time.sleep(retry_interval)
             
+            # df -B1 output format: Filesystem 1B-blocks Used Available Use% Mounted
+            # After tail -1: /dev/xxx total_size used_size available_size percentage /mount
+            # $2 is the total size in bytes
             cmd = "df -B1 /data | tail -1 | awk '{print $2}'"
             try:
                 result = run_commands_in_pod(pod_name, cmd)
-                # Extract just the size number from the result
-                actual_size_str = result.strip().split('\n')[-1]
-                # Remove the EXIT_CODE line if present
-                if 'EXIT_CODE' in actual_size_str:
-                    actual_size_str = result.strip().split('\n')[0]
-                
-                actual_size = int(actual_size_str.strip())
+                actual_size = int(result.strip())
                 logging(f"Current filesystem size in workload {workload_name}: {actual_size} bytes, minimum expected: {min_acceptable_size} bytes")
                 
                 if actual_size >= min_acceptable_size:
