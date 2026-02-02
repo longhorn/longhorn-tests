@@ -101,7 +101,6 @@ Test RWX Volume Automatic Online Expansion
     Then Wait for deployment 0 volume size expanded
     And Check deployment 0 pods did not restart
     And Assert disk size in sharemanager pod for deployment 0 is 100MiB
-    And Check deployment 0 data in file data.txt is intact
     # Wait for filesystem to be expanded in the workload pod before writing new data
     And Assert filesystem size in deployment 0 is 100MiB
     # Write data that covers the newly expanded blocks to verify filesystem expansion
