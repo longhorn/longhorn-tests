@@ -14,6 +14,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/volume.resource
+Resource    ../keywords/sharemanager.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
