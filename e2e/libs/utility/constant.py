@@ -32,3 +32,5 @@ BLOCK_PVC_VOLUME_DEVICE_NAME = "longhorn-testblk"
 BLOCK_PVC_VOLUME_DEVICE_DIR = "/dev/longhorn"
 # This path is used in the deployment template for block volume
 BLOCK_PVC_VOLUME_DEVICE_PATH = BLOCK_PVC_VOLUME_DEVICE_DIR + "/" + BLOCK_PVC_VOLUME_DEVICE_NAME
+
+DISK_UNSCHEDULABLE_KEEP_ROUNDS = 30
