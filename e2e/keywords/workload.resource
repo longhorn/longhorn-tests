@@ -404,7 +404,7 @@ Kill volume engine process for ${workload_kind} ${workload_id}
     ${instance_manager_name} =    get_volume_instance_manager    ${volume_name}
     kill_engine_process    ${instance_manager_name}    ${volume_name}
 
-Wait for ${workload_kind} ${workload_id} filesystem size ${size}
+Assert filesystem size in ${workload_kind} ${workload_id} is ${size}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
     wait_for_filesystem_size_in_workload    ${workload_name}    ${expected_size_byte}
