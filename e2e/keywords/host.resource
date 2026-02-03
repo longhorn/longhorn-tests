@@ -92,6 +92,12 @@ Run command on node
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node    ${command}    ${node_name}
 
+Run command on node and not expect output
+    [Arguments]    ${node_id}    ${command}    ${unexpected_output}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${result} =    execute_command_on_node    ${command}    ${node_name}
+    Should Not Contain    ${result}    ${unexpected_output}    msg=Unexpected output '${unexpected_output}' found in command result: ${result}
+
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${host_log_files} =    get_host_log_files    ${node_name}    ${log_path}
