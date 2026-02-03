@@ -414,6 +414,6 @@ Check no uninterruptible sleep processes on ${workload_kind} ${workload_id} node
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${node_names} =    get_all_workload_node_names    ${workload_name}
     FOR    ${node_name}    IN    @{node_names}
-        ${result} =    check_no_uninterruptible_sleep_processes_on_node    ${node_name}    ${pattern}
-        Should Be True    ${result}    msg=Found processes in uninterruptible sleep state on node ${node_name}
+        # This will raise an exception if D-state processes are found
+        check_no_uninterruptible_sleep_processes_on_node    ${node_name}    ${pattern}
     END

@@ -335,6 +335,8 @@ class workload_keywords:
         """
         Check that there are no processes in uninterruptible sleep state (D state) on a node.
         Optionally filter by a pattern (e.g., process name).
+        
+        Returns: True if no processes in D state found, raises exception otherwise
         """
         logging(f"Checking for uninterruptible sleep processes on node {node_name} with pattern '{pattern}'")
         node_exec = NodeExec(node_name)
@@ -343,26 +345,30 @@ class workload_keywords:
             # Build the command to check for processes in D state
             # ps aux shows process state in the STAT column (8th column)
             # D, D+, Ds, etc. indicate uninterruptible sleep
+            # Using shell parameter substitution to safely handle pattern
             if pattern:
+                # Escape pattern for safe shell usage - only allow alphanumeric, dash, underscore, slash
+                safe_pattern = ''.join(c for c in pattern if c.isalnum() or c in '-_/')
+                if safe_pattern != pattern:
+                    logging(f"WARNING: Pattern '{pattern}' contains unsafe characters, using sanitized version: '{safe_pattern}'")
                 # First get all processes matching the pattern, then check for D state
-                # Using grep -c to count or true to avoid exit code 1
-                cmd = f"ps aux | grep '{pattern}' | grep -v grep | awk '{{if ($8 ~ /^D/) print $0}}' || true"
+                # Using awk to avoid grep exit codes
+                cmd = f"ps aux | grep '{safe_pattern}' | grep -v grep | awk '{{if ($8 ~ /^D/) print $0}}' || true"
             else:
                 cmd = "ps aux | awk '{if ($8 ~ /^D/) print $0}' || true"
             
             result = node_exec.issue_cmd(cmd)
             # If grep finds matches, it returns them; if not, it returns empty
             if result and result.strip():
-                logging(f"WARNING: Found processes in uninterruptible sleep state on node {node_name}:\n{result}")
-                return False
+                error_msg = f"Found processes in uninterruptible sleep state on node {node_name}:\n{result}"
+                logging(f"ERROR: {error_msg}")
+                raise Exception(error_msg)
             else:
                 logging(f"No processes in uninterruptible sleep state found on node {node_name}")
                 return True
         except Exception as e:
-            # Log error but don't fail - we'll consider this as no D state processes
-            logging(f"Error checking for uninterruptible sleep processes on node {node_name}: {e}")
-            # For safety, return False if we can't check
-            return False
+            # Re-raise the exception to let caller handle it
+            raise Exception(f"Failed to check uninterruptible sleep processes on node {node_name}: {e}")
         finally:
             node_exec.cleanup()
 
