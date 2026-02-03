@@ -71,7 +71,24 @@ class host_keywords:
         self.host.cleanup_snapshots()
 
     def execute_command_on_node(self, cmd, node_name):
-        NodeExec(node_name).issue_cmd(cmd)
+        return NodeExec(node_name).issue_cmd(cmd)
+
+    def execute_command_on_node_and_not_expect_output(self, cmd, node_name, output):
+        from utility.utility import get_retry_count_and_interval
+        import time
+        
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            res = NodeExec(node_name).issue_cmd(cmd)
+            if output not in res:
+                return
+            logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
+            time.sleep(retry_interval)
+        
+        # If we get here, the output was found in all retries
+        logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
+        time.sleep(retry_count)
+        assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
 
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)
