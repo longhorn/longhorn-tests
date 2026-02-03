@@ -31,10 +31,11 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     ${node_count} =    Get length  ${node_names}
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
-Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with ${replicaset} replicas using args ${args}
+Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
+    [Arguments]    &{config}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_deployment    ${deployment_name}    ${claim_name}    ${replicaset}    args=${args}
+    create_deployment    ${deployment_name}    ${claim_name}    &{config}
 
 Create deployment ${deployment_id} with volume ${volume_id}
     ${volume_id}=  Convert To String  ${volume_id}
@@ -87,6 +88,10 @@ Check deployment ${deployment_id} works
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_workload_pod_random_data    ${deployment_name}    1024    random-data
     check_workload_pod_data_checksum    ${deployment_name}    random-data
+
+Check all deployment ${deployment_id} replica pods are working
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    write_and_check_all_workload_pod_random_data    ${deployment_name}    1024    random-data
 
 Wait for deployment ${deployment_id} pods stable
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}

@@ -13,7 +13,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, **kwargs):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -75,10 +75,8 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
 
         if args:
             # Allow custom args to be provided to the container
-            container = manifest_dict['spec']['template']['spec']['containers'][0]
-            container['command'] = ["/bin/sh", "-c"]
-            container['args'] = [args]
-            manifest_dict['spec']['template']['spec']['containers'][0] = container
+            # command is already set in the template, so we only need to set args
+            manifest_dict['spec']['template']['spec']['containers'][0]['args'] = [args]
 
         api = client.AppsV1Api()
 
