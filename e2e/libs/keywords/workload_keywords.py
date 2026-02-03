@@ -43,7 +43,6 @@ from utility.utility import list_namespaced_pod
 
 from volume import Volume
 from datetime import datetime, timezone
-from node_exec import NodeExec
 
 
 class workload_keywords:
@@ -330,45 +329,6 @@ class workload_keywords:
                 continue
         
         assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
-
-    def check_no_uninterruptible_sleep_processes_on_node(self, node_name, pattern=""):
-        """
-        Check that there are no processes in uninterruptible sleep state (D state) on a node.
-        Optionally filter by a pattern (e.g., process name).
-        
-        Returns: True if no processes in D state found, raises exception otherwise
-        """
-        logging(f"Checking for uninterruptible sleep processes on node {node_name} with pattern '{pattern}'")
-        node_exec = NodeExec(node_name)
-        
-        try:
-            # Build the command to check for processes in D state
-            # ps aux shows process state in the STAT column (8th column)
-            # D, D+, Ds, etc. indicate uninterruptible sleep
-            if pattern:
-                # Escape pattern for safe shell usage - only allow alphanumeric, dash, underscore, slash
-                safe_pattern = ''.join(c for c in pattern if c.isalnum() or c in '-_/')
-                if safe_pattern != pattern:
-                    logging(f"WARNING: Pattern '{pattern}' contains unsafe characters, using sanitized version: '{safe_pattern}'")
-                # Use awk with pattern matching for efficiency
-                cmd = f"ps aux | awk -v pat='{safe_pattern}' '$0 ~ pat && $8 ~ /^D/ && $0 !~ /awk/ {{print}}' || true"
-            else:
-                cmd = "ps aux | awk '$8 ~ /^D/ {print}' || true"
-            
-            result = node_exec.issue_cmd(cmd)
-            # If awk finds matches, it returns them; if not, it returns empty
-            if result and result.strip():
-                error_msg = f"Found processes in uninterruptible sleep state on node {node_name}:\n{result}"
-                logging(f"ERROR: {error_msg}")
-                raise Exception(error_msg)
-            else:
-                logging(f"No processes in uninterruptible sleep state found on node {node_name}")
-                return True
-        except Exception as e:
-            # Re-raise the exception to let caller handle it
-            raise Exception(f"Failed to check uninterruptible sleep processes on node {node_name}: {e}")
-        finally:
-            node_exec.cleanup()
 
     def get_workload_node_name(self, workload_name):
         """
