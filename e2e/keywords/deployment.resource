@@ -31,6 +31,11 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     ${node_count} =    Get length  ${node_names}
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
+Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with ${replicaset} replicas for rwx file writing
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_deployment    ${deployment_name}    ${claim_name}    ${replicaset}    rwx_file_writing=${True}
+
 Create deployment ${deployment_id} with volume ${volume_id}
     ${volume_id}=  Convert To String  ${volume_id}
     Create persistentvolume for volume ${volume_id}

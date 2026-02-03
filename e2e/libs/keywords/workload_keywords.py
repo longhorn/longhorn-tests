@@ -43,6 +43,7 @@ from utility.utility import list_namespaced_pod
 
 from volume import Volume
 from datetime import datetime, timezone
+from node_exec import NodeExec
 
 
 class workload_keywords:
@@ -329,3 +330,61 @@ class workload_keywords:
                 continue
         
         assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
+
+    def check_no_uninterruptible_sleep_processes_on_node(self, node_name, pattern=""):
+        """
+        Check that there are no processes in uninterruptible sleep state (D state) on a node.
+        Optionally filter by a pattern (e.g., process name).
+        """
+        logging(f"Checking for uninterruptible sleep processes on node {node_name} with pattern '{pattern}'")
+        node_exec = NodeExec(node_name)
+        
+        # Build the command to check for processes in D state
+        # ps aux shows process state in the STAT column
+        # D or D+ indicates uninterruptible sleep
+        if pattern:
+            cmd = f"ps aux | grep '{pattern}' | grep -v grep | awk '{{print $8}}' | grep -E '^D'"
+        else:
+            cmd = "ps aux | awk '{print $8}' | grep -E '^D'"
+        
+        try:
+            result = node_exec.issue_cmd(cmd)
+            # If grep finds matches, it returns them; if not, it returns empty
+            if result and result.strip():
+                logging(f"WARNING: Found processes in uninterruptible sleep state: {result}")
+                return False
+            else:
+                logging(f"No processes in uninterruptible sleep state found")
+                return True
+        except Exception as e:
+            # If grep returns exit code 1 (no matches), that's actually what we want
+            logging(f"No uninterruptible sleep processes found (grep returned no matches): {e}")
+            return True
+        finally:
+            node_exec.cleanup()
+
+    def get_workload_node_name(self, workload_name):
+        """
+        Get the node name where the workload pod is running.
+        For deployments with multiple replicas, returns the first pod's node.
+        """
+        pods = get_workload_pods(workload_name)
+        if not pods:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
+        node_name = pods[0].spec.node_name
+        logging(f"Workload {workload_name} pod is running on node {node_name}")
+        return node_name
+    
+    def get_all_workload_node_names(self, workload_name):
+        """
+        Get all node names where the workload pods are running.
+        Returns a list of node names.
+        """
+        pods = get_workload_pods(workload_name)
+        if not pods:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
+        node_names = [pod.spec.node_name for pod in pods]
+        logging(f"Workload {workload_name} pods are running on nodes: {node_names}")
+        return node_names

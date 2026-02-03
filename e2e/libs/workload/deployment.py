@@ -13,7 +13,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, rwx_file_writing=False):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -72,6 +72,22 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
                 "periodSeconds": 5,
                 "failureThreshold": 3
             }
+
+        if rwx_file_writing:
+            # Configure container to write to the same file continuously
+            # This simulates the scenario from issue #11907
+            container = manifest_dict['spec']['template']['spec']['containers'][0]
+            container['image'] = 'ubuntu:xenial'
+            container['imagePullPolicy'] = 'IfNotPresent'
+            container['command'] = ["/bin/sh", "-c"]
+            container['args'] = [
+                "sleep 10; touch /data/index.html; "
+                "while true; do "
+                "  echo \"$(date) $(hostname)\" >> /data/index.html; "
+                "  sleep 1; "
+                "done;"
+            ]
+            manifest_dict['spec']['template']['spec']['containers'][0] = container
 
         api = client.AppsV1Api()
 
