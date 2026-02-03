@@ -45,7 +45,7 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
 
     # Check that no processes are in uninterruptible sleep state
     # We check for processes related to the writing operation (echo command)
-    Then Check no uninterruptible sleep processes on deployment 0 nodes    pattern=echo
+    Then Check no uninterruptible sleep processes on deployment 0 nodes    echo
 
     # Verify the deployment is still running and accessible
     And Wait for deployment 0 pods stable
