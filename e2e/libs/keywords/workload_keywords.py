@@ -345,20 +345,18 @@ class workload_keywords:
             # Build the command to check for processes in D state
             # ps aux shows process state in the STAT column (8th column)
             # D, D+, Ds, etc. indicate uninterruptible sleep
-            # Using shell parameter substitution to safely handle pattern
             if pattern:
                 # Escape pattern for safe shell usage - only allow alphanumeric, dash, underscore, slash
                 safe_pattern = ''.join(c for c in pattern if c.isalnum() or c in '-_/')
                 if safe_pattern != pattern:
                     logging(f"WARNING: Pattern '{pattern}' contains unsafe characters, using sanitized version: '{safe_pattern}'")
-                # First get all processes matching the pattern, then check for D state
-                # Using awk to avoid grep exit codes
-                cmd = f"ps aux | grep '{safe_pattern}' | grep -v grep | awk '{{if ($8 ~ /^D/) print $0}}' || true"
+                # Use awk with pattern matching for efficiency
+                cmd = f"ps aux | awk -v pat='{safe_pattern}' '$0 ~ pat && $8 ~ /^D/ && $0 !~ /awk/ {{print}}' || true"
             else:
-                cmd = "ps aux | awk '{if ($8 ~ /^D/) print $0}' || true"
+                cmd = "ps aux | awk '$8 ~ /^D/ {print}' || true"
             
             result = node_exec.issue_cmd(cmd)
-            # If grep finds matches, it returns them; if not, it returns empty
+            # If awk finds matches, it returns them; if not, it returns empty
             if result and result.strip():
                 error_msg = f"Found processes in uninterruptible sleep state on node {node_name}:\n{result}"
                 logging(f"ERROR: {error_msg}")
