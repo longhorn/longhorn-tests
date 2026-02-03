@@ -115,6 +115,22 @@ class workload_keywords:
         self.volume.set_data_checksum(volume_name, file_name, checksum)
         self.volume.set_last_data_checksum(volume_name, checksum)
 
+    def write_and_check_all_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
+        """
+        Write random data to all pods in the workload and verify checksums.
+        This is used to test that all replicas are working correctly.
+        """
+        pod_names = get_workload_pod_names(workload_name)
+        
+        logging(f'Writing and checking {size_in_mb} MB random data to all {len(pod_names)} pods in workload {workload_name}')
+        
+        for pod_name in pod_names:
+            logging(f'Writing {size_in_mb} MB random data to pod {pod_name} file {file_name}')
+            checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
+            
+            logging(f'Checking pod {pod_name} file {file_name} checksum = {checksum}')
+            check_workload_pod_data_checksum(pod_name, file_name, checksum)
+
     def write_workload_pod_large_data(self, workload_name, size_in_gb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
 

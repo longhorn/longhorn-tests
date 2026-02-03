@@ -92,11 +92,10 @@ Run command on node
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node    ${command}    ${node_name}
 
-Run command on node and not expect output
-    [Arguments]    ${node_id}    ${command}    ${unexpected_output}
+Run command on node ${node_id} and not expect output
+    [Arguments]    ${command}    ${unexpected_output}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${result} =    execute_command_on_node    ${command}    ${node_name}
-    Should Not Contain    ${result}    ${unexpected_output}    msg=Unexpected output '${unexpected_output}' found in command result: ${result}
+    execute_command_on_node_and_not_expect_output    ${command}    ${node_name}    ${unexpected_output}
 
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}

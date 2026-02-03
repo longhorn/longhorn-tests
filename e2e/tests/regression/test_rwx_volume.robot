@@ -31,35 +31,29 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     ...                Issue: https://github.com/longhorn/longhorn/issues/11907
     ...
     ...                Steps:
-    ...                1. Create a single node cluster (cordon other nodes)
+    ...                1. Create a single node cluster (cordon nodes 1 and 2)
     ...                2. Create a RWX volume
     ...                3. Create a deployment with 6 replicas, all writing to the same file
     ...                4. Wait and check every minute for 30 minutes that no processes are in D state
     ...                5. Verify that all replicas remain accessible and working
 
-    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
-    And Create deployment 0 with persistentvolumeclaim 0 with 6 replicas using args    sleep 10; touch /data/index.html; while true; do echo "$(date) $(hostname)" >> /data/index.html; sleep 1; done;
-    And Wait for volume of deployment 0 healthy
+    # Create a single-node environment by cordoning nodes 1 and 2
+    Given Cordon node 1
+    And Cordon node 2
     
-    # Cordon all nodes except the one where the volume is attached to create a single-node cluster
-    And Cordon all other nodes beside deployment 0 volume node
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0    replicaset=6    args=sleep 10; touch /data/index.html; while true; do echo "$(date) $(hostname)" >> /data/index.html; sleep 1; done;
+    And Wait for volume of deployment 0 healthy
 
     # Continuously check for uninterruptible sleep processes every minute for the specified duration
     FOR    ${i}    IN RANGE    ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}
         ${current_check} =    Evaluate    ${i} + 1
         Log To Console    Checking for uninterruptible sleep processes (${current_check}/${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION})...
         
-        # Check the volume node for processes in D state
+        # Check node 2 (the only schedulable node) for processes in D state
         # We check for processes related to writing to /data/index.html
-        FOR    ${node_id}    IN RANGE    0    3
-            TRY
-                Run command on node and not expect output    ${node_id}    ps aux | grep 'echo.*/data/index.html' | awk '{print $8}'    D
-            EXCEPT
-                # Node might not have the pods, continue
-                Log    Node ${node_id} doesn't have matching processes or is cordoned
-            END
-        END
+        Run command on node 2 and not expect output    ps aux | grep 'echo.*/data/index.html' | awk '{print $8}'    D
         
         # Wait 1 minute before next check
         Sleep    60
@@ -67,3 +61,4 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
 
     # Verify all replicas are still working properly
     Then Wait for deployment 0 pods stable
+    And Check all deployment 0 replica pods are working
