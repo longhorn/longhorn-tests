@@ -408,12 +408,3 @@ Assert filesystem size in ${workload_kind} ${workload_id} is ${size}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
     wait_for_filesystem_size_in_workload    ${workload_name}    ${expected_size_byte}
-
-Check no uninterruptible sleep processes on ${workload_kind} ${workload_id} nodes
-    [Arguments]    ${pattern}=${EMPTY}
-    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${node_names} =    get_all_workload_node_names    ${workload_name}
-    FOR    ${node_name}    IN    @{node_names}
-        # This will raise an exception if D-state processes are found
-        check_no_uninterruptible_sleep_processes_on_node    ${node_name}    ${pattern}
-    END
