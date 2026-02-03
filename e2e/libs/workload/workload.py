@@ -188,10 +188,16 @@ def run_commands_in_pod(pod_name, commands):
     else:
         logging(f"Ran commands {commands} in pod {pod_name} with result: {output}")
 
-    exit_line = output.strip().splitlines()[-1]
+    # Split output into command output and exit code
+    lines = output.strip().splitlines()
+    exit_line = lines[-1]
     exit_code = int(exit_line.replace(exit_code_prefix, "").strip())
     if exit_code != 0:
         raise RuntimeError(f"Failed to run commands {commands} in pod {pod_name}: {output}")
+    
+    # Return the command output (everything except the exit code line)
+    command_output = '\n'.join(lines[:-1])
+    return command_output
 
 def get_workload_pod_data_checksum(workload_name, file_name, data_directory="/data"):
 
