@@ -84,22 +84,22 @@ class host_keywords:
             time.sleep(retry_count)  # Long sleep for debugging
             assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
 
-    def execute_command_on_node_and_wait_for_output(self, cmd, node_name, output):
+    def execute_command_on_node_and_wait_for_output(self, cmd, node_name, expected_output):
         from utility.utility import get_retry_count_and_interval
         import time
         
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
-            logging(f"Waiting for command {cmd} on node {node_name} returning output {output} ... ({i})")
+            logging(f"Waiting for command {cmd} on node {node_name} returning output {expected_output} ... ({i})")
             try:
                 res = NodeExec(node_name).issue_cmd(cmd)
-                if output in res:
+                if expected_output in res:
                     return
             except Exception as e:
-                logging(f"Execute command {cmd} on node {node_name} and wait for output {output} error: {e}")
+                logging(f"Execute command {cmd} on node {node_name} and wait for output {expected_output} error: {e}")
             time.sleep(retry_interval)
         
-        assert False, f"Timeout waiting for output {output} in {cmd} result on node {node_name}"
+        assert False, f"Timeout waiting for output {expected_output} in {cmd} result on node {node_name}"
 
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)
