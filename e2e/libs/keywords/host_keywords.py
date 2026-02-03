@@ -87,7 +87,7 @@ class host_keywords:
         
         # If we get here, the output was found in all retries
         logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
-        time.sleep(retry_count)
+        time.sleep(retry_count)  # Long sleep for debugging (matching existing pattern in common_keywords)
         assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
 
     def get_host_log_files(self, node_name, log_path):
