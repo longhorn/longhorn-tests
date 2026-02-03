@@ -47,7 +47,8 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
 
     # Continuously check for uninterruptible sleep processes every minute for the specified duration
     FOR    ${i}    IN RANGE    ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}
-        Log To Console    Checking for uninterruptible sleep processes (${i + 1}/${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION})...
+        ${current_check} =    Evaluate    ${i} + 1
+        Log To Console    Checking for uninterruptible sleep processes (${current_check}/${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION})...
         
         # Check the volume node for processes in D state
         # We check for processes related to writing to /data/index.html
@@ -66,14 +67,3 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
 
     # Verify all replicas are still working properly
     Then Wait for deployment 0 pods stable
-    
-    # Check that all 6 replicas are working by verifying we can write/read from each
-    FOR    ${replica_idx}    IN RANGE    6
-        ${workload_name} =    generate_name_with_suffix    deployment    0
-        ${pod_names} =    get_workload_pod_names    ${workload_name}
-        ${pod_count} =    Get Length    ${pod_names}
-        IF    ${replica_idx} < ${pod_count}
-            Log To Console    Checking replica pod ${replica_idx + 1}/${pod_count}
-            # Each pod should be accessible (pods stable check above verifies this)
-        END
-    END
