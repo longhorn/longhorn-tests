@@ -26,7 +26,7 @@ ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}    30
 Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     [Tags]    volume    rwx
     [Documentation]    Test that RWX volume with multiple pods writing to the same file
-    ...                does not cause processes to enter uninterruptible sleep state.
+    ...                does not cause processes to get stuck in uninterruptible sleep state.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/11907
     ...
@@ -34,7 +34,8 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     ...                1. Create a single node cluster (cordon nodes 0 and 1)
     ...                2. Create a RWX volume
     ...                3. Create a deployment with 6 replicas, all writing to the same file
-    ...                4. Wait and check every minute for 30 minutes that no processes are in D state
+    ...                4. Check every minute for 30 minutes that no processes are stuck in D state
+    ...                   (A process is considered stuck if it remains in D state for 30+ seconds)
     ...                5. Verify that all replicas remain accessible and working
 
     # Create a single-node environment by cordoning nodes 0 and 1
@@ -46,14 +47,14 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     And Create deployment 0 with persistentvolumeclaim 0    replicaset=6    args=sleep 10; touch /data/index.html; while true; do echo "$(date) $(hostname)" >> /data/index.html; sleep 1; done;
     And Wait for volume of deployment 0 healthy
 
-    # Continuously check for uninterruptible sleep processes every minute for the specified duration
+    # Continuously check for stuck uninterruptible sleep processes every minute for the specified duration
     FOR    ${i}    IN RANGE    ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}
         ${current_check} =    Evaluate    ${i} + 1
-        Log To Console    Checking for uninterruptible sleep processes (${current_check}/${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION})...
+        Log To Console    Checking for stuck uninterruptible sleep processes (${current_check}/${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION})...
         
-        # Check node 2 (the only schedulable node) for processes in D state
-        # We check for processes related to writing to /data/index.html
-        Run command on node 2 and not expect output    pgrep -f 'echo.*/data/index.html' | xargs -r ps --no-headers -o pid,stat,command -p    D
+        # Check node 2 (the only schedulable node) for processes stuck in D state
+        # A process is considered stuck if it remains in D state for 30 seconds
+        Check for stuck uninterruptible sleep processes on node 2    echo.*/data/index.html    30
         
         # Wait 1 minute before next check
         Sleep    60

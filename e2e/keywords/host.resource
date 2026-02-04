@@ -102,6 +102,11 @@ Run command on node ${node_id} and wait for output
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node_and_wait_for_output    ${command}    ${node_name}    ${expected_output}
 
+Check for stuck uninterruptible sleep processes on node ${node_id}
+    [Arguments]    ${process_pattern}    ${stuck_duration_seconds}=30
+    ${node_name} =    get_node_by_index    ${node_id}
+    check_for_stuck_uninterruptible_sleep_processes_on_node    ${node_name}    ${process_pattern}    ${stuck_duration_seconds}
+
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${host_log_files} =    get_host_log_files    ${node_name}    ${log_path}
