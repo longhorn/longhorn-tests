@@ -31,15 +31,15 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     ...                Issue: https://github.com/longhorn/longhorn/issues/11907
     ...
     ...                Steps:
-    ...                1. Create a single node cluster (cordon nodes 1 and 2)
+    ...                1. Create a single node cluster (cordon nodes 0 and 1)
     ...                2. Create a RWX volume
     ...                3. Create a deployment with 6 replicas, all writing to the same file
     ...                4. Wait and check every minute for 30 minutes that no processes are in D state
     ...                5. Verify that all replicas remain accessible and working
 
-    # Create a single-node environment by cordoning nodes 1 and 2
-    Given Cordon node 1
-    And Cordon node 2
+    # Create a single-node environment by cordoning nodes 0 and 1
+    Given Cordon node 0
+    And Cordon node 1
     
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    nfsOptions=vers=4.0,noresvport,softerr,timeo=600,retrans=5    numberOfReplicas=1
     And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
