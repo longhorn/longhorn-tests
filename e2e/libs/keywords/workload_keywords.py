@@ -1,9 +1,14 @@
 import multiprocessing
 import asyncio
 
+from kubernetes import client
+from kubernetes.stream import stream
+
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
+
+from utility.utility import get_retry_count_and_interval
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
@@ -12,6 +17,7 @@ from workload.pod import delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.pod import check_pod_did_not_restart
+from workload.pod import wait_for_pod_status
 from workload.workload import get_workload_pod_data_checksum
 from workload.workload import check_workload_pod_data_checksum
 from workload.workload import check_workload_pod_data_exists
@@ -122,6 +128,9 @@ class workload_keywords:
         """
         pod_names = get_workload_pod_names(workload_name)
         
+        if not pod_names:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
         logging(f'Writing and checking {size_in_mb} MB random data to all {len(pod_names)} pods in workload {workload_name}')
         
         for pod_name in pod_names:
@@ -129,7 +138,43 @@ class workload_keywords:
             checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
             
             logging(f'Checking pod {pod_name} file {file_name} checksum = {checksum}')
-            check_workload_pod_data_checksum(pod_name, file_name, checksum)
+            self._check_pod_data_checksum(pod_name, file_name, checksum)
+    
+    def _check_pod_data_checksum(self, pod_name, file_name, expected_checksum, data_directory="/data"):
+        """
+        Check checksum of a file in a specific pod.
+        """
+        retry_count, retry_interval = get_retry_count_and_interval()
+        
+        for _ in range(retry_count):
+            try:
+                wait_for_pod_status(pod_name, "Running")
+                
+                file_path = f"{data_directory}/{file_name}"
+                api = client.CoreV1Api()
+                cmd_get_file_checksum = [
+                    '/bin/sh',
+                    '-c',
+                    f"md5sum {file_path} | awk '{{print $1}}' | tr -d ' \n'"
+                ]
+                actual_checksum = stream(
+                    api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                    command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
+                    tty=False)
+                
+                logging(f"Checked {pod_name} file {file_name} checksum: Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}")
+                
+                if actual_checksum != expected_checksum:
+                    message = f"Checked {pod_name} file {file_name} checksum failed. Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}"
+                    logging(message)
+                    time.sleep(retry_interval)
+                else:
+                    return
+            except Exception as e:
+                logging(f"Checking pod {pod_name} data checksum failed with error: {e}")
+                time.sleep(retry_interval)
+        
+        assert False, f"Checking pod {pod_name} file {file_name} checksum failed"
 
     def write_workload_pod_large_data(self, workload_name, size_in_gb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
