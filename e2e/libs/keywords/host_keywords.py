@@ -101,5 +101,66 @@ class host_keywords:
         
         assert False, f"Timeout waiting for output {expected_output} in {cmd} result on node {node_name}"
 
+    def check_for_stuck_uninterruptible_sleep_processes_on_node(self, node_name, process_pattern, stuck_duration_seconds=30):
+        """
+        Check if any processes matching the pattern are stuck in uninterruptible sleep (D state).
+        A process is considered stuck if it remains in D state for stuck_duration_seconds.
+        
+        Args:
+            node_name: Name of the node to check
+            process_pattern: Pattern to match processes (used with pgrep -f)
+            stuck_duration_seconds: How long a process must be in D state to be considered stuck (default: 30)
+        """
+        import time
+        
+        # First check: Get all PIDs matching the pattern and their states
+        cmd = f"pgrep -f '{process_pattern}' | xargs -r ps --no-headers -o pid,stat -p"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        
+        if not res or not res.strip():
+            logging(f"No processes matching '{process_pattern}' found on node {node_name}")
+            return
+        
+        # Parse output to find PIDs in D state
+        d_state_pids = set()
+        for line in res.strip().split('\n'):
+            parts = line.strip().split()
+            if len(parts) >= 2:
+                pid, stat = parts[0], parts[1]
+                # Check if process state starts with 'D' (uninterruptible sleep)
+                if stat.startswith('D'):
+                    d_state_pids.add(pid)
+                    logging(f"Found process {pid} in D state on node {node_name}")
+        
+        if not d_state_pids:
+            logging(f"No processes in D state found on node {node_name}")
+            return
+        
+        # Wait for the specified duration
+        logging(f"Found {len(d_state_pids)} process(es) in D state. Waiting {stuck_duration_seconds} seconds to check if they are stuck...")
+        time.sleep(stuck_duration_seconds)
+        
+        # Second check: See if those same PIDs are still in D state
+        res2 = NodeExec(node_name).issue_cmd(cmd)
+        stuck_pids = []
+        
+        for line in res2.strip().split('\n'):
+            parts = line.strip().split()
+            if len(parts) >= 2:
+                pid, stat = parts[0], parts[1]
+                if stat.startswith('D') and pid in d_state_pids:
+                    stuck_pids.append(pid)
+        
+        if stuck_pids:
+            # Get full details of stuck processes
+            stuck_pids_str = ' '.join(stuck_pids)
+            details_cmd = f"ps --no-headers -o pid,stat,command -p {stuck_pids_str}"
+            details = NodeExec(node_name).issue_cmd(details_cmd)
+            error_msg = f"Found {len(stuck_pids)} process(es) stuck in D state for {stuck_duration_seconds}+ seconds on node {node_name}:\n{details}"
+            logging(error_msg)
+            assert False, error_msg
+        else:
+            logging(f"All D-state processes were transient (not stuck) on node {node_name}")
+
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)
