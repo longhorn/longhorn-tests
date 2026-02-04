@@ -311,6 +311,43 @@ def check_workload_pod_data_checksum(expected_checksum, workload_name, file_name
     assert False, f"Checking pod {pod_name} data checksum failed"
 
 
+def check_pod_data_checksum(pod_name, file_name, expected_checksum, data_directory="/data"):
+    """
+    Check checksum of a file in a specific pod.
+    """
+    retry_count, retry_interval = get_retry_count_and_interval()
+    
+    for _ in range(retry_count):
+        try:
+            wait_for_pod_status(pod_name, "Running")
+            
+            file_path = f"{data_directory}/{file_name}"
+            api = client.CoreV1Api()
+            cmd_get_file_checksum = [
+                '/bin/sh',
+                '-c',
+                f"md5sum {file_path} | awk '{{print $1}}' | tr -d ' \n'"
+            ]
+            actual_checksum = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
+                tty=False)
+            
+            logging(f"Checked {pod_name} file {file_name} checksum: Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}")
+            
+            if actual_checksum != expected_checksum:
+                message = f"Checked {pod_name} file {file_name} checksum failed. Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}"
+                logging(message)
+                time.sleep(retry_interval)
+            else:
+                return
+        except Exception as e:
+            logging(f"Checking pod {pod_name} data checksum failed with error: {e}")
+            time.sleep(retry_interval)
+    
+    assert False, f"Checking pod {pod_name} file {file_name} checksum failed"
+
+
 def check_workload_pod_data_exists(workload_name, file_name, data_directory="/data"):
 
     logging(f"Checking if file {file_name} exists in workload {workload_name}")
