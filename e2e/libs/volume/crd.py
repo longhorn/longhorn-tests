@@ -326,25 +326,7 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume_name} status error: {e}")
             time.sleep(self.retry_interval)
-        
-        # Provide detailed error message with actual state and conditions
-        if volume is None:
-            assert False, f"Failed to get volume {volume_name}"
-        
-        actual_state = volume["status"].get("state", "unknown")
-        if actual_state != desired_state:
-            # Collect additional context for debugging
-            conditions = volume["status"].get("conditions", {})
-            robustness = volume["status"].get("robustness", "unknown")
-            
-            error_msg = (
-                f"Volume {volume_name} state check failed:\n"
-                f"  Expected state: {desired_state}\n"
-                f"  Actual state: {actual_state}\n"
-                f"  Robustness: {robustness}\n"
-                f"  Conditions: {conditions}"
-            )
-            assert False, error_msg
+        assert volume["status"]["state"] == desired_state, f"Failed to wait for {volume_name} {desired_state}, currently it's {volume['status']['state']}"
 
     def wait_for_volume_attaching(self, volume_name):
         self.wait_for_volume_state(volume_name, "attaching")
