@@ -10,9 +10,10 @@ Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
+    [Arguments]    &{config}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_deployment    ${deployment_name}    ${claim_name}
+    create_deployment    ${deployment_name}    ${claim_name}    &{config}
 
 Create deployment ${deployment_id} with block persistentvolumeclaim ${claim_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
@@ -30,12 +31,6 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     ${node_names} =    list_node_names_by_role    worker
     ${node_count} =    Get length  ${node_names}
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
-
-Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
-    [Arguments]    &{config}
-    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
-    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_deployment    ${deployment_name}    ${claim_name}    &{config}
 
 Create deployment ${deployment_id} with volume ${volume_id}
     ${volume_id}=  Convert To String  ${volume_id}
