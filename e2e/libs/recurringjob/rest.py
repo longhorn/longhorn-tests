@@ -51,7 +51,7 @@ class Rest(Base):
                 updated = True
                 break
             time.sleep(self.retry_interval)
-        assert updated
+        assert updated, f"Failed to update volume {volume_name} recurring job {job_name}"
 
     def _wait_for_volume_recurringjob_delete(self, job_name, volume_name):
         deleted = False
@@ -61,7 +61,7 @@ class Rest(Base):
                 deleted = True
                 break
             time.sleep(self.retry_interval)
-        assert deleted
+        assert deleted, f"Failed to delete volume {volume_name} recurring job {job_name}"
 
     def get_volume_recurringjobs_and_groups(self, volume_name):
         for _ in range(self.retry_count):
@@ -91,7 +91,7 @@ class Rest(Base):
                 created = True
                 break
             time.sleep(self.retry_interval)
-        assert created
+        assert created, f"Failed to create cron job for recurring job {job_name}"
 
     def _wait_for_cron_job_delete(self, job_name):
         deleted = False
@@ -103,7 +103,7 @@ class Rest(Base):
                 deleted = True
                 break
             time.sleep(self.retry_interval)
-        assert deleted
+        assert deleted, f"Failed to delete cron job for recurring job {job_name}"
 
     def cleanup(self, volume_names):
         for volume_name in volume_names:
