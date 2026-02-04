@@ -41,7 +41,7 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     Given Cordon node 1
     And Cordon node 2
     
-    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    nfsOptions=vers=4.0,noresvport,softerr,timeo=600,retrans=5
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    nfsOptions=vers=4.0,noresvport,softerr,timeo=600,retrans=5    numberOfReplicas=1
     And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0    replicaset=6    args=sleep 10; touch /data/index.html; while true; do echo "$(date) $(hostname)" >> /data/index.html; sleep 1; done;
     And Wait for volume of deployment 0 healthy
