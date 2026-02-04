@@ -102,10 +102,17 @@ Run command on node ${node_id} and wait for output
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node_and_wait_for_output    ${command}    ${node_name}    ${expected_output}
 
-Check for stuck uninterruptible sleep processes on node ${node_id}
-    [Arguments]    ${process_pattern}    ${stuck_duration_seconds}=30
+Run command on node ${node_id} and get output
+    [Arguments]    ${command}    ${expected_output}
     ${node_name} =    get_node_by_index    ${node_id}
-    check_for_stuck_uninterruptible_sleep_processes_on_node    ${node_name}    ${process_pattern}    ${stuck_duration_seconds}
+    ${result} =    execute_command_on_node_and_get_output    ${command}    ${node_name}    ${expected_output}
+    RETURN    ${result}
+
+Run command on node ${node_id} and get output string
+    [Arguments]    ${command}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
+    RETURN    ${result}
 
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
