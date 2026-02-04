@@ -48,7 +48,7 @@ Test Encrypted RWX Volume Basic
         RWX
 
 Test Encrypted RWO Volume Online Expansion
-    [Tags]    rwo    expansion
+    [Tags]    rwo    volume-expansion
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
@@ -71,7 +71,7 @@ Test Encrypted RWO Volume Online Expansion
     Then Check deployment 0 data in file data.txt is intact
 
 Test Encrypted RWX Volume Online Expansion
-    [Tags]    rwx
+    [Tags]    rwx    volume-expansion
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-crypto    storage_size=50MiB
@@ -95,7 +95,7 @@ Test Encrypted RWX Volume Online Expansion
     Then Check deployment 0 data in file data.txt is intact
 
 Test Encrypted RWO Block Volume Online Expansion
-    [Tags]    rwo
+    [Tags]    rwo    volume-expansion
     Given Create crypto secret
     And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim in Block volume mode 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
