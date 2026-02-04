@@ -53,7 +53,7 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
         
         # Check node 2 (the only schedulable node) for processes in D state
         # We check for processes related to writing to /data/index.html
-        Run command on node 2 and not expect output    pgrep -f 'echo.*/data/index.html' | xargs -r ps -o pid,stat,command -p    D
+        Run command on node 2 and not expect output    pgrep -f 'echo.*/data/index.html' | xargs -r ps --no-headers -o pid,stat,command -p    D
         
         # Wait 1 minute before next check
         Sleep    60
