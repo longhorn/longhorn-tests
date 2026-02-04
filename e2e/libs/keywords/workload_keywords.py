@@ -279,3 +279,53 @@ class workload_keywords:
             creation_time = pod.metadata.creation_timestamp
             logging(f"Comparing pod creation: {creation_time} < {time}")
             assert creation_time < time, f"{pod.metadata.name} restarted after test started"
+
+    def wait_for_filesystem_size_in_workload(self, workload_name, expected_size_in_bytes):
+        """
+        Wait for the filesystem in the workload pod to reflect the expanded size.
+        This accounts for filesystem overhead - the actual filesystem size will be
+        smaller than the PVC size.
+        
+        Args:
+            workload_name: Name of the workload
+            expected_size_in_bytes: Expected filesystem size in bytes (as string)
+        """
+        from utility.utility import get_retry_count_and_interval
+        from workload.workload import get_workload_pod_names
+        import time
+        
+        retry_count, retry_interval = get_retry_count_and_interval()
+        pod_names = get_workload_pod_names(workload_name)
+        
+        if not pod_names:
+            assert False, f"No pods found for workload {workload_name}"
+        
+        pod_name = pod_names[0]
+        
+        # Convert expected size to an approximate minimum filesystem size
+        # Accounting for ~10-15% filesystem overhead
+        expected_size_bytes = int(expected_size_in_bytes)
+        min_acceptable_size = int(expected_size_bytes * 0.85)  # Allow 15% overhead
+        
+        for i in range(retry_count):
+            logging(f"Waiting for filesystem size in workload {workload_name} to be at least {min_acceptable_size} bytes ... ({i})")
+            time.sleep(retry_interval)
+            
+            # df -P -B1 output format (one filesystem per line):
+            # Filesystem 1B-blocks Used Available Use% Mounted
+            # /dev/xxx total_size used_size available_size percentage /mount
+            # NR==2 skips the header, $2 is the total size in bytes
+            cmd = "df -P -B1 /data | awk 'NR==2 {print $2}'"
+            try:
+                result = run_commands_in_pod(pod_name, cmd)
+                actual_size = int(result.strip())
+                logging(f"Current filesystem size in workload {workload_name}: {actual_size} bytes, minimum expected: {min_acceptable_size} bytes")
+                
+                if actual_size >= min_acceptable_size:
+                    logging(f"Filesystem size {actual_size} bytes meets requirement (>= {min_acceptable_size} bytes)")
+                    return
+            except Exception as e:
+                logging(f"Error checking filesystem size in workload {workload_name}: {e}")
+                continue
+        
+        assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
