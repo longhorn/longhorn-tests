@@ -79,7 +79,7 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         ${patch}=    Set Variable    .longhornManager.daemonsetUpdateStrategy.rollingUpdate.maxUnavailable = 1
-        ${custom_cmd}=    Set Variable    yq eval '${patch}' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
+        ${custom_cmd}=    Set Variable    yq eval -i '${patch}' ${LONGHORN_REPO_DIR}/chart/values.yaml
         
         # Upgrade with custom maxUnavailable setting
         Upgrade Longhorn With Custom Command    ${custom_cmd}
