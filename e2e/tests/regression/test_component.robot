@@ -73,21 +73,18 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     END
     
     When Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
-    Then Wait for Longhorn workloads pods stable    longhorn-manager
     
     # Prepare custom command for upgrade with maxUnavailable=1
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
-        ${patch}=    Set Variable    .longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1
         # Start upgrade without waiting - returns process object
         Upgrade Longhorn
-        ...    custom_cmd=yq eval -i '${patch}' values.yaml
+        ...    custom_cmd=yq eval -i '.longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1' values.yaml
         ...    wait=${False}
     ELSE
         # For manifest, maxUnavailable is in longhorn.yaml DaemonSet spec
-        ${patch}=    Set Variable    (.spec.updateStrategy.rollingUpdate.maxUnavailable = 1) | select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager")
         Upgrade Longhorn
-        ...    custom_cmd=yq eval -i '${patch}' longhorn.yaml
+        ...    custom_cmd=yq eval -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.updateStrategy.rollingUpdate.maxUnavailable = 1' longhorn.yaml
         ...    wait=${False}
     END
     
@@ -101,12 +98,15 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
         # Check if all Longhorn components are running (upgrade finished)
         ${all_running}=    Is Longhorn components all running
         IF    ${all_running} == ${True}
+            Log To Console    Upgrade completed - all Longhorn components are running
             BREAK
         END
         
-        Sleep    5s
+        Log To Console    Upgrade in progress - monitoring pod availability
+        Sleep    1s
     END
     
+    Then Wait for Longhorn components all running
     Then Wait for Longhorn workloads pods stable    longhorn-manager
 
 Test CSI Components Rolling Update Configuration During Upgrade
@@ -135,11 +135,6 @@ Test CSI Components Rolling Update Configuration During Upgrade
     END
     
     When Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
-    Then Wait for Longhorn workloads pods stable
-    ...    csi-attacher
-    ...    csi-provisioner
-    ...    csi-resizer
-    ...    csi-snapshotter
     
     # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
     Upgrade Longhorn    wait=${False}
@@ -170,12 +165,15 @@ Test CSI Components Rolling Update Configuration During Upgrade
         # Check if all Longhorn components are running (upgrade finished)
         ${all_running}=    Is Longhorn components all running
         IF    ${all_running} == ${True}
+            Log To Console    Upgrade completed - all Longhorn components are running
             BREAK
         END
         
-        Sleep    5s
+        Log To Console    Upgrade in progress - monitoring pod availability
+        Sleep    1s
     END
     
+    Then Wait for Longhorn components all running
     Then Wait for Longhorn workloads pods stable
     ...    csi-attacher
     ...    csi-provisioner
