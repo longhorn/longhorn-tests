@@ -10,6 +10,7 @@ ${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 ${DATA_ENGINE}    v1
 ${VOLUME_STATE_CHECK_TIMEOUT}    120
 ${LONGHORN_NAMESPACE}    longhorn-system
+${DEFAULT_BLOCK_DISK_NAME}    block-disk
 
 @{powered_off_nodes}=
 
