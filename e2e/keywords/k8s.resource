@@ -168,8 +168,8 @@ Upgrade kubernetes to latest version
 
 Check DaemonSet Rolling Update Max Unavailable
     [Arguments]    ${daemonset_name}    ${expected_max_unavailable}=${None}    ${namespace}=${LONGHORN_NAMESPACE}
-    check_daemonset_rolling_update_max_unavailable    ${daemonset_name}    ${namespace}    ${expected_max_unavailable}
+    check_daemonset_rolling_update_max_unavailable    ${daemonset_name}    namespace=${namespace}    expected_max_unavailable=${expected_max_unavailable}
 
 Check Deployment Rolling Update Max Unavailable
     [Arguments]    ${deployment_name}    ${expected_max_unavailable}=${None}    ${namespace}=${LONGHORN_NAMESPACE}
-    check_deployment_rolling_update_max_unavailable    ${deployment_name}    ${namespace}    ${expected_max_unavailable}
+    check_deployment_rolling_update_max_unavailable    ${deployment_name}    namespace=${namespace}    expected_max_unavailable=${expected_max_unavailable}
