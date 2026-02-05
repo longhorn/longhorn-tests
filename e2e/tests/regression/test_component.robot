@@ -79,24 +79,28 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         ${patch}=    Set Variable    .longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1
-        ${custom_cmd}=    Set Variable    yq eval -i '${patch}' values.yaml
+        # Start upgrade without waiting - returns process object
+        Upgrade Longhorn
+        ...    custom_cmd=yq eval -i '${patch}' values.yaml
+        ...    wait=${False}
     ELSE
         # For manifest, maxUnavailable is in longhorn.yaml DaemonSet spec
-        ${custom_cmd}=    Set Variable    yq eval -i '(.spec.updateStrategy.rollingUpdate.maxUnavailable = 1) | select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager")' longhorn.yaml
+        ${patch}=    Set Variable    (.spec.updateStrategy.rollingUpdate.maxUnavailable = 1) | select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager")
+        Upgrade Longhorn
+        ...    custom_cmd=yq eval -i '${patch}' longhorn.yaml
+        ...    wait=${False}
     END
     
-    # Start upgrade without waiting - returns process object
-    ${process}=    Upgrade Longhorn    custom_cmd=${custom_cmd}    wait=${False}
-    
     # Monitor longhorn-manager pods during upgrade
-    # Count should not be 0 (meaning at least some pods are always running)
+    # At least some pods should always be running
     WHILE    True
-        ${cmd}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager --field-selector=status.phase=Running --no-headers | wc -l
-        Run command and expect output    ${cmd}    [^0]
+        Run command and not expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    0
         
-        # Check if upgrade process is still running
-        ${running}=    Is Upgrade Process Running    ${process}
-        IF    ${running} == ${False}
+        # Check if all Longhorn components are running (upgrade finished)
+        ${all_running}=    Is Longhorn components all running
+        IF    ${all_running} == ${True}
             BREAK
         END
         
@@ -138,30 +142,34 @@ Test CSI Components Rolling Update Configuration During Upgrade
     ...    csi-snapshotter
     
     # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
-    ${process}=    Upgrade Longhorn    wait=${False}
+    Upgrade Longhorn    wait=${False}
     
     # Monitor CSI component pods during upgrade
-    # Count for each component should not be 0 (meaning at least some pods are always running)
+    # At least some pods of each component should always be running
     WHILE    True
         # Check csi-attacher
-        ${cmd_attacher}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-attacher --field-selector=status.phase=Running --no-headers | wc -l
-        Run command and expect output    ${cmd_attacher}    [^0]
+        Run command and not expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-attacher --field-selector=status.phase=Running --no-headers | wc -l
+        ...    0
         
         # Check csi-provisioner
-        ${cmd_provisioner}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-provisioner --field-selector=status.phase=Running --no-headers | wc -l
-        Run command and expect output    ${cmd_provisioner}    [^0]
+        Run command and not expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-provisioner --field-selector=status.phase=Running --no-headers | wc -l
+        ...    0
         
         # Check csi-resizer
-        ${cmd_resizer}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-resizer --field-selector=status.phase=Running --no-headers | wc -l
-        Run command and expect output    ${cmd_resizer}    [^0]
+        Run command and not expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-resizer --field-selector=status.phase=Running --no-headers | wc -l
+        ...    0
         
         # Check csi-snapshotter
-        ${cmd_snapshotter}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-snapshotter --field-selector=status.phase=Running --no-headers | wc -l
-        Run command and expect output    ${cmd_snapshotter}    [^0]
+        Run command and not expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-snapshotter --field-selector=status.phase=Running --no-headers | wc -l
+        ...    0
         
-        # Check if upgrade process is still running
-        ${running}=    Is Upgrade Process Running    ${process}
-        IF    ${running} == ${False}
+        # Check if all Longhorn components are running (upgrade finished)
+        ${all_running}=    Is Longhorn components all running
+        IF    ${all_running} == ${True}
             BREAK
         END
         

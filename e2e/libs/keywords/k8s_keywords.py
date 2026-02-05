@@ -22,13 +22,7 @@ from k8s.k8s import patch_longhorn_component_resources_limit
 from k8s.k8s import get_longhorn_component_resources_limit
 from k8s.k8s import remove_longhorn_component_resources_limit
 from k8s.k8s import verify_pod_log_after_time_not_contains
-from k8s.k8s import get_daemonset_update_strategy
-from k8s.k8s import get_deployment_update_strategy
-from k8s.k8s import check_daemonset_rolling_update_max_unavailable
-from k8s.k8s import check_deployment_rolling_update_max_unavailable
-from k8s.k8s import count_running_pods_by_label
-from k8s.k8s import monitor_pods_during_operation
-from k8s.k8s import upgrade_longhorn_with_pod_monitoring
+from k8s.k8s import is_namespaced_pods_all_running
 
 from node import Node
 
@@ -154,25 +148,5 @@ class k8s_keywords:
             result.append(pod.metadata.name)
         return result
 
-    def get_daemonset_update_strategy(self, daemonset_name, namespace=constant.LONGHORN_NAMESPACE):
-        return get_daemonset_update_strategy(daemonset_name, namespace)
-
-    def get_deployment_update_strategy(self, deployment_name, namespace=constant.LONGHORN_NAMESPACE):
-        return get_deployment_update_strategy(deployment_name, namespace)
-
-    def check_daemonset_rolling_update_max_unavailable(self, daemonset_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
-        return check_daemonset_rolling_update_max_unavailable(daemonset_name, expected_max_unavailable, namespace)
-
-    def check_deployment_rolling_update_max_unavailable(self, deployment_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
-        return check_deployment_rolling_update_max_unavailable(deployment_name, expected_max_unavailable, namespace)
-
-    def count_running_pods_by_label(self, namespace, label_selector):
-        return count_running_pods_by_label(namespace, label_selector)
-
-    def monitor_pods_during_operation(self, namespace, label_selector, min_expected_running, check_interval=5, max_checks=120):
-        return monitor_pods_during_operation(namespace, label_selector, min_expected_running, check_interval, max_checks)
-
-    def upgrade_longhorn_with_pod_monitoring(self, longhorn_deploy, namespace, component_label, min_running_pods,
-                                             upgrade_to_transient_version=False, timeout=600, custom_cmd=""):
-        return upgrade_longhorn_with_pod_monitoring(longhorn_deploy, namespace, component_label, min_running_pods,
-                                                    upgrade_to_transient_version, timeout, custom_cmd)
+    def is_namespaced_pods_all_running(self, namespace):
+        return is_namespaced_pods_all_running(namespace)
