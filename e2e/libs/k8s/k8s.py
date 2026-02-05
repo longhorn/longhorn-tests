@@ -439,8 +439,7 @@ def get_daemonset_update_strategy(daemonset_name, namespace):
     
     if update_strategy.rolling_update:
         strategy_dict["rollingUpdate"] = {
-            "maxUnavailable": update_strategy.rolling_update.max_unavailable,
-            "maxSurge": getattr(update_strategy.rolling_update, 'max_surge', None)
+            "maxUnavailable": update_strategy.rolling_update.max_unavailable
         }
     
     logging(f"DaemonSet {daemonset_name} update strategy: {strategy_dict}")
