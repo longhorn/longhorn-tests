@@ -421,3 +421,119 @@ def get_longhorn_component_resources_limit(component_name, component_type, names
             return {"requests": requests, "limits": limits}
 
     assert False, f"Container {component_name} not found in {component_type}/{component_name}"
+
+def get_daemonset_update_strategy(daemonset_name, namespace):
+    """
+    Get the update strategy configuration for a DaemonSet.
+    
+    Returns a dictionary containing the update strategy configuration.
+    """
+    api = client.AppsV1Api()
+    ds = api.read_namespaced_daemon_set(name=daemonset_name, namespace=namespace)
+    
+    update_strategy = ds.spec.update_strategy
+    strategy_dict = {
+        "type": update_strategy.type,
+        "rollingUpdate": None
+    }
+    
+    if update_strategy.rolling_update:
+        strategy_dict["rollingUpdate"] = {
+            "maxUnavailable": update_strategy.rolling_update.max_unavailable,
+            "maxSurge": getattr(update_strategy.rolling_update, 'max_surge', None)
+        }
+    
+    logging(f"DaemonSet {daemonset_name} update strategy: {strategy_dict}")
+    return strategy_dict
+
+def get_deployment_update_strategy(deployment_name, namespace):
+    """
+    Get the update strategy configuration for a Deployment.
+    
+    Returns a dictionary containing the update strategy configuration.
+    """
+    api = client.AppsV1Api()
+    deployment = api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+    
+    update_strategy = deployment.spec.strategy
+    strategy_dict = {
+        "type": update_strategy.type,
+        "rollingUpdate": None
+    }
+    
+    if update_strategy.rolling_update:
+        strategy_dict["rollingUpdate"] = {
+            "maxUnavailable": update_strategy.rolling_update.max_unavailable,
+            "maxSurge": update_strategy.rolling_update.max_surge
+        }
+    
+    logging(f"Deployment {deployment_name} update strategy: {strategy_dict}")
+    return strategy_dict
+
+def check_daemonset_rolling_update_max_unavailable(daemonset_name, namespace, expected_max_unavailable=None):
+    """
+    Check that a DaemonSet has a RollingUpdate strategy with maxUnavailable configured.
+    
+    Args:
+        daemonset_name: Name of the DaemonSet
+        namespace: Namespace of the DaemonSet
+        expected_max_unavailable: Expected value for maxUnavailable (optional)
+    
+    Returns:
+        True if the check passes, raises AssertionError otherwise
+    """
+    strategy = get_daemonset_update_strategy(daemonset_name, namespace)
+    
+    assert strategy["type"] == "RollingUpdate", \
+        f"DaemonSet {daemonset_name} does not have RollingUpdate strategy. Found: {strategy['type']}"
+    
+    assert strategy["rollingUpdate"] is not None, \
+        f"DaemonSet {daemonset_name} does not have rollingUpdate configuration"
+    
+    max_unavailable = strategy["rollingUpdate"]["maxUnavailable"]
+    assert max_unavailable is not None, \
+        f"DaemonSet {daemonset_name} does not have maxUnavailable configured"
+    
+    if expected_max_unavailable is not None:
+        # Convert to string for comparison if it's an integer
+        expected_str = str(expected_max_unavailable)
+        actual_str = str(max_unavailable)
+        assert actual_str == expected_str, \
+            f"DaemonSet {daemonset_name} maxUnavailable is {max_unavailable}, expected {expected_max_unavailable}"
+    
+    logging(f"DaemonSet {daemonset_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
+    return True
+
+def check_deployment_rolling_update_max_unavailable(deployment_name, namespace, expected_max_unavailable=None):
+    """
+    Check that a Deployment has a RollingUpdate strategy with maxUnavailable configured.
+    
+    Args:
+        deployment_name: Name of the Deployment
+        namespace: Namespace of the Deployment
+        expected_max_unavailable: Expected value for maxUnavailable (optional)
+    
+    Returns:
+        True if the check passes, raises AssertionError otherwise
+    """
+    strategy = get_deployment_update_strategy(deployment_name, namespace)
+    
+    assert strategy["type"] == "RollingUpdate", \
+        f"Deployment {deployment_name} does not have RollingUpdate strategy. Found: {strategy['type']}"
+    
+    assert strategy["rollingUpdate"] is not None, \
+        f"Deployment {deployment_name} does not have rollingUpdate configuration"
+    
+    max_unavailable = strategy["rollingUpdate"]["maxUnavailable"]
+    assert max_unavailable is not None, \
+        f"Deployment {deployment_name} does not have maxUnavailable configured"
+    
+    if expected_max_unavailable is not None:
+        # Convert to string for comparison if it's an integer
+        expected_str = str(expected_max_unavailable)
+        actual_str = str(max_unavailable)
+        assert actual_str == expected_str, \
+            f"Deployment {deployment_name} maxUnavailable is {max_unavailable}, expected {expected_max_unavailable}"
+    
+    logging(f"Deployment {deployment_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
+    return True
