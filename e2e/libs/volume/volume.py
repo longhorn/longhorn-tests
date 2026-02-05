@@ -121,6 +121,12 @@ class Volume(Base):
     def write_random_data(self, volume_name, size, data_id):
         return self.volume.write_random_data(volume_name, size, data_id)
 
+    def prefill_with_fio(self, volume_name, size):
+        return self.volume.prefill_with_fio(volume_name, size)
+
+    def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
+        return self.volume.write_scattered_data_with_fio(volume_name, size, bs, ratio)
+
     def keep_writing_data(self, volume_name):
         return self.volume.keep_writing_data(volume_name, 256)
 

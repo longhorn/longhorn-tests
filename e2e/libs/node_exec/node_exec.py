@@ -28,6 +28,45 @@ class NodeExec:
         self.cleanup()
         self.pod = self.launch_pod()
 
+        if self._needs_fio(cmd):
+            fio_ready = False
+            for i in range(120):
+                try:
+                    # Check if fio is available using bash
+                    path_result = stream(
+                        self.core_api.connect_get_namespaced_pod_exec,
+                        self.pod.metadata.name,
+                        'default',
+                        command=['/bin/bash', '-c', 'which fio 2>&1'],
+                        stderr=True, stdin=False, stdout=True, tty=False
+                    )
+                    
+                    if path_result and path_result.strip() and '/fio' in path_result:
+                        # Verify fio is executable
+                        version_result = stream(
+                            self.core_api.connect_get_namespaced_pod_exec,
+                            self.pod.metadata.name,
+                            'default',
+                            command=['/bin/bash', '-c', 'fio --version 2>&1'],
+                            stderr=True, stdin=False, stdout=True, tty=False
+                        )
+                        
+                        if version_result and 'fio' in version_result.lower():
+                            fio_ready = True
+                            logging(f"fio is ready in node-exec pod on {self.node_name}")
+                            break
+                            
+                except Exception as e:
+                    if i % 10 == 0:
+                        logging(f"Waiting for fio to be available... ({i}s)")
+                    time.sleep(1)
+                    continue
+                    
+                time.sleep(1)
+
+            if not fio_ready:
+                raise Exception(f"fio not available in node-exec pod on {self.node_name} after 120 seconds")
+
         logging(f"Issuing command on {self.node_name}: {cmd}")
 
         if isinstance(cmd, list):
@@ -53,6 +92,11 @@ class NodeExec:
         )
         logging(f"Issued command: {cmd} on {self.node_name} with result:\n{res}")
         return res
+
+    def _needs_fio(self, cmd):
+        if isinstance(cmd, list):
+            return any('fio' in str(part) for part in cmd)
+        return 'fio' in str(cmd)
 
     def launch_pod(self):
         pod_manifest = {
@@ -108,15 +152,14 @@ class NodeExec:
                     "effect": "NoSchedule"
                 }],
                 'containers': [{
-                    'image': 'ubuntu:16.04',
+                    'image': 'ubuntu:22.04',
                     'imagePullPolicy': 'IfNotPresent',
                     'securityContext': {
                         'privileged': True
                     },
                     'name': 'node-exec',
-                    "args": [
-                        "tail", "-f", "/dev/null"
-                    ],
+                    'command': ['/bin/bash'],
+                    'args': ['-c', 'set -e; apt-get update -qq && apt-get install -y -qq fio && tail -f /dev/null'],
                     "volumeMounts": [{
                         'name': 'rootfs',
                         'mountPath': HOST_ROOTFS
