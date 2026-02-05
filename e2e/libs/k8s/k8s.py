@@ -469,6 +469,41 @@ def get_deployment_update_strategy(deployment_name, namespace):
     logging(f"Deployment {deployment_name} update strategy: {strategy_dict}")
     return strategy_dict
 
+def _validate_rolling_update_max_unavailable(component_name, component_type, strategy, expected_max_unavailable=None):
+    """
+    Helper function to validate rolling update maxUnavailable configuration.
+    
+    Args:
+        component_name: Name of the component (DaemonSet or Deployment)
+        component_type: Type of the component ("DaemonSet" or "Deployment")
+        strategy: The update strategy dictionary
+        expected_max_unavailable: Expected value for maxUnavailable (optional)
+    
+    Returns:
+        True if validation passes, raises AssertionError otherwise
+    """
+    assert strategy["type"] == "RollingUpdate", \
+        f"{component_type} {component_name} does not have RollingUpdate strategy. Found: {strategy['type']}"
+    
+    assert strategy["rollingUpdate"] is not None, \
+        f"{component_type} {component_name} does not have rollingUpdate configuration"
+    
+    max_unavailable = strategy["rollingUpdate"]["maxUnavailable"]
+    assert max_unavailable is not None, \
+        f"{component_type} {component_name} does not have maxUnavailable configured"
+    
+    if expected_max_unavailable is not None:
+        # Normalize both values to strings for comparison
+        # maxUnavailable can be an integer (e.g., 1) or a percentage string (e.g., "10%")
+        actual_str = str(max_unavailable)
+        expected_str = str(expected_max_unavailable)
+        
+        assert actual_str == expected_str, \
+            f"{component_type} {component_name} maxUnavailable is {actual_str}, expected {expected_str}"
+    
+    logging(f"{component_type} {component_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
+    return True
+
 def check_daemonset_rolling_update_max_unavailable(daemonset_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
     """
     Check that a DaemonSet has a RollingUpdate strategy with maxUnavailable configured.
@@ -482,28 +517,7 @@ def check_daemonset_rolling_update_max_unavailable(daemonset_name, expected_max_
         True if the check passes, raises AssertionError otherwise
     """
     strategy = get_daemonset_update_strategy(daemonset_name, namespace)
-    
-    assert strategy["type"] == "RollingUpdate", \
-        f"DaemonSet {daemonset_name} does not have RollingUpdate strategy. Found: {strategy['type']}"
-    
-    assert strategy["rollingUpdate"] is not None, \
-        f"DaemonSet {daemonset_name} does not have rollingUpdate configuration"
-    
-    max_unavailable = strategy["rollingUpdate"]["maxUnavailable"]
-    assert max_unavailable is not None, \
-        f"DaemonSet {daemonset_name} does not have maxUnavailable configured"
-    
-    if expected_max_unavailable is not None:
-        # Normalize both values to strings for comparison
-        # maxUnavailable can be an integer (e.g., 1) or a percentage string (e.g., "10%")
-        actual_str = str(max_unavailable)
-        expected_str = str(expected_max_unavailable)
-        
-        assert actual_str == expected_str, \
-            f"DaemonSet {daemonset_name} maxUnavailable is {actual_str}, expected {expected_str}"
-    
-    logging(f"DaemonSet {daemonset_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
-    return True
+    return _validate_rolling_update_max_unavailable(daemonset_name, "DaemonSet", strategy, expected_max_unavailable)
 
 def check_deployment_rolling_update_max_unavailable(deployment_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
     """
@@ -518,25 +532,4 @@ def check_deployment_rolling_update_max_unavailable(deployment_name, expected_ma
         True if the check passes, raises AssertionError otherwise
     """
     strategy = get_deployment_update_strategy(deployment_name, namespace)
-    
-    assert strategy["type"] == "RollingUpdate", \
-        f"Deployment {deployment_name} does not have RollingUpdate strategy. Found: {strategy['type']}"
-    
-    assert strategy["rollingUpdate"] is not None, \
-        f"Deployment {deployment_name} does not have rollingUpdate configuration"
-    
-    max_unavailable = strategy["rollingUpdate"]["maxUnavailable"]
-    assert max_unavailable is not None, \
-        f"Deployment {deployment_name} does not have maxUnavailable configured"
-    
-    if expected_max_unavailable is not None:
-        # Normalize both values to strings for comparison
-        # maxUnavailable can be an integer (e.g., 1) or a percentage string (e.g., "10%")
-        actual_str = str(max_unavailable)
-        expected_str = str(expected_max_unavailable)
-        
-        assert actual_str == expected_str, \
-            f"Deployment {deployment_name} maxUnavailable is {actual_str}, expected {expected_str}"
-    
-    logging(f"Deployment {deployment_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
-    return True
+    return _validate_rolling_update_max_unavailable(deployment_name, "Deployment", strategy, expected_max_unavailable)
