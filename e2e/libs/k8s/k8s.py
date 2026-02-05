@@ -617,7 +617,6 @@ def upgrade_longhorn_with_pod_monitoring(longhorn_deploy, namespace, component_l
         (upgrade_success, monitoring_success) tuple of booleans
     """
     import threading
-    import subprocess
     
     monitoring_result = {"violations": [], "completed": False}
     
