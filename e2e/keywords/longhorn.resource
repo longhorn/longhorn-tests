@@ -159,11 +159,6 @@ Upgrade Longhorn
     ${upgraded} =    upgrade_longhorn    &{config}
     [Return]    ${upgraded}
 
-Is Upgrade Process Running
-    [Arguments]    ${process}
-    ${running} =    is_upgrade_process_running    ${process}
-    [Return]    ${running}
-
 Upgrade Longhorn to custom version should fail
     ${upgraded} =     upgrade_longhorn    wait_when_fail=False
     IF    "${upgraded}" == ${True}
