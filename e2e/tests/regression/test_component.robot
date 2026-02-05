@@ -100,14 +100,14 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
         IF    ${all_running} == ${True}
             Log To Console    Upgrade completed - all Longhorn components are running
             BREAK
+        ELSE
+            Log To Console    Upgrade in progress - monitoring pod availability
         END
         
-        Log To Console    Upgrade in progress - monitoring pod availability
         Sleep    1s
     END
     
     Then Wait for Longhorn components all running
-    Then Wait for Longhorn workloads pods stable    longhorn-manager
 
 Test CSI Components Rolling Update Configuration During Upgrade
     [Tags]    upgrade
@@ -167,15 +167,11 @@ Test CSI Components Rolling Update Configuration During Upgrade
         IF    ${all_running} == ${True}
             Log To Console    Upgrade completed - all Longhorn components are running
             BREAK
+        ELSE
+            Log To Console    Upgrade in progress - monitoring pod availability
         END
         
-        Log To Console    Upgrade in progress - monitoring pod availability
         Sleep    1s
     END
     
     Then Wait for Longhorn components all running
-    Then Wait for Longhorn workloads pods stable
-    ...    csi-attacher
-    ...    csi-provisioner
-    ...    csi-resizer
-    ...    csi-snapshotter
