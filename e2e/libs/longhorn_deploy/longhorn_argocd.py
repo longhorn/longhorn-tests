@@ -67,6 +67,11 @@ class LonghornArgocd(Base):
         command = "./pipelines/utilities/argocd.sh"
         process = subprocess.Popen([command, upgrade_function],
                                    shell=False)
+        
+        if not wait:
+            # Return immediately without waiting for process to complete
+            return process
+        
         try:
             process.wait(timeout=timeout)
             return True if process.returncode == 0 else False

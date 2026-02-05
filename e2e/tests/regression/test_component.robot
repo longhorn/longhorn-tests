@@ -94,10 +94,9 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
         ${cmd}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager --field-selector=status.phase=Running --no-headers | wc -l
         Run command and expect output    ${cmd}    [^0]
         
-        # Check if upgrade process is still running by checking return code
-        ${rc}=    Execute Command    python3 -c "import subprocess; p = subprocess.Popen(['ps', '-p', '${process.pid}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE); p.communicate(); exit(p.returncode)"
-        IF    ${rc} != 0
-            # Process finished
+        # Check if upgrade process is still running
+        ${running}=    Is Upgrade Process Running    ${process}
+        IF    ${running} == ${False}
             BREAK
         END
         
@@ -161,9 +160,8 @@ Test CSI Components Rolling Update Configuration During Upgrade
         Run command and expect output    ${cmd_snapshotter}    [^0]
         
         # Check if upgrade process is still running
-        ${rc}=    Execute Command    python3 -c "import subprocess; p = subprocess.Popen(['ps', '-p', '${process.pid}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE); p.communicate(); exit(p.returncode)"
-        IF    ${rc} != 0
-            # Process finished
+        ${running}=    Is Upgrade Process Running    ${process}
+        IF    ${running} == ${False}
             BREAK
         END
         
