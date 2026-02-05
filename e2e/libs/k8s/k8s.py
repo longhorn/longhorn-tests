@@ -657,7 +657,10 @@ def upgrade_longhorn_with_pod_monitoring(longhorn_deploy, namespace, component_l
     
     # Signal monitoring to stop
     monitoring_result["completed"] = True
-    monitor_thread.join(timeout=30)  # Wait for monitoring thread to finish
+    
+    # Wait for monitoring thread to finish
+    MONITOR_THREAD_JOIN_TIMEOUT = 30
+    monitor_thread.join(timeout=MONITOR_THREAD_JOIN_TIMEOUT)
     
     monitoring_success = len(monitoring_result["violations"]) == 0
     
