@@ -22,6 +22,10 @@ from k8s.k8s import patch_longhorn_component_resources_limit
 from k8s.k8s import get_longhorn_component_resources_limit
 from k8s.k8s import remove_longhorn_component_resources_limit
 from k8s.k8s import verify_pod_log_after_time_not_contains
+from k8s.k8s import get_daemonset_update_strategy
+from k8s.k8s import get_deployment_update_strategy
+from k8s.k8s import check_daemonset_rolling_update_max_unavailable
+from k8s.k8s import check_deployment_rolling_update_max_unavailable
 
 from node import Node
 
@@ -149,3 +153,15 @@ class k8s_keywords:
         for pod in pods:
             result.append(pod.metadata.name)
         return result
+
+    def get_daemonset_update_strategy(self, daemonset_name, namespace=constant.LONGHORN_NAMESPACE):
+        return get_daemonset_update_strategy(daemonset_name, namespace)
+
+    def get_deployment_update_strategy(self, deployment_name, namespace=constant.LONGHORN_NAMESPACE):
+        return get_deployment_update_strategy(deployment_name, namespace)
+
+    def check_daemonset_rolling_update_max_unavailable(self, daemonset_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
+        return check_daemonset_rolling_update_max_unavailable(daemonset_name, namespace, expected_max_unavailable)
+
+    def check_deployment_rolling_update_max_unavailable(self, deployment_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
+        return check_deployment_rolling_update_max_unavailable(deployment_name, namespace, expected_max_unavailable)

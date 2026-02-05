@@ -7,6 +7,7 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -45,3 +46,21 @@ Test Longhorn Manager Resource Configuration Via Helm Install
 
     When Install Longhorn via helm with resource configuration   cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
     And Check Longhorn Manager Resources Are       cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
+
+Test Rolling Update Strategy Configuration
+    [Documentation]    Test rolling update strategy configuration for longhorn-manager and CSI deployments
+    ...
+    ...                https://github.com/longhorn/longhorn/issues/12240
+    ...
+    ...                Validates that:
+    ...                1. longhorn-manager DaemonSet has a RollingUpdate strategy with maxUnavailable configured
+    ...                2. CSI deployment components (csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter) have RollingUpdate strategy with maxUnavailable set to 1
+    
+    # Check longhorn-manager DaemonSet has rolling update strategy configured
+    When Check DaemonSet Rolling Update Max Unavailable    longhorn-manager
+    
+    # Check CSI deployment components have rolling update strategy with maxUnavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-attacher    expected_max_unavailable=1
+    And Check Deployment Rolling Update Max Unavailable    csi-provisioner    expected_max_unavailable=1
+    And Check Deployment Rolling Update Max Unavailable    csi-resizer    expected_max_unavailable=1
+    And Check Deployment Rolling Update Max Unavailable    csi-snapshotter    expected_max_unavailable=1
