@@ -48,7 +48,7 @@ Test Longhorn Manager Resource Configuration Via Helm Install
     And Check Longhorn Manager Resources Are       cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
 
 Test Rolling Update Strategy Configuration
-    [Documentation]    Test rolling update strategy configuration for longhorn-manager and CSI deployments
+    [Documentation]    Test rolling update strategy configuration for Longhorn DaemonSets and CSI deployments
     ...
     ...                https://github.com/longhorn/longhorn/issues/12240
     ...
