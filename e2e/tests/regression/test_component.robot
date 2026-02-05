@@ -56,18 +56,18 @@ Test Rolling Update Strategy Configuration
     ...                1. longhorn-manager DaemonSet has a RollingUpdate strategy with maxUnavailable configured
     ...                2. longhorn-csi-plugin DaemonSet has a RollingUpdate strategy with maxUnavailable configured
     ...                3. CSI deployment components (csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter) have RollingUpdate strategy with maxUnavailable set to 1
-    
+
     # Check longhorn-manager DaemonSet has rolling update strategy configured
     # Note: maxUnavailable is user-configurable, so we only verify it's set (not checking a specific value)
-    When Check DaemonSet Rolling Update Max Unavailable    longhorn-manager
-    
+    Then Check DaemonSet Rolling Update Max Unavailable    longhorn-manager
+
     # Check longhorn-csi-plugin DaemonSet has rolling update strategy configured
     # Note: maxUnavailable is user-configurable, so we only verify it's set (not checking a specific value)
-    And Check DaemonSet Rolling Update Max Unavailable    longhorn-csi-plugin
-    
+    Then Check DaemonSet Rolling Update Max Unavailable    longhorn-csi-plugin
+
     # Check CSI deployment components have rolling update strategy with maxUnavailable=1
     # Note: CSI deployments should have maxUnavailable=1 by default for safer rolling updates
     Then Check Deployment Rolling Update Max Unavailable    csi-attacher    expected_max_unavailable=1
-    And Check Deployment Rolling Update Max Unavailable    csi-provisioner    expected_max_unavailable=1
-    And Check Deployment Rolling Update Max Unavailable    csi-resizer    expected_max_unavailable=1
-    And Check Deployment Rolling Update Max Unavailable    csi-snapshotter    expected_max_unavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-provisioner    expected_max_unavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-resizer    expected_max_unavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-snapshotter    expected_max_unavailable=1
