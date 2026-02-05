@@ -109,6 +109,14 @@ class volume_keywords:
         logging(f'Keep writing data to volume {volume_name}')
         self.volume.keep_writing_data(volume_name)
 
+    def write_volume_scattered_data_with_fio(self, volume_name, size, bs, ratio):
+        logging(f'Writing scattered data to volume {volume_name} with fio (size={size}, bs={bs}, ratio={ratio})')
+        return self.volume.write_scattered_data_with_fio(volume_name, size, bs, ratio)
+
+    def prefill_volume_with_fio(self, volume_name, size):
+        logging(f'Prefilling volume {volume_name} with fio (size={size})')
+        return self.volume.prefill_with_fio(volume_name, size)
+
     def check_data_checksum(self, volume_name, data_id=0):
         logging(f"Checking volume {volume_name} data {data_id} checksum")
         return self.volume.check_data_checksum(volume_name, data_id)
