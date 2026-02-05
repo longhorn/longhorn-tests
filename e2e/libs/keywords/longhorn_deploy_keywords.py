@@ -18,5 +18,11 @@ class longhorn_deploy_keywords:
     def upgrade_longhorn(self, upgrade_to_transient_version=False, timeout=600, wait_when_fail=True, custom_cmd="", wait=True):
         return self.longhorn.upgrade(upgrade_to_transient_version, timeout, wait_when_fail, custom_cmd, wait)
 
+    def is_upgrade_process_running(self, process):
+        """Check if upgrade process is still running"""
+        if hasattr(process, 'poll'):
+            return process.poll() is None
+        return False
+
     def enable_storage_network_setting(self):
         self.longhorn.enable_storage_network_setting()
