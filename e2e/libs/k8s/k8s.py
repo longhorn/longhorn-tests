@@ -469,14 +469,14 @@ def get_deployment_update_strategy(deployment_name, namespace):
     logging(f"Deployment {deployment_name} update strategy: {strategy_dict}")
     return strategy_dict
 
-def check_daemonset_rolling_update_max_unavailable(daemonset_name, namespace, expected_max_unavailable=None):
+def check_daemonset_rolling_update_max_unavailable(daemonset_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
     """
     Check that a DaemonSet has a RollingUpdate strategy with maxUnavailable configured.
     
     Args:
         daemonset_name: Name of the DaemonSet
-        namespace: Namespace of the DaemonSet
         expected_max_unavailable: Expected value for maxUnavailable (optional)
+        namespace: Namespace of the DaemonSet (defaults to LONGHORN_NAMESPACE)
     
     Returns:
         True if the check passes, raises AssertionError otherwise
@@ -505,14 +505,14 @@ def check_daemonset_rolling_update_max_unavailable(daemonset_name, namespace, ex
     logging(f"DaemonSet {daemonset_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
     return True
 
-def check_deployment_rolling_update_max_unavailable(deployment_name, namespace, expected_max_unavailable=None):
+def check_deployment_rolling_update_max_unavailable(deployment_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
     """
     Check that a Deployment has a RollingUpdate strategy with maxUnavailable configured.
     
     Args:
         deployment_name: Name of the Deployment
-        namespace: Namespace of the Deployment
         expected_max_unavailable: Expected value for maxUnavailable (optional)
+        namespace: Namespace of the Deployment (defaults to LONGHORN_NAMESPACE)
     
     Returns:
         True if the check passes, raises AssertionError otherwise

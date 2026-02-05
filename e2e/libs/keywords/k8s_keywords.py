@@ -158,7 +158,7 @@ class k8s_keywords:
         return get_deployment_update_strategy(deployment_name, namespace)
 
     def check_daemonset_rolling_update_max_unavailable(self, daemonset_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
-        return check_daemonset_rolling_update_max_unavailable(daemonset_name, namespace, expected_max_unavailable)
+        return check_daemonset_rolling_update_max_unavailable(daemonset_name, expected_max_unavailable, namespace)
 
     def check_deployment_rolling_update_max_unavailable(self, deployment_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
-        return check_deployment_rolling_update_max_unavailable(deployment_name, namespace, expected_max_unavailable)
+        return check_deployment_rolling_update_max_unavailable(deployment_name, expected_max_unavailable, namespace)
