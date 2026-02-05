@@ -26,6 +26,8 @@ from k8s.k8s import get_daemonset_update_strategy
 from k8s.k8s import get_deployment_update_strategy
 from k8s.k8s import check_daemonset_rolling_update_max_unavailable
 from k8s.k8s import check_deployment_rolling_update_max_unavailable
+from k8s.k8s import count_running_pods_by_label
+from k8s.k8s import monitor_pods_during_operation
 
 from node import Node
 
@@ -165,3 +167,9 @@ class k8s_keywords:
 
     def check_deployment_rolling_update_max_unavailable(self, deployment_name, expected_max_unavailable=None, namespace=constant.LONGHORN_NAMESPACE):
         return check_deployment_rolling_update_max_unavailable(deployment_name, expected_max_unavailable, namespace)
+
+    def count_running_pods_by_label(self, namespace, label_selector):
+        return count_running_pods_by_label(namespace, label_selector)
+
+    def monitor_pods_during_operation(self, namespace, label_selector, min_expected_running, check_interval=5, max_checks=120):
+        return monitor_pods_during_operation(namespace, label_selector, min_expected_running, check_interval, max_checks)
