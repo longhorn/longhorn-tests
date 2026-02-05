@@ -125,12 +125,6 @@ Test CSI Components Rolling Update Configuration During Upgrade
     ...    csi-resizer
     ...    csi-snapshotter
     
-    # Check if CSI components already have correct configuration in stable version
-    ${attacher_before}=    Get Deployment Update Strategy    csi-attacher
-    ${provisioner_before}=    Get Deployment Update Strategy    csi-provisioner
-    ${resizer_before}=    Get Deployment Update Strategy    csi-resizer
-    ${snapshotter_before}=    Get Deployment Update Strategy    csi-snapshotter
-    
     # Verify after upgrade that CSI components have maxUnavailable=1 configured
     # This should be the default in the code for CSI deployments
     When Upgrade Longhorn to custom version
