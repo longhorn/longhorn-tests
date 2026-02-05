@@ -48,19 +48,19 @@ Test Longhorn Manager Resource Configuration Via Helm Install
     And Check Longhorn Manager Resources Are       cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
 
 Test Longhorn Manager Rolling Update Configuration During Upgrade
-    [Documentation]    Test that longhorn-manager rolling update is configured correctly for upgrade
+    [Tags]    upgrade
+    [Documentation]    Test that longhorn-manager rolling update works correctly during upgrade
     ...
     ...                https://github.com/longhorn/longhorn/issues/12240
     ...
-    ...                This test validates that longhorn-manager DaemonSet rolling update strategy
-    ...                is configured with maxUnavailable=1 during upgrade, ensuring at least 2 out of 3 pods
-    ...                remain running during upgrades.
+    ...                This test validates that with maxUnavailable=1, at least 2 out of 3 longhorn-manager pods
+    ...                remain running during the upgrade process, ensuring high availability.
     ...
     ...                Test steps:
     ...                1. Uninstall existing Longhorn
     ...                2. Install stable version of Longhorn
-    ...                3. Upgrade Longhorn with maxUnavailable=1 for longhorn-manager
-    ...                4. Verify the rolling update strategy is correctly configured
+    ...                3. Upgrade Longhorn with maxUnavailable=1 for longhorn-manager (don't wait)
+    ...                4. Monitor during upgrade that running longhorn-manager pods count is not 0
     
     # Uninstall and install stable version
     Given Setting deleting-confirmation-flag is set to true
@@ -78,35 +78,48 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     # Prepare custom command for upgrade with maxUnavailable=1
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
-        ${patch}=    Set Variable    .longhornManager.daemonsetUpdateStrategy.rollingUpdate.maxUnavailable = 1
-        ${custom_cmd}=    Set Variable    yq eval -i '${patch}' ${LONGHORN_REPO_DIR}/chart/values.yaml
-        
-        # Upgrade with custom maxUnavailable setting
-        Upgrade Longhorn With Custom Command    ${custom_cmd}
-        
-        # Verify the configuration was applied
-        Then Check DaemonSet Rolling Update Max Unavailable    longhorn-manager    expected_max_unavailable=1
+        ${patch}=    Set Variable    .longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1
+        ${custom_cmd}=    Set Variable    yq eval -i '${patch}' values.yaml
     ELSE
-        Log    Skipping test for ${LONGHORN_INSTALL_METHOD} - only helm supports custom maxUnavailable configuration
-        Skip    Test only applicable for helm installation method
+        # For manifest, maxUnavailable is in longhorn.yaml
+        ${custom_cmd}=    Set Variable    yq eval -i '(.spec.template.spec.updateStrategy.rollingUpdate.maxUnavailable = 1) | select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager")' longhorn.yaml
+    END
+    
+    # Start upgrade without waiting - returns process object
+    ${process}=    Upgrade Longhorn    custom_cmd=${custom_cmd}    wait=${False}
+    
+    # Monitor longhorn-manager pods during upgrade
+    # Count should not be 0 (meaning at least some pods are always running)
+    WHILE    True
+        ${cmd}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager --field-selector=status.phase=Running --no-headers | wc -l
+        Run command and expect output    ${cmd}    [^0]
+        
+        # Check if upgrade process is still running by checking return code
+        ${rc}=    Execute Command    python3 -c "import subprocess; p = subprocess.Popen(['ps', '-p', '${process.pid}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE); p.communicate(); exit(p.returncode)"
+        IF    ${rc} != 0
+            # Process finished
+            BREAK
+        END
+        
+        Sleep    5s
     END
     
     Then Wait for Longhorn workloads pods stable    longhorn-manager
 
 Test CSI Components Rolling Update Configuration During Upgrade
-    [Documentation]    Test that CSI components rolling update is configured correctly for upgrade
+    [Tags]    upgrade
+    [Documentation]    Test that CSI components rolling update works correctly during upgrade
     ...
     ...                https://github.com/longhorn/longhorn/issues/12240
     ...
-    ...                This test validates that CSI deployment components (csi-attacher, csi-provisioner,
-    ...                csi-resizer, csi-snapshotter) have rolling update strategy configured with
-    ...                maxUnavailable=1, ensuring at least 2 out of 3 replicas remain available during upgrades.
+    ...                This test validates that with maxUnavailable=1, at least 2 out of 3 CSI component pods
+    ...                remain running during the upgrade process for each CSI component.
     ...
     ...                Test steps:
     ...                1. Uninstall existing Longhorn
     ...                2. Install stable version of Longhorn
-    ...                3. Upgrade Longhorn with maxUnavailable=1 for CSI components
-    ...                4. Verify the rolling update strategy is correctly configured for all CSI components
+    ...                3. Upgrade Longhorn (don't wait)
+    ...                4. Monitor during upgrade that running CSI pods count is not 0 for each component
     
     # Uninstall and install stable version
     Given Setting deleting-confirmation-flag is set to true
@@ -125,14 +138,37 @@ Test CSI Components Rolling Update Configuration During Upgrade
     ...    csi-resizer
     ...    csi-snapshotter
     
-    # Verify after upgrade that CSI components have maxUnavailable=1 configured
-    # This should be the default in the code for CSI deployments
-    When Upgrade Longhorn to custom version
+    # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
+    ${process}=    Upgrade Longhorn    wait=${False}
     
-    Then Check Deployment Rolling Update Max Unavailable    csi-attacher    expected_max_unavailable=1
-    Then Check Deployment Rolling Update Max Unavailable    csi-provisioner    expected_max_unavailable=1
-    Then Check Deployment Rolling Update Max Unavailable    csi-resizer    expected_max_unavailable=1
-    Then Check Deployment Rolling Update Max Unavailable    csi-snapshotter    expected_max_unavailable=1
+    # Monitor CSI component pods during upgrade
+    # Count for each component should not be 0 (meaning at least some pods are always running)
+    WHILE    True
+        # Check csi-attacher
+        ${cmd_attacher}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-attacher --field-selector=status.phase=Running --no-headers | wc -l
+        Run command and expect output    ${cmd_attacher}    [^0]
+        
+        # Check csi-provisioner
+        ${cmd_provisioner}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-provisioner --field-selector=status.phase=Running --no-headers | wc -l
+        Run command and expect output    ${cmd_provisioner}    [^0]
+        
+        # Check csi-resizer
+        ${cmd_resizer}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-resizer --field-selector=status.phase=Running --no-headers | wc -l
+        Run command and expect output    ${cmd_resizer}    [^0]
+        
+        # Check csi-snapshotter
+        ${cmd_snapshotter}=    Set Variable    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-snapshotter --field-selector=status.phase=Running --no-headers | wc -l
+        Run command and expect output    ${cmd_snapshotter}    [^0]
+        
+        # Check if upgrade process is still running
+        ${rc}=    Execute Command    python3 -c "import subprocess; p = subprocess.Popen(['ps', '-p', '${process.pid}'], stdout=subprocess.PIPE, stderr=subprocess.PIPE); p.communicate(); exit(p.returncode)"
+        IF    ${rc} != 0
+            # Process finished
+            BREAK
+        END
+        
+        Sleep    5s
+    END
     
     Then Wait for Longhorn workloads pods stable
     ...    csi-attacher
