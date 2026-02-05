@@ -178,6 +178,11 @@ Check Deployment Rolling Update Max Unavailable
     [Arguments]    ${deployment_name}    ${expected_max_unavailable}=${None}    ${namespace}=${LONGHORN_NAMESPACE}
     check_deployment_rolling_update_max_unavailable    ${deployment_name}    expected_max_unavailable=${expected_max_unavailable}    namespace=${namespace}
 
+Get Deployment Update Strategy
+    [Arguments]    ${deployment_name}    ${namespace}=${LONGHORN_NAMESPACE}
+    ${strategy}=    get_deployment_update_strategy    ${deployment_name}    ${namespace}
+    [Return]    ${strategy}
+
 Count Running Pods By Label
     [Arguments]    ${namespace}    ${label_selector}
     ${count}=    count_running_pods_by_label    ${namespace}    ${label_selector}

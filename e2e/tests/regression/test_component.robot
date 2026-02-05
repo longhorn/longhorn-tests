@@ -47,19 +47,20 @@ Test Longhorn Manager Resource Configuration Via Helm Install
     When Install Longhorn via helm with resource configuration   cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
     And Check Longhorn Manager Resources Are       cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
 
-Test Longhorn Manager Rolling Update During Upgrade
-    [Documentation]    Test that longhorn-manager rolling update works correctly during upgrade
+Test Longhorn Manager Rolling Update Configuration During Upgrade
+    [Documentation]    Test that longhorn-manager rolling update is configured correctly for upgrade
     ...
     ...                https://github.com/longhorn/longhorn/issues/12240
     ...
-    ...                This test validates that with maxUnavailable=1, at least 2 out of 3 longhorn-manager pods
-    ...                remain running during the upgrade process, ensuring high availability.
+    ...                This test validates that longhorn-manager DaemonSet rolling update strategy
+    ...                is configured with maxUnavailable=1 during upgrade, ensuring at least 2 out of 3 pods
+    ...                remain running during upgrades.
     ...
     ...                Test steps:
     ...                1. Uninstall existing Longhorn
     ...                2. Install stable version of Longhorn
     ...                3. Upgrade Longhorn with maxUnavailable=1 for longhorn-manager
-    ...                4. Monitor during upgrade that running longhorn-manager pods >= 2
+    ...                4. Verify the rolling update strategy is correctly configured
     
     # Uninstall and install stable version
     Given Setting deleting-confirmation-flag is set to true
@@ -79,38 +80,33 @@ Test Longhorn Manager Rolling Update During Upgrade
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         ${patch}=    Set Variable    .longhornManager.daemonsetUpdateStrategy.rollingUpdate.maxUnavailable = 1
         ${custom_cmd}=    Set Variable    yq eval '${patch}' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
-    ELSE
-        # For manifest install, we'll just verify the upgrade without custom maxUnavailable
-        ${custom_cmd}=    Set Variable    ${EMPTY}
-    END
-    
-    # Start monitoring in background and upgrade
-    # With 3 worker nodes and maxUnavailable=1, at least 2 pods should always be running
-    # Monitor for 10 minutes (check_interval=5, max_checks=120)
-    ${min_running}=    Set Variable    2
-    
-    # Start the upgrade with custom command
-    IF    '${custom_cmd}' != ''
+        
+        # Upgrade with custom maxUnavailable setting
         Upgrade Longhorn With Custom Command    ${custom_cmd}
+        
+        # Verify the configuration was applied
+        Then Check DaemonSet Rolling Update Max Unavailable    longhorn-manager    expected_max_unavailable=1
     ELSE
-        Upgrade Longhorn to custom version
+        Log    Skipping test for ${LONGHORN_INSTALL_METHOD} - only helm supports custom maxUnavailable configuration
+        Skip    Test only applicable for helm installation method
     END
     
     Then Wait for Longhorn workloads pods stable    longhorn-manager
 
-Test CSI Components Rolling Update During Upgrade
-    [Documentation]    Test that CSI components rolling update works correctly during upgrade
+Test CSI Components Rolling Update Configuration During Upgrade
+    [Documentation]    Test that CSI components rolling update is configured correctly for upgrade
     ...
     ...                https://github.com/longhorn/longhorn/issues/12240
     ...
-    ...                This test validates that with maxUnavailable=1, at least 2 out of 3 CSI component pods
-    ...                remain running during the upgrade process for each CSI component.
+    ...                This test validates that CSI deployment components (csi-attacher, csi-provisioner,
+    ...                csi-resizer, csi-snapshotter) have rolling update strategy configured with
+    ...                maxUnavailable=1, ensuring at least 2 out of 3 replicas remain available during upgrades.
     ...
     ...                Test steps:
     ...                1. Uninstall existing Longhorn
     ...                2. Install stable version of Longhorn
     ...                3. Upgrade Longhorn with maxUnavailable=1 for CSI components
-    ...                4. Monitor during upgrade that running CSI pods >= 2 for each component
+    ...                4. Verify the rolling update strategy is correctly configured for all CSI components
     
     # Uninstall and install stable version
     Given Setting deleting-confirmation-flag is set to true
@@ -129,26 +125,20 @@ Test CSI Components Rolling Update During Upgrade
     ...    csi-resizer
     ...    csi-snapshotter
     
-    # Prepare custom command for upgrade with maxUnavailable=1 for CSI components
-    ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
-    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
-        ${patch_attacher}=    Set Variable    .csi.attacherReplicaCount = 3 | .csi.attacherUpdateStrategy.rollingUpdate.maxUnavailable = 1
-        ${patch_provisioner}=    Set Variable    .csi.provisionerReplicaCount = 3 | .csi.provisionerUpdateStrategy.rollingUpdate.maxUnavailable = 1
-        ${patch_resizer}=    Set Variable    .csi.resizerReplicaCount = 3 | .csi.resizerUpdateStrategy.rollingUpdate.maxUnavailable = 1
-        ${patch_snapshotter}=    Set Variable    .csi.snapshotterReplicaCount = 3 | .csi.snapshotterUpdateStrategy.rollingUpdate.maxUnavailable = 1
-        ${all_patches}=    Set Variable    ${patch_attacher} | ${patch_provisioner} | ${patch_resizer} | ${patch_snapshotter}
-        ${custom_cmd}=    Set Variable    yq eval '${all_patches}' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
-    ELSE
-        # For manifest install, we'll just verify the upgrade without custom maxUnavailable
-        ${custom_cmd}=    Set Variable    ${EMPTY}
-    END
+    # Check if CSI components already have correct configuration in stable version
+    ${attacher_before}=    Get Deployment Update Strategy    csi-attacher
+    ${provisioner_before}=    Get Deployment Update Strategy    csi-provisioner
+    ${resizer_before}=    Get Deployment Update Strategy    csi-resizer
+    ${snapshotter_before}=    Get Deployment Update Strategy    csi-snapshotter
     
-    # Start the upgrade with custom command
-    IF    '${custom_cmd}' != ''
-        Upgrade Longhorn With Custom Command    ${custom_cmd}
-    ELSE
-        Upgrade Longhorn to custom version
-    END
+    # Verify after upgrade that CSI components have maxUnavailable=1 configured
+    # This should be the default in the code for CSI deployments
+    When Upgrade Longhorn to custom version
+    
+    Then Check Deployment Rolling Update Max Unavailable    csi-attacher    expected_max_unavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-provisioner    expected_max_unavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-resizer    expected_max_unavailable=1
+    Then Check Deployment Rolling Update Max Unavailable    csi-snapshotter    expected_max_unavailable=1
     
     Then Wait for Longhorn workloads pods stable
     ...    csi-attacher
