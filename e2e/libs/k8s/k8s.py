@@ -494,11 +494,13 @@ def check_daemonset_rolling_update_max_unavailable(daemonset_name, namespace, ex
         f"DaemonSet {daemonset_name} does not have maxUnavailable configured"
     
     if expected_max_unavailable is not None:
-        # Convert to string for comparison if it's an integer
-        expected_str = str(expected_max_unavailable)
+        # Normalize both values to strings for comparison
+        # maxUnavailable can be an integer (e.g., 1) or a percentage string (e.g., "10%")
         actual_str = str(max_unavailable)
+        expected_str = str(expected_max_unavailable)
+        
         assert actual_str == expected_str, \
-            f"DaemonSet {daemonset_name} maxUnavailable is {max_unavailable}, expected {expected_max_unavailable}"
+            f"DaemonSet {daemonset_name} maxUnavailable is {actual_str}, expected {expected_str}"
     
     logging(f"DaemonSet {daemonset_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
     return True
@@ -528,11 +530,13 @@ def check_deployment_rolling_update_max_unavailable(deployment_name, namespace, 
         f"Deployment {deployment_name} does not have maxUnavailable configured"
     
     if expected_max_unavailable is not None:
-        # Convert to string for comparison if it's an integer
-        expected_str = str(expected_max_unavailable)
+        # Normalize both values to strings for comparison
+        # maxUnavailable can be an integer (e.g., 1) or a percentage string (e.g., "10%")
         actual_str = str(max_unavailable)
+        expected_str = str(expected_max_unavailable)
+        
         assert actual_str == expected_str, \
-            f"Deployment {deployment_name} maxUnavailable is {max_unavailable}, expected {expected_max_unavailable}"
+            f"Deployment {deployment_name} maxUnavailable is {actual_str}, expected {expected_str}"
     
     logging(f"Deployment {deployment_name} has RollingUpdate strategy with maxUnavailable={max_unavailable}")
     return True
