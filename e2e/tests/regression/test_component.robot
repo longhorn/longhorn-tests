@@ -54,10 +54,14 @@ Test Rolling Update Strategy Configuration
     ...
     ...                Validates that:
     ...                1. longhorn-manager DaemonSet has a RollingUpdate strategy with maxUnavailable configured
-    ...                2. CSI deployment components (csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter) have RollingUpdate strategy with maxUnavailable set to 1
+    ...                2. longhorn-csi-plugin DaemonSet has a RollingUpdate strategy with maxUnavailable configured
+    ...                3. CSI deployment components (csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter) have RollingUpdate strategy with maxUnavailable set to 1
     
     # Check longhorn-manager DaemonSet has rolling update strategy configured
     When Check DaemonSet Rolling Update Max Unavailable    longhorn-manager
+    
+    # Check longhorn-csi-plugin DaemonSet has rolling update strategy configured
+    And Check DaemonSet Rolling Update Max Unavailable    longhorn-csi-plugin
     
     # Check CSI deployment components have rolling update strategy with maxUnavailable=1
     Then Check Deployment Rolling Update Max Unavailable    csi-attacher    expected_max_unavailable=1
