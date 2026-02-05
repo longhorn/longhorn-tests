@@ -81,8 +81,8 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
         ${patch}=    Set Variable    .longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1
         ${custom_cmd}=    Set Variable    yq eval -i '${patch}' values.yaml
     ELSE
-        # For manifest, maxUnavailable is in longhorn.yaml
-        ${custom_cmd}=    Set Variable    yq eval -i '(.spec.template.spec.updateStrategy.rollingUpdate.maxUnavailable = 1) | select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager")' longhorn.yaml
+        # For manifest, maxUnavailable is in longhorn.yaml DaemonSet spec
+        ${custom_cmd}=    Set Variable    yq eval -i '(.spec.updateStrategy.rollingUpdate.maxUnavailable = 1) | select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager")' longhorn.yaml
     END
     
     # Start upgrade without waiting - returns process object
