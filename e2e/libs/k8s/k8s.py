@@ -596,3 +596,70 @@ def monitor_pods_during_operation(namespace, label_selector, min_expected_runnin
     
     logging(f"All pod count checks passed: pods stayed >= {min_expected_running}")
     return True
+
+def upgrade_longhorn_with_pod_monitoring(longhorn_deploy, namespace, component_label, min_running_pods, 
+                                        upgrade_to_transient_version=False, timeout=600, custom_cmd=""):
+    """
+    Upgrade Longhorn while monitoring that pod counts stay above minimum.
+    
+    This function starts the upgrade process and monitors pods in parallel.
+    
+    Args:
+        longhorn_deploy: LonghornDeploy instance
+        namespace: Namespace to monitor pods in
+        component_label: Label selector for component to monitor (e.g., "app=longhorn-manager")
+        min_running_pods: Minimum number of pods that should remain running
+        upgrade_to_transient_version: Whether upgrading to transient version
+        timeout: Upgrade timeout in seconds
+        custom_cmd: Custom command for upgrade
+    
+    Returns:
+        (upgrade_success, monitoring_success) tuple of booleans
+    """
+    import threading
+    import subprocess
+    
+    monitoring_result = {"violations": [], "completed": False}
+    
+    def monitor_pods():
+        """Monitor pods during upgrade"""
+        check_interval = 5
+        max_duration = timeout
+        max_checks = max_duration // check_interval
+        
+        for i in range(max_checks):
+            running_count = count_running_pods_by_label(namespace, component_label)
+            
+            if running_count < min_running_pods:
+                violation_msg = f"Monitoring check {i+1}: Only {running_count} pods running, expected >= {min_running_pods}"
+                logging(violation_msg)
+                monitoring_result["violations"].append(violation_msg)
+            else:
+                logging(f"Monitoring check {i+1}: {running_count} pods running (>= {min_running_pods}) ✓")
+            
+            time.sleep(check_interval)
+            
+            if monitoring_result["completed"]:
+                break
+        
+        if monitoring_result["violations"]:
+            logging(f"Pod monitoring found {len(monitoring_result['violations'])} violations")
+        else:
+            logging("Pod monitoring completed successfully - pods stayed >= minimum")
+    
+    # Start monitoring thread
+    monitor_thread = threading.Thread(target=monitor_pods)
+    monitor_thread.daemon = True
+    monitor_thread.start()
+    
+    # Start upgrade
+    logging(f"Starting upgrade with pod monitoring for {component_label}")
+    upgrade_success = longhorn_deploy.upgrade(upgrade_to_transient_version, timeout, wait_when_fail=True, custom_cmd=custom_cmd)
+    
+    # Signal monitoring to stop
+    monitoring_result["completed"] = True
+    monitor_thread.join(timeout=30)  # Wait for monitoring thread to finish
+    
+    monitoring_success = len(monitoring_result["violations"]) == 0
+    
+    return upgrade_success, monitoring_success
