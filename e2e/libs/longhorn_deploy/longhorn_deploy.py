@@ -60,9 +60,9 @@ class LonghornDeploy(Base):
         self.longhorn.setup_longhorn_ui_nodeport()
         logging(f"Installed Longhorn")
 
-    def upgrade(self, upgrade_to_transient_version, timeout, wait_when_fail):
+    def upgrade(self, upgrade_to_transient_version, timeout, wait_when_fail, custom_cmd=""):
         logging(f"Upgrading Longhorn to {'transient' if upgrade_to_transient_version else 'the latest'} version")
-        upgraded = self.longhorn.upgrade(upgrade_to_transient_version, timeout)
+        upgraded = self.longhorn.upgrade(upgrade_to_transient_version, timeout, custom_cmd)
         if not upgraded:
             logging(f"Upgrading Longhorn failed")
             if wait_when_fail is True:

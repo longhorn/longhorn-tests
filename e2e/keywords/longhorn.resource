@@ -154,6 +154,14 @@ Upgrade Longhorn to custom version
         Fail    Upgrading Longhorn failed
     END
 
+Upgrade Longhorn With Custom Command
+    [Arguments]    ${custom_cmd}
+    ${upgraded} =    upgrade_longhorn    custom_cmd=${custom_cmd}
+    IF    "${upgraded}" == ${False}
+        Log To Console    Upgrade failed with custom command
+        Fail    Upgrading Longhorn with custom command failed
+    END
+
 Upgrade Longhorn to custom version should fail
     ${upgraded} =     upgrade_longhorn    wait_when_fail=False
     IF    "${upgraded}" == ${True}

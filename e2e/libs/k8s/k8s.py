@@ -533,3 +533,66 @@ def check_deployment_rolling_update_max_unavailable(deployment_name, expected_ma
     """
     strategy = get_deployment_update_strategy(deployment_name, namespace)
     return _validate_rolling_update_max_unavailable(deployment_name, "Deployment", strategy, expected_max_unavailable)
+
+def count_running_pods_by_label(namespace, label_selector):
+    """
+    Count the number of running pods matching a label selector.
+    
+    Args:
+        namespace: Namespace to search in
+        label_selector: Label selector (e.g., "app=longhorn-manager")
+    
+    Returns:
+        Number of running pods
+    """
+    api = client.CoreV1Api()
+    pods = api.list_namespaced_pod(namespace=namespace, label_selector=label_selector)
+    
+    running_count = 0
+    for pod in pods.items:
+        if pod.status.phase == "Running" and pod.status.conditions:
+            # Check if pod is actually ready
+            for condition in pod.status.conditions:
+                if condition.type == "Ready" and condition.status == "True":
+                    running_count += 1
+                    break
+    
+    logging(f"Found {running_count} running pods with label {label_selector} in namespace {namespace}")
+    return running_count
+
+def monitor_pods_during_operation(namespace, label_selector, min_expected_running, check_interval=5, max_checks=120):
+    """
+    Monitor that pod count stays above minimum during an operation (e.g., upgrade).
+    
+    Args:
+        namespace: Namespace to monitor
+        label_selector: Label selector for pods to monitor
+        min_expected_running: Minimum number of pods that should be running
+        check_interval: Seconds between checks
+        max_checks: Maximum number of checks before giving up
+    
+    Returns:
+        True if pods stayed above minimum, False otherwise
+    """
+    violations = []
+    
+    for i in range(max_checks):
+        running_count = count_running_pods_by_label(namespace, label_selector)
+        
+        if running_count < min_expected_running:
+            violation_msg = f"Check {i+1}/{max_checks}: Only {running_count} pods running, expected at least {min_expected_running}"
+            logging(violation_msg)
+            violations.append(violation_msg)
+        else:
+            logging(f"Check {i+1}/{max_checks}: {running_count} pods running (>= {min_expected_running}) ✓")
+        
+        time.sleep(check_interval)
+    
+    if violations:
+        logging(f"Pod count violations detected: {len(violations)} times")
+        for v in violations:
+            logging(f"  - {v}")
+        return False
+    
+    logging(f"All pod count checks passed: pods stayed >= {min_expected_running}")
+    return True
