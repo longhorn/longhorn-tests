@@ -63,6 +63,15 @@ class common_keywords:
             time.sleep(retry_count)
             assert False, f"Failed to find {output} in {cmd} result: {res}"
 
+    def execute_command_until_success(self, cmd, expected_output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for _ in range(retry_count):
+            res = subprocess_exec_cmd(cmd)
+            if expected_output in res:
+                return res
+            time.sleep(retry_interval)
+        assert False, f"'{expected_output}' not found in command result: {res}"
+
     def execute_command_and_wait_for_output(self, cmd, output):
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):

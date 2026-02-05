@@ -263,6 +263,23 @@ def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, na
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
 
     assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
+
+def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace):
+    # Convert test_start_time to UTC and format it for kubectl --since-time use
+    test_start_time = test_start_time.astimezone(timezone.utc)
+    test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    exec_cmd = [
+        "kubectl", "logs", pod_name,
+        "-n", namespace,
+        f"--since-time={test_start_time}"
+    ]
+
+    pod_log = subprocess_exec_cmd(exec_cmd)
+    logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
+
+    assert unexpected_log not in pod_log, f"Unexpected log '{unexpected_log}' found in pod '{pod_name}' logs"
+
 def deploy_system_upgrade_controller():
     logging(f"Deploying system upgrade controller")
     cmd = "kubectl apply -f https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml -f https://raw.githubusercontent.com/yangchiu/longhorn-tests/refs/heads/k8s-upgrade-test/e2e/templates/system_upgrade_controller/system_upgrade_controller.yaml"
