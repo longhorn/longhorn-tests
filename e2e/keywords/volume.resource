@@ -167,6 +167,16 @@ Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     keep_writing_data    ${volume_name}
 
+Write scattered data to volume ${volume_id} with fio
+    [Arguments]    ${size}=2G    ${bs}=4k    ${ratio}=0.2
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_scattered_data_with_fio    ${volume_name}    ${size}    ${bs}    ${ratio}
+
+Prefill volume ${volume_id} with fio
+    [Arguments]    ${size}=2G
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    prefill_volume_with_fio    ${volume_name}    ${size}
+
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}

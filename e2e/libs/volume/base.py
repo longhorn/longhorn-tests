@@ -118,6 +118,14 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def prefill_with_fio(self, volume_name, size):
+        return NotImplemented
+
+    @abstractmethod
+    def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
+        return NotImplemented
+
+    @abstractmethod
     def delete_replica(self, volume_name, node_name):
         return NotImplemented
 
