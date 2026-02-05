@@ -170,25 +170,6 @@ Upgrade kubernetes to latest version
     [Arguments]    &{config}
     upgrade_k8s_to_latest_version    &{config}
 
-Check DaemonSet Rolling Update Max Unavailable
-    [Arguments]    ${daemonset_name}    ${expected_max_unavailable}=${None}    ${namespace}=${LONGHORN_NAMESPACE}
-    check_daemonset_rolling_update_max_unavailable    ${daemonset_name}    expected_max_unavailable=${expected_max_unavailable}    namespace=${namespace}
-
-Check Deployment Rolling Update Max Unavailable
-    [Arguments]    ${deployment_name}    ${expected_max_unavailable}=${None}    ${namespace}=${LONGHORN_NAMESPACE}
-    check_deployment_rolling_update_max_unavailable    ${deployment_name}    expected_max_unavailable=${expected_max_unavailable}    namespace=${namespace}
-
-Get Deployment Update Strategy
-    [Arguments]    ${deployment_name}    ${namespace}=${LONGHORN_NAMESPACE}
-    ${strategy}=    get_deployment_update_strategy    ${deployment_name}    ${namespace}
-    [Return]    ${strategy}
-
-Count Running Pods By Label
-    [Arguments]    ${namespace}    ${label_selector}
-    ${count}=    count_running_pods_by_label    ${namespace}    ${label_selector}
-    [Return]    ${count}
-
-Monitor Pods During Operation
-    [Arguments]    ${namespace}    ${label_selector}    ${min_expected_running}    ${check_interval}=5    ${max_checks}=120
-    ${result}=    monitor_pods_during_operation    ${namespace}    ${label_selector}    ${min_expected_running}    ${check_interval}    ${max_checks}
-    Should Be True    ${result}    Pod count dropped below minimum during operation
+Is Longhorn components all running
+    ${all_running}=    is_namespaced_pods_all_running    ${LONGHORN_NAMESPACE}
+    [Return]    ${all_running}
