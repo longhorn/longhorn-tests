@@ -142,6 +142,12 @@ class Rest(Base):
     def write_random_data(self, volume_name, size, data_id):
         return NotImplemented
 
+    def prefill_with_fio(self, volume_name, size):
+        return NotImplemented
+
+    def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
+        return NotImplemented
+
     def keep_writing_data(self, volume_name, size):
         return NotImplemented
 
