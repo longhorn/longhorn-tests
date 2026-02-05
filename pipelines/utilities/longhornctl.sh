@@ -1,5 +1,5 @@
 longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.9.1/longhornctl-linux-amd64 -o longhornctl
+  curl -L https://github.com/longhorn/cli/releases/download/v1.11.0/longhornctl-linux-amd64 -o longhornctl
   chmod +x longhornctl
   ./longhornctl install preflight --enable-spdk
   ./longhornctl check preflight --enable-spdk

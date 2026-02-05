@@ -204,3 +204,29 @@ Check Longhorn Manager Resources Are
 
 Remove Longhorn Manager Resource Limit
     remove_longhorn_component_resources_limit    longhorn-manager    daemonset
+
+Verify longhorn manager logs does not contain ${expect_log} after test start
+    ${pod_names} =    get_longhorn_manager_pods
+
+    FOR    ${pod_name}    IN    @{pod_names}
+        verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+    END
+
+Delete Longhorn node ${node_id}
+    # Taint the node and delete nodes.longhorn.io instead of deleting the 
+    # entire Kubernetes node, thereford we can bring the Longhorn node back 
+    # without rebooting the machine by untaint command.
+    ${node_name} =    get_node_by_index    ${node_id}
+    execute_command
+    ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute
+    wait_for_longhorn_node_down    ${node_name}
+    execute_command_until_success
+    ...    kubectl -n longhorn-system delete nodes.longhorn.io ${node_name}
+    ...    node.longhorn.io "${node_name}" deleted
+
+Add Longhorn node ${node_id} back
+    # Remove the taint to bring the Longhorn node back. 
+    # "Delete Longhorn node ${node_id}" must be executed first.
+    ${node_name} =    get_node_by_index    ${node_id}
+    execute_command
+    ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute-
