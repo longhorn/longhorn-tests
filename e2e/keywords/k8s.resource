@@ -173,3 +173,13 @@ Check DaemonSet Rolling Update Max Unavailable
 Check Deployment Rolling Update Max Unavailable
     [Arguments]    ${deployment_name}    ${expected_max_unavailable}=${None}    ${namespace}=${LONGHORN_NAMESPACE}
     check_deployment_rolling_update_max_unavailable    ${deployment_name}    expected_max_unavailable=${expected_max_unavailable}    namespace=${namespace}
+
+Count Running Pods By Label
+    [Arguments]    ${namespace}    ${label_selector}
+    ${count}=    count_running_pods_by_label    ${namespace}    ${label_selector}
+    [Return]    ${count}
+
+Monitor Pods During Operation
+    [Arguments]    ${namespace}    ${label_selector}    ${min_expected_running}    ${check_interval}=5    ${max_checks}=120
+    ${result}=    monitor_pods_during_operation    ${namespace}    ${label_selector}    ${min_expected_running}    ${check_interval}    ${max_checks}
+    Should Be True    ${result}    Pod count dropped below minimum during operation
