@@ -59,7 +59,7 @@ class LonghornArgocd(Base):
         process.wait()
         return True if process.returncode == 0 else False
 
-    def upgrade(self, upgrade_to_transient_version, timeout):
+    def upgrade(self, upgrade_to_transient_version, timeout, custom_cmd=""):
         if upgrade_to_transient_version:
             upgrade_function = "upgrade_longhorn_transient"
         else:
