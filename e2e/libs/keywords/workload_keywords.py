@@ -1,9 +1,14 @@
 import multiprocessing
 import asyncio
 
+from kubernetes import client
+from kubernetes.stream import stream
+
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
+
+from utility.utility import get_retry_count_and_interval
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
@@ -12,8 +17,10 @@ from workload.pod import delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.pod import check_pod_did_not_restart
+from workload.pod import wait_for_pod_status
 from workload.workload import get_workload_pod_data_checksum
 from workload.workload import check_workload_pod_data_checksum
+from workload.workload import check_pod_data_checksum
 from workload.workload import check_workload_pod_data_exists
 from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
@@ -114,6 +121,25 @@ class workload_keywords:
         volume_name = get_volume_name_by_pod(pod_name)
         self.volume.set_data_checksum(volume_name, file_name, checksum)
         self.volume.set_last_data_checksum(volume_name, checksum)
+
+    def write_and_check_all_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
+        """
+        Write random data to all pods in the workload and verify checksums.
+        This is used to test that all replicas are working correctly.
+        """
+        pod_names = get_workload_pod_names(workload_name)
+        
+        if not pod_names:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
+        logging(f'Writing and checking {size_in_mb} MB random data to all {len(pod_names)} pods in workload {workload_name}')
+        
+        for pod_name in pod_names:
+            logging(f'Writing {size_in_mb} MB random data to pod {pod_name} file {file_name}')
+            checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
+            
+            logging(f'Checking pod {pod_name} file {file_name} checksum = {checksum}')
+            check_pod_data_checksum(pod_name, file_name, checksum)
 
     def write_workload_pod_large_data(self, workload_name, size_in_gb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
@@ -329,3 +355,29 @@ class workload_keywords:
                 continue
         
         assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
+
+    def get_workload_node_name(self, workload_name):
+        """
+        Get the node name where the workload pod is running.
+        For deployments with multiple replicas, returns the first pod's node.
+        """
+        pods = get_workload_pods(workload_name)
+        if not pods:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
+        node_name = pods[0].spec.node_name
+        logging(f"Workload {workload_name} pod is running on node {node_name}")
+        return node_name
+    
+    def get_all_workload_node_names(self, workload_name):
+        """
+        Get all node names where the workload pods are running.
+        Returns a list of node names.
+        """
+        pods = get_workload_pods(workload_name)
+        if not pods:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
+        node_names = [pod.spec.node_name for pod in pods]
+        logging(f"Workload {workload_name} pods are running on nodes: {node_names}")
+        return node_names
