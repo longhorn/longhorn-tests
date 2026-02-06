@@ -248,6 +248,24 @@ def wait_for_namespace_pods_running(namespace):
 
     assert False, f"wait all pod in namespace {namespace} running failed"
 
+def is_namespaced_pods_all_running(namespace):
+    """
+    Check if all pods in a namespace are in Running state.
+    
+    Args:
+        namespace: Namespace to check
+    
+    Returns:
+        True if all pods are running, False otherwise
+    """
+    pod_list = list_namespace_pods(namespace)
+    
+    for pod in pod_list.items:
+        if pod.status.phase != "Running":
+            return False
+    
+    return True
+
 def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace):
     # Convert test_start_time to UTC and format it for kubectl --since-time use
     test_start_time = test_start_time.astimezone(timezone.utc)
@@ -421,3 +439,5 @@ def get_longhorn_component_resources_limit(component_name, component_type, names
             return {"requests": requests, "limits": limits}
 
     assert False, f"Container {component_name} not found in {component_type}/{component_name}"
+
+
