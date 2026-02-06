@@ -160,3 +160,8 @@ class InstanceManager:
         ]
 
         subprocess_exec_cmd(exec_cmd)
+
+    def get_instance_manager_pod_on_node(self, node_name, engine_type):
+        label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
+        ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
+        return ims[0].metadata.name
