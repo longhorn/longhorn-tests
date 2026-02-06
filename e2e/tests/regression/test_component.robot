@@ -78,23 +78,19 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         # Start upgrade without waiting - returns process object
-        Upgrade Longhorn
+        Upgrade Longhorn to custom version
         ...    custom_cmd=yq eval -i '.longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1' values.yaml
         ...    wait=${False}
     ELSE
         # For manifest, maxUnavailable is in longhorn.yaml DaemonSet spec
-        Upgrade Longhorn
+        Upgrade Longhorn to custom version
         ...    custom_cmd=yq eval -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.updateStrategy.rollingUpdate.maxUnavailable = 1' longhorn.yaml
         ...    wait=${False}
     END
     
-    # Wait a moment for upgrade to start
-    Sleep    5s
-    
     # Monitor longhorn-manager pods during upgrade
     # At least some pods should always be running
-    # Maximum 600 iterations (10 minutes with 1s sleep)
-    FOR    ${i}    IN RANGE    600
+    WHILE    True
         Run command and not expect output
         ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager --field-selector=status.phase=Running --no-headers | wc -l
         ...    0
@@ -141,15 +137,11 @@ Test CSI Components Rolling Update Configuration During Upgrade
     When Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
     
     # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
-    Upgrade Longhorn    wait=${False}
-    
-    # Wait a moment for upgrade to start
-    Sleep    5s
+    Upgrade Longhorn to custom version    wait=${False}
     
     # Monitor CSI component pods during upgrade
     # At least some pods of each component should always be running
-    # Maximum 600 iterations (10 minutes with 1s sleep)
-    FOR    ${i}    IN RANGE    600
+    WHILE    True
         # Check csi-attacher
         Run command and not expect output
         ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-attacher --field-selector=status.phase=Running --no-headers | wc -l
