@@ -88,9 +88,13 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
         ...    wait=${False}
     END
     
+    # Wait a moment for upgrade to start
+    Sleep    5s
+    
     # Monitor longhorn-manager pods during upgrade
     # At least some pods should always be running
-    WHILE    True
+    # Maximum 600 iterations (10 minutes with 1s sleep)
+    FOR    ${i}    IN RANGE    600
         Run command and not expect output
         ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager --field-selector=status.phase=Running --no-headers | wc -l
         ...    0
@@ -139,9 +143,13 @@ Test CSI Components Rolling Update Configuration During Upgrade
     # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
     Upgrade Longhorn    wait=${False}
     
+    # Wait a moment for upgrade to start
+    Sleep    5s
+    
     # Monitor CSI component pods during upgrade
     # At least some pods of each component should always be running
-    WHILE    True
+    # Maximum 600 iterations (10 minutes with 1s sleep)
+    FOR    ${i}    IN RANGE    600
         # Check csi-attacher
         Run command and not expect output
         ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=csi-attacher --field-selector=status.phase=Running --no-headers | wc -l
