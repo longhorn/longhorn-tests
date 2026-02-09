@@ -39,6 +39,10 @@ from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
 from workload.workload import get_pod_node
 from workload.workload import run_commands_in_pod
+from workload.workload import get_workload_node_name
+from workload.workload import get_all_workload_node_names
+from workload.workload import check_workload_pods_not_restarted
+from workload.workload import check_workload_pods_not_recreated
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -355,84 +359,3 @@ class workload_keywords:
                 continue
         
         assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
-
-    def get_workload_node_name(self, workload_name):
-        """
-        Get the node name where the workload pod is running.
-        For deployments with multiple replicas, returns the first pod's node.
-        """
-        pods = get_workload_pods(workload_name)
-        if not pods:
-            raise Exception(f"No pods found for workload {workload_name}")
-        
-        node_name = pods[0].spec.node_name
-        logging(f"Workload {workload_name} pod is running on node {node_name}")
-        return node_name
-    
-    def get_all_workload_node_names(self, workload_name):
-        """
-        Get all node names where the workload pods are running.
-        Returns a list of node names.
-        """
-        pods = get_workload_pods(workload_name)
-        if not pods:
-            raise Exception(f"No pods found for workload {workload_name}")
-        
-        node_names = [pod.spec.node_name for pod in pods]
-        logging(f"Workload {workload_name} pods are running on nodes: {node_names}")
-        return node_names
-    
-    def check_workload_pods_not_restarted(self, workload_name):
-        """
-        Check that all pods of a workload have not been restarted.
-        Verifies that the restartCount for all containers in all pods is zero.
-        """
-        from host import Host
-        host = Host()
-        
-        # Get all pod names for the workload
-        cmd = f"kubectl get pods -l app={workload_name} -o jsonpath='{{.items[*].metadata.name}}'"
-        pod_names_str = host.execute_command(cmd)
-        pod_names = pod_names_str.strip().split()
-        
-        if not pod_names:
-            raise Exception(f"No pods found for workload {workload_name}")
-        
-        logging(f"Checking restart count for {len(pod_names)} pods of workload {workload_name}")
-        
-        for pod_name in pod_names:
-            # Get restart counts for all containers in the pod
-            cmd = f"kubectl get pod {pod_name} -o jsonpath='{{.status.containerStatuses[*].restartCount}}'"
-            restart_counts_str = host.execute_command(cmd)
-            restart_counts = restart_counts_str.strip().split()
-            
-            for i, count in enumerate(restart_counts):
-                restart_count = int(count)
-                assert restart_count == 0, f"Pod {pod_name} container {i} has been restarted {restart_count} times (expected 0)"
-        
-        logging(f"All pods of workload {workload_name} have not been restarted")
-    
-    def check_workload_pods_not_recreated(self, workload_name):
-        """
-        Check that workload pods have not been recreated.
-        Verifies that the deployment has only one revision (no rolling update).
-        """
-        from host import Host
-        host = Host()
-        
-        # Get the rollout history revision count
-        cmd = f"kubectl rollout history deployment/{workload_name} | wc -l"
-        output = host.execute_command(cmd)
-        line_count = int(output.strip())
-        
-        # The output includes header lines, so we subtract them
-        # Format is typically:
-        # deployment.apps/workload-name
-        # REVISION  CHANGE-CAUSE
-        # 1         <none>
-        # So 3 lines total for a single revision
-        revision_count = line_count - 2
-        
-        assert revision_count == 1, f"Deployment {workload_name} has {revision_count} revisions (expected 1), pods may have been recreated"
-        
-        logging(f"Deployment {workload_name} has only 1 revision, pods have not been recreated")
