@@ -359,3 +359,28 @@ class workload_keywords:
                 continue
         
         assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
+
+    def check_workload_pods_not_restarted(self, workload_name, namespace="default"):
+        """
+        Check that all pods in the workload have not been restarted.
+        This verifies that the pods have not crashed due to I/O errors.
+        
+        Args:
+            workload_name: Name of the workload
+            namespace: Kubernetes namespace (default: "default")
+        """
+        logging(f"Checking that workload {workload_name} pods have not been restarted in namespace {namespace}")
+        check_workload_pods_not_restarted(workload_name, namespace)
+
+    def check_workload_pods_not_recreated(self, workload_name, workload_kind, namespace="default"):
+        """
+        Check that the workload has not been recreated (no rolling update).
+        This verifies that the deployment has only one revision.
+        
+        Args:
+            workload_name: Name of the workload
+            workload_kind: Kind of workload (e.g., "deployment", "statefulset")
+            namespace: Kubernetes namespace (default: "default")
+        """
+        logging(f"Checking that {workload_kind} {workload_name} has not been recreated in namespace {namespace}")
+        check_workload_pods_not_recreated(workload_name, workload_kind, namespace)
