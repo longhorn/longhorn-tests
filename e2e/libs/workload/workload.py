@@ -8,6 +8,7 @@ from kubernetes.stream import stream
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
+from utility.utility import subprocess_exec_cmd
 
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 from workload.constant import WAIT_FOR_POD_KEPT_IN_STATE_TIME
@@ -531,3 +532,71 @@ def is_workload_pods_has_cni_interface(workload_name, interface_name, namespace=
             return False
 
     return True
+
+
+def get_workload_node_name(workload_name, namespace="default"):
+    """
+    Get the node name where the workload pod is running.
+    For deployments with multiple replicas, returns the first pod's node.
+    """
+    pods = get_workload_pods(workload_name, namespace)
+    if not pods:
+        raise Exception(f"No pods found for workload {workload_name}")
+    
+    node_name = pods[0].spec.node_name
+    logging(f"Workload {workload_name} pod is running on node {node_name}")
+    return node_name
+
+
+def get_all_workload_node_names(workload_name, namespace="default"):
+    """
+    Get all node names where the workload pods are running.
+    Returns a list of node names.
+    """
+    pods = get_workload_pods(workload_name, namespace)
+    if not pods:
+        raise Exception(f"No pods found for workload {workload_name}")
+    
+    node_names = [pod.spec.node_name for pod in pods]
+    logging(f"Workload {workload_name} pods are running on nodes: {node_names}")
+    return node_names
+
+
+def check_workload_pods_not_restarted(workload_name, namespace="default"):
+    """
+    Check that all pods of a workload have not been restarted.
+    Verifies that the restartCount for all containers in all pods is zero.
+    """
+    pods = get_workload_pods(workload_name, namespace)
+    if not pods:
+        raise Exception(f"No pods found for workload {workload_name}")
+    
+    logging(f"Checking restart count for {len(pods)} pods of workload {workload_name}")
+    
+    for pod in pods:
+        pod_name = pod.metadata.name
+        # Get restart counts for all containers in the pod
+        cmd = f"kubectl get pod {pod_name} -n {namespace} -o jsonpath='{{.status.containerStatuses[*].restartCount}}'"
+        restart_counts_str = subprocess_exec_cmd(cmd)
+        restart_counts = restart_counts_str.strip().split()
+        
+        for i, count in enumerate(restart_counts):
+            restart_count = int(count)
+            assert restart_count == 0, f"Pod {pod_name} container {i} has been restarted {restart_count} times (expected 0)"
+    
+    logging(f"All pods of workload {workload_name} have not been restarted")
+
+
+def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="default"):
+    """
+    Check that workload pods have not been recreated.
+    Verifies that the workload has only one revision (no rolling update).
+    """
+    # Get the latest revision number from rollout history
+    cmd = f"kubectl rollout history {workload_kind}/{workload_name} -n {namespace} | awk 'NR>1 {{print $1}}' | sort -n | tail -1"
+    output = subprocess_exec_cmd(cmd)
+    latest_revision = output.strip()
+    
+    assert latest_revision == "1", f"{workload_kind.capitalize()} {workload_name} has revision {latest_revision} (expected 1), pods may have been recreated"
+    
+    logging(f"{workload_kind.capitalize()} {workload_name} has only revision 1, pods have not been recreated")

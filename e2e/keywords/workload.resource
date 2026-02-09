@@ -415,4 +415,4 @@ Check ${workload_kind} ${workload_id} pods not restarted
 
 Check ${workload_kind} ${workload_id} pods not recreated
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    check_workload_pods_not_recreated    ${workload_name}
+    check_workload_pods_not_recreated    ${workload_kind}    ${workload_name}
