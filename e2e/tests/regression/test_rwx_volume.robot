@@ -82,3 +82,5 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     # Verify all replicas are still working properly
     Then Wait for deployment 0 pods stable
     And Check all deployment 0 replica pods are working
+    And Check deployment 0 pods not restarted
+    And Check deployment 0 pods not recreated
