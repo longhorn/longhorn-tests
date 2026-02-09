@@ -222,3 +222,21 @@ Test V2 Data Engine Selective Activation With Existing Engine And Replica
     When Run command and expect output
     ...    kubectl label node ${node_2} node.longhorn.io/disable-v2-data-engine=true
     ...    cannot disable v2 data engine
+
+Check Block Device Is Not In Use Before Creating Disk
+    [Documentation]    Issue:
+    ...    https://github.com/longhorn/longhorn/issues/12179
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    When Create 1 Gi block type device block-device-check on node 0
+    And Run command on node    0
+    ...    sudo mkfs.xfs ${mount_path}
+    And Add block device block-device-check on node 0 should result in unschedulable state
+    And Disable disk block-device-check scheduling without ready check on node 0
+    And Delete disk block-device-check on node 0
+
+    When Run command on node    0
+    ...    sudo wipefs -a ${mount_path}
+    And Add block device block-device-check on node 0 should success

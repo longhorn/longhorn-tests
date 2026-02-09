@@ -90,8 +90,11 @@ class backing_image_keywords:
     def get_backing_image_disk_uuids(self, bi_name):
         return self.backing_image.get_backing_image_disk_uuids(bi_name)
 
-    def download_backing_image(self, bi_name):
-        return self.backing_image.download_backing_image(bi_name)
+    def download_backing_image(self, bi_name, is_async=False):
+        return self.backing_image.download_backing_image(bi_name, is_async)
+
+    def wait_for_async_download_complete(self, bi_name):
+        return self.backing_image.wait_for_async_download_complete(bi_name)
 
     def get_backing_image_checksum(self, bi_name):
         return self.backing_image.get_backing_image_checksum(bi_name)

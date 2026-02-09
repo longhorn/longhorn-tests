@@ -21,10 +21,12 @@ from k8s.k8s import upgrade_k8s_to_latest_version
 from k8s.k8s import patch_longhorn_component_resources_limit
 from k8s.k8s import get_longhorn_component_resources_limit
 from k8s.k8s import remove_longhorn_component_resources_limit
+from k8s.k8s import verify_pod_log_after_time_not_contains
 
 from node import Node
 
 from utility.utility import logging
+from utility.utility import list_namespaced_pod
 import utility.constant as constant
 
 
@@ -63,6 +65,9 @@ class k8s_keywords:
         replica_node = volume_keywords.get_replica_node(volume_name)
         delete_node(replica_node)
         return replica_node
+
+    def delete_node(self, node_name):
+        delete_node(node_name)
 
     def set_k8s_node_zone(self, node_name, zone_name):
         set_k8s_node_zone(node_name, zone_name)
@@ -116,6 +121,10 @@ class k8s_keywords:
 
     def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
         return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
+
+    def verify_pod_log_after_time_not_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+        return verify_pod_log_after_time_not_contains(pod_name, expect_log, test_start_time, namespace)
+
     def deploy_system_upgrade_controller(self):
         return deploy_system_upgrade_controller()
 
@@ -130,3 +139,13 @@ class k8s_keywords:
 
     def remove_longhorn_component_resources_limit(self, component_name, component_type, namespace=constant.LONGHORN_NAMESPACE):
         return remove_longhorn_component_resources_limit(component_name, component_type, namespace)
+
+    def get_longhorn_manager_pods(self):
+        pods = list_namespaced_pod(
+            namespace=constant.LONGHORN_NAMESPACE,
+            label_selector=f"app=longhorn-manager"
+        )
+        result = []
+        for pod in pods:
+            result.append(pod.metadata.name)
+        return result
