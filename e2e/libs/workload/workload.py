@@ -575,14 +575,17 @@ def check_workload_pods_not_restarted(workload_name, namespace="default"):
     
     for pod in pods:
         pod_name = pod.metadata.name
-        # Get restart counts for all containers in the pod
-        cmd = f"kubectl get pod {pod_name} -n {namespace} -o jsonpath='{{.status.containerStatuses[*].restartCount}}'"
-        restart_counts_str = subprocess_exec_cmd(cmd)
-        restart_counts = restart_counts_str.strip().split()
+        # Get restart count for the pod (there won't be more than 1 container)
+        cmd = f"kubectl get pod {pod_name} -n {namespace} -o jsonpath='{{.status.containerStatuses[0].restartCount}}'"
+        restart_count_str = subprocess_exec_cmd(cmd)
+        restart_count = int(restart_count_str.strip())
         
-        for i, count in enumerate(restart_counts):
-            restart_count = int(count)
-            assert restart_count == 0, f"Pod {pod_name} container {i} has been restarted {restart_count} times (expected 0)"
+        if restart_count != 0:
+            retry_count, _ = get_retry_count_and_interval()
+            logging(f"ERROR: Pod {pod_name} has been restarted {restart_count} times (expected 0)")
+            logging(f"Sleeping {retry_count} seconds for debugging...")
+            time.sleep(retry_count)
+            assert False, f"Pod {pod_name} has been restarted {restart_count} times (expected 0)"
     
     logging(f"All pods of workload {workload_name} have not been restarted")
 
@@ -597,6 +600,11 @@ def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="d
     output = subprocess_exec_cmd(cmd)
     latest_revision = output.strip()
     
-    assert latest_revision == "1", f"{workload_kind.capitalize()} {workload_name} has revision {latest_revision} (expected 1), pods may have been recreated"
+    if latest_revision != "1":
+        retry_count, _ = get_retry_count_and_interval()
+        logging(f"ERROR: {workload_kind.capitalize()} {workload_name} has revision {latest_revision} (expected 1), pods may have been recreated")
+        logging(f"Sleeping {retry_count} seconds for debugging...")
+        time.sleep(retry_count)
+        assert False, f"{workload_kind.capitalize()} {workload_name} has revision {latest_revision} (expected 1), pods may have been recreated"
     
     logging(f"{workload_kind.capitalize()} {workload_name} has only revision 1, pods have not been recreated")
