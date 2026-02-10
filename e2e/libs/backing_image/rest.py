@@ -52,8 +52,8 @@ class Rest(Base):
         if sourceType == self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD:
             assert bi.parameters["url"] == url, f"expect backing image url is {url}, but it's {bi.parameters['url']}"
         if sourceType == self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME:
-            assert bi.parameters["volume-name"] == parameters["volume-name"], f"expect backing image volume-name is {parameters["volume-name"]}, but it's {bi.parameters['volume-name']}"
-            assert bi.parameters["export-type"] == parameters["export-type"], f"expect backing image volume-name is {parameters["export-type"]}, but it's {bi.parameters['export-type']}"
+            assert bi.parameters["volume-name"] == parameters["volume-name"], f"expect backing image volume-name is {parameters['volume-name']}, but it's {bi.parameters['volume-name']}"
+            assert bi.parameters["export-type"] == parameters["export-type"], f"expect backing image volume-name is {parameters['export-type']}, but it's {bi.parameters['export-type']}"
         assert not bi.deletionTimestamp, f"expect backing image deletionTimestamp is empty, but it's {bi.deletionTimestamp}"
 
         return bi
