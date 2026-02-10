@@ -25,7 +25,7 @@ Test Teardown    Cleanup test resources without corrupting remote backupstore
 
 *** Keywords ***
 # Reset backup target from remote AWS S3 to local minio backup store before cleaning up resources
-# to avoid deleting the existing backupa on AWS S3
+# to avoid deleting the existing backup on AWS S3
 Cleanup test resources without corrupting remote backupstore
     Set default backupstore
     Cleanup test resources
@@ -43,6 +43,32 @@ Backup target could not be changed when DR volume exist
     Set setting backup-target to random.backup.target will fail
 
 *** Test Cases ***
+Test Backup During Active IO
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12140
+    ...    Concurrent backup/restore during active I/O
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolume for volume 0
+    And Create persistentvolumeclaim for volume 0
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+
+    # active io in the background
+    And Keep writing data to pod 0
+    # write another file for data integrity check
+    # this file won't be overwritten by the active io
+    And Write 100 MB data to file data.txt in pod 0
+    And Record file data.txt checksum in pod 0 as checksum 0
+    And Create backup 0 for volume 0
+
+    When Create volume 1 from backup 0 of volume 0
+    And Wait for volume 1 restoration from backup 0 of volume 0 start
+    And Wait for volume 1 detached
+    And Create persistentvolume for volume 1
+    And Create persistentvolumeclaim for volume 1
+    And Create pod 1 using volume 1
+    And Wait for pod 1 running
+    Then Check pod 1 file data.txt checksum matches checksum 0
+
 Test Backup Volume List
     [Documentation]    Test Backup Volume List
     ...    We want to make sure that an error when listing a single backup volume
