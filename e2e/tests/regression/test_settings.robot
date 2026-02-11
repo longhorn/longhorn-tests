@@ -102,7 +102,8 @@ Test Setting Network For RWX Volume Endpoint
     ...                Precondition: NAD network configured.
 
     Given Setting endpoint-network-for-rwx-volume is set to ${EMPTY}
-    When Create persistentvolumeclaim 0    volume_type=RWX
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0 with max replicaset
     Then Check Longhorn workload pods not running with CNI interface lhnet2
         ...    longhorn-csi-plugin
@@ -114,7 +115,7 @@ Test Setting Network For RWX Volume Endpoint
     And Wait for all sharemanager to be deleted
 
     When Setting endpoint-network-for-rwx-volume is set to kube-system/demo-172-16-0-0
-    And Create persistentvolumeclaim 1    volume_type=RWX
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1 with max replicaset
     Then Check Longhorn workload pods is running with CNI interface lhnet2
         ...    longhorn-csi-plugin
@@ -157,8 +158,9 @@ Test RWX Volume Endpoint Network With Storage Network Enabled
     ...         NAD1       |             -
     Given Setting storage-network should be kube-system/demo-192-168-0-0
     And Setting endpoint-network-for-rwx-volume is set to kube-system/demo-192-168-0-0
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
 
-    When Create persistentvolumeclaim 0    volume_type=RWX
+    When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     Then Check Longhorn workload pods is running with CNI interface lhnet2
@@ -172,7 +174,7 @@ Test RWX Volume Endpoint Network With Storage Network Enabled
     And Wait for all sharemanager to be deleted
 
     Given Setting endpoint-network-for-rwx-volume is set to kube-system/demo-172-16-0-0
-    When Create persistentvolumeclaim 1    volume_type=RWX
+    When Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 1 healthy
     Then Check Longhorn workload pods is running with CNI interface lhnet2
@@ -186,7 +188,7 @@ Test RWX Volume Endpoint Network With Storage Network Enabled
     And Wait for all sharemanager to be deleted
 
     Given Setting endpoint-network-for-rwx-volume is set to ${EMPTY}
-    When Create persistentvolumeclaim 2    volume_type=RWX
+    When Create persistentvolumeclaim 2    volume_type=RWX        sc_name=longhorn-test
     And Create deployment 2 with persistentvolumeclaim 2
     And Wait for volume of deployment 2 healthy
     Then Check Longhorn workload pods not running with CNI interface lhnet2
@@ -212,8 +214,9 @@ Test RWX Volume Endpoint Network With Storage Network Disabled
     ...         -          |             -
     Given Setting storage-network is set to ${EMPTY}
     And Setting endpoint-network-for-rwx-volume is set to kube-system/demo-192-168-0-0
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
 
-    When Create persistentvolumeclaim 0    volume_type=RWX
+    When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     Then Check Longhorn workload pods is running with CNI interface lhnet2
@@ -227,7 +230,7 @@ Test RWX Volume Endpoint Network With Storage Network Disabled
     And Wait for all sharemanager to be deleted
 
     Given Setting endpoint-network-for-rwx-volume is set to kube-system/demo-172-16-0-0
-    When Create persistentvolumeclaim 1    volume_type=RWX
+    When Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 1 healthy
     Then Check Longhorn workload pods is running with CNI interface lhnet2
@@ -241,7 +244,7 @@ Test RWX Volume Endpoint Network With Storage Network Disabled
     And Wait for all sharemanager to be deleted
 
     Given Setting endpoint-network-for-rwx-volume is set to ${EMPTY}
-    When Create persistentvolumeclaim 2    volume_type=RWX
+    When Create persistentvolumeclaim 2    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 2 with persistentvolumeclaim 2
     And Wait for volume of deployment 2 healthy
     Then Check Longhorn workload pods not running with CNI interface lhnet2
@@ -276,6 +279,7 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Ena
     END
 
     Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
     And Uninstall Longhorn
     And Check Longhorn CRD removed
     And Install Longhorn stable version
@@ -288,7 +292,7 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Ena
     Then Setting storage-network should be kube-system/demo-192-168-0-0
     And Setting endpoint-network-for-rwx-volume should be kube-system/demo-192-168-0-0
 
-    When Create persistentvolumeclaim 0    volume_type=RWX
+    When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     Then Check Longhorn workload pods is running with CNI interface lhnet2
@@ -316,6 +320,7 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Dis
     END
 
     Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
     And Uninstall Longhorn
     And Check Longhorn CRD removed
     And Install Longhorn stable version
@@ -328,7 +333,7 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Dis
     Then Setting storage-network should be kube-system/demo-192-168-0-0
     And Setting endpoint-network-for-rwx-volume should be ${EMPTY}
 
-    When Create persistentvolumeclaim 0    volume_type=RWX
+    When Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     Then Check Longhorn workload pods not running with CNI interface lhnet2
