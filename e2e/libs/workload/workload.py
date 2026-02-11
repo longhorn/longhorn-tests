@@ -451,6 +451,46 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
     assert False, f"Timeout waiting for {workload_name} pods {wait_for_stable_pod} stable)"
 
 
+def wait_for_workload_pods_recreated(workload_name, workload_kind, namespace="default"):
+    """
+    Wait for workload pods to be recreated (new UIDs).
+    This is useful for detecting when a rolling update has started.
+    
+    Args:
+        workload_name: Name of the workload
+        workload_kind: Kind of workload (e.g., "deployment", "daemonset")
+        namespace: Kubernetes namespace
+    """
+    # Get initial pod UIDs
+    initial_pods = get_workload_pods(workload_name, namespace=namespace)
+    if len(initial_pods) == 0:
+        logging(f"No initial pods found for workload {workload_name}")
+        return
+    
+    initial_pod_uids = {pod.metadata.uid for pod in initial_pods}
+    logging(f"Initial {workload_name} pod UIDs: {initial_pod_uids}")
+    
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        current_pods = get_workload_pods(workload_name, namespace=namespace)
+        if len(current_pods) == 0:
+            logging(f"Waiting for {workload_name} pods to be recreated, retry ({i}) ...")
+            time.sleep(retry_interval)
+            continue
+        
+        current_pod_uids = {pod.metadata.uid for pod in current_pods}
+        
+        # Check if any pod has a new UID (indicating recreation)
+        if not current_pod_uids.issubset(initial_pod_uids):
+            logging(f"Detected {workload_name} pods recreated with new UIDs: {current_pod_uids}")
+            return
+        
+        logging(f"Waiting for {workload_name} pods to be recreated, retry ({i}) ...")
+        time.sleep(retry_interval)
+    
+    assert False, f"Timeout waiting for {workload_name} pods to be recreated"
+
+
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
     def is_in_crashloopbackoff(pod):
         for container_status in pod.status.container_statuses:
