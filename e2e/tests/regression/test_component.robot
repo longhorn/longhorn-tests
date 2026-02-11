@@ -8,6 +8,7 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/k8s.resource
+Resource    ../keywords/workload.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
