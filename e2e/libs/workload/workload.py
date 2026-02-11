@@ -454,13 +454,10 @@ async def wait_for_workload_pods_stable(workload_name, namespace="default"):
 def wait_for_workload_pods_recreated(workload_name, workload_kind, namespace="default"):
     """
     Wait for workload pods to be recreated (e.g., during rolling update).
-    Detects recreation by checking if the revision annotation has changed from "1".
+    Detects recreation by checking if the revision has changed from "1".
     
-    For Deployments, Kubernetes maintains a revision annotation
-    (deployment.kubernetes.io/revision) that increments with each rollout.
-    Initial value is "1", so any value != "1" indicates the workload has been updated.
-    
-    For DaemonSets and StatefulSets, checks observedGeneration > 1.
+    Uses kubectl rollout history to get the latest revision number.
+    Initial revision is "1", so any value != "1" indicates the workload has been updated.
     
     Args:
         workload_name: Name of the workload
@@ -469,32 +466,19 @@ def wait_for_workload_pods_recreated(workload_name, workload_kind, namespace="de
     """
     retry_count, retry_interval = get_retry_count_and_interval()
     
-    api = get_apps_api_client()
-    
     # Wait for revision to be != "1" (indicating an update has occurred)
     last_revision = "unknown"
     for i in range(retry_count):
         try:
-            if workload_kind.lower() == "deployment":
-                workload = api.read_namespaced_deployment(workload_name, namespace)
-                annotations = workload.metadata.annotations or {}
-                revision = annotations.get("deployment.kubernetes.io/revision", "1")
-            elif workload_kind.lower() in ("daemonset", "statefulset"):
-                # DaemonSets and StatefulSets use observedGeneration
-                if workload_kind.lower() == "daemonset":
-                    workload = api.read_namespaced_daemon_set(workload_name, namespace)
-                else:
-                    workload = api.read_namespaced_stateful_set(workload_name, namespace)
-                observed_gen = workload.status.observed_generation
-                revision = str(observed_gen) if observed_gen else "1"
-            else:
-                raise ValueError(f"Unsupported workload kind: {workload_kind}")
+            cmd = f"kubectl rollout history {workload_kind}/{workload_name} -n {namespace} | awk 'NR>1 {{print $1}}' | sort -n | tail -1"
+            output = subprocess_exec_cmd(cmd)
+            latest_revision = output.strip()
             
-            last_revision = revision
-            logging(f"Current revision for {workload_kind} {workload_name}: {revision}")
+            last_revision = latest_revision
+            logging(f"Current revision for {workload_kind} {workload_name}: {latest_revision}")
             
-            if revision != "1":
-                logging(f"{workload_kind} {workload_name} has been recreated (revision: {revision})")
+            if latest_revision != "1":
+                logging(f"{workload_kind} {workload_name} has been recreated (revision: {latest_revision})")
                 return
                 
         except Exception as e:
