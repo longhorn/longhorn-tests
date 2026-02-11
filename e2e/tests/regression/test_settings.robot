@@ -100,6 +100,9 @@ Test Setting Network For RWX Volume Endpoint
     ...                    - https://github.com/longhorn/longhorn/issues/8184
     ...
     ...                Precondition: NAD network configured.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Need enable v2 environment on pipeline first: https://github.com/longhorn/longhorn/issues/12659
+    END
 
     Given Setting endpoint-network-for-rwx-volume is set to ${EMPTY}
     When Create persistentvolumeclaim 0    volume_type=RWX
@@ -155,6 +158,10 @@ Test RWX Volume Endpoint Network With Storage Network Enabled
     ...         NAD1       |            NAD1
     ...         NAD1       |            NAD2
     ...         NAD1       |             -
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Need enable v2 environment on pipeline first: https://github.com/longhorn/longhorn/issues/12659
+    END
+
     Given Setting storage-network should be kube-system/demo-192-168-0-0
     And Setting endpoint-network-for-rwx-volume is set to kube-system/demo-192-168-0-0
 
@@ -210,6 +217,10 @@ Test RWX Volume Endpoint Network With Storage Network Disabled
     ...         -          |            NAD1
     ...         -          |            NAD2
     ...         -          |             -
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Need enable v2 environment on pipeline first: https://github.com/longhorn/longhorn/issues/12659
+    END
+
     Given Setting storage-network is set to ${EMPTY}
     And Setting endpoint-network-for-rwx-volume is set to kube-system/demo-192-168-0-0
 
@@ -268,6 +279,10 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Ena
     ...    Upgrade strategy
     ...    During upgrade, the manager detects the legacy storage-network-for-rwx-volume-enabled setting and performs a one-time migration:
     ...    If storage-network-for-rwx-volume-enabled=true, endpoint-network-for-rwx-volume is set to the storage-network value.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Need enable v2 environment on pipeline first: https://github.com/longhorn/longhorn/issues/12659
+    END
+
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
@@ -308,6 +323,10 @@ Test RWX Volume Endpoint Network Upgrade When Storage Network For RWX Volume Dis
     ...    Upgrade strategy
     ...    During upgrade, the manager detects the legacy storage-network-for-rwx-volume-enabled setting and performs a one-time migration:
     ...    If the legacy setting is false or absent, endpoint-network-for-rwx-volume is created with the default (empty) value.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Need enable v2 environment on pipeline first: https://github.com/longhorn/longhorn/issues/12659
+    END
+
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set
