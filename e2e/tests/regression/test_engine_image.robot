@@ -14,6 +14,10 @@ Test Teardown    Cleanup test resources
 *** Test Cases ***
 Test Replica Rebuilding After Engine Upgrade
     [Tags]    coretest
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 data engine does not support engine image upgrade
+    END
+    
     Given Create compatible engine image
     And Create volume 0
     And Attach volume 0
@@ -27,6 +31,10 @@ Test Replica Rebuilding After Engine Upgrade
     And Check volume 0 data is intact
 
 Test Engine Upgrade With Extra Replicas
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 data engine does not support engine image upgrade
+    END
+
     Given Create compatible engine image
     And Create volume 0    numberOfReplicas=3
     And Attach volume 0
