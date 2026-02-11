@@ -63,6 +63,10 @@ Disable disk ${disk_name} scheduling on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     disable_disk    ${node_name}    ${disk_name}
 
+Disable disk ${disk_name} scheduling without ready check on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    disable_disk    ${node_name}    ${disk_name}    wait=False
+
 Enable disk ${disk_name} scheduling on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     enable_disk    ${node_name}    ${disk_name}
@@ -102,6 +106,39 @@ Create ${disk_size} Gi ${disk_type} type disk ${disk_name} on node ${node_id}
         ${mount_path} =    Set Variable    /dev/longhorn/${disk_name}
     END
     add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+
+Get Mount Path For Device
+    [Arguments]    ${disk_name}    ${disk_type}    ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    IF    "${disk_type}" == "filesystem"
+        ${mount_path} =    mount_disk    ${disk_name}    ${node_name}
+    ELSE IF    "${disk_type}" == "block"
+        ${mount_path} =    Set Variable    /dev/longhorn/${disk_name}
+    END
+    [Return]    ${mount_path}
+
+Create ${disk_size} Gi ${disk_type} type device ${disk_name} on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    create_volume   ${disk_name}    size=${disk_size}Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    attach_volume    ${disk_name}    ${node_name}
+    wait_for_volume_healthy    ${disk_name}
+    ${mount_path} =    Get Mount Path For Device    ${disk_name}    ${disk_type}    ${node_id}
+    Set Test Variable    ${mount_path}
+
+Add ${disk_type} device ${disk_name} on node ${node_id} should result in unschedulable state
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${mount_path} =    Get Mount Path For Device    ${disk_name}    ${disk_type}    ${node_id}
+    add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}    wait=False
+    wait_disk_kept_unschedulable    ${disk_name}    ${node_name}
+
+Add ${disk_type} device ${disk_name} on node ${node_id} should success
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${mount_path} =    Get Mount Path For Device    ${disk_name}    ${disk_type}    ${node_id}
+    add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+
+Delete disk ${disk_name} on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    delete_disk    ${disk_name}    ${node_name}
 
 Wait for node ${node_id} default disk broken
     ${node_name} =    get_node_by_index    ${node_id}
