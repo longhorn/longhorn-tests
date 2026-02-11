@@ -12,6 +12,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/snapshot.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -174,3 +175,98 @@ Test Offline Replica Rebuilding Volume Status Condition
     And Run command and not expect output
     ...    kubectl get volumes vol -n longhorn-system -oyaml
     ...    OfflineRebuildingInProgress
+
+Test Replica Rebuild Performance With Concurrent Sync Limit
+    [Tags]    performance
+    [Documentation]    Test to verify that increasing concurrent sync limit improves rebuild speed.
+    ...
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/11331
+    ...
+    ...                - 1. Create a 5Gi volume with 3 replicas and attach it to a node.
+    ...                - 2. Prefill volume with 2G sequential data and take snapshot 0.
+    ...                - 3. Write 2G scattered data (4k blocks, 20% ratio) and take snapshot 1.
+    ...                - 4. Write 2G scattered data (4k blocks, 20% ratio) again and take snapshot 2.
+    ...                - 5. Delete one replica and measure the 1st baseline rebuild time.
+    ...                - 6. Set replica-rebuild-concurrent-sync-limit to 5.
+    ...                - 7. Delete another replica and measure the 2nd rebuild time.
+    ...                - 8. Verify the 2nd rebuild time is less than the 1st baseline time.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Test case not support for v2 data engine
+    END
+
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+
+    # Prefill volume with sequential data
+    When Prefill volume 0 with fio    size=2G
+    And Create snapshot 0 of volume 0
+    # Write scattered tiny chunks and take snapshots
+    And Write scattered data to volume 0 with fio    size=2G    bs=4k    ratio=0.2
+    And Create snapshot 1 of volume 0
+    And Write scattered data to volume 0 with fio    size=2G    bs=4k    ratio=0.2
+    And Create snapshot 2 of volume 0
+
+    # Measure 1st baseline rebuild time
+    And Delete volume 0 replica on node 0
+    And Wait until volume 0 replica rebuilding started on node 0
+    ${rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 0
+    And Wait for volume 0 healthy
+
+    # Set concurrent sync limit and measure 2nd rebuild time
+    When Setting replica-rebuild-concurrent-sync-limit is set to 5
+    And Delete volume 0 replica on node 1
+    And Wait until volume 0 replica rebuilding started on node 1
+    ${2nd_rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 1
+    And Wait for volume 0 healthy
+
+    # Verify improvement
+    Then Should Be True    ${2nd_rebuild_time} < ${rebuild_time}
+    ...    msg=The 2nd replica rebuilding time (${2nd_rebuild_time}s) should be faster than 1st (${rebuild_time}s)
+
+Test Volume Level Replica Rebuild Concurrent Sync Limit
+    [Tags]    performance
+    [Documentation]    Test to verify volume-level rebuildConcurrentSyncLimit setting effect.
+    ...
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/11331
+    ...
+    ...                - 1. Create a 5Gi volume with rebuildConcurrentSyncLimit=5 and 3 replicas.
+    ...                - 2. Prefill volume with 2G sequential data and take snapshot 0.
+    ...                - 3. Write 2G scattered data (4k blocks, 20% ratio) and take snapshot 1.
+    ...                - 4. Write 2G scattered data (4k blocks, 20% ratio) again and take snapshot 2.
+    ...                - 5. Delete one replica and measure the 1st optimized rebuild time (with limit=5).
+    ...                - 6. Update volume rebuildConcurrentSyncLimit to 0 (use global default).
+    ...                - 7. Delete another replica and measure the 2nd baseline rebuild time (with default limit).
+    ...                - 8. Verify the 1st optimized rebuild time is less than the 2nd baseline time.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Test case not support for v2 data engine
+    END
+
+    Given Create volume 0 with    size=5Gi    numberOfReplicas=3    rebuildConcurrentSyncLimit=5    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+
+    # Prefill volume with sequential data
+    When Prefill volume 0 with fio    size=2G
+    And Create snapshot 0 of volume 0
+    # Write scattered tiny chunks and take snapshots
+    And Write scattered data to volume 0 with fio    size=2G    bs=4k    ratio=0.2
+    And Create snapshot 1 of volume 0
+    And Write scattered data to volume 0 with fio    size=2G    bs=4k    ratio=0.2
+    And Create snapshot 2 of volume 0
+    # Measure 1st optimized rebuild time with volume-level limit=5
+    And Delete volume 0 replica on node 0
+    And Wait until volume 0 replica rebuilding started on node 0
+    ${rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 0
+    And Wait for volume 0 healthy
+
+    # Update volume to use global default (0) and measure baseline rebuild time
+    When Update volume 0 rebuild concurrent sync limit to 0
+    And Delete volume 0 replica on node 1
+    And Wait until volume 0 replica rebuilding started on node 1
+    ${2nd_rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 1
+    And Wait for volume 0 healthy
+
+    # Verify improvement
+    Then Should Be True    ${rebuild_time} < ${2nd_rebuild_time}
+    ...    msg=The 1st replica rebuilding time (${rebuild_time}s) should be faster than 2nd (${2nd_rebuild_time}s)
