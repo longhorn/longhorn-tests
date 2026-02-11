@@ -434,21 +434,25 @@ def wait_for_workload_pods_recreated(workload_name, workload_kind, namespace="de
     api = get_apps_api_client()
     
     # Wait for revision to be != "1" (indicating an update has occurred)
+    last_revision = "unknown"
     for i in range(retry_count):
         try:
             if workload_kind.lower() == "deployment":
                 workload = api.read_namespaced_deployment(workload_name, namespace)
-                revision = workload.metadata.annotations.get("deployment.kubernetes.io/revision", "1") if workload.metadata.annotations else "1"
-            elif workload_kind.lower() == "daemonset":
-                workload = api.read_namespaced_daemon_set(workload_name, namespace)
-                # DaemonSets use observedGeneration
-                revision = str(workload.status.observed_generation) if workload.status.observed_generation else "1"
-            elif workload_kind.lower() == "statefulset":
-                workload = api.read_namespaced_stateful_set(workload_name, namespace)
-                revision = str(workload.status.observed_generation) if workload.status.observed_generation else "1"
+                annotations = workload.metadata.annotations or {}
+                revision = annotations.get("deployment.kubernetes.io/revision", "1")
+            elif workload_kind.lower() in ("daemonset", "statefulset"):
+                # DaemonSets and StatefulSets use observedGeneration
+                if workload_kind.lower() == "daemonset":
+                    workload = api.read_namespaced_daemon_set(workload_name, namespace)
+                else:
+                    workload = api.read_namespaced_stateful_set(workload_name, namespace)
+                observed_gen = workload.status.observed_generation
+                revision = str(observed_gen) if observed_gen else "1"
             else:
                 raise ValueError(f"Unsupported workload kind: {workload_kind}")
             
+            last_revision = revision
             logging(f"Current revision for {workload_kind} {workload_name}: {revision}")
             
             if revision != "1":
@@ -461,7 +465,7 @@ def wait_for_workload_pods_recreated(workload_name, workload_kind, namespace="de
         logging(f"Waiting for {workload_name} pods to be recreated, retry ({i}) ...")
         time.sleep(retry_interval)
     
-    assert False, f"{workload_kind} {workload_name} was not recreated after {retry_count * retry_interval} seconds (revision still at 1)"
+    assert False, f"{workload_kind} {workload_name} was not recreated after {retry_count * retry_interval} seconds (last known revision: {last_revision})"
 
 
 def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="default"):
