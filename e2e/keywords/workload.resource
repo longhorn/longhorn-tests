@@ -239,6 +239,11 @@ Wait for ${workload_kind} ${workload_id} pods container creating
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     wait_for_workload_pods_container_creating    ${workload_name}
 
+Wait for ${workload_kind} ${workload_id} pods recreated
+    [Arguments]    ${namespace}=default
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    wait_for_workload_pods_recreated    ${workload_name}    ${workload_kind}    ${namespace}
+
 Wait for workloads pods stable
     [Arguments]    @{args}
     @{workload_list} =    Create List
