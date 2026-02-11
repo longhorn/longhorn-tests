@@ -2,6 +2,8 @@ import time
 
 from node import Node
 from metrics.metrics import get_node_metrics, check_longhorn_metric
+from metrics.metrics import get_longhorn_components_memory_cpu_usage
+from metrics.metrics import check_longhorn_components_memory_cpu_usage
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
@@ -49,3 +51,9 @@ class metrics_keywords:
 
     def check_longhorn_metric(self, metric_name, node_name=None, metric_label=None, expected_value=None):
         check_longhorn_metric(metric_name, node_name, metric_label, expected_value)
+
+    def get_longhorn_components_memory_cpu_usage(self):
+        get_longhorn_components_memory_cpu_usage()
+
+    def check_longhorn_components_memory_cpu_usage(self):
+        check_longhorn_components_memory_cpu_usage()
