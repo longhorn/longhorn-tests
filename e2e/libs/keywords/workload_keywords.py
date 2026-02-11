@@ -36,6 +36,7 @@ from workload.workload import write_pod_large_data
 from workload.workload import wait_for_workload_pods_container_creating
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
+from workload.workload import wait_for_workload_pods_recreated
 from workload.workload import wait_for_workload_pod_kept_in_state
 from workload.workload import get_pod_node
 from workload.workload import run_commands_in_pod
@@ -213,6 +214,10 @@ class workload_keywords:
     async def wait_for_workload_pods_stable(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pod stable')
         await wait_for_workload_pods_stable(workload_name, namespace=namespace)
+
+    def wait_for_workload_pods_recreated(self, workload_name, workload_kind, namespace="default"):
+        logging(f'Waiting for {namespace} {workload_kind} {workload_name} pods to be recreated')
+        wait_for_workload_pods_recreated(workload_name, workload_kind, namespace=namespace)
 
     def wait_for_workload_volume_healthy(self, workload_name):
         volume_name = get_workload_volume_name(workload_name)
