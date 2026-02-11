@@ -88,6 +88,9 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
         ...    wait=${False}
     END
     
+    # Wait for longhorn-driver-deployer pods to be recreated to ensure upgrade started
+    And Wait for deployment longhorn-driver-deployer pods recreated    namespace=${LONGHORN_NAMESPACE}
+    
     # Monitor longhorn-manager pods during upgrade
     # At least some pods should always be running
     WHILE    True
@@ -138,6 +141,9 @@ Test CSI Components Rolling Update Configuration During Upgrade
     
     # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
     Upgrade Longhorn to custom version    wait=${False}
+    
+    # Wait for longhorn-driver-deployer pods to be recreated to ensure upgrade started
+    And Wait for deployment longhorn-driver-deployer pods recreated    namespace=${LONGHORN_NAMESPACE}
     
     # Monitor CSI component pods during upgrade
     # At least some pods of each component should always be running
