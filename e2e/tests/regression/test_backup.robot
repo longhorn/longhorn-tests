@@ -16,6 +16,9 @@ Resource    ../keywords/system_backup.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/k8s.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources without corrupting remote backupstore
@@ -26,6 +29,10 @@ Test Teardown    Cleanup test resources without corrupting remote backupstore
 Cleanup test resources without corrupting remote backupstore
     Set default backupstore
     Cleanup test resources
+
+Set up v2 test environment
+    Set up test environment
+    Enable v2 data engine and add block disks
 
 Snapshot PV PVC could not be created on DR volume 1
     Create snapshot 0 of volume 1 will fail
@@ -177,7 +184,6 @@ Backup Older Snapshot When Newer Snapshot Backup Exists
     ...    up.
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/11461
-
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -203,3 +209,34 @@ Test DR Volume Backup Block Size
 
     When Create DR volume 1 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
     And DR volume 1 setting backupBlockSize should be 16Mi
+
+SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
+    [Documentation]
+    ...    Verify snapshot backup goes to the correct instance-manager pod.
+    ...
+    ...    https://github.com/longhorn/longhorn/issues/12475
+    # Limit the test scope to a single node
+    [Setup]    Set up v2 test environment
+    Given Set node 1 with    allowScheduling=false    evictionRequested=true
+    And Set node 2 with    allowScheduling=false    evictionRequested=true
+    And Delete node 1
+    And Delete node 2
+
+    And Create volume 0 with    dataEngine=v1   numberOfReplicas=1
+    And Attach volume 0 to node 0
+    And Write data 0 to volume 0
+    And Create volume 1 with    dataEngine=v2   numberOfReplicas=1
+    And Attach volume 1 to node 0
+    And Write data 1 to volume 0
+
+    When Get test start time
+    And Create backup 0 for volume 0
+    And Verify v1 instance manager log on node 0 contain backup after test start
+    And Verify v2 instance manager log on node 0 not contain backup after test start
+    Then Get test start time
+    And Create backup 1 for volume 1
+    And Verify v2 instance manager log on node 0 contain backup after test start
+    And Verify v1 instance manager log on node 0 not contain backup after test start
+    And Reboot node 1
+    And Reboot node 2
+    And Wait for longhorn ready

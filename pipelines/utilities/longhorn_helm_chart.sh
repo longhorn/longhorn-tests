@@ -31,8 +31,6 @@ customize_longhorn_chart_registry(){
 }
 
 customize_longhorn_chart(){
-  # remove hard-coded .global.imageRegistry=docker.io
-  yq -i '.global.imageRegistry=""' "${LONGHORN_REPO_DIR}/chart/values.yaml"
   # customize longhorn components repository and tag (version) in chart/values.yaml
   OLD_IFS=$IFS
   IFS=':'
@@ -77,6 +75,9 @@ install_longhorn(){
   else
     CUSTOM_HELM_INSTALLATION=""
   fi
+
+  # remove hard-coded .global.imageRegistry=docker.io
+  yq -i '.global.imageRegistry=""' "${LONGHORN_REPO_DIR}/chart/values.yaml"
 
   get_longhorn_namespace
   helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}" ${CUSTOM_HELM_INSTALLATION}

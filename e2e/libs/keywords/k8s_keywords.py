@@ -67,6 +67,9 @@ class k8s_keywords:
         delete_node(replica_node)
         return replica_node
 
+    def delete_node(self, node_name):
+        delete_node(node_name)
+
     def set_k8s_node_zone(self, node_name, zone_name):
         set_k8s_node_zone(node_name, zone_name)
 

@@ -1,0 +1,55 @@
+name: Trigger Jenkins CI
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  jenkins-test:
+    # Only run if it's a Pull Request and the comment matches the trigger
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/jenkins test') && (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch PR Metadata
+        id: pr_metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Query the head repository URL and the head branch name
+          PR_JSON=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName,headRepositoryOwner,headRepository -q '.')
+
+          BRANCH=$(echo $PR_JSON | jq -r '.headRefName')
+          REPO_URL="https://github.com/$(echo $PR_JSON | jq -r '.headRepositoryOwner.login + "/" + .headRepository.name').git"
+
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "repo_url=$REPO_URL" >> $GITHUB_OUTPUT
+      - name: Extract Arguments
+        id: vars
+        run: |
+          # Use an environment variable to safely handle the quotes from the comment
+          COMMENT_RAW=$(cat << 'EOF'
+          ${{ github.event.comment.body }}
+          EOF
+          )
+          # Grabs everything after '/jenkins test'
+          # Use 'sed' to trim leading/trailing whitespace without stripping internal quotes
+          ARGS=$(echo "$COMMENT_RAW" | sed 's/\/jenkins test//g' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          ESCAPED_ARGS=$(echo "$ARGS" | sed 's/"/\\\\\\"/g')
+          echo "test_options=$ESCAPED_ARGS" >> $GITHUB_OUTPUT
+      - name: Trigger Jenkins via API
+        env:
+          JENKINS_URL: "ci.longhorn.io"
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+          REMOTE_TOKEN: ${{ secrets.REMOTE_TOKEN }}
+        run: |
+          curl -X POST "https://$JENKINS_USER:$JENKINS_TOKEN@$JENKINS_URL/job/longhorn-e2e-test-pull-request-check/buildWithParameters" \
+            --data "token=$REMOTE_TOKEN" \
+            --data "PR_NUMBER=${{ github.event.issue.number }}" \
+            --data "LONGHORN_TESTS_REPO=${{ steps.pr_metadata.outputs.repo_url }}" \
+            --data "LONGHORN_TESTS_BRANCH=${{ steps.pr_metadata.outputs.branch }}" \
+            --data-urlencode "CUSTOM_TEST_OPTIONS=${{ steps.vars.outputs.test_options }}"
+      - name: React
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions -f content='+1'

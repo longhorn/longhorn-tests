@@ -16,7 +16,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, rebuildConcurrentSyncLimit):
         return NotImplemented
 
     def set_data_checksum(self, volume_name, data_id, checksum):
@@ -115,6 +115,14 @@ class Base(ABC):
 
     @abstractmethod
     def write_random_data(self, volume_name, size, data_id):
+        return NotImplemented
+
+    @abstractmethod
+    def prefill_with_fio(self, volume_name, size):
+        return NotImplemented
+
+    @abstractmethod
+    def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         return NotImplemented
 
     @abstractmethod
