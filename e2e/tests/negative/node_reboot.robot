@@ -222,6 +222,49 @@ Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Wr
         Then Check statefulset 1 works
     END
 
+Test Volume Expansion During Node Reboot With Volume Type
+    [Arguments]    ${VOLUME_TYPE}
+    [Documentation]    Test volume expansion behavior when attached node is rebooted during expansion.
+    ...                Supports both RWO and RWX volume types.
+    ...                Related Issue:
+    ...                https://github.com/longhorn/longhorn/issues/1674
+    ...                https://github.com/longhorn/longhorn/issues/5171
+    ...
+    ...                Test Steps:
+    ...                - Create a volume with initial size 5Gi and attach it to a node.
+    ...                - Create a workload using the volume and wait for it to be running.
+    ...                - Write test data to the volume for data integrity verification.
+    ...                - Trigger volume expansion to 10Gi by updating PVC size.
+    ...                - Reboot the node where the volume is attached.
+    ...                - Wait for node to recover and become ready.
+    ...                - Verify volume expansion completes successfully within timeout.
+    ...                - Verify workload does not stuck in Creating state for more than 5 minutes.
+    ...                - Verify volume size is updated to 10Gi.
+    ...                - Verify workload recovers to Running state.
+    ...                - Verify test data integrity is maintained.
+    ...                - Verify filesystem size is expanded to 10Gi.
+    ...
+    ...                Expected Results:
+    ...                - Volume expansion should complete successfully after node reboot.
+    ...                - Workload should recover without getting stuck in Creating state.
+    ...                - No data loss or corruption should occur.
+    ...                - Filesystem should be properly expanded.
+
+    Given Create storageclass longhorn-test with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=${VOLUME_TYPE}    sc_name=longhorn-test    storage_size=5Gi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 512 MB data to file data.txt in deployment 0
+
+    When Expand deployment 0 volume to 10Gi
+    And Reboot volume node of deployment 0
+    And Wait for longhorn ready
+
+    Then Wait for deployment 0 volume size expanded
+    And Wait for workloads pods stable    deployment 0
+    And Check deployment 0 data in file data.txt is intact
+    And Assert filesystem size in deployment 0 is 10Gi
+
 *** Test Cases ***
 Shutdown Volume Node And Test Auto Reattach To A New Node
     Given Setting node-down-pod-deletion-policy is set to delete-both-statefulset-and-deployment-pod
@@ -548,3 +591,13 @@ Power Off Replica Node Should Not Rebuild New Replica On Same Node
 
         Then Check volume 0 replica names are as recorded
     END
+
+Test Volume Expansion During Node Reboot With RWO Volume
+    [Tags]    expansion    rwo
+    [Documentation]    Test RWO volume expansion behavior when attached node is rebooted during expansion.
+    Test Volume Expansion During Node Reboot With Volume Type    RWO
+
+Test Volume Expansion During Node Reboot With RWX Volume
+    [Tags]    expansion    rwx
+    [Documentation]    Test RWX volume expansion behavior when share-manager node is rebooted during expansion.
+    Test Volume Expansion During Node Reboot With Volume Type    RWX

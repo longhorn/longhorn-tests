@@ -19,8 +19,11 @@ Reboot volume ${volume_id} replica node
     ${node_name} =    get_replica_node    ${volume_name}
     reboot_node_by_name    ${node_name}
 
-Reboot node ${idx}
-    reboot_node_by_index    ${idx}
+Reboot node ${node_id}
+    [Documentation]    Reboot a node by its index.
+    ...                Node will be rebooted with default 1 minute downtime.
+    ...                Example: Reboot node 0
+    reboot_node_by_index    ${node_id}
 
 Restart all worker nodes
     reboot_all_worker_nodes
@@ -53,8 +56,10 @@ Power off volume ${volume_id} replica node without waiting
     Append to list    ${powered_off_nodes}    ${powered_off_node}
     power_off_node_by_name    ${node_name}    waiting=False
 
-Power off node ${idx} for ${power_off_time_in_min} mins
-    reboot_node_by_index    ${idx}    ${power_off_time_in_min}
+Power off node ${node_id} for ${power_off_time_in_min} mins
+    [Documentation]    Power off a node for specified duration in minutes.
+    ...                Example: Power off node 0 for 6 mins
+    reboot_node_by_index    ${node_id}    ${power_off_time_in_min}
 
 Power off all worker nodes for ${power_off_time_in_min} mins
     reboot_all_worker_nodes    ${power_off_time_in_min}
