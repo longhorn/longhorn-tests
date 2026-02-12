@@ -517,7 +517,8 @@ Create persistentvolumeclaim for volume ${volume_id} will fail
     Run Keyword And Expect Error    *    create_persistentvolumeclaim_for_volume    ${volume_name}    retry=False
 
 Create volume ${volume_id} with ${size} GB and no replicas on the attached node
-    Create volume ${volume_id} with    size=${size}Gi    numberOfReplicas=3
+    [Arguments]    &{config}
+    Create volume ${volume_id} with    size=${size}Gi    numberOfReplicas=3    &{config}
     Attach volume ${volume_id} to node 1
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 2
