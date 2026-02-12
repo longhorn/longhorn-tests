@@ -148,7 +148,8 @@ Upgrade Longhorn to transient version
     END
 
 Upgrade Longhorn to custom version
-    ${upgraded} =    upgrade_longhorn
+    [Arguments]    &{config}
+    ${upgraded} =    upgrade_longhorn    &{config}
     IF    "${upgraded}" == ${False}
         Log To Console    Upgrade failed
         Fail    Upgrading Longhorn failed
