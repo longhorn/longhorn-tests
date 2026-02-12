@@ -325,9 +325,9 @@ class CRD(Base):
                 if volume["status"]["state"] == desired_state:
                     break
             except Exception as e:
-                logging(f"Getting volume {volume} status error: {e}")
+                logging(f"Getting volume {volume_name} status error: {e}")
             time.sleep(self.retry_interval)
-        assert volume["status"]["state"] == desired_state
+        assert volume["status"]["state"] == desired_state, f"Failed to wait for {volume_name} {desired_state}, currently it's {volume['status']['state']}"
 
     def wait_for_volume_attaching(self, volume_name):
         self.wait_for_volume_state(volume_name, "attaching")

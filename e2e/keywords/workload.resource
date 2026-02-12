@@ -413,3 +413,11 @@ Assert filesystem size in ${workload_kind} ${workload_id} is ${size}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
     wait_for_filesystem_size_in_workload    ${workload_name}    ${expected_size_byte}
+
+Check ${workload_kind} ${workload_id} pods not restarted
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    check_workload_pods_not_restarted    ${workload_name}
+
+Check ${workload_kind} ${workload_id} pods not recreated
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    check_workload_pods_not_recreated    ${workload_kind}    ${workload_name}
