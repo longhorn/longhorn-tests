@@ -1,7 +1,7 @@
 from node import Node
 
 from utility.utility import logging
-
+from utility.constant import DISK_UNSCHEDULABLE_KEEP_ROUNDS
 
 class node_keywords:
 
@@ -15,7 +15,7 @@ class node_keywords:
         logging(f"Mount device /dev/longhorn/{disk_name} on node {node_name}")
         return self.node.mount_disk(disk_name, node_name)
 
-    def add_disk(self, disk_name, node_name, type, path):
+    def add_disk(self, disk_name, node_name, type, path, wait=True):
         logging(f"Adding {type} type disk {disk_name} {path} to node {node_name}")
         disk = {
             f"{disk_name}": {
@@ -24,13 +24,13 @@ class node_keywords:
                 "allowScheduling": True
             }
         }
-        self.node.add_disk(node_name, disk)
+        self.node.add_disk(node_name, disk, wait)
 
-    def cleanup_disks(self):
+    def cleanup_disks(self, data_engine, default_block_disk_path=None):
         nodes = self.node.list_node_names_by_role("worker")
         for node_name in nodes:
             logging(f"Resetting node {node_name} disks to default")
-            self.node.reset_disks(node_name)
+            self.node.reset_disks(node_name, data_engine, default_block_disk_path)
 
     def reset_node_disks_tags(self):
         nodes = self.node.list_node_names_by_role("worker")
@@ -63,8 +63,8 @@ class node_keywords:
     def cleanup_node_taints(self):
         self.node.cleanup_node_taints()
 
-    def disable_disk(self, node_name, disk_name):
-        self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False)
+    def disable_disk(self, node_name, disk_name, wait=True):
+        self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False, wait=wait)
 
     def enable_disk(self, node_name, disk_name):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=True)
@@ -159,3 +159,9 @@ class node_keywords:
 
     def wait_for_longhorn_node_up(self, node_name):
         self.node.wait_for_longhorn_node_up(node_name)
+
+    def delete_disk(self, disk_name, node_name):
+        return self.node.delete_disk(disk_name, node_name)
+
+    def wait_disk_kept_unschedulable(self, disk_name, node_name, keep_rounds=DISK_UNSCHEDULABLE_KEEP_ROUNDS):
+        return self.node.wait_disk_kept_unschedulable(disk_name, node_name, keep_rounds)
