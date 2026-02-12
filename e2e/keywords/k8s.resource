@@ -169,3 +169,7 @@ Install system upgrade controller
 Upgrade kubernetes to latest version
     [Arguments]    &{config}
     upgrade_k8s_to_latest_version    &{config}
+
+Is Longhorn components all running
+    ${all_running}=    is_namespaced_pods_all_running    ${LONGHORN_NAMESPACE}
+    [Return]    ${all_running}
