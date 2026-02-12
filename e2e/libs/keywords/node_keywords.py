@@ -26,11 +26,11 @@ class node_keywords:
         }
         self.node.add_disk(node_name, disk, wait)
 
-    def cleanup_disks(self):
+    def cleanup_disks(self, data_engine, default_block_disk_path=None):
         nodes = self.node.list_node_names_by_role("worker")
         for node_name in nodes:
             logging(f"Resetting node {node_name} disks to default")
-            self.node.reset_disks(node_name)
+            self.node.reset_disks(node_name, data_engine, default_block_disk_path)
 
     def reset_node_disks_tags(self):
         nodes = self.node.list_node_names_by_role("worker")

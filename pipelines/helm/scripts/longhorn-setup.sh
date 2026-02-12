@@ -41,7 +41,9 @@ main(){
 
   create_longhorn_namespace
   install_backupstores
-  install_backupstores_networkpolicy
+  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+    install_backupstores_networkpolicy
+  fi
   setup_azurite_backup_store
   install_csi_snapshotter
 
