@@ -30,6 +30,10 @@ Set up v2 test environment
 Test V2 Volume Basic
     [Tags]  coretest
     [Documentation]    Test basic v2 volume operations
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
     When Create volume 0 with    dataEngine=v2
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
@@ -42,6 +46,10 @@ Test V2 Volume Basic
 Test V2 Snapshot
     [Tags]    coretest
     [Documentation]    Test snapshot operations
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
     Given Create volume 0 with    dataEngine=v2
     When Attach volume 0
     And Wait for volume 0 healthy
@@ -87,6 +95,10 @@ Test V2 Snapshot
 
 Degraded Volume Replica Rebuilding
     [Tags]    coretest    replica
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
     Given Disable node 2 scheduling
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -109,6 +121,10 @@ V2 Volume Should Block Trim When Volume Is Degraded
     [Documentation]    Issues:
     ...    https://github.com/longhorn/longhorn-tests/pull/2114
     ...    https://github.com/longhorn/longhorn/issues/8430
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
     Given Setting auto-salvage is set to true
     And Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -194,6 +210,10 @@ Test V2 Data Engine Selective Activation
 
 Test V2 Data Engine Selective Activation During Replica Rebuilding
     [Tags]    replica
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
     Given Create volume 0 attached to node 0 with 2 replicas excluding node 2    dataEngine=v2
     And Wait for volume 0 healthy
     And Write data to volume 0
@@ -211,6 +231,10 @@ Test V2 Data Engine Selective Activation With Existing Engine And Replica
     [Tags]    replica
     # create a volume with replicas on node 0 and node 1
     # and attach it to node 2
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
     Given Create volume 0 attached to node 2 with 2 replicas excluding node 2    dataEngine=v2
 
     ${node_0}=    Get Node By Index    0
