@@ -31,7 +31,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -59,6 +59,7 @@ class CRD(Base):
                 "backingImage": backingImage,
                 "Standby": Standby,
                 "fromBackup": fromBackup,
+                "rebuildConcurrentSyncLimit": int(rebuildConcurrentSyncLimit),
                 # disable revision counter by default from v1.7.0
                 "revisionCounterDisabled": True,
                 "nodeSelector": nodeSelector,
@@ -324,9 +325,9 @@ class CRD(Base):
                 if volume["status"]["state"] == desired_state:
                     break
             except Exception as e:
-                logging(f"Getting volume {volume} status error: {e}")
+                logging(f"Getting volume {volume_name} status error: {e}")
             time.sleep(self.retry_interval)
-        assert volume["status"]["state"] == desired_state
+        assert volume["status"]["state"] == desired_state, f"Failed to wait for {volume_name} {desired_state}, currently it's {volume['status']['state']}"
 
     def wait_for_volume_attaching(self, volume_name):
         self.wait_for_volume_state(volume_name, "attaching")
@@ -563,6 +564,111 @@ class CRD(Base):
         self.set_last_data_checksum(volume_name, checksum)
         return checksum
 
+    def prefill_with_fio(self, volume_name, size):
+        """Prefill volume with sequential data using fio"""
+        self.wait_for_volume_state(volume_name, "attached")
+
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+
+        endpoint = self.get_endpoint(volume_name)
+
+        # Use fio to sequentially fill the volume
+        # This creates a baseline of data that will be overwritten later
+        cmd = [
+            "sh", "-c",
+            f"fio --name=prefill "
+            f"--filename={endpoint} "
+            f"--size={size} "
+            f"--bs=1M "
+            f"--rw=write "
+            f"--ioengine=libaio "
+            f"--direct=1 "
+            f"--numjobs=1 "
+            f"--group_reporting"
+        ]
+        logging(f"Prefilling volume {volume_name} with {size} of sequential data using fio")
+        NodeExec(node_name).issue_cmd(cmd)
+
+        # Sync to ensure data is persisted
+        sync_cmd = ["sh", "-c", "sync"]
+        NodeExec(node_name).issue_cmd(sync_cmd)
+
+    def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
+        """Write scattered tiny chunks using fio with random writes
+
+        This function writes random small blocks across the volume to create
+        a large number of scattered snapshots deltas, which is ideal for testing
+        concurrent replica rebuild performance.
+
+        Args:
+            volume_name: Name of the volume
+            size: Total size of the volume region to write to (e.g., '5G')
+            bs: Block size for each write operation (e.g., '4k')
+            ratio: write ratio of the volume in scattered blocks
+        """
+        self.wait_for_volume_state(volume_name, "attached")
+
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+
+        endpoint = self.get_endpoint(volume_name)
+
+        # Calculate the amount of data to write (about 20% of size)
+        # This ensures we create enough scattered blocks without taking too long
+        size_str = size.upper()
+        if size_str.endswith('G'):
+            total_mb = int(size_str[:-1]) * 1024
+        elif size_str.endswith('M'):
+            total_mb = int(size_str[:-1])
+        else:
+            total_mb = 2048
+        
+        # Default write 20% of the volume in scattered blocks
+        ratio = float(ratio)
+        if ratio <= 0 or ratio > 1:
+            raise ValueError(f"ratio must be within (0, 1], got {ratio}")
+
+        io_size_mb = int(total_mb * ratio)
+        io_size = f"{io_size_mb}M"
+        
+        # Use fio to write random scattered blocks
+        # Key parameters:
+        # --size: defines the region where random writes can occur
+        # --io_size: total amount of data to write (stops after writing this much)
+        # --bs: block size (4k creates many small scattered writes)
+        # --rw=randwrite: random write pattern
+        # --randrepeat=0: different random sequence each time
+        # --norandommap: allow overwriting same blocks (more realistic)
+        cmd = [
+            "sh", "-c",
+            f"fio --name=scattered_write "
+            f"--filename={endpoint} "
+            f"--size={size} "
+            f"--io_size={io_size} "
+            f"--bs={bs} "
+            f"--rw=randwrite "
+            f"--ioengine=libaio "
+            f"--direct=1 "
+            f"--iodepth=16 "
+            f"--numjobs=1 "
+            f"--randrepeat=0 "
+            f"--norandommap "
+            f"--group_reporting"
+        ]
+        logging(f"Writing scattered data to volume {volume_name} using fio: {io_size} of random {bs} blocks across {size} region")
+        NodeExec(node_name).issue_cmd(cmd)
+        
+        # Sync to ensure data is persisted
+        sync_cmd = ["sh", "-c", "sync"]
+        NodeExec(node_name).issue_cmd(sync_cmd)
+
     def keep_writing_data(self, volume_name, size):
 
         self.wait_for_volume_state(volume_name, "attached")
@@ -674,7 +780,7 @@ class CRD(Base):
             try:
                 volume = self.get(volume_name)
                 spec = volume['spec']
-                if key == "numberOfReplicas":
+                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit"]:
                     spec[key] = int(value)
                 else:
                     spec[key] = value

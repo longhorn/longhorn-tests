@@ -79,7 +79,7 @@ class PersistentVolumeClaim():
                 namespace=namespace,
                 grace_period_seconds=0)
         except ApiException as e:
-            assert e.status == 404
+            assert e.status == 404, f"Unexpected error deleting PVC {name}: {e}"
 
         deleted = False
         for _ in range(self.retry_count):
@@ -87,7 +87,7 @@ class PersistentVolumeClaim():
                 deleted = True
                 break
             time.sleep(self.retry_interval)
-        assert deleted
+        assert deleted, f"Failed to delete PVC {name} in namespace {namespace}"
 
     def is_exist(self, name, namespace='default'):
         exist = False

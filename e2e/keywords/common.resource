@@ -28,6 +28,7 @@ Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
+Resource            variables.resource
 
 *** Keywords ***
 Run command
@@ -70,14 +71,14 @@ Set disk path based on host provider and architecture
     END
 
 Enable v2 data engine and add block disks
+    set_disk_path_based_on_host_provider_and_architecture
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
-    set_disk_path_based_on_host_provider_and_architecture
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    block-disk    ${worker_node}    block    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}
     END
 
 Init worker node variables
@@ -123,10 +124,14 @@ Cleanup test resources
     cleanup_system_restores
     delete_orphans
     cleanup_backing_images
-    cleanup_disks
+    IF    "${DATA_ENGINE}" == "v2"
+        cleanup_disks    data_engine=${DATA_ENGINE}    default_block_disk_path=${DISK_PATH}
+    ELSE
+        cleanup_disks    data_engine=${DATA_ENGINE}
+    END
     cleanup_engine_images
     reset_backupstore
-    reset_settings
+    reset_settings    data_engine=${DATA_ENGINE}
     reset_node_tags
     reset_node_disks_tags
     cleanup_k8s_node_zone

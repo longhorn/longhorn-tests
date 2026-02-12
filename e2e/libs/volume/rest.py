@@ -49,7 +49,7 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         return vol_list
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, backupBlockSize):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, backupBlockSize, rebuildConcurrentSyncLimit):
         return NotImplemented
 
     def attach(self, volume_name, node_name, disable_frontend, wait, retry):
@@ -140,6 +140,12 @@ class Rest(Base):
         return endpoint
 
     def write_random_data(self, volume_name, size, data_id):
+        return NotImplemented
+
+    def prefill_with_fio(self, volume_name, size):
+        return NotImplemented
+
+    def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         return NotImplemented
 
     def keep_writing_data(self, volume_name, size):
