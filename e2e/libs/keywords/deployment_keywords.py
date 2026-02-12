@@ -24,9 +24,9 @@ class deployment_keywords:
         for deployment in deployments.items:
             self.delete_deployment(deployment.metadata.name)
 
-    def create_deployment(self, name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False):
+    def create_deployment(self, name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None):
         logging(f'Creating deployment {name}')
-        create_deployment(name, claim_name, replicaset=replicaset, enable_pvc_io_and_liveness_probe=enable_pvc_io_and_liveness_probe, block_volume=block_volume)
+        create_deployment(name, claim_name, replicaset=replicaset, enable_pvc_io_and_liveness_probe=enable_pvc_io_and_liveness_probe, block_volume=block_volume, args=args)
 
     def delete_deployment(self, name):
         logging(f'Deleting deployment {name}')

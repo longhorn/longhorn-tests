@@ -71,6 +71,10 @@ Update volume ${volume_id} replica count to ${replica_count}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
 
+Update volume ${volume_id} rebuild concurrent sync limit to ${limit}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_volume_spec   ${volume_name}    rebuildConcurrentSyncLimit    ${limit}
+
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -162,6 +166,16 @@ Write data ${data_id} ${size} MB to volume ${volume_id}
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     keep_writing_data    ${volume_name}
+
+Write scattered data to volume ${volume_id} with fio
+    [Arguments]    ${size}=2G    ${bs}=4k    ${ratio}=0.2
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_scattered_data_with_fio    ${volume_name}    ${size}    ${bs}    ${ratio}
+
+Prefill volume ${volume_id} with fio
+    [Arguments]    ${size}=2G
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    prefill_volume_with_fio    ${volume_name}    ${size}
 
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

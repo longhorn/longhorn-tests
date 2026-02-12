@@ -1,9 +1,14 @@
 import multiprocessing
 import asyncio
 
+from kubernetes import client
+from kubernetes.stream import stream
+
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
+
+from utility.utility import get_retry_count_and_interval
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
@@ -12,8 +17,10 @@ from workload.pod import delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.pod import check_pod_did_not_restart
+from workload.pod import wait_for_pod_status
 from workload.workload import get_workload_pod_data_checksum
 from workload.workload import check_workload_pod_data_checksum
+from workload.workload import check_pod_data_checksum
 from workload.workload import check_workload_pod_data_exists
 from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
@@ -29,9 +36,14 @@ from workload.workload import write_pod_large_data
 from workload.workload import wait_for_workload_pods_container_creating
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
+from workload.workload import wait_for_workload_pods_recreated
 from workload.workload import wait_for_workload_pod_kept_in_state
 from workload.workload import get_pod_node
 from workload.workload import run_commands_in_pod
+from workload.workload import get_workload_node_name
+from workload.workload import get_all_workload_node_names
+from workload.workload import check_workload_pods_not_restarted
+from workload.workload import check_workload_pods_not_recreated
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -115,6 +127,25 @@ class workload_keywords:
         self.volume.set_data_checksum(volume_name, file_name, checksum)
         self.volume.set_last_data_checksum(volume_name, checksum)
 
+    def write_and_check_all_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
+        """
+        Write random data to all pods in the workload and verify checksums.
+        This is used to test that all replicas are working correctly.
+        """
+        pod_names = get_workload_pod_names(workload_name)
+        
+        if not pod_names:
+            raise Exception(f"No pods found for workload {workload_name}")
+        
+        logging(f'Writing and checking {size_in_mb} MB random data to all {len(pod_names)} pods in workload {workload_name}')
+        
+        for pod_name in pod_names:
+            logging(f'Writing {size_in_mb} MB random data to pod {pod_name} file {file_name}')
+            checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
+            
+            logging(f'Checking pod {pod_name} file {file_name} checksum = {checksum}')
+            check_pod_data_checksum(pod_name, file_name, checksum)
+
     def write_workload_pod_large_data(self, workload_name, size_in_gb, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
 
@@ -183,6 +214,10 @@ class workload_keywords:
     async def wait_for_workload_pods_stable(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pod stable')
         await wait_for_workload_pods_stable(workload_name, namespace=namespace)
+
+    def wait_for_workload_pods_recreated(self, workload_name, workload_kind, namespace="default"):
+        logging(f'Waiting for {namespace} {workload_kind} {workload_name} pods to be recreated')
+        wait_for_workload_pods_recreated(workload_name, workload_kind, namespace=namespace)
 
     def wait_for_workload_volume_healthy(self, workload_name):
         volume_name = get_workload_volume_name(workload_name)
@@ -329,3 +364,28 @@ class workload_keywords:
                 continue
         
         assert False, f"Filesystem size in workload {workload_name} did not reach minimum size {min_acceptable_size} bytes"
+
+    def check_workload_pods_not_restarted(self, workload_name, namespace="default"):
+        """
+        Check that all pods in the workload have not been restarted.
+        This verifies that the pods have not crashed due to I/O errors.
+        
+        Args:
+            workload_name: Name of the workload
+            namespace: Kubernetes namespace (default: "default")
+        """
+        logging(f"Checking that workload {workload_name} pods have not been restarted in namespace {namespace}")
+        check_workload_pods_not_restarted(workload_name, namespace)
+
+    def check_workload_pods_not_recreated(self, workload_name, workload_kind, namespace="default"):
+        """
+        Check that the workload has not been recreated (no rolling update).
+        This verifies that the deployment has only one revision.
+        
+        Args:
+            workload_name: Name of the workload
+            workload_kind: Kind of workload (e.g., "deployment", "statefulset")
+            namespace: Kubernetes namespace (default: "default")
+        """
+        logging(f"Checking that {workload_kind} {workload_name} has not been recreated in namespace {namespace}")
+        check_workload_pods_not_recreated(workload_name, workload_kind, namespace)
