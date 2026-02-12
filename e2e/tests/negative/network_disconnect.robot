@@ -74,7 +74,7 @@ Node Disconnect And Keep Data Writing And No Replica On The Disconnected Node
     ...                The volume should remain detached, and all replicas remain in ERROR state.
     Given Setting auto-salvage is set to false
 
-    When Create volume 0 with 10 GB and no replicas on the attached node
+    When Create volume 0 with 10 GB and no replicas on the attached node    dataEngine=${DATA_ENGINE}
     And Keep writing data to volume 0
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
 
@@ -115,7 +115,7 @@ Node Disconnect And No Replica On Disconnected Node
     ...                The volume will be in an attached state with its robustness unknown at first, then the volume become healthy.
     Given Setting auto-salvage is set to false
 
-    When Create volume 0 with 10 GB and no replicas on the attached node
+    When Create volume 0 with 10 GB and no replicas on the attached node    dataEngine=${DATA_ENGINE}
     And Disconnect volume 0 node network for 100 seconds without waiting for completion
 
     Then Wait for disconnected node back
