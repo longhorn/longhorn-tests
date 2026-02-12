@@ -15,8 +15,8 @@ class longhorn_deploy_keywords:
     def install_longhorn_system(self, custom_cmd="", install_stable_version=False, longhorn_namespace="longhorn-system"):
         self.longhorn.install(custom_cmd, install_stable_version, longhorn_namespace)
 
-    def upgrade_longhorn(self, upgrade_to_transient_version=False, timeout=600, wait_when_fail=True):
-        return self.longhorn.upgrade(upgrade_to_transient_version, timeout, wait_when_fail)
+    def upgrade_longhorn(self, upgrade_to_transient_version=False, timeout=600, wait_when_fail=True, custom_cmd="", wait=True):
+        return self.longhorn.upgrade(upgrade_to_transient_version, timeout, wait_when_fail, custom_cmd, wait)
 
     def enable_storage_network_setting(self):
         self.longhorn.enable_storage_network_setting()

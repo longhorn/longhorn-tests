@@ -148,7 +148,8 @@ Upgrade Longhorn to transient version
     END
 
 Upgrade Longhorn to custom version
-    ${upgraded} =    upgrade_longhorn
+    [Arguments]    &{config}
+    ${upgraded} =    upgrade_longhorn    &{config}
     IF    "${upgraded}" == ${False}
         Log To Console    Upgrade failed
         Fail    Upgrading Longhorn failed
@@ -230,3 +231,15 @@ Add Longhorn node ${node_id} back
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command
     ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute-
+
+Verify ${engine_type} instance manager log on node ${node_id} contain ${expect_log} after test start
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    Log    ${pod_name}
+    verify_pod_log_after_time_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+
+Verify ${engine_type} instance manager log on node ${node_id} not contain ${expect_log} after test start
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    Log    ${pod_name}
+    verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}

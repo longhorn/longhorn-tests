@@ -71,7 +71,72 @@ class host_keywords:
         self.host.cleanup_snapshots()
 
     def execute_command_on_node(self, cmd, node_name):
-        NodeExec(node_name).issue_cmd(cmd)
+        return NodeExec(node_name).issue_cmd(cmd)
+
+    def execute_command_on_node_and_not_expect_output(self, cmd, node_name, output):
+        from utility.utility import get_retry_count_and_interval
+        import time
+        
+        retry_count, _ = get_retry_count_and_interval()
+        res = NodeExec(node_name).issue_cmd(cmd)
+        if output in res:
+            logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
+            time.sleep(retry_count)  # Long sleep for debugging
+            assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
+
+    def execute_command_on_node_and_wait_for_output(self, cmd, node_name, expected_output):
+        from utility.utility import get_retry_count_and_interval
+        import time
+        
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for command {cmd} on node {node_name} returning output {expected_output} ... ({i})")
+            try:
+                res = NodeExec(node_name).issue_cmd(cmd)
+                if expected_output in res:
+                    return
+            except Exception as e:
+                logging(f"Execute command {cmd} on node {node_name} and wait for output {expected_output} error: {e}")
+            time.sleep(retry_interval)
+        
+        assert False, f"Timeout waiting for output {expected_output} in {cmd} result on node {node_name}"
+
+    def execute_command_on_node_and_get_output(self, cmd, node_name, expected_output):
+        """
+        Execute a command on a node and return True if the output contains the expected string, False otherwise.
+        
+        Args:
+            cmd: Command to execute
+            node_name: Name of the node
+            expected_output: String to look for in the output
+            
+        Returns:
+            True if expected_output is found in the command output, False otherwise
+        """
+        try:
+            res = NodeExec(node_name).issue_cmd(cmd)
+            return expected_output in res
+        except Exception as e:
+            logging(f"Execute command {cmd} on node {node_name} error: {e}")
+            return False
+
+    def execute_command_on_node_and_get_output_string(self, cmd, node_name):
+        """
+        Execute a command on a node and return the output as a string.
+        
+        Args:
+            cmd: Command to execute
+            node_name: Name of the node
+            
+        Returns:
+            The command output as a string
+        """
+        try:
+            res = NodeExec(node_name).issue_cmd(cmd)
+            return res
+        except Exception as e:
+            logging(f"Execute command {cmd} on node {node_name} error: {e}")
+            return ""
 
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)

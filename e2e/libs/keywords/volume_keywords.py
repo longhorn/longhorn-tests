@@ -31,9 +31,9 @@ class volume_keywords:
         for volume in volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi"):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit)
 
     def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
@@ -108,6 +108,14 @@ class volume_keywords:
     def keep_writing_data(self, volume_name):
         logging(f'Keep writing data to volume {volume_name}')
         self.volume.keep_writing_data(volume_name)
+
+    def write_volume_scattered_data_with_fio(self, volume_name, size, bs, ratio):
+        logging(f'Writing scattered data to volume {volume_name} with fio (size={size}, bs={bs}, ratio={ratio})')
+        return self.volume.write_scattered_data_with_fio(volume_name, size, bs, ratio)
+
+    def prefill_volume_with_fio(self, volume_name, size):
+        logging(f'Prefilling volume {volume_name} with fio (size={size})')
+        return self.volume.prefill_with_fio(volume_name, size)
 
     def check_data_checksum(self, volume_name, data_id=0):
         logging(f"Checking volume {volume_name} data {data_id} checksum")

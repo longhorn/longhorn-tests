@@ -40,26 +40,36 @@ class Node:
         res = NodeExec(node_name).issue_cmd(cmd)
         return mount_path
 
-    def update_disks(self, node_name, disks):
+    def update_disks(self, node_name, disks, wait=True):
         logging(f"Updating node {node_name} disks {disks}")
         for _ in range(self.retry_count):
             try:
                 node = get_longhorn_client().by_id_node(node_name)
                 node = node.diskUpdate(disks=disks)
-                self.wait_for_disk_update(node_name, len(disks))
+                self.wait_for_disk_update(node_name, len(disks), wait)
                 return node
             except Exception as e:
                 logging(f"Failed to update node {node_name} disk: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to update node {node_name} disk {disks}"
 
-    def wait_for_disk_update(self, node_name, disk_num):
+    def wait_for_disk_update(self, node_name, disk_num, wait=True):
         for i in range(self.retry_count):
             node = get_longhorn_client().by_id_node(node_name)
             if len(node.disks) == disk_num:
                 all_updated = True
                 disks = node.disks
                 for d in disks:
+                    if not wait and disks[d]["diskUUID"] == "":
+                        # If wait is not True and the disk has no UUID yet,
+                        # only verify that the 'allowScheduling' field exists.
+                        # NOT wait for the disk to become Ready.
+                        if "allowScheduling" not in disks[d]:
+                            logging(f"Waiting for node {node_name} disk {d} field ... ({i})")
+                            all_updated = False
+                            break
+                        continue
+
                     if disks[d]["diskUUID"] == "" or \
                         (disks[d]["allowScheduling"] and
                         (not disks[d]["conditions"] or
@@ -72,7 +82,7 @@ class Node:
             time.sleep(self.retry_interval)
         assert len(node.disks) == disk_num and all_updated, f"Waiting for node {node_name} disk updated to {disk_num} failed: {disks}"
 
-    def add_disk(self, node_name, disk):
+    def add_disk(self, node_name, disk, wait=True):
         added = False
         for i in range(self.retry_count):
             logging(f"Adding disk {disk} to node {node_name} ... ({i})")
@@ -80,7 +90,7 @@ class Node:
                 node = get_longhorn_client().by_id_node(node_name)
                 disks = node.disks
                 disks.update(disk)
-                self.update_disks(node_name, disks)
+                self.update_disks(node_name, disks, wait)
                 added = True
                 break
             except Exception as e:
@@ -347,14 +357,14 @@ class Node:
                 disk.evictionRequested = evictionRequested
         self.update_disks(node_name, node.disks)
 
-    def set_disk_scheduling(self, node_name, disk_name, allowScheduling):
+    def set_disk_scheduling(self, node_name, disk_name, allowScheduling, wait=True):
         logging(f"Setting node {node_name} disk {disk_name} allowScheduling to {allowScheduling}")
         node = get_longhorn_client().by_id_node(node_name)
 
         for name, disk in iter(node.disks.items()):
             if name == disk_name:
                 disk.allowScheduling = allowScheduling
-        self.update_disks(node_name, node.disks)
+        self.update_disks(node_name, node.disks, wait)
 
     def set_disk_eviction_requested(self, node_name, disk_name, evictionRequested):
         logging(f"Setting node {node_name} disk {disk_name} evictionRequested to {evictionRequested}")
@@ -559,6 +569,33 @@ class Node:
             time.sleep(self.retry_interval)
         assert self.is_disk_unschedulable(node_name, disk_name), f"Waiting for node {node_name} disk {disk_name} unschedulable failed: {get_longhorn_client().by_id_node(node_name)}"
 
+    def wait_disk_kept_unschedulable(self, disk_name, node_name, keep_rounds=constant.DISK_UNSCHEDULABLE_KEEP_ROUNDS):
+        consecutive = 0
+        for i in range(self.retry_count):
+            try:
+                is_unschedulable = self.is_disk_unschedulable(node_name, disk_name)
+            except Exception as e:
+                logging(f"Get disk {disk_name} on node {node_name} failed {e} ... ({i})")
+                time.sleep(self.retry_interval)
+                continue
+
+            logging(f"Checking disk {disk_name} on node {node_name} unschedulable ... ({i}), consecutive={consecutive}")
+            if is_unschedulable:
+                consecutive += 1
+                if consecutive >= keep_rounds:
+                    logging(
+                        f"Disk {disk_name} on node {node_name} kept Unschedulable for {keep_rounds} consecutive rounds"
+                    )
+                    return
+            else:
+                consecutive = 0
+            time.sleep(self.retry_interval)
+
+        raise AssertionError(
+            f"Disk {disk_name} on node {node_name} did not stay Unschedulable for "
+            f"{keep_rounds} consecutive rounds within {self.retry_count} retries"
+        )
+
     def is_disk_file_system_changed(self, node_name, disk_name):
         node = get_longhorn_client().by_id_node(node_name)
         return node["disks"][disk_name]["conditions"]["Ready"]["reason"] == "DiskFilesystemChanged"
@@ -585,3 +622,30 @@ class Node:
             if disk.path == self.DEFAULT_DISK_PATH:
                 return self.get_disk_uuid(node_name, disk_name)
         assert False, f"No disk is using path {self.DEFAULT_DISK_PATH}"
+
+    def delete_disk(self, disk_name, node_name):
+        logging(f"Deleting disk {disk_name} from node {node_name}")
+        node = get_longhorn_client().by_id_node(node_name)
+        disks = {}
+        target_disk_found = False
+
+        for name, disk in node.disks.items():
+            if name == disk_name:
+                target_disk_found = True
+                logging(f"Disk {disk_name} (path={disk.path}) found and will be removed from update list")
+                continue
+
+            disks[name] = {
+                "path": disk.path,
+                "diskType": disk.diskType,
+                "allowScheduling": disk.allowScheduling,
+                "evictionRequested": disk.evictionRequested,
+                "storageReserved": disk.storageReserved,
+                "tags": disk.tags
+            }
+
+        if not target_disk_found:
+            logging(f"Disk {disk_name} not found on node {node_name}, no deletion performed")
+            return node
+
+        return self.update_disks(node_name, disks)

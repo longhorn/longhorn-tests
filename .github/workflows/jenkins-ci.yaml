@@ -18,7 +18,7 @@ jobs:
           PR_JSON=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName,headRepositoryOwner,headRepository -q '.')
 
           BRANCH=$(echo $PR_JSON | jq -r '.headRefName')
-          REPO_URL="https://github.com/$(echo $PR_JSON | jq -r '.headRepositoryOwner.name + "/" + .headRepository.name').git"
+          REPO_URL="https://github.com/$(echo $PR_JSON | jq -r '.headRepositoryOwner.login + "/" + .headRepository.name').git"
 
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
           echo "repo_url=$REPO_URL" >> $GITHUB_OUTPUT
