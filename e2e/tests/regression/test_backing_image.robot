@@ -13,6 +13,9 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/k8s.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/workload.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
