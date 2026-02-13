@@ -53,6 +53,37 @@ Wait for volume of persistentvolumeclaim ${claim_id} detached
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     wait_for_volume_detached    ${volume_name}
 
+Volume of persistentvolumeclaim ${claim_id} should have condition ${condition_type}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${condition} =    get_volume_condition    ${volume_name}    ${condition_type}
+    Should Not Be Equal    ${condition}    ${None}    Volume should have condition ${condition_type}
+
+Volume of persistentvolumeclaim ${claim_id} should not have condition ${condition_type}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${condition} =    get_volume_condition    ${volume_name}    ${condition_type}
+    Should Be Equal    ${condition}    ${None}    Volume should not have condition ${condition_type}
+
+Volume of persistentvolumeclaim ${claim_id} condition ${condition_type} should contain message ${message}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${condition} =    get_volume_condition    ${volume_name}    ${condition_type}
+    Should Not Be Equal    ${condition}    ${None}    Volume should have condition ${condition_type}
+    ${condition_message} =    Get From Dictionary    ${condition}    message
+    Should Contain    ${condition_message}    ${message}
+
+Wait for all replicas of volume of persistentvolumeclaim ${claim_id} WaitForBackingImage status to be ${expected_status}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${expected_bool} =    Evaluate    '${expected_status}'.lower() == 'true'
+    wait_for_all_replicas_wait_for_backing_image_status    ${volume_name}    ${expected_bool}
+
+Wait for volume of persistentvolumeclaim ${claim_id} condition ${condition_name} to be ${condition_status}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}
+
 Delete persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     delete_persistentvolumeclaim    ${claim_name}

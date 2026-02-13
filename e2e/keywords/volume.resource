@@ -245,6 +245,30 @@ Wait for volume ${volume_id} condition ${condition_name} to be ${condition_statu
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
 
+Get volume ${volume_id} condition ${condition_type}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${condition} =    get_volume_condition    ${volume_name}    ${condition_type}
+    [Return]    ${condition}
+
+Volume ${volume_id} should have condition ${condition_type}
+    ${condition} =    Get volume ${volume_id} condition ${condition_type}
+    Should Not Be Equal    ${condition}    ${None}    Volume should have condition ${condition_type}
+
+Volume ${volume_id} should not have condition ${condition_type}
+    ${condition} =    Get volume ${volume_id} condition ${condition_type}
+    Should Be Equal    ${condition}    ${None}    Volume should not have condition ${condition_type}
+
+Volume ${volume_id} condition ${condition_type} should contain message ${message}
+    ${condition} =    Get volume ${volume_id} condition ${condition_type}
+    Should Not Be Equal    ${condition}    ${None}    Volume should have condition ${condition_type}
+    ${condition_message} =    Get From Dictionary    ${condition}    message
+    Should Contain    ${condition_message}    ${message}
+
+Wait for all replicas of volume ${volume_id} WaitForBackingImage status to be ${expected_status}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${expected_bool} =    Evaluate    '${expected_status}'.lower() == 'true'
+    wait_for_all_replicas_wait_for_backing_image_status    ${volume_name}    ${expected_bool}
+
 Wait for volume ${volume_id} cloning to complete
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_clone_status_completed    ${volume_name}
