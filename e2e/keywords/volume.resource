@@ -266,7 +266,7 @@ Volume ${volume_id} condition ${condition_type} should contain message ${message
 
 Wait for all replicas of volume ${volume_id} WaitForBackingImage status to be ${expected_status}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${expected_bool} =    Evaluate    ${expected_status} if isinstance(${expected_status}, bool) else ${expected_status}.lower() == 'true'
+    ${expected_bool} =    Evaluate    '${expected_status}'.lower() == 'true'
     wait_for_all_replicas_wait_for_backing_image_status    ${volume_name}    ${expected_bool}
 
 Wait for volume ${volume_id} cloning to complete

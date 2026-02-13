@@ -76,7 +76,7 @@ Volume of persistentvolumeclaim ${claim_id} condition ${condition_type} should c
 Wait for all replicas of volume of persistentvolumeclaim ${claim_id} WaitForBackingImage status to be ${expected_status}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
-    ${expected_bool} =    Evaluate    ${expected_status} if isinstance(${expected_status}, bool) else ${expected_status}.lower() == 'true'
+    ${expected_bool} =    Evaluate    '${expected_status}'.lower() == 'true'
     wait_for_all_replicas_wait_for_backing_image_status    ${volume_name}    ${expected_bool}
 
 Wait for volume of persistentvolumeclaim ${claim_id} condition ${condition_name} to be ${condition_status}
