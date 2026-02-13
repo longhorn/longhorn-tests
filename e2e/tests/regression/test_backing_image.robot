@@ -161,3 +161,49 @@ Test Node ID Change During Backing Image Creation
     When Wait backimg image bi-large download complete
     And Check backing image bi-large download file checksum matches
     And Verify longhorn manager logs does not contain but the pod became not ready after test start
+
+Test Backing Image Size Mismatch - Volume Size Smaller Than Backing Image
+    [Documentation]    Test that when volume size is smaller than backing image virtual size,
+    ...                the system displays a clear error condition on the volume CR.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/11673
+    ...
+    ...                1. Create a backing image with virtual size of 2.2GB (ubuntu-20.04-minimal-cloudimg-amd64.img)
+    ...                2. Create a StorageClass with this backing image configured
+    ...                3. Create a PVC requesting 2Gi storage (smaller than backing image virtual size)
+    ...                4. Create a Pod using this PVC
+    ...                5. Wait for all replicas' WaitForBackingImage status to become false
+    ...                6. Verify the volume CR contains a condition indicating backing image size mismatch
+    ...                7. Verify the condition message clearly states that volume size is smaller than backing image virtual size
+    ...                8. Verify the volume does not enter attached state
+    Given Create backing image bi-size-test with    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3
+    And Create storageclass sc-bi-size-test with    backingImage=bi-size-test
+    When Create persistentvolumeclaim 0    storage_size=2Gi    sc_name=sc-bi-size-test
+    And Create pod 0 using persistentvolumeclaim 0
+    And Wait for volume of persistentvolumeclaim 0 to be created
+    And Wait for all replicas of volume of persistentvolumeclaim 0 WaitForBackingImage status to be False
+
+    Then Volume of persistentvolumeclaim 0 should have condition scheduled
+    And Volume of persistentvolumeclaim 0 condition scheduled should contain message volume size
+    And Volume of persistentvolumeclaim 0 condition scheduled should contain message backing image
+
+Test Backing Image Size Match - Volume Size Equal To Or Greater Than Backing Image
+    [Documentation]    Test that when volume size is equal to or greater than backing image virtual size,
+    ...                the volume works normally without size mismatch error.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/11673
+    ...
+    ...                1. Create a backing image with virtual size of 2.2GB
+    ...                2. Create a StorageClass with this backing image configured
+    ...                3. Create a PVC requesting 3Gi storage (larger than backing image virtual size)
+    ...                4. Create a Pod using this PVC
+    ...                5. Wait for all replicas' WaitForBackingImage status to become false
+    ...                6. Verify the volume CR does not contain a backing image size mismatch condition
+    ...                7. Verify the volume successfully enters attached state
+    Given Create backing image bi-size-ok with    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3
+    And Create storageclass sc-bi-size-ok with    backingImage=bi-size-ok
+    When Create persistentvolumeclaim 1    storage_size=3Gi    sc_name=sc-bi-size-ok
+    And Create pod 1 using persistentvolumeclaim 1
+    And Wait for volume of persistentvolumeclaim 1 healthy
+
+    Then Volume of persistentvolumeclaim 1 should not have condition scheduled

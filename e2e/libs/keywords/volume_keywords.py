@@ -23,6 +23,7 @@ class volume_keywords:
         self.node = Node()
         self.volume = Volume()
         self.replica = Replica()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def cleanup_volumes(self):
         volumes = self.volume.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
@@ -397,6 +398,38 @@ class volume_keywords:
     def get_volume_size(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['size']
+
+    def get_volume_condition(self, volume_name, condition_type):
+        """Get a specific condition from volume status"""
+        volume = self.volume.get(volume_name)
+        conditions = volume.get('status', {}).get('conditions', [])
+        for condition in conditions:
+            if condition.get('type', '').lower() == condition_type.lower():
+                return condition
+        return None
+
+    def get_replicas_for_volume(self, volume_name):
+        """Get all replicas for a volume"""
+        return self.replica.get(volume_name)
+
+    def check_all_replicas_wait_for_backing_image_status(self, volume_name, expected_status):
+        """Check if all replicas have the expected WaitForBackingImage status"""
+        replicas = self.replica.get(volume_name)
+        for replica in replicas:
+            actual_status = replica.get('status', {}).get('waitForBackingImage', False)
+            if actual_status != expected_status:
+                return False
+        return True
+
+    def wait_for_all_replicas_wait_for_backing_image_status(self, volume_name, expected_status):
+        """Wait for all replicas to have the expected WaitForBackingImage status"""
+        logging(f'Waiting for all replicas of volume {volume_name} to have WaitForBackingImage={expected_status}')
+        for i in range(self.retry_count):
+            if self.check_all_replicas_wait_for_backing_image_status(volume_name, expected_status):
+                logging(f'All replicas of volume {volume_name} have WaitForBackingImage={expected_status}')
+                return
+            time.sleep(self.retry_interval)
+        assert False, f'Failed to wait for all replicas of volume {volume_name} to have WaitForBackingImage={expected_status}'
 
     def get_volume_node_disk_storage_maximum(self, volume_name, node_name):
         replica_list = self.replica.get(volume_name, node_name)
