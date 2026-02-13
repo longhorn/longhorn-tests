@@ -6,6 +6,8 @@ Test Tags    network-disconnect    negative
 Resource    ../keywords/variables.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/deployment.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/common.resource
@@ -49,6 +51,51 @@ Disconnect Volume Node Network For More Than Pod Eviction Timeout While Workload
         Then Check statefulset 0 works
         And Check statefulset 1 works
     END
+
+Test Volume Expansion During Network Disconnect With Volume Type
+    [Arguments]    ${VOLUME_TYPE}
+    [Documentation]    Test volume expansion behavior when attached node network is disconnected during expansion.
+    ...                Supports both RWO and RWX volume types.
+    ...                Related Issue:
+    ...                https://github.com/longhorn/longhorn/issues/1674
+    ...                https://github.com/longhorn/longhorn/issues/5171
+    ...
+    ...                Test Steps:
+    ...                - Create a volume with initial size 5Gi and attach it to a node.
+    ...                - Create a workload using the volume and wait for it to be running.
+    ...                - Write test data to the volume for data integrity verification.
+    ...                - Trigger volume expansion to 10Gi by updating PVC size.
+    ...                - Disconnect network on the node where volume is attached for 100 seconds.
+    ...                - Reconnect network automatically after timeout.
+    ...                - Wait for node to recover and become ready.
+    ...                - Verify volume expansion completes successfully within timeout.
+    ...                - Verify workload does not stuck in Creating state for more than 5 minutes.
+    ...                - Verify volume size is updated to 10Gi.
+    ...                - Verify workload recovers to Running state.
+    ...                - Verify test data integrity is maintained.
+    ...                - Verify filesystem size is expanded to 10Gi.
+    ...
+    ...                Expected Results:
+    ...                - Volume expansion should complete successfully after network recovery.
+    ...                - Workload should recover without getting stuck in Creating state.
+    ...                - No data loss or corruption should occur.
+    ...                - Filesystem should be properly expanded.
+
+    Given Create storageclass longhorn-test with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=${VOLUME_TYPE}    sc_name=longhorn-test    storage_size=5Gi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 512 MB data to file data.txt in deployment 0
+
+    When Expand deployment 0 volume to 10Gi
+    And Disconnect volume node network of deployment 0 for 100 seconds
+    And Wait for volume of deployment 0 attached
+    And Wait for volume of deployment 0 healthy
+
+    Then Wait for deployment 0 volume size expanded
+    And Wait for workloads pods stable    deployment 0
+    And Check deployment 0 data in file data.txt is intact
+    And Assert filesystem size in deployment 0 is 10Gi
 
 *** Test Cases ***
 Disconnect Volume Node Network While Workload Heavy Writing With RWX Fast Failover Enabled
@@ -174,3 +221,13 @@ Node Disconnect With Statefulset
     And Detach volume 0 from attached node
     And Wait for volume 0 detached
     Then Wait for volume 0 detached
+
+Test Volume Expansion During Network Disconnect With RWO Volume
+    [Tags]    expansion    rwo
+    [Documentation]    Test RWO volume expansion behavior when attached node network is disconnected during expansion.
+    Test Volume Expansion During Network Disconnect With Volume Type    RWO
+
+Test Volume Expansion During Network Disconnect With RWX Volume
+    [Tags]    expansion    rwx
+    [Documentation]    Test RWX volume expansion behavior when share-manager node network is disconnected during expansion.
+    Test Volume Expansion During Network Disconnect With Volume Type    RWX
