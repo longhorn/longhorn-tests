@@ -61,6 +61,11 @@ class Rest(Base):
     def get(self, bi_name):
         return get_longhorn_client().by_id_backing_image(bi_name)
 
+    def get_virtual_size(self, bi_name):
+        """Get the virtual size of a backing image"""
+        bi = self.get(bi_name)
+        return getattr(bi, 'virtualSize', None) if bi else None
+
     def all_disk_file_status_are_ready(self, bi_name):
         bi = self.get(bi_name)
         assert len(bi.diskFileStatusMap) == 3, f"expect backing images on all disks, but it's {bi.diskFileStatusMap}"

@@ -30,6 +30,10 @@ class BackingImage(Base):
     def get(self, bi_name):
         return self.backing_image.get(bi_name)
 
+    def get_virtual_size(self, bi_name):
+        """Get the virtual size of a backing image"""
+        return self.backing_image.get_virtual_size(bi_name)
+
     def all_disk_file_status_are_ready(self, bi_name):
         return self.backing_image.all_disk_file_status_are_ready(bi_name)
 

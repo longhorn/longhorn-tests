@@ -98,3 +98,6 @@ class backing_image_keywords:
 
     def get_backing_image_checksum(self, bi_name):
         return self.backing_image.get_backing_image_checksum(bi_name)
+
+    def get_backing_image_virtual_size(self, bi_name):
+        return self.backing_image.get_virtual_size(bi_name)
