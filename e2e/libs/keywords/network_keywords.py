@@ -13,9 +13,9 @@ from workload.pod import wait_for_pod_status
 
 class network_keywords:
 
-    def setup_control_plane_network_latency(self):
-        logging(f"Setting up control plane network latency")
-        setup_control_plane_network_latency()
+    def setup_control_plane_network_latency(self, latency_in_ms):
+        logging(f"Setting up control plane network latency to {latency_in_ms} ms")
+        setup_control_plane_network_latency(int(latency_in_ms))
 
     def cleanup_control_plane_network_latency(self):
         logging(f"Cleaning up control plane network latency")

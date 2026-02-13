@@ -237,7 +237,6 @@ class Node:
         Node.all_nodes = sorted(filter_nodes(nodes, lambda node: True))
 
         control_plane_labels = {
-            "node-role.kubernetes.io/master": ["true"],
             "node-role.kubernetes.io/control-plane": ["true", ""],
             "talos.dev/owned-labels": ["[\"node-role.kubernetes.io/control-plane\"]"]
         }

@@ -9,9 +9,7 @@ spec:
   nodeSelector:
     matchExpressions:
     - key: node-role.kubernetes.io/control-plane
-      operator: In
-      values:
-      - "true"
+      operator: Exists
   serviceAccountName: system-upgrade
   tolerations:
   - key: "node-role.kubernetes.io/control-plane"
