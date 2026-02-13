@@ -79,6 +79,11 @@ Wait for all replicas of volume of persistentvolumeclaim ${claim_id} WaitForBack
     ${expected_bool} =    Evaluate    ${expected_status} if isinstance(${expected_status}, bool) else ${expected_status}.lower() == 'true'
     wait_for_all_replicas_wait_for_backing_image_status    ${volume_name}    ${expected_bool}
 
+Wait for volume of persistentvolumeclaim ${claim_id} condition ${condition_name} to be ${condition_status}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}
+
 Delete persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     delete_persistentvolumeclaim    ${claim_name}
