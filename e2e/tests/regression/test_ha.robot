@@ -19,7 +19,7 @@ Test Teardown    Cleanup test resources
 Disrupt Data Plane Traffic For Less Than Long Engine Replica Timeout
     Given Setting engine-replica-timeout is set to {"v1":"15","v2":"15"}
     And Setting auto-salvage is set to false
-    And Create storageclass longhorn-test with    dataEngine=v1
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create statefulset 0 using RWO volume with longhorn-test storageclass
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Drop instance-manager egress traffic of statefulset 0 for 25 seconds without waiting for completion
