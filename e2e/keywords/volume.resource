@@ -560,6 +560,10 @@ Upgrade volume ${volume_id} engine to ${custom_engine_image}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
 
+Wait for volume ${volume_id} engine to be upgraded to ${custom_engine_image}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
 Verify volume ${volume_id} is using engine image ${custom_engine_image}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}

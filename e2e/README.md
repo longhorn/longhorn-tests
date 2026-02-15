@@ -3,9 +3,8 @@
 ### Requirement
 
 1. A Kubernetes cluster with 3 worker nodes.
-   - And control node(s) with following taints:
-      - `node-role.kubernetes.io/master=true:NoExecute`
-      - `node-role.kubernetes.io/master=true:NoSchedule` 
+   - And control node(s) with following taint:
+      - `node-role.kubernetes.io/control-plane:NoSchedule`
 1. Longhorn system has already been successfully deployed in the cluster.
 1. Run the environment check script to check if each node in the cluster fulfills the requirements:
 ```
