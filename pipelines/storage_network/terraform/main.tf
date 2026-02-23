@@ -207,6 +207,28 @@ resource "aws_instance" "aws_instance" {
   }
 }
 
+resource "aws_ebs_volume" "lh_aws_ssd_volume" {
+
+  count = var.aws_instance_count
+
+  availability_zone = "us-east-1c"
+  size              = var.block_device_size_worker
+  type              = "gp2"
+
+  tags = {
+    Name = "lh-aws-ssd-volume-${count.index}-${random_string.random_suffix.id}"
+    Owner = var.resources_owner
+  }
+}
+
+resource "aws_volume_attachment" "lh_aws_ssd_volume_att" {
+  count = var.aws_instance_count
+  device_name  = "/dev/xvdh"
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
+  instance_id  = aws_instance.aws_instance[count.index].id
+  force_detach = true
+}
+
 resource "aws_network_interface" "instance_eth1" {
   depends_on = [
     aws_subnet.aws_subnet_1,
