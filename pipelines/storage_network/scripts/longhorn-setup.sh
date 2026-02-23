@@ -14,6 +14,7 @@ source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
 source pipelines/utilities/longhorn_status.sh
 source pipelines/utilities/longhorn_ui.sh
+source pipelines/utilities/longhornctl.sh
 if [[ ${TEST_TYPE} == "robot" ]]; then
   source pipelines/utilities/run_longhorn_e2e_test.sh
 else
@@ -55,6 +56,8 @@ main(){
 
   patch_coredns_ipv6_name_servers
   scale_up_coredns
+
+  longhornctl_check
 
   create_longhorn_namespace
   install_backupstores
