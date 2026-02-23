@@ -17,6 +17,10 @@ Test Teardown    Cleanup test resources
 Test System Upgrade with New Instance Manager
     # Test case only work in 2 stage upgrade scenario due to
     # maximum value of guaranteed-instance-manager-cpu is 40
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volume doesn't support live upgrade
+    END
+
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Fail    Environment variable LONGHORN_STABLE_VERSION is not set

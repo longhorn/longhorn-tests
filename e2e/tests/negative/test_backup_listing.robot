@@ -81,7 +81,11 @@ Perform backup 1001 times for deployment 0 volume
         IF    ${i} % 100 == 0
             ${workload_name}=   generate_name_with_suffix    deployment    0
             ${volume_name}=    get_workload_volume_name    ${workload_name}
-            purge_snapshot    ${volume_name}
+            IF    '${DATA_ENGINE}' == 'v2'
+                purge_snapshot    ${volume_name}    wait=${False}
+            ELSE
+                purge_snapshot    ${volume_name}
+            END
         END
         Verify backup list contains backup no error for deployment 0 volume
         Verify backup ${i} count for deployment 0 volume
@@ -127,8 +131,9 @@ Pod ${pod_id} data should same as volume ${source_volume_id} backup ${backup_id}
 Backup Listing With More Than 1000 Backups
     [Tags]  manual  longhorn-8355    snapshot-purge
     [Documentation]    Test backup listing
-    Given Create persistentvolumeclaim 0    volume_type=RWO
-    And Create deployment 0 with persistentvolumeclaim 0
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    When Create deployment 0 with persistentvolumeclaim 0
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume
     Then Create volume 1 from deployment 0 volume random backup
@@ -140,7 +145,8 @@ Backup Listing With More Than 1000 Backups
 Backup Listing Of Volume Bigger Than 200 Gi
     [Tags]  manual  longhorn-8355  large-size
     [Documentation]    Test backup bigger than 200 Gi
-    Given Create persistentvolumeclaim 0    volume_type=RWO
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Write data to file in deployment 0
     Then Perform backup 1001 times for deployment 0 volume
