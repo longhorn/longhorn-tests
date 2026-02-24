@@ -3,6 +3,7 @@ Documentation       Common keywords
 
 Library             Collections
 Library             OperatingSystem
+Library             String
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/deployment_keywords.py
 Library             ../libs/keywords/network_keywords.py
