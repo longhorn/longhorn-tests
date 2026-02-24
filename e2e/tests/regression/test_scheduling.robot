@@ -387,3 +387,35 @@ Test Storageclass Allowed Topologies
     And Run command and expect output
     ...    kubectl get volumes -n longhorn-system -ojsonpath='{.items[0].spec.nodeID}'
     ...    ${NODE_2}
+
+Test Scheduling Replicas To Different Disks On The Same Node
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12653
+    ...    1. Enable replica-soft-anti-affinity
+    ...    2. Disable replica-disk-soft-anti-affinity
+    ...    3. Create a single-node cluster where a single node has 2 separate disks with the same size (e.g., 1GiB Disk A and Disk B)
+    ...    4. Create a 900MiB volume with 2 replicas. The scheduler attempts to place Replica-1 on Disk A and Replica-2 on Disk B (same Node)
+    ...    5. Replica-1 is scheduled successfully on Disk A, and Replica-2 is scheduled successfully on Disk B, the scheduler doesn't throw an insufficient storage error
+    Given Setting replica-soft-anti-affinity is set to true
+    And Setting replica-disk-soft-anti-affinity is set to false
+
+    ${suffix_0}=    Generate Random String    4    [LOWER][NUMBERS]
+    ${suffix_1}=    Generate Random String    4    [LOWER][NUMBERS]
+    IF    "${DATA_ENGINE}" == "v1"
+        And Create 1 Gi filesystem type disk local-disk-${suffix_0} on node 0
+        And Create 1 Gi filesystem type disk local-disk-${suffix_1} on node 0
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        And Create 1 Gi block type disk local-disk-${suffix_0} on node 0
+        And Create 1 Gi block type disk local-disk-${suffix_1} on node 0
+    END
+    And Disable disk block-disk scheduling on node 0
+    And Disable node 0 default disk
+    And Disable node 1 scheduling
+    And Disable node 2 scheduling
+
+    When Create storageclass two-replicas with    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with two-replicas storageclass and size 900 Mi
+    Then Wait for volume of statefulset 0 healthy
+    And Check volume of statefulset 0 replica on node 0 disk local-disk-${suffix_0}
+    And Check volume of statefulset 0 replica on node 0 disk local-disk-${suffix_1}
+    And Write 500 MB data to file data.bin in statefulset 0
+    And Check statefulset 0 data in file data.bin is intact
