@@ -29,7 +29,6 @@ Storage Network Should Not Restart Migratable RWX Volume Workload Pods
     ...                Issue: https://github.com/longhorn/longhorn/issues/11158
     ...
     ...                Precondition: Storage network configured.
-
     Given Setting endpoint-network-for-rwx-volume is set to kube-system/demo-192-168-0-0
     And Wait for Longhorn workloads pods stable
         ...    longhorn-csi-plugin

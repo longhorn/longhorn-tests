@@ -153,22 +153,20 @@ Test Longhorn Dynamic Provisioned RWX Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.
     ...                    Delete the Share-manager pod and verify the RWX volume is able recover. Verify the data too.
-    IF    '${DATA_ENGINE}' == 'v1'
-        When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
-        And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
-        And Create deployment 0 with persistentvolumeclaim 0
-        And Write 2048 MB data to file data.txt in deployment 0
-        Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
+    When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Write 2048 MB data to file data.txt in deployment 0
+    Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
-        When Delete replica of deployment 0 volume on replica node
-        And Wait until volume of deployment 0 replica rebuilding started on replica node
-        Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
+    When Delete replica of deployment 0 volume on replica node
+    And Wait until volume of deployment 0 replica rebuilding started on replica node
+    Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
-        When Delete sharemanager pod of deployment 0 and wait for recreation
-        And Wait for sharemanager pod of deployment 0 running
-        And Wait for deployment 0 pods stable
-        And Check deployment 0 data in file data.txt is intact
-    END
+    When Delete sharemanager pod of deployment 0 and wait for recreation
+    And Wait for sharemanager pod of deployment 0 running
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 data in file data.txt is intact
 
 Test Longhorn Dynamic Provisioned RWO Volume Recovery
     [Documentation]    -- Manual test plan --

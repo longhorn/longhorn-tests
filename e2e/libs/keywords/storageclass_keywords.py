@@ -7,9 +7,9 @@ class storageclass_keywords:
     def __init__(self):
         self.storageclass = StorageClass()
 
-    def create_storageclass(self, name, numberOfReplicas=None, migratable=None, dataLocality=None, fromBackup=None, nfsOptions=None, dataEngine=None, encrypted=None, recurringJobSelector=None, volumeBindingMode=None, allowedTopologies=None):
+    def create_storageclass(self, name, numberOfReplicas=None, migratable=None, dataLocality=None, fromBackup=None, nfsOptions=None, dataEngine=None, encrypted=None, recurringJobSelector=None, volumeBindingMode=None, allowedTopologies=None, backingImage=None):
         logging(f'Creating storageclass with {locals()}')
-        self.storageclass.create(name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies)
+        self.storageclass.create(name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage)
 
     def cleanup_storageclasses(self):
         self.storageclass.cleanup()

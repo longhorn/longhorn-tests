@@ -256,7 +256,7 @@ class CRD(Base):
                 is_created = True
                 break
             time.sleep(RETRY_INTERVAL)
-        assert is_created
+        assert is_created, f"Failed to create recurring job {job_name}"
 
     def wait_for_systembackup_state(self, job_name, expected_state):
         for i in range(self.retry_count):

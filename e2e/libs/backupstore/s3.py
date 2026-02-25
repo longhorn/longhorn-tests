@@ -59,13 +59,13 @@ class S3(Base):
 
     def get_backupstore_bucket_name(self):
         backupstore = self.backup_target
-        assert self.is_backupTarget_s3(backupstore)
+        assert self.is_backupTarget_s3(backupstore), f"Backupstore {backupstore} is not S3"
         bucket_name = urlparse(backupstore).netloc.split('@')[0]
         return bucket_name
 
     def get_backupstore_path(self):
         backupstore = self.backup_target
-        assert self.is_backupTarget_s3(backupstore)
+        assert self.is_backupTarget_s3(backupstore), f"Backupstore {backupstore} is not S3"
         backupstore_path = urlparse(backupstore).path.split('$')[0].strip("/")
         return backupstore_path
 
@@ -119,7 +119,7 @@ class S3(Base):
 
     def write_backup_cfg_file(self, volume_name, backup_name, backup_cfg_data): # NOQA
         secret_name = self.secret
-        assert secret_name != ''
+        assert secret_name != '', f"Secret name is empty for writing backup config file"
 
         minio_api = self.get_api_client(secret_name)
         bucket_name = self.get_backupstore_bucket_name()
@@ -158,7 +158,7 @@ class S3(Base):
 
     def delete_backup_cfg_file(self, volume_name, backup_name):
         secret_name = self.secret
-        assert secret_name != ''
+        assert secret_name != '', f"Secret name is empty for deleting backup config file"
 
         minio_api = self.get_api_client(secret_name)
         bucket_name = self.get_backupstore_bucket_name()
@@ -172,7 +172,7 @@ class S3(Base):
 
     def delete_volume_cfg_file(self, volume_name):
         secret_name = self.secret
-        assert secret_name != ''
+        assert secret_name != '', f"Secret name is empty for deleting volume config file"
 
         minio_api = self.get_api_client(secret_name)
         bucket_name = self.get_backupstore_bucket_name()
@@ -185,7 +185,7 @@ class S3(Base):
 
     def delete_random_backup_block(self, volume_name):
         secret_name = self.secret
-        assert secret_name != ''
+        assert secret_name != '', f"Secret name is empty for deleting random backup block"
 
         minio_api = self.get_api_client(secret_name)
 
@@ -205,7 +205,7 @@ class S3(Base):
 
     def count_backup_block_files(self, volume_name):
         secret_name = self.secret
-        assert secret_name != ''
+        assert secret_name != '', f"Secret name is empty for counting backup block files"
 
         minio_api = self.get_api_client(secret_name)
         bucket_name = self.get_backupstore_bucket_name()

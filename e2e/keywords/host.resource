@@ -19,8 +19,11 @@ Reboot volume ${volume_id} replica node
     ${node_name} =    get_replica_node    ${volume_name}
     reboot_node_by_name    ${node_name}
 
-Reboot node ${idx}
-    reboot_node_by_index    ${idx}
+Reboot node ${node_id}
+    [Documentation]    Reboot a node by its index.
+    ...                Node will be rebooted with default 1 minute downtime.
+    ...                Example: Reboot node 0
+    reboot_node_by_index    ${node_id}
 
 Restart all worker nodes
     reboot_all_worker_nodes
@@ -53,8 +56,10 @@ Power off volume ${volume_id} replica node without waiting
     Append to list    ${powered_off_nodes}    ${powered_off_node}
     power_off_node_by_name    ${node_name}    waiting=False
 
-Power off node ${idx} for ${power_off_time_in_min} mins
-    reboot_node_by_index    ${idx}    ${power_off_time_in_min}
+Power off node ${node_id} for ${power_off_time_in_min} mins
+    [Documentation]    Power off a node for specified duration in minutes.
+    ...                Example: Power off node 0 for 6 mins
+    reboot_node_by_index    ${node_id}    ${power_off_time_in_min}
 
 Power off all worker nodes for ${power_off_time_in_min} mins
     reboot_all_worker_nodes    ${power_off_time_in_min}
@@ -91,6 +96,28 @@ Run command on node
     [Arguments]    ${node_id}    ${command}
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node    ${command}    ${node_name}
+
+Run command on node ${node_id} and not expect output
+    [Arguments]    ${command}    ${unexpected_output}
+    ${node_name} =    get_node_by_index    ${node_id}
+    execute_command_on_node_and_not_expect_output    ${command}    ${node_name}    ${unexpected_output}
+
+Run command on node ${node_id} and wait for output
+    [Arguments]    ${command}    ${expected_output}
+    ${node_name} =    get_node_by_index    ${node_id}
+    execute_command_on_node_and_wait_for_output    ${command}    ${node_name}    ${expected_output}
+
+Run command on node ${node_id} and get output
+    [Arguments]    ${command}    ${expected_output}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${result} =    execute_command_on_node_and_get_output    ${command}    ${node_name}    ${expected_output}
+    RETURN    ${result}
+
+Run command on node ${node_id} and get output string
+    [Arguments]    ${command}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
+    RETURN    ${result}
 
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}

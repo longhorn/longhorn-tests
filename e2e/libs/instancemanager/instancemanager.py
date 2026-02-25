@@ -70,12 +70,16 @@ class InstanceManager:
             logging(f"Checking v1 instance managers {v1_im_names} have recreated")
 
             for im_name in v1_im_names:
-                pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
-                creation_time = pod.metadata.creation_timestamp
-                if creation_time > baseline_time:
-                    recreated.append(im_name)
-                else:
-                    logging(f"Instance manager {im_name} not recreated")
+                try:
+                    pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
+                    creation_time = pod.metadata.creation_timestamp
+                    if creation_time > baseline_time:
+                        recreated.append(im_name)
+                    else:
+                        logging(f"Instance manager {im_name} not recreated")
+                except Exception as e:
+                    logging(f"Checking instance manager existence error: {e}")
+                    continue
 
             if len(recreated) == len(v1_im_names):
                 logging(f"All instance-manager pods have restarted")
@@ -83,7 +87,6 @@ class InstanceManager:
             time.sleep(retry_interval)
 
         assert False, f"Instance managers never recreated after {retry_count} attempts"
-
     def check_all_instance_managers_not_restart(self):
 
         ims = get_longhorn_client().list_instance_manager()

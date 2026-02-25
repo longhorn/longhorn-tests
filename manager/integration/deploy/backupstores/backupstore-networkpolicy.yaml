@@ -23,6 +23,9 @@ spec:
     - podSelector:
         matchLabels:
           longhorn-test: test-job  # Matches the specific label of the longhorn-test pod
+  - from:
+    - ipBlock:
+        cidr: "::/0"
     ports:
     - protocol: TCP
       port: 2049 # NFS port
@@ -54,6 +57,9 @@ spec:
     - podSelector:
         matchLabels:
           longhorn-test: test-job  # Matches the specific label of the longhorn-test pod
+  - from:
+    - ipBlock:
+        cidr: "::/0"
     ports:
     - protocol: TCP
       port: 9000 # MinIO API port

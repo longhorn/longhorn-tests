@@ -18,6 +18,7 @@ class Node:
 
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
+    DEFAULT_BLOCK_DISK_NAME = "block-disk"
 
     all_nodes = None
     control_plane_nodes = None
@@ -97,17 +98,19 @@ class Node:
             time.sleep(self.retry_interval)
         assert added, f"Adding disk {disk} to node {node_name} failed"
 
-    def reset_disks(self, node_name):
-        node = get_longhorn_client().by_id_node(node_name)
+    def reset_disks(self, node_name, data_engine="v1", default_block_disk_path=None):
+        client = get_longhorn_client()
+        node = client.by_id_node(node_name)
 
         disks = {}
         # copy Longhorn RestObject into a normal Python dict
         # otherwise we got TypeError: 'RestObject' object does not support item assignment
         for disk_name, disk in node.disks.items():
+            allow_sched = disk.path == self.DEFAULT_DISK_PATH or disk_name == self.DEFAULT_BLOCK_DISK_NAME
             disks[disk_name] = {
                 "path": disk.path,
                 "diskType": disk.diskType,
-                "allowScheduling": disk.allowScheduling,
+                "allowScheduling": allow_sched,
             }
 
         # add default back if not exist
@@ -119,11 +122,27 @@ class Node:
                 "diskType": "filesystem",
                 "allowScheduling": True
             }
-            logging(f"updating node {node_name} with {disks}")
+
+        # add block disk back if not exist
+        if data_engine == "v2" and not any(disk.get("path") == default_block_disk_path for disk in disks.values()):
+            setting = client.by_id_setting("v2-data-engine")
+            client.update(setting, value="true")
+            logging(f"Block disk {self.DEFAULT_BLOCK_DISK_NAME} not found on node {node_name}, re-adding it for v2")
+
+            disks[self.DEFAULT_BLOCK_DISK_NAME] = {
+                "diskType": "block",
+                "path": default_block_disk_path,
+                "allowScheduling": True,
+            }
+
+        if disks:
+            # update all disks at once
+            logging(f"Updating node {node_name} with disks: {disks}")
             node = self.update_disks(node_name, disks)
 
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path != self.DEFAULT_DISK_PATH:
+            # do not disable block-disk if v2 data engine enabled
+            if disk.path != self.DEFAULT_DISK_PATH and not (data_engine == "v2" and disk_name == self.DEFAULT_BLOCK_DISK_NAME):
                 disk.allowScheduling = False
                 logging(f"Disabling scheduling disk {disk_name} on node {node_name}")
             else:
@@ -133,7 +152,8 @@ class Node:
 
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            # do not delete block-disk if v2 data engine enabled
+            if disk.path == self.DEFAULT_DISK_PATH or (data_engine == "v2" and disk_name == self.DEFAULT_BLOCK_DISK_NAME):
                 disks[disk_name] = disk
                 disk.allowScheduling = True
                 logging(f"Keeping disk {disk_name} on node {node_name}")

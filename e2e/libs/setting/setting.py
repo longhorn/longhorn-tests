@@ -64,7 +64,7 @@ class Setting:
     def get_setting(self, key):
         return get_longhorn_client().by_id_setting(key).value
 
-    def reset_settings(self):
+    def reset_settings(self, data_engine="v1"):
         client = get_longhorn_client()
         for setting in client.list_setting():
             setting_name = setting.name
@@ -100,6 +100,15 @@ class Setting:
                 continue
 
             if setting_name == "registry-secret":
+                continue
+
+            if data_engine == "v2" and setting_name == "v2-data-engine":
+                try:
+                    s = client.by_id_setting(setting_name)
+                    client.update(s, value="true")
+                    logging(f"Set {setting_name} to true because data_engine is v2")
+                except Exception as e:
+                    logging(f"Failed to set {setting_name} to true: {e}")
                 continue
 
             s = client.by_id_setting(setting_name)

@@ -110,6 +110,10 @@ Test Strict Local Volume Disabled Revision Counter By Default
     ...    1. Set the global setting disable-revision-counter to false
     ...    2. Create a volume with 1 replica and strict-local data locality
     ...    3. See that the revisionCounterDisabled: true for volume/engine/replica CRs
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Setting disable-revision-counter is not supported for v2 data engine
+    END
+
     Given Setting disable-revision-counter is set to {"v1":"false"}
 
     When Create volume 0 with    numberOfReplicas=1    dataLocality=strict-local

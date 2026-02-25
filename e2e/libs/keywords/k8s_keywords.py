@@ -22,6 +22,7 @@ from k8s.k8s import patch_longhorn_component_resources_limit
 from k8s.k8s import get_longhorn_component_resources_limit
 from k8s.k8s import remove_longhorn_component_resources_limit
 from k8s.k8s import verify_pod_log_after_time_not_contains
+from k8s.k8s import is_namespaced_pods_all_running
 
 from node import Node
 
@@ -149,3 +150,6 @@ class k8s_keywords:
         for pod in pods:
             result.append(pod.metadata.name)
         return result
+
+    def is_namespaced_pods_all_running(self, namespace):
+        return is_namespaced_pods_all_running(namespace)

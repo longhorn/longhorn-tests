@@ -97,6 +97,10 @@ Test Concurrent Job Limit For Snapshot Purge
     ...    -H 'Accept: application/json'
     ...    9. It fails with an error: cannot start snapshot purge: concurrent snapshot purge limit reached
     ...    10. Once the snapshot deletion is complete, execute the curl request again. It should succeed
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volume not support snapshot purge now
+    END
+
     Given Setting snapshot-heavy-task-concurrent-limit is set to 1
     And Setting disable-snapshot-purge is set to false
     And Create volume 0    dataEngine=v1

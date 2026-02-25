@@ -12,5 +12,5 @@ class setting_keywords:
     def get_setting(self, key):
         return self.setting.get_setting(key)
 
-    def reset_settings(self):
-        self.setting.reset_settings()
+    def reset_settings(self, data_engine="v1"):
+        self.setting.reset_settings(data_engine)
