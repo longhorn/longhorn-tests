@@ -60,17 +60,20 @@ Test Replica Auto Balance Disk In Pressure
     ...    space. Replicas should not be rebuilt at the same time.
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/4105
+    ${DISK0}=    Generate random disk name
+    ${DISK1}=    Generate random disk name
+
     Given Setting replica-soft-anti-affinity is set to false
     And Setting replica-auto-balance-disk-pressure-percentage is set to 80
 
     IF    "${DATA_ENGINE}" == "v1"
-        And Create 1 Gi filesystem type disk local-disk-0 on node 0
-        And Create 1 Gi filesystem type disk local-disk-1 on node 0
+        And Create 1 Gi filesystem type disk ${DISK0} on node 0
+        And Create 1 Gi filesystem type disk ${DISK1} on node 0
     ELSE IF    "${DATA_ENGINE}" == "v2"
-        And Create 1 Gi block type disk local-disk-0 on node 0
-        And Create 1 Gi block type disk local-disk-1 on node 0
+        And Create 1 Gi block type disk ${DISK0} on node 0
+        And Create 1 Gi block type disk ${DISK1} on node 0
     END
-    And Disable disk local-disk-1 scheduling on node 0
+    And Disable disk ${DISK1} scheduling on node 0
     And Disable disk block-disk scheduling on node 0
     And Disable node 0 default disk
     And Disable node 1 scheduling
@@ -81,24 +84,24 @@ Test Replica Auto Balance Disk In Pressure
     And Create statefulset 0 using RWO volume with one-replica storageclass and size 316 Mi
     And Create statefulset 1 using RWO volume with one-replica storageclass and size 316 Mi
     And Create statefulset 2 using RWO volume with one-replica storageclass and size 316 Mi
-    And Check volume of statefulset 0 replica on node 0 disk local-disk-0
-    And Check volume of statefulset 1 replica on node 0 disk local-disk-0
-    And Check volume of statefulset 2 replica on node 0 disk local-disk-0
+    And Check volume of statefulset 0 replica on node 0 disk ${DISK0}
+    And Check volume of statefulset 1 replica on node 0 disk ${DISK0}
+    And Check volume of statefulset 2 replica on node 0 disk ${DISK0}
 
     # Write 950 Mi * 80% / 3 = 254 Mi data to disk 0 to make it in pressure
     And Write 254 MB data to file data.bin in statefulset 0
     And Write 254 MB data to file data.bin in statefulset 1
     And Write 254 MB data to file data.bin in statefulset 2
-    And Check node 0 disk local-disk-0 is in pressure
+    And Check node 0 disk ${DISK0} is in pressure
 
-    When Enable disk local-disk-1 scheduling on node 0
+    When Enable disk ${DISK1} scheduling on node 0
     And Setting replica-auto-balance is set to best-effort
 
     # auto balance should happen
-    Then Check node 0 disk local-disk-0 is not in pressure
-    And Check node 0 disk local-disk-1 is not in pressure
-    And There should be running replicas on node 0 disk local-disk-0
-    And There should be running replicas on node 0 disk local-disk-1
+    Then Check node 0 disk ${DISK0} is not in pressure
+    And Check node 0 disk ${DISK1} is not in pressure
+    And There should be running replicas on node 0 disk ${DISK0}
+    And There should be running replicas on node 0 disk ${DISK1}
 
     And Wait for volume of statefulset 0 healthy
     And Wait for volume of statefulset 1 healthy
@@ -114,17 +117,18 @@ Test Replica Auto Balance Disk In Pressure With Stopped Volume Should Not Block
     ...    pressure.
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/10837
-
     Given Setting replica-soft-anti-affinity is set to false
 
+    ${DISK0}=    Generate random disk name
+    ${DISK1}=    Generate random disk name
     IF    "${DATA_ENGINE}" == "v1"
-        And Create 1 Gi filesystem type disk local-disk-0 on node 0
-        And Create 1 Gi filesystem type disk local-disk-1 on node 0
+        And Create 1 Gi filesystem type disk ${DISK0} on node 0
+        And Create 1 Gi filesystem type disk ${DISK1} on node 0
     ELSE IF    "${DATA_ENGINE}" == "v2"
-        And Create 1 Gi block type disk local-disk-0 on node 0
-        And Create 1 Gi block type disk local-disk-1 on node 0
+        And Create 1 Gi block type disk ${DISK0} on node 0
+        And Create 1 Gi block type disk ${DISK1} on node 0
     END
-    And Disable disk local-disk-1 scheduling on node 0
+    And Disable disk ${DISK1} scheduling on node 0
     And Disable disk block-disk scheduling on node 0
     And Disable node 0 default disk
     And Disable node 1 scheduling
@@ -151,14 +155,14 @@ Test Replica Auto Balance Disk In Pressure With Stopped Volume Should Not Block
 
     # Enable auto-balance under disk pressure
     And Setting replica-auto-balance-disk-pressure-percentage is set to 70
-    And Enable disk local-disk-1 scheduling on node 0
+    And Enable disk ${DISK1} scheduling on node 0
     And Setting replica-auto-balance is set to best-effort
 
     # The running replica (bbb) should be auto-balanced to disk 1,
     # ignoring the stopped volume (aaa).
-    Then Check node 0 disk local-disk-1 is not in pressure
-    And There should be 1 replicas of volume aaa on node 0 disk local-disk-0
-    And There should be 1 replicas of volume bbb on node 0 disk local-disk-1
+    Then Check node 0 disk ${DISK1} is not in pressure
+    And There should be 1 replicas of volume aaa on node 0 disk ${DISK0}
+    And There should be 1 replicas of volume bbb on node 0 disk ${DISK1}
 
     And Wait for volume bbb healthy
     And Check volume bbb data is intact
@@ -335,21 +339,23 @@ Test No Transient Error In Engine Status During Eviction
     ...    3. Evicting the old disk for node. Verify that there is no transient error in
     ...       engine Status during evictionKeep monitoring the engine YAML.
     ...       e.g., watch -n "kubectl -n longhorn-system get lhe <engine name>".
+    ${DISK0}=    Generate random disk name
+
     Given Create volume 0    size=256Mi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 1
     And Wait for volume 0 healthy
 
     IF    "${DATA_ENGINE}" == "v1"
-        When Create 1 Gi filesystem type disk local-disk-0 on node 0
+        When Create 1 Gi filesystem type disk ${DISK0} on node 0
         And Disable node 0 default disk
         And Request eviction on default disk of node 0
-        Then There should be 1 replicas of volume 0 on node 0 disk local-disk-0
+        Then There should be 1 replicas of volume 0 on node 0 disk ${DISK0}
         And There should be no replica of volume 0 on node 0 disk default
     ELSE IF    "${DATA_ENGINE}" == "v2"
-        When Create 1 Gi block type disk local-disk-0 on node 0
+        When Create 1 Gi block type disk ${DISK0} on node 0
         And Disable disk block-disk scheduling on node 0
         And Request eviction on disk block-disk of node 0
-        Then There should be 1 replicas of volume 0 on node 0 disk local-disk-0
+        Then There should be 1 replicas of volume 0 on node 0 disk ${DISK0}
         And There should be no replica of volume 0 on node 0 disk block-disk
     END
 
