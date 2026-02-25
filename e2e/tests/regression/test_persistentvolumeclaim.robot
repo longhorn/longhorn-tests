@@ -22,7 +22,7 @@ ${RETRY_INTERVAL}    1
 *** Test Cases ***
 
 Test PersistentVolumeClaim Expand More Than Storage Maximum Size Should Fail
-    [Tags]    volume    volume-expansion
+    [Tags]    expansion
     [Documentation]    Verify that a PersistentVolumeClaim cannot be expanded beyond
     ...                the storage maximum size.
     ...

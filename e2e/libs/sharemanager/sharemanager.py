@@ -1,31 +1,24 @@
-from strategy import LonghornOperationStrategy
+from datetime import datetime
+import time
+import json
 
-from sharemanager.base import Base
-from sharemanager.crd import CRD
-from sharemanager.rest import Rest
+from workload.pod import delete_pod, get_pod
+from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 
 
-class ShareManager(Base):
-
-    _strategy = LonghornOperationStrategy.CRD
+class ShareManager:
 
     def __init__(self):
-        if self._strategy == LonghornOperationStrategy.CRD:
-            self.sharemanager = CRD()
-        else:
-            self.sharemanager = Rest()
-
-    def list(self):
-        return self.sharemanager.list()
-
-    def delete(self, name):
-        return self.sharemanager.delete(name)
-
-    def wait_for_running(self, name):
-        return self.sharemanager.wait_for_running(name)
+        pass
 
     def get(self, name):
-        return self.sharemanager.get(name)
+        return get_pod(name, constant.LONGHORN_NAMESPACE)
 
-    def wait_for_restart(self, name, last_creation_time):
-        return self.sharemanager.wait_for_restart(name, last_creation_time)
+    def list(self):
+        cmd = f"kubectl -n {constant.LONGHORN_NAMESPACE} get pod -l longhorn.io/component=share-manager -o json"
+        output = json.loads(subprocess_exec_cmd(cmd, verbose=False))
+        return output.get('items', [])
+
+    def delete(self, name):
+        return delete_pod(name, constant.LONGHORN_NAMESPACE)
