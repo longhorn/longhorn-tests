@@ -1,121 +1,113 @@
 import time
 
-from service.service import is_services_headless
-
 from sharemanager import ShareManager
-from sharemanager.constant import LABEL_SHAREMANAGER
 
+from service.service import list_services
+from event.event import get_events
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-from utility.utility import get_pod, delete_pod
+from utility.utility import get_pod, delete_pod, pod_exec, wait_delete_pod
 import utility.constant as constant
 
 class sharemanager_keywords:
 
     def __init__(self):
         self.sharemanager = ShareManager()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def is_sharemanagers_using_headless_service(self):
-        not_headless_services = []
+        LABEL_SHAREMANAGER = "longhorn.io/share-manager"
+        headless_services = []
         sharemanagers = self.sharemanager.list()
-        for sharemanager in sharemanagers['items']:
-            sharemanager_name = sharemanager['metadata']['name']
-            label_selector = f"{LABEL_SHAREMANAGER}={sharemanager_name}"
-            if not is_services_headless(label_selector=label_selector):
-                not_headless_services.append(sharemanager_name)
-
-        if len(not_headless_services) == 0:
+        for sharemanager in sharemanagers:
+            # the sharemanager pod has a label longhorn.io/share-manager=volume-name,
+            # and the headless service also has the same label,
+            # so we can find the headless service by the label selector
+            volume_name = sharemanager['metadata']['labels'][LABEL_SHAREMANAGER]
+            label_selector = f"{LABEL_SHAREMANAGER}={volume_name}"
+            services = list_services(label_selector)
+            for service in services:
+                if service['spec']['clusterIP'] == "None":
+                    headless_services.append(volume_name)
+        if len(headless_services):
             return True
-
-        return False
-
-    def wait_for_sharemanagers_deleted(self, name=[]):
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for i in range(retry_count):
-            sharemanagers = self.sharemanager.list()
-
-            try:
-                if len(name) == 0:
-                    assert sharemanagers is None or len(sharemanagers['items']) == 0
-                else:
-                    for sharemanager in sharemanagers['items']:
-                        assert sharemanager['metadata']['name'] not in name
-
-                return
-
-            except AssertionError as e:
-                logging(f"Waiting for sharemanager deleted: {e}, retry ({i}) ...")
-            time.sleep(retry_interval)
-
-        assert AssertionError, f"Failed to wait for all sharemanagers to be deleted"
-
-
-    def delete_sharemanager_pod_and_wait_for_recreation(self, name):
-        sharemanager_pod_name = "share-manager-" + name
-        sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-        last_creation_time = sharemanager_pod.metadata.creation_timestamp
-        delete_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for i in range(retry_count):
-            time.sleep(retry_interval)
-            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-            if sharemanager_pod == None:
-                continue
-            creation_time = sharemanager_pod.metadata.creation_timestamp
-            if creation_time > last_creation_time:
-                return
-
-        assert False, f"sharemanager pod {sharemanager_pod_name} not recreated"
-
-    def wait_for_sharemanager_pod_restart(self, name, after=None):
-        sharemanager_pod_name = "share-manager-" + name
-        sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-        if after is not None:
-            last_creation_time = after
         else:
-            last_creation_time = sharemanager_pod.metadata.creation_timestamp
+            return False
 
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for i in range(retry_count):
-            logging(f"Waiting for sharemanager {sharemanager_pod_name} for volume {name} restart ... ({i})")
-            time.sleep(retry_interval)
-            sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
-            if sharemanager_pod == None:
-                continue
-            creation_time = sharemanager_pod.metadata.creation_timestamp
-            logging(f"Getting new sharemanager which is created at {creation_time}, and old one is created at {last_creation_time}")
-            if creation_time > last_creation_time:
-                return
+    def wait_for_sharemanagers_deleted(self):
+        sharemanagers = self.sharemanager.list()
+        for sharemanager in sharemanagers:
+            logging(f"Waiting for sharemanager {sharemanager['metadata']['name']} deletion ...")
+            wait_delete_pod(sharemanager['metadata']['name'], constant.LONGHORN_NAMESPACE)
 
-        assert False, f"sharemanager pod {sharemanager_pod_name} isn't restarted"
+    def delete_sharemanager_pod(self, name):
+        sharemanager_pod_name = "share-manager-" + name
+        self.sharemanager.delete(sharemanager_pod_name)
 
+    def wait_for_sharemanager_pod_recreation(self, name):
+        sharemanager_pod_name = "share-manager-" + name
+        for i in range(self.retry_count):
+            try:
+                logging(f"Waiting for sharemanager {sharemanager_pod_name} for volume {name} recreation ... ({i})")
+                events = get_events()
+                scheduled_event_found = False
+                killing_event_found = False
+                for event in events:
+                    reason = event.get('reason')
+                    obj_name = event.get('involvedObject', {}).get('name')
+                    if obj_name == sharemanager_pod_name and (reason == "Scheduled" or reason == "Created"):
+                        logging(f"Found new sharemanager {sharemanager_pod_name} for volume {name} is recreated")
+                        scheduled_event_found = True
+                    if obj_name == sharemanager_pod_name and (reason == "Killing" or reason == "NodeNotReady"):
+                        logging(f"Found old sharemanager {sharemanager_pod_name} for volume {name} was replaced")
+                        killing_event_found = True
+                if scheduled_event_found and killing_event_found:
+                    return
+            except Exception as e:
+                logging(f"Waiting for sharemanager {sharemanager_pod_name} for volume {name} recreation error: {e}")
+            time.sleep(self.retry_interval)
+
+        assert False, f"Failed to wait for sharemanager pod {sharemanager_pod_name} recreation: {events}"
+
+    def check_no_sharemanager_pod_recreation(self, name):
+        sharemanager_pod_name = "share-manager-" + name
+        logging(f"Checking no sharemanager {sharemanager_pod_name} for volume {name} recreation")
+        events = get_events()
+        scheduled_event_found = False
+        killing_event_found = False
+        for event in events:
+            reason = event.get('reason')
+            obj_name = event.get('involvedObject', {}).get('name')
+            if obj_name == sharemanager_pod_name and (reason == "Scheduled" or reason == "Created"):
+                scheduled_event_found = True
+            if obj_name == sharemanager_pod_name and reason == "Killing":
+                killing_event_found = True
+        if scheduled_event_found and killing_event_found:
+            logging(f"Unexpected sharemanager {sharemanager_pod_name} for volume {name} recreation: {events}")
+            time.sleep(self.retry_count)
+            assert False, f"Unexpected sharemanager pod {sharemanager_pod_name} recreation: {events}"
 
     def wait_for_share_manager_pod_running(self, name):
         sharemanager_pod_name = "share-manager-" + name
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             try:
-                sharemanager_pod = get_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
+                sharemanager_pod = self.sharemanager.get(sharemanager_pod_name)
                 logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
                 if sharemanager_pod.status.phase == "Running":
                     return sharemanager_pod.metadata.creation_timestamp
             except Exception as e:
                 logging(f"Waiting for sharemanager for volume {name} running error: {e}")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
 
         assert False, f"sharemanager pod {sharemanager_pod_name} not running"
 
     def wait_for_disk_size_in_sharemanager_pod(self, share_manager_pod, volume_name, expected_size):
-        from utility.utility import pod_exec, get_longhorn_namespace
-        retry_count, retry_interval = get_retry_count_and_interval()
-        longhorn_namespace = get_longhorn_namespace()
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             logging(f"Waiting for disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
             cmd = f"blockdev --getsize64 /dev/longhorn/{volume_name}"
             try:
-                result = pod_exec(share_manager_pod, longhorn_namespace, cmd)
+                result = pod_exec(share_manager_pod, constant.LONGHORN_NAMESPACE, cmd)
                 actual_size = result.strip()
                 logging(f"Current disk size in sharemanager pod {share_manager_pod}: {actual_size}, expected: {expected_size}")
                 if actual_size == expected_size:
@@ -127,15 +119,12 @@ class sharemanager_keywords:
         assert False, f"Disk size in sharemanager pod {share_manager_pod} is not {expected_size}"
 
     def wait_for_encrypted_disk_size_in_sharemanager_pod(self, share_manager_pod, volume_name, expected_size):
-        from utility.utility import pod_exec, get_longhorn_namespace
-        retry_count, retry_interval = get_retry_count_and_interval()
-        longhorn_namespace = get_longhorn_namespace()
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             logging(f"Waiting for encrypted disk size in sharemanager pod {share_manager_pod} to be {expected_size} ... ({i})")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
             cmd = f"fdisk -l | grep /dev/mapper/{volume_name}"
             try:
-                result = pod_exec(share_manager_pod, longhorn_namespace, cmd)
+                result = pod_exec(share_manager_pod, constant.LONGHORN_NAMESPACE, cmd)
                 logging(f"Current encrypted disk info in sharemanager pod {share_manager_pod}: {result}")
                 if expected_size in result:
                     return
