@@ -29,10 +29,6 @@ Storage Network Should Not Restart Migratable RWX Volume Workload Pods
     ...                Issue: https://github.com/longhorn/longhorn/issues/11158
     ...
     ...                Precondition: Storage network configured.
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    Need enable v2 environment on pipeline first: https://github.com/longhorn/longhorn/issues/12659
-    END
-
     Given Setting endpoint-network-for-rwx-volume is set to kube-system/demo-192-168-0-0
     And Wait for Longhorn workloads pods stable
         ...    longhorn-csi-plugin
