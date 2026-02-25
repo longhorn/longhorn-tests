@@ -9,6 +9,8 @@ Resource    ../keywords/node.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/sharemanager.resource
+Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
 
 Test Setup    Set up test environment
@@ -111,3 +113,29 @@ Test Volume Expansion
     When Expand persistentvolumeclaim 0 size to 4Gi
     Then Wait for volume of persistentvolumeclaim 0 size to be 4Gi
     And Check pod 0 data in file data.txt is intact
+
+Test RWX Volume Automatic Online Expansion
+    [Tags]    rwx    expansion    sharemanager
+    [Documentation]    Test automatic online filesystem resize for RWX volumes
+    ...                Ref: https://github.com/longhorn/longhorn/issues/8119
+    ...                Related issues:
+    ...                - https://github.com/longhorn/longhorn/issues/8118
+    ...                - https://github.com/longhorn/longhorn/issues/9736
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test    storage_size=50MiB
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 10 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+
+    When Expand deployment 0 volume to 100MiB
+    Then Wait for deployment 0 volume size expanded
+    And Check deployment 0 pods did not restart
+    And Check no sharemanager pod of deployment 0 recreation
+    And Assert disk size in sharemanager pod for deployment 0 is 100MiB
+    # Wait for filesystem to be expanded in the workload pod before writing new data
+    And Assert filesystem size in deployment 0 is 100MiB
+    # Write data that covers the newly expanded blocks to verify filesystem expansion
+    And Write 60 MB data to file data2.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+    And Check deployment 0 data in file data2.txt is intact

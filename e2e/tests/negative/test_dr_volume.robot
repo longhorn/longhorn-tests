@@ -127,7 +127,7 @@ Sync Up With Backup Target During DR Volume Activation
     Then Check pod 0 file version-info.txt has checksum d51dc42f616b67126fd2aa1e1f43385b
 
 Test DR Volume Live Upgrade And Rebuild
-    [Tags]    manual    negative    dr-volume-live-upgrade-and-rebuild    expansion    upgrade
+    [Tags]    manual    negative    dr-volume    expansion    upgrade
     [Documentation]    - Test DR volume live upgrade and rebuild
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/1279
@@ -251,7 +251,7 @@ Test DR Volume Live Upgrade And Rebuild
     And Check pod 2 works
 
 Test DR Volume Incremental Restore After Source Volume Expansion
-    [Tags]    manual    negative    dr-volume-expansion    expansion
+    [Tags]    manual    negative    dr-volume    expansion
     [Documentation]    - Test DR Volume Incremental Restore After Source Volume Expansion
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/11767
