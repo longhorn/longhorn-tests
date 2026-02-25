@@ -12,6 +12,23 @@ Add ${disk_type} type disk ${disk_path} for all worker nodes
         add_disk    ${disk_type}-disk    ${worker_node}    ${disk_type}    ${disk_path}
     END
 
+Disable default block disks on all worker nodes
+    ${worker_nodes}=    get_worker_nodes
+    ${worker_count}=    Get Length    ${worker_nodes}
+    FOR    ${node_id}    IN RANGE    ${worker_count}
+        Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling on node ${node_id}
+    END
+
+Delete default block disks on all worker nodes
+    ${worker_nodes}=    get_worker_nodes
+    ${worker_count}=    Get Length    ${worker_nodes}
+    FOR    ${node_id}    IN RANGE    ${worker_count}
+        Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node ${node_id}
+    END
+
+Add default block disks on all worker nodes
+    Add block type disk ${DISK_PATH} for all worker nodes
+
 Set node ${node_id} with
     [Arguments]    &{config}
     ${node_name} =    get_node_by_index    ${node_id}

@@ -264,3 +264,29 @@ Check Block Device Is Not In Use Before Creating Disk
     When Run command on node    0
     ...    sudo wipefs -a ${mount_path}
     And Add block device block-device-check on node 0 should success
+
+Test Default Block Disks Delete And Re-add
+    [Tags]    block-disk
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12637
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    # Run at least 3 loops to ensure stability when default block disks
+    # are deleted and re-added multiple times
+    IF    ${LOOP_COUNT} < 3
+        ${loop_count}=    Set Variable    3
+    ELSE
+        ${loop_count}=    Set Variable    ${LOOP_COUNT}
+    END
+
+    FOR    ${i}    IN RANGE    ${loop_count}
+        Given Disable default block disks on all worker nodes
+        When Delete default block disks on all worker nodes
+        Then Add default block disks on all worker nodes
+    END
+    Given Create volume 0 with    size=2Gi    numberOfReplicas=3    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    When Write data to volume 0
+    Then Check volume 0 data is intact
