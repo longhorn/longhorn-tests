@@ -55,6 +55,10 @@ Disconnect volume ${volume_id} node network for ${duration} seconds without wait
 Wait for disconnected node back
     wait_for_block_network_pod_completed    ${network_block_pod_name}    Succeeded
 
+Setup control plane network latency to ${latency_ms} ms
+    [Documentation]    Set network latency on control plane nodes
+    ...    ${latency_ms}: Latency in milliseconds (e.g., 1500 for 1.5 seconds)
+    setup_control_plane_network_latency    ${latency_ms}
 Disconnect network on node ${node_id} for ${duration} seconds
     [Documentation]    Disconnect network on node for specified duration.
     ...                Network will automatically reconnect after timeout.
