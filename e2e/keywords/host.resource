@@ -66,7 +66,6 @@ Power off all worker nodes for ${power_off_time_in_min} mins
 
 Restart cluster
     reboot_all_nodes
-    setup_control_plane_network_latency
 
 Power on off nodes
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
