@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Compare Longhorn Components Resource Usage
 
-Test Tags    manual    regression    resource-usage
+Test Tags    manual    regression    negative    resource-usage
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
