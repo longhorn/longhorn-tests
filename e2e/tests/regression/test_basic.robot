@@ -204,3 +204,15 @@ Test Deploy V2 Volume With Disabled V1 Data Engine
 
     When Write data to volume 0
     Then Check volume 0 data is intact
+
+Test Dynamic PV Has No Node Affinity
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12656
+    ...    1. Create a Longhorn storageclass and a PVC to trigger dynamic provisioning.
+    ...    2. Wait for the volume to be created and bound.
+    ...    3. Ensure the dynamically provisioned PV does not contain spec.nodeAffinity.
+    ${claim_name}=    Generate name with suffix    claim    0
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    Then Run command and not expect output
+    ...    kubectl get pv $(kubectl get pvc ${claim_name} -ojsonpath='{.spec.volumeName}') -o yaml
+    ...    nodeAffinity:
