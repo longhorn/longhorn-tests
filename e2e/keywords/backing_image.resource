@@ -7,9 +7,12 @@ Library    Collections
 Library    OperatingSystem
 
 *** Keywords ***
-Create backing image ${backing_image_name} with
+Create backing image ${backing_image_name}
     [Arguments]    &{config}
     create_backing_image    ${backing_image_name}    &{config}
+
+Update backing image ${backing_image_name} min number of copies to ${minimal_number_of_copies}
+    update_min_number_of_copies    ${backing_image_name}    ${minimal_number_of_copies}
 
 Verify all disk file status of backing image ${backing_image_name} are ready
     all_disk_file_status_are_ready    ${backing_image_name}
@@ -24,6 +27,7 @@ Verify disk file status of backing image ${backing_image_name} are expected
 Wait for disk file status of backing image ${backing_image_name} are expected
     [Arguments]    &{config}
     wait_for_disk_file_status_match_expected    ${backing_image_name}    &{config}
+
 Wait for all disk file status of backing image ${backing_image_name} are failed
     wait_all_disk_file_status_are_at_state    ${backing_image_name}    failed
 
@@ -89,6 +93,7 @@ Backing image ${bi_name} should not have the removed disk in its DiskFileSpecMap
     # ${recorded_disk_uuid} come from `Record node ${node_id} default disk uuid` in node.resource
     ${disk_uuids} =    get_backing_image_disk_uuids    ${bi_name}
     List Should Not Contain Value    ${disk_uuids}    ${recorded_disk_uuid}
+
 Download backing image ${backing_image_name}
     [Arguments]    &{config}
     ${download_bi_checksum} =    download_backing_image    ${backing_image_name}     &{config}

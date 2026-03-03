@@ -58,6 +58,9 @@ class Rest(Base):
 
         return bi
 
+    def update(self, name, key, value):
+        return CRD().update(name, key, value)
+
     def get(self, bi_name):
         return get_longhorn_client().by_id_backing_image(bi_name)
 

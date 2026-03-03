@@ -1,4 +1,5 @@
 import time
+import re
 
 from node import Node
 from node_exec import NodeExec
@@ -55,13 +56,19 @@ class common_keywords:
     def execute_command(self, cmd):
         subprocess_exec_cmd(cmd)
 
-    def execute_command_and_expect_output(self, cmd, output):
+    def execute_command_and_expect_output(self, cmd, expected_output):
         res = subprocess_exec_cmd(cmd)
         retry_count, _ = get_retry_count_and_interval()
-        if output not in res:
-            logging(f"Failed to find {output} in {cmd} result: {res}")
+
+        try:
+            expected_pattern = re.compile(expected_output, re.DOTALL)
+        except re.error as e:
+            expected_pattern = re.compile(re.escape(expected_output), re.DOTALL)
+
+        if not expected_pattern.search(res):
+            logging(f"Failed to find {expected_output} in {cmd} result: {res}")
             time.sleep(retry_count)
-            assert False, f"Failed to find {output} in {cmd} result: {res}"
+            assert False, f"Failed to find {expected_output} in {cmd} result: {res}"
 
     def execute_command_until_success(self, cmd, expected_output):
         retry_count, retry_interval = get_retry_count_and_interval()
