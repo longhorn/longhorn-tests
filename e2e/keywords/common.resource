@@ -29,9 +29,16 @@ Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
+Library             String
 Resource            variables.resource
 
 *** Keywords ***
+Generate random disk name
+    [Arguments]    ${prefix}=local-disk    ${length}=6
+    ${suffix}=    Generate Random String    ${length}    [LOWER][NUMBERS]
+    ${disk_name}=    Set Variable    ${prefix}-${suffix}
+    [Return]    ${disk_name}
+
 Run command
     [Arguments]    ${command}
     execute_command    ${command}
