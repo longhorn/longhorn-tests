@@ -110,7 +110,7 @@ def get_backupstore():
     return os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
 
 
-def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
+def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=False):
     if verbose:
         logging(f"Executing command {cmd}")
 
