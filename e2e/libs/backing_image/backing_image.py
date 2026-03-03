@@ -27,6 +27,9 @@ class BackingImage(Base):
         sourceType = self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD if url else self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
         return self.backing_image.create(name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
 
+    def update(self, name, key, value):
+        return self.backing_image.update(name, key, value)
+
     def get(self, bi_name):
         return self.backing_image.get(bi_name)
 
