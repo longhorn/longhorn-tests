@@ -9,6 +9,9 @@ class backing_image_keywords:
     def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True, parameters=None):
         self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
 
+    def update_min_number_of_copies(self, name, minNumberOfCopies):
+        self.backing_image.update(name, "minNumberOfCopies", minNumberOfCopies)
+
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)
 
@@ -18,7 +21,7 @@ class backing_image_keywords:
     def disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
         self.backing_image.disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
 
-    def wait_for_disk_file_status_match_expected(self, bi_name, expected_ready_count, expected_unknown_count):
+    def wait_for_disk_file_status_match_expected(self, bi_name, expected_ready_count=0, expected_unknown_count=0):
         self.backing_image.wait_for_disk_file_status_match_expected(bi_name, expected_ready_count, expected_unknown_count)
 
     def clean_up_backing_image_from_a_random_disk(self, bi_name):

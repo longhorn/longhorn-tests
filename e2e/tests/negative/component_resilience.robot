@@ -59,7 +59,7 @@ Test Longhorn Components Recovery
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data.txt in deployment 0
 
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    When Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     And Create volume 1 with    backingImage=bi
     And Attach volume 1
     And Wait for volume 1 healthy
@@ -126,7 +126,7 @@ Test Longhorn Backing Image Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.    
     ...                    Delete the backing image manager pod and verify the pod gets recreated.
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    When Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     And Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy

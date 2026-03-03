@@ -29,14 +29,14 @@ Retry interval should match expected backoff window
 
 *** Test Cases ***
 Backing image with an invalid URL schema
-    [Tags]    backing image
+    [Tags]    backing-image
     [Documentation]    https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/    
     ...                - Create a backing image via a invalid download URL.
     ...                - Wait for the download start. The backing image data source pod, should be cleaned up after download fail.    
     ...                - The corresponding and only entry in the disk file status should be failed. 
     ...                  The error message in this entry should explain why the downloading or the pod becomes failed.
     ...                - Check if there is a backoff window for the downloading retry. The initial duration is 1 minute. The max interval is 5 minute.
-    Given Create backing image bi-test with    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3    check_creation=False
+    Given Create backing image bi-test    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3    check_creation=False
     ${creation_time}=     Wait backimg image bi-test data source pod created
     And Wait for all disk file status of backing image bi-test are failed
     And Wait for all disk file status of backing image bi-test are failed-and-cleanup
@@ -53,13 +53,13 @@ Backing image with an invalid URL schema
     END
 
 Backing image with sync failure
-    [Tags]    backing image
+    [Tags]    backing-image
     [Documentation]    https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/
     ...                - Create a backing image. Then create and attach a volume using this backing image
     ...                - Exec into one of the worker node, remove the files in that backing image directory and set the directory as immutable
     ...                - Monitor the backing-image-manager pod log. Verify the backoff works for the sync retry as well.
     ...                - Unset the immutable flag for the backing image directory. Then the retry should succeed, and the volume should become healthy
-    Given Create backing image bi-test with    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    Given Create backing image bi-test    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     When Create volume 0 with    backingImage=bi-test    numberOfReplicas=3
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy

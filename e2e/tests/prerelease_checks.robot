@@ -113,7 +113,7 @@ Pre-release Checks
         And Write 1024 MB data to file data.txt in deployment deploy-upgrade
 
         # (7) create a volume with a backing image
-        When Create backing image bi-v1 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1
+        When Create backing image bi-v1    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1
         And Create volume vol-bi with    size=3Gi    backingImage=bi-v1
         And Create persistentvolume for volume vol-bi
         And Create persistentvolumeclaim for volume vol-bi

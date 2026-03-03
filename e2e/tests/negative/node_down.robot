@@ -147,7 +147,7 @@ Test Backing Image On Two Nodes Down
     Given Setting replica-replenishment-wait-interval is set to 600
     And Setting replica-soft-anti-affinity is set to false
 
-    When Create backing image bi-down with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    When Create backing image bi-down    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     And Create volume 0 with    backingImage=bi-down    numberOfReplicas=3
     And Create volume 1 with    backingImage=bi-down    numberOfReplicas=3
     And Attach volume 0 to node 0
