@@ -3,6 +3,7 @@ Documentation       Common keywords
 
 Library             Collections
 Library             OperatingSystem
+Library             String
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/deployment_keywords.py
 Library             ../libs/keywords/network_keywords.py
@@ -95,7 +96,6 @@ Init worker node variables
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
 
 Set up test environment
-    setup_control_plane_network_latency
     set_backupstore
     Init worker node variables
     IF     "${DATA_ENGINE}" == "v2"
