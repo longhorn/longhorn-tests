@@ -297,9 +297,6 @@ spec:
       - key: CriticalAddonsOnly
         operator: Exists
       - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
-      - effect: NoSchedule
         key: node-role.kubernetes.io/controlplane
         operator: Exists
       - effect: NoSchedule

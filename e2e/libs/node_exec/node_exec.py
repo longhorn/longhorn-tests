@@ -122,27 +122,13 @@ class NodeExec:
                     }
                 },
                 "tolerations": [{
-                    "key": "node-role.kubernetes.io/master",
-                    "operator": "Equal",
-                    "value": "true",
-                    "effect": "NoSchedule"
-                },
-                {
-                    "key": "node-role.kubernetes.io/master",
-                    "operator": "Equal",
-                    "value": "true",
-                    "effect": "NoExecute"
-                },
-                {
                     "key": "node-role.kubernetes.io/control-plane",
-                    "operator": "Equal",
-                    "value": "true",
+                    "operator": "Exists",
                     "effect": "NoSchedule"
                 },
                 {
                     "key": "node-role.kubernetes.io/control-plane",
-                    "operator": "Equal",
-                    "value": "true",
+                    "operator": "Exists",
                     "effect": "NoExecute"
                 },
                 # Allow to schedule on cordoned node to execute command on its host.
