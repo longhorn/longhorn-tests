@@ -33,6 +33,10 @@ Library             String
 Resource            variables.resource
 
 *** Keywords ***
+Generate new uuid
+    ${uuid} =    generate_uuid
+    [Return]    ${uuid}
+
 Generate random disk name
     [Arguments]    ${prefix}=local-disk    ${length}=6
     ${suffix}=    Generate Random String    ${length}    [LOWER][NUMBERS]

@@ -1,4 +1,6 @@
 from backing_image import BackingImage
+import json
+import uuid
 
 
 class backing_image_keywords:
@@ -98,3 +100,11 @@ class backing_image_keywords:
 
     def get_backing_image_checksum(self, bi_name):
         return self.backing_image.get_backing_image_checksum(bi_name)
+
+    def generate_uuid(self):
+        return str(uuid.uuid4())
+
+    def get_disk_file_spec_map(self, bi_name):
+        bi = self.backing_image.get(bi_name)
+        disk_file_spec_map = bi["spec"]["diskFileSpecMap"]
+        return json.dumps(disk_file_spec_map)
