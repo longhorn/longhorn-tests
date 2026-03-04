@@ -139,8 +139,8 @@ Test RWOP Volume
 Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
     [Tags]    volume    backing-image    coretest
     [Documentation]    Validates that when volume size is smaller than backing image virtual size,
-    ...                the longhorn manager log shows a clear error condition.
-    ...                Issue: https://github.com/longhorn/longhorn/issues/11673
+    ...                - the longhorn manager log shows a clear error condition.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/11673
 
     Given Get test start time
     And Create backing image bi-ubuntu-focal with    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3    dataEngine=${DATA_ENGINE}
