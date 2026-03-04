@@ -15,6 +15,7 @@ Resource    ../keywords/node.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/sharemanager.resource
+Resource    ../keywords/backing_image.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -134,3 +135,21 @@ Test RWOP Volume
     And Run command and wait for output
     ...    kubectl get pods -l app=e2e-test-deployment-0 --field-selector=status.phase=Pending --no-headers | wc -l
     ...    1
+
+Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
+    [Tags]    volume    backing-image    coretest
+    [Documentation]    Validates that when volume size is smaller than backing image virtual size,
+    ...                the longhorn manager log shows a clear error condition.
+    ...                Issue: https://github.com/longhorn/longhorn/issues/11673
+
+    Given Get test start time
+    And Create backing image bi-ubuntu-focal with    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3    dataEngine=${DATA_ENGINE}
+    And Wait for all disk file status of backing image bi-ubuntu-focal are ready
+    When Create storageclass sc-backing-image-size-test with    backingImage=bi-ubuntu-focal    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+
+    # Attempt to create PVC with size smaller than backing image virtualSize.
+    # The admission webhook will reject the volume creation; no volume CR will be created.
+    And Create persistentvolumeclaim 0 without waiting for bound    sc_name=sc-backing-image-size-test    storage_size=2Gi
+
+    # Verify the admission webhook rejection is recorded in the longhorn-manager logs.
+    Then Verify longhorn manager log contains volume size should be larger than the backing image size after test start

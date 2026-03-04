@@ -25,7 +25,7 @@ class PersistentVolumeClaim():
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volume_mode="Filesystem"):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volume_mode="Filesystem", wait_for_bound=True):
         storage_size_bytes = convert_size_to_bytes(storage_size)
 
         filepath = "./templates/workload/pvc.yaml"
@@ -69,7 +69,8 @@ class PersistentVolumeClaim():
             api.create_namespaced_persistent_volume_claim(
                 body=manifest_dict,
                 namespace=namespace)
-            self.wait_for_pvc_phase(name, "Bound")
+            if wait_for_bound:
+                self.wait_for_pvc_phase(name, "Bound")
 
     def delete(self, name, namespace='default'):
         api = client.CoreV1Api()

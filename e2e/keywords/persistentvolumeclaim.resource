@@ -12,6 +12,11 @@ Create persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     create_persistentvolumeclaim    ${claim_name}    &{config}
 
+Create persistentvolumeclaim ${claim_id} without waiting for bound
+    [Arguments]    &{config}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_persistentvolumeclaim_without_waiting_for_bound    ${claim_name}    &{config}
+
 Create persistentvolumeclaim ${cloned_claim_id} from persistentvolumeclaim ${source_claim_id}
     [Arguments]    &{config}
     ${cloned_claim_name} =    generate_name_with_suffix    claim    ${cloned_claim_id}
