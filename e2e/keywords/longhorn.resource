@@ -224,7 +224,7 @@ Verify longhorn manager log contains ${expect_log} after test start
             BREAK
         END
     END
-    Should Be True    ${found}    Expected log '${expect_log}' was not found in any longhorn-manager pod logs
+    Should Be True    ${found}    Expected log "${expect_log}" was not found in any longhorn-manager pod logs
 
 Delete Longhorn node ${node_id}
     # Taint the node and delete nodes.longhorn.io instead of deleting the 
