@@ -556,59 +556,6 @@ test steps."</p>
 <p>And
 - 1.5 Gi of data is successfully written to the expanded volume</p></div>
 </dd>
-<dt id="tests.test_rwx.test_rwx_online_expansion"><code class="name flex">
-<span>def <span class="ident">test_rwx_online_expansion</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rwx_online_expansion(): # NOQA
-    &#34;&#34;&#34;
-    Related issue :
-    https://github.com/longhorn/longhorn/issues/2181
-    https://github.com/longhorn/longhorn/issues/2484
-
-    This test case does not cover the UI test mentioned in the related issue&#39;s
-    test steps.&#34;
-
-    Given
-    - Create a rwx pvc using longhorn storage class of size 1 Gi.
-
-    And
-    - Attach it to a workload (deployment) and write some data.
-
-    When
-    - Expand the volume to 5 Gi
-
-    Then
-    - Expansion of volume is completed.
-    - Share manager pod not restart
-
-    And
-    - 1.5 Gi of data is successfully written to the expanded volume.
-    &#34;&#34;&#34;
-    pass</code></pre>
-</details>
-<div class="desc"><p>Related issue :
-<a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
-<a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
-<p>This test case does not cover the UI test mentioned in the related issue's
-test steps."</p>
-<p>Given
-- Create a rwx pvc using longhorn storage class of size 1 Gi.</p>
-<p>And
-- Attach it to a workload (deployment) and write some data.</p>
-<p>When
-- Expand the volume to 5 Gi</p>
-<p>Then
-- Expansion of volume is completed.
-- Share manager pod not restart</p>
-<p>And
-- 1.5 Gi of data is successfully written to the expanded volume.</p></div>
-</dd>
 <dt id="tests.test_rwx.test_rwx_parallel_writing"><code class="name flex">
 <span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>client, core_api, statefulset, pod, storage_class)</span>
 </code></dt>
@@ -1128,7 +1075,6 @@ count.</li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc" href="#tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc">test_rwx_multi_statefulset_with_same_pvc</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_offline_expansion" href="#tests.test_rwx.test_rwx_offline_expansion">test_rwx_offline_expansion</a></code></li>
-<li><code><a title="tests.test_rwx.test_rwx_online_expansion" href="#tests.test_rwx.test_rwx_online_expansion">test_rwx_online_expansion</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_parallel_writing" href="#tests.test_rwx.test_rwx_parallel_writing">test_rwx_parallel_writing</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_statefulset_scale_down_up" href="#tests.test_rwx.test_rwx_statefulset_scale_down_up">test_rwx_statefulset_scale_down_up</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_volume_mount_options" href="#tests.test_rwx.test_rwx_volume_mount_options">test_rwx_volume_mount_options</a></code></li>
