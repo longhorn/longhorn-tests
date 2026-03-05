@@ -15,7 +15,7 @@ Create persistentvolumeclaim ${claim_id}
 Create persistentvolumeclaim ${claim_id} without waiting for bound
     [Arguments]    &{config}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_persistentvolumeclaim_without_waiting_for_bound    ${claim_name}    &{config}
+    create_persistentvolumeclaim    ${claim_name}    wait_for_bound=${FALSE}    &{config}
 
 Create persistentvolumeclaim ${cloned_claim_id} from persistentvolumeclaim ${source_claim_id}
     [Arguments]    &{config}
@@ -88,3 +88,14 @@ Wait for volume of persistentvolumeclaim ${claim_id} size to be ${size}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     wait_for_volume_expand_to_size    ${volume_name}    ${size}
+
+Assert persistentvolumeclaim ${claim_id} has no volume
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    Should Be Equal    ${volume_name}    ${NONE}
+
+Wait for volume of persistentvolumeclaim ${claim_id} condition ${condition_name} to be ${condition_status}
+    [Arguments]    &{config}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
