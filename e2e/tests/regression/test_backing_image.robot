@@ -217,7 +217,7 @@ Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
 
     Given Get test start time
     # The virtual size of this image is 2.20 GiB, which is larger than the 2Gi PVC size used below.
-    And Create backing image bi-ubuntu-focal with    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3    dataEngine=${DATA_ENGINE}
+    And Create backing image bi-ubuntu-focal    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3    dataEngine=${DATA_ENGINE}
     And Wait for all disk file status of backing image bi-ubuntu-focal are ready
     When Create storageclass sc-backing-image-size-test with    backingImage=bi-ubuntu-focal    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
 
