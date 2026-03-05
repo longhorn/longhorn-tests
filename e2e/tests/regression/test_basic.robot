@@ -19,6 +19,7 @@ Resource    ../keywords/replica.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/backup.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -216,3 +217,58 @@ Test Dynamic PV Has No Node Affinity
     Then Run command and not expect output
     ...    kubectl get pv $(kubectl get pvc ${claim_name} -ojsonpath='{.spec.volumeName}') -o yaml
     ...    nodeAffinity:
+
+Test Instance Manager AWS Role Annotation
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/9923
+    ...    Verify that the iam.amazonaws.com/role annotation is propagated to
+    ...    instance manager pods when AWS_IAM_ROLE_ARN is set in the backup
+    ...    credential secret, and removed when the key is deleted.
+    ...
+    ...    1. Create a volume
+    ...    2. Write some data
+    ...    3. Create a backup
+    ...    4. Check there is no iam.amazonaws.com/role annotation in instance manager pods
+    ...    5. Patch the s3 secret: add AWS_IAM_ROLE_ARN
+    ...    6. Check there is iam.amazonaws.com/role=test-aws-iam-role-arn in instance manager pods
+    ...    7. Create a backup
+    ...    8. Delete all instance manager pods
+    ...    9. Check there is still iam.amazonaws.com/role=test-aws-iam-role-arn in instance manager pods
+    ...    10. Create a backup
+    ...    11. Remove AWS_IAM_ROLE_ARN from the s3 secret
+    ...    12. Check there is no iam.amazonaws.com/role annotation in instance manager pods
+    ${LONGHORN_BACKUPSTORE}=    Get Environment Variable    LONGHORN_BACKUPSTORE    default=${EMPTY}
+    IF    not $LONGHORN_BACKUPSTORE.startswith('s3://')
+        Skip    Test requires S3 backupstore, got: ${LONGHORN_BACKUPSTORE}
+    END
+
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create backup 0 for volume 0
+    Then Run command and not expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    iam.amazonaws.com/role
+
+    # AWS_IAM_ROLE_ARN: test-aws-iam-role-arn
+    When Run command
+    ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} -p '{"data": {"AWS_IAM_ROLE_ARN": "dGVzdC1hd3MtaWFtLXJvbGUtYXJu"}}'
+    Then Run command and expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
+    And Create backup 1 for volume 0
+
+    When Delete ${DATA_ENGINE} instance manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 2
+    And Check volume 0 kept in healthy
+    Then Run command and expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
+    And Create backup 2 for volume 0
+
+    When Run command
+    ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} --type=json -p='[{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]'
+    Then Run command and not expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    iam.amazonaws.com/role
