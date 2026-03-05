@@ -115,3 +115,7 @@ Wait backimg image ${backing_image_name} download complete
 Check backing image ${backing_image_name} download file checksum matches
     ${bi_checksum} =  get_backing_image_checksum    ${backing_image_name}
     Should Be Equal    ${download_bi_checksum}    ${bi_checksum}
+
+Get diskFileSpecMap of backing image ${backing_image_name}
+    ${original_diskFileSpecMap} =    get_disk_file_spec_map    ${backing_image_name}
+    [Return]    ${original_diskFileSpecMap}

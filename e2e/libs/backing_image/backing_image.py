@@ -11,6 +11,7 @@ from utility.utility import subprocess_exec_cmd
 from utility.utility import get_longhorn_base_url
 from time import sleep
 
+import json
 import os
 import subprocess
 
@@ -31,7 +32,9 @@ class BackingImage(Base):
         return self.backing_image.update(name, key, value)
 
     def get(self, bi_name):
-        return self.backing_image.get(bi_name)
+        cmd = f"kubectl get backingimage {bi_name} -n {constant.LONGHORN_NAMESPACE} -o json"
+        output = subprocess_exec_cmd(cmd).strip()
+        return json.loads(output)
 
     def all_disk_file_status_are_ready(self, bi_name):
         return self.backing_image.all_disk_file_status_are_ready(bi_name)
