@@ -164,6 +164,48 @@ Test Node ID Change During Backing Image Creation
     And Check backing image bi-large download file checksum matches
     And Verify longhorn manager logs does not contain but the pod became not ready after test start
 
+Test Backing Image Non-existent Disk UUID Warning
+    [Documentation]    Validate backing image generates warning log when referencing non-existent disk UUID
+    ...    1. Create a backing image
+    ...    2. Record original diskFileSpecMap
+    ...    3. Add one non-existent UUID entry into spec.diskFileSpecMap
+    ...    4. Verify warning log "Disk xxx is not ready or does not exist" appears in longhorn-manager pod
+    ...    5. Restore original diskFileSpecMap and verify all disk file status are ready
+    ...
+    ...    Expected log: "Disk <random-uuid> is not ready or does not exist.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/4887
+    Given Create backing image test-bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+
+    ${original_diskFileSpecMap} =    Get diskFileSpecMap of backing image test-bi
+    ${nonexistent_disk_uuid} =    Generate new uuid
+    When Run command
+    ...    kubectl patch backingimage test-bi -n longhorn-system --type=merge -p='{"spec":{"diskFileSpecMap":{"${nonexistent_disk_uuid}":{}}}}'
+
+    Then Run command and wait for output
+    ...    kubectl logs -n longhorn-system -l app=longhorn-manager --since=30s | grep "${nonexistent_disk_uuid}"
+    ...    Disk ${nonexistent_disk_uuid} is not ready or does not exist
+
+    When Run command
+    ...    kubectl patch backingimage test-bi -n longhorn-system --type=json -p='[{"op":"replace","path":"/spec/diskFileSpecMap","value":${original_diskFileSpecMap}}]'
+    Then Verify all disk file status of backing image test-bi are ready
+
+Test Reduce Backing Image Min Number Of Copies
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12584
+    ...    1. Create a backing image with min number of copies 3
+    ...    2. Reduce the min number of copies to 1
+    ...    3. Check unused backing image files are cleaned up after the waiting interval of backing image cleanup
+    Given Setting backing-image-cleanup-wait-interval is set to 1
+    And Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    And Wait for disk file status of backing image bi are expected    expected_ready_count=3
+
+    When Update backing image bi min number of copies to 1
+    And Wait for disk file status of backing image bi are expected    expected_ready_count=1
+
+    Then Run command and expect output
+    ...    kubectl logs -l app=longhorn-manager -n longhorn-system --since=3m
+    ...    Cleaning up the unused file in disk.*failedDiskFileCount.*fileState.*handlingDiskFileCount.*minNumberOfCopies.*readyDiskFileCount
+
 Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
     [Tags]    coretest
     [Documentation]    Validates that when volume size is smaller than backing image virtual size,
