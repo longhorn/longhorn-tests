@@ -261,6 +261,13 @@ Check volume ${volume_id} replica on node ${node_id} kept in stopped
         Sleep    ${RETRY_INTERVAL}
     END
 
+Check volume ${volume_id} kept in healthy
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_healthy    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Check volume ${volume_id} kept in degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
