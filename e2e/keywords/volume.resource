@@ -273,14 +273,14 @@ Check volume ${volume_id} kept in attaching
 
 Check volume ${volume_id} kept in detached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
         wait_for_volume_detached    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
 
-Check all replicas of volume ${volume_id} kept in error
+Check volume ${volume_id} kept in faulted
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
         wait_for_volume_faulted    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
