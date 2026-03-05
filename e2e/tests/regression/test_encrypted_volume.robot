@@ -48,7 +48,7 @@ Test Encrypted RWX Volume Basic
         RWX
 
 Test Encrypted RWO Volume Online Expansion
-    [Tags]    rwo    volume-expansion
+    [Tags]    rwo    expansion
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
@@ -71,7 +71,7 @@ Test Encrypted RWO Volume Online Expansion
     Then Check deployment 0 data in file data.txt is intact
 
 Test Encrypted RWX Volume Online Expansion
-    [Tags]    rwx    volume-expansion
+    [Tags]    rwx    expansion
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-crypto    storage_size=50MiB
@@ -83,6 +83,7 @@ Test Encrypted RWX Volume Online Expansion
     When Expand deployment 0 volume to 100 MiB
     Then Wait for deployment 0 volume size expanded
     And Check deployment 0 pods did not restart
+    And Check no sharemanager pod of deployment 0 recreation
     # Verify the actual disk size in the sharemanager pod.
     # NOTE: For encrypted volumes, 16MiB is reserved for the encryption header.
     # Therefore, a 100MiB requested volume will result in an 84MiB actual disk size.
@@ -95,7 +96,7 @@ Test Encrypted RWX Volume Online Expansion
     Then Check deployment 0 data in file data.txt is intact
 
 Test Encrypted RWO Block Volume Online Expansion
-    [Tags]    rwo    volume-expansion
+    [Tags]    rwo    expansion
     Given Create crypto secret
     And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim in Block volume mode 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB

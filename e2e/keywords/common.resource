@@ -145,3 +145,4 @@ Cleanup test resources
     cleanup_csi_volume_snapshots
     cleanup_csi_volume_snapshot_classes
     reset_longhorn_namespace
+    cleanup_events

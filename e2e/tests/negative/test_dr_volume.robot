@@ -106,7 +106,7 @@ Sync Up With Backup Target During DR Volume Activation
     ...                7. Activate the DR volume in the 2nd cluster. Then verify the data
     ...                8. The activated DR volume should contain the latest data.
     Given Create dummy backup from backup-1.tar.gz
-    And Create DR volume 0 from backup backup-96b3a82b011e4b76
+    And Create DR volume 0 from backup backup-96b3a82b011e4b76    dataEngine=${DATA_ENGINE}
     # the name of precreated backup 1 is backup-96b3a82b011e4b76
     # the name of precreated backup 2 is backup-b823c0557efa4a4f
     And Wait for volume 0 restoration from backup backup-96b3a82b011e4b76 to complete
@@ -127,7 +127,7 @@ Sync Up With Backup Target During DR Volume Activation
     Then Check pod 0 file version-info.txt has checksum d51dc42f616b67126fd2aa1e1f43385b
 
 Test DR Volume Live Upgrade And Rebuild
-    [Tags]    manual    negative    dr-volume-live-upgrade-and-rebuild    expansion    upgrade
+    [Tags]    manual    negative    dr-volume    expansion    upgrade
     [Documentation]    - Test DR volume live upgrade and rebuild
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/1279
@@ -150,6 +150,9 @@ Test DR Volume Live Upgrade And Rebuild
     ...                - Launch a pod for the 2nd activated volume, and verify the restored data is correct.
     ...                - Crash one replica for the 2nd activated volume.
     ...                - Wait for the rebuild complete, then verify the volume still works fine by reading/writing more data.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volume doesn't support live upgrade
+    END
 
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
@@ -248,7 +251,7 @@ Test DR Volume Live Upgrade And Rebuild
     And Check pod 2 works
 
 Test DR Volume Incremental Restore After Source Volume Expansion
-    [Tags]    manual    negative    dr-volume-expansion    expansion
+    [Tags]    manual    negative    dr-volume    expansion
     [Documentation]    - Test DR Volume Incremental Restore After Source Volume Expansion
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/11767

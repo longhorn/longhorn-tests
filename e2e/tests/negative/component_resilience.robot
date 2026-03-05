@@ -141,6 +141,7 @@ Test Longhorn Backing Image Volume Recovery
     Then Wait backing image managers running
 
 Test Longhorn Dynamic Provisioned RWX Volume Recovery
+    [Tags]    sharemanager
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -163,7 +164,8 @@ Test Longhorn Dynamic Provisioned RWX Volume Recovery
     And Wait until volume of deployment 0 replica rebuilding started on replica node
     Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
-    When Delete sharemanager pod of deployment 0 and wait for recreation
+    When Delete sharemanager pod of deployment 0
+    Then Wait for sharemanager pod of deployment 0 recreation
     And Wait for sharemanager pod of deployment 0 running
     And Wait for deployment 0 pods stable
     And Check deployment 0 data in file data.txt is intact

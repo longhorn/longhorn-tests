@@ -13,6 +13,7 @@ from utility.utility import subprocess_exec_cmd
 from utility.utility import get_retry_count_and_interval
 from utility.utility import set_longhorn_namespace
 from utility.utility import get_longhorn_namespace
+from event.event import cleanup_events
 
 
 class common_keywords:
@@ -99,3 +100,6 @@ class common_keywords:
             logging(f"Unexpected {output} in {cmd} result: {res}")
             time.sleep(retry_count)
             assert False, f"Unexpected {output} in {cmd} result: {res}"
+
+    def cleanup_events(self):
+        cleanup_events()
