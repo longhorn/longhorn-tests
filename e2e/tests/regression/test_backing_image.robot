@@ -201,5 +201,5 @@ Test Reduce Backing Image Min Number Of Copies
     And Wait for disk file status of backing image bi are expected    expected_ready_count=1
 
     Then Run command and expect output
-    ...    kubectl logs -l app=longhorn-manager -n longhorn-system --tail=-1
+    ...    kubectl logs -l app=longhorn-manager -n longhorn-system --since=3m
     ...    Cleaning up the unused file in disk.*failedDiskFileCount.*fileState.*handlingDiskFileCount.*minNumberOfCopies.*readyDiskFileCount
