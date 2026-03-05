@@ -7,6 +7,7 @@ from backing_image.base import Base
 
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+from utility.utility import subprocess_exec_cmd
 import utility.constant as constant
 
 
@@ -17,6 +18,10 @@ class CRD(Base):
 
     def create(self, name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies):
         return NotImplemented
+
+    def update(self, name, key, value):
+        cmd = f"kubectl patch backingimage {name} -n {constant.LONGHORN_NAMESPACE} --type merge -p '{{\"spec\": {{\"{key}\": {value}}}}}'"
+        subprocess_exec_cmd(cmd)
 
     def get(self, bi_name):
         return NotImplemented

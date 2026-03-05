@@ -1,19 +1,13 @@
-from kubernetes import client
+import json
 
+from utility.utility import subprocess_exec_cmd
 import utility.constant as constant
 
 
-def list_services(label_selector, namespace=constant.LONGHORN_NAMESPACE):
-    core_api = client.CoreV1Api()
-    return core_api.list_namespaced_service(
-        namespace=namespace,
-        label_selector=label_selector
-    )
-
-
-def is_services_headless(namespace=constant.LONGHORN_NAMESPACE, label_selector=None):
-    services = list_services(label_selector, namespace=namespace)
-    for service in services.items:
-        if service.spec.cluster_ip == "None":
-            return True
-    return False
+def list_services(label_selector=None, namespace=constant.LONGHORN_NAMESPACE):
+    cmd = f"kubectl -n {namespace} get svc"
+    if label_selector:
+        cmd += f" -l {label_selector}"
+    cmd += " -o json"
+    output = json.loads(subprocess_exec_cmd(cmd))
+    return output.get('items', [])

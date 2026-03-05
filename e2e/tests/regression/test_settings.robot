@@ -92,7 +92,7 @@ Test Setting Concurrent Rebuild Limit
     And Check volume 1 data is intact
 
 Test Setting Network For RWX Volume Endpoint
-    [Tags]    setting    volume    rwx    storage-network
+    [Tags]    setting    volume    rwx    storage-network    sharemanager
     [Documentation]    Test if setting endpoint-network-for-rwx-volume works correctly.
     ...
     ...                Issues:
@@ -146,7 +146,7 @@ Test Setting Csi Components Resource Limits
     ...    {"cpu":"250m","memory":"256Mi"}
 
 Test RWX Volume Endpoint Network With Storage Network Enabled
-    [Tags]    storage-network
+    [Tags]    storage-network    sharemanager
     [Documentation]    Issues: https://github.com/longhorn/longhorn/issues/10269
     ...                        https://github.com/longhorn/longhorn/blob/40086933b11383cdcc492b3b1be836dec0c23d81/enhancements/20251017-rwx-volume-endpoint-network.md
     ...    Feature validation: Verify that RWX volume mounts function correctly with the endpoint network setting.
@@ -202,7 +202,7 @@ Test RWX Volume Endpoint Network With Storage Network Enabled
     And Wait for all sharemanager to be deleted
 
 Test RWX Volume Endpoint Network With Storage Network Disabled
-    [Tags]    storage-network
+    [Tags]    storage-network    sharemanager
     [Documentation]    Issues: https://github.com/longhorn/longhorn/issues/10269
     ...                        https://github.com/longhorn/longhorn/blob/40086933b11383cdcc492b3b1be836dec0c23d81/enhancements/20251017-rwx-volume-endpoint-network.md
     ...    Feature validation: Verify that RWX volume mounts function correctly with the endpoint network setting.
