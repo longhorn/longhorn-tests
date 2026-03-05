@@ -3,6 +3,7 @@ Documentation       Common keywords
 
 Library             Collections
 Library             OperatingSystem
+Library             String
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/deployment_keywords.py
 Library             ../libs/keywords/network_keywords.py
@@ -28,9 +29,16 @@ Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
+Library             String
 Resource            variables.resource
 
 *** Keywords ***
+Generate random disk name
+    [Arguments]    ${prefix}=local-disk    ${length}=6
+    ${suffix}=    Generate Random String    ${length}    [LOWER][NUMBERS]
+    ${disk_name}=    Set Variable    ${prefix}-${suffix}
+    [Return]    ${disk_name}
+
 Run command
     [Arguments]    ${command}
     execute_command    ${command}
@@ -88,7 +96,6 @@ Init worker node variables
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
 
 Set up test environment
-    setup_control_plane_network_latency
     set_backupstore
     Init worker node variables
     IF     "${DATA_ENGINE}" == "v2"
