@@ -13,6 +13,8 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/k8s.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -161,3 +163,32 @@ Test Node ID Change During Backing Image Creation
     When Wait backimg image bi-large download complete
     And Check backing image bi-large download file checksum matches
     And Verify longhorn manager logs does not contain but the pod became not ready after test start
+
+Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
+    [Tags]    coretest
+    [Documentation]    Validates that when volume size is smaller than backing image virtual size,
+    ...                - the longhorn manager log shows a clear error condition.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/11673
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Backing image is not supported for v2 data engine
+    END
+
+    Given Get test start time
+    # The ubuntu-20.04-minimal-cloudimg-amd64.img backing image has a virtual size of ~2.3 GB.
+    # Using backingImageDataSourceType=download so the backing image is created on demand via StorageClass.
+    When Create storageclass sc-bi-size-mismatch with
+    ...    backingImage=bi-ubuntu-focal
+    ...    backingImageDataSourceType=download
+    ...    backingImageDataSourceParameters={"url": "https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img"}
+    ...    numberOfReplicas=3
+
+    # Attempt to create PVC with 2Gi, which is smaller than the backing image virtual size (~2.3 GB).
+    # The admission webhook will reject the volume creation; no volume CR will be created.
+    And Create persistentvolumeclaim 0 without waiting for bound    sc_name=sc-bi-size-mismatch    storage_size=2Gi
+
+    # Verify no volume CR was created.
+    Then Assert persistentvolumeclaim 0 has no volume
+
+    # Verify the admission webhook rejection is recorded in the longhorn-manager logs.
+    And Verify longhorn manager log contains volume size should be larger than the backing image size after test start
