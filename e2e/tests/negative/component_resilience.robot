@@ -59,7 +59,7 @@ Test Longhorn Components Recovery
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data.txt in deployment 0
 
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    When Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     And Create volume 1 with    backingImage=bi
     And Attach volume 1
     And Wait for volume 1 healthy
@@ -126,7 +126,7 @@ Test Longhorn Backing Image Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.    
     ...                    Delete the backing image manager pod and verify the pod gets recreated.
-    When Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    When Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     And Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -141,6 +141,7 @@ Test Longhorn Backing Image Volume Recovery
     Then Wait backing image managers running
 
 Test Longhorn Dynamic Provisioned RWX Volume Recovery
+    [Tags]    sharemanager
     [Documentation]    -- Manual test plan --
     ...                Test data setup:
     ...                    Deploy Longhorn on a 3 nodes cluster.
@@ -163,7 +164,8 @@ Test Longhorn Dynamic Provisioned RWX Volume Recovery
     And Wait until volume of deployment 0 replica rebuilding started on replica node
     Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
 
-    When Delete sharemanager pod of deployment 0 and wait for recreation
+    When Delete sharemanager pod of deployment 0
+    Then Wait for sharemanager pod of deployment 0 recreation
     And Wait for sharemanager pod of deployment 0 running
     And Wait for deployment 0 pods stable
     And Check deployment 0 data in file data.txt is intact
