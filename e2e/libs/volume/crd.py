@@ -26,6 +26,7 @@ from volume.rest import Rest
 class CRD(Base):
 
     def __init__(self):
+        super().__init__()
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
@@ -802,12 +803,6 @@ class CRD(Base):
 
     def activate(self, volume_name):
         return Rest().activate(volume_name)
-
-    def create_persistentvolume(self, volume_name, retry):
-        return Rest().create_persistentvolume(volume_name, retry)
-
-    def create_persistentvolumeclaim(self, volume_name, retry):
-        return Rest().create_persistentvolumeclaim(volume_name, retry)
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         return Rest().upgrade_engine_image(volume_name, engine_image_name)
