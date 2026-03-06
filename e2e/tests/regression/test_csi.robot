@@ -8,6 +8,12 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/k8s.resource
+Resource    ../keywords/deployment.resource
+Resource    ../keywords/host.resource
+Resource    ../keywords/volume.resource
+Resource    ../keywords/persistentvolume.resource
+Resource    ../keywords/persistentvolumeclaim.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -272,3 +278,35 @@ Test CSI Pod Anti Affinity Update
     And Check all Longhorn CRD removed
     And Install Longhorn
     And Wait for Longhorn components all running
+
+Test CSI Node Server Can Recover Corrupted Block Mount Point
+    [Documentation]    Reproduce CSI block mount issue with broken symlink and verify workload launch succeeds.
+    ...    1. Cordon non-target nodes.
+    ...    2. Create single replica Longhorn volume `vol`.
+    ...    3. Corrupt mount point on target node with reproduce script.
+    ...    4. Create block-volume workload using pre-created volume.
+    ...    5. Verify workload is launched successfully and the broken symlink issue is resolved.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12006
+    Given Cordon node 1
+    And Cordon node 2
+    And Create volume vol    size=200Mi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    # corrupt the mount point on the target node (node 0)
+    And Corrupt CSI block volume staging mount point on node 0 for volume vol
+    # verify the the mount point is corrupted with a broken symlink
+    And Run command on node 0 and wait for output
+    ...    file /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/staging/vol/vol
+    ...    /nonexistent/path/file
+
+    When Create persistentvolume for volume vol    volume_mode=Block
+    And Create persistentvolumeclaim for volume vol    volume_mode=Block
+    And Create deployment csi-block-mount-recovery with block persistentvolumeclaim vol
+    # verify the broken symlink issue is resolved and the workload is running successfully
+    Then Wait for deployment csi-block-mount-recovery pods stable
+    And Run command on node 0 and not expect output
+    ...    file /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/staging/vol/vol
+    ...    /nonexistent/path/file
+    And Make block device filesystem in deployment csi-block-mount-recovery
+    And Mount block device on /data in deployment csi-block-mount-recovery
+    And Write 100 MB data to file data.txt in deployment csi-block-mount-recovery
+    And Check deployment csi-block-mount-recovery data in file data.txt is intact
