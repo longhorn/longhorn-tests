@@ -803,11 +803,11 @@ class CRD(Base):
     def activate(self, volume_name):
         return Rest().activate(volume_name)
 
-    def create_persistentvolume(self, volume_name, retry):
-        return Rest().create_persistentvolume(volume_name, retry)
+    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem"):
+        return Rest().create_persistentvolume(volume_name, retry, volume_mode)
 
-    def create_persistentvolumeclaim(self, volume_name, retry):
-        return Rest().create_persistentvolumeclaim(volume_name, retry)
+    def create_persistentvolumeclaim(self, volume_name, retry, volume_mode="Filesystem"):
+        return Rest().create_persistentvolumeclaim(volume_name, retry, volume_mode)
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         return Rest().upgrade_engine_image(volume_name, engine_image_name)

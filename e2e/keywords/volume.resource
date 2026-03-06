@@ -501,12 +501,14 @@ Activate DR volume ${volume_id}
     activate_dr_volume    ${volume_name}
 
 Create persistentvolume for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_persistentvolume_for_volume    ${volume_name}
+    create_persistentvolume_for_volume    ${volume_name}    &{config}
 
 Create persistentvolumeclaim for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_persistentvolumeclaim_for_volume    ${volume_name}
+    create_persistentvolumeclaim_for_volume    ${volume_name}    &{config}
 
 Create persistentvolume for volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

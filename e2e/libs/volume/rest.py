@@ -403,53 +403,67 @@ class Rest(Base):
         assert engine.lastRestoredBackup == ""
         assert engine.requestedBackupRestore == ""
 
-    def create_persistentvolume(self, volume_name, retry):
-        for _ in range(self.retry_count):
-            try:
-                volume = self.get(volume_name)
-                if hasattr(volume, 'pvCreate'):
-                    break
-            except Exception as e:
-                logging(f"Failed to get pvCreate method for volume {volume_name}: {e}")
-            time.sleep(self.retry_interval)
-        else:
-            raise AttributeError
-        volume.pvCreate(pvName=volume_name, fsType="ext4")
-
-        if not retry:
+    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem"):
+        if volume_mode == "Block":
+            logging(f'Creating block PV {volume_name}')
+            volume = self.get(volume_name)
+            storage = str(convert_size_to_bytes(volume.size))
+            self.pv.create(volume_name, storage, volume_mode="Block")
             return
-
-        created = False
-        for _ in range(self.retry_count):
-            if self.pv.is_exist(volume_name):
-                created = True
-                break
-            time.sleep(self.retry_interval)
-        assert created
-
-    def create_persistentvolumeclaim(self, volume_name, retry):
-        for _ in range(self.retry_count):
-            try:
-                volume = self.get(volume_name)
-                if hasattr(volume, 'pvcCreate'):
-                    break
-            except Exception as e:
-                logging(f"Failed to get pvcCreate method for volume {volume_name}: {e}")
-            time.sleep(self.retry_interval)
         else:
-            raise AttributeError
-        volume.pvcCreate(namespace="default", pvcName=volume_name)
+            for _ in range(self.retry_count):
+                try:
+                    volume = self.get(volume_name)
+                    if hasattr(volume, 'pvCreate'):
+                        break
+                except Exception as e:
+                    logging(f"Failed to get pvCreate method for volume {volume_name}: {e}")
+                time.sleep(self.retry_interval)
+            else:
+                raise AttributeError
+            volume.pvCreate(pvName=volume_name, fsType="ext4")
 
-        if not retry:
+            if not retry:
+                return
+
+            created = False
+            for _ in range(self.retry_count):
+                if self.pv.is_exist(volume_name):
+                    created = True
+                    break
+                time.sleep(self.retry_interval)
+            assert created
+
+    def create_persistentvolumeclaim(self, volume_name, retry, volume_mode="Filesystem"):
+        if volume_mode == "Block":
+            logging(f'Creating block PVC {volume_name}')
+            volume = self.get(volume_name)
+            storage = str(convert_size_to_bytes(volume.size))
+            self.pvc.create(volume_name, "RWO", "longhorn", storage_size=storage, volume_mode="Block", volume_name=volume_name)
             return
+        else:
+            for _ in range(self.retry_count):
+                try:
+                    volume = self.get(volume_name)
+                    if hasattr(volume, 'pvcCreate'):
+                        break
+                except Exception as e:
+                    logging(f"Failed to get pvcCreate method for volume {volume_name}: {e}")
+                time.sleep(self.retry_interval)
+            else:
+                raise AttributeError
+            volume.pvcCreate(namespace="default", pvcName=volume_name)
 
-        created = False
-        for _ in range(self.retry_count):
-            if self.pvc.is_exist(volume_name, namespace="default"):
-                created = True
-                break
-            time.sleep(self.retry_interval)
-        assert created
+            if not retry:
+                return
+
+            created = False
+            for _ in range(self.retry_count):
+                if self.pvc.is_exist(volume_name, namespace="default"):
+                    created = True
+                    break
+                time.sleep(self.retry_interval)
+            assert created
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         logging(f"Upgrading volume {volume_name} engine image to {engine_image_name}")

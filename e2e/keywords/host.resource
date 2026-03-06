@@ -2,6 +2,8 @@
 Documentation       Physical Node Keywords
 
 Library             Collections
+Library             OperatingSystem
+Library             String
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/network_keywords.py
@@ -117,6 +119,24 @@ Run command on node ${node_id} and get output string
     ${node_name} =    get_node_by_index    ${node_id}
     ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
     RETURN    ${result}
+
+Run script on node
+    [Arguments]    ${node_id}    ${script_path}    ${args}=${EMPTY}
+    ${script_content}=    Get File    ${script_path}
+    ${node_name}=    get_node_by_index    ${node_id}
+    ${script_name}=    Fetch From Right    ${script_path}    /
+    ${cmd}=    Catenate    SEPARATOR=\n
+    ...    cat <<'EOF' > /tmp/${script_name}
+    ...    ${script_content}
+    ...    EOF
+    ...    chmod +x /tmp/${script_name}
+    ...    /tmp/${script_name} ${args}
+    execute_command_on_node    ${cmd}    ${node_name}
+
+Corrupt CSI block volume staging mount point on node ${node_id} for volume ${volume_name}
+    Run script on node    ${node_id}
+    ...    ${CURDIR}/../scripts/corrupt-csi-block-mount.sh
+    ...    ${volume_name} corrupt
 
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
