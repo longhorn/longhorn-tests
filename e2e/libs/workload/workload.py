@@ -647,3 +647,7 @@ def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="d
         assert False, f"{workload_kind.capitalize()} {workload_name} has revision {latest_revision} (expected 1), pods may have been recreated"
     
     logging(f"{workload_kind.capitalize()} {workload_name} has only revision 1, pods have not been recreated")
+
+def rollout_restart_workload(workload_kind, workload_name, namespace="default"):
+    cmd = f"kubectl rollout restart {workload_kind}/{workload_name} -n {namespace}"
+    subprocess_exec_cmd(cmd)

@@ -421,3 +421,7 @@ Check ${workload_kind} ${workload_id} pods not restarted
 Check ${workload_kind} ${workload_id} pods not recreated
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     check_workload_pods_not_recreated    ${workload_kind}    ${workload_name}
+
+Rollout restart ${workload_kind} ${workload_id} in namespace ${namespace}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    rollout_restart_workload    ${workload_kind}    ${workload_name}    ${namespace}
