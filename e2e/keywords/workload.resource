@@ -421,3 +421,13 @@ Check ${workload_kind} ${workload_id} pods not restarted
 Check ${workload_kind} ${workload_id} pods not recreated
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     check_workload_pods_not_recreated    ${workload_kind}    ${workload_name}
+
+Volume of ${workload_kind} ${workload_id} actual size should be less than ${size}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_actual_size_less_than    ${volume_name}    ${size}
+
+Volume of ${workload_kind} ${workload_id} actual size should be greater than ${size}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_actual_size_greater_than    ${volume_name}    ${size}
