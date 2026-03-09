@@ -70,6 +70,10 @@ Validate snapshot ${snapshot_id} is marked as removed in volume ${volume_id} sna
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_marked_as_removed    ${volume_name}    ${snapshot_id}
 
+Wait for snapshot ${snapshot_id} to not be in volume ${volume_id} snapshot list
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_snapshot_to_be_not_existing    ${volume_name}    ${snapshot_id}
+
 Validate snapshot ${snapshot_id} is not in volume ${volume_id} snapshot list
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_not_existing    ${volume_name}    ${snapshot_id}

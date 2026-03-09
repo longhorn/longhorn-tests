@@ -41,6 +41,14 @@ class snapshot_keywords:
     def is_marked_as_removed(self, volume_name, snapshot_id):
         self.snapshot.is_marked_as_removed(volume_name, snapshot_id)
 
+    def wait_for_snapshot_to_be_not_existing(self, volume_name, snapshot_id):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} snapshot {snapshot_id} to not exist ... ({i})")
+            if not self.snapshot.is_existing(volume_name, snapshot_id):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Timed out waiting for volume {volume_name} snapshot {snapshot_id} to not exist"
+
     def is_not_existing(self, volume_name, snapshot_id):
         if self.snapshot.is_existing(volume_name, snapshot_id):
             logging(f"Expecting volume {volume_name} snapshot {snapshot_id} to not exist, but it still exists")
