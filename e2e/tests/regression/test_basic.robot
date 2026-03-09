@@ -216,3 +216,22 @@ Test Dynamic PV Has No Node Affinity
     Then Run command and not expect output
     ...    kubectl get pv $(kubectl get pvc ${claim_name} -ojsonpath='{.spec.volumeName}') -o yaml
     ...    nodeAffinity:
+
+Test Filesystem Trim
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/7534
+    ...    1. Create a workload to use a Longhorn volume.
+    ...    2. Write data to the volume and then delete the data.
+    ...    3. Trigger filesystem trim on the volume.
+    ...    4. Check the volume's used storage size is reduced after trim.
+    ...    Note: v2 volumes don't support unmapMarkSnapChainRemoved and Remove Snapshots During Filesystem Trim
+    ...          so pytest test case test_filesystem_trim doesn't work on v2 volumes.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    When Write 256 MB data to file testfile in deployment 0
+    And Volume of deployment 0 actual size should be greater than 256Mi
+    And Run commands in deployment 0    commands=rm -rf /data/testfile && sync
+    And Trim deployment 0 volume should pass
+    Then Volume of deployment 0 actual size should be less than 256Mi
