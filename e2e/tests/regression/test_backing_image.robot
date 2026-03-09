@@ -21,7 +21,7 @@ Test Teardown    Cleanup test resources
 Test Backing Image Basic Operation
     [Tags]    coretest
     [Documentation]    Test Backing Image APIs.
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    Given Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     When Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -43,8 +43,8 @@ Test Uninstall When Backing Image Exists
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/10044
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Given Create backing image bi-qcow2 with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
-        And Create backing image bi-raw with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+        Given Create backing image bi-qcow2    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+        And Create backing image bi-raw    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
         And Setting deleting-confirmation-flag is set to true
 
         When Uninstall Longhorn
@@ -54,7 +54,7 @@ Test Uninstall When Backing Image Exists
     END
 
 Test Backup Backing Image
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    Given Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     When Create backup backing image bi-backup for backing image bi
     Then Wait for backing image backup for backing image bi ready
 
@@ -80,7 +80,7 @@ Test Evict Two Replicas Volume With Backing Image
     ...                of a volume created from a backing image
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/11034
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    Given Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     # To make sure replica node is node 1
     And Set node 2 with    allowScheduling=false    evictionRequested=false
     When Create volume 0 with    backingImage=bi    numberOfReplicas=2
@@ -99,7 +99,7 @@ Test backing image handle node disk deleting events
     ...               are removed after a broken disk is removed from Longhorn node.
     ...
     ...               Issue: https://github.com/longhorn/longhorn/issues/10983
-    Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1    minNumberOfCopies=3
+    Given Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    dataEngine=v1    minNumberOfCopies=3
     Then Record node 0 default disk uuid
     When Run command on node    0
     ...    rm /var/lib/longhorn/longhorn-disk.cfg
@@ -126,7 +126,7 @@ Test backing image download to local
     And Write 50 Mi data to volume vol-0
 
     &{bi_params} =    Create Dictionary    volume-name=vol-0   export-type=raw
-    When Create backing image bi with    url=    parameters=&{bi_params}    minNumberOfCopies=3    dataEngine=v1
+    When Create backing image bi    url=    parameters=&{bi_params}    minNumberOfCopies=3    dataEngine=v1
     And Download backing image bi
     And Check downloaded backing image bi data matches source backingimage
     And Check downloaded backing image bi data matches volume vol-0
@@ -151,7 +151,7 @@ Test Node ID Change During Backing Image Creation
     And Evict node 0
     And Delete Longhorn node 0
 
-    When Create backing image bi-large with    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    minNumberOfCopies=1
+    When Create backing image bi-large    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    minNumberOfCopies=1
     And Download backing image bi-large    is_async=${True}
     Then Add Longhorn node 0 back
     And Wait for Longhorn node 0 up
@@ -161,3 +161,45 @@ Test Node ID Change During Backing Image Creation
     When Wait backimg image bi-large download complete
     And Check backing image bi-large download file checksum matches
     And Verify longhorn manager logs does not contain but the pod became not ready after test start
+
+Test Backing Image Non-existent Disk UUID Warning
+    [Documentation]    Validate backing image generates warning log when referencing non-existent disk UUID
+    ...    1. Create a backing image
+    ...    2. Record original diskFileSpecMap
+    ...    3. Add one non-existent UUID entry into spec.diskFileSpecMap
+    ...    4. Verify warning log "Disk xxx is not ready or does not exist" appears in longhorn-manager pod
+    ...    5. Restore original diskFileSpecMap and verify all disk file status are ready
+    ...
+    ...    Expected log: "Disk <random-uuid> is not ready or does not exist.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/4887
+    Given Create backing image test-bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+
+    ${original_diskFileSpecMap} =    Get diskFileSpecMap of backing image test-bi
+    ${nonexistent_disk_uuid} =    Generate new uuid
+    When Run command
+    ...    kubectl patch backingimage test-bi -n longhorn-system --type=merge -p='{"spec":{"diskFileSpecMap":{"${nonexistent_disk_uuid}":{}}}}'
+
+    Then Run command and wait for output
+    ...    kubectl logs -n longhorn-system -l app=longhorn-manager --since=30s | grep "${nonexistent_disk_uuid}"
+    ...    Disk ${nonexistent_disk_uuid} is not ready or does not exist
+
+    When Run command
+    ...    kubectl patch backingimage test-bi -n longhorn-system --type=json -p='[{"op":"replace","path":"/spec/diskFileSpecMap","value":${original_diskFileSpecMap}}]'
+    Then Verify all disk file status of backing image test-bi are ready
+
+Test Reduce Backing Image Min Number Of Copies
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12584
+    ...    1. Create a backing image with min number of copies 3
+    ...    2. Reduce the min number of copies to 1
+    ...    3. Check unused backing image files are cleaned up after the waiting interval of backing image cleanup
+    Given Setting backing-image-cleanup-wait-interval is set to 1
+    And Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    And Wait for disk file status of backing image bi are expected    expected_ready_count=3
+
+    When Update backing image bi min number of copies to 1
+    And Wait for disk file status of backing image bi are expected    expected_ready_count=1
+
+    Then Run command and expect output
+    ...    kubectl logs -l app=longhorn-manager -n longhorn-system --since=3m
+    ...    Cleaning up the unused file in disk.*failedDiskFileCount.*fileState.*handlingDiskFileCount.*minNumberOfCopies.*readyDiskFileCount

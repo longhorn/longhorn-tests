@@ -10,6 +10,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/network.resource
 Resource    ../keywords/setting.resource
@@ -93,6 +94,9 @@ Test Volume Expansion During Network Disconnect With Volume Type
     And Wait for volume of deployment 0 healthy
 
     Then Wait for deployment 0 volume size expanded
+    IF    '${VOLUME_TYPE}' == 'rwx'
+        And Check no sharemanager pod of deployment 0 recreation
+    END
     And Wait for workloads pods stable    deployment 0
     And Check deployment 0 data in file data.txt is intact
     And Assert filesystem size in deployment 0 is 10Gi

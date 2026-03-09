@@ -92,7 +92,7 @@ Test Setting Concurrent Rebuild Limit
     And Check volume 1 data is intact
 
 Test Setting Network For RWX Volume Endpoint
-    [Tags]    setting    volume    rwx    storage-network
+    [Tags]    setting    volume    rwx    storage-network    sharemanager
     [Documentation]    Test if setting endpoint-network-for-rwx-volume works correctly.
     ...
     ...                Issues:

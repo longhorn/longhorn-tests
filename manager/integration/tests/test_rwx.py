@@ -534,35 +534,6 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
     assert md5sum == md5sum_pod1 == md5sum_pod2
 
 
-@pytest.mark.skip(reason="TODO")
-def test_rwx_online_expansion(): # NOQA
-    """
-    Related issue :
-    https://github.com/longhorn/longhorn/issues/2181
-    https://github.com/longhorn/longhorn/issues/2484
-
-    This test case does not cover the UI test mentioned in the related issue's
-    test steps."
-
-    Given
-    - Create a rwx pvc using longhorn storage class of size 1 Gi.
-
-    And
-    - Attach it to a workload (deployment) and write some data.
-
-    When
-    - Expand the volume to 5 Gi
-
-    Then
-    - Expansion of volume is completed.
-    - Share manager pod not restart
-
-    And
-    - 1.5 Gi of data is successfully written to the expanded volume.
-    """
-    pass
-
-
 @pytest.mark.v2_volume_test
 def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc, storage_class): # NOQA
     """
