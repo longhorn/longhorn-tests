@@ -52,9 +52,10 @@ Test Replicas Not Accumulate During Engine Upgrade
     ...    2. Reinstall stable version of Longhorn
     ...    3. Create 10 volumes
     ...    4. Set concurrent-automatic-engine-upgrade-per-node-limit = 10
-    ...    5. Apply network latency to the control plane
-    ...    6. Upgrade Longhorn to custom version
-    ...    7. For all volumes, wait for their replica count to be 3
+    ...    5. Apply network latency to the control plane to produce etcd delays
+    ...    6. Upgrade Longhorn to custom version, engine image upgrade will be triggered for all volumes
+    ...    7. For all volumes, check there is no failed replicas accumulated due to etcd delays by
+    ...       waiting for their replica count to be 3
     [Tags]    coretest    upgrade
 
     IF    '${DATA_ENGINE}' == 'v2'
@@ -86,11 +87,15 @@ Test Replicas Not Accumulate During Engine Upgrade
     And Upgrade Longhorn to custom version
 
     FOR    ${i}    IN RANGE    10
-        Then Volume ${i} should have 3 replicas
+        And Wait for volume ${i} engine to be upgraded to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
     END
 
+    # remove control plane network latency to prevent it from
+    # unexpectedly affecting subsequent checking and accessing k8s resources
+    And Reset control plane network latency
+
     FOR    ${i}    IN RANGE    10
-        And Wait for volume ${i} engine to be upgraded to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        Then Volume ${i} should have 3 replicas
     END
 
     FOR    ${i}    IN RANGE    10
