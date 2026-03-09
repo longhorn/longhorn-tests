@@ -213,6 +213,19 @@ Verify longhorn manager logs does not contain ${expect_log} after test start
         verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
     END
 
+Verify longhorn manager log contains ${expect_log} after test start
+    ${pods} =    get_longhorn_manager_pods
+    ${found} =    Set Variable    ${FALSE}
+    FOR    ${pod}    IN    @{pods}
+        ${status}    ${value} =    Run Keyword And Ignore Error
+        ...    verify_pod_log_after_time_contains    ${pod}    ${expect_log}    ${test_start_time}
+        IF    '${status}' == 'PASS'
+            ${found} =    Set Variable    ${TRUE}
+            BREAK
+        END
+    END
+    Should Be True    ${found}    Expected log "${expect_log}" was not found in any longhorn-manager pod logs
+
 Delete Longhorn node ${node_id}
     # Taint the node and delete nodes.longhorn.io instead of deleting the 
     # entire Kubernetes node, thereford we can bring the Longhorn node back 
