@@ -59,6 +59,10 @@ Setup control plane network latency to ${latency_ms} ms
     [Documentation]    Set network latency on control plane nodes
     ...    ${latency_ms}: Latency in milliseconds (e.g., 1500 for 1.5 seconds)
     setup_control_plane_network_latency    ${latency_ms}
+
+Reset control plane network latency
+    cleanup_control_plane_network_latency
+
 Disconnect network on node ${node_id} for ${duration} seconds
     [Documentation]    Disconnect network on node for specified duration.
     ...                Network will automatically reconnect after timeout.
