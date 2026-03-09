@@ -13,6 +13,8 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/k8s.resource
+Resource    ../keywords/storageclass.resource
+Resource    ../keywords/persistentvolumeclaim.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -177,3 +179,47 @@ Test Reduce Backing Image Min Number Of Copies
     Then Run command and expect output
     ...    kubectl logs -l app=longhorn-manager -n longhorn-system --since=3m
     ...    Cleaning up the unused file in disk.*failedDiskFileCount.*fileState.*handlingDiskFileCount.*minNumberOfCopies.*readyDiskFileCount
+
+Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
+    [Documentation]    Validates that when volume size is smaller than backing image virtual size,
+    ...                - the longhorn manager log shows a clear error condition.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/11673
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Test case not support for v2 data engine
+    END
+
+    Given Get test start time
+    # The virtual size of this image is 2.20 GiB, which is larger than the 2Gi PVC size used below.
+    And Create backing image bi-ubuntu-focal    url=https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img    minNumberOfCopies=3    dataEngine=${DATA_ENGINE}
+    And Wait for all disk file status of backing image bi-ubuntu-focal are ready
+    When Create storageclass sc-backing-image-size-test with    backingImage=bi-ubuntu-focal    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+
+    # Attempt to create PVC with size smaller than backing image virtualSize.
+    # The admission webhook will reject the volume creation; no volume CR will be created.
+    And Create persistentvolumeclaim 0 without waiting for bound    sc_name=sc-backing-image-size-test    storage_size=2Gi
+
+    # Verify the admission webhook rejection is recorded in the longhorn-manager logs.
+    Then Verify longhorn manager log contains volume size should be larger than the backing image size after test start
+
+Test Volume Size Smaller Than Backing Image Virtual Size Should Show BackingImageIncompatible Condition
+    [Documentation]    Validates that when volume size is smaller than backing image virtual size
+    ...                - and the backing image is created on-demand, the volume CR's BackingImageIncompatible
+    ...                - condition is set by the controller after the virtualSize becomes known.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/11673
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Test case not support for v2 data engine
+    END
+
+    # The virtual size of this image is ~2.20 GiB, which is larger than the 2Gi PVC size used below.
+    Given Create storageclass sc-backing-image-size-test with    backingImage=bi-ubuntu-focal    backingImageDataSourceType=download    backingImageDataSourceParameters={"url": "https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img"}    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    # Create PVC with size smaller than backing image virtualSize.
+    # The backing image does not exist yet (virtualSize=0), so the webhook allows volume CR creation.
+    And Create persistentvolumeclaim 0    sc_name=sc-backing-image-size-test    storage_size=2Gi
+    And Wait for volume of persistentvolumeclaim 0 to be created
+    # Once the backing image finishes downloading, virtualSize becomes known.
+    # The controller then detects the incompatibility and sets the condition.
+    And Wait for all disk file status of backing image bi-ubuntu-focal are ready
+    Then Wait for volume of persistentvolumeclaim 0 condition BackingImageIncompatible to be True    reason=BackingImageVirtualSizeTooLarge
+
