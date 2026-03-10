@@ -184,8 +184,8 @@ class Volume(Base):
     def activate(self, volume_name):
         return self.volume.activate(volume_name)
 
-    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem"):
-        return self.volume.create_persistentvolume(volume_name, retry, volume_mode)
+    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem", fsType="ext4"):
+        return self.volume.create_persistentvolume(volume_name, retry, volume_mode, fsType)
 
     def create_persistentvolumeclaim(self, volume_name, retry, volume_mode="Filesystem"):
         return self.volume.create_persistentvolumeclaim(volume_name, retry, volume_mode)
