@@ -17,6 +17,127 @@ Resource    ../keywords/longhorn.resource
 Test Setup   Set up test environment
 Test Teardown    Cleanup test resources
 
+*** Keywords ***
+Test Allow Snapshots Removal During Trim
+    [Arguments]    ${FILESYSTEM}
+    [Documentation]    Migrated from test_basic.py::test_filesystem_trim
+    ...   This test verifies that when the option `unmapMarkSnapChainRemoved` is enabled,
+    ...   the latest snapshot and the preceding continuous chain of snapshots are automatically marked as removed,
+    ...   allowing Longhorn to reclaim space for as many snapshots as possible.
+    ...
+    ...   1. Create a volume with option `unmapMarkSnapChainRemoved` enabled
+    ...   2. Create PV/PVC for the volume, and create a pod to mount the volume
+    ...   3. write file 0 to the volume, then take snapshot snap 0
+    ...   4. Write file 1 to the volume, then take snapshot snap 1
+    ...   5. Detach and re-attach the volume without frontend, and revert the volume to snap 0
+    ...   6. Recreate a pod to mount the volume
+    ...   7. Write file 2, then take snapshot snap 2
+    ...   8. Write file 3, then take snapshot snap 3
+    ...   9. Write file 4, then take snapshot snap 4
+    ...   10. Write file 5
+    ...   11. Remove file 0, file 2, file 3, file 4, and file 5
+    ...       Verify the snapshots and volume head size are not shrunk
+    ...   12. Do filesystem trim
+    ...   13. Verify that snap 2, snap 3, snap 4 are marked as removed,
+    ...       and snap 2, snap 3, snap 4, and volume head size are shrunk
+    ...
+    ...   14. Disable option `unmapMarkSnapChainRemoved` for the volume
+    ...   15. Write file 6, then take snapshot snap 6
+    ...   16. Write file 7
+    ...   17. Remove file 6 and file 7
+    ...   18. Do filesystem trim
+    ...   19. Verify that snap 6 is not marked as removed,
+    ...       and snap 6 and volume head size are shrunk
+    ...
+    ...   20. Detach and re-attach the volume without frontend, and revert the volume to snap 1
+    ...   21. Recreate a pod to mount the volume. Verify the file 0 and file 1
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volumes don't support unmapMarkSnapChainRemoved option
+    END
+    Given Create volume 0
+    And Update volume 0 unmapMarkSnapChainRemoved to enabled
+    And Create persistentvolume for volume 0    fsType=${FILESYSTEM}
+    And Create persistentvolumeclaim for volume 0
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Wait for volume 0 healthy
+
+    And Write 256 MB data to file file0 in pod 0
+    And Record file file0 checksum in pod 0 as checksum 0
+    And Create snapshot 0 of volume 0
+    And Write 256 MB data to file file1 in pod 0
+    And Record file file1 checksum in pod 0 as checksum 1
+    And Create snapshot 1 of volume 0
+
+    And Delete pod 0
+    And Wait for volume 0 detached
+    And Attach volume 0 in maintenance mode
+    And Wait for volume 0 attached
+    And Wait for volume 0 healthy
+    And Revert volume 0 to snapshot 0
+    And Detach volume 0
+    And Wait for volume 0 detached
+
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Wait for volume 0 healthy
+    And Write 256 MB data to file file2 in pod 0
+    And Create snapshot 2 of volume 0
+    And Write 256 MB data to file file3 in pod 0
+    And Create snapshot 3 of volume 0
+    And Write 256 MB data to file file4 in pod 0
+    And Create snapshot 4 of volume 0
+    And Write 256 MB data to file file5 in pod 0
+
+    When Run commands in pod 0    commands=rm /data/file0 /data/file2 /data/file3 /data/file4 /data/file5 && sync
+    # There are some extra metadata
+    # so the size would be greater than 256Mi
+    Then Volume 0 snapshot 0 size should be greater than 256Mi
+    And Volume 0 snapshot 2 size should be greater than 256Mi
+    And Volume 0 snapshot 3 size should be greater than 256Mi
+    And Volume 0 snapshot 4 size should be greater than 256Mi
+    And Volume 0 volume head size should be greater than 256Mi
+
+    When Trim volume 0
+    Then Validate snapshot 2 is marked as removed in volume 0 snapshot list
+    And Validate snapshot 3 is marked as removed in volume 0 snapshot list
+    And Validate snapshot 4 is marked as removed in volume 0 snapshot list
+    # There are some extra metadata
+    # so the size would be greater than 0
+    And Volume 0 snapshot 2 size should be less than 16Mi
+    And Volume 0 snapshot 3 size should be less than 16Mi
+    And Volume 0 snapshot 4 size should be less than 16Mi
+    # volume head stores even more metadata than other snapshots
+    And Volume 0 volume head size should be less than 64Mi
+
+    When Update volume 0 unmapMarkSnapChainRemoved to disabled
+    And Write 256 MB data to file file6 in pod 0
+    And Create snapshot 6 of volume 0
+    And Write 256 MB data to file file7 in pod 0
+    Then Run commands in pod 0    commands=rm /data/file6 /data/file7 && sync
+    And Volume 0 snapshot 6 size should be greater than 256Mi
+    And Volume 0 volume head size should be greater than 256Mi
+
+    When Trim volume 0
+    Then Validate snapshot 6 is not marked as removed in volume 0 snapshot list
+    And Volume 0 snapshot 6 size should be less than 16Mi
+    And Volume 0 volume head size should be less than 64Mi
+
+    And Delete pod 0
+    And Wait for volume 0 detached
+    And Attach volume 0 in maintenance mode
+    And Wait for volume 0 attached
+    And Wait for volume 0 healthy
+    When Revert volume 0 to snapshot 1
+    And Detach volume 0
+    And Wait for volume 0 detached
+
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Wait for volume 0 healthy
+    Then Check pod 0 file file0 checksum matches checksum 0
+    And Check pod 0 file file1 checksum matches checksum 1
+
 *** Test Cases ***
 Test Snapshot During Active IO
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12140
@@ -123,3 +244,9 @@ Test Concurrent Job Limit For Snapshot Purge
 
     When Wait for snapshot purge for volume 0 completed
     Then Purge volume 0 snapshot
+
+Test Allow Snapshots Removal During Trim With Filesystem XFS
+    Test Allow Snapshots Removal During Trim    FILESYSTEM=xfs
+
+Test Allow Snapshots Removal During Trim With Filesystem EXT4
+    Test Allow Snapshots Removal During Trim    FILESYSTEM=ext4
