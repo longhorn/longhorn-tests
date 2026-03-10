@@ -777,10 +777,11 @@ class CRD(Base):
     def update_volume_spec(self, volume_name, key, value):
         # retry conflict error
         for i in range(self.retry_count):
+            logging(f"Updating volume {volume_name} spec {key}={value} ... ({i})")
             try:
                 volume = self.get(volume_name)
                 spec = volume['spec']
-                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit"]:
+                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit", "staleReplicaTimeout"]:
                     spec[key] = int(value)
                 else:
                     spec[key] = value
