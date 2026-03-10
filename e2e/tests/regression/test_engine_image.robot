@@ -75,6 +75,11 @@ Test Replicas Not Accumulate During Engine Upgrade
 
     FOR    ${i}    IN RANGE    10
         And Create volume ${i} with    dataEngine=v1
+        # staleReplicaTimeout needs to be set to a small value to make the failed replica quickly marked as stale after engine upgrade,
+        # for dynamic provisioning by storageclass longhorn or longhorn-static, it's set to 30 (minutes)
+        # for UI-created volume, Longhorn forontend automatically sets it to 20 (minutes)
+        # both of them are too long for this test
+        And Update volume ${i} staleReplicaTimeout to 1
         And Attach volume ${i}
         And Wait for volume ${i} healthy
     END

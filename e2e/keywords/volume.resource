@@ -75,6 +75,10 @@ Update volume ${volume_id} rebuild concurrent sync limit to ${limit}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    rebuildConcurrentSyncLimit    ${limit}
 
+Update volume ${volume_id} ${key} to ${value}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_volume_spec   ${volume_name}    ${key}    ${value}
+
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
