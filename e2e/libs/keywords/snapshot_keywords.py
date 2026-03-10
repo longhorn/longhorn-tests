@@ -2,6 +2,7 @@ from snapshot import Snapshot
 
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+from utility.utility import convert_size_to_bytes
 import time
 
 
@@ -49,6 +50,9 @@ class snapshot_keywords:
             time.sleep(self.retry_interval)
         assert False, f"Timed out waiting for volume {volume_name} snapshot {snapshot_id} to not exist"
 
+    def is_not_marked_as_removed(self, volume_name, snapshot_id):
+        self.snapshot.is_not_marked_as_removed(volume_name, snapshot_id)
+
     def is_not_existing(self, volume_name, snapshot_id):
         if self.snapshot.is_existing(volume_name, snapshot_id):
             logging(f"Expecting volume {volume_name} snapshot {snapshot_id} to not exist, but it still exists")
@@ -75,3 +79,43 @@ class snapshot_keywords:
 
     def wait_for_snapshot_to_be_deleted(self, volume_name, snapshot_name):
         return self.snapshot.wait_for_snapshot_to_be_deleted(volume_name, snapshot_name)
+
+    def snapshot_size_should_be_greater_than(self, volume_name, snapshot_id, size):
+        size = convert_size_to_bytes(size)
+        for i in range(self.retry_count):
+            snap = self.snapshot.get(volume_name, snapshot_id)
+            logging(f"Volume {volume_name} snapshot {snapshot_id} size {snap.size} should be greater than {size} ... ({i})")
+            if int(snap.size) > size:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Volume {volume_name} snapshot {snapshot_id} size {snap.size} should be greater than {size}"
+
+    def snapshot_size_should_be_less_than(self, volume_name, snapshot_id, size):
+        size = convert_size_to_bytes(size)
+        for i in range(self.retry_count):
+            snap = self.snapshot.get(volume_name, snapshot_id)
+            logging(f"Volume {volume_name} snapshot {snapshot_id} size {snap.size} should be less than {size} ... ({i})")
+            if int(snap.size) < size:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Volume {volume_name} snapshot {snapshot_id} size {snap.size} should be less than {size}"
+
+    def volume_head_size_should_be_greater_than(self, volume_name, size):
+        size = convert_size_to_bytes(size)
+        for i in range(self.retry_count):
+            volume_head = self.snapshot.get_volume_head(volume_name)
+            logging(f"Volume {volume_name} head size {volume_head.size} should be greater than {size} ... ({i})")
+            if int(volume_head.size) > size:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Volume {volume_name} head size {volume_head.size} should be greater than {size}"
+
+    def volume_head_size_should_be_less_than(self, volume_name, size):
+        size = convert_size_to_bytes(size)
+        for i in range(self.retry_count):
+            volume_head = self.snapshot.get_volume_head(volume_name)
+            logging(f"Volume {volume_name} head size {volume_head.size} should be less than {size} ... ({i})")
+            if int(volume_head.size) < size:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Volume {volume_name} head size {volume_head.size} should be less than {size}"
