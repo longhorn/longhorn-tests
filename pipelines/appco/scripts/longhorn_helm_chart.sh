@@ -38,6 +38,7 @@ helm_login_appco(){
 
 set_longhorn_registry_args() {
   REGISTRY_ARGS=(
+      --set global.imageRegistry=""
       --set image.longhorn.engine.registry=""
       --set image.longhorn.manager.registry=""
       --set image.longhorn.ui.registry=""
