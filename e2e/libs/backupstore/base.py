@@ -3,6 +3,7 @@ import hashlib
 import os
 import re
 import time
+import json
 
 from kubernetes import client
 
@@ -11,6 +12,7 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
 from utility.constant import DEFAULT_BACKUPSTORE
+from utility import constant
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -102,27 +104,53 @@ class Base(ABC):
             self.wait_for_backupstore_available()
 
     def set_backupstore_url(self, url):
-        bt = get_longhorn_client().by_id_backupTarget(
-                            self.DEFAULT_BACKUPTARGET)
-        p_interval = from_k8s_duration_to_seconds(bt.pollInterval)
-        self.update_backupstore(url=url,
-                                credential_secret=bt.credentialSecret,
-                                poll_interval=p_interval)
+        cmd = "kubectl patch backuptarget -n {} {} --type='merge' -p '{}'".format(
+            constant.LONGHORN_NAMESPACE,
+            self.DEFAULT_BACKUPTARGET,
+            json.dumps({"spec": {"backupTargetURL": url}})
+        )
+        for i in range(self.retry_count):
+            logging(f"Setting backupstore url to {url} ... ({i})")
+            try:
+                subprocess_exec_cmd(cmd)
+                return
+            except Exception as e:
+                logging(f"Failed to set backupstore url to {url}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to set backupstore url to {url}"
 
     def set_backupstore_secret(self, secret):
-        bt = get_longhorn_client().by_id_backupTarget(
-                            self.DEFAULT_BACKUPTARGET)
-        p_interval = from_k8s_duration_to_seconds(bt.pollInterval)
-        self.update_backupstore(url=bt.backupTargetURL,
-                                credential_secret=secret,
-                                poll_interval=p_interval)
+        cmd = "kubectl patch backuptarget -n {} {} --type='merge' -p '{}'".format(
+            constant.LONGHORN_NAMESPACE,
+            self.DEFAULT_BACKUPTARGET,
+            json.dumps({"spec": {"credentialSecret": secret}})
+        )
+        for i in range(self.retry_count):
+            logging(f"Setting backupstore secret to {secret} ... ({i})")
+            try:
+                subprocess_exec_cmd(cmd)
+                return
+            except Exception as e:
+                logging(f"Failed to set backupstore secret to {secret}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to set backupstore secret to {secret}"
+
 
     def set_backupstore_poll_interval(self, poll_interval):
-        bt = get_longhorn_client().by_id_backupTarget(
-                            self.DEFAULT_BACKUPTARGET)
-        self.update_backupstore(url=bt.backupTargetURL,
-                                credential_secret=bt.credentialSecret,
-                                poll_interval=poll_interval)
+        cmd = "kubectl patch backuptarget -n {} {} --type='merge' -p '{}'".format(
+            constant.LONGHORN_NAMESPACE,
+            self.DEFAULT_BACKUPTARGET,
+            json.dumps({"spec": {"pollInterval": poll_interval}})
+        )
+        for i in range(self.retry_count):
+            logging(f"Setting backupstore poll interval to {poll_interval} ... ({i})")
+            try:
+                subprocess_exec_cmd(cmd)
+                return
+            except Exception as e:
+                logging(f"Failed to set backupstore poll interval to {poll_interval}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to set backupstore poll interval to {poll_interval}"
 
     def wait_for_backupstore_available(self):
         for i in range(self.retry_count):
@@ -137,24 +165,9 @@ class Base(ABC):
         assert False, f"Failed to wait for default backupstore available"
 
     def reset_backupstore(self):
-        self.update_backupstore()
-
-    def update_backupstore(self,
-                           url="", credential_secret="", poll_interval=300):
-        backup_target = get_longhorn_client().by_id_backupTarget(
-                            self.DEFAULT_BACKUPTARGET)
-        for i in range(self.retry_count):
-            logging(f"Updating backupstore to url={url}, credential_secret={credential_secret}, poll_interval={poll_interval} ... ({i})")
-            try:
-                backup_target.backupTargetUpdate(name=self.DEFAULT_BACKUPTARGET,
-                                                 backupTargetURL=url,
-                                                 credentialSecret=credential_secret,
-                                                 pollInterval=str(poll_interval))
-                return
-            except Exception as e:
-                logging(f"Failed to update backupstore to url={url}, credential_secret={credential_secret}, poll_interval={poll_interval}: {e}")
-            time.sleep(self.retry_interval)
-        assert False, f"Failed to update backupstore to url={url}, credential_secret={credential_secret}, poll_interval={poll_interval}"
+        self.set_backupstore_url("")
+        self.set_backupstore_secret("")
+        self.set_backupstore_poll_interval("5m0s")
 
     @abstractmethod
     def get_backup_volume_prefix(self, volume_name):
