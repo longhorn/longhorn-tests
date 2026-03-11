@@ -9,10 +9,11 @@ LONGHORN_NAMESPACE="longhorn-system"
 
 set_secret_args() {
   local chart_uri="$1"
+  local use_registry_root_only="${2:-false}"
   SECRET_ARGS=()
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
-    if [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
+    if [[ "${use_registry_root_only}" == true ]] || [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}"
     elif [[ -z "${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}" || "${chart_uri}" == *"dp.apps.rancher.io"* ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}/dp.apps.rancher.io"
@@ -34,6 +35,28 @@ helm_login_appco(){
   helm registry login dp.apps.rancher.io \
     --username "${APPCO_USERNAME}" \
     --password "${APPCO_PASSWORD}"
+}
+
+is_oci_chart_uri() {
+  local chart_uri="$1"
+  [[ "${chart_uri}" == oci://* ]]
+}
+
+prepare_chart_source() {
+  local chart_uri="$1"
+
+  # Always log into AppCo - required for component image pulls and dp.apps.rancher.io OCI charts.
+  helm_login_appco
+
+  # OCI charts (e.g. oci://dp.apps.rancher.io/... or oci://registry.suse.de/...) need no repo add.
+  if is_oci_chart_uri "${chart_uri}"; then
+    return 0
+  fi
+
+  if [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
+    helm repo add longhorn https://charts.longhorn.io --force-update
+    helm repo update
+  fi
 }
 
 set_longhorn_registry_args() {
@@ -98,19 +121,19 @@ set_longhorn_tag_args() {
 }
 
 install_longhorn_custom(){
+  local chart_uri="${LONGHORN_CHART_URI:-longhorn/longhorn}"
+
   # set debugging mode off to avoid leaking appco secrets to the logs.
   # DON'T REMOVE!
   set +x
-  helm_login_appco
+  prepare_chart_source "${chart_uri}"
   set -x
   set_longhorn_registry_args
   set_longhorn_repository_args
   set_longhorn_tag_args
-  set_secret_args "${LONGHORN_CHART_URI}"
-  
-  helm repo add longhorn https://charts.longhorn.io
-  helm repo update
-  helm upgrade --install longhorn longhorn/longhorn \
+  set_secret_args "${chart_uri}" true
+
+  helm upgrade --install longhorn "${chart_uri}" \
     --namespace "${LONGHORN_NAMESPACE}" \
     --version "${LONGHORN_VERSION}" \
     "${REGISTRY_ARGS[@]}" \
@@ -125,10 +148,8 @@ install_longhorn_version() {
   local version="$2"
 
   set_secret_args "$chart_uri"
-  helm repo add longhorn https://charts.longhorn.io
-  helm repo update
   set +x
-  helm_login_appco
+  prepare_chart_source "${chart_uri}"
   set -x
   helm upgrade --install longhorn "$chart_uri" \
     --version "$version" \
