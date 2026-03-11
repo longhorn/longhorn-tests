@@ -10,6 +10,7 @@ from node_exec.constant import HOST_ROOTFS
 
 from utility.utility import logging
 from utility.utility import delete_pod, get_pod
+from utility.utility import get_retry_count_and_interval
 
 
 class NodeExec:
@@ -17,6 +18,7 @@ class NodeExec:
     def __init__(self, node_name):
         self.node_name = node_name
         self.core_api = client.CoreV1Api()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def cleanup(self):
         if get_pod(self.node_name):
@@ -80,18 +82,24 @@ class NodeExec:
                 f'--net={ns_net}',
                 '--', 'sh', '-c', cmd
             ]
-        res = stream(
-            self.core_api.connect_get_namespaced_pod_exec,
-            self.pod.metadata.name,
-            'default',
-            command=exec_command,
-            stderr=True,
-            stdin=False,
-            stdout=True,
-            tty=False
-        )
-        logging(f"Issued command: {cmd} on {self.node_name} with result:\n{res}")
-        return res
+        for i in range(self.retry_count):
+            try:
+                res = stream(
+                    self.core_api.connect_get_namespaced_pod_exec,
+                    self.pod.metadata.name,
+                    'default',
+                    command=exec_command,
+                    stderr=True,
+                    stdin=False,
+                    stdout=True,
+                    tty=False
+                )
+                logging(f"Issued command: {cmd} on {self.node_name} with result:\n{res}")
+                return res
+            except Exception as e:
+                logging(f"Failed to issue command: {cmd} on {self.node_name} with error: {e}")
+                time.sleep(self.retry_interval)
+        assert False, f"Failed to issue command: {cmd} on {self.node_name}"
 
     def _needs_fio(self, cmd):
         if isinstance(cmd, list):
