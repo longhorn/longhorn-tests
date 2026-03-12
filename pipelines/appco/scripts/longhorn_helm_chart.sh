@@ -122,30 +122,6 @@ set_longhorn_tag_args() {
 
 install_longhorn_custom(){
   local chart_uri="${LONGHORN_CHART_URI:-longhorn/longhorn}"
-
-  # set debugging mode off to avoid leaking appco secrets to the logs.
-  # DON'T REMOVE!
-  set +x
-  prepare_chart_source "${chart_uri}"
-  set -x
-  set_longhorn_registry_args
-  set_longhorn_repository_args
-  set_longhorn_tag_args
-  set_secret_args "${chart_uri}" true
-
-  helm upgrade --install longhorn "${chart_uri}" \
-    --namespace "${LONGHORN_NAMESPACE}" \
-    --version "${LONGHORN_VERSION}" \
-    "${REGISTRY_ARGS[@]}" \
-    "${REPOSITORY_ARGS[@]}" \
-    "${TAG_ARGS[@]}" \
-    "${SECRET_ARGS[@]}"
-  wait_longhorn_status_running
-}
-
-install_longhorn_version() {
-  local chart_uri="$1"
-  local version="$2"
   local effective_uri="${chart_uri}"
 
   # If this is an internal OCI registry not reachable from pods on AWS (e.g. registry.suse.de),
@@ -153,7 +129,7 @@ install_longhorn_version() {
   if [[ "${chart_uri}" == oci://registry.suse.de/* ]]; then
     local chart_name
     chart_name=$(basename "${chart_uri}")
-    local key="${chart_name}-${version}.tgz"
+    local key="${chart_name}-${LONGHORN_VERSION}.tgz"
     local chart_dir="/tmp/longhorn-pre-pulled-charts"
     local local_tgz="${chart_dir}/${key}"
     local configmap_name="longhorn-pre-pulled-charts"
@@ -170,13 +146,37 @@ install_longhorn_version() {
     fi
   fi
 
-  set_secret_args "${chart_uri}"
+  # set debugging mode off to avoid leaking appco secrets to the logs.
+  # DON'T REMOVE!
   set +x
   if [[ "${effective_uri}" == "${chart_uri}" ]]; then
     prepare_chart_source "${chart_uri}"
   fi
   set -x
+  set_longhorn_registry_args
+  set_longhorn_repository_args
+  set_longhorn_tag_args
+  set_secret_args "${chart_uri}" true
+
   helm upgrade --install longhorn "${effective_uri}" \
+    --namespace "${LONGHORN_NAMESPACE}" \
+    --version "${LONGHORN_VERSION}" \
+    "${REGISTRY_ARGS[@]}" \
+    "${REPOSITORY_ARGS[@]}" \
+    "${TAG_ARGS[@]}" \
+    "${SECRET_ARGS[@]}"
+  wait_longhorn_status_running
+}
+
+install_longhorn_version() {
+  local chart_uri="$1"
+  local version="$2"
+
+  set_secret_args "${chart_uri}"
+  set +x
+  prepare_chart_source "${chart_uri}"
+  set -x
+  helm upgrade --install longhorn "${chart_uri}" \
     --version "${version}" \
     --namespace "${LONGHORN_NAMESPACE}" \
     "${SECRET_ARGS[@]}"
@@ -202,17 +202,10 @@ pre_pull_oci_charts() {
 
   mkdir -p "${chart_dir}"
 
-  if [[ "${LONGHORN_STABLE_VERSION_CHART_URI}" == oci://registry.suse.de/* && -n "${LONGHORN_STABLE_VERSION}" ]]; then
-    echo "Pre-pulling ${LONGHORN_STABLE_VERSION_CHART_URI} version ${LONGHORN_STABLE_VERSION} for use in test pods"
-    helm pull "${LONGHORN_STABLE_VERSION_CHART_URI}" \
-      --version "${LONGHORN_STABLE_VERSION}" \
-      --destination "${chart_dir}"
-  fi
-
-  if [[ "${LONGHORN_TRANSIENT_VERSION_CHART_URI}" == oci://registry.suse.de/* && -n "${LONGHORN_TRANSIENT_VERSION}" ]]; then
-    echo "Pre-pulling ${LONGHORN_TRANSIENT_VERSION_CHART_URI} version ${LONGHORN_TRANSIENT_VERSION} for use in test pods"
-    helm pull "${LONGHORN_TRANSIENT_VERSION_CHART_URI}" \
-      --version "${LONGHORN_TRANSIENT_VERSION}" \
+  if [[ "${LONGHORN_CHART_URI}" == oci://registry.suse.de/* && -n "${LONGHORN_VERSION}" ]]; then
+    echo "Pre-pulling ${LONGHORN_CHART_URI} version ${LONGHORN_VERSION} for use in test pods"
+    helm pull "${LONGHORN_CHART_URI}" \
+      --version "${LONGHORN_VERSION}" \
       --destination "${chart_dir}"
   fi
 
