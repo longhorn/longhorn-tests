@@ -88,13 +88,14 @@ UPGRADE_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:upgrade-test"
 ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
-if os.uname().machine == "x86_64":
-    if os.environ.get("CLOUDPROVIDER") == "harvester":
-        BLOCK_DEV_PATH = "/dev/vdc"
-    else:
-        BLOCK_DEV_PATH = "/dev/xvdh"
+if os.environ.get("CLOUDPROVIDER") == "aws":
+    BLOCK_DEV_PATH = "0000:00:1f.0"
+elif os.environ.get("CLOUDPROVIDER") == "harvester":
+    BLOCK_DEV_PATH = "0000:09:00.0"
+elif os.environ.get("CLOUDPROVIDER") == "vagrant":
+    BLOCK_DEV_PATH = "/dev/vdb"
 else:
-    BLOCK_DEV_PATH = "/dev/nvme1n1"
+    BLOCK_DEV_PATH = "dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
@@ -3866,6 +3867,12 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
             wait_for_disk_status(client, node.name, name,
                                  "storageReserved",
                                  expected_reserved_storage)
+
+    # for block type disks added by bdf (nvme disk driver)
+    # disk deletion takes some time, wait the device show up on the host
+    # normally less than 30 seconds
+    # ref: https://github.com/longhorn/longhorn/issues/11860
+    time.sleep(30)
 
 
 def reset_settings(client):
