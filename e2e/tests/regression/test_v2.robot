@@ -67,7 +67,7 @@ Test V2 Snapshot
     And Validate snapshot 2 is parent of volume-head in volume 0 snapshot list
 
     When Delete snapshot 2 CR of volume 0
-    Then Validate snapshot 2 is not in volume 0 snapshot list
+    Then Wait for snapshot 2 to not be in volume 0 snapshot list
     And Check volume 0 data is data 2
 
     When Detach volume 0
