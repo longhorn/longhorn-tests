@@ -21,7 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${LONGHORN_NAMESPACE}    longhorn-system
-${DEP_VERSIONS_URL}    https://raw.githubusercontent.com/longhorn/dep-versions/master/versions.json
+${DEP_VERSIONS_URL}    None
 
 *** Keywords ***
 List Pods In Namespace With Label
@@ -49,6 +49,31 @@ Parse JSON String
     [Documentation]    Parse JSON string to dictionary
     ${json_dict}=    Evaluate    json.loads('''${json_string}''')    json
     RETURN    ${json_dict}
+
+Resolve Dep Versions Branch
+    [Arguments]    ${longhorn_version}
+    [Documentation]    Map LONGHORN_VERSION to dep-versions branch name
+    ...    Accepts: master, v1.11.x, 1.10.2
+    ${version}=    Strip String    ${longhorn_version}
+    ${lower_version}=    Convert To Lowercase    ${version}
+
+    Return From Keyword If    '${lower_version}' == 'master'    master
+
+    # Strip leading 'v' prefix if present, then split on '.' to get major and minor
+    ${stripped}=    Remove String    ${lower_version}    v
+    @{parts}=    Split String    ${stripped}    .
+    ${major}=    Get From List    ${parts}    0
+    ${minor}=    Get From List    ${parts}    1
+    ${branch}=    Set Variable    v${major}.${minor}.x
+    RETURN    ${branch}
+
+Resolve Dep Versions Url
+    [Arguments]    ${longhorn_version}
+    [Documentation]    Build dep-versions URL from LONGHORN_VERSION
+    ${branch}=    Resolve Dep Versions Branch    ${longhorn_version}
+    ${url}=    Set Variable    https://raw.githubusercontent.com/longhorn/dep-versions/${branch}/versions.json
+    Log    Using dep-versions branch: ${branch}
+    RETURN    ${url}
 
 Get Expected Version From JSON
     [Arguments]    ${json_data}    ${component_key}    ${tag_key}=tag
@@ -244,6 +269,10 @@ Verify Appco Component Versions
 
     Set Test Variable    @{FAILED_CHECKS}    @{EMPTY}
     Set Test Variable    @{VERSION_REPORT}    @{EMPTY}
+
+    ${LONGHORN_VERSION}=    Get Environment Variable    LONGHORN_VERSION    default=master
+    ${resolved_dep_versions_url}=    Resolve Dep Versions Url    ${LONGHORN_VERSION}
+    Set Test Variable    ${DEP_VERSIONS_URL}    ${resolved_dep_versions_url}
 
     Given Create storageclass longhorn-test with    dataEngine=v1
     And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
