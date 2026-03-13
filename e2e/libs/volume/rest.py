@@ -433,6 +433,7 @@ class Rest(Base):
         assert ready, f"Failed to get volume {volume_name} replicas ready: {replicas}"
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
+        logging(f"Trimming volume {volume_name} filesystem")
         is_unexpected_pass = False
         try:
             self.get(volume_name).trimFilesystem(name=volume_name)
