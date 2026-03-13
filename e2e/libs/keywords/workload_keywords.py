@@ -44,6 +44,7 @@ from workload.workload import get_workload_node_name
 from workload.workload import get_all_workload_node_names
 from workload.workload import check_workload_pods_not_restarted
 from workload.workload import check_workload_pods_not_recreated
+from workload.workload import rollout_restart_workload
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -389,3 +390,7 @@ class workload_keywords:
         """
         logging(f"Checking that {workload_kind} {workload_name} has not been recreated in namespace {namespace}")
         check_workload_pods_not_recreated(workload_name, workload_kind, namespace)
+
+    def rollout_restart_workload(self, workload_name, workload_kind, namespace="default"):
+        logging(f"Triggering rollout restart of {workload_kind} {workload_name} in namespace {namespace}")
+        rollout_restart_workload(workload_name, workload_kind, namespace)
