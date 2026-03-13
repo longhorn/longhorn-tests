@@ -38,6 +38,8 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 
   generate_name = "e2e-machine-config-controlplane-${random_string.random_suffix.id}"
 
+  depends_on = [rancher2_cloud_credential.e2e-credential]
+
   harvester_config {
 
     vm_namespace = "longhorn-qa"
@@ -83,6 +85,8 @@ EOF
 resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 
   generate_name = "e2e-machine-config-worker-${random_string.random_suffix.id}"
+
+  depends_on = [rancher2_cloud_credential.e2e-credential]
 
   harvester_config {
 
@@ -156,6 +160,12 @@ EOF
 resource "rancher2_cluster_v2" "e2e-cluster" {
 
   name = "e2e-cluster-${random_string.random_suffix.id}"
+
+  depends_on = [
+    rancher2_cloud_credential.e2e-credential,
+    rancher2_machine_config_v2.e2e-machine-config-controlplane,
+    rancher2_machine_config_v2.e2e-machine-config-worker
+  ]
 
   kubernetes_version = var.k8s_distro_version
 
