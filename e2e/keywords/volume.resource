@@ -75,6 +75,10 @@ Update volume ${volume_id} rebuild concurrent sync limit to ${limit}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    rebuildConcurrentSyncLimit    ${limit}
 
+Update volume ${volume_id} ${key} to ${value}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_volume_spec   ${volume_name}    ${key}    ${value}
+
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -257,6 +261,13 @@ Check volume ${volume_id} replica on node ${node_id} kept in stopped
         Sleep    ${RETRY_INTERVAL}
     END
 
+Check volume ${volume_id} kept in healthy
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_healthy    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Check volume ${volume_id} kept in degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
@@ -273,14 +284,14 @@ Check volume ${volume_id} kept in attaching
 
 Check volume ${volume_id} kept in detached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
         wait_for_volume_detached    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
 
-Check all replicas of volume ${volume_id} kept in error
+Check volume ${volume_id} kept in faulted
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
         wait_for_volume_faulted    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
@@ -501,12 +512,14 @@ Activate DR volume ${volume_id}
     activate_dr_volume    ${volume_name}
 
 Create persistentvolume for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_persistentvolume_for_volume    ${volume_name}
+    create_persistentvolume_for_volume    ${volume_name}    &{config}
 
 Create persistentvolumeclaim for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_persistentvolumeclaim_for_volume    ${volume_name}
+    create_persistentvolumeclaim_for_volume    ${volume_name}    &{config}
 
 Create persistentvolume for volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

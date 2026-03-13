@@ -19,6 +19,7 @@ Resource    ../keywords/replica.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/backup.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -216,3 +217,105 @@ Test Dynamic PV Has No Node Affinity
     Then Run command and not expect output
     ...    kubectl get pv $(kubectl get pvc ${claim_name} -ojsonpath='{.spec.volumeName}') -o yaml
     ...    nodeAffinity:
+
+Test Filesystem Trim
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/7534
+    ...    1. Create a workload to use a Longhorn volume.
+    ...    2. Write data to the volume and then delete the data.
+    ...    3. Trigger filesystem trim on the volume.
+    ...    4. Check the volume's used storage size is reduced after trim.
+    ...    Note: v2 volumes don't support unmapMarkSnapChainRemoved and Remove Snapshots During Filesystem Trim
+    ...          so pytest test case test_filesystem_trim doesn't work on v2 volumes.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    When Write 256 MB data to file testfile in deployment 0
+    And Volume of deployment 0 actual size should be greater than 256Mi
+    And Run commands in deployment 0    commands=rm -rf /data/testfile && sync
+    And Trim deployment 0 volume should pass
+    Then Volume of deployment 0 actual size should be less than 256Mi
+
+Test Auto Salvage After Volume Faulted By Instance Manager Deletion
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/8430
+    ...    1. Dynamically provision a v1/v2 volume via storageclass, create a deployment
+    ...       workload and write data to it.
+    ...    2. Disable auto-salvage setting.
+    ...    3. Force delete all instance manager pods for the volume's data engine on all
+    ...       nodes so that all replicas fail and the volume becomes faulted.
+    ...    4. Confirm the volume remains in faulted state for a sufficient period
+    ...    5. Re-enable auto-salvage setting.
+    ...    6. Verify the faulted volume automatically recovers to healthy and the
+    ...       data written in step 1 is intact.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data.txt in deployment 0
+
+    When Setting auto-salvage is set to false
+    And Delete ${DATA_ENGINE} instance manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 2
+    Then Check volume of deployment 0 kept in faulted
+
+    When Setting auto-salvage is set to true
+    Then Wait for volume of deployment 0 healthy
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 data in file data.txt is intact
+
+Test Instance Manager AWS Role Annotation
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/9923
+    ...    Verify that the iam.amazonaws.com/role annotation is propagated to
+    ...    instance manager pods when AWS_IAM_ROLE_ARN is set in the backup
+    ...    credential secret, and removed when the key is deleted.
+    ...
+    ...    1. Create a volume
+    ...    2. Write some data
+    ...    3. Create a backup
+    ...    4. Check there is no iam.amazonaws.com/role annotation in instance manager pods
+    ...    5. Patch the s3 secret: add AWS_IAM_ROLE_ARN
+    ...    6. Check there is iam.amazonaws.com/role=test-aws-iam-role-arn in instance manager pods
+    ...    7. Create a backup
+    ...    8. Delete all instance manager pods
+    ...    9. Check there is still iam.amazonaws.com/role=test-aws-iam-role-arn in instance manager pods
+    ...    10. Create a backup
+    ...    11. Remove AWS_IAM_ROLE_ARN from the s3 secret
+    ...    12. Check there is no iam.amazonaws.com/role annotation in instance manager pods
+    ${LONGHORN_BACKUPSTORE}=    Get Environment Variable    LONGHORN_BACKUPSTORE    default=${EMPTY}
+    IF    not $LONGHORN_BACKUPSTORE.startswith('s3://')
+        Skip    Test requires S3 backupstore, got: ${LONGHORN_BACKUPSTORE}
+    END
+
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create backup 0 for volume 0
+    Then Run command and not expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    iam.amazonaws.com/role
+
+    # AWS_IAM_ROLE_ARN: test-aws-iam-role-arn
+    When Run command
+    ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} -p '{"data": {"AWS_IAM_ROLE_ARN": "dGVzdC1hd3MtaWFtLXJvbGUtYXJu"}}'
+    Then Run command and expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
+    And Create backup 1 for volume 0
+
+    When Delete ${DATA_ENGINE} instance manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 2
+    And Check volume 0 kept in healthy
+    Then Run command and expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
+    And Create backup 2 for volume 0
+
+    When Run command
+    ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} --type=json -p='[{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]'
+    Then Run command and not expect output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
+    ...    iam.amazonaws.com/role
