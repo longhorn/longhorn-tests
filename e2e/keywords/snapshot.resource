@@ -70,6 +70,10 @@ Validate snapshot ${snapshot_id} is marked as removed in volume ${volume_id} sna
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_marked_as_removed    ${volume_name}    ${snapshot_id}
 
+Validate snapshot ${snapshot_id} is not marked as removed in volume ${volume_id} snapshot list
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    is_not_marked_as_removed    ${volume_name}    ${snapshot_id}
+
 Validate snapshot ${snapshot_id} is not in volume ${volume_id} snapshot list
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_not_existing    ${volume_name}    ${snapshot_id}
@@ -77,6 +81,22 @@ Validate snapshot ${snapshot_id} is not in volume ${volume_id} snapshot list
 Validate snapshot ${snapshot_id} is in volume ${volume_id} snapshot list
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_existing    ${volume_name}    ${snapshot_id}
+
+Volume ${volume_id} snapshot ${snapshot_id} size should be greater than ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    snapshot_size_should_be_greater_than    ${volume_name}    ${snapshot_id}    ${size}
+
+Volume ${volume_id} snapshot ${snapshot_id} size should be less than ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    snapshot_size_should_be_less_than    ${volume_name}    ${snapshot_id}    ${size}
+
+Volume ${volume_id} volume head size should be greater than ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    volume_head_size_should_be_greater_than    ${volume_name}    ${size}
+
+Volume ${volume_id} volume head size should be less than ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    volume_head_size_should_be_less_than    ${volume_name}    ${size}
 
 Create snapshot ${snapshot_id} of volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

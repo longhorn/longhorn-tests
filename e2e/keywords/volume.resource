@@ -664,3 +664,7 @@ Expand volume ${volume_id} to ${size}
 Expand volume ${volume_id} to ${size} should fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     Run Keyword And Expect Error    *    expand_volume    ${volume_name}    ${size}
+
+Trim volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    trim_volume    ${volume_name}

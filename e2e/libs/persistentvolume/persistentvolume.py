@@ -16,7 +16,7 @@ class PersistentVolume():
         self.api = client.CoreV1Api()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, storage, volume_mode="Filesystem"):
+    def create(self, name, storage, volume_mode="Filesystem", fsType="ext4"):
         filepath = "./templates/workload/pv.yaml"
         with open(filepath, 'r') as f:
             manifest_dict = yaml.safe_load(f)
@@ -25,6 +25,7 @@ class PersistentVolume():
             manifest_dict['metadata']['labels'][LABEL_TEST] = LABEL_TEST_VALUE
             manifest_dict['spec']['capacity']['storage'] = storage
             manifest_dict['spec']['volumeMode'] = volume_mode
+            manifest_dict['spec']['csi']['fsType'] = fsType
             manifest_dict['spec']['csi']['volumeHandle'] = name
 
             logging(f"yaml = {manifest_dict}")
