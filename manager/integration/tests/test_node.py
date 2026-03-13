@@ -2120,7 +2120,8 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     volume_size = SIZE
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=str(volume_size),
-                         numberOfReplicas=len(nodes))
+                         numberOfReplicas=len(nodes),
+                         dataEngine=DATA_ENGINE)
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_TRUE)
@@ -2134,7 +2135,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     for node in nodes:
         disks = node.disks
         for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
+            if disk.path == BLOCK_DEV_PATH:
                 disk.allowScheduling = False
             elif disk.path == small_disk_path:
                 disk.allowScheduling = True
@@ -2149,7 +2150,8 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     restore_name = common.generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
                          numberOfReplicas=1,
-                         fromBackup=b.url)
+                         fromBackup=b.url,
+                         dataEngine=DATA_ENGINE)
     r_vol = common.wait_for_volume_condition_scheduled(client, restore_name,
                                                        "status",
                                                        CONDITION_STATUS_FALSE)
@@ -2166,7 +2168,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
     for node in nodes:
         disks = node.disks
         for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
+            if disk.path == BLOCK_DEV_PATH:
                 disk.allowScheduling = True
             elif disk.path == small_disk_path:
                 disk.allowScheduling = False
@@ -2257,7 +2259,8 @@ def test_disk_migration(client):  # NOQA
 
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=SIZE,
-                         numberOfReplicas=1, diskSelector=["extra"])
+                         numberOfReplicas=1, diskSelector=["extra"],
+                         dataEngine=DATA_ENGINE)
     common.wait_for_volume_condition_scheduled(
         client, vol_name, "status", CONDITION_STATUS_TRUE)
     volume = common.wait_for_volume_detached(client, vol_name)
@@ -2646,6 +2649,7 @@ def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, 
     assert expect_md5sum == created_md5sum2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQA
                                                                    volume_name, # NOQA
                                                                    request, # NOQA
@@ -2671,7 +2675,8 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     # Step 2
     nodes = client.list_node()
     volume = client.create_volume(name=volume_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
+                                  size=SIZE, numberOfReplicas=len(nodes),
+                                  dataEngine=DATA_ENGINE)
     common.wait_for_volume_detached(client, volume_name)
 
     lht_hostId = get_self_host_id()
@@ -2685,7 +2690,12 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     # Step 4
     node = client.by_id_node(lht_hostId)
     test_disk_path = create_host_disk(client, "vol-test", str(Gi), lht_hostId)
-    test_disk = {"path": test_disk_path, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        test_disk = {"path": test_disk_path, "allowScheduling": True}
+    else:
+        test_disk = {"path": test_disk_path,
+                     "allowScheduling": True,
+                     "diskType": "block"}
 
     update_disks = get_update_disks(node.disks)
     update_disks["test-disk"] = test_disk
@@ -2703,8 +2713,9 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     node = update_node_disks(client, node.name, disks=update_disks, retry=True)
 
     # Step 6
-    replica_path = test_disk_path + '/replicas'
-    assert os.path.isdir(replica_path)
+    if DATA_ENGINE == "v1":
+        replica_path = test_disk_path + '/replicas'
+        assert os.path.isdir(replica_path)
 
     # Since https://github.com/longhorn/longhorn-manager/pull/2138, the node
     # controller is responsible for triggering replica eviction. If the timing
@@ -2714,12 +2725,13 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     wait_for_volume_replica_count(client, volume.name,
                                   volume.numberOfReplicas + 1)
 
-    for i in range(common.RETRY_COMMAND_COUNT):
-        if len(os.listdir(replica_path)) > 0:
-            break
-        time.sleep(common.RETRY_EXEC_INTERVAL)
-    assert len(os.listdir(replica_path)) > 0
-    volume = wait_for_volume_healthy(client, volume_name)
+    if DATA_ENGINE == "v1":
+        for i in range(common.RETRY_COMMAND_COUNT):
+            if len(os.listdir(replica_path)) > 0:
+                break
+            time.sleep(common.RETRY_EXEC_INTERVAL)
+        assert len(os.listdir(replica_path)) > 0
+        volume = wait_for_volume_healthy(client, volume_name)
 
     # Step 7
     replica_count = 1
