@@ -9,10 +9,11 @@ LONGHORN_NAMESPACE="longhorn-system"
 
 set_secret_args() {
   local chart_uri="$1"
+  local use_registry_root_only="${2:-false}"
   SECRET_ARGS=()
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
-    if [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
+    if [[ "${use_registry_root_only}" == true ]] || [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}"
     elif [[ -z "${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}" || "${chart_uri}" == *"dp.apps.rancher.io"* ]]; then
       FINAL_REGISTRY_URL="${REGISTRY_URL}/dp.apps.rancher.io"
@@ -34,6 +35,28 @@ helm_login_appco(){
   helm registry login dp.apps.rancher.io \
     --username "${APPCO_USERNAME}" \
     --password "${APPCO_PASSWORD}"
+}
+
+is_oci_chart_uri() {
+  local chart_uri="$1"
+  [[ "${chart_uri}" == oci://* ]]
+}
+
+prepare_chart_source() {
+  local chart_uri="$1"
+
+  # Always log into AppCo - required for component image pulls and dp.apps.rancher.io OCI charts.
+  helm_login_appco
+
+  # OCI charts (e.g. oci://dp.apps.rancher.io/... or oci://registry.suse.de/...) need no repo add.
+  if is_oci_chart_uri "${chart_uri}"; then
+    return 0
+  fi
+
+  if [[ "${chart_uri}" == "longhorn/longhorn" ]]; then
+    helm repo add longhorn https://charts.longhorn.io --force-update
+    helm repo update
+  fi
 }
 
 set_longhorn_registry_args() {
@@ -98,19 +121,44 @@ set_longhorn_tag_args() {
 }
 
 install_longhorn_custom(){
+  local chart_uri="${LONGHORN_CHART_URI:-longhorn/longhorn}"
+  local effective_uri="${chart_uri}"
+
+  # If this is an internal OCI registry not reachable from pods on AWS (e.g. registry.suse.de),
+  # try to use a chart pre-pulled by Jenkins and stored in a ConfigMap.
+  if [[ "${chart_uri}" == oci://registry.suse.de/* ]]; then
+    local chart_name
+    chart_name=$(basename "${chart_uri}")
+    local key="${chart_name}-${LONGHORN_VERSION}.tgz"
+    local chart_dir="/tmp/longhorn-pre-pulled-charts"
+    local local_tgz="${chart_dir}/${key}"
+    local configmap_name="longhorn-pre-pulled-charts"
+    local namespace="${LONGHORN_NAMESPACE:-longhorn-system}"
+
+    mkdir -p "${chart_dir}"
+    if kubectl get configmap "${configmap_name}" -n "${namespace}" > /dev/null 2>&1; then
+      kubectl get configmap "${configmap_name}" -n "${namespace}" \
+        -o "jsonpath={.binaryData['${key}']}" | base64 -d > "${local_tgz}"
+      if [[ -s "${local_tgz}" ]]; then
+        echo "Using pre-pulled chart at ${local_tgz}"
+        effective_uri="${local_tgz}"
+      fi
+    fi
+  fi
+
   # set debugging mode off to avoid leaking appco secrets to the logs.
   # DON'T REMOVE!
   set +x
-  helm_login_appco
+  if [[ "${effective_uri}" == "${chart_uri}" ]]; then
+    prepare_chart_source "${chart_uri}"
+  fi
   set -x
   set_longhorn_registry_args
   set_longhorn_repository_args
   set_longhorn_tag_args
-  set_secret_args "${LONGHORN_CHART_URI}"
-  
-  helm repo add longhorn https://charts.longhorn.io
-  helm repo update
-  helm upgrade --install longhorn longhorn/longhorn \
+  set_secret_args "${chart_uri}" true
+
+  helm upgrade --install longhorn "${effective_uri}" \
     --namespace "${LONGHORN_NAMESPACE}" \
     --version "${LONGHORN_VERSION}" \
     "${REGISTRY_ARGS[@]}" \
@@ -124,14 +172,12 @@ install_longhorn_version() {
   local chart_uri="$1"
   local version="$2"
 
-  set_secret_args "$chart_uri"
-  helm repo add longhorn https://charts.longhorn.io
-  helm repo update
+  set_secret_args "${chart_uri}"
   set +x
-  helm_login_appco
+  prepare_chart_source "${chart_uri}"
   set -x
-  helm upgrade --install longhorn "$chart_uri" \
-    --version "$version" \
+  helm upgrade --install longhorn "${chart_uri}" \
+    --version "${version}" \
     --namespace "${LONGHORN_NAMESPACE}" \
     "${SECRET_ARGS[@]}"
 
@@ -144,6 +190,32 @@ install_longhorn_stable(){
 
 install_longhorn_transient(){
   install_longhorn_version "${LONGHORN_TRANSIENT_VERSION_CHART_URI}" "${LONGHORN_TRANSIENT_VERSION}"
+}
+
+# Pre-pull OCI charts from registries not accessible from pods on AWS (e.g. registry.suse.de,
+# which requires VPN/Jenkins DNS access). Stores the charts in a Kubernetes ConfigMap so the
+# test pod can retrieve them via install_longhorn_version without needing registry access.
+pre_pull_oci_charts() {
+  local chart_dir="/tmp/longhorn-pre-pulled-charts"
+  local configmap_name="longhorn-pre-pulled-charts"
+  local namespace="${LONGHORN_NAMESPACE:-longhorn-system}"
+
+  mkdir -p "${chart_dir}"
+
+  if [[ "${LONGHORN_CHART_URI}" == oci://registry.suse.de/* && -n "${LONGHORN_VERSION}" ]]; then
+    echo "Pre-pulling ${LONGHORN_CHART_URI} version ${LONGHORN_VERSION} for use in test pods"
+    helm pull "${LONGHORN_CHART_URI}" \
+      --version "${LONGHORN_VERSION}" \
+      --destination "${chart_dir}"
+  fi
+
+  if ls "${chart_dir}"/*.tgz 1>/dev/null 2>&1; then
+    kubectl create configmap "${configmap_name}" \
+      --from-file="${chart_dir}" \
+      -n "${namespace}" \
+      --dry-run=client -o yaml | kubectl apply -f -
+    echo "Pre-pulled charts stored in ConfigMap ${namespace}/${configmap_name}"
+  fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

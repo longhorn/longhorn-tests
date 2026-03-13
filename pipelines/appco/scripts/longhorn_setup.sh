@@ -101,6 +101,7 @@ main(){
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_stable
+    pre_pull_oci_charts
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
