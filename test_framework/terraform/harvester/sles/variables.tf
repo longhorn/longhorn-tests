@@ -29,7 +29,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "15-sp6"
+  default     = "16.0"
 }
 
 variable "k8s_distro_name" {
