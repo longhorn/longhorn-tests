@@ -364,16 +364,19 @@ Test No Transient Error In Engine Status During Eviction
     ...    kubectl get lhe -n longhorn-system -oyaml
     ...    TransientFailure
 
-Test Storageclass Allowed Topologies
+Test Storageclass Allowed Topologies With Empty Csi Allowed Topology Keys
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12261
-    ...    1. Create storage class with allowedTopologies:
+    ...                       https://github.com/longhorn/longhorn/issues/12684
+    ...    1. Set csi-allowed-topology-keys to empty
+    ...    2. Create storage class with allowedTopologies:
     ...    allowedTopologies:
     ...    - matchLabelExpressions:
     ...      - key: kubernetes.io/hostname
     ...        values:
     ...          - <node-name>
-    ...    2. Create a workload with the storage class
-    ...    3. Observe the created PV has the expected nodeAffinity:
+    ...    3. Create a workload with the storage class
+    ...    4. Because csi-allowed-topology-keys is empty, allowedTopologies won't take effect,
+    ...       the created PV won't have the expected nodeAffinity:
     ...    nodeAffinity:
     ...      required:
     ...        nodeSelectorTerms:
@@ -382,9 +385,41 @@ Test Storageclass Allowed Topologies
     ...            operator: In
     ...            values:
     ...            - <node-name>
-    ...    4. The workload pod and the volume are created on node <node-name> as we specified
-    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    allowedTopologies={"kubernetes.io/hostname":"${NODE_2}"}
-    When Create persistentvolumeclaim 0    sc_name=longhorn-test
+    Given Setting csi-allowed-topology-keys is set to ${EMPTY}
+    And Rollout restart daemonset longhorn-csi-plugin in namespace longhorn-system
+    When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    allowedTopologies={"kubernetes.io/hostname":"${NODE_2}"}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    Then Run command and not expect output
+    ...    kubectl get pv -ojsonpath='{.items[0].spec.nodeAffinity.required.nodeSelectorTerms[*].matchExpressions[*].values[*]}'
+    ...    ${NODE_2}
+
+Test Storageclass Allowed Topologies With Csi Allowed Topology Keys
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12261
+    ...                       https://github.com/longhorn/longhorn/issues/12684
+    ...    1. Set csi-allowed-topology-keys to kubernetes.io/hostname
+    ...    2. Create storage class with allowedTopologies:
+    ...    allowedTopologies:
+    ...    - matchLabelExpressions:
+    ...      - key: kubernetes.io/hostname
+    ...        values:
+    ...          - <node-name>
+    ...    3. Create a workload with the storage class
+    ...    4. Because csi-allowed-topology-keys matches allowedTopologies,
+    ...       the created PV has the expected nodeAffinity:
+    ...    nodeAffinity:
+    ...      required:
+    ...        nodeSelectorTerms:
+    ...        - matchExpressions:
+    ...          - key: kubernetes.io/hostname
+    ...            operator: In
+    ...            values:
+    ...            - <node-name>
+    Given Setting csi-allowed-topology-keys is set to kubernetes.io/hostname
+    And Rollout restart daemonset longhorn-csi-plugin in namespace longhorn-system
+    When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    allowedTopologies={"kubernetes.io/hostname":"${NODE_2}"}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     Then Run command and expect output
