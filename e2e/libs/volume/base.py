@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
+import time
 
+from persistentvolume.persistentvolume import PersistentVolume
+from persistentvolumeclaim.persistentvolumeclaim import PersistentVolumeClaim
 from utility.utility import set_annotation
 from utility.utility import get_annotation_value
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
+from utility.utility import convert_size_to_bytes
 import utility.constant as constant
 
 
@@ -10,6 +15,17 @@ class Base(ABC):
 
     ANNOT_DATA_CHECKSUM = "test.longhorn.io/data-checksum-"
     ANNOT_LAST_CHECKSUM = "test.longhorn.io/last-recorded-checksum"
+
+    def __init__(self):
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
+        self.pv = PersistentVolume()
+        self.pvc = PersistentVolumeClaim()
+
+    def _get_volume_size(self, volume):
+        # CRD returns dict-like payloads, REST returns object-like payloads.
+        if isinstance(volume, dict):
+            return volume.get("size") or volume.get("spec", {}).get("size")
+        return getattr(volume, "size", None)
 
     @abstractmethod
     def get(self, volume_name):
@@ -153,13 +169,43 @@ class Base(ABC):
     def activate(self, volume_name):
         return NotImplemented
 
-    @abstractmethod
-    def create_persistentvolume(self, volume_name, retry):
-        return NotImplemented
+    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem"):
+        logging(f'Creating PV {volume_name} with volumeMode={volume_mode}')
+        volume = self.get(volume_name)
+        volume_size = self._get_volume_size(volume)
+        assert volume_size is not None, f"Cannot determine size for volume {volume_name}"
+        storage = str(convert_size_to_bytes(str(volume_size)))
+        self.pv.create(volume_name, storage, volume_mode=volume_mode)
 
-    @abstractmethod
-    def create_persistentvolumeclaim(self, volume_name, retry):
-        return NotImplemented
+        if not retry:
+            return
+
+        created = False
+        for _ in range(self.retry_count):
+            if self.pv.is_exist(volume_name):
+                created = True
+                break
+            time.sleep(self.retry_interval)
+        assert created
+
+    def create_persistentvolumeclaim(self, volume_name, retry, volume_mode="Filesystem"):
+        logging(f'Creating PVC {volume_name} with volumeMode={volume_mode}')
+        volume = self.get(volume_name)
+        volume_size = self._get_volume_size(volume)
+        assert volume_size is not None, f"Cannot determine size for volume {volume_name}"
+        storage = str(convert_size_to_bytes(str(volume_size)))
+        self.pvc.create(volume_name, "RWO", "longhorn", storage_size=storage, volume_mode=volume_mode, volume_name=volume_name)
+
+        if not retry:
+            return
+
+        created = False
+        for _ in range(self.retry_count):
+            if self.pvc.is_exist(volume_name, namespace="default"):
+                created = True
+                break
+            time.sleep(self.retry_interval)
+        assert created
 
     # @abstractmethod
     # def cleanup(self, volume_names):

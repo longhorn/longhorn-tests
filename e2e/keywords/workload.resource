@@ -434,3 +434,35 @@ Volume of ${workload_kind} ${workload_id} actual size should be greater than ${s
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_actual_size_greater_than    ${volume_name}    ${size}
+
+Check volume of ${workload_kind} ${workload_id} kept in degraded
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_degraded    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check volume of ${workload_kind} ${workload_id} kept in attaching
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_attaching    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check volume of ${workload_kind} ${workload_id} kept in detached
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_detached    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check volume of ${workload_kind} ${workload_id} kept in faulted
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_faulted    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
