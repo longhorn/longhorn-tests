@@ -4,28 +4,22 @@ import asyncio
 
 from node_exec import NodeExec
 
-from persistentvolumeclaim.persistentvolumeclaim import PersistentVolumeClaim
-from persistentvolume.persistentvolume import PersistentVolume
-
 from volume.base import Base
 from volume.constant import DEV_PATH
 from volume.constant import VOLUME_FRONTEND_BLOCKDEV
 from volume.constant import VOLUME_FRONTEND_ISCSI
 
 import utility.constant as constant
-from utility.utility import get_retry_count_and_interval
+from utility.utility import convert_size_to_bytes
 from utility.utility import get_longhorn_client
 from utility.utility import logging
 from utility.utility import pod_exec
-from utility.utility import convert_size_to_bytes
 
 
 class Rest(Base):
 
     def __init__(self):
-        self.retry_count, self.retry_interval = get_retry_count_and_interval()
-        self.pv = PersistentVolume()
-        self.pvc = PersistentVolumeClaim()
+        super().__init__()
 
     def get(self, volume_name):
         for i in range(self.retry_count):
@@ -403,54 +397,6 @@ class Rest(Base):
         assert engine.lastRestoredBackup == ""
         assert engine.requestedBackupRestore == ""
 
-    def create_persistentvolume(self, volume_name, retry):
-        for _ in range(self.retry_count):
-            try:
-                volume = self.get(volume_name)
-                if hasattr(volume, 'pvCreate'):
-                    break
-            except Exception as e:
-                logging(f"Failed to get pvCreate method for volume {volume_name}: {e}")
-            time.sleep(self.retry_interval)
-        else:
-            raise AttributeError
-        volume.pvCreate(pvName=volume_name, fsType="ext4")
-
-        if not retry:
-            return
-
-        created = False
-        for _ in range(self.retry_count):
-            if self.pv.is_exist(volume_name):
-                created = True
-                break
-            time.sleep(self.retry_interval)
-        assert created
-
-    def create_persistentvolumeclaim(self, volume_name, retry):
-        for _ in range(self.retry_count):
-            try:
-                volume = self.get(volume_name)
-                if hasattr(volume, 'pvcCreate'):
-                    break
-            except Exception as e:
-                logging(f"Failed to get pvcCreate method for volume {volume_name}: {e}")
-            time.sleep(self.retry_interval)
-        else:
-            raise AttributeError
-        volume.pvcCreate(namespace="default", pvcName=volume_name)
-
-        if not retry:
-            return
-
-        created = False
-        for _ in range(self.retry_count):
-            if self.pvc.is_exist(volume_name, namespace="default"):
-                created = True
-                break
-            time.sleep(self.retry_interval)
-        assert created
-
     def upgrade_engine_image(self, volume_name, engine_image_name):
         logging(f"Upgrading volume {volume_name} engine image to {engine_image_name}")
         volume = self.get(volume_name)
@@ -487,6 +433,7 @@ class Rest(Base):
         assert ready, f"Failed to get volume {volume_name} replicas ready: {replicas}"
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
+        logging(f"Trimming volume {volume_name} filesystem")
         is_unexpected_pass = False
         try:
             self.get(volume_name).trimFilesystem(name=volume_name)

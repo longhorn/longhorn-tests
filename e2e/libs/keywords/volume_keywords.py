@@ -12,6 +12,7 @@ from utility.constant import LABEL_TEST_VALUE
 import utility.constant as constant
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+from utility.utility import convert_size_to_bytes
 
 from volume import Volume
 from volume.rest import Rest as VolumeRest
@@ -23,6 +24,7 @@ class volume_keywords:
         self.node = Node()
         self.volume = Volume()
         self.replica = Replica()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def cleanup_volumes(self):
         volumes = self.volume.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
@@ -351,11 +353,11 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True):
-        self.volume.create_persistentvolume(volume_name, retry)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volume_mode="Filesystem"):
+        self.volume.create_persistentvolume(volume_name, retry, volume_mode)
 
-    def create_persistentvolumeclaim_for_volume(self, volume_name, retry=True):
-        self.volume.create_persistentvolumeclaim(volume_name, retry)
+    def create_persistentvolumeclaim_for_volume(self, volume_name, retry=True, volume_mode="Filesystem"):
+        self.volume.create_persistentvolumeclaim(volume_name, retry, volume_mode)
 
     def record_volume_replica_names(self, volume_name):
         replica_list = self.replica.get(volume_name, node_name="")
@@ -397,6 +399,30 @@ class volume_keywords:
     def get_volume_size(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['size']
+
+    def get_volume_actual_size(self, volume_name):
+        volume = self.volume.get(volume_name)
+        return volume['status']['actualSize']
+
+    def wait_for_volume_actual_size_less_than(self, volume_name, size):
+        size = convert_size_to_bytes(size)
+        for i in range(self.retry_count):
+            actual_size = self.get_volume_actual_size(volume_name)
+            logging(f"Waiting for volume {volume_name} actual size ({actual_size}) less than {size} ... ({i})")
+            if actual_size < size:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} actual size less than {size}"
+
+    def wait_for_volume_actual_size_greater_than(self, volume_name, size):
+        size = convert_size_to_bytes(size)
+        for i in range(self.retry_count):
+            actual_size = self.get_volume_actual_size(volume_name)
+            logging(f"Waiting for volume {volume_name} actual size ({actual_size}) greater than {size} ... ({i})")
+            if actual_size > size:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} actual size greater than {size}"
 
     def get_volume_node_disk_storage_maximum(self, volume_name, node_name):
         replica_list = self.replica.get(volume_name, node_name)

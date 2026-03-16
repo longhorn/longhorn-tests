@@ -118,6 +118,39 @@ Run command on node ${node_id} and get output string
     ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
     RETURN    ${result}
 
+Corrupt CSI block volume staging mount point on node ${node_id} for volume ${volume_name}
+    [Documentation]    Corrupt the CSI block volume staging mount point with explicit host operations.
+    ...    1. Create fake device symlink /dev/longhorn/${volume_name} -> /dev/zero.
+    ...    2. Create staging directory under kubelet CSI staging path.
+    ...    3. Bind-mount the staging directory to itself to trigger EBUSY-style cleanup behavior.
+    ...    4. Create a broken symlink ${volume_name} -> /nonexistent/path/file to trigger ENOENT.
+    ${staging_path} =    Set Variable    /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/staging/${volume_name}
+    ${target_path} =    Set Variable    ${staging_path}/${volume_name}
+    ${fake_device} =    Set Variable    /dev/longhorn/${volume_name}
+    Run command on node    ${node_id}    mkdir -p /dev/longhorn
+    Run command on node    ${node_id}    ln -sfn /dev/zero ${fake_device}
+    Run command on node    ${node_id}    mkdir -p ${staging_path}
+    Run command on node    ${node_id}    mountpoint -q ${staging_path} || mount --bind ${staging_path} ${staging_path}
+    Run command on node    ${node_id}    rm -f ${target_path} && ln -s /nonexistent/path/file ${target_path}
+
+Verify CSI block volume staging mount point is corrupted on node ${node_id} for volume ${volume_name}
+    [Documentation]    Verify that the CSI block volume staging mount point has been corrupted
+    ...    with a broken symlink pointing to /nonexistent/path/file.
+    ...    This confirms the corruption created by the explicit host commands in this test keyword.
+    ${staging_path} =    Set Variable    /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/staging/${volume_name}/${volume_name}
+    Run command on node ${node_id} and wait for output
+    ...    file ${staging_path}
+    ...    /nonexistent/path/file
+
+Verify CSI block volume staging mount point is recovered on node ${node_id} for volume ${volume_name}
+    [Documentation]    Verify that the CSI block volume staging mount point has been recovered
+    ...    by confirming the broken symlink pointing to /nonexistent/path/file is no longer present.
+    ...    This confirms that the CSI node server has successfully resolved the corrupted mount point.
+    ${staging_path} =    Set Variable    /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/staging/${volume_name}/${volume_name}
+    Run command on node ${node_id} and not expect output
+    ...    file ${staging_path}
+    ...    /nonexistent/path/file
+
 Get host log list on path ${log_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${host_log_files} =    get_host_log_files    ${node_name}    ${log_path}
