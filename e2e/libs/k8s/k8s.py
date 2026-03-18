@@ -12,6 +12,7 @@ from robot.libraries.BuiltIn import BuiltIn
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
+from utility.utility import list_namespaced_pod
 from utility.constant import LONGHORN_UNINSTALL_TIMEOUT
 import utility.constant as constant
 
@@ -297,6 +298,39 @@ def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
 
     assert unexpected_log not in pod_log, f"Unexpected log '{unexpected_log}' found in pod '{pod_name}' logs"
+
+def get_pods_by_label_selector(label_selector, namespace=constant.LONGHORN_NAMESPACE):
+    pods = list_namespaced_pod(namespace=namespace, label_selector=label_selector)
+    return [pod.metadata.name for pod in pods]
+
+def verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+    pods = get_pods_by_label_selector(label_selector, namespace)
+    if not pods:
+        raise AssertionError(
+            f"No pods found with label selector '{label_selector}' in namespace '{namespace}'"
+        )
+    failures = []
+    for pod in pods:
+        try:
+            verify_pod_log_after_time_contains(pod, expect_log, test_start_time, namespace)
+            logging(f"Found expected log in pod '{pod}'")
+            return
+        except AssertionError as e:
+            logging(f"Pod '{pod}' did not contain expected log: {e}")
+            failures.append(pod)
+    raise AssertionError(
+        f'Expected log "{expect_log}" was not found in any pod matching "{label_selector}". '
+        f'Checked pods: {failures}'
+    )
+
+def verify_pods_log_after_time_not_contains(label_selector, unexpected_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+    pods = get_pods_by_label_selector(label_selector, namespace)
+    if not pods:
+        raise AssertionError(
+            f"No pods found with label selector '{label_selector}' in namespace '{namespace}'"
+        )
+    for pod in pods:
+        verify_pod_log_after_time_not_contains(pod, unexpected_log, test_start_time, namespace)
 
 def deploy_system_upgrade_controller():
     logging(f"Deploying system upgrade controller")
