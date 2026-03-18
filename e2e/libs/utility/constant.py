@@ -33,4 +33,16 @@ BLOCK_PVC_VOLUME_DEVICE_DIR = "/dev/longhorn"
 # This path is used in the deployment template for block volume
 BLOCK_PVC_VOLUME_DEVICE_PATH = BLOCK_PVC_VOLUME_DEVICE_DIR + "/" + BLOCK_PVC_VOLUME_DEVICE_NAME
 
+# Pod label selectors for longhorn-system namespace
+LABEL_SELECTOR_LONGHORN_MANAGER = "app=longhorn-manager"
+LABEL_SELECTOR_INSTANCE_MANAGER = "longhorn.io/component=instance-manager"
+LABEL_SELECTOR_ENGINE_IMAGE     = "longhorn.io/component=engine-image"
+LABEL_SELECTOR_CSI_PLUGIN       = "app=longhorn-csi-plugin"
+LABEL_SELECTOR_CSI_ATTACHER     = "app=csi-attacher"
+LABEL_SELECTOR_CSI_PROVISIONER  = "app=csi-provisioner"
+LABEL_SELECTOR_CSI_RESIZER      = "app=csi-resizer"
+LABEL_SELECTOR_CSI_SNAPSHOTTER  = "app=csi-snapshotter"
+LABEL_SELECTOR_DRIVER_DEPLOYER  = "app=longhorn-driver-deployer"
+LABEL_SELECTOR_LONGHORN_UI      = "app=longhorn-ui"
+
 DISK_UNSCHEDULABLE_KEEP_ROUNDS = 30
