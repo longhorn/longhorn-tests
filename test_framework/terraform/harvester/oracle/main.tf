@@ -171,6 +171,10 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
     rancher2_machine_config_v2.e2e-machine-config-worker
   ]
 
+  timeouts {
+    create = "90m"
+  }
+
   kubernetes_version = var.k8s_distro_version
 
   rke_config {
