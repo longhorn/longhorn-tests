@@ -28,7 +28,7 @@ Create volume with invalid name should fail
 *** Test Cases ***
 
 Test RWX Volume Data Integrity After CSI Plugin Pod Restart
-    [Tags]    volume    rwx    storage-network
+    [Tags]    volume    rwx
     [Documentation]    Test RWX volume data directory is accessible after Longhorn CSI plugin pod restart.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/8184
