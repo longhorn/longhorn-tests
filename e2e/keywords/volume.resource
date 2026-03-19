@@ -261,6 +261,13 @@ Check volume ${volume_id} replica on node ${node_id} kept in stopped
         Sleep    ${RETRY_INTERVAL}
     END
 
+Check volume ${volume_id} kept in healthy
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        wait_for_volume_healthy    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Check volume ${volume_id} kept in degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
@@ -505,12 +512,14 @@ Activate DR volume ${volume_id}
     activate_dr_volume    ${volume_name}
 
 Create persistentvolume for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_persistentvolume_for_volume    ${volume_name}
+    create_persistentvolume_for_volume    ${volume_name}    &{config}
 
 Create persistentvolumeclaim for volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_persistentvolumeclaim_for_volume    ${volume_name}
+    create_persistentvolumeclaim_for_volume    ${volume_name}    &{config}
 
 Create persistentvolume for volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -655,3 +664,7 @@ Expand volume ${volume_id} to ${size}
 Expand volume ${volume_id} to ${size} should fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     Run Keyword And Expect Error    *    expand_volume    ${volume_name}    ${size}
+
+Trim volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    trim_volume    ${volume_name}

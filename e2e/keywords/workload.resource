@@ -422,6 +422,9 @@ Check ${workload_kind} ${workload_id} pods not recreated
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     check_workload_pods_not_recreated    ${workload_kind}    ${workload_name}
 
+Rollout restart ${workload_kind} ${workload_id} in namespace ${namespace}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    rollout_restart_workload    ${workload_kind}    ${workload_name}    ${namespace}
 Volume of ${workload_kind} ${workload_id} actual size should be less than ${size}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
