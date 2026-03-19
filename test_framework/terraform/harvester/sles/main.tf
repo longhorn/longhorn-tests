@@ -213,8 +213,7 @@ disable-kube-proxy: false
 etcd-expose-metrics: false
 EOF
     etcd {
-      snapshot_schedule_cron = "0 */5 * * *"
-      snapshot_retention = 5
+      disable_snapshots = true
     }
     chart_values = ""
   }

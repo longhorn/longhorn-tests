@@ -217,8 +217,7 @@ EOF
       worker_concurrency = "10%"
     }
     etcd {
-      snapshot_schedule_cron = "0 */5 * * *"
-      snapshot_retention = 5
+      disable_snapshots = true
     }
     chart_values = ""
   }
