@@ -173,3 +173,8 @@ Upgrade kubernetes to latest version
 Is Longhorn components all running
     ${all_running}=    is_namespaced_pods_all_running    ${LONGHORN_NAMESPACE}
     [Return]    ${all_running}
+
+Get Pod By Label Selector
+    [Arguments]    ${label_selector}    ${namespace}
+    ${pods}=    get_pods_by_label_selector    ${label_selector}    ${namespace}
+    RETURN    ${pods}
