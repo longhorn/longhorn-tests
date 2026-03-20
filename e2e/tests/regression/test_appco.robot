@@ -15,6 +15,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/storageclass.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -24,24 +25,11 @@ ${LONGHORN_NAMESPACE}    longhorn-system
 ${DEP_VERSIONS_URL}    None
 
 *** Keywords ***
-List Pods In Namespace With Label
-    [Arguments]    ${namespace}    ${label_selector}
-    [Documentation]    List pods in namespace with label selector
-    ${cmd}=    Set Variable    kubectl -n ${namespace} get pods -l ${label_selector} -o jsonpath='{.items[*].metadata.name}'
-    ${pods_str}=    Execute Command And Get Output    ${cmd}
-    @{pods}=    Split String    ${pods_str}
-    RETURN    @{pods}
-
-Execute Command And Get Output
-    [Arguments]    ${command}
-    [Documentation]    Execute shell command and return output
-    ${result}=    Run    ${command}
-    RETURN    ${result}
-
 Download JSON From URL
     [Arguments]    ${url}
     [Documentation]    Download JSON file using curl
-    ${result}=    Execute Command And Get Output    curl -fsSL ${url}
+    ${cmd}=    Set Variable    curl -fsSL ${url}
+    ${result}=    Run Command And Get Output    ${cmd}
     RETURN    ${result}
 
 Parse JSON String
@@ -111,7 +99,7 @@ Get Pod Image Tag
     ...    {.spec.template.spec.containers[?(@.name=="${container_name}")].image}
 
     ${cmd}=    Set Variable    kubectl -n ${LONGHORN_NAMESPACE} get ${resource_type} ${resource_name} -o jsonpath='${jsonpath}'
-    ${image}=    Execute Command And Get Output    ${cmd}
+    ${image}=    Run Command And Get Output    ${cmd}
 
     ${tag}=    Fetch From Right    ${image}    :
     RETURN    ${tag}
@@ -201,7 +189,7 @@ Check All CSI Component Versions
 
     # Liveness probe
     ${cmd}=    Set Variable    kubectl -n ${LONGHORN_NAMESPACE} get ds longhorn-csi-plugin -o jsonpath='{.spec.template.spec.containers[*].image}'
-    ${liveness_image}=    Execute Command And Get Output    ${cmd}
+    ${liveness_image}=    Run Command And Get Output    ${cmd}
     ${images}=    Split String    ${liveness_image}
     ${liveness_full}=    Evaluate    [img for img in ${images} if 'livenessprobe' in img][0]
     ${liveness_tag}=    Fetch From Right    ${liveness_full}    :
@@ -215,7 +203,7 @@ Check All V2 Component Versions
     [Arguments]    ${versions}
     [Documentation]    Check all V2 data engine component versions
 
-    ${v2_pods}=    List Pods In Namespace With Label    ${LONGHORN_NAMESPACE}    longhorn.io/component=instance-manager,longhorn.io/data-engine=v2
+    ${v2_pods}=    Get Pod By Label Selector    longhorn.io/component=instance-manager,longhorn.io/data-engine=v2    ${LONGHORN_NAMESPACE}
     Should Not Be Empty    ${v2_pods}    msg=No running v2 instance-manager pod found
     ${v2_pod}=    Get From List    ${v2_pods}    0
     Log    Using v2 instance manager pod: ${v2_pod}
@@ -230,7 +218,7 @@ Check All V2 Component Versions
 Check NFS Component Versions
     [Arguments]    ${versions}
     [Documentation]    Check all NFS/Share Manager component versions
-    ${sm_pods}=    List Pods In Namespace With Label    ${LONGHORN_NAMESPACE}    longhorn.io/component=share-manager
+    ${sm_pods}=    Get Pod By Label Selector    longhorn.io/component=share-manager    ${LONGHORN_NAMESPACE}
     Should Not Be Empty    ${sm_pods}    msg=No share-manager pod found (NFS feature may not be enabled)
     ${sm_pod}=    Get From List    ${sm_pods}    0
     Log    Using share manager pod: ${sm_pod}
@@ -286,4 +274,3 @@ Verify Appco Component Versions
     And Check NFS Component Versions    ${versions}
 
     Then Check Component Version Result
-
