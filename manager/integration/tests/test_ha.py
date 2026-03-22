@@ -85,6 +85,7 @@ from common import set_tags_for_node_and_its_disks
 from common import wait_for_tainted_node_engine_image_undeployed
 from common import wait_for_replica_count
 from common import DATA_ENGINE
+from common import DATA_SIZE_IN_MB_5, RETRY_COUNTS_LONG
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -631,13 +632,17 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
 def wait_pod_for_remount_request(client, core_api, volume_name, pod_name, original_md5sum, data_path="/data/test"):  # NOQA
     try:
         # this line may fail if the recovery is too quick
-        wait_for_volume_faulted(client, volume_name)
+        #
+        # For v2, crashing replica processes does not guarantee the volume
+        # reaches a faulted state,  because replica recovery can
+        # happen independently for each replica. Therefore, only assert the
+        # faulted state for v1.
+        if DATA_ENGINE == "v1":
+            wait_for_volume_faulted(client, volume_name)
     except AssertionError:
         print("\nException waiting for volume faulted,"
               "could have missed it")
-
     wait_for_volume_healthy(client, volume_name)
-
     try:
         common.wait_for_pod_phase(core_api, pod_name, pod_phase="Pending")
     except AssertionError:
@@ -651,6 +656,7 @@ def wait_pod_for_remount_request(client, core_api, volume_name, pod_name, origin
     assert md5sum == original_md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_salvage_auto_crash_all_replicas(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test automatic salvage feature by crashing all the replicas
@@ -678,7 +684,12 @@ def test_salvage_auto_crash_all_replicas(client, core_api, storage_class, sts_na
     # Case #1
     vol_name, pod_name, md5sum = common.prepare_statefulset_with_data_in_mb(
         client, core_api, statefulset, sts_name, storage_class)
-    crash_replica_processes(client, core_api, vol_name)
+    if DATA_ENGINE == "v2":
+        # Crashing all v2 replicas causes them to restart, but not
+        # enter the failed state.
+        crash_replica_processes(client, core_api, vol_name, wait_to_fail=False)
+    else:
+        crash_replica_processes(client, core_api, vol_name)
     wait_pod_for_remount_request(client, core_api, vol_name, pod_name, md5sum)
 
     # Case #2
@@ -693,11 +704,18 @@ def test_salvage_auto_crash_all_replicas(client, core_api, storage_class, sts_na
         if r.running is True:
             replicas.append(r)
 
-    crash_replica_processes(client, core_api, vol_name, replicas)
+    if DATA_ENGINE == "v2":
+        # Crashing all v2 replicas causes them to restart, but not
+        # enter the failed state.
+        crash_replica_processes(client, core_api, vol_name, replicas,
+                                wait_to_fail=False)
+    else:
+        crash_replica_processes(client, core_api, vol_name, replicas)
 
     wait_pod_for_remount_request(client, core_api, vol_name, pod_name, md5sum)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test rebuild failure with intensive data writing
@@ -713,17 +731,25 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, csi_
     9. Wait for volume to finish two rebuilds and become healthy
     10. Check md5sum for both data location
     """
+    if DATA_ENGINE == "v2":
+        volume_size = str(4*Gi)
+        data_size = DATA_SIZE_IN_MB_5
+        retry_count = RETRY_COUNTS_LONG * 2
+    else:
+        volume_size = str(2*Gi)
+        data_size = DATA_SIZE_IN_MB_4
+        retry_count = RETRY_COUNTS_LONG
 
     data_path_1 = "/data/test1"
     data_path_2 = "/data/test2"
     pod_name, pv_name, pvc_name, original_md5sum_1 = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, volume_name,
-            volume_size=str(2*Gi),
-            data_path=data_path_1, data_size_in_mb=DATA_SIZE_IN_MB_4)
+            volume_size=volume_size,
+            data_path=data_path_1, data_size_in_mb=data_size)
     create_snapshot(client, volume_name)
     write_pod_volume_random_data(core_api, pod_name,
-                                 data_path_2, DATA_SIZE_IN_MB_4)
+                                 data_path_2, data_size)
     original_md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
 
     volume = client.by_id_volume(volume_name)
@@ -746,13 +772,14 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, csi_
             from_replica = r
     assert from_replica
     crash_replica_processes(client, core_api, volume_name, [from_replica])
-    wait_for_volume_healthy(client, volume_name)
+    wait_for_volume_healthy(client, volume_name, retry_count)
     md5sum_1 = get_pod_data_md5sum(core_api, pod_name, data_path_1)
     assert original_md5sum_1 == md5sum_1
     md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
     assert original_md5sum_2 == md5sum_2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_rebuild_replica_and_from_replica_on_the_same_node(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test the corner case that the from-replica and the rebuilding replica
@@ -2243,6 +2270,7 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
     assert expect_md5sum == md5sum
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     """
     Steps:
@@ -2251,8 +2279,9 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     2. Disable the setting soft node anti-affinity.
     3. Create and attach a volume. Then write data to the volume.
     4. Disable the scheduling for a node.
-    5. Mess up the data of a random snapshot or the volume head for a replica.
-       Then crash the replica on the node.
+    5. For v1, mess up the data of a random snapshot or the volume head for a
+         replica, then crash the replica on the node.
+       For v2, directly fail the replica on the node.
        --> Verify Longhorn won't create a new replica on the node
            for the volume.
     6. Update setting `replica-replenishment-wait-interval` to
@@ -2298,10 +2327,15 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
             other_replicas.append(r)
     replica_2, replica_3 = other_replicas
 
-    for filenames in os.listdir(replica_1.dataPath):
-        if filenames.endswith(".img"):
-            with open(os.path.join(replica_1.dataPath, filenames), 'w') as f:
-                f.write("Longhorn is the best!")
+    # Only v1 supports corrupting replica data by modifying image files.
+    # V2/SPDK does not expose replica data in the same file-based format.
+    # Skip the step, keep validating the replica failure and recovery process
+    # for both engines.
+    if DATA_ENGINE == "v1":
+        for filenames in os.listdir(replica_1.dataPath):
+            if filenames.endswith(".img"):
+                with open(os.path.join(replica_1.dataPath, filenames), 'w') as f: # NOQA
+                    f.write("Longhorn is the best!")
 
     crash_replica_processes(client, core_api, volume_name,
                             replicas=[replica_1],
@@ -2344,6 +2378,7 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     check_volume_data(vol, data)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_name): # NOQA
     """
     Steps:
@@ -2378,7 +2413,8 @@ def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_nam
         set_tags_for_node_and_its_disks(client, node, tags)
 
     client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=3,
-                         diskSelector=tags, nodeSelector=tags)
+                         diskSelector=tags, nodeSelector=tags,
+                         dataEngine=DATA_ENGINE)
     vol = wait_for_volume_detached(client, volume_name)
     assert vol.diskSelector == tags
     assert vol.nodeSelector == tags
@@ -3379,6 +3415,12 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
     a replica is killed and the settings enabled at the time vary with the
     parameters.
     """
+    if DATA_ENGINE == "v2":
+        volume_size = str(4 * Gi)
+        data_size = DATA_SIZE_IN_MB_5 * 2
+    else:
+        volume_size = str(2 * Gi)
+        data_size = DATA_SIZE_IN_MB_4
 
     backupstore_cleanup(client)
 
@@ -3390,8 +3432,8 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
         prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make,
                                     volume_name,
-                                    volume_size=str(2 * Gi),
-                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
+                                    volume_size=volume_size,
+                                    data_size_in_mb=data_size,
                                     data_path=data_path)
 
     volume = client.by_id_volume(volume_name)
