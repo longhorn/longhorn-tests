@@ -287,6 +287,7 @@ DATA_SIZE_IN_MB_1 = 100
 DATA_SIZE_IN_MB_2 = 300
 DATA_SIZE_IN_MB_3 = 500
 DATA_SIZE_IN_MB_4 = 800
+DATA_SIZE_IN_MB_5 = 1500
 
 MESSAGE_TYPE_ERROR = "error"
 
@@ -2526,13 +2527,35 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != ""
+        if DATA_ENGINE == "v2":
+            replica_name = r["name"]
 
-        pgrep_command = f"pgrep -f {r['dataPath']}"
-        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
-        assert pid != ""
+            get_nqn_command = (
+                "go-spdk-helper nvmf subsystem-get | "
+                "tr \"'\" '\"' | "
+                "grep '\"nqn\"' | "
+                "grep '%s' | "
+                "head -n 1 | cut -d'\"' -f4"
+            ) % replica_name
+            nqn = exec_instance_manager(api, r.instanceManagerName,
+                                        get_nqn_command).strip()
 
-        kill_command = f"kill {pid}"
-        exec_instance_manager(api, r.instanceManagerName, kill_command)
+            assert nqn != "", \
+                f"Failed to extract NQN for replica {replica_name}"
+
+            stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
+            print(f"Executing command: {stop_expose_command}")
+            exec_instance_manager(
+                api, r.instanceManagerName, stop_expose_command
+            )
+        else:
+            pgrep_command = f"pgrep -f {r['dataPath']}"
+            pid = exec_instance_manager(api, r.instanceManagerName,
+                                        pgrep_command)
+            assert pid != ""
+
+            kill_command = f"kill {pid}"
+            exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
