@@ -792,6 +792,7 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
     delete_backup_volume(client, backup_volume.name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
     Test DR volume activated with a failed replica
@@ -3016,6 +3017,7 @@ def test_expansion_canceling(client, core_api, volume_name, pod, pvc, storage_cl
     delete_and_wait_pv(core_api, expansion_pv_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_running_volume_with_scheduling_failure(
         client, core_api, volume_name, pod):  # NOQA
@@ -3136,6 +3138,7 @@ def test_running_volume_with_scheduling_failure(
     delete_and_wait_pv(core_api, test_pv_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_expansion_with_scheduling_failure(
         client, core_api, volume_name, pod, pvc, storage_class):  # NOQA

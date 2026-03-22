@@ -761,6 +761,7 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQA
     """
     Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
@@ -893,7 +894,13 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
             replicas.append(r)
 
     assert len(replicas) > 0
-    crash_replica_processes(client, core_api, volume1_name, replicas)
+    if DATA_ENGINE == "v2":
+        # Crashing all v2 replicas causes them to restart, but not
+        # enter the failed state.
+        crash_replica_processes(client, core_api, volume1_name, replicas,
+                                wait_to_fail=False)
+    else:
+        crash_replica_processes(client, core_api, volume1_name, replicas)
     delete_replica_on_test_node(client, volume2_name)
 
     # While one volume is rebuilding, verify another volume is not
