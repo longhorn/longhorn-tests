@@ -27,7 +27,7 @@ Test Teardown    Cleanup test resources
 *** Keywords ***
 Create volume with invalid name should fail
   [Arguments]    ${invalid_volume_name}
-  Given Create volume     ${invalid_volume_name}
+  When Run Keyword And Expect Error    *    Create volume     ${invalid_volume_name}    retry=False
   Then No volume created
 
 *** Test Cases ***
