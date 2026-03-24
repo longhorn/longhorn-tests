@@ -117,7 +117,7 @@ def new_busybox_manifest(pod_name, claim_name):
         return manifest_dict
 
 
-def create_pod(manifest, is_wait_for_pod_running=False):
+def create_pod(manifest, is_wait_for_pod_running=False, is_wait_for_pod_succeeded=False):
     core_api = client.CoreV1Api()
 
     name = manifest['metadata']['name']
@@ -127,6 +127,8 @@ def create_pod(manifest, is_wait_for_pod_running=False):
 
     if is_wait_for_pod_running:
         wait_for_pod_status(name, 'Running', namespace=namespace)
+    if is_wait_for_pod_succeeded:
+        wait_for_pod_status(name, 'Succeeded', namespace=namespace)
 
     return get_pod(name, namespace=namespace)
 

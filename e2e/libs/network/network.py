@@ -21,21 +21,34 @@ def setup_control_plane_network_latency(latency_in_ms=0):
     if latency_in_ms != 0:
         control_plane_nodes = Node().list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
-            cmd = f"tc qdisc replace dev eth0 root netem delay {latency_in_ms}ms"
-            res = NodeExec(control_plane_node).issue_cmd(cmd)
-            cmd = f"tc qdisc show dev eth0 | grep delay"
-            res = NodeExec(control_plane_node).issue_cmd(cmd)
-            assert res, "setup control plane network latency failed"
+            ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+            ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
+            manifest = new_pod_manifest(
+                image=IMAGE_BUSYBOX,
+                command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
+                args=["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && tc qdisc replace dev $INTERFACE root netem delay {latency_in_ms}ms"],
+                node_name=control_plane_node,
+                labels = {LABEL_TEST: LABEL_TEST_VALUE}
+            )
+            pod_name = manifest['metadata']['name']
+            create_pod(manifest, is_wait_for_pod_succeeded=True)
 
 
 def cleanup_control_plane_network_latency():
     control_plane_nodes = Node().list_node_names_by_role("control-plane")
     for control_plane_node in control_plane_nodes:
-        cmd = "tc qdisc del dev eth0 root"
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        cmd = f"tc qdisc show dev eth0 | grep -v delay"
-        res = NodeExec(control_plane_node).issue_cmd(cmd)
-        assert res, "cleanup control plane network failed"
+        ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+        ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
+        manifest = new_pod_manifest(
+            image=IMAGE_BUSYBOX,
+            command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
+            args=["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && tc qdisc del dev $INTERFACE root || true"],
+            node_name=control_plane_node,
+            labels = {LABEL_TEST: LABEL_TEST_VALUE}
+        )
+        pod_name = manifest['metadata']['name']
+        create_pod(manifest, is_wait_for_pod_succeeded=True)
+
 
 async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
@@ -43,7 +56,7 @@ async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
         command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
-        args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
+        args=["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && sleep 10 && tc qdisc replace dev $INTERFACE root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev $INTERFACE root"],
         node_name=node_name
     )
     pod_name = manifest['metadata']['name']
@@ -59,7 +72,7 @@ def disconnect_node_network_without_waiting_completion(node_name, disconnection_
     manifest = new_pod_manifest(
         image=IMAGE_BUSYBOX,
         command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
-        args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
+        args=["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && sleep 10 && tc qdisc replace dev $INTERFACE root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev $INTERFACE root"],
         node_name=node_name,
         labels = {LABEL_TEST: LABEL_TEST_VALUE}
     )

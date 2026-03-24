@@ -265,6 +265,24 @@ Test Auto Salvage After Volume Faulted By Instance Manager Deletion
     And Wait for deployment 0 pods stable
     And Check deployment 0 data in file data.txt is intact
 
+Test Refuse To Attach Strict-local Volume To A Different Node
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/8546
+    ...                Test that a strict-local volume cannot be attached to a different node
+    ...                after it has been attached and detached from its original node.
+    ...
+    ...                1. Create a strict-local volume
+    ...                2. Attach it to node 0
+    ...                3. Detach it from node 0
+    ...                4. Attach it to node 1 should fail
+    Given Create volume 0 with    numberOfReplicas=1    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    When Detach volume 0
+    And Wait for volume 0 detached
+
+    Then Attach volume 0 to node 1 should fail
+
 Test Instance Manager AWS Role Annotation
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/9923
     ...    Verify that the iam.amazonaws.com/role annotation is propagated to
