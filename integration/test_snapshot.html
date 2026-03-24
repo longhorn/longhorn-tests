@@ -682,17 +682,27 @@ def test_snapshot_cr(client, volume_name, settings_reset):  # NOQA
         wait_for_volume_degraded(client, volume_name)
         wait_for_volume_healthy(client, volume_name)
 
-        # 2 snapshots, 1 is volume-head, the other 1 was system generated
+        # For v1 volumes: 2 snapshots, 1 is volume-head,
+        # the other 1 was system generated
+        #
+        # For v2 volumes: unlike v1 volumes, the system-generated
+        # snapshot right after the volume-head can be purged.
+        # As a result, the number of system-generated snapshots
+        # for the volume becomes 0 after the rebuilding process.
         for j in range(RETRY_COUNTS_SHORT):
             volume = client.by_id_volume(volume_name)
             snapshots = get_available_snapshots(volume)
-            if len(snapshots) == 1:
+            expected_snapshots = 1
+            if DATA_ENGINE == &#34;v2&#34;:
+                expected_snapshots = 0
+            if len(snapshots) == expected_snapshots:
                 break
             time.sleep(RETRY_INTERVAL)
 
-        assert len(snapshots) == 1
-        assert snapshots[0].created != created_time
-        created_time = snapshots[0].created</code></pre>
+        assert len(snapshots) == expected_snapshots
+        if DATA_ENGINE == &#34;v1&#34;:
+            assert snapshots[0].created != created_time
+            created_time = snapshots[0].created</code></pre>
 </details>
 <div class="desc"><p>GitHub ticket: <a href="https://github.com/longhorn/longhorn/issues/6298">https://github.com/longhorn/longhorn/issues/6298</a></p>
 <ol>
