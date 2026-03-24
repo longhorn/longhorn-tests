@@ -169,13 +169,13 @@ class Base(ABC):
     def activate(self, volume_name):
         return NotImplemented
 
-    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem"):
+    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem", fsType="ext4"):
         logging(f'Creating PV {volume_name} with volumeMode={volume_mode}')
         volume = self.get(volume_name)
         volume_size = self._get_volume_size(volume)
         assert volume_size is not None, f"Cannot determine size for volume {volume_name}"
         storage = str(convert_size_to_bytes(str(volume_size)))
-        self.pv.create(volume_name, storage, volume_mode=volume_mode)
+        self.pv.create(volume_name, storage, volume_mode=volume_mode, fsType=fsType)
 
         if not retry:
             return
@@ -206,7 +206,3 @@ class Base(ABC):
                 break
             time.sleep(self.retry_interval)
         assert created
-
-    # @abstractmethod
-    # def cleanup(self, volume_names):
-    #     return NotImplemented

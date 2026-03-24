@@ -353,8 +353,8 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volume_mode="Filesystem"):
-        self.volume.create_persistentvolume(volume_name, retry, volume_mode)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volume_mode="Filesystem", fsType="ext4"):
+        self.volume.create_persistentvolume(volume_name, retry, volume_mode, fsType)
 
     def create_persistentvolumeclaim_for_volume(self, volume_name, retry=True, volume_mode="Filesystem"):
         self.volume.create_persistentvolumeclaim(volume_name, retry, volume_mode)
@@ -455,3 +455,6 @@ class volume_keywords:
 
     def expand_volume(self, volume_name, size):
         self.volume.expand(volume_name, size)
+
+    def trim_volume(self, volume_name):
+        self.volume.trim_filesystem(volume_name)
