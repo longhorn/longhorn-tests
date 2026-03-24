@@ -167,7 +167,7 @@ run_longhorn_test_out_of_cluster(){
   elif [[ $BACKUP_STORE_TYPE = "azurite" ]]; then
     LONGHORN_BACKUPSTORES=${AZURITE_BACKUP_STORE}
   fi
-  LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
+  LONGHORN_BACKUPSTORE_POLL_INTERVAL="30s"
 
   if [[ "${CUSTOM_TEST_OPTIONS}" == \"*\" ]]; then
     # Remove leading and trailing double quotes
