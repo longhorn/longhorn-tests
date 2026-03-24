@@ -171,6 +171,10 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
     rancher2_machine_config_v2.e2e-machine-config-worker
   ]
 
+  timeouts {
+    create = "90m"
+  }
+
   kubernetes_version = var.k8s_distro_version
 
   rke_config {
@@ -209,8 +213,7 @@ disable-kube-proxy: false
 etcd-expose-metrics: false
 EOF
     etcd {
-      snapshot_schedule_cron = "0 */5 * * *"
-      snapshot_retention = 5
+      disable_snapshots = true
     }
     chart_values = ""
   }

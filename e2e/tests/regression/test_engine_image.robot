@@ -56,7 +56,7 @@ Test Replicas Not Accumulate During Engine Upgrade
     ...    6. Upgrade Longhorn to custom version, engine image upgrade will be triggered for all volumes
     ...    7. For all volumes, check there is no failed replicas accumulated due to etcd delays by
     ...       waiting for their replica count to be 3
-    [Tags]    coretest    upgrade
+    [Tags]    coretest    upgrade    network
 
     IF    '${DATA_ENGINE}' == 'v2'
         Skip    v2 data engine does not support engine image upgrade
