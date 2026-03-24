@@ -34,11 +34,6 @@ Set up v2 test environment
     Set up test environment
     Enable v2 data engine and add block disks
 
-Snapshot PV PVC could not be created on DR volume 1
-    Create snapshot 0 of volume 1 will fail
-    Create persistentvolume for volume 1 will fail
-    Create persistentvolumeclaim for volume 1 will fail
-
 Backup target could not be changed when DR volume exist
     Set setting backup-target to random.backup.target will fail
 
@@ -112,7 +107,7 @@ Test Incremental Restore
     And Create DR volume 3 from backup 0 of volume 0   dataEngine=${DATA_ENGINE}
     And Wait for volume 3 restoration from backup 0 of volume 0 completed
 
-    Then Snapshot PV PVC could not be created on DR volume 1
+    Then Create snapshot 0 of volume 1 will fail
     And Backup target could not be changed when DR volume exist
 
     When Activate DR volume 1
