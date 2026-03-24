@@ -96,7 +96,7 @@ class Base(ABC):
         backupstore = os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
         if backupstore:
             backupsettings = backupstore.split("$")
-            poll_interval = os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL', '30')
+            poll_interval = os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL', '30s')
             self.set_backupstore_url(backupsettings[0])
             if len(backupsettings) > 1:
                 self.set_backupstore_secret(backupsettings[1])
