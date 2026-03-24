@@ -56,7 +56,7 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
                 "set -e; "
                 "while true; do "
                 "  date >> /data/date.log; "
-                "  sync; "
+                "  sync /data/date.log 2>/dev/null; "
                 "  sleep 1; "
                 "done"
             ]
