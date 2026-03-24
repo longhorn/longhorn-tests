@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    network-disconnect    negative
+Test Tags    network-disconnect    network    negative
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/volume.resource
@@ -131,7 +131,7 @@ Node Disconnect And Keep Data Writing And No Replica On The Disconnected Node
 
     Then Wait for disconnected node back
     And Check volume 0 kept in detached
-    And Check all replicas of volume 0 kept in error
+    And Check volume 0 kept in faulted
 
 Node Disconnect And Keep Data Writing And Have Replica On The Disconnected Node
     [Documentation]    -- Manual test plan --
