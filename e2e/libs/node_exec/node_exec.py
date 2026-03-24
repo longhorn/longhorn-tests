@@ -139,6 +139,19 @@ class NodeExec:
                     "operator": "Exists",
                     "effect": "NoExecute"
                 },
+                # For a rke2 cluster on HAL, the control-plane node is tainted with:
+                # node-role.kubernetes.io/etcd:NoExecute
+                # node-role.kubernetes.io/control-plane:NoSchedule
+                {
+                    "key": "node-role.kubernetes.io/etcd",
+                    "operator": "Exists",
+                    "effect": "NoSchedule"
+                },
+                {
+                    "key": "node-role.kubernetes.io/etcd",
+                    "operator": "Exists",
+                    "effect": "NoExecute"
+                },
                 # Allow to schedule on cordoned node to execute command on its host.
                 {
                     "key": "node.kubernetes.io/unschedulable",

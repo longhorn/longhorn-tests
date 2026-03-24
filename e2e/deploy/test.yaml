@@ -61,7 +61,7 @@ spec:
     - name: LONGHORN_BACKUPSTORE
       value: "s3://backupbucket@us-east-1/backupstore$minio-secret"
     - name: LONGHORN_BACKUPSTORE_POLL_INTERVAL
-      value: "30"
+      value: "30s"
     - name: LONGHORN_DISK_TYPE
       value: "ssd"
     - name: LONGHORN_UPGRADE_TYPE
