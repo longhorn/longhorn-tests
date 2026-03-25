@@ -62,6 +62,7 @@ class Setting:
             self._update_setting(key, value)
 
     def get_setting(self, key):
+        logging(f"Getting setting {key} value {get_longhorn_client().by_id_setting(key).value}")
         return get_longhorn_client().by_id_setting(key).value
 
     def reset_settings(self, data_engine="v1"):
