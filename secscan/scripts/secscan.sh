@@ -16,7 +16,7 @@ for IMAGE in "${IMAGES[@]}"; do
 	IMAGE_NAME=`echo "${IMAGE}" | awk -F"/" '{print $NF}' | tr ':' '-'`
 	sed "s/LONGHORN_IMAGE_NAME/${IMAGE_NAME}/" /templates/junit.tpl > /templates/junit-${IMAGE_NAME}.tpl
 
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /templates/junit-${IMAGE_NAME}.tpl:/contrib/junit.tpl -v /junit-reports:/root/ aquasec/trivy image  --severity ${SEVERITY} --format template --template "@/contrib/junit.tpl" -o /root/${IMAGE_NAME}-junit-report.xml ${IMAGE}
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /templates/junit-${IMAGE_NAME}.tpl:/contrib/junit.tpl -v /junit-reports:/root/ aquasec/trivy:0.69.3 image --severity ${SEVERITY} --format template --template "@/contrib/junit.tpl" -o /root/${IMAGE_NAME}-junit-report.xml ${IMAGE}
 
 done
 
