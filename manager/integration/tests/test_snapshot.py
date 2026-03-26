@@ -20,6 +20,7 @@ from test_basic import get_volume_endpoint
 from test_scheduling import get_host_replica, wait_new_replica_ready  # NOQA
 
 from common import Gi, Mi
+from common import DATA_ENGINE
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_SNAPSHOT_DATA_INTEGRITY
 from common import SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION  # NOQA
@@ -723,17 +724,28 @@ def test_snapshot_cr(client, volume_name, settings_reset):  # NOQA
         wait_for_volume_degraded(client, volume_name)
         wait_for_volume_healthy(client, volume_name)
 
-        # 2 snapshots, 1 is volume-head, the other 1 was system generated
+        # For v1 volumes: 2 snapshots, 1 is volume-head,
+        # the other 1 was system generated
+        #
+        # For v2 volumes: unlike v1 volumes, the system-generated
+        # snapshot right after the volume-head can be purged.
+        # As a result, the number of system-generated snapshots
+        # for the volume becomes 0 after the rebuilding process.
         for j in range(RETRY_COUNTS_SHORT):
             volume = client.by_id_volume(volume_name)
             snapshots = get_available_snapshots(volume)
-            if len(snapshots) == 1:
+            expected_snapshots = 1
+            if DATA_ENGINE == "v2":
+                expected_snapshots = 0
+            if len(snapshots) == expected_snapshots:
                 break
             time.sleep(RETRY_INTERVAL)
 
-        assert len(snapshots) == 1
-        assert snapshots[0].created != created_time
-        created_time = snapshots[0].created
+        assert len(snapshots) == expected_snapshots
+        if DATA_ENGINE == "v1":
+            assert snapshots[0].created != created_time
+            created_time = snapshots[0].created
+
 
 @pytest.mark.skip(reason="TODO") # NOQA
 def test_freeze_file_system_for_snapshot(): # NOQA

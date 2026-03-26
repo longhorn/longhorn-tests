@@ -175,7 +175,7 @@ Test Backing Image Non-existent Disk UUID Warning
     ...    Expected log: "Disk <random-uuid> is not ready or does not exist.
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/4887
-    Given Create backing image test-bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    Given Create backing image test-bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
 
     ${original_diskFileSpecMap} =    Get diskFileSpecMap of backing image test-bi
     ${nonexistent_disk_uuid} =    Generate new uuid
