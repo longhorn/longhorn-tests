@@ -2990,8 +2990,7 @@ Clean up backups, volumes</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
-def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
+<pre><code class="python">def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     &#34;&#34;&#34;
     Scenario: test recurring jobs when volume detached unexpectedly
 
