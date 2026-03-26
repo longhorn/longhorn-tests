@@ -48,7 +48,7 @@ export LONGHORN_CLIENT_URL=http://localhost:8080
 
 ```
 export LONGHORN_BACKUPSTORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
-export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30
+export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30s
 ```
 
 1. To run node shutdown/reboot related test cases, export `HOST_PROVIDER` environment variable and generate :

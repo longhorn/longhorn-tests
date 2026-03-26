@@ -206,25 +206,26 @@ Check Longhorn Manager Resources Are
 Remove Longhorn Manager Resource Limit
     remove_longhorn_component_resources_limit    longhorn-manager    daemonset
 
-Verify longhorn manager logs does not contain ${expect_log} after test start
-    ${pod_names} =    get_longhorn_manager_pods
+Any ${label_selector} Pods Log Should Have ${expect_log} After Test Start
+    [Documentation]    Verify that at least one pod matching the given label selector contains
+    ...                the expected log substring after test_start_time.
+    ...
+    ...                Available label selectors for Longhorn components in longhorn-system:
+    ...
+    ...                  app=longhorn-manager
+    ...                  app=longhorn-driver-deployer
+    ...                  app=longhorn-csi-plugin
+    ...                  app=longhorn-ui
+    ...                  app=csi-attacher
+    ...                  app=csi-provisioner
+    ...                  app=csi-resizer
+    ...                  app=csi-snapshotter
+    ...                  longhorn.io/component=instance-manager
+    ...                  longhorn.io/component=engine-image
+    verify_pods_log_after_time_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
-    FOR    ${pod_name}    IN    @{pod_names}
-        verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
-    END
-
-Verify longhorn manager log contains ${expect_log} after test start
-    ${pods} =    get_longhorn_manager_pods
-    ${found} =    Set Variable    ${FALSE}
-    FOR    ${pod}    IN    @{pods}
-        ${status}    ${value} =    Run Keyword And Ignore Error
-        ...    verify_pod_log_after_time_contains    ${pod}    ${expect_log}    ${test_start_time}
-        IF    '${status}' == 'PASS'
-            ${found} =    Set Variable    ${TRUE}
-            BREAK
-        END
-    END
-    Should Be True    ${found}    Expected log "${expect_log}" was not found in any longhorn-manager pod logs
+Any ${label_selector} Pods Log Should Not Have ${expect_log} After Test Start
+    verify_pods_log_after_time_not_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
 Delete Longhorn node ${node_id}
     # Taint the node and delete nodes.longhorn.io instead of deleting the 

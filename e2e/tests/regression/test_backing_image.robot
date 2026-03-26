@@ -161,8 +161,8 @@ Test Node ID Change During Backing Image Creation
     And Unevict evicted nodes
 
     When Wait backimg image bi-large download complete
-    And Check backing image bi-large download file checksum matches
-    And Verify longhorn manager logs does not contain but the pod became not ready after test start
+    Then Check backing image bi-large download file checksum matches
+    And Any app=longhorn-manager Pods Log Should Not Have but the pod became not ready After Test Start
 
 Test Backing Image Non-existent Disk UUID Warning
     [Documentation]    Validate backing image generates warning log when referencing non-existent disk UUID
@@ -175,7 +175,7 @@ Test Backing Image Non-existent Disk UUID Warning
     ...    Expected log: "Disk <random-uuid> is not ready or does not exist.
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/4887
-    Given Create backing image test-bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    Given Create backing image test-bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
 
     ${original_diskFileSpecMap} =    Get diskFileSpecMap of backing image test-bi
     ${nonexistent_disk_uuid} =    Generate new uuid
@@ -226,7 +226,7 @@ Test Volume Size Smaller Than Backing Image Virtual Size Should Show Error
     And Create persistentvolumeclaim 0 without waiting for bound    sc_name=sc-backing-image-size-test    storage_size=2Gi
 
     # Verify the admission webhook rejection is recorded in the longhorn-manager logs.
-    Then Verify longhorn manager log contains volume size should be larger than the backing image size after test start
+    Then Any app=longhorn-manager Pods Log Should Have volume size should be larger than the backing image size After Test Start
 
 Test Volume Size Smaller Than Backing Image Virtual Size Should Show BackingImageIncompatible Condition
     [Documentation]    Validates that when volume size is smaller than backing image virtual size

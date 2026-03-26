@@ -47,6 +47,11 @@ Run command
     [Arguments]    ${command}
     execute_command    ${command}
 
+Run Command And Get Output
+    [Arguments]    ${command}
+    ${result}=    execute_command_and_get_output    ${command}
+    RETURN    ${result}
+
 Run command and expect output
     [Arguments]    ${command}    ${expected_output}
     execute_command_and_expect_output    ${command}    ${expected_output}
