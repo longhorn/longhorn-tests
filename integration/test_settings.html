@@ -738,7 +738,8 @@ value
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
 
@@ -870,7 +871,13 @@ value
             replicas.append(r)
 
     assert len(replicas) &gt; 0
-    crash_replica_processes(client, core_api, volume1_name, replicas)
+    if DATA_ENGINE == &#34;v2&#34;:
+        # Crashing all v2 replicas causes them to restart, but not
+        # enter the failed state.
+        crash_replica_processes(client, core_api, volume1_name, replicas,
+                                wait_to_fail=False)
+    else:
+        crash_replica_processes(client, core_api, volume1_name, replicas)
     delete_replica_on_test_node(client, volume2_name)
 
     # While one volume is rebuilding, verify another volume is not

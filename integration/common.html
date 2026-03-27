@@ -1466,13 +1466,35 @@ def core_api(request):
 
     for r in replicas:
         assert r.instanceManagerName != &#34;&#34;
+        if DATA_ENGINE == &#34;v2&#34;:
+            replica_name = r[&#34;name&#34;]
 
-        pgrep_command = f&#34;pgrep -f {r[&#39;dataPath&#39;]}&#34;
-        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
-        assert pid != &#34;&#34;
+            get_nqn_command = (
+                &#34;go-spdk-helper nvmf subsystem-get | &#34;
+                &#34;tr \&#34;&#39;\&#34; &#39;\&#34;&#39; | &#34;
+                &#34;grep &#39;\&#34;nqn\&#34;&#39; | &#34;
+                &#34;grep &#39;%s&#39; | &#34;
+                &#34;head -n 1 | cut -d&#39;\&#34;&#39; -f4&#34;
+            ) % replica_name
+            nqn = exec_instance_manager(api, r.instanceManagerName,
+                                        get_nqn_command).strip()
 
-        kill_command = f&#34;kill {pid}&#34;
-        exec_instance_manager(api, r.instanceManagerName, kill_command)
+            assert nqn != &#34;&#34;, \
+                f&#34;Failed to extract NQN for replica {replica_name}&#34;
+
+            stop_expose_command = f&#34;go-spdk-helper expose stop --nqn {nqn}&#34;
+            print(f&#34;Executing command: {stop_expose_command}&#34;)
+            exec_instance_manager(
+                api, r.instanceManagerName, stop_expose_command
+            )
+        else:
+            pgrep_command = f&#34;pgrep -f {r[&#39;dataPath&#39;]}&#34;
+            pid = exec_instance_manager(api, r.instanceManagerName,
+                                        pgrep_command)
+            assert pid != &#34;&#34;
+
+            kill_command = f&#34;kill {pid}&#34;
+            exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
