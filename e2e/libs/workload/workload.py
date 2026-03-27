@@ -152,7 +152,7 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
                 '/bin/sh',
                 '-c',
                 f"dd if=/dev/urandom of={data_path} bs=1M count={size_in_mb} status=none;\
-                sync;\
+                sync {data_path} 2>/dev/null;\
                 md5sum {data_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
             resp = stream(
@@ -185,7 +185,7 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
                 '/bin/sh',
                 '-c',
                 f"fallocate -l {size_in_gb}G {data_path};\
-                sync;\
+                sync {data_path} 2>/dev/null;\
                 md5sum {data_path} | awk '{{print $1}}' | tr -d ' \n'"
             ]
             resp = stream(
