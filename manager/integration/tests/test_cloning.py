@@ -19,6 +19,7 @@ from common import get_clone_volume_name
 from common import create_storage_class, storage_class  # NOQA
 from common import wait_for_volume_degraded
 from common import wait_for_volume_status
+from common import DATA_ENGINE, DATA_SIZE_IN_MB_5
 
 
 # Kept some fixtures specifically for volume cloning module to avoid cleaning
@@ -360,6 +361,7 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
     wait_for_volume_healthy(client, clone_volume_name)
 
 
+@pytest.mark.v2_volume_test
 @pytest.mark.cloning  # NOQA
 def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     """
@@ -400,6 +402,9 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
     5. Wait for the `CloneStatus.State` in `cloned-pvc` to be `initiated`
     6. Kill all replicas process of the `source-pvc`
     7. Wait for the `CloneStatus.State` in `cloned-pvc` to be `failed`
+        - For v2 volume, since it will automatically restart the replica
+        process, we can only verify the clone status becomes
+        copy-completed-awaiting-healthy
     8. Clean up `clone-pvc`
     9. Redeploy `cloned-pvc` and clone pod
     10. In 3-min retry loop, verify cloned pod become running
@@ -407,12 +412,20 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
     12. In 2-min retry loop, verify the volume of the `clone-pvc`
         eventually becomes healthy.
     """
+    if DATA_ENGINE == "v2":
+        volume_size = '5Gi'
+        data_size = DATA_SIZE_IN_MB_5 * 3
+    else:
+        volume_size = '3Gi'
+        data_size = DATA_SIZE_IN_MB_3
+
     # Step-1
     create_storage_class(storage_class)
 
     source_pvc_name = 'source-pvc' + generate_random_suffix()
     pvc['metadata']['name'] = source_pvc_name
     pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['resources']['requests']['storage'] = volume_size
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
     wait_for_pvc_phase(core_api, source_pvc_name, "Bound")
@@ -425,7 +438,7 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
 
     # Step-3
     write_pod_volume_random_data(core_api, pod_name,
-                                 '/data/test', DATA_SIZE_IN_MB_3)
+                                 '/data/test', data_size)
     source_data = get_pod_data_md5sum(core_api, pod_name, '/data/test')
 
     source_volume_name = get_volume_name(core_api, source_pvc_name)
@@ -434,6 +447,7 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
     clone_pvc_name = 'clone-pvc' + generate_random_suffix()
     clone_pvc['metadata']['name'] = clone_pvc_name
     clone_pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    clone_pvc['spec']['resources']['requests']['storage'] = volume_size
     clone_pvc['spec']['dataSource'] = {
         'name': source_pvc_name,
         'kind': 'PersistentVolumeClaim'
@@ -448,7 +462,13 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
 
     # Step-6
     wait_for_volume_degraded(client, clone_volume_name)
-    crash_replica_processes(client, core_api, source_volume_name)
+    if DATA_ENGINE == "v2":
+        # Crashing all v2 replicas causes them to restart, but not
+        # enter the failed state.
+        crash_replica_processes(client, core_api, source_volume_name,
+                                wait_to_fail=False)
+    else:
+        crash_replica_processes(client, core_api, source_volume_name)
 
     # Step-7
     # This is a workaround, since in some case it's hard to
@@ -456,9 +476,15 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
     wait_for_volume_status(client, source_volume_name,
                            VOLUME_FIELD_STATE,
                            'attaching')
-    wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
-                                 'failed')
+    if DATA_ENGINE == "v2":
+        wait_for_volume_clone_status(client, clone_volume_name,
+                                     VOLUME_FIELD_STATE,
+                                     VOLUME_FIELD_CLONE_COPY_COMPLETED_AWAITING_HEALTHY) # NOQA
 
+    else:
+        wait_for_volume_clone_status(client, clone_volume_name,
+                                     VOLUME_FIELD_STATE,
+                                     'failed')
     # Step-8
     delete_and_wait_pvc(core_api, clone_pvc_name)
 
@@ -466,6 +492,7 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod, s
     clone_pvc_name = 'clone-pvc-2' + generate_random_suffix()
     clone_pvc['metadata']['name'] = clone_pvc_name
     clone_pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    clone_pvc['spec']['resources']['requests']['storage'] = volume_size
     clone_pvc['spec']['dataSource'] = {
         'name': source_pvc_name,
         'kind': 'PersistentVolumeClaim'
