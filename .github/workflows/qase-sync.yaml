@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Qase Sync
-        uses: longhorn/bot/qase-sync-action@master
+        uses: longhorn/bot/qase-sync-action@34354a22b34defc637e5029345d392a9e2dec72e # master
         with:
           project-code: LH
           token: ${{ secrets.QASE_TOKEN }}
