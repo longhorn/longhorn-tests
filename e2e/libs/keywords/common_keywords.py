@@ -57,6 +57,9 @@ class common_keywords:
     def execute_command(self, cmd):
         subprocess_exec_cmd(cmd)
 
+    def execute_command_and_get_output(self, cmd):
+        return subprocess_exec_cmd(cmd)
+
     def execute_command_and_expect_output(self, cmd, expected_output):
         res = subprocess_exec_cmd(cmd)
         retry_count, _ = get_retry_count_and_interval()
