@@ -32,7 +32,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -69,7 +69,8 @@ class CRD(Base):
         }
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize
-        try:
+
+        if not retry:
             self.obj_api.create_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
@@ -77,31 +78,45 @@ class CRD(Base):
                 plural="volumes",
                 body=body
             )
-            if fromBackup or Standby:
-                self.wait_for_volume_state(volume_name, "attached")
-                self.wait_for_restore_required_status(volume_name, True)
-            else:
-                self.wait_for_volume_state(volume_name, "detached")
-                self.wait_for_restore_required_status(volume_name, False)
-            volume = self.get(volume_name)
-            assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
-            if not Standby:
-                assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
-                if not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
-                    assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
-            assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
-            assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
-            assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
-            assert volume['spec']['dataLocality'] == dataLocality, f"expect volume dataLocality is {dataLocality}, but it's {volume['spec']['dataLocality']}"
-            assert volume['spec']['accessMode'] == accessMode, f"expect volume accessMode is {accessMode}, but it's {volume['spec']['accessMode']}"
-            assert volume['spec']['backingImage'] == backingImage, f"expect volume backingImage is {backingImage}, but it's {volume['spec']['backingImage']}"
-            assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
-            assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
-            assert volume['spec']['encrypted'] == encrypted, f"expect volume encrypted is {encrypted}, but it's {volume['spec']['encrypted']}"
-            assert volume['spec']['nodeSelector'] == nodeSelector, f"expect volume nodeSelector is {nodeSelector}, but it's {volume['spec']['nodeSelector']}"
-            assert volume['spec']['diskSelector'] == diskSelector, f"expect volume diskSelector is {diskSelector}, but it's {volume['spec']['diskSelector']}"
-        except ApiException as e:
-            logging(f"Failed to create volume {volume_name} with parameters {body}: {e}")
+        else:
+            for i in range(self.retry_count):
+                try:
+                    self.obj_api.create_namespaced_custom_object(
+                        group="longhorn.io",
+                        version="v1beta2",
+                        namespace=constant.LONGHORN_NAMESPACE,
+                        plural="volumes",
+                        body=body
+                    )
+                    break
+                except Exception as e:
+                    logging(f"Failed to create volume {volume_name} with parameters {body}: {e}")
+                    time.sleep(self.retry_interval)
+
+        if fromBackup or Standby:
+            self.wait_for_volume_state(volume_name, "attached")
+            self.wait_for_restore_required_status(volume_name, True)
+        else:
+            self.wait_for_volume_state(volume_name, "detached")
+            self.wait_for_restore_required_status(volume_name, False)
+
+        volume = self.get(volume_name)
+        assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
+        if not Standby:
+            assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
+            if not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
+                assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
+        assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
+        assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
+        assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
+        assert volume['spec']['dataLocality'] == dataLocality, f"expect volume dataLocality is {dataLocality}, but it's {volume['spec']['dataLocality']}"
+        assert volume['spec']['accessMode'] == accessMode, f"expect volume accessMode is {accessMode}, but it's {volume['spec']['accessMode']}"
+        assert volume['spec']['backingImage'] == backingImage, f"expect volume backingImage is {backingImage}, but it's {volume['spec']['backingImage']}"
+        assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
+        assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
+        assert volume['spec']['encrypted'] == encrypted, f"expect volume encrypted is {encrypted}, but it's {volume['spec']['encrypted']}"
+        assert volume['spec']['nodeSelector'] == nodeSelector, f"expect volume nodeSelector is {nodeSelector}, but it's {volume['spec']['nodeSelector']}"
+        assert volume['spec']['diskSelector'] == diskSelector, f"expect volume diskSelector is {diskSelector}, but it's {volume['spec']['diskSelector']}"
 
     def delete(self, volume_name, wait):
         try:
