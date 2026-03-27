@@ -8,8 +8,26 @@ on:
     - v*
   pull_request:
 jobs:
+<<<<<<< HEAD
   validate:
     name: Validate
+=======
+  flake8:
+    name: flake8 check
+    runs-on: ubuntu-latest
+    container:
+      image: rancher/dapper:v0.6.0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+    # flake8 check
+    - name: Run dapper
+      run: dapper
+
+  make:
+    name: make check
+>>>>>>> 42d18bb4 (chore: pin GH actions to commit sha)
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
