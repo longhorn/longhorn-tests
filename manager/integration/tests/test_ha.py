@@ -3284,11 +3284,15 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
 
     mgr_name = ret.items[0].metadata.name
 
-    command = 'ss -a -n | grep :8500 | wc -l'
+    command = "ss -tan 2>/dev/null | grep :8500 | wc -l"
     for i in range(RETRY_EXEC_COUNTS):
-        socket_cnt = exec_command_in_pod(
-            core_api, command, mgr_name, 'longhorn-system', 'longhorn-manager')
-        assert int(socket_cnt) < 20
+        output = exec_command_in_pod(
+            core_api, command, mgr_name, "longhorn-system", "longhorn-manager"
+        ).strip()
+
+        print(output)
+        socket_cnt = int(output.splitlines()[-1])
+        assert socket_cnt < 20
 
         time.sleep(RETRY_EXEC_INTERVAL)
 
