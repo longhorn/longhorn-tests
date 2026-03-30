@@ -5587,40 +5587,32 @@ def settings_reset():
     reset_settings(client)
 
 
-def detach_v2_volume_by_killing_instance_manager_process(client, core_api, volume_name): # NOQA
-    # Kill the instance manager process will detach all v2 volumes and the
-    # instance manager will be restarted.
-    # This function is crash_engine_process_with_sigkill's alternative for
-    # v2 volume.
-    volume = client.by_id_volume(volume_name)
-    ins_mgr_name = volume.controllers[0].instanceManagerName
-
-    kill_command = [
-        '/bin/sh', '-c',
-        "kill `pgrep -f -- '--spdk-enabled'`"]
-
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message='Timeout on executing stream read'):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)
-
-
 def crash_engine_process_with_sigkill(client, core_api, volume_name):
     volume = client.by_id_volume(volume_name)
     ins_mgr_name = volume.controllers[0].instanceManagerName
 
-    kill_command = [
-            '/bin/sh', '-c',
-            "kill `pgrep -f \"controller " + volume_name + "\"`"]
+    if DATA_ENGINE == "v2":
+        engine_name = volume.controllers[0]["name"]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message='Timeout on executing stream read'):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)
+        delete_raid_command = (
+            f"go-spdk-helper bdev-raid delete {engine_name}"
+        )
+        print(f"Executing command: {delete_raid_command}")
+
+        exec_instance_manager(
+            core_api, ins_mgr_name, delete_raid_command
+        )
+    else:
+        kill_command = [
+                '/bin/sh', '-c',
+                "kill `pgrep -f \"controller " + volume_name + "\"`"]
+
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message='Timeout on executing stream read'):
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   ins_mgr_name,
+                   LONGHORN_NAMESPACE, command=kill_command,
+                   stderr=True, stdin=False, stdout=True, tty=False)
 
 
 def remount_volume_read_only(client, core_api, volume_name):
