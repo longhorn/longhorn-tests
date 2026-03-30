@@ -3199,9 +3199,9 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
        and the workload pod is restarted. Exec into the workload pod.
        Verify that read/write to the volume is ok
     8. Exec into the longhorn manager pod on `node-2`.
-       Running `ss -a -n | grep :8500 | wc -l` to find the number of socket
-       connections from this manager pod to instance manager pods.
-       In a 2-min loop, verify that the number of socket connection is <= 20
+       Running `ss -tan 2>/dev/null | grep :8500 | wc -l` to find the number of
+       socket connections from this manager pod to instance manager pods.
+       In a 2-min loop, verify that the number of socket connections is <= 20
 
     Cleaning up:
     1. Clean up the node tag
@@ -3284,11 +3284,14 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
 
     mgr_name = ret.items[0].metadata.name
 
-    command = 'ss -a -n | grep :8500 | wc -l'
+    command = "ss -tan 2>/dev/null | grep :8500 | wc -l"
     for i in range(RETRY_EXEC_COUNTS):
-        socket_cnt = exec_command_in_pod(
-            core_api, command, mgr_name, 'longhorn-system', 'longhorn-manager')
-        assert int(socket_cnt) < 20
+        output = exec_command_in_pod(
+            core_api, command, mgr_name, "longhorn-system", "longhorn-manager"
+        ).strip()
+
+        socket_cnt = int(output.splitlines()[-1])
+        assert socket_cnt < 20
 
         time.sleep(RETRY_EXEC_INTERVAL)
 
