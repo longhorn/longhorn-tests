@@ -1692,6 +1692,7 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
     backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test volume can successfully retry restoring after
@@ -1793,6 +1794,7 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
     backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test DR volume can be recovered after
@@ -1911,6 +1913,7 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     assert md5sum2 == dr_md5sum2
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_volume_reattach_after_engine_sigkill(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
