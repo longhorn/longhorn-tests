@@ -378,7 +378,8 @@ the first one.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_v1_api, volume_name): # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_v1_api, volume_name): # NOQA
     &#34;&#34;&#34;
     Scenario: test metric longhorn_backup_actual_size_bytes and
                           longhorn_backup_state
@@ -412,7 +413,8 @@ the first one.</p></div>
     volume_size = 50 * Mi
     client.create_volume(name=volume_name,
                          numberOfReplicas=1,
-                         size=str(volume_size))
+                         size=str(volume_size),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=self_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -529,7 +531,8 @@ and recurring_job label is the job name</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
     &#34;&#34;&#34;
     Scenario: test metric longhorn_snapshot_actual_size_bytes
 
@@ -562,7 +565,8 @@ and recurring_job label is the job name</p></div>
     volume_size = 50 * Mi
     client.create_volume(name=volume_name,
                          numberOfReplicas=1,
-                         size=str(volume_size))
+                         size=str(volume_size),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=self_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -601,7 +605,13 @@ and recurring_job label is the job name</p></div>
         else:
             system_snapshot_size = int(snapshot.size)
     assert user_snapshot_size &gt; 0
-    assert system_snapshot_size &gt; 0
+
+    if DATA_ENGINE == &#34;v1&#34;:
+        assert system_snapshot_size &gt; 0
+    else:
+        # For v2 data engine, expanding the volume won&#39;t create a system
+        # snapshot, so the system snapshot size should be 0.
+        assert system_snapshot_size == 0
 
     # assert the metric values for the user snapshot.
     user_snapshot_metric_labels = {
@@ -613,15 +623,16 @@ and recurring_job label is the job name</p></div>
                                   user_snapshot_metric_labels,
                                   user_snapshot_size)
 
-    # assert the metric values for the system snapshot.
-    system_snapshot_metric_labels = {
-        &#34;volume&#34;: volume_name,
-        &#34;user_created&#34;: &#34;false&#34;,
-    }
-    check_metric_sum_on_all_nodes(client, core_api,
-                                  &#34;longhorn_snapshot_actual_size_bytes&#34;,
-                                  system_snapshot_metric_labels,
-                                  system_snapshot_size)
+    if DATA_ENGINE == &#34;v1&#34;:
+        # assert the metric values for the system snapshot.
+        system_snapshot_metric_labels = {
+            &#34;volume&#34;: volume_name,
+            &#34;user_created&#34;: &#34;false&#34;,
+        }
+        check_metric_sum_on_all_nodes(client, core_api,
+                                      &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                      system_snapshot_metric_labels,
+                                      system_snapshot_size)
 
     # create 3 more user snapshots.
     create_snapshot(client, volume_name)
@@ -631,9 +642,11 @@ and recurring_job label is the job name</p></div>
     wait_for_metric_count_all_nodes(client, core_api,
                                     &#34;longhorn_snapshot_actual_size_bytes&#34;,
                                     user_snapshot_metric_labels, 4)
-    wait_for_metric_count_all_nodes(client, core_api,
-                                    &#34;longhorn_snapshot_actual_size_bytes&#34;,
-                                    system_snapshot_metric_labels, 1)</code></pre>
+
+    if DATA_ENGINE == &#34;v1&#34;:
+        wait_for_metric_count_all_nodes(client, core_api,
+                                        &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                        system_snapshot_metric_labels, 1)</code></pre>
 </details>
 <div class="desc"><p>Scenario: test metric longhorn_snapshot_actual_size_bytes</p>
 <p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5869">https://github.com/longhorn/longhorn/issues/5869</a></p>
