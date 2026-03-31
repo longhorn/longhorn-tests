@@ -34,6 +34,7 @@ from common import RETRY_COUNTS
 from common import RETRY_INTERVAL
 from common import DEFAULT_DISK_PATH
 from common import Gi
+from common import DATA_ENGINE
 
 from backupstore import set_random_backupstore  # NOQA
 from common import create_recurring_jobs
@@ -536,6 +537,7 @@ def test_metric_longhorn_volume_file_system_read_only(client, core_api, volume_n
     raise AssertionError("Failed to verify 'longhorn_volume_file_system_read_only' metric after all retries")   # NOQA
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
     """
     Scenario: test metric longhorn_snapshot_actual_size_bytes
@@ -569,7 +571,8 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
     volume_size = 50 * Mi
     client.create_volume(name=volume_name,
                          numberOfReplicas=1,
-                         size=str(volume_size))
+                         size=str(volume_size),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=self_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -608,7 +611,13 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
         else:
             system_snapshot_size = int(snapshot.size)
     assert user_snapshot_size > 0
-    assert system_snapshot_size > 0
+
+    if DATA_ENGINE == "v1":
+        assert system_snapshot_size > 0
+    else:
+        # For v2 data engine, expanding the volume won't create a system
+        # snapshot, so the system snapshot size should be 0.
+        assert system_snapshot_size == 0
 
     # assert the metric values for the user snapshot.
     user_snapshot_metric_labels = {
@@ -620,15 +629,16 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
                                   user_snapshot_metric_labels,
                                   user_snapshot_size)
 
-    # assert the metric values for the system snapshot.
-    system_snapshot_metric_labels = {
-        "volume": volume_name,
-        "user_created": "false",
-    }
-    check_metric_sum_on_all_nodes(client, core_api,
-                                  "longhorn_snapshot_actual_size_bytes",
-                                  system_snapshot_metric_labels,
-                                  system_snapshot_size)
+    if DATA_ENGINE == "v1":
+        # assert the metric values for the system snapshot.
+        system_snapshot_metric_labels = {
+            "volume": volume_name,
+            "user_created": "false",
+        }
+        check_metric_sum_on_all_nodes(client, core_api,
+                                      "longhorn_snapshot_actual_size_bytes",
+                                      system_snapshot_metric_labels,
+                                      system_snapshot_size)
 
     # create 3 more user snapshots.
     create_snapshot(client, volume_name)
@@ -638,9 +648,11 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
     wait_for_metric_count_all_nodes(client, core_api,
                                     "longhorn_snapshot_actual_size_bytes",
                                     user_snapshot_metric_labels, 4)
-    wait_for_metric_count_all_nodes(client, core_api,
-                                    "longhorn_snapshot_actual_size_bytes",
-                                    system_snapshot_metric_labels, 1)
+
+    if DATA_ENGINE == "v1":
+        wait_for_metric_count_all_nodes(client, core_api,
+                                        "longhorn_snapshot_actual_size_bytes",
+                                        system_snapshot_metric_labels, 1)
 
 
 def test_node_metrics(client, core_api): # NOQA
@@ -723,6 +735,7 @@ def test_node_metrics(client, core_api): # NOQA
                                 metric_labels, 0.0)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_v1_api, volume_name): # NOQA
     """
     Scenario: test metric longhorn_backup_actual_size_bytes and
@@ -757,7 +770,8 @@ def test_metric_longhorn_backup(set_random_backupstore, client, core_api, batch_
     volume_size = 50 * Mi
     client.create_volume(name=volume_name,
                          numberOfReplicas=1,
-                         size=str(volume_size))
+                         size=str(volume_size),
+                         dataEngine=DATA_ENGINE)
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=self_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
