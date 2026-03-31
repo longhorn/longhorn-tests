@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1.20.0
+# syntax=docker/dockerfile:1.22.0@sha256:4a43a54dd1fedceb30ba47e76cfcf2b47304f4161c0caeac2db1c61804ea3c91
 
-FROM registry.suse.com/bci/python:3.13
+FROM registry.suse.com/bci/python:3.13@sha256:e4141fdc88b7fd2b8a300ac6ffe39b5f846d1bc1432c4912a56985681b81064e
 
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/arm64" ]; then \

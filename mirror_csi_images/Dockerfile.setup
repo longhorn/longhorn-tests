@@ -1,4 +1,4 @@
-From alpine:3.22.3
+From alpine:3.23.3@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
 ENV WORKSPACE /src/longhorn-tests
 
@@ -6,6 +6,6 @@ WORKDIR $WORKSPACE
 
 RUN apk add --no-cache skopeo docker jq bash grep
 
-COPY --from=docker/buildx-bin:v0.30 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+COPY --from=docker/buildx-bin:v0.32@sha256:a9ed0339f819f75537acf335a71b3f99765b15ed4e97036e63fdfce8896808b2 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 
 COPY [".", "$WORKSPACE"]
