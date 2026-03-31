@@ -86,6 +86,7 @@ from common import wait_for_tainted_node_engine_image_undeployed
 from common import wait_for_replica_count
 from common import DATA_ENGINE
 from common import DATA_SIZE_IN_MB_5, RETRY_COUNTS_LONG
+from common import delete_all_v2_instance_manager_pods, wait_for_all_nodes_disks_schedulable # NOQA
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -183,6 +184,7 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
     check_volume_data(volume, data)
 
 
+@pytest.mark.v2_volume_test # NOQA
 @pytest.mark.coretest   # NOQA
 def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQA
     """
@@ -197,6 +199,10 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
     Setting: Disable auto salvage
 
     Case 1: Delete all replica processes using instance manager
+
+    For v2 volumes, there is no replica process in the instance manager pod.
+    If needed, delete all related v2 instance manager pods to keep the volume
+    faulted.
 
     1. Create volume and attach to the current node
     2. Write `data` to the volume.
@@ -250,51 +256,59 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
 
 def ha_salvage_test(client, core_api, # NOQA
                     volume_name, backing_image=""):  # NOQA
-
-    # Setting Disable auto salvage
-    # Case 1: Delete all replica processes using instance manager
-
-    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
-    setting = client.update(auto_salvage_setting, value="false")
-    assert setting.name == SETTING_AUTO_SALVAGE
-    assert setting.value == "false"
-
-    volume = create_and_check_volume(client, volume_name,
-                                     num_of_replicas=2,
-                                     backing_image=backing_image)
-
+    # For v2 volume, crash_replica_processes() does not keep the volume
+    # faulted. Therefore, delete_all_v2_instance_manager_pods() is used
+    # for the v2 salvage test instead.
+    #
+    # delete_replica_processes() does not support v2. In v2, the equivalent
+    # way to simulate deleting or crashing a replica is to stop the replica
+    # NVMf subsystem, which already implemented in crash_replica_processes().
+    # Therefore, delete_replica_processes() is only used in the first v1 case.
     host_id = get_self_host_id()
-    volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_healthy(client, volume_name)
+    if DATA_ENGINE == "v1":
+        # Setting Disable auto salvage
+        # Case 1: Delete all replica processes using instance manager
 
-    assert len(volume.replicas) == 2
-    replica0_name = volume.replicas[0].name
-    replica1_name = volume.replicas[1].name
+        auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+        setting = client.update(auto_salvage_setting, value="false")
+        assert setting.name == SETTING_AUTO_SALVAGE
+        assert setting.value == "false"
 
-    data = write_volume_random_data(volume)
+        volume = create_and_check_volume(client, volume_name,
+                                         num_of_replicas=2,
+                                         backing_image=backing_image)
 
-    delete_replica_processes(client, core_api, volume_name)
+        volume = volume.attach(hostId=host_id)
+        volume = wait_for_volume_healthy(client, volume_name)
 
-    volume = wait_for_volume_faulted(client, volume_name)
-    assert len(volume.replicas) == 2
-    assert volume.replicas[0].failedAt != ""
-    assert volume.replicas[1].failedAt != ""
+        assert len(volume.replicas) == 2
+        replica0_name = volume.replicas[0].name
+        replica1_name = volume.replicas[1].name
 
-    volume = wait_for_volume_detached(client, volume_name)
-    volume = common.wait_for_volume_faulted(client, volume_name)
+        data = write_volume_random_data(volume)
 
-    volume.salvage(names=[replica0_name, replica1_name])
-    volume = client.by_id_volume(volume_name)
+        delete_replica_processes(client, core_api, volume_name)
 
-    assert len(volume.replicas) == 2
-    assert volume.replicas[0].failedAt == ""
-    assert volume.replicas[1].failedAt == ""
+        volume = wait_for_volume_faulted(client, volume_name)
+        assert len(volume.replicas) == 2
+        assert volume.replicas[0].failedAt != ""
+        assert volume.replicas[1].failedAt != ""
 
-    volume = wait_for_volume_healthy(client, volume_name)
+        volume = wait_for_volume_detached(client, volume_name)
+        volume = common.wait_for_volume_faulted(client, volume_name)
 
-    check_volume_data(volume, data)
+        volume.salvage(names=[replica0_name, replica1_name])
+        volume = client.by_id_volume(volume_name)
 
-    cleanup_volume(client, volume)
+        assert len(volume.replicas) == 2
+        assert volume.replicas[0].failedAt == ""
+        assert volume.replicas[1].failedAt == ""
+
+        volume = wait_for_volume_healthy(client, volume_name)
+
+        check_volume_data(volume, data)
+
+        cleanup_volume(client, volume)
 
     # Setting Disable auto salvage
     # Case 2: Crash all replica processes
@@ -314,8 +328,10 @@ def ha_salvage_test(client, core_api, # NOQA
     replica1_name = volume.replicas[1].name
 
     data = write_volume_random_data(volume)
-
-    crash_replica_processes(client, core_api, volume_name)
+    if DATA_ENGINE == "v2":
+        delete_all_v2_instance_manager_pods()
+    else:
+        crash_replica_processes(client, core_api, volume_name)
 
     volume = common.wait_for_volume_faulted(client, volume_name)
     assert len(volume.replicas) == 2
@@ -325,6 +341,8 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = common.wait_for_volume_detached(client, volume_name)
     volume = common.wait_for_volume_faulted(client, volume_name)
 
+    if DATA_ENGINE == "v2":
+        wait_for_all_nodes_disks_schedulable(client)
     volume.salvage(names=[replica0_name, replica1_name])
     volume = client.by_id_volume(volume_name)
 
@@ -367,7 +385,10 @@ def ha_salvage_test(client, core_api, # NOQA
 
     data = write_volume_random_data(volume)
 
-    crash_replica_processes(client, core_api, volume_name)
+    if DATA_ENGINE == "v2":
+        delete_all_v2_instance_manager_pods()
+    else:
+        crash_replica_processes(client, core_api, volume_name)
     # This is a workaround, since in some case it's hard to
     # catch faulted volume status
     common.wait_for_volume_status(client, volume_name,
@@ -412,7 +433,10 @@ def ha_salvage_test(client, core_api, # NOQA
 
     data = write_volume_random_data(volume)
 
-    crash_replica_processes(client, core_api, volume_name)
+    if DATA_ENGINE == "v2":
+        delete_all_v2_instance_manager_pods()
+    else:
+        crash_replica_processes(client, core_api, volume_name)
     # This is a workaround, since in some case it's hard to
     # catch faulted volume status
     common.wait_for_volume_status(client, volume_name,
@@ -427,6 +451,7 @@ def ha_salvage_test(client, core_api, # NOQA
 
     check_volume_data(volume, data)
     cleanup_volume(client, volume)
+
 
 # https://github.com/rancher/longhorn/issues/253
 @pytest.mark.v2_volume_test  # NOQA

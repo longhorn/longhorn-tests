@@ -6978,3 +6978,33 @@ def wait_for_all_nodes_disks_schedulable(client):
     raise TimeoutError(
         f"Not all disks across all nodes reached Schedulable=True "
         f"after {RETRY_COUNTS * RETRY_INTERVAL}s")
+
+
+def delete_all_v2_instance_manager_pods():
+    # Keep a v2 volume in the faulted state by deleting all instance-manager
+    # pods until volume salvage is triggered.
+    api = get_core_api_client()
+
+    label_selector = (
+        "longhorn.io/component=instance-manager,"
+        "longhorn.io/data-engine=v2"
+    )
+
+    pods = api.list_namespaced_pod(
+        namespace=LONGHORN_NAMESPACE,
+        label_selector=label_selector
+    )
+
+    for pod in pods.items:
+        pod_name = pod.metadata.name
+        print(f"Force deleting pod {pod_name}")
+
+        api.delete_namespaced_pod(
+            name=pod_name,
+            namespace=LONGHORN_NAMESPACE,
+            grace_period_seconds=0,
+            body=k8sclient.V1DeleteOptions(
+                grace_period_seconds=0,
+                propagation_policy="Background"
+            )
+        )
