@@ -16,8 +16,8 @@ node {
             sh "mirror_csi_images/scripts/build.sh"
 
             sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                   --env DOCKER_USERNAME=${DOCKER_USERNAME} \
-                                   --env DOCKER_PASSWORD=${DOCKER_PASSWORD} \
+                                   --env DOCKER_USERNAME="${DOCKER_USERNAME}" \
+                                   --env DOCKER_PASSWORD="${DOCKER_PASSWORD}" \
                                    --env LONGHORN_IMAGES_FILE_URL=${LONGHORN_IMAGES_FILE_URL} \
                                    --env CSI_IMAGES=${CSI_IMAGES} \
                                    ${imageName}
