@@ -1435,16 +1435,28 @@ def core_api(request):
     volume = client.by_id_volume(volume_name)
     ins_mgr_name = volume.controllers[0].instanceManagerName
 
-    kill_command = [
-            &#39;/bin/sh&#39;, &#39;-c&#39;,
-            &#34;kill `pgrep -f \&#34;controller &#34; + volume_name + &#34;\&#34;`&#34;]
+    if DATA_ENGINE == &#34;v2&#34;:
+        engine_name = volume.controllers[0][&#34;name&#34;]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message=&#39;Timeout on executing stream read&#39;):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)</code></pre>
+        delete_raid_command = (
+            f&#34;go-spdk-helper bdev-raid delete {engine_name}&#34;
+        )
+        print(f&#34;Executing command: {delete_raid_command}&#34;)
+
+        exec_instance_manager(
+            core_api, ins_mgr_name, delete_raid_command
+        )
+    else:
+        kill_command = [
+                &#39;/bin/sh&#39;, &#39;-c&#39;,
+                &#34;kill `pgrep -f \&#34;controller &#34; + volume_name + &#34;\&#34;`&#34;]
+
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message=&#39;Timeout on executing stream read&#39;):
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   ins_mgr_name,
+                   LONGHORN_NAMESPACE, command=kill_command,
+                   stderr=True, stdin=False, stdout=True, tty=False)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -2785,35 +2797,6 @@ if a nonexistent Pod is specified.</p>
     url = get_support_bundle_url(client)
     support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
     return requests.delete(support_bundle_url)</code></pre>
-</details>
-<div class="desc"></div>
-</dd>
-<dt id="tests.common.detach_v2_volume_by_killing_instance_manager_process"><code class="name flex">
-<span>def <span class="ident">detach_v2_volume_by_killing_instance_manager_process</span></span>(<span>client, core_api, volume_name)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def detach_v2_volume_by_killing_instance_manager_process(client, core_api, volume_name): # NOQA
-    # Kill the instance manager process will detach all v2 volumes and the
-    # instance manager will be restarted.
-    # This function is crash_engine_process_with_sigkill&#39;s alternative for
-    # v2 volume.
-    volume = client.by_id_volume(volume_name)
-    ins_mgr_name = volume.controllers[0].instanceManagerName
-
-    kill_command = [
-        &#39;/bin/sh&#39;, &#39;-c&#39;,
-        &#34;kill `pgrep -f -- &#39;--spdk-enabled&#39;`&#34;]
-
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message=&#39;Timeout on executing stream read&#39;):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -10376,7 +10359,6 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.delete_statefulset" href="#tests.common.delete_statefulset">delete_statefulset</a></code></li>
 <li><code><a title="tests.common.delete_storage_class" href="#tests.common.delete_storage_class">delete_storage_class</a></code></li>
 <li><code><a title="tests.common.delete_support_bundle" href="#tests.common.delete_support_bundle">delete_support_bundle</a></code></li>
-<li><code><a title="tests.common.detach_v2_volume_by_killing_instance_manager_process" href="#tests.common.detach_v2_volume_by_killing_instance_manager_process">detach_v2_volume_by_killing_instance_manager_process</a></code></li>
 <li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>
 <li><code><a title="tests.common.dev_write" href="#tests.common.dev_write">dev_write</a></code></li>
 <li><code><a title="tests.common.disable_auto_salvage" href="#tests.common.disable_auto_salvage">disable_auto_salvage</a></code></li>
