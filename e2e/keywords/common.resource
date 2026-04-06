@@ -120,7 +120,7 @@ Cleanup test resources
     uncordon_all_nodes
     cleanup_node_taints
     cleanup_node_labels
-    cleanup_control_plane_network_latency
+    Run keyword And Ignore Error    cleanup_control_plane_network_latency
     reset_disk_eviction_and_scheduling
     reset_node_scheduling
     cleanup_node_exec

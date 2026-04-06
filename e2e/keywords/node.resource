@@ -26,6 +26,12 @@ Delete default block disks on all worker nodes
         Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node ${node_id}
     END
 
+Delete default block disk on node ${node_id}
+    Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node ${node_id}
+
+Disable default block disk on node ${node_id}
+    Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling on node ${node_id}
+
 Add default block disks on all worker nodes
     Add block type disk ${DISK_PATH} for all worker nodes
 
@@ -152,6 +158,15 @@ Add ${disk_type} device ${disk_name} on node ${node_id} should success
     ${node_name} =    get_node_by_index    ${node_id}
     ${mount_path} =    Get Mount Path For Device    ${disk_name}    ${disk_type}    ${node_id}
     add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+
+Add ${disk_type} device ${disk_name} on node ${node_id} mounted at ${mount_path} should success
+    ${node_name} =    get_node_by_index    ${node_id}
+    add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+
+Add ${disk_type} device ${disk_name} on node ${node_id} mounted at ${mount_path} should fail with message ${error_message}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${err} =    Run Keyword And Expect Error    *    add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+    Should Contain    ${err}    ${error_message}
 
 Delete disk ${disk_name} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
