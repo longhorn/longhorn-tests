@@ -63,51 +63,51 @@ Power Off Node With Anti-Affinity Settings
     END
 
 *** Test Cases ***
+Power Off Replica Node More Than 3 Mins With Default Soft Anti Affinity Setting
+    Power Off Node With Anti-Affinity Settings    node_type=replica    power_off_time=4
+
 Power Off Replica Node More Than 3 Mins With Zone Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    zone_affinity=true    node_type=replica    power_off_time=4
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=false    zone_affinity=true    node_type=replica    power_off_time=4
 
-Power Off Replica Node More Than 3 Mins With Disk Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_type=replica    power_off_time=4
-
-Power Off Replica Node More Than 3 Mins With Node Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    node_affinity=true    node_type=replica    power_off_time=4
+Power Off Replica Node More Than 3 Mins With Disk Soft Anti Affinity Disabled
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=true    zone_affinity=true    node_type=replica    power_off_time=4
 
 Power Off Replica Node More Than 3 Mins With All Soft Anti Affinity Enabled
     Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_affinity=true    zone_affinity=true    node_type=replica    power_off_time=4
 
+Power Off Replica Node Less Than 3 Mins With Default Soft Anti Affinity Setting
+    Power Off Node With Anti-Affinity Settings    node_type=replica    power_off_time=2
+
 Power Off Replica Node Less Than 3 Mins With Zone Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    zone_affinity=true    node_type=replica    power_off_time=2
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=false    zone_affinity=true    node_type=replica    power_off_time=2
 
-Power Off Replica Node Less Than 3 Mins With Disk Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_type=replica    power_off_time=2
-
-Power Off Replica Node Less Than 3 Mins With Node Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    node_affinity=true    node_type=replica    power_off_time=2
+Power Off Replica Node Less Than 3 Mins With Disk Soft Anti Affinity Disabled
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=true    zone_affinity=true    node_type=replica    power_off_time=2
 
 Power Off Replica Node Less Than 3 Mins With All Soft Anti Affinity Enabled
     Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_affinity=true    zone_affinity=true    node_type=replica    power_off_time=2
 
+Power Off Volume Node More Than 3 Mins With Default Soft Anti Affinity Setting
+    Power Off Node With Anti-Affinity Settings    node_type=volume    power_off_time=4
 
 Power Off Volume Node More Than 3 Mins With Zone Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    zone_affinity=true    node_type=volume    power_off_time=4
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=false    zone_affinity=true    node_type=volume    power_off_time=4
 
-Power Off Volume Node More Than 3 Mins With Disk Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_type=volume    power_off_time=4
-
-Power Off Volume Node More Than 3 Mins With Node Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    node_affinity=true    node_type=volume    power_off_time=4
+Power Off Volume Node More Than 3 Mins With Disk Soft Anti Affinity Disabled
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=true    zone_affinity=true    node_type=volume    power_off_time=4
 
 Power Off Volume Node More Than 3 Mins With All Soft Anti Affinity Enabled
     Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_affinity=true    zone_affinity=true    node_type=volume    power_off_time=4
 
+Power Off Volume Node Less Than 3 Mins With Default Soft Anti Affinity Setting
+    Power Off Node With Anti-Affinity Settings    node_type=volume    power_off_time=2
+
 Power Off Volume Node Less Than 3 Mins With Zone Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    zone_affinity=true    node_type=volume    power_off_time=2
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=false    zone_affinity=true    node_type=volume    power_off_time=2
 
-Power Off Volume Node Less Than 3 Mins With Disk Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_type=volume    power_off_time=2
-
-Power Off Volume Node Less Than 3 Mins With Node Soft Anti Affinity Enabled
-    Power Off Node With Anti-Affinity Settings    node_affinity=true    node_type=volume    power_off_time=2
+Power Off Volume Node Less Than 3 Mins With Disk Soft Anti Affinity Disabled
+    Power Off Node With Anti-Affinity Settings    disk_affinity=false    node_affinity=true    zone_affinity=true    node_type=volume    power_off_time=2
 
 Power Off Volume Node Less Than 3 Mins With All Soft Anti Affinity Enabled
     Power Off Node With Anti-Affinity Settings    disk_affinity=true    node_affinity=true    zone_affinity=true    node_type=volume    power_off_time=2
+
