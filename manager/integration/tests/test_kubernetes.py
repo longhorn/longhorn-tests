@@ -31,7 +31,6 @@ from common import update_setting
 from common import SETTING_DEGRADED_AVAILABILITY
 from common import wait_statefulset, crash_engine_process_with_sigkill
 from common import DATA_ENGINE
-from common import detach_v2_volume_by_killing_instance_manager_process
 
 from backupstore import backupstore_cleanup
 
@@ -827,13 +826,8 @@ def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly(clie
     create_and_wait_statefulset(statefulset)
     sspod_info = get_statefulset_pod_info(core_api, statefulset)[0]
 
-    if DATA_ENGINE == "v2":
-        detach_v2_volume_by_killing_instance_manager_process(client,
-                                                             core_api,
-                                                             sspod_info['pv_name']) # NOQA
-    else:
-        crash_engine_process_with_sigkill(client, core_api,
-                                          sspod_info['pv_name'])
+    crash_engine_process_with_sigkill(client, core_api,
+                                      sspod_info['pv_name'])
     delete_and_wait_pod(core_api,
                         pod_name=sspod_info['pod_name'],
                         wait=False)
