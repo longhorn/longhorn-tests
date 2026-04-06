@@ -20,7 +20,6 @@ Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Test Cases ***
-*** Test Cases ***
 Test Setting Update With Valid Value
     [Tags]    setting
     [Documentation]    Test that valid setting updates are applied correctly.
@@ -165,3 +164,49 @@ Test Setting Blacklist For Auto Delete Pod
 
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
     And Wait for deployment 0 pods stable
+
+Test Default Settings Quoting
+    [Tags]    setting    uninstall
+    [Documentation]    Verify that Longhorn correctly handles quoted and unquoted values in default
+    ...                settings during installation, for both helm and manifest install methods.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/11854
+    ...
+    ...                Test steps:
+    ...                1. Uninstall Longhorn.
+    ...                2. If install method is helm, patch values.yaml with:
+    ...                       defaultSettings.defaultReplicaCount: '{"v1":"4","v2":"2"}' (with quotes)
+    ...                       defaultSettings.deletingConfirmationFlag: true (no quotes)
+    ...                   If install method is manifest, append to default-setting.yaml section of
+    ...                   longhorn.yaml:
+    ...                       default-replica-count: '{"v1":"4","v2":"2"}'
+    ...                       deleting-confirmation-flag: true
+    ...                   then install Longhorn.
+    ...                3. Wait for Longhorn to be running.
+    ...                4. Check that default-replica-count is {"v1":"4","v2":"2"} and
+    ...                   deleting-confirmation-flag is true.
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        # Patch values.yaml: defaultReplicaCount with a quoted JSON string, deletingConfirmationFlag without quotes.
+        # The custom_cmd outputs a values.yaml file used by helm install via -f values.yaml.
+        ${patch} =    Set Variable
+        ...    .defaultSettings.defaultReplicaCount = "{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}" | .defaultSettings.deletingConfirmationFlag = true
+        ${helm_cmd} =    Set Variable    yq eval \'${patch}\' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
+        Install Longhorn    custom_cmd=${helm_cmd}
+    ELSE
+        # Append two settings lines after the "default-setting.yaml" key in the longhorn.yaml ConfigMap,
+        # using sed append. Second sed inserts default-replica-count first so it appears before
+        # deleting-confirmation-flag in the block (sed /pattern/a inserts immediately after the match).
+        ${manifest_cmd} =    Set Variable
+        ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}deleting-confirmation-flag: true" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}default-replica-count: '{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}'" longhorn.yaml
+        Install Longhorn    custom_cmd=${manifest_cmd}
+    END
+
+    Then Wait for longhorn ready
+    And Setting default-replica-count should be {"v1":"4","v2":"2"}
+    And Setting deleting-confirmation-flag should be true

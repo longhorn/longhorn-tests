@@ -66,6 +66,7 @@ from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import VOLUME_FRONTEND_NVMF
 from common import VOLUME_CONDITION_SCHEDULED
 from common import DATA_SIZE_IN_MB_1
+from common import DATA_SIZE_IN_MB_5
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
@@ -2625,6 +2626,7 @@ def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_restore_inc_with_offline_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     """
@@ -3394,7 +3396,8 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
 
     std_pod_name, _, _, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, std_volume_name)
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
+            volume_size=str(2*Gi), data_size_in_mb=DATA_SIZE_IN_MB_5)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
@@ -3402,7 +3405,7 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name, "/data/test",
-                                 common.DATA_SIZE_IN_MB_4)
+                                 common.DATA_SIZE_IN_MB_5)
 
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, "/data/test")
     snap2 = create_snapshot(client, std_volume_name)
@@ -4101,6 +4104,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
     assert md5sum1 == read_md5sum1
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NOQA
     """
     Test Volume TooManySnapshots Condition

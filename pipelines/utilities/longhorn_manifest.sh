@@ -81,7 +81,7 @@ customize_longhorn_manifest_registry(){
   yq -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
   yq -i 'select(.kind == "DaemonSet" and .metadata.name == "pre-pull-share-manager-image").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
   yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-ui").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
-  yq -i 'select(.kind == "ConfigMap" and .metadata.name == "longhorn-default-setting").data."default-setting.yaml"="registry-secret: docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
+  sed -i "/default-setting\.yaml: |-/a\    registry-secret: docker-registry-secret" "${LONGHORN_MANIFEST_PATH}"
   # (2) modify images to point to custom registry
   if [[ ! -z "${REGISTRY_URL}" ]]; then
     sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "${LONGHORN_MANIFEST_PATH}"
