@@ -28,7 +28,7 @@ Test Teardown    Cleanup test resources
 
 *** Keywords ***
 Power Off Node With Anti-Affinity Settings
-    [Arguments]    ${disk_affinity}=false    ${node_affinity}=false    ${zone_affinity}=true    ${node_type}=volume    ${power_off_time}=3
+    [Arguments]    ${disk_affinity}=true    ${node_affinity}=false    ${zone_affinity}=true    ${node_type}=volume    ${power_off_time}=3
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/10210#issuecomment-2600594553
     ...                Keyword to test node power off behavior with different anti-affinity settings.
     ...                Notice that the default value of replica-zone-soft-anti-affinity is true
