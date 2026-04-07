@@ -23,6 +23,9 @@ from k8s.k8s import get_longhorn_component_resources_limit
 from k8s.k8s import remove_longhorn_component_resources_limit
 from k8s.k8s import verify_pod_log_after_time_not_contains
 from k8s.k8s import is_namespaced_pods_all_running
+from k8s.k8s import get_pods_by_label_selector
+from k8s.k8s import verify_pods_log_after_time_contains
+from k8s.k8s import verify_pods_log_after_time_not_contains
 
 from node import Node
 
@@ -141,15 +144,44 @@ class k8s_keywords:
     def remove_longhorn_component_resources_limit(self, component_name, component_type, namespace=constant.LONGHORN_NAMESPACE):
         return remove_longhorn_component_resources_limit(component_name, component_type, namespace)
 
-    def get_longhorn_manager_pods(self):
-        pods = list_namespaced_pod(
-            namespace=constant.LONGHORN_NAMESPACE,
-            label_selector=f"app=longhorn-manager"
-        )
-        result = []
-        for pod in pods:
-            result.append(pod.metadata.name)
-        return result
+    def get_longhorn_manager_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_LONGHORN_MANAGER, namespace)
+
+    def get_longhorn_instance_manager_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_INSTANCE_MANAGER, namespace)
+
+    def get_longhorn_engine_image_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_ENGINE_IMAGE, namespace)
+
+    def get_longhorn_csi_plugin_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_CSI_PLUGIN, namespace)
+
+    def get_longhorn_csi_attacher_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_CSI_ATTACHER, namespace)
+
+    def get_longhorn_csi_provisioner_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_CSI_PROVISIONER, namespace)
+
+    def get_longhorn_csi_resizer_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_CSI_RESIZER, namespace)
+
+    def get_longhorn_csi_snapshotter_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_CSI_SNAPSHOTTER, namespace)
+
+    def get_longhorn_driver_deployer_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_DRIVER_DEPLOYER, namespace)
+
+    def get_longhorn_ui_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_LONGHORN_UI, namespace)
+
+    def get_pods_by_label_selector(self, label_selector, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(label_selector, namespace)
+
+    def verify_pods_log_after_time_contains(self, label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+        return verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace)
+
+    def verify_pods_log_after_time_not_contains(self, label_selector, unexpected_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+        return verify_pods_log_after_time_not_contains(label_selector, unexpected_log, test_start_time, namespace)
 
     def is_namespaced_pods_all_running(self, namespace):
         return is_namespaced_pods_all_running(namespace)

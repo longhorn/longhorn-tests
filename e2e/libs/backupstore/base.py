@@ -96,12 +96,28 @@ class Base(ABC):
         backupstore = os.environ.get('LONGHORN_BACKUPSTORE', DEFAULT_BACKUPSTORE)
         if backupstore:
             backupsettings = backupstore.split("$")
+            url = backupsettings[0]
+            secret = backupsettings[1] if len(backupsettings) > 1 else ""
             poll_interval = os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL', '30s')
-            self.set_backupstore_url(backupsettings[0])
-            if len(backupsettings) > 1:
-                self.set_backupstore_secret(backupsettings[1])
-            self.set_backupstore_poll_interval(poll_interval)
+            self.set_default_backuptarget(url, secret, poll_interval)
             self.wait_for_backupstore_available()
+
+    def set_default_backuptarget(self, url, secret, poll_interval):
+        setting = {"spec": {"backupTargetURL": url, "credentialSecret": secret, "pollInterval": poll_interval}}
+        cmd = "kubectl patch backuptarget -n {} {} --type='merge' -p '{}'".format(
+            constant.LONGHORN_NAMESPACE,
+            self.DEFAULT_BACKUPTARGET,
+            json.dumps(setting)
+        )
+        for i in range(self.retry_count):
+            logging(f"Setting default backuptarget to {setting} ... ({i})")
+            try:
+                subprocess_exec_cmd(cmd)
+                return
+            except Exception as e:
+                logging(f"Failed to set default backuptarget to {setting}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to set default backuptarget to {setting}"
 
     def set_backupstore_url(self, url):
         cmd = "kubectl patch backuptarget -n {} {} --type='merge' -p '{}'".format(
@@ -165,9 +181,7 @@ class Base(ABC):
         assert False, f"Failed to wait for default backupstore available"
 
     def reset_backupstore(self):
-        self.set_backupstore_url("")
-        self.set_backupstore_secret("")
-        self.set_backupstore_poll_interval("5m0s")
+        self.set_default_backuptarget("", "", "5m0s")
 
     @abstractmethod
     def get_backup_volume_prefix(self, volume_name):

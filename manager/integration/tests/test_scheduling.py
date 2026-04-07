@@ -1647,6 +1647,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     wait_for_rebuild_start(client, volume3_name)
     crash_engine_process_with_sigkill(client, core_api, volume3_name)
+
     delete_and_wait_pod(core_api, pod3_name)
     wait_for_volume_detached(client, volume3_name)
     volume3 = client.by_id_volume(volume3_name)

@@ -287,6 +287,7 @@ DATA_SIZE_IN_MB_1 = 100
 DATA_SIZE_IN_MB_2 = 300
 DATA_SIZE_IN_MB_3 = 500
 DATA_SIZE_IN_MB_4 = 800
+DATA_SIZE_IN_MB_5 = 1500
 
 MESSAGE_TYPE_ERROR = "error"
 
@@ -2526,13 +2527,35 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != ""
+        if DATA_ENGINE == "v2":
+            replica_name = r["name"]
 
-        pgrep_command = f"pgrep -f {r['dataPath']}"
-        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
-        assert pid != ""
+            get_nqn_command = (
+                "go-spdk-helper nvmf subsystem-get | "
+                "tr \"'\" '\"' | "
+                "grep '\"nqn\"' | "
+                "grep '%s' | "
+                "head -n 1 | cut -d'\"' -f4"
+            ) % replica_name
+            nqn = exec_instance_manager(api, r.instanceManagerName,
+                                        get_nqn_command).strip()
 
-        kill_command = f"kill {pid}"
-        exec_instance_manager(api, r.instanceManagerName, kill_command)
+            assert nqn != "", \
+                f"Failed to extract NQN for replica {replica_name}"
+
+            stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
+            print(f"Executing command: {stop_expose_command}")
+            exec_instance_manager(
+                api, r.instanceManagerName, stop_expose_command
+            )
+        else:
+            pgrep_command = f"pgrep -f {r['dataPath']}"
+            pid = exec_instance_manager(api, r.instanceManagerName,
+                                        pgrep_command)
+            assert pid != ""
+
+            kill_command = f"kill {pid}"
+            exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
@@ -5568,16 +5591,28 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
     volume = client.by_id_volume(volume_name)
     ins_mgr_name = volume.controllers[0].instanceManagerName
 
-    kill_command = [
-            '/bin/sh', '-c',
-            "kill `pgrep -f \"controller " + volume_name + "\"`"]
+    if DATA_ENGINE == "v2":
+        engine_name = volume.controllers[0]["name"]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message='Timeout on executing stream read'):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)
+        delete_raid_command = (
+            f"go-spdk-helper bdev-raid delete {engine_name}"
+        )
+        print(f"Executing command: {delete_raid_command}")
+
+        exec_instance_manager(
+            core_api, ins_mgr_name, delete_raid_command
+        )
+    else:
+        kill_command = [
+                '/bin/sh', '-c',
+                "kill `pgrep -f \"controller " + volume_name + "\"`"]
+
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message='Timeout on executing stream read'):
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   ins_mgr_name,
+                   LONGHORN_NAMESPACE, command=kill_command,
+                   stderr=True, stdin=False, stdout=True, tty=False)
 
 
 def remount_volume_read_only(client, core_api, volume_name):
@@ -6943,3 +6978,33 @@ def wait_for_all_nodes_disks_schedulable(client):
     raise TimeoutError(
         f"Not all disks across all nodes reached Schedulable=True "
         f"after {RETRY_COUNTS * RETRY_INTERVAL}s")
+
+
+def delete_all_v2_instance_manager_pods():
+    # Keep a v2 volume in the faulted state by deleting all instance-manager
+    # pods until volume salvage is triggered.
+    api = get_core_api_client()
+
+    label_selector = (
+        "longhorn.io/component=instance-manager,"
+        "longhorn.io/data-engine=v2"
+    )
+
+    pods = api.list_namespaced_pod(
+        namespace=LONGHORN_NAMESPACE,
+        label_selector=label_selector
+    )
+
+    for pod in pods.items:
+        pod_name = pod.metadata.name
+        print(f"Force deleting pod {pod_name}")
+
+        api.delete_namespaced_pod(
+            name=pod_name,
+            namespace=LONGHORN_NAMESPACE,
+            grace_period_seconds=0,
+            body=k8sclient.V1DeleteOptions(
+                grace_period_seconds=0,
+                propagation_policy="Background"
+            )
+        )

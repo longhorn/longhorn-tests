@@ -35,8 +35,8 @@ node {
                 sh "pipelines/gke/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
-                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
-                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
+                                       --env REGISTRY_USERNAME="${REGISTRY_USERNAME}" \
+                                       --env REGISTRY_PASSWORD="${REGISTRY_PASSWORD}" \
                                        --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
                                        --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
                                        --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \

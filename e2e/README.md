@@ -48,7 +48,7 @@ export LONGHORN_CLIENT_URL=http://localhost:8080
 
 ```
 export LONGHORN_BACKUPSTORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
-export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30s
+export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30
 ```
 
 1. To run node shutdown/reboot related test cases, export `HOST_PROVIDER` environment variable and generate :
@@ -114,6 +114,12 @@ pip install -r requirements.txt
 
 # to run all the test cases, simply execute:
 ./run.sh
+
+# to run all the test cases in test_basic.robot for v2 data engine, simply execute:
+./run.sh -s test_basic -v DATA_ENGINE:v2
+
+# to run all regression test cases for v2 data engine, simply execute:
+./run.sh -i "regression" -v DATA_ENGINE:v2
 
 # to specify the test case you'd like to run, use "-t" option:
 ./run.sh -t "Reboot Volume Node While Workload Heavy Writing"
