@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/python:3.13
+FROM registry.suse.com/bci/python:3.13@sha256:e4141fdc88b7fd2b8a300ac6ffe39b5f846d1bc1432c4912a56985681b81064e
 
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/arm64" ]; then \
