@@ -74,10 +74,6 @@ run_longhorn_test(){
 
   kubectl wait --for=condition=Ready pod/longhorn-test --timeout=10m
 
-  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
-    unset_kubectl_retry
-  fi
-
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
     kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
@@ -209,10 +205,6 @@ run_longhorn_upgrade_test(){
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
   kubectl wait --for=condition=Ready pod/${LONGHORN_UPGRADE_TEST_POD_NAME} --timeout=10m
-
-  if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
-    unset_kubectl_retry
-  fi
 
   # wait upgrade test to complete
   while [[ -n "`kubectl get pod ${LONGHORN_UPGRADE_TEST_POD_NAME} -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
