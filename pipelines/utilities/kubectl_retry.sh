@@ -8,6 +8,13 @@ kubectl() {
   local delay=5
   local count=0
 
+  for arg in "$@"; do
+    if [[ "$arg" == "-f" || "$arg" == "-w" || "$arg" == "--follow" || "$arg" == "--watch" ]]; then
+      /usr/local/bin/kubectl "$@"
+      return $?
+    fi
+  done
+
   while true; do
     output=$(/usr/local/bin/kubectl "$@" 2>&1)
     exit_code=$?
