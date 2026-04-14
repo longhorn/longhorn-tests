@@ -5701,7 +5701,13 @@ def random_labels():
                 expected_reserved_storage = reserved_storage
             wait_for_disk_status(client, node.name, name,
                                  &#34;storageReserved&#34;,
-                                 expected_reserved_storage)</code></pre>
+                                 expected_reserved_storage)
+
+    # for block type disks added by bdf (nvme disk driver)
+    # disk deletion takes some time, wait the device show up on the host
+    # normally less than 30 seconds
+    # ref: https://github.com/longhorn/longhorn/issues/11860
+    time.sleep(30)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
