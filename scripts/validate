@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+cd $(dirname $0)/..
+
+echo Running validation
+
+pip install -r manager/integration/tests/requirements.txt
+
+echo "Running: flake8"
+flake8 manager/integration/tests
