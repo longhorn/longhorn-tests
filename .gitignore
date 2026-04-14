@@ -9,7 +9,7 @@ validationTestsJunit.xml
 
 
 # build files
-.dapper
+validate.done
 
 # ignores all goland project folders and files
 .idea/
