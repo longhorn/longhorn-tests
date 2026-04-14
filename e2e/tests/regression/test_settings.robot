@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Settings Test Cases
 
-Test Tags    regression
+Test Tags    regression    setting
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -62,7 +62,6 @@ Verify TooManySnapshots Condition After Creating Snapshots
 
 *** Test Cases ***
 Test Setting Update With Valid Value
-    [Tags]    setting
     [Documentation]    Test that valid setting updates are applied correctly.
     [Template]    Update Setting To Valid Value And Verify
     default-replica-count    1    {"v1":"1","v2":"1"}
@@ -70,16 +69,21 @@ Test Setting Update With Valid Value
     disable-revision-counter    {"v1":"false"}    {"v1":"false"}
 
 Test Setting Update With Invalid Value
-    [Tags]    setting
     [Documentation]    Test that invalid setting updates are rejected and values remain unchanged.
     [Template]    Update Setting To Invalid Value And Verify
-    disable-revision-counter    {"v1":"true","v2":"true"}
     disable-revision-counter    {"v2":"true"}
     disable-revision-counter    {"v3":"true"}
     default-replica-count    {}
+    # disable-revision-counter    {"v1":"true","v2":"true"}
+    # unlike rest api, kubectl patch doesn't block the above invalid update,
+    # it just ignores the invalid part and update the valid part,
+    # so the setting will be updated to {"v1":"true"} instead of being rejected
+    # $ kubectl patch settings.longhorn.io disable-revision-counter -n longhorn-system --type merge -p '{"value": "{\"v1\":\"true\",\"v2\":\"true\"}"}'
+    # setting.longhorn.io/disable-revision-counter patched
+    # $ curl -X PUT -H "Content-Type: application/json" -d '{"name":"disable-revision-counter","type":"setting","value":"{\"v1\":\"true\",\"v2\":\"true\"}"}' http://frontend-url/v1/settings/disable-revision-counter
+    # {"actions":{},"code":"Internal Server Error","detail":"","links":{"self":"http://frontend-url/v1/settings/disable-revision-counter"},"message":"failed to validate setting disable-revision-counter with invalid value {\"v1\":\"false\",\"v2\":\"false\"}: value {\"v1\":\"true\",\"v2\":\"true\"} of settings disable-revision-counter is invalid: mismatched data engines for setting Disable Revision Counter","status":500,"type":"error"}
 
 Test Setting Concurrent Rebuild Limit
-    [Tags]    setting
     [Documentation]    Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
     Given Setting concurrent-replica-rebuild-per-node-limit is set to 1
 
@@ -132,7 +136,7 @@ Test Setting Concurrent Rebuild Limit
     And Check volume 1 data is intact
 
 Test Setting Network For RWX Volume Endpoint
-    [Tags]    setting    volume    rwx    storage-network    sharemanager
+    [Tags]    volume    rwx    storage-network    sharemanager
     [Documentation]    Test if setting endpoint-network-for-rwx-volume works correctly.
     ...
     ...                Issues:
@@ -186,7 +190,6 @@ Test Setting Csi Components Resource Limits
     ...    {"cpu":"250m","memory":"256Mi"}
 
 Test Setting Blacklist For Auto Delete Pod
-    [Tags]    setting
     [Documentation]    Test if setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly works correctly.
     ...                Issues:
     ...                    - https://github.com/longhorn/longhorn/issues/12120
@@ -207,7 +210,7 @@ Test Setting Blacklist For Auto Delete Pod
     And Wait for deployment 0 pods stable
 
 Test Default Settings Quoting
-    [Tags]    setting    uninstall
+    [Tags]    uninstall
     [Documentation]    Verify that Longhorn correctly handles quoted and unquoted values in default
     ...                settings during installation, for both helm and manifest install methods.
     ...
@@ -282,3 +285,9 @@ Test TooManySnapshots Volume Condition
     snapshot_max_count=3    warning_threshold=5    volume_snapshot_max_count=0    expected_warning_snapshot_count=3
     # warning at min(10, 15, -) (10)
     snapshot_max_count=10    warning_threshold=15    volume_snapshot_max_count=0    expected_warning_snapshot_count=10
+
+Test Setting Read Only Setting Should Fail
+    [Documentation]    Test that modifying a read-only setting should fail.
+    ...                Issue: https://github.com/longhorn/longhorn/issues/5989
+    ...                1. Modified setting current-longhorn-version to v1.12.0-invalid should fail
+    When Set setting current-longhorn-version to v1.12.0-invalid will fail
