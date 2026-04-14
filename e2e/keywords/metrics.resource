@@ -14,6 +14,9 @@ Check if nodes are under memory pressure
 Metric ${metric_name} value should be ${expected_value}
     check_longhorn_metric    metric_name=${metric_name}    expected_value=${expected_value}
 
+There should be no ${metric_name} metric
+    wait_for_longhorn_metric_absent    metric_name=${metric_name}
+
 Get Longhorn components resource usage
     get_longhorn_components_memory_cpu_usage
 
