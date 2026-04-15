@@ -94,6 +94,16 @@ class BackingImage(Base):
             sleep(self.retry_interval)
         assert False, f"no data spice pod of {bi_name} created"
 
+    def wait_backing_image_data_source_pod_running(self, bi_name):
+        for i in range(self.retry_count):
+            data_source_pod = self.get_backing_image_data_source_pod(bi_name)
+            if len(data_source_pod) == 1:
+                pod_status = data_source_pod[0].status.phase
+                if pod_status == "Running":
+                    return True
+            sleep(self.retry_interval)
+        assert False, f"data source pod of {bi_name} is not running"
+
     def check_disk_file_map_contain_specific_message(self, bi_name, expected_message):
         return self.backing_image.check_disk_file_map_contain_specific_message(bi_name, expected_message)
 

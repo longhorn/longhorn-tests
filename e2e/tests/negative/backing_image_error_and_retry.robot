@@ -43,7 +43,7 @@ Backing image with an invalid URL schema
     And Wait backing image data source pod terminated
 
     FOR    ${i}    IN RANGE    3
-        ${recreation_time}=    Wait backimg image bi-test data source pod created
+        ${recreation_time}=    Wait backing image bi-test data source pod created
         Then Retry interval should match expected backoff window   ${recreation_time}    ${creation_time}    ${i}
         And Wait for all disk file status of backing image bi-test are failed
         And Wait for all disk file status of backing image bi-test are failed-and-cleanup

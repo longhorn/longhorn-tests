@@ -77,6 +77,9 @@ class backing_image_keywords:
         create_time = self.backing_image.wait_backing_image_data_source_pod_created(bi_name)
         return create_time
 
+    def wait_backing_image_data_source_pod_running(self, bi_name):
+        return self.backing_image.wait_backing_image_data_source_pod_running(bi_name)
+
     def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
         self.backing_image.wait_all_disk_file_status_are_at_state(bi_name, expected_state)
 
