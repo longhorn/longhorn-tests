@@ -15,9 +15,50 @@ Resource    ../keywords/backupstore.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/snapshot.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
+
+*** Keywords ***
+Verify TooManySnapshots Condition After Creating Snapshots
+    [Documentation]    Create a volume, create snapshots up to the expected warning threshold,
+    ...                verify TooManySnapshots condition becomes True with the expected threshold
+    ...                in the message, then delete all snapshots and purge, and verify the
+    ...                condition becomes False with an empty message.
+    [Arguments]    ${snapshot_max_count}    ${warning_threshold}    ${volume_snapshot_max_count}    ${expected_warning_snapshot_count}
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 data engine doesn't support snapshot-max-count: https://github.com/longhorn/longhorn/issues/12921
+    END
+    Given Setting snapshot-max-count is set to ${snapshot_max_count}
+    And Setting snapshot-count-warning-threshold is set to ${warning_threshold}
+
+    ${volume_suffix} =    Generate new uuid
+    ${volume_name} =    Set Variable    vol-${volume_suffix}
+    When Create volume ${volume_name}    snapshotMaxCount=${volume_snapshot_max_count}
+    And Attach volume ${volume_name}
+    And Wait for volume ${volume_name} healthy
+
+    And Create ${expected_warning_snapshot_count} snapshot for volume ${volume_name}
+    Then Run command and wait for output
+    ...    kubectl get volume -n ${LONGHORN_NAMESPACE} ${volume_name} -o jsonpath='{.status.conditions[?(@.type=="TooManySnapshots")].status}'
+    ...    True
+    And Run command and wait for output
+    ...    kubectl get volume -n ${LONGHORN_NAMESPACE} ${volume_name} -o jsonpath='{.status.conditions[?(@.type=="TooManySnapshots")].message}'
+    ...    at or over the warning threshold ${expected_warning_snapshot_count}
+
+    # Remove all snapshots
+    FOR    ${i}    IN RANGE    ${expected_warning_snapshot_count}
+        Delete snapshot ${i} of volume ${volume_name}
+    END
+    And Purge volume ${volume_name} snapshot
+
+    Then Run command and wait for output
+    ...    kubectl get volume -n ${LONGHORN_NAMESPACE} ${volume_name} -o jsonpath='{.status.conditions[?(@.type=="TooManySnapshots")].status}'
+    ...    False
+    And Run command and not expect output
+    ...    kubectl get volume -n ${LONGHORN_NAMESPACE} ${volume_name} -o jsonpath='{.status.conditions[?(@.type=="TooManySnapshots")].message}'
+    ...    at or over the warning threshold
 
 *** Test Cases ***
 Test Setting Update With Valid Value
@@ -210,3 +251,34 @@ Test Default Settings Quoting
     Then Wait for longhorn ready
     And Setting default-replica-count should be {"v1":"4","v2":"2"}
     And Setting deleting-confirmation-flag should be true
+
+Test TooManySnapshots Volume Condition
+    [Tags]    snapshot
+    [Documentation]    Test TooManySnapshots volume condition when snapshot count reaches warning threshold.
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12396
+    ...    1. Set snapshot-max-count to 10
+    ...    2. Set snapshot-count-warning-threshold to 5
+    ...    3. Create a volume without setting snapshotMaxCount
+    ...    4. Create 5 snapshots for the volume
+    ...    5. Check TooManySnapshots volume condition is True
+    ...    6. Check TooManySnapshots volume condition message contains
+    ...       "at or over the warning threshold 5"
+    ...    7. Remove all snapshots
+    ...    8. Check TooManySnapshots volume condition is False
+    ...    9. Check TooManySnapshots volume condition message is empty
+    ...
+    ...    Repeat the above steps with different combinations
+    [Template]    Verify TooManySnapshots Condition After Creating Snapshots
+    # snapshot-max-count    warning-threshold    volume snapshotMaxCount    expected warning snapshot count
+    # warning at min(10, 5, -) (5)
+    snapshot_max_count=10    warning_threshold=5    volume_snapshot_max_count=0    expected_warning_snapshot_count=5
+    # warning at min(10, 5, 15) (5)
+    snapshot_max_count=10    warning_threshold=5    volume_snapshot_max_count=15    expected_warning_snapshot_count=5
+    # warning at min(10, 5, 5) (5)
+    snapshot_max_count=10    warning_threshold=5    volume_snapshot_max_count=5    expected_warning_snapshot_count=5
+    # warning at min(10, 5, 3) (3)
+    snapshot_max_count=10    warning_threshold=5    volume_snapshot_max_count=3    expected_warning_snapshot_count=3
+    # warning at min(3, 5, -) (3)
+    snapshot_max_count=3    warning_threshold=5    volume_snapshot_max_count=0    expected_warning_snapshot_count=3
+    # warning at min(10, 15, -) (10)
+    snapshot_max_count=10    warning_threshold=15    volume_snapshot_max_count=0    expected_warning_snapshot_count=10
