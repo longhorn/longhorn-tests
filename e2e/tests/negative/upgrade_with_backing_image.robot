@@ -139,7 +139,7 @@ System upgrade with the same backing image manager image
 
     FOR    ${i}    IN RANGE    10
         When Delete Longhorn DaemonSet longhorn-manager pod on all nodes simultaneously
-        And No backimg image data source pod exist
+        And No backing image data source pod exist
         Then Wait for Longhorn components all running
         And Wait for all disk file status of backing image bi are ready
     END
