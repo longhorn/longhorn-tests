@@ -6980,7 +6980,7 @@ def wait_for_replica_count(client, volume_name, replica_count):
     assert len(volume.replicas) == replica_count
 
 
-def wait_for_all_nodes_disks_schedulable(client):
+def wait_for_all_nodes_disks_schedulable(client, disk_type=None):
     for _ in range(RETRY_COUNTS):
         nodes = client.list_node()
         all_disks_ready = True
@@ -6988,6 +6988,11 @@ def wait_for_all_nodes_disks_schedulable(client):
             node_name = getattr(node, "name", "<unknown>")
             disk_statuses = getattr(node, "disks", {})
             for disk_name, disk_status in disk_statuses.items():
+                if disk_type is not None:
+                    dt = getattr(disk_status, "diskType", None) or \
+                        disk_status.get("diskType", None)
+                    if dt != disk_type:
+                        continue
                 schedulable = False
                 conditions = disk_status.get("conditions", {})
                 sched_status = conditions.get("Schedulable", {}).get("status")
