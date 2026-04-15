@@ -342,7 +342,7 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = common.wait_for_volume_faulted(client, volume_name)
 
     if DATA_ENGINE == "v2":
-        wait_for_all_nodes_disks_schedulable(client)
+        wait_for_all_nodes_disks_schedulable(client, disk_type="block")
     volume.salvage(names=[replica0_name, replica1_name])
     volume = client.by_id_volume(volume_name)
 
