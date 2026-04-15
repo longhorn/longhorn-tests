@@ -165,7 +165,7 @@ Test Node ID Change During Backing Image Creation
     And Enable node 0 scheduling
     And Unevict evicted nodes
 
-    When Wait backimg image bi-large download complete
+    When Wait backing image bi-large download complete
     Then Check backing image bi-large download file checksum matches
     And Any app=longhorn-manager Pods Log Should Not Have but the pod became not ready After Test Start
 
