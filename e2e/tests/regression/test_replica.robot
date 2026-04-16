@@ -10,9 +10,11 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/network.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/snapshot.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -270,3 +272,49 @@ Test Volume Level Replica Rebuild Concurrent Sync Limit
     # Verify improvement
     Then Should Be True    ${rebuild_time} < ${2nd_rebuild_time}
     ...    msg=The 1st replica rebuilding time (${rebuild_time}s) should be faster than 2nd (${2nd_rebuild_time}s)
+
+Test Replica Rebuilding Progress Should Not Go Over 100
+    [Tags]    network-disconnect
+    [Documentation]    Test disconnect network while replica rebuilding
+    ...                Issie: https://github.com/longhorn/longhorn/issues/12949
+    ...
+    ...                Test Steps:
+    ...                1. Cordon node 2 to create a 2-nodes cluster environment.
+    ...                2. Create a 12 GiB volume with 2 replicas.
+    ...                3. Attach the volume to node 0.
+    ...                4. Prefill 10 GiB data to the volume.
+    ...                5. Delete replica on node 1 to trigger replica rebuilding.
+    ...                6. While replica rebuilding is not completed:
+    ...                   6.1 Disconnect network on node 1 for 30 seconds.
+    ...                   6.2 After network recovered, check replica rebuilding progress,
+    ...                       it may restart but never should go over 100%.
+    ...                   6.3 Sleep 30 seconds to let the rebuilding continue.
+    ...
+    ...                Expected Results:
+    ...                - Replica rebuilding progress should not go over 100%
+    ...                  after network disconnection.
+    ...                - Replica rebuilding should eventually complete successfully.
+    Given Cordon node 2
+    And Create volume 0    size=12Gi    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    ANd Prefill volume 0 with fio    size=10G
+    And Delete volume 0 replica on node 1
+    And Wait until volume 0 replica rebuilding started on node 1
+
+    ${progress} =    Get volume 0 replica rebuilding progress on node 1
+    ${progress} =    Convert To Integer    ${progress}
+    WHILE    ${progress} != 100
+        When Disconnect network on node 1 for 30 seconds
+        ${progress} =    Get volume 0 replica rebuilding progress on node 1
+        ${progress} =    Convert To Integer    ${progress}
+        Then Should Be True    ${progress} <= 100    msg=Replica rebuilding progress should not go over 100%, but current progress is ${progress}%
+        When Sleep    30
+        ${progress} =    Get volume 0 replica rebuilding progress on node 1
+        ${progress} =    Convert To Integer    ${progress}
+        Then Should Be True    ${progress} <= 100    msg=Replica rebuilding progress should not go over 100%, but current progress is ${progress}%
+    END
+
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact

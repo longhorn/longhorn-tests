@@ -14,6 +14,8 @@ Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/network.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/k8s.resource
+Resource    ../keywords/node.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -235,3 +237,47 @@ Test Volume Expansion During Network Disconnect With RWX Volume
     [Tags]    expansion    rwx
     [Documentation]    Test RWX volume expansion behavior when share-manager node network is disconnected during expansion.
     Test Volume Expansion During Network Disconnect With Volume Type    RWX
+
+Test Large Volume Replica Rebuilding Resilience
+    [Tags]    replica-rebuilding
+    [Documentation]    Test large volume replica rebuilding resilience during network disconnection.
+    ...
+    ...                Test Steps:
+    ...                1. Cordon node 2 to create a 2-nodes cluster environment.
+    ...                2. Create a 32 GiB volume with 2 replicas.
+    ...                3. Attach the volume to node 0.
+    ...                4. Prefill 30 GiB data to the volume.
+    ...                5. Delete replica on node 1 to trigger replica rebuilding.
+    ...                6. While replica rebuilding is not completed:
+    ...                   6.1 Disconnect network port 10003:10050 of instance manager pod on node 1 for 30 seconds.
+    ...                   6.2 After network recovered, check replica rebuilding progress,
+    ...                       it should not fail or restart from 0.
+    ...                   6.3 Sleep 30 seconds to let the rebuilding continue.
+    ...
+    ...                Expected Results:
+    ...                - Replica rebuilding should not fail or restart from 0
+    ...                  after network disconnection.
+    ...                - Replica rebuilding should eventually complete successfully.
+    Given Cordon node 2
+    And Create volume 0    size=32Gi    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    ANd Prefill volume 0 with fio    size=30G
+    And Delete volume 0 replica on node 1
+    And Wait until volume 0 replica rebuilding started on node 1
+
+    ${progress} =    Get volume 0 replica rebuilding progress on node 1
+    ${progress} =    Convert To Integer    ${progress}
+    WHILE    ${progress} != 100
+        When Disconnect network port 10003:10050 of ${DATA_ENGINE} instance manager network on node 1 for 30 seconds
+        Then Volume 0 replica rebuilding on node 1 should not restart    previous_progress=${progress}
+
+        And Sleep    30
+        ${progress} =    Get volume 0 replica rebuilding progress on node 1
+        ${progress} =    Convert To Integer    ${progress}
+        And Log to console    Sleeping for 30 seconds after network disconnection, current rebuilding progress: ${progress}%
+    END
+
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
