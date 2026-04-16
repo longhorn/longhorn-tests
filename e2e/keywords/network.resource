@@ -37,7 +37,7 @@ Disconnect volume node network of ${workload_kind} ${workload_id} for ${duration
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${volume_name}
-    ${network_block_pod_name} =    disconnect_node_network_without_waiting_completion    ${node_name}    ${duration}
+    ${network_block_pod_name} =    disconnect_node_network    ${node_name}    ${duration}    wait=${False}
     Set Test Variable    ${network_block_pod_name}
 
 Drop instance-manager egress traffic of statefulset ${statefulset_id} for ${duration} seconds without waiting for completion
@@ -49,7 +49,7 @@ Drop instance-manager egress traffic of statefulset ${statefulset_id} for ${dura
 Disconnect volume ${volume_id} node network for ${duration} seconds without waiting for completion
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_volume_node    ${volume_name}
-    ${network_block_pod_name} =    disconnect_node_network_without_waiting_completion    ${node_name}    ${duration}
+    ${network_block_pod_name} =    disconnect_node_network    ${node_name}    ${duration}    wait=${False}
     Set Test Variable    ${network_block_pod_name}
 
 Wait for disconnected node back
@@ -69,3 +69,17 @@ Disconnect network on node ${node_id} for ${duration} seconds
     ...                Example: Disconnect network on node 0 for 100 seconds
     ${node_name} =    get_node_by_index    ${node_id}
     disconnect_node_network    ${node_name}    ${duration}
+
+Disconnect network port ${port_number} on node ${node_id} for ${duration} seconds
+    ${node_name} =    get_node_by_index    ${node_id}
+    disconnect_node_network    ${node_name}    ${duration}    ${port_number}
+
+Disconnect network of ${engine_type} instance manager on node ${node_id} for ${duration} seconds
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    disconnect_pod_network    ${pod_name}    ${duration}
+
+Disconnect network port ${port_number} of ${engine_type} instance manager network on node ${node_id} for ${duration} seconds
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    disconnect_pod_network    ${pod_name}    ${duration}    ${port_number}
