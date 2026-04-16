@@ -185,6 +185,9 @@ class volume_keywords:
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
         self.volume.wait_for_replica_rebuilding_complete(volume_name)
 
+    def get_replica_rebuilding_progress(self, volume_name, node_name):
+        return self.volume.get_replica_rebuilding_progress(volume_name, node_name)
+
     async def only_one_replica_rebuilding_will_start_at_a_time_on_node(self, volume_name_0, volume_name_1, replica_locality):
 
         node_id = self.get_node_id_by_replica_locality(volume_name_0, replica_locality)
