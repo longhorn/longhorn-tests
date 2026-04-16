@@ -174,12 +174,14 @@ Keep writing data to volume ${volume_id}
 Write scattered data to volume ${volume_id} with fio
     [Arguments]    ${size}=2G    ${bs}=4k    ${ratio}=0.2
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    write_volume_scattered_data_with_fio    ${volume_name}    ${size}    ${bs}    ${ratio}
+    ${checksum} =    write_volume_scattered_data_with_fio    ${volume_name}    ${size}    ${bs}    ${ratio}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Prefill volume ${volume_id} with fio
     [Arguments]    ${size}=2G
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    prefill_volume_with_fio    ${volume_name}    ${size}
+    ${checksum} =    prefill_volume_with_fio    ${volume_name}    ${size}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -349,6 +351,30 @@ Wait until volume ${volume_id} replica rebuilding completed on ${replica_localit
 Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
+
+Get volume ${volume_id} replica rebuilding progress on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${progress} =    get_replica_rebuilding_progress    ${volume_name}    ${node_name}
+    [Return]    ${progress}
+
+Volume ${volume_id} replica rebuilding on node ${node_id} should not restart
+    [Arguments]    ${previous_progress}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${progress} =    get_replica_rebuilding_progress    ${volume_name}    ${node_name}
+    ${progress} =    Convert To Integer    ${progress}
+    IF    ${progress} > 100 or ${progress} < 0
+        Log to console    Replica rebuilding progress is ${progress}% for volume ${volume_id} on node ${node_name} after network disconnection, which is unexpected
+        Sleep   ${RETRY_COUNT}
+        Fail    Replica rebuilding progress is ${progress}% for volume ${volume_id} on node ${node_name} after network disconnection, which is unexpected
+    ELSE IF    ${progress} < ${previous_progress}
+        Log to console    Replica rebuilding progress went backwards from ${previous_progress}% to ${progress}% after network disconnection
+        Sleep   ${RETRY_COUNT}
+        Fail    Replica rebuilding progress went backwards from ${previous_progress}% to ${progress}% after network disconnection
+    ELSE
+        Log to console    Replica rebuilding progress is ${progress}% which is not less than previous progress ${previous_progress} after network disconnection
+    END
 
 Monitor only one replica rebuilding will start at a time for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
