@@ -95,7 +95,7 @@ elif os.environ.get("CLOUDPROVIDER") == "harvester":
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
     BLOCK_DEV_PATH = "/dev/vdb"
 else:
-    BLOCK_DEV_PATH = "dev/nvme1n1"
+    BLOCK_DEV_PATH = "/dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
