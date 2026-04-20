@@ -280,6 +280,7 @@ Test CSI Pod Anti Affinity Update
     And Wait for Longhorn components all running
 
 Test CSI Node Server Can Recover Corrupted Block Mount Point
+    [Tags]    block-volume
     [Documentation]    Reproduce CSI block mount issue with broken symlink and verify workload launch succeeds.
     ...    1. Cordon non-target nodes.
     ...    2. Create single replica Longhorn volume `vol`.
@@ -295,8 +296,8 @@ Test CSI Node Server Can Recover Corrupted Block Mount Point
     And Corrupt CSI block volume staging mount point on node 0 for volume vol
     And Verify CSI block volume staging mount point is corrupted on node 0 for volume vol
 
-    When Create persistentvolume for volume vol    volume_mode=Block
-    And Create persistentvolumeclaim for volume vol    volume_mode=Block
+    When Create persistentvolume for volume vol    volumeMode=Block
+    And Create persistentvolumeclaim for volume vol    volumeMode=Block
     And Create deployment csi-block-mount-recovery with block persistentvolumeclaim vol
     Then Wait for deployment csi-block-mount-recovery pods stable
     And Verify CSI block volume staging mount point is recovered on node 0 for volume vol

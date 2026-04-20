@@ -96,10 +96,10 @@ Test Encrypted RWX Volume Online Expansion
     Then Check deployment 0 data in file data.txt is intact
 
 Test Encrypted RWO Block Volume Online Expansion
-    [Tags]    rwo    expansion
+    [Tags]    rwo    expansion    block-volume
     Given Create crypto secret
     And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim in Block volume mode 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
+    And Create persistentvolumeclaim 0    volumeMode=Block    volume_type=RWO    sc_name=longhorn-crypto    storage_size=50MiB
     And Create deployment 0 with block persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
     And Make block device filesystem in deployment 0
