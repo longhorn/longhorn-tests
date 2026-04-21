@@ -45,11 +45,7 @@ Generate random disk name
 
 Run command
     [Arguments]    ${command}
-    execute_command    ${command}
-
-Run Command And Get Output
-    [Arguments]    ${command}
-    ${result}=    execute_command_and_get_output    ${command}
+    ${result} =    execute_command    ${command}
     RETURN    ${result}
 
 Run command and expect output

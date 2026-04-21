@@ -1,3 +1,4 @@
+import json
 import time
 import ipaddress
 import requests
@@ -64,6 +65,7 @@ def find_longhorn_metric_samples(metric_name, node_name=None):
                 for sample in family.samples:
                     if sample.name == metric_name:
                         samples.append(sample)
+                        logging(f"Got metric sample {metric_name}={sample} on node {node_name}")
         logging(f"Got metric samples {metric_name}={samples} on all worker nodes")
     else:
         metrics_data = get_longhorn_metrics(node_name)
@@ -80,11 +82,19 @@ def check_longhorn_metric(metric_name, node_name=None, metric_label=None, expect
     samples = find_longhorn_metric_samples(metric_name, node_name)
     expected_value = float(convert_size_to_bytes(expected_value))
     retry_count, retry_interval = get_retry_count_and_interval()
+
+    label_filter = None
+    if metric_label is not None:
+        label_filter = json.loads(metric_label)
+
     if not len(samples):
         logging(f"Failed to get longhorn metric {locals()}")
         time.sleep(retry_count)
         assert False, f"Failed to get longhorn metric {locals()}"
     for sample in samples:
+        if label_filter:
+            if not all(sample.labels.get(k) == v for k, v in label_filter.items()):
+                continue
         if expected_value and sample.value != expected_value:
             logging(f"Expected metric {metric_name}:{metric_label} has value {expected_value}, but it's {sample.value}: {samples}")
             time.sleep(retry_count)
