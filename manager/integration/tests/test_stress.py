@@ -581,7 +581,6 @@ def generate_load(request):
     write_data(k8s_api_client, pod_name)
     create_recurring_jobs(longhorn_api_client, volume_name)
 
-    global N_RANDOM_ACTIONS
     for round in range(N_RANDOM_ACTIONS):
         action = randrange(0, 8)
 
