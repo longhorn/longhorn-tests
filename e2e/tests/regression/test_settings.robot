@@ -227,27 +227,30 @@ Test Setting Blacklist For Auto Delete Pod
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
     And Wait for deployment 0 pods stable
 
-Test Default Settings Quoting
+Test Install With Different Format Settings
     [Tags]    uninstall
-    [Documentation]    Verify that Longhorn correctly handles quoted and unquoted values in default
+    [Documentation]    Verify that Longhorn correctly handles values with different formats (
+    ...                quotes, no quotes, engine specific setting) in default
     ...                settings during installation, for both helm and manifest install methods.
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/11854
+    ...                       https://github.com/longhorn/longhorn/issues/11810
     ...
     ...                Test steps:
     ...                1. Uninstall Longhorn.
     ...                2. If install method is helm, patch values.yaml with:
     ...                       defaultSettings.defaultReplicaCount: '{"v1":"4","v2":"2"}' (with quotes)
     ...                       defaultSettings.deletingConfirmationFlag: true (no quotes)
+    ...                       defaultSettings.dataEngineHugepageEnabled: '{"v2": "false"}' (engine specific setting)
     ...                   If install method is manifest, append to default-setting.yaml section of
     ...                   longhorn.yaml:
     ...                       default-replica-count: '{"v1":"4","v2":"2"}'
     ...                       deleting-confirmation-flag: true
+    ...                       data-engine-hugepage-enabled: '{"v2": "false"}'
     ...                   then install Longhorn.
     ...                3. Wait for Longhorn to be running.
-    ...                4. Check that default-replica-count is {"v1":"4","v2":"2"} and
-    ...                   deleting-confirmation-flag is true.
-
+    ...                4. Check that default-replica-count is {"v1":"4","v2":"2"},
+    ...                   deleting-confirmation-flag is true, and data-engine-hugepage-enabled is {"v2": "false"}.
     Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check all Longhorn CRD removed
@@ -257,7 +260,7 @@ Test Default Settings Quoting
         # Patch values.yaml: defaultReplicaCount with a quoted JSON string, deletingConfirmationFlag without quotes.
         # The custom_cmd outputs a values.yaml file used by helm install via -f values.yaml.
         ${patch} =    Set Variable
-        ...    .defaultSettings.defaultReplicaCount = "{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}" | .defaultSettings.deletingConfirmationFlag = true
+        ...    .defaultSettings.defaultReplicaCount = "{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}" | .defaultSettings.deletingConfirmationFlag = true | .defaultSettings.dataEngineHugepageEnabled = "{\\"v2\\": \\"false\\"}"
         ${helm_cmd} =    Set Variable    yq eval \'${patch}\' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
         Install Longhorn    custom_cmd=${helm_cmd}
     ELSE
@@ -265,13 +268,14 @@ Test Default Settings Quoting
         # using sed append. Second sed inserts default-replica-count first so it appears before
         # deleting-confirmation-flag in the block (sed /pattern/a inserts immediately after the match).
         ${manifest_cmd} =    Set Variable
-        ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}deleting-confirmation-flag: true" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}default-replica-count: '{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}'" longhorn.yaml
+        ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}deleting-confirmation-flag: true" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}default-replica-count: '{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}'" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}data-engine-hugepage-enabled: '{\\"v2\\":\\"false\\"}'" longhorn.yaml
         Install Longhorn    custom_cmd=${manifest_cmd}
     END
 
     Then Wait for longhorn ready
     And Setting default-replica-count should be {"v1":"4","v2":"2"}
     And Setting deleting-confirmation-flag should be true
+    And Setting data-engine-hugepage-enabled should be {"v2":"false"}
 
 Test TooManySnapshots Volume Condition
     [Tags]    snapshot
