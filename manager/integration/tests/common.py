@@ -89,7 +89,10 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.environ.get("CLOUDPROVIDER") == "aws":
-    BLOCK_DEV_PATH = "0000:00:1f.0"
+    if os.uname().machine == "x86_64":
+        BLOCK_DEV_PATH = "/dev/xvdh"
+    else:
+        BLOCK_DEV_PATH = "0000:00:1f.0"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
     BLOCK_DEV_PATH = "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
