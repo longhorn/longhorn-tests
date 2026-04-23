@@ -6913,9 +6913,9 @@ def sts_name(request):
 </summary>
 <pre><code class="python">def v2_data_engine_cr_supported(client):
     longhorn_version = client.by_id_setting(&#39;current-longhorn-version&#39;).value
-    version_doesnt_support_v2_backimg_image = [&#39;v1.5&#39;, &#39;v1.6&#39;, &#39;v1.7&#39;]
+    version_doesnt_support_v2_backing_image = [&#39;v1.5&#39;, &#39;v1.6&#39;, &#39;v1.7&#39;]
     if any(_version in longhorn_version for
-           _version in version_doesnt_support_v2_backimg_image):
+           _version in version_doesnt_support_v2_backing_image):
         print(f&#39;{longhorn_version} doesn\&#39;t support v2 cr for test&#39;)
         return False
     else:
