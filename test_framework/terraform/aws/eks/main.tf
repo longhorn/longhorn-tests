@@ -122,7 +122,7 @@ resource "aws_eks_node_group" "node_group" {
   capacity_type  = "ON_DEMAND"
   # For Arm-based instances, Amazon Linux 2023 (AL2023) only supports instance types that use Graviton2 or later processors.
   # AL2023 doesn’t support A1 instances.
-  instance_types = [var.arch == "amd64" ? "t2.xlarge" : "t4g.xlarge"]
+  instance_types = [var.arch == "amd64" ? "t3.xlarge" : "t4g.xlarge"]
   disk_size      = var.block_device_size_worker
   scaling_config {
     desired_size = 3

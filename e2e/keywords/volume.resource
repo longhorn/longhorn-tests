@@ -600,9 +600,10 @@ Create volume ${volume_id} from backup ${backup_id} in another cluster
     create_volume   ${volume_name}    fromBackup=${backup_url}
 
 Create DR volume ${volume_id} from backup ${backup_id} in another cluster
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_url} =    get_backup_url_from_backup_list    ${backups_before_uninstall}    ${backup_id}
-    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} in another cluster completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

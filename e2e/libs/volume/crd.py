@@ -32,7 +32,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -61,6 +61,7 @@ class CRD(Base):
                 "Standby": Standby,
                 "fromBackup": fromBackup,
                 "rebuildConcurrentSyncLimit": int(rebuildConcurrentSyncLimit),
+                "snapshotMaxCount": int(snapshotMaxCount),
                 # disable revision counter by default from v1.7.0
                 "revisionCounterDisabled": True,
                 "nodeSelector": nodeSelector,
@@ -412,7 +413,8 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume} robustness error: {e}")
             time.sleep(self.retry_interval)
-        assert volume["status"]["robustness"] == desired_state
+        assert volume["status"]["robustness"] == desired_state, \
+            f"Failed to wait for {volume_name} robustness={desired_state}, currently it's {volume['status']['robustness']}"
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
         volume = None

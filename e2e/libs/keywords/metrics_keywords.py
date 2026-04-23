@@ -1,7 +1,7 @@
 import time
 
 from node import Node
-from metrics.metrics import get_node_metrics, check_longhorn_metric
+from metrics.metrics import get_node_metrics, check_longhorn_metric, find_longhorn_metric_samples
 from metrics.metrics import get_longhorn_components_memory_cpu_usage
 from metrics.metrics import check_longhorn_components_memory_cpu_usage
 from utility.utility import get_retry_count_and_interval
@@ -12,7 +12,7 @@ class metrics_keywords:
 
     def __init__(self):
         self.node = Node()
-        retry_count, retry_interval = get_retry_count_and_interval()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def get_node_total_memory_in_mi(self, node_name):
         total_memory = self.node.get_node_total_memory(node_name)
@@ -51,6 +51,14 @@ class metrics_keywords:
 
     def check_longhorn_metric(self, metric_name, node_name=None, metric_label=None, expected_value=None):
         check_longhorn_metric(metric_name, node_name, metric_label, expected_value)
+
+    def wait_for_longhorn_metric_absent(self, metric_name, node_name=None):
+        for i in range(self.retry_count):
+            logging(f"Waiting for longhorn metric {metric_name} absent on node {node_name} ... ({i})")
+            if not find_longhorn_metric_samples(metric_name, node_name):
+                logging(f"Longhorn metric {metric_name} is absent on node {node_name}")
+                return
+            time.sleep(self.retry_interval)
 
     def get_longhorn_components_memory_cpu_usage(self):
         get_longhorn_components_memory_cpu_usage()
