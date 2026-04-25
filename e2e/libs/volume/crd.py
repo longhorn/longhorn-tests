@@ -32,7 +32,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -65,7 +65,8 @@ class CRD(Base):
                 # disable revision counter by default from v1.7.0
                 "revisionCounterDisabled": True,
                 "nodeSelector": nodeSelector,
-                "diskSelector": diskSelector
+                "diskSelector": diskSelector,
+                "replicaAutoBalance": replicaAutoBalance
             }
         }
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):

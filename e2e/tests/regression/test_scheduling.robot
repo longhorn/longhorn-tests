@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Scheduling Test Cases
 
-Test Tags    regression    replica
+Test Tags    regression    replica    scheduling
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -460,3 +460,114 @@ Test Scheduling Replicas To Different Disks On The Same Node
     And Check volume of statefulset 0 replica on node 0 disk local-disk-${suffix_1}
     And Write 500 MB data to file data.bin in statefulset 0
     And Check statefulset 0 data in file data.bin is intact
+
+Test Best Effort Auto Balance In Unstable Cluster
+    [Documentation]    Test replica best effort auto balance with unstable node
+    [Tags]    kubelet-restart    long-running
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12926
+    ...
+    ...    1. In a 3-node cluster, tag node 0 and node 1 with zone-a, node 2 with zone-b.
+    ...    2. Stop kubelet on node 2, wait 35 minutes, then restart it so its Ready
+    ...       condition lastTransitionTime is >30 min later than zone-a nodes.
+    ...       Ready condition lastTransitionTime updates only when the status changes.
+    ...       Cordoning a node doesn't make the node NotReady, but it only makes the node Unschedulable,
+    ...       so it's not suitable for this case.
+    ...    3. Verify the lastTransitionTime gap between node 2 and node 0/1 is >30 min.
+    ...    4. Set Replica Auto Balance to best-effort.
+    ...    5. Disable scheduling for node 2.
+    ...    6. Create and attach a 2-replica volume. Replicas go to zone-a nodes.
+    ...    7. Wait for volume attached and healthy.
+    ...    8. Enable scheduling for node 2.
+    ...    9. Wait for a replica to be auto balanced to node 2.
+    ...    10. Verify replicas are stable: one in zone-a and one in zone-b for a sufficient time.
+
+    # Step 1: Set up zones
+    Given Set k8s node 0 zone zone-a
+    And Set k8s node 1 zone zone-a
+    And Set k8s node 2 zone zone-b
+
+    # Step 2: Create unstable node condition on node 2
+    And Stop kubelet on node 2 for 2100 seconds
+    And Wait for node 2 ready
+
+    # Step 3: Verify lastTransitionTime of node 2 is 30 minutes later than node 0 and node 1
+    ${node2_ts}=    Run command
+    ...    kubectl get node ${NODE_2} -o jsonpath='{.status.conditions[?(@.type=="Ready")].lastTransitionTime}' | xargs -I{} date -d "{}" +%s
+    ${node0_ts}=    Run command
+    ...    kubectl get node ${NODE_0} -o jsonpath='{.status.conditions[?(@.type=="Ready")].lastTransitionTime}' | xargs -I{} date -d "{}" +%s
+    ${node1_ts}=    Run command
+    ...    kubectl get node ${NODE_1} -o jsonpath='{.status.conditions[?(@.type=="Ready")].lastTransitionTime}' | xargs -I{} date -d "{}" +%s
+    Run command and expect output
+    ...    echo $(( ${node2_ts} - ${node0_ts} > 1800 && ${node2_ts} - ${node1_ts} > 1800 ))
+    ...    1
+
+    # Step 4: Set Replica Auto Balance to best-effort
+    When Setting replica-auto-balance is set to best-effort
+
+    # Step 5: Disable scheduling for node 2
+    And Disable node 2 scheduling
+
+    # Step 6: Create and attach a 2-replica volume
+    And Create volume 0 with    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+
+    # Step 7: Wait for volume attached and healthy
+    Then Wait for volume 0 attached
+    And Wait for volume 0 healthy
+
+    # Step 8: Enable scheduling for node 2
+    When Enable node 2 scheduling
+
+    # Step 9: Wait for a replica to auto balance to node 2
+    Then Volume 0 should have running replicas on node 2
+
+    # Step 10: Verify replicas are stable - one in zone-a, one in zone-b
+    And Volume 0 should have 1 running replicas on node 2 and no additional scheduling occurs
+    And Volume 0 should have 2 replicas and no additional scheduling occurs
+
+Test Least Effort Auto Balance In Unstable Cluster
+    [Documentation]    Test replica least effort auto balance with unstable node
+    [Tags]    kubelet-restart    long-running
+    ...    Issue: https://github.com/longhorn/longhorn/issues/11730
+    ...
+    ...    1. Set Replica Auto Balance to least-effort.
+    ...    2. Disable node 2 scheduling. Create and attach a 2-replica volume.
+    ...       Replicas go to node 0 and node 1. Re-enable node 2 scheduling.
+    ...    3. Stop kubelet on node 1 (a replica node) for 35 mins so its Ready
+    ...       condition lastTransitionTime is >30 min later than other nodes.
+    ...    4. Verify the lastTransitionTime gap between node 1 and other nodes is >30 min.
+    ...    5. Wait for the replica rebuilding to complete.
+    ...    6. The volume should have 2 running replicas on node 0 and node 2. There should be no running replica on node 1.
+    # Step 1: Set Replica Auto Balance to least-effort
+    # Step 2: Create and attach a 2-replica volume with replicas on node 0 and node 1
+    And Disable node 2 scheduling
+    And Create volume 0 with    numberOfReplicas=2    replicaAutoBalance=least-effort    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 attached
+    And Wait for volume 0 healthy
+    And Enable node 2 scheduling
+
+    # Step 3: Stop kubelet on node 1 for 35 minutes
+    And Stop kubelet on node 1 for 2100 seconds
+    And Wait for node 1 ready
+
+    # Step 4: Verify lastTransitionTime gap between node 1 and other nodes is >30 min
+    ${node1_ts}=    Run command
+    ...    kubectl get node ${NODE_1} -o jsonpath='{.status.conditions[?(@.type=="Ready")].lastTransitionTime}' | xargs -I{} date -d "{}" +%s
+    ${node0_ts}=    Run command
+    ...    kubectl get node ${NODE_0} -o jsonpath='{.status.conditions[?(@.type=="Ready")].lastTransitionTime}' | xargs -I{} date -d "{}" +%s
+    ${node2_ts}=    Run command
+    ...    kubectl get node ${NODE_2} -o jsonpath='{.status.conditions[?(@.type=="Ready")].lastTransitionTime}' | xargs -I{} date -d "{}" +%s
+    Run command and expect output
+    ...    echo $(( ${node1_ts} - ${node0_ts} > 1800 && ${node1_ts} - ${node2_ts} > 1800 ))
+    ...    1
+
+    # Step 5: Wait for the replica rebuilding to complete
+    Then Wait until volume 0 replicas rebuilding completed
+    And Wait for volume 0 healthy
+
+    # Step 6: The volume should have 2 running replicas on node 0 and node 2, and no running replica on node 1
+    And Volume 0 should have 2 running replicas and no additional scheduling occurs
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 0 running replicas on node 1
+    And Volume 0 should have 1 running replicas on node 2
