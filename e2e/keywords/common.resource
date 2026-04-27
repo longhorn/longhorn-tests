@@ -76,7 +76,11 @@ Set disk path based on host provider and architecture
     ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
     ${ARCH}=    Get Environment Variable    ARCH    amd64
     IF    "${HOST_PROVIDER}" == "aws"
-        Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+        IF    "${ARCH}" == "amd64"
+            Set Test Variable    ${DISK_PATH}    /dev/xvdh
+        ELSE IF    "${ARCH}" == "arm64"
+            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+        END
     ELSE IF    '${HOST_PROVIDER}' == "harvester"
         Set Test Variable    ${DISK_PATH}    /dev/vdc
     ELSE IF    '${HOST_PROVIDER}' == "vagrant"

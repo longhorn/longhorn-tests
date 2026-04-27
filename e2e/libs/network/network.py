@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 
 from node import Node
 from node_exec import NodeExec
@@ -15,11 +16,12 @@ from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 from workload.pod import wait_for_pod_status
-from workload.pod import IMAGE_BUSYBOX
+from workload.constant import IMAGE_BUSYBOX, IMAGE_NETWORK_TEST
 
 
 def setup_control_plane_network_latency(latency_in_ms=0):
     if latency_in_ms != 0:
+        logging(f"Setting up control plane network latency with {latency_in_ms} ms")
         control_plane_nodes = Node().list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
@@ -36,6 +38,7 @@ def setup_control_plane_network_latency(latency_in_ms=0):
 
 
 def cleanup_control_plane_network_latency():
+    logging("Cleaning up control plane network latency")
     control_plane_nodes = Node().list_node_names_by_role("control-plane")
     for control_plane_node in control_plane_nodes:
         ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
@@ -51,42 +54,32 @@ def cleanup_control_plane_network_latency():
         create_pod(manifest, is_wait_for_pod_succeeded=True)
 
 
-async def disconnect_node_network(node_name, disconnection_time_in_sec=10):
-    logging(f"Disconnect node {node_name} network for {disconnection_time_in_sec} seconds")
+def disconnect_node_network(node_name, disconnection_time_in_sec=10, port_number=None, wait=True):
+    if port_number:
+        logging(f"Disconnecting node {node_name} network for {disconnection_time_in_sec} seconds on port {port_number}")
+        args = ["-c", f"iptables -I INPUT -p tcp --dport {port_number} -j DROP && iptables -I INPUT -p tcp --sport {port_number} -j DROP && iptables -I OUTPUT -p tcp --dport {port_number} -j DROP && iptables -I OUTPUT -p tcp --sport {port_number} -j DROP && sleep {disconnection_time_in_sec} && iptables -D INPUT -p tcp --dport {port_number} -j DROP && iptables -D INPUT -p tcp --sport {port_number} -j DROP && iptables -D OUTPUT -p tcp --dport {port_number} -j DROP && iptables -D OUTPUT -p tcp --sport {port_number} -j DROP"]
+    else:
+        logging(f"Disconnecting node {node_name} network for {disconnection_time_in_sec} seconds")
+        args = ["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && tc qdisc replace dev $INTERFACE root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev $INTERFACE root || true"]
+
     ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
     ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
     manifest = new_pod_manifest(
-        image=IMAGE_BUSYBOX,
+        image=IMAGE_NETWORK_TEST,
         command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
-        args=["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && sleep 10 && tc qdisc replace dev $INTERFACE root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev $INTERFACE root"],
-        node_name=node_name
-    )
-    pod_name = manifest['metadata']['name']
-    create_pod(manifest, is_wait_for_pod_running=True)
-
-    await asyncio.sleep(disconnection_time_in_sec)
-
-    delete_pod(pod_name)
-
-def disconnect_node_network_without_waiting_completion(node_name, disconnection_time_in_sec=10):
-    logging(f"Disconnect node {node_name} network for {disconnection_time_in_sec} seconds")
-    ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
-    ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
-    manifest = new_pod_manifest(
-        image=IMAGE_BUSYBOX,
-        command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
-        args=["-c", f"INTERFACE=$(ip route show default | awk '/default/ {{print $5}}') && sleep 10 && tc qdisc replace dev $INTERFACE root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev $INTERFACE root"],
+        args=args,
         node_name=node_name,
-        labels = {LABEL_TEST: LABEL_TEST_VALUE}
+        labels={LABEL_TEST: LABEL_TEST_VALUE}
     )
     pod_name = manifest['metadata']['name']
-    create_pod(manifest, is_wait_for_pod_running=True)
-
+    create_pod(manifest, is_wait_for_pod_succeeded=wait)
     return pod_name
+
 
 # For now, drop_pod_egress_traffic only works in "suse-like" container images. It relies on iptables userspace 
 # utilities, which must generally be installed before execution.
 def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
+    logging(f"Dropping pod {pod_name} egress traffic for {drop_time_in_sec} seconds")
     wait_for_pod_status(pod_name, "Running", namespace=constant.LONGHORN_NAMESPACE)
 
     # Install iptables and execute the drop rule in the foreground.
@@ -101,3 +94,16 @@ def drop_pod_egress_traffic(pod_name, drop_time_in_sec=10):
     full_cmd = f"{install_cmd} {drop_rule} {{ sleep {drop_time_in_sec}; {undrop_rule} }} > /dev/null 2> /dev/null &"
 
     pod_exec(pod_name, constant.LONGHORN_NAMESPACE, full_cmd)
+
+def disconnect_pod_network(pod_name, disconnection_time_in_sec=10, port_number=None, wait=True):
+    if port_number:
+        logging(f"Disconnecting pod {pod_name} network for {disconnection_time_in_sec} seconds on port {port_number}")
+        cmd = f"zypper install -y iptables && iptables -I INPUT -p tcp --dport {port_number} -j DROP && iptables -I INPUT -p tcp --sport {port_number} -j DROP && iptables -I OUTPUT -p tcp --dport {port_number} -j DROP && iptables -I OUTPUT -p tcp --sport {port_number} -j DROP && sleep {disconnection_time_in_sec} && iptables -D INPUT -p tcp --dport {port_number} -j DROP && iptables -D INPUT -p tcp --sport {port_number} -j DROP && iptables -D OUTPUT -p tcp --dport {port_number} -j DROP && iptables -D OUTPUT -p tcp --sport {port_number} -j DROP > /dev/null 2> /dev/null &"
+    else:
+        logging(f"Disconnecting pod {pod_name} network for {disconnection_time_in_sec} seconds")
+        cmd = f"zypper install -y iptables && iptables -I INPUT -j DROP && iptables -I OUTPUT -j DROP && sleep {disconnection_time_in_sec} && iptables -D INPUT -j DROP && iptables -D OUTPUT -j DROP > /dev/null 2> /dev/null &"
+
+    wait_for_pod_status(pod_name, "Running", namespace=constant.LONGHORN_NAMESPACE)
+    pod_exec(pod_name, constant.LONGHORN_NAMESPACE, cmd)
+    if wait:
+        time.sleep(disconnection_time_in_sec)
