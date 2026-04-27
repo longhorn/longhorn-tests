@@ -16,6 +16,7 @@ from utility.utility import convert_size_to_bytes
 
 from volume import Volume
 from volume.rest import Rest as VolumeRest
+from workload.workload import get_workload_volume_name
 
 
 class volume_keywords:

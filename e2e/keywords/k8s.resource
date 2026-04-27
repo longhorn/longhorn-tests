@@ -186,3 +186,6 @@ Get Pod By Label Selector
     [Arguments]    ${label_selector}    ${namespace}
     ${pods}=    get_pods_by_label_selector    ${label_selector}    ${namespace}
     RETURN    ${pods}
+
+Check CSI driver storage capacity is ${expected_value}
+    check_csi_driver_storage_capacity    ${expected_value}
