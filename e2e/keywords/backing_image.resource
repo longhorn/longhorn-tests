@@ -52,13 +52,16 @@ Delete backing image managers and wait for recreation
 Wait backing image managers running
     wait_all_backing_image_managers_running
 
-No backimg image data source pod exist
+No backing image data source pod exist
     ${ds_count}=     get_backing_image_data_source_pod_count
     Should Be Equal    ${ds_count}     ${0}
 
-Wait backimg image ${backing_image_name} data source pod created
+Wait backing image ${backing_image_name} data source pod created
     ${creation_time} =    wait_backing_image_data_source_pod_created    ${backing_image_name}
     [Return]    ${creation_time}
+
+Wait backing image ${backing_image_name} data source pod running
+    wait_backing_image_data_source_pod_running    ${backing_image_name}
 
 Wait backing image data source pod terminated
     wait_for_no_backing_image_data_source_pod_exist
@@ -108,7 +111,7 @@ Check downloaded backing image ${backing_image_name} data matches source backing
     ${bi_checksum} =  get_backing_image_checksum    ${backing_image_name}
     Should Be Equal    ${download_bi_checksum}    ${bi_checksum}
 
-Wait backimg image ${backing_image_name} download complete
+Wait backing image ${backing_image_name} download complete
     ${download_bi_checksum} =    wait_for_async_download_complete    ${backing_image_name}
     Set Test Variable    ${download_bi_checksum}
 

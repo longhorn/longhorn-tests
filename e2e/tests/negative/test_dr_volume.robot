@@ -17,6 +17,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/deployment.resource
+Resource    ../keywords/k8s.resource
 
 
 Test Setup    Set up test environment
@@ -127,7 +128,7 @@ Sync Up With Backup Target During DR Volume Activation
     Then Check pod 0 file version-info.txt has checksum d51dc42f616b67126fd2aa1e1f43385b
 
 Test DR Volume Live Upgrade And Rebuild
-    [Tags]    manual    negative    dr-volume    expansion    upgrade
+    [Tags]    expansion    upgrade
     [Documentation]    - Test DR volume live upgrade and rebuild
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/1279
@@ -298,3 +299,35 @@ Test DR Volume Incremental Restore After Source Volume Expansion
     Then Wait for pod 1 running
     And Check pod 1 file data0 checksum matches checksum 0
     And Check pod 1 file data1 checksum matches checksum 1
+
+Activate Degraded DR Volume With Failed Replica Node
+    [Documentation]    Test that a DR volume with a failed replica due to node power off
+    ...                can be activated and exits standby mode.
+    ...                Related Issue:
+    ...                https://github.com/longhorn/longhorn/issues/2107
+    ...                - Create a volume, write data, and take a backup.
+    ...                - Create a DR volume from the backup.
+    ...                - Wait for the DR volume initial restoration to complete.
+    ...                - Power off one of the DR volume's replica nodes.
+    ...                - Wait for the DR volume to become degraded due to the failed replica.
+    ...                - Activate the DR volume.
+    ...                - Verify the DR volume exits standby mode (detaches from standby).
+    ...                - Power on the replica node.
+    ...                - Attach the DR volume to a healthy node.
+    ...                - Wait for the DR volume to become healthy.
+    ...                - Verify the data is correct.
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data 0 to volume 0
+    Then Volume 0 backup 0 should be able to create
+    And Create DR volume 1 from backup 0 Of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 restoration from backup 0 of volume 0 completed
+    When Power off volume 1 replica node
+    And Wait for volume 1 degraded
+    Then Activate DR volume 1
+    And Wait for volume 1 detached
+    When Power on off nodes
+    And Attach volume 1 to healthy node
+    And Wait for volume 1 healthy
+    Then Check volume 1 data is backup 0 of volume 0

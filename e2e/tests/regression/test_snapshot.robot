@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Snapshot Test Cases
 
-Test Tags    regression
+Test Tags    regression    snapshot
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
