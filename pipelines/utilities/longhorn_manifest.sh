@@ -21,6 +21,7 @@ get_longhorn_repo(){
             "${LONGHORN_REPO_DIR}"
 
   LONGHORN_MANIFEST_PATH="${LONGHORN_REPO_DIR}/deploy/longhorn.yaml"
+  LONGHORN_UNINSTALL_MANIFEST_PATH="${LONGHORN_REPO_DIR}/uninstall/uninstall.yaml"
 }
 
 generate_longhorn_yaml_manifest() {
@@ -126,9 +127,10 @@ uninstall_longhorn(){
   get_longhorn_namespace
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml" -O uninstall.yaml
-  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" uninstall.yaml
-  kubectl create -f uninstall.yaml
+  get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  kubectl create -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl patch job longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --type=json -p='[{"op":"remove","path":"/spec/activeDeadlineSeconds"}]'
 
   kubectl wait --for=condition=complete job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --timeout=10m
@@ -154,18 +156,20 @@ delete_longhorn_crds(){
   get_longhorn_namespace
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/deploy/longhorn.yaml" -O longhorn.yaml
-  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" longhorn.yaml
-  kubectl delete -f longhorn.yaml
+  get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
+  kubectl delete -f "${LONGHORN_MANIFEST_PATH}"
 }
 
 delete_uninstall_job(){
   get_longhorn_namespace
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml" -O uninstall.yaml
-  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" uninstall.yaml
-  kubectl delete -f uninstall.yaml
+  get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  kubectl delete -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
