@@ -94,3 +94,7 @@ Wait for volume of persistentvolumeclaim ${claim_id} condition ${condition_name}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
+
+Wait for persistentvolumeclaim ${claim_id} status to be ${phase}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    wait_for_pvc_status_phase    ${claim_name}    ${phase}

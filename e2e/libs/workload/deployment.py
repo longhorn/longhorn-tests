@@ -13,7 +13,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -30,6 +30,10 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
 
         # correct claim name
         manifest_dict['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = claim_name
+
+        # set nodeSelector if provided
+        if node_selector:
+            manifest_dict['spec']['template']['spec']['nodeSelector'] = node_selector
 
         if block_volume:
             # remove volumeMounts for block volume
@@ -157,3 +161,17 @@ def scale_deployment(name, replica_count, namespace='default'):
 
     deployment = get_deployment(name, namespace)
     assert deployment.spec.replicas == int(replica_count)
+
+def get_deployment_pod_node_name(name, namespace='default'):
+    core_v1_api = client.CoreV1Api()
+    label_selector = f"app={name}"
+    pods = core_v1_api.list_namespaced_pod(
+        namespace=namespace,
+        label_selector=label_selector
+    )
+    if not pods.items:
+        raise ValueError(f"No pods found for deployment {name}")
+    pod = pods.items[0]
+    node_name = pod.spec.node_name
+    logging(f"Deployment {name} pod is running on node {node_name}")
+    return node_name

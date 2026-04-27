@@ -26,6 +26,12 @@ Delete default block disks on all worker nodes
         Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node ${node_id}
     END
 
+Delete default block disk on node ${node_id}
+    Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node ${node_id}
+
+Disable default block disk on node ${node_id}
+    Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling on node ${node_id}
+
 Add default block disks on all worker nodes
     Add block type disk ${DISK_PATH} for all worker nodes
 
