@@ -10,7 +10,7 @@ Wait for backing image data source ${backing_image_data_source_name} created
 
 Disconnect backing image data source ${backing_image_data_source_name} network for ${duration} seconds
     ${node_name} =    get_backing_image_data_source_node_id    ${backing_image_data_source_name}
-    disconnect_node_network_without_waiting_completion    ${node_name}    ${duration}
+    disconnect_node_network    ${node_name}    ${duration}    wait=${False}
 
 Backing image data source ${backing_image_data_source_name} should not be in state ${state}
     backing_image_data_source_should_not_be_in_state    ${backing_image_data_source_name}    ${state}
