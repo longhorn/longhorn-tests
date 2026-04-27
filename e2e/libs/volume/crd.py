@@ -616,6 +616,16 @@ class CRD(Base):
         sync_cmd = ["sh", "-c", f"sync {endpoint} 2>/dev/null"]
         NodeExec(node_name).issue_cmd(sync_cmd)
 
+        cmd = [
+            "sh", "-c",
+            f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
+        ]
+        checksum = NodeExec(node_name).issue_cmd(cmd)
+
+        logging(f"Storing volume {volume_name} data last recorded checksum = {checksum}")
+        self.set_last_data_checksum(volume_name, checksum)
+        return checksum
+
     def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         """Write scattered tiny chunks using fio with random writes
 
@@ -753,6 +763,9 @@ class CRD(Base):
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return Rest().wait_for_replica_rebuilding_complete(volume_name, node_name)
+
+    def get_replica_rebuilding_progress(self, volume_name, node_name):
+        return Rest().get_replica_rebuilding_progress(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
         expected_checksum = self.get_data_checksum(volume_name, data_id)
