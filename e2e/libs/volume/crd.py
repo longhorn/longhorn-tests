@@ -413,7 +413,8 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume} robustness error: {e}")
             time.sleep(self.retry_interval)
-        assert volume["status"]["robustness"] == desired_state
+        assert volume["status"]["robustness"] == desired_state, \
+            f"Failed to wait for {volume_name} robustness={desired_state}, currently it's {volume['status']['robustness']}"
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
         volume = None

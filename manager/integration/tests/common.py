@@ -89,13 +89,16 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.environ.get("CLOUDPROVIDER") == "aws":
-    BLOCK_DEV_PATH = "0000:00:1f.0"
+    if os.uname().machine == "x86_64":
+        BLOCK_DEV_PATH = "/dev/xvdh"
+    else:
+        BLOCK_DEV_PATH = "0000:00:1f.0"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
     BLOCK_DEV_PATH = "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
     BLOCK_DEV_PATH = "/dev/vdb"
 else:
-    BLOCK_DEV_PATH = "dev/nvme1n1"
+    BLOCK_DEV_PATH = "/dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
@@ -5912,9 +5915,9 @@ def recurring_job_feature_supported(client):
 # - v2 backing images are not supported before v1.8.
 def v2_data_engine_cr_supported(client):
     longhorn_version = client.by_id_setting('current-longhorn-version').value
-    version_doesnt_support_v2_backimg_image = ['v1.5', 'v1.6', 'v1.7']
+    version_doesnt_support_v2_backing_image = ['v1.5', 'v1.6', 'v1.7']
     if any(_version in longhorn_version for
-           _version in version_doesnt_support_v2_backimg_image):
+           _version in version_doesnt_support_v2_backing_image):
         print(f'{longhorn_version} doesn\'t support v2 cr for test')
         return False
     else:
