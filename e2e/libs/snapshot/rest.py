@@ -44,7 +44,7 @@ class Rest(Base):
     def get(self, volume_name, snapshot_id):
         snapshots = self.list(volume_name)
         for snapshot in snapshots:
-            if snapshot.name != "volume-head" and self.get_snapshot_id(snapshot.name) == snapshot_id:
+            if snapshot.name != "volume-head" and str(self.get_snapshot_id(snapshot.name)) == str(snapshot_id):
                 return snapshot
         return None
 

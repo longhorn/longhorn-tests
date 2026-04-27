@@ -21,6 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Uninstallation Checks
+    [Tags]    dr-volume
     [Documentation]    Uninstallation Checks
     ...    Prerequisites
     ...    - Have a setup of Longhorn installed on a kubernetes cluster.
@@ -60,9 +61,10 @@ Uninstallation Checks
 
     # Assume this is another Longhorn cluster
     Then Install Longhorn
+    And Enable v2 data engine and add block disks
     And Set default backupstore
     And Check backup synced from backupstore
-    When Create DR volume 0 from backup 0 in another cluster
+    When Create DR volume 0 from backup 0 in another cluster    dataEngine=${DATA_ENGINE}
     And Wait for volume 0 restoration from backup 0 in another cluster completed
     And Activate DR volume 0
     And Attach volume 0

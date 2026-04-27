@@ -24,9 +24,9 @@ class BackingImage(Base):
         if self._strategy == LonghornOperationStrategy.REST:
             self.backing_image = Rest()
 
-    def create(self, name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters):
+    def create(self, name, url, expectedChecksum, dataEngine, minNumberOfCopies, parameters, wait):
         sourceType = self.BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD if url else self.BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
-        return self.backing_image.create(name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
+        return self.backing_image.create(name, sourceType, url, expectedChecksum, dataEngine, minNumberOfCopies, parameters, wait)
 
     def update(self, name, key, value):
         return self.backing_image.update(name, key, value)
@@ -93,6 +93,16 @@ class BackingImage(Base):
                 return data_source_pod[0].metadata.creation_timestamp
             sleep(self.retry_interval)
         assert False, f"no data spice pod of {bi_name} created"
+
+    def wait_backing_image_data_source_pod_running(self, bi_name):
+        for i in range(self.retry_count):
+            data_source_pod = self.get_backing_image_data_source_pod(bi_name)
+            if len(data_source_pod) == 1:
+                pod_status = data_source_pod[0].status.phase
+                if pod_status == "Running":
+                    return True
+            sleep(self.retry_interval)
+        assert False, f"data source pod of {bi_name} is not running"
 
     def check_disk_file_map_contain_specific_message(self, bi_name, expected_message):
         return self.backing_image.check_disk_file_map_contain_specific_message(bi_name, expected_message)

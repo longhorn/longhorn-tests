@@ -8,8 +8,8 @@ class backing_image_keywords:
     def __init__(self):
         self.backing_image = BackingImage()
 
-    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, check_creation=True, parameters=None):
-        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, check_creation, parameters)
+    def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, parameters=None, wait=True):
+        self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, parameters, wait)
 
     def update_min_number_of_copies(self, name, minNumberOfCopies):
         self.backing_image.update(name, "minNumberOfCopies", minNumberOfCopies)
@@ -76,6 +76,9 @@ class backing_image_keywords:
     def wait_backing_image_data_source_pod_created(self, bi_name):
         create_time = self.backing_image.wait_backing_image_data_source_pod_created(bi_name)
         return create_time
+
+    def wait_backing_image_data_source_pod_running(self, bi_name):
+        return self.backing_image.wait_backing_image_data_source_pod_running(bi_name)
 
     def wait_all_disk_file_status_are_at_state(self, bi_name, expected_state):
         self.backing_image.wait_all_disk_file_status_are_at_state(bi_name, expected_state)
