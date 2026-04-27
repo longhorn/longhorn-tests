@@ -53,6 +53,7 @@ Test Uninstallation With System Backup
     Then Install Longhorn
 
 Test Create System Backup With DR Volume
+    [Tags]    dr-volume
     [Documentation]    Test create system backup with DR volume
     ...                Issue: https://github.com/longhorn/longhorn/issues/10239
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
@@ -62,6 +63,6 @@ Test Create System Backup With DR Volume
     And Create backup 0 for volume 0
     And Check snapshot for backup 0 of volume 0 exists True
 
-    When Create DR volume 1 from backup 0
+    When Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
     And Create system backup 0
     And Assert volume 1 remains attached for at least 60 seconds

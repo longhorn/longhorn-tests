@@ -15,8 +15,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, retry):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, retry)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, retry):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, retry)
 
     def delete(self, volume_name, wait):
         return self.volume.delete(volume_name, wait)
@@ -166,6 +166,9 @@ class Volume(Base):
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
+    def get_replica_rebuilding_progress(self, volume_name, node_name):
+        return self.volume.get_replica_rebuilding_progress(volume_name, node_name)
+
     def check_data_checksum(self, volume_name, data_id):
         return self.volume.check_data_checksum(volume_name, data_id)
 
@@ -184,11 +187,11 @@ class Volume(Base):
     def activate(self, volume_name):
         return self.volume.activate(volume_name)
 
-    def create_persistentvolume(self, volume_name, retry, volume_mode="Filesystem", fsType="ext4"):
-        return self.volume.create_persistentvolume(volume_name, retry, volume_mode, fsType)
+    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType):
+        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType)
 
-    def create_persistentvolumeclaim(self, volume_name, retry, volume_mode="Filesystem"):
-        return self.volume.create_persistentvolumeclaim(volume_name, retry, volume_mode)
+    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry):
+        return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry)
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         return self.volume.upgrade_engine_image(volume_name, engine_image_name)

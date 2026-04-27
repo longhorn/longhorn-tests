@@ -1,11 +1,14 @@
 import os
 import time
+import json
 
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import is_json_object
+from utility.utility import subprocess_exec_cmd
 from utility.constant import DEFAULT_BACKUPSTORE
+import utility.constant as constant
 
 
 class Setting:
@@ -25,8 +28,11 @@ class Setting:
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def _update_setting(self, key, value):
-        setting = get_longhorn_client().by_id_setting(key)
-        get_longhorn_client().update(setting, value=value)
+        value = value.replace('"', '\\"')
+        cmd = f"kubectl patch settings.longhorn.io {key} -n {constant.LONGHORN_NAMESPACE} --type merge -p '{{\"value\": \"{value}\"}}'"
+        res = subprocess_exec_cmd(cmd)
+        if f"setting.longhorn.io/{key} patched" not in res:
+            raise Exception(f"Failed to update setting {key} to {value}, command output: {res}")
 
     def update_setting(self, key, value, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
