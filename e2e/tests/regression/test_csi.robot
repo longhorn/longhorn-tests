@@ -14,6 +14,8 @@ Resource    ../keywords/host.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/persistentvolume.resource
 Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/workload.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -305,3 +307,70 @@ Test CSI Node Server Can Recover Corrupted Block Mount Point
     And Mount block device on /data in deployment csi-block-mount-recovery
     And Write 100 MB data to file data.txt in deployment csi-block-mount-recovery
     And Check deployment csi-block-mount-recovery data in file data.txt is intact
+
+Test Volume With WaitForFirstConsumer Binding Mode And Node Selector Without CSI Storage Capacity
+    [Documentation]    Test WaitForFirstConsumer volume binding with nodeSelector on compute nodes without disks.
+    ...
+    ...    1. Set up a 3-node cluster with node roles: 1 compute node, 2 storage nodes
+    ...    2. Verify csi-storage-capacity-tracking setting is false (default)
+    ...    3. Verify CSIDriver storageCapacity is false (default)
+    ...    4. Label nodes: node 0 as compute, nodes 1-2 as storage
+    ...    5. Set tag 'storage' on nodes 1-2 for replica scheduling
+    ...    6. Remove disk on node 0 (compute node)
+    ...    7. Create storage class with volumeBindingMode: WaitForFirstConsumer and nodeSelector: storage
+    ...    8. Create PVC with the storage class and verify it's Pending
+    ...    9. Create deployment with PVC, forcing pod to run on compute node (node 0)
+    ...    10. Verify:
+    ...        - Pod is scheduled to compute node without Longhorn disk
+    ...        - PVC is successfully bound
+    ...        - Pod is running on compute node
+    ...        - Longhorn replica is scheduled on storage node
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12807
+
+    # Step 1-3: Verify default settings
+    Given Setting csi-storage-capacity-tracking should be false
+    And Check CSI driver storage capacity is false
+
+    # Step 4: Label nodes for pod scheduling
+    When Label node 0 with longhorn-test-role=compute
+    And Label node 1 with longhorn-test-role=storage
+    And Label node 2 with longhorn-test-role=storage
+
+    # Step 5: Set tags on storage nodes for replica scheduling
+    And Set node 1 tags    storage
+    And Set node 2 tags    storage
+
+    # Step 6: Remove disk on compute node
+    IF    "${DATA_ENGINE}" == "v1"
+        And Disable node 0 default disk
+        And Delete node 0 default disk
+    ELSE IF    "${DATA_ENGINE}" == "v2"
+        And Disable default block disk on node 0
+        And Delete default block disk on node 0
+    END
+
+    # Step 7: Create storage class with WaitForFirstConsumer and nodeSelector
+    And Create storageclass longhorn-wffc-storage with
+    ...    volumeBindingMode=WaitForFirstConsumer
+    ...    numberOfReplicas=2
+    ...    nodeSelector=storage
+    ...    dataEngine=${DATA_ENGINE}
+
+    # Step 8: Create PVC without waiting for bound (it should be Pending)
+    And Create persistentvolumeclaim 0 without waiting for bound
+    ...    sc_name=longhorn-wffc-storage
+    And Wait for persistentvolumeclaim 0 status to be Pending
+
+    # Step 9: Create deployment with nodeSelector for compute node
+    And Create deployment 0 with persistentvolumeclaim 0
+    ...    node_selector={"longhorn-test-role":"compute"}
+
+    # Step 10: Verify the results
+    Then Wait for persistentvolumeclaim 0 status to be Bound
+    And Wait for volume of deployment 0 healthy
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 pod is running on node ${NODE_0}
+    And Check deployment 0 volume replica is not on node ${NODE_0}
+    And Write 100 MB data to file data.bin in deployment 0
+    And Check deployment 0 data in file data.bin is intact

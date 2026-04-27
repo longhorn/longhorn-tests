@@ -485,4 +485,13 @@ def get_longhorn_component_resources_limit(component_name, component_type, names
 
     assert False, f"Container {component_name} not found in {component_type}/{component_name}"
 
+def get_csi_driver_storage_capacity(driver_name="driver.longhorn.io"):
+    cmd = [
+        "kubectl", "get", "csidrivers", driver_name,
+        "-o", "jsonpath={.spec.storageCapacity}"
+    ]
+    logging(f"Getting CSI driver {driver_name} storageCapacity")
+    result = subprocess_exec_cmd(cmd)
+    logging(f"CSI driver {driver_name} storageCapacity: {result}")
+    return result
 
