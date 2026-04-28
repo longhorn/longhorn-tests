@@ -27,6 +27,8 @@ Verify TooManySnapshots Condition After Creating Snapshots
     ...                in the message, then delete all snapshots and purge, and verify the
     ...                condition becomes False with an empty message.
     [Arguments]    ${snapshot_max_count}    ${warning_threshold}    ${volume_snapshot_max_count}    ${expected_warning_snapshot_count}
+    Skip    This test case is not supported in v1.11.x
+
     IF    '${DATA_ENGINE}' == 'v2'
         Skip    v2 data engine doesn't support snapshot-max-count: https://github.com/longhorn/longhorn/issues/12921
     END

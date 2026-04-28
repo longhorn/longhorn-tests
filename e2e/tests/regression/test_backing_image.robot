@@ -212,6 +212,7 @@ Test Volume Size Smaller Than Backing Image Virtual Size Should Show BackingImag
     ...                - and the backing image is created on-demand, the volume CR's BackingImageIncompatible
     ...                - condition is set by the controller after the virtualSize becomes known.
     ...                - Issue: https://github.com/longhorn/longhorn/issues/11673
+    Skip    This test case is not supported in v1.11.x
 
     IF    '${DATA_ENGINE}' == 'v2'
         Skip    Test case not support for v2 data engine
