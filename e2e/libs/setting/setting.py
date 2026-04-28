@@ -68,8 +68,10 @@ class Setting:
             self._update_setting(key, value)
 
     def get_setting(self, key):
-        logging(f"Getting setting {key} value {get_longhorn_client().by_id_setting(key).value}")
-        return get_longhorn_client().by_id_setting(key).value
+        cmd = f"kubectl get settings {key} -n {constant.LONGHORN_NAMESPACE} -o jsonpath='{{.value}}'"
+        res = subprocess_exec_cmd(cmd)
+        logging(f"Getting setting {key} value {res}")
+        return res
 
     def reset_settings(self, data_engine="v1"):
         client = get_longhorn_client()
