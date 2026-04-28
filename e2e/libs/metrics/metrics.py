@@ -197,9 +197,9 @@ def is_high_resource_consumption(name, res, new_val, old_val):
     unit = "mi" if res == "memory" else "m"
     if new_val > criteria:
         logging(f"Unexpected high {res} consumption for {name}: {new_val}{unit}. At the beginning of the test, it's only {old_val}{unit}")
-        retry_count, _ = get_retry_count_and_interval()
-        time.sleep(retry_count)
-        assert False, f"Unexpected high {res} consumption for {name}: {new_val}{unit}. At the beginning of the test, it's only {old_val}{unit}"
+        return True
+    else:
+        return False
 
 
 def check_longhorn_components_memory_cpu_usage():
@@ -209,106 +209,110 @@ def check_longhorn_components_memory_cpu_usage():
     logging(f"old resource usage: {old_usage}")
     logging(f"current resource usage: {usage}")
 
+    high_usage = False
+
     if "backing-image-manager" in usage and "backing-image-manager" in old_usage:
-        is_high_resource_consumption("backing-image-manager", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("backing-image-manager", "cpu",
             usage["backing-image-manager"]["cpu"],
             old_usage["backing-image-manager"]["cpu"])
-        is_high_resource_consumption("backing-image-manager", "memory",
+        high_usage = high_usage or is_high_resource_consumption("backing-image-manager", "memory",
             usage["backing-image-manager"]["memory"],
             cold_usage["backing-image-manager"]["memory"])
 
     if "csi-attacher" in usage and "csi-attacher" in old_usage:
-        is_high_resource_consumption("csi-attacher", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("csi-attacher", "cpu",
             usage["csi-attacher"]["cpu"],
             old_usage["csi-attacher"]["cpu"])
-        is_high_resource_consumption("csi-attacher", "memory",
+        high_usage = high_usage or is_high_resource_consumption("csi-attacher", "memory",
             usage["csi-attacher"]["memory"],
             old_usage["csi-attacher"]["memory"])
 
     if "csi-provisioner" in usage and "csi-provisioner" in old_usage:
-        is_high_resource_consumption("csi-provisioner", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("csi-provisioner", "cpu",
             usage["csi-provisioner"]["cpu"],
             old_usage["csi-provisioner"]["cpu"])
-        is_high_resource_consumption("csi-provisioner", "memory",
+        high_usage = high_usage or is_high_resource_consumption("csi-provisioner", "memory",
             usage["csi-provisioner"]["memory"],
             old_usage["csi-provisioner"]["memory"])
 
     if "csi-resizer" in usage and "csi-resizer" in old_usage:
-        is_high_resource_consumption("csi-resizer", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("csi-resizer", "cpu",
             usage["csi-resizer"]["cpu"],
             old_usage["csi-resizer"]["cpu"])
-        is_high_resource_consumption("csi-resizer", "memory",
+        high_usage = high_usage or is_high_resource_consumption("csi-resizer", "memory",
             usage["csi-resizer"]["memory"],
             old_usage["csi-resizer"]["memory"])
 
     if "csi-snapshotter" in usage and "csi-snapshotter" in old_usage:
-        is_high_resource_consumption("csi-snapshotter", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("csi-snapshotter", "cpu",
             usage["csi-snapshotter"]["cpu"],
             old_usage["csi-snapshotter"]["cpu"])
-        is_high_resource_consumption("csi-snapshotter", "memory",
+        high_usage = high_usage or is_high_resource_consumption("csi-snapshotter", "memory",
             usage["csi-snapshotter"]["memory"],
             old_usage["csi-snapshotter"]["memory"])
 
     if "engine-image" in usage and "engine-image" in old_usage:
-        is_high_resource_consumption("engine-image", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("engine-image", "cpu",
             usage["engine-image"]["cpu"],
             old_usage["engine-image"]["cpu"])
-        is_high_resource_consumption("engine-image", "memory",
+        high_usage = high_usage or is_high_resource_consumption("engine-image", "memory",
             usage["engine-image"]["memory"],
             old_usage["engine-image"]["memory"])
 
     if "instance-manager-v1" in usage and "instance-manager-v1" in old_usage:
-        is_high_resource_consumption("instance-manager-v1", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("instance-manager-v1", "cpu",
             usage["instance-manager-v1"]["cpu"],
             old_usage["instance-manager-v1"]["cpu"])
-        is_high_resource_consumption("instance-manager-v1", "memory",
+        high_usage = high_usage or is_high_resource_consumption("instance-manager-v1", "memory",
             usage["instance-manager-v1"]["memory"],
             old_usage["instance-manager-v1"]["memory"])
 
     if "instance-manager-v2" in usage and "instance-manager-v2" in old_usage:
-        is_high_resource_consumption("instance-manager-v2", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("instance-manager-v2", "cpu",
             usage["instance-manager-v2"]["cpu"],
             old_usage["instance-manager-v2"]["cpu"])
-        is_high_resource_consumption("instance-manager-v2", "memory",
+        high_usage = high_usage or is_high_resource_consumption("instance-manager-v2", "memory",
             usage["instance-manager-v2"]["memory"],
             old_usage["instance-manager-v2"]["memory"])
 
     if "longhorn-csi-plugin" in usage and "longhorn-csi-plugin" in old_usage:
-        is_high_resource_consumption("longhorn-csi-plugin", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-csi-plugin", "cpu",
             usage["longhorn-csi-plugin"]["cpu"],
             old_usage["longhorn-csi-plugin"]["cpu"])
-        is_high_resource_consumption("longhorn-csi-plugin", "memory",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-csi-plugin", "memory",
             usage["longhorn-csi-plugin"]["memory"],
             old_usage["longhorn-csi-plugin"]["memory"])
 
     if "longhorn-driver-deployer" in usage and "longhorn-driver-deployer" in old_usage:
-        is_high_resource_consumption("longhorn-driver-deployer", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-driver-deployer", "cpu",
             usage["longhorn-driver-deployer"]["cpu"],
             old_usage["longhorn-driver-deployer"]["cpu"])
-        is_high_resource_consumption("longhorn-driver-deployer", "memory",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-driver-deployer", "memory",
             usage["longhorn-driver-deployer"]["memory"],
             old_usage["longhorn-driver-deployer"]["memory"])
 
     if "longhorn-manager" in usage and "longhorn-manager" in old_usage:
-        is_high_resource_consumption("longhorn-manager", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-manager", "cpu",
             usage["longhorn-manager"]["cpu"],
             old_usage["longhorn-manager"]["cpu"])
-        is_high_resource_consumption("longhorn-manager", "memory",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-manager", "memory",
             usage["longhorn-manager"]["memory"],
             old_usage["longhorn-manager"]["memory"])
 
     if "longhorn-ui" in usage and "longhorn-ui" in old_usage:
-        is_high_resource_consumption("longhorn-ui", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-ui", "cpu",
             usage["longhorn-ui"]["cpu"],
             old_usage["longhorn-ui"]["cpu"])
-        is_high_resource_consumption("longhorn-ui", "memory",
+        high_usage = high_usage or is_high_resource_consumption("longhorn-ui", "memory",
             usage["longhorn-ui"]["memory"],
             old_usage["longhorn-ui"]["memory"])
 
     if "share-manager" in usage and "share-manager" in old_usage:
-        is_high_resource_consumption("share-manager", "cpu",
+        high_usage = high_usage or is_high_resource_consumption("share-manager", "cpu",
             usage["share-manager"]["cpu"],
             old_usage["share-manager"]["cpu"])
-        is_high_resource_consumption("share-manager", "memory",
+        high_usage = high_usage or is_high_resource_consumption("share-manager", "memory",
             usage["share-manager"]["memory"],
             old_usage["share-manager"]["memory"])
+
+    return high_usage
