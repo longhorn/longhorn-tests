@@ -3,25 +3,24 @@ Documentation    RWX Volume Test Cases
 
 Test Tags    regression    rwx
 
+Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
+Resource    ../keywords/statefulset.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/k8s.resource
-Resource    ../keywords/variables.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/metrics.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Variables ***
-${LOOP_COUNT}    1
-${RETRY_COUNT}    300
-${RETRY_INTERVAL}    1
 ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}    30
 
 *** Test Cases ***
@@ -100,13 +99,13 @@ Test ShareManager Status Current Image After Fresh Install
     ...                - 3. Wait for the volume to become healthy and the share manager pod to be running
     ...                - 4. Assert that the ShareManager CR status.currentImage matches spec.image
     ...                - 5. Assert that the share manager pod container image matches spec.image
-    Given Create Storageclass longhorn-test With    dataEngine=${DATA_ENGINE}
-    And Create Persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
-    And Create Deployment 0 With Persistentvolumeclaim 0
-    And Wait For Volume of deployment 0 Healthy
-    When Wait For Sharemanager Pod Of deployment 0 Running
-    Then Assert Sharemanager Current Image Of deployment 0 Matches Spec Image
-    And Assert Sharemanager Pod Container Image Of deployment 0 Matches Spec Image
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    When Wait for sharemanager pod of deployment 0 running
+    Then Assert sharemanager current image of deployment 0 matches spec image
+    And Assert sharemanager pod container image of deployment 0 matches spec image
 
 Test ShareManager Status Current Image After Upgrade
     [Tags]    upgrade    sharemanager
@@ -137,35 +136,67 @@ Test ShareManager Status Current Image After Upgrade
         Skip    LONGHORN_STABLE_VERSION not set - required for upgrade test
     END
 
-    Given Setting deleting-confirmation-flag Is Set To true
+    Given setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
 
     When Install Longhorn stable version
-    And Create Storageclass longhorn-test With    dataEngine=v1
-    And Create Persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
-    And Create Deployment 0 With Persistentvolumeclaim 0
-    And Wait For Volume of deployment 0 Healthy
-    And Wait For Sharemanager Pod Of deployment 0 Running
+    And Create storageclass longhorn-test with    dataEngine=v1
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Wait for sharemanager pod of deployment 0 running
 
     # Record the pre-upgrade image — status.currentImage and spec.image are equal
     # on a freshly installed system; recording spec.image captures the stable-version image.
-    ${old_sharemanager_image} =    Get Sharemanager Spec Image Of deployment 0
+    ${old_sharemanager_image} =    get sharemanager spec image of deployment 0
 
-    When Upgrade Longhorn To Custom Version
+    When Upgrade Longhorn to custom version
 
     # The share manager pod has not been restarted yet, so status.currentImage must
     # still reflect the pre-upgrade (old) image.
-    Then Assert Sharemanager Current Image Of deployment 0 Is ${old_sharemanager_image}
+    Then Assert sharemanager current image of deployment 0 is ${old_sharemanager_image}
 
     # Restart the share manager pod by cycling the workload.
-    When Scale Down Deployment 0 To Detach Volume
-    And Wait For Sharemanager Pod Of deployment 0 Deleted
-    And Scale Up Deployment 0 To Attach Volume
-    And Wait For Sharemanager Pod Of deployment 0 Running
+    When Scale down deployment 0 to detach volume
+    And Wait for sharemanager pod of deployment 0 deleted
+    And Scale up deployment 0 to attach volume
+    And Wait for sharemanager pod of deployment 0 running
 
     # After the pod is recreated with the new image, status.currentImage must reflect
     # spec.image (the post-upgrade image).
-    Then Assert Sharemanager Current Image Of deployment 0 Matches Spec Image
-    And Assert Sharemanager Pod Container Image Of deployment 0 Matches Spec Image
+    Then Assert sharemanager current image of deployment 0 matches spec image
+    And Assert sharemanager pod container image of deployment 0 matches spec image
 
+Test RWX Failover And Auto Salvage When Volume Is Faulted
+    [Tags]    rwx-fast-failover    node-down
+    [Documentation]    If the volume is faulted, we don't need to have RWX fast failover
+    ...    Issue: https://github.com/longhorn/longhorn/issues/9089
+    ...
+    ...    1. Enable RWX fast failover setting
+    ...    2. Deploy a workload which uses a RWX PVC
+    ...    3. Reduce the number of replicas to 1. Delete 2 replicas not on the same node as the share manager pod
+    ...    4. Record the CPU usage
+    ...    5. Turn off the node of the share manager pod
+    ...    6. Volume stay in faulted. Share manager pod is recreated but then error and deleted. the CPU usage is still small
+    ...    7. Turn on the node of the share-manager pod
+    ...    8. Volume is salvaged and should not be stuck in auto-salvage loop forever. Share manager pod is recreated and become running. CPU usage still is small
+    Given Setting rwx-volume-fast-failover is set to true
+    And Setting auto-salvage is set to true
+    And Create storageclass longhorn-test with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0     volume_type=RWX    sc_name=longhorn-test
+    And Wait for volume of statefulset 0 healthy
+    And Update volume of statefulset 0 replica count to 1
+    And Delete replica of statefulset 0 volume on all replica node
+    And Write 1 MB data to file data.bin in statefulset 0
+    And Get Longhorn components resource usage
+
+    When Power off volume node of statefulset 0
+    Then Check volume of statefulset 0 kept in faulted
+    And Check Longhorn components resource usage
+
+    When Power on off nodes
+    Then Wait for volume of statefulset 0 healthy
+    And Check statefulset 0 data in file data.bin is intact
+    And Wait for sharemanager pod of statefulset 0 running
+    And Check Longhorn components resource usage
