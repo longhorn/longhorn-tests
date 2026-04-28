@@ -44,6 +44,10 @@ Keep writing data to pod of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     keep_writing_workload_pod_data    ${workload_name}
 
+Stop writing data to pod of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    stop_writing_workload_pod_data    ${workload_name}
+
 Keep writing data to pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     keep_writing_workload_pod_data    ${pod_name}
