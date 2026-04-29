@@ -624,7 +624,7 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
     # Step 5: Wait for volume expansion & rebuilding
     wait_for_volume_expansion(client, volume.name)
     wait_for_rebuild_complete(client, volume.name)
-    volume = client.by_id_volume(volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     check_block_device_size(volume, int(expand_size))
 
     write_volume_dev_random_mb_data(
