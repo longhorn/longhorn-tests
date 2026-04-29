@@ -3486,6 +3486,9 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
         common.update_setting(
             client,
             common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, "0")
+        common.update_setting(
+            client,
+            common.SETTING_OFFLINE_REPLICA_REBUILDING, "false")
 
     if replica_failure_mode == REPLICA_FAILURE_MODE_CRASH:
         crash_replica_processes(client, core_api, restore_volume_name,
@@ -3544,6 +3547,11 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
 
     restore_md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert restore_md5sum == md5sum
+
+    if disable_rebuild:
+        common.update_setting(
+            client,
+            common.SETTING_OFFLINE_REPLICA_REBUILDING, "true")
 
     # cleanup the backupstore so we don't impact other tests
     # since we crashed the replica that initiated the restore

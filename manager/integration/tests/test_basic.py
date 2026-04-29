@@ -837,9 +837,6 @@ def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client,
     check_volume_last_backup(client, dr_vol_name, backup.name)
     wait_for_backup_restore_completed(client, dr_vol_name, backup.name)
 
-    common.update_setting(
-        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, "0"
-    )
     common.update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "true")
 
     dr_vol = client.by_id_volume(dr_vol_name)
@@ -849,10 +846,6 @@ def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client,
     dr_vol = wait_for_volume_degraded(client, dr_vol_name)
 
     activate_standby_volume(client, dr_vol_name)
-
-    common.update_setting(
-        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, "5"
-    )
 
     dr_vol = client.by_id_volume(dr_vol_name)
     dr_vol.attach(hostId=host_id)
