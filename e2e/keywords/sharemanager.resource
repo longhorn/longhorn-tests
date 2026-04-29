@@ -37,12 +37,12 @@ Check no sharemanager pod of ${workload_kind} ${workload_id} recreation
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     check_no_sharemanager_pod_recreation    ${volume_name}
 
-Wait For Sharemanager Pod Of ${workload_kind} ${workload_id} Running
+Wait for sharemanager pod of ${workload_kind} ${workload_id} running
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_share_manager_pod_running    ${volume_name}
 
-Wait For Sharemanager Pod Of ${workload_kind} ${workload_id} Deleted
+Wait for sharemanager pod of ${workload_kind} ${workload_id} deleted
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_sharemanager_pod_deleted    ${volume_name}
@@ -63,31 +63,31 @@ Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_i
     ${share_manager_pod}=    Set Variable    share-manager-${volume_name}
     wait_for_encrypted_disk_size_in_sharemanager_pod    ${share_manager_pod}    ${volume_name}    ${expected_size_byte}
 
-Get Sharemanager Spec Image Of ${workload_kind} ${workload_id}
+Get sharemanager spec image of ${workload_kind} ${workload_id}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${spec_image} =    get_sharemanager_spec_image    ${volume_name}
     [Return]    ${spec_image}
 
-Assert Sharemanager Current Image Of ${workload_kind} ${workload_id} Is ${expected_image}
+Assert sharemanager current image of ${workload_kind} ${workload_id} is ${expected_image}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${current_image} =    get_sharemanager_current_image    ${volume_name}
     Should Be Equal    ${current_image}    ${expected_image}
 
-Check Sharemanager Current Image
+Check sharemanager current image
     [Arguments]    ${volume_name}    ${expected_image}
     ${current_image} =    get_sharemanager_current_image    ${volume_name}
     Should Be Equal    ${current_image}    ${expected_image}
 
-Assert Sharemanager Current Image Of ${workload_kind} ${workload_id} Matches Spec Image
+Assert sharemanager current image of ${workload_kind} ${workload_id} matches spec image
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${spec_image} =    get_sharemanager_spec_image    ${volume_name}
     ${current_image} =    get_sharemanager_current_image    ${volume_name}
     Should Be Equal    ${current_image}    ${spec_image}
 
-Assert Sharemanager Pod Container Image Of ${workload_kind} ${workload_id} Matches Spec Image
+Assert sharemanager pod container image of ${workload_kind} ${workload_id} matches spec image
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${spec_image} =    get_sharemanager_spec_image    ${volume_name}

@@ -55,9 +55,6 @@ class common_keywords:
         return pod_exec(pod_name, namespace, cmd)
 
     def execute_command(self, cmd):
-        subprocess_exec_cmd(cmd)
-
-    def execute_command_and_get_output(self, cmd):
         return subprocess_exec_cmd(cmd)
 
     def execute_command_and_expect_output(self, cmd, expected_output):

@@ -29,7 +29,7 @@ Download JSON From URL
     [Arguments]    ${url}
     [Documentation]    Download JSON file using curl
     ${cmd}=    Set Variable    curl -fsSL ${url}
-    ${result}=    Run Command And Get Output    ${cmd}
+    ${result}=    Run Command    ${cmd}
     RETURN    ${result}
 
 Parse JSON String
@@ -99,7 +99,7 @@ Get Pod Image Tag
     ...    {.spec.template.spec.containers[?(@.name=="${container_name}")].image}
 
     ${cmd}=    Set Variable    kubectl -n ${LONGHORN_NAMESPACE} get ${resource_type} ${resource_name} -o jsonpath='${jsonpath}'
-    ${image}=    Run Command And Get Output    ${cmd}
+    ${image}=    Run Command    ${cmd}
 
     ${tag}=    Fetch From Right    ${image}    :
     RETURN    ${tag}
@@ -189,7 +189,7 @@ Check All CSI Component Versions
 
     # Liveness probe
     ${cmd}=    Set Variable    kubectl -n ${LONGHORN_NAMESPACE} get ds longhorn-csi-plugin -o jsonpath='{.spec.template.spec.containers[*].image}'
-    ${liveness_image}=    Run Command And Get Output    ${cmd}
+    ${liveness_image}=    Run Command    ${cmd}
     ${images}=    Split String    ${liveness_image}
     ${liveness_full}=    Evaluate    [img for img in ${images} if 'livenessprobe' in img][0]
     ${liveness_tag}=    Fetch From Right    ${liveness_full}    :

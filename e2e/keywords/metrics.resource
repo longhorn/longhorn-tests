@@ -14,6 +14,9 @@ Check if nodes are under memory pressure
 Metric ${metric_name} value should be ${expected_value}
     check_longhorn_metric    metric_name=${metric_name}    expected_value=${expected_value}
 
+Metric ${metric_name} value with label ${metric_label} should be ${expected_value}
+    check_longhorn_metric    metric_name=${metric_name}    metric_label=${metric_label}    expected_value=${expected_value}
+
 There should be no ${metric_name} metric
     wait_for_longhorn_metric_absent    metric_name=${metric_name}
 
