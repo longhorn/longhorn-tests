@@ -23,6 +23,7 @@ Test Teardown    Cleanup test resources
 *** Test Cases ***
 Test CSI Storage Capacity Without DataEngine Parameter
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11906
+    Given Setting csi-storage-capacity-tracking is set to true
     When Create storageclass longhorn-test with    volumeBindingMode=WaitForFirstConsumer
     # expect no error message like:
     # err: rpc error: code = InvalidArgument desc = storage class parameters missing 'dataEngine'

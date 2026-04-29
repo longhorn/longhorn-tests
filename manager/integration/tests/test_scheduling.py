@@ -93,6 +93,7 @@ from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY
 from common import SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE
+from common import SETTING_CSI_STORAGE_CAPACITY_TRACKING
 from common import DATA_ENGINE
 
 from time import sleep
@@ -2520,20 +2521,23 @@ def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, 
     node when scheduling pods using a StorageClass with volumeBindingMode set
     to 'WaitForFirstConsumer'.
 
-    1. Update 'storage-over-provisioning-percentage' to 400.
-    2. Reduce the schedulable storage on all nodes (except the current node)
+    1. Enable the 'csi-storage-capacity-tracking' setting.
+    2. Update 'storage-over-provisioning-percentage' to 400.
+    3. Reduce the schedulable storage on all nodes (except the current node)
        to 1Gi.
-    3. Compute max schedulable storage on the current node taking into account
+    4. Compute max schedulable storage on the current node taking into account
        the 'storage-over-provisioning-percentage' setting.
-    4. Create a new StorageClass with volumeBindingMode set
+    5. Create a new StorageClass with volumeBindingMode set
        to 'WaitForFirstConsumer'.
-    5. Create a StatefulSet with 2 replicas, each requesting the max
+    6. Create a StatefulSet with 2 replicas, each requesting the max
        schedulable storage size.
-    6. Verify pod 0 is scheduled to the current node and volume 0 is attached
+    7. Verify pod 0 is scheduled to the current node and volume 0 is attached
        to the current node.
-    7. Verify pod 1 is not scheduled because there is no node with sufficient
+    8. Verify pod 1 is not scheduled because there is no node with sufficient
        storage and that its PVC is in Pending state.
     """
+    update_setting(client, SETTING_CSI_STORAGE_CAPACITY_TRACKING, "true")
+
     # Set storage over-provisioning to 400%
     over_provisioning_percentage = 400
     update_setting(client,
