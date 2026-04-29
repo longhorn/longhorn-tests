@@ -1242,11 +1242,14 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
     &#34;&#34;&#34;
     Test that CSIStorageCapacity objects are properly created
 
-    1. Verify that initially there are no CSIStorageCapacity objects
-    2. Create new storage class with volumeBindingMode set
+    1. Enable the &#39;csi-storage-capacity-tracking&#39; setting
+    2. Verify that initially there are no CSIStorageCapacity objects
+    3. Create new storage class with volumeBindingMode set
        to WaitForFirstConsumer
-    3. Verify that CSIStorageCapacity object is created for each node
+    4. Verify that CSIStorageCapacity object is created for each node
     &#34;&#34;&#34;
+
+    update_setting(client, SETTING_CSI_STORAGE_CAPACITY_TRACKING, &#34;true&#34;)
 
     api = k8sclient.StorageV1Api()
     csi_storage_capacities = api.list_namespaced_csi_storage_capacity(
@@ -1269,6 +1272,7 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
 </details>
 <div class="desc"><p>Test that CSIStorageCapacity objects are properly created</p>
 <ol>
+<li>Enable the 'csi-storage-capacity-tracking' setting</li>
 <li>Verify that initially there are no CSIStorageCapacity objects</li>
 <li>Create new storage class with volumeBindingMode set
 to WaitForFirstConsumer</li>

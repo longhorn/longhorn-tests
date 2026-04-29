@@ -3062,20 +3062,23 @@ def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, 
     node when scheduling pods using a StorageClass with volumeBindingMode set
     to &#39;WaitForFirstConsumer&#39;.
 
-    1. Update &#39;storage-over-provisioning-percentage&#39; to 400.
-    2. Reduce the schedulable storage on all nodes (except the current node)
+    1. Enable the &#39;csi-storage-capacity-tracking&#39; setting.
+    2. Update &#39;storage-over-provisioning-percentage&#39; to 400.
+    3. Reduce the schedulable storage on all nodes (except the current node)
        to 1Gi.
-    3. Compute max schedulable storage on the current node taking into account
+    4. Compute max schedulable storage on the current node taking into account
        the &#39;storage-over-provisioning-percentage&#39; setting.
-    4. Create a new StorageClass with volumeBindingMode set
+    5. Create a new StorageClass with volumeBindingMode set
        to &#39;WaitForFirstConsumer&#39;.
-    5. Create a StatefulSet with 2 replicas, each requesting the max
+    6. Create a StatefulSet with 2 replicas, each requesting the max
        schedulable storage size.
-    6. Verify pod 0 is scheduled to the current node and volume 0 is attached
+    7. Verify pod 0 is scheduled to the current node and volume 0 is attached
        to the current node.
-    7. Verify pod 1 is not scheduled because there is no node with sufficient
+    8. Verify pod 1 is not scheduled because there is no node with sufficient
        storage and that its PVC is in Pending state.
     &#34;&#34;&#34;
+    update_setting(client, SETTING_CSI_STORAGE_CAPACITY_TRACKING, &#34;true&#34;)
+
     # Set storage over-provisioning to 400%
     over_provisioning_percentage = 400
     update_setting(client,
@@ -3162,6 +3165,7 @@ def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, 
 node when scheduling pods using a StorageClass with volumeBindingMode set
 to 'WaitForFirstConsumer'.</p>
 <ol>
+<li>Enable the 'csi-storage-capacity-tracking' setting.</li>
 <li>Update 'storage-over-provisioning-percentage' to 400.</li>
 <li>Reduce the schedulable storage on all nodes (except the current node)
 to 1Gi.</li>
