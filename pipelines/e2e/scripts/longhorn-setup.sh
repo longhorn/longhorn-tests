@@ -62,6 +62,8 @@ main(){
 
   if [[ "${DISTRO}" == "talos" ]]; then
     install_metrics_server
+  else
+    scale_up_metrics_server
   fi
 
   get_longhorn_repo
