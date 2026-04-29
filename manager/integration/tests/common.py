@@ -245,6 +245,7 @@ SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
 SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
 SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES = \
     "default-min-number-of-backing-image-copies"
+SETTING_CSI_STORAGE_CAPACITY_TRACKING = "csi-storage-capacity-tracking"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
