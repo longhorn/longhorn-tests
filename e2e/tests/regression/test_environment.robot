@@ -45,6 +45,7 @@ Test IPv4 Only Environment
     ...    sudo sed -i 's/ipv6\.disable=1 //g' /etc/default/grub && sudo update-grub || sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     # reboot to make reverted grub take effect
     And Restart all worker nodes
+    And Wait for longhorn ready
 
 Test RWX Fast Failover In Non-default Longhorn Namespace
     [Tags]    non-default-namespace

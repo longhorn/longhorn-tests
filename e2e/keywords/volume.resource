@@ -6,6 +6,9 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/backup_keywords.py
 
+*** Variables ***
+${SCHEDULING_STATUS_CHECK_TIMEOUT}    30
+
 *** Keywords ***
 Create volume ${volume_id}
     [Arguments]    &{config}
@@ -174,12 +177,14 @@ Keep writing data to volume ${volume_id}
 Write scattered data to volume ${volume_id} with fio
     [Arguments]    ${size}=2G    ${bs}=4k    ${ratio}=0.2
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    write_volume_scattered_data_with_fio    ${volume_name}    ${size}    ${bs}    ${ratio}
+    ${checksum} =    write_volume_scattered_data_with_fio    ${volume_name}    ${size}    ${bs}    ${ratio}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Prefill volume ${volume_id} with fio
     [Arguments]    ${size}=2G
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    prefill_volume_with_fio    ${volume_name}    ${size}
+    ${checksum} =    prefill_volume_with_fio    ${volume_name}    ${size}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -350,6 +355,30 @@ Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
 
+Get volume ${volume_id} replica rebuilding progress on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${progress} =    get_replica_rebuilding_progress    ${volume_name}    ${node_name}
+    [Return]    ${progress}
+
+Volume ${volume_id} replica rebuilding on node ${node_id} should not restart
+    [Arguments]    ${previous_progress}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${progress} =    get_replica_rebuilding_progress    ${volume_name}    ${node_name}
+    ${progress} =    Convert To Integer    ${progress}
+    IF    ${progress} > 100 or ${progress} < 0
+        Log to console    Replica rebuilding progress is ${progress}% for volume ${volume_id} on node ${node_name} after network disconnection, which is unexpected
+        Sleep   ${RETRY_COUNT}
+        Fail    Replica rebuilding progress is ${progress}% for volume ${volume_id} on node ${node_name} after network disconnection, which is unexpected
+    ELSE IF    ${progress} < ${previous_progress}
+        Log to console    Replica rebuilding progress went backwards from ${previous_progress}% to ${progress}% after network disconnection
+        Sleep   ${RETRY_COUNT}
+        Fail    Replica rebuilding progress went backwards from ${previous_progress}% to ${progress}% after network disconnection
+    ELSE
+        Log to console    Replica rebuilding progress is ${progress}% which is not less than previous progress ${previous_progress} after network disconnection
+    END
+
 Monitor only one replica rebuilding will start at a time for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
@@ -413,6 +442,8 @@ Wait for volume ${volume_id} replica on node ${node_id} to be deleted
 Volume ${volume_id} should have ${expected_replica_count} running replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${replica_count}
 
 Volume ${volume_id} should have ${expected_replica_count} stopped replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -425,6 +456,8 @@ Volume ${volume_id} should have stopped replicas
 Volume ${volume_id} should have ${expected_replica_count} replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}    running=${None}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${replica_count}
 
 Volume ${volume_id} should have ${expected_replica_count} replicas when detached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -465,7 +498,7 @@ Volume ${volume_id} should have running replicas on node ${node_id}
 
 Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id} and no additional scheduling occurs
     Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id}
-    FOR    ${i}    IN RANGE    3
+    FOR    ${i}    IN RANGE    ${SCHEDULING_STATUS_CHECK_TIMEOUT}
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=${expected_replica_count}
         IF    int(${replica_count}) != int(${new_replica_count})
@@ -478,9 +511,35 @@ Volume ${volume_id} should have ${expected_replica_count} running replicas on no
 
 Volume ${volume_id} should have running replicas on node ${node_id} and no additional scheduling occurs
     Volume ${volume_id} should have running replicas on node ${node_id}
-    FOR    ${i}    IN RANGE    3
+    FOR    ${i}    IN RANGE    ${SCHEDULING_STATUS_CHECK_TIMEOUT}
         Log to console    Ensuring there's no additional scheduling for node ${node_name} ... (${i})
         ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}
+        IF     int(${replica_count}) != int(${new_replica_count})
+            Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+            Sleep    ${retry_count}
+            Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        END
+        Sleep    5
+    END
+
+Volume ${volume_id} should have ${expected_replica_count} replicas and no additional scheduling occurs
+    Volume ${volume_id} should have ${expected_replica_count} replicas
+    FOR    ${i}    IN RANGE    ${SCHEDULING_STATUS_CHECK_TIMEOUT}
+        Log to console    Ensuring there's no additional scheduling for volime ${volume_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    running=${None}
+        IF     int(${replica_count}) != int(${new_replica_count})
+            Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+            Sleep    ${retry_count}
+            Fail    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
+        END
+        Sleep    5
+    END
+
+Volume ${volume_id} should have ${expected_replica_count} running replicas and no additional scheduling occurs
+    Volume ${volume_id} should have ${expected_replica_count} running replicas
+    FOR    ${i}    IN RANGE    ${SCHEDULING_STATUS_CHECK_TIMEOUT}
+        Log to console    Ensuring there's no additional scheduling for volime ${volume_name} ... (${i})
+        ${new_replica_count} =    wait_for_replica_count    ${volume_name}    node_name=
         IF     int(${replica_count}) != int(${new_replica_count})
             Log to console    Additional scheduling occurs: ${replica_count} != ${new_replica_count}
             Sleep    ${retry_count}
@@ -600,9 +659,10 @@ Create volume ${volume_id} from backup ${backup_id} in another cluster
     create_volume   ${volume_name}    fromBackup=${backup_url}
 
 Create DR volume ${volume_id} from backup ${backup_id} in another cluster
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_url} =    get_backup_url_from_backup_list    ${backups_before_uninstall}    ${backup_id}
-    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}
+    create_volume   ${volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
 Wait for volume ${volume_id} restoration from backup ${backup_id} in another cluster completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

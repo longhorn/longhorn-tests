@@ -38,6 +38,8 @@ from common import fail_replica_expansion
 from common import get_volume_name, get_volume_dev_mb_data_md5sum # NOQA
 from common import exec_command_in_pod
 from common import DATA_ENGINE
+from common import update_setting
+from common import SETTING_CSI_STORAGE_CAPACITY_TRACKING
 from common import RETRY_COUNTS_SHORT
 from common import RETRY_INTERVAL_LONG
 from backupstore import set_random_backupstore  # NOQA
@@ -1026,11 +1028,14 @@ def test_csi_storage_capacity(client, storage_class): # NOQA
     """
     Test that CSIStorageCapacity objects are properly created
 
-    1. Verify that initially there are no CSIStorageCapacity objects
-    2. Create new storage class with volumeBindingMode set
+    1. Enable the 'csi-storage-capacity-tracking' setting
+    2. Verify that initially there are no CSIStorageCapacity objects
+    3. Create new storage class with volumeBindingMode set
        to WaitForFirstConsumer
-    3. Verify that CSIStorageCapacity object is created for each node
+    4. Verify that CSIStorageCapacity object is created for each node
     """
+
+    update_setting(client, SETTING_CSI_STORAGE_CAPACITY_TRACKING, "true")
 
     api = k8sclient.StorageV1Api()
     csi_storage_capacities = api.list_namespaced_csi_storage_capacity(

@@ -32,7 +32,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -61,10 +61,12 @@ class CRD(Base):
                 "Standby": Standby,
                 "fromBackup": fromBackup,
                 "rebuildConcurrentSyncLimit": int(rebuildConcurrentSyncLimit),
+                "snapshotMaxCount": int(snapshotMaxCount),
                 # disable revision counter by default from v1.7.0
                 "revisionCounterDisabled": True,
                 "nodeSelector": nodeSelector,
-                "diskSelector": diskSelector
+                "diskSelector": diskSelector,
+                "replicaAutoBalance": replicaAutoBalance
             }
         }
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
@@ -343,6 +345,7 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume_name} status error: {e}")
             time.sleep(self.retry_interval)
+        assert volume is not None, f"Failed to wait for {volume_name} {desired_state}: volume not found"
         assert volume["status"]["state"] == desired_state, f"Failed to wait for {volume_name} {desired_state}, currently it's {volume['status']['state']}"
 
     def wait_for_volume_attaching(self, volume_name):
@@ -411,7 +414,8 @@ class CRD(Base):
             except Exception as e:
                 logging(f"Getting volume {volume} robustness error: {e}")
             time.sleep(self.retry_interval)
-        assert volume["status"]["robustness"] == desired_state
+        assert volume["status"]["robustness"] == desired_state, \
+            f"Failed to wait for {volume_name} robustness={desired_state}, currently it's {volume['status']['robustness']}"
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
         volume = None
@@ -613,6 +617,16 @@ class CRD(Base):
         sync_cmd = ["sh", "-c", f"sync {endpoint} 2>/dev/null"]
         NodeExec(node_name).issue_cmd(sync_cmd)
 
+        cmd = [
+            "sh", "-c",
+            f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
+        ]
+        checksum = NodeExec(node_name).issue_cmd(cmd)
+
+        logging(f"Storing volume {volume_name} data last recorded checksum = {checksum}")
+        self.set_last_data_checksum(volume_name, checksum)
+        return checksum
+
     def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         """Write scattered tiny chunks using fio with random writes
 
@@ -750,6 +764,9 @@ class CRD(Base):
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name=None):
         return Rest().wait_for_replica_rebuilding_complete(volume_name, node_name)
+
+    def get_replica_rebuilding_progress(self, volume_name, node_name):
+        return Rest().get_replica_rebuilding_progress(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
         expected_checksum = self.get_data_checksum(volume_name, data_id)

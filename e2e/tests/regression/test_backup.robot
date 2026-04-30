@@ -93,6 +93,7 @@ Test Backup Volume List
     And Delete backup volume 1
 
 Test Incremental Restore
+    [Tags]    dr-volume
     [Documentation]    Test restore from disaster recovery volume (incremental restore)
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
@@ -198,7 +199,6 @@ Test Backupstore With Existing Backups
     And Wait for system backup system-backup ready
 
 Backup Older Snapshot When Newer Snapshot Backup Exists
-    [Tags]    backup
     [Documentation]
     ...    This test verifies that a volume can successfully create a backup from
     ...    an older snapshot even after a newer snapshot had already been backed
@@ -219,6 +219,7 @@ Backup Older Snapshot When Newer Snapshot Backup Exists
     Then Verify backup list contains no error for volume 0
 
 Test DR Volume Backup Block Size
+    [Tags]    dr-volume
     [Documentation]
     ...    Verify the DR volume's backup block size should be always set from the latest backup.
     ...

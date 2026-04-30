@@ -44,6 +44,11 @@ class sharemanager_keywords:
         sharemanager_pod_name = "share-manager-" + name
         self.sharemanager.delete(sharemanager_pod_name)
 
+    def wait_for_sharemanager_pod_deleted(self, volume_name):
+        sharemanager_pod_name = "share-manager-" + volume_name
+        logging(f"Waiting for sharemanager pod {sharemanager_pod_name} to be deleted ...")
+        wait_delete_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
+
     def wait_for_sharemanager_pod_recreation(self, name):
         sharemanager_pod_name = "share-manager-" + name
         for i in range(self.retry_count):
@@ -133,3 +138,12 @@ class sharemanager_keywords:
                 continue
 
         assert False, f"Encrypted disk size in sharemanager pod {share_manager_pod} does not contain {expected_size}"
+
+    def get_sharemanager_spec_image(self, volume_name):
+        return self.sharemanager.get_spec_image(volume_name)
+
+    def get_sharemanager_current_image(self, volume_name):
+        return self.sharemanager.get_status_current_image(volume_name)
+
+    def get_sharemanager_pod_container_image(self, volume_name):
+        return self.sharemanager.get_pod_container_image(volume_name)

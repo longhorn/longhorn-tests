@@ -67,7 +67,7 @@ Test RWX Volume Without Migratable Should Be Incompatible With Strict-Local
     ...
     ...                Issue: https://github.com/longhorn/longhorn/issues/6735
 
-    When Create volume 0 with    numberOfReplicas=1    migratable=False    accessMode=RWX    dataLocality=strict-local    dataEngine=${DATA_ENGINE}
+    When Run Keyword And Expect Error    *    Create volume 0 with    numberOfReplicas=1    migratable=False    accessMode=RWX    dataLocality=strict-local    dataEngine=${DATA_ENGINE}    retry=False
     Then No volume created
 
 Test Volume Attached at Maximum Snapshot Count
@@ -110,3 +110,16 @@ Test RWOP Volume
     ...    kubectl get pods -l app=e2e-test-deployment-0 --field-selector=status.phase=Pending --no-headers | wc -l
     ...    1
 
+Test Block Volume Should Reject Filesystem Trim
+    [Tags]    block-volume
+    [Documentation]    Test that filesystem trim operations are rejected on block volumes.
+    ...                Issue: https://github.com/longhorn/longhorn/issues/12048
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volumeMode=Block    sc_name=longhorn-test
+    And Create deployment 0 with block persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Make block device filesystem in deployment 0
+    And Mount block device on /data in deployment 0
+    And Write 10 MB data to file data1.txt in deployment 0
+    When Trim deployment 0 volume should fail
+    Then Check deployment 0 data in file data1.txt is intact

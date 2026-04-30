@@ -23,7 +23,7 @@ Retry interval should match expected backoff window
     ${elapsed}=    Evaluate    ${recreation_time} - ${creation_time}
 
     Log    Retry ${retry_times} pod recreated after ${elapsed} seconds
-    Should Be True    ${elapsed} > 60
+    Should Be True    ${elapsed} >= 60
     # Max retry interval is 300s; extra 60s tolerance added for scheduling timing variations
     Should Be True    ${elapsed} <= 360
 
@@ -36,14 +36,14 @@ Backing image with an invalid URL schema
     ...                - The corresponding and only entry in the disk file status should be failed. 
     ...                  The error message in this entry should explain why the downloading or the pod becomes failed.
     ...                - Check if there is a backoff window for the downloading retry. The initial duration is 1 minute. The max interval is 5 minute.
-    Given Create backing image bi-test    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3    check_creation=False
-    ${creation_time}=     Wait backimg image bi-test data source pod created
+    Given Create backing image bi-test    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3    wait=False
+    ${creation_time}=     Wait backing image bi-test data source pod created
     And Wait for all disk file status of backing image bi-test are failed
     And Wait for all disk file status of backing image bi-test are failed-and-cleanup
     And Wait backing image data source pod terminated
 
     FOR    ${i}    IN RANGE    3
-        ${recreation_time}=    Wait backimg image bi-test data source pod created
+        ${recreation_time}=    Wait backing image bi-test data source pod created
         Then Retry interval should match expected backoff window   ${recreation_time}    ${creation_time}    ${i}
         And Wait for all disk file status of backing image bi-test are failed
         And Wait for all disk file status of backing image bi-test are failed-and-cleanup

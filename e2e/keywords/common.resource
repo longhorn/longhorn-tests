@@ -45,11 +45,7 @@ Generate random disk name
 
 Run command
     [Arguments]    ${command}
-    execute_command    ${command}
-
-Run Command And Get Output
-    [Arguments]    ${command}
-    ${result}=    execute_command_and_get_output    ${command}
+    ${result} =    execute_command    ${command}
     RETURN    ${result}
 
 Run command and expect output
@@ -79,7 +75,7 @@ Set disk path based on host provider and architecture
         IF    "${ARCH}" == "amd64"
             Set Test Variable    ${DISK_PATH}    /dev/xvdh
         ELSE IF    "${ARCH}" == "arm64"
-            Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
         END
     ELSE IF    '${HOST_PROVIDER}' == "harvester"
         Set Test Variable    ${DISK_PATH}    /dev/vdc

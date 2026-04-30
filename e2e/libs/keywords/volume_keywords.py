@@ -16,6 +16,7 @@ from utility.utility import convert_size_to_bytes
 
 from volume import Volume
 from volume.rest import Rest as VolumeRest
+from workload.workload import get_workload_volume_name
 
 
 class volume_keywords:
@@ -33,9 +34,9 @@ class volume_keywords:
         for volume in volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, retry=True):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", retry=True):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, retry)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry)
 
     def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
@@ -184,6 +185,9 @@ class volume_keywords:
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
         self.volume.wait_for_replica_rebuilding_complete(volume_name)
+
+    def get_replica_rebuilding_progress(self, volume_name, node_name):
+        return self.volume.get_replica_rebuilding_progress(volume_name, node_name)
 
     async def only_one_replica_rebuilding_will_start_at_a_time_on_node(self, volume_name_0, volume_name_1, replica_locality):
 
@@ -353,11 +357,11 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volume_mode="Filesystem", fsType="ext4"):
-        self.volume.create_persistentvolume(volume_name, retry, volume_mode, fsType)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4"):
+        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType)
 
-    def create_persistentvolumeclaim_for_volume(self, volume_name, retry=True, volume_mode="Filesystem"):
-        self.volume.create_persistentvolumeclaim(volume_name, retry, volume_mode)
+    def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True):
+        self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry)
 
     def record_volume_replica_names(self, volume_name):
         replica_list = self.replica.get(volume_name, node_name="")

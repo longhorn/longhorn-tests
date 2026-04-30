@@ -21,6 +21,7 @@ get_longhorn_repo(){
             "${LONGHORN_REPO_DIR}"
 
   LONGHORN_MANIFEST_PATH="${LONGHORN_REPO_DIR}/deploy/longhorn.yaml"
+  LONGHORN_UNINSTALL_MANIFEST_PATH="${LONGHORN_REPO_DIR}/uninstall/uninstall.yaml"
 }
 
 generate_longhorn_yaml_manifest() {
@@ -81,7 +82,7 @@ customize_longhorn_manifest_registry(){
   yq -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
   yq -i 'select(.kind == "DaemonSet" and .metadata.name == "pre-pull-share-manager-image").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
   yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-ui").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
-  yq -i 'select(.kind == "ConfigMap" and .metadata.name == "longhorn-default-setting").data."default-setting.yaml"="registry-secret: docker-registry-secret"' "${LONGHORN_MANIFEST_PATH}"
+  sed -i "/default-setting\.yaml: |-/a\    registry-secret: docker-registry-secret" "${LONGHORN_MANIFEST_PATH}"
   # (2) modify images to point to custom registry
   if [[ ! -z "${REGISTRY_URL}" ]]; then
     sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "${LONGHORN_MANIFEST_PATH}"
@@ -126,9 +127,10 @@ uninstall_longhorn(){
   get_longhorn_namespace
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml" -O uninstall.yaml
-  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" uninstall.yaml
-  kubectl create -f uninstall.yaml
+  get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  kubectl create -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl patch job longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --type=json -p='[{"op":"remove","path":"/spec/activeDeadlineSeconds"}]'
 
   kubectl wait --for=condition=complete job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --timeout=10m
@@ -154,18 +156,20 @@ delete_longhorn_crds(){
   get_longhorn_namespace
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/deploy/longhorn.yaml" -O longhorn.yaml
-  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" longhorn.yaml
-  kubectl delete -f longhorn.yaml
+  get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
+  kubectl delete -f "${LONGHORN_MANIFEST_PATH}"
 }
 
 delete_uninstall_job(){
   get_longhorn_namespace
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${UNINSTALL_VERSION}/uninstall/uninstall.yaml" -O uninstall.yaml
-  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" uninstall.yaml
-  kubectl delete -f uninstall.yaml
+  get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  kubectl delete -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

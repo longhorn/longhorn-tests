@@ -26,11 +26,13 @@ Test Volume Expansion When Node Disk Is Full
     ...    5. Expanding the volume to 8Gi will fail:
     ...       unable to expand volume: error while CheckReplicasSizeExpansion for volume: disk does not have enough actual space for expansion:
     ...       Physical free space would drop below minimal: left < minimal
+    ${DISK0}=    Generate random disk name
+
     IF    "${DATA_ENGINE}" == "v1"
-        Given Create 10 Gi filesystem type disk local-disk on node 0
+        Given Create 10 Gi filesystem type disk ${DISK0} on node 0
         And Disable node 0 default disk
     ELSE IF    "${DATA_ENGINE}" == "v2"
-        And Create 10 Gi block type disk local-disk on node 0
+        And Create 10 Gi block type disk ${DISK0} on node 0
         And Disable disk block-disk scheduling on node 0
     END
 
@@ -41,6 +43,7 @@ Test Volume Expansion When Node Disk Is Full
     Then Wait for volume 0 size to be 3Gi
 
     When Write 3 GB data to volume 0
+    And Sleep    30s    # Wait for node disk status to be updated
     Then Expand volume 0 to 8Gi should fail
     And Wait for volume 0 size to be 3Gi
     And Delete volume 0

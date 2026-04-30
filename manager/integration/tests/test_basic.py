@@ -2626,6 +2626,7 @@ def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_restore_inc_with_offline_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     """
@@ -4103,6 +4104,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
     assert md5sum1 == read_md5sum1
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NOQA
     """
     Test Volume TooManySnapshots Condition

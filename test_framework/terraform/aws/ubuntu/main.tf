@@ -322,7 +322,7 @@ resource "aws_ebs_volume" "lh_aws_ssd_volume" {
 
   availability_zone = var.aws_availability_zone
   size              = var.block_device_size_worker
-  type              = "gp2"
+  type              = "gp3"
 
   tags = {
     Name = "lh-aws-ssd-volume-${count.index}-${random_string.random_suffix.id}"

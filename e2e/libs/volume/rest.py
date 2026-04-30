@@ -219,6 +219,29 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         return in_progress
 
+    def get_replica_rebuilding_progress(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            logging(f"Trying to get volume {volume_name} replica rebuilding progress on node {node_name} ... ({i})")
+            try:
+                replicas = get_longhorn_client().by_id_volume(volume_name).replicas
+                for replica in replicas:
+                    if replica.hostId == node_name and replica.mode == "RW":
+                        logging(f"Found volume {volume_name} replica {replica.name} on node {replica.hostId} with mode {replica.mode}: {replicas}")
+                        logging(f"Replica {replica.name} on node {replica.hostId} is rebuilt")
+                        return 100
+
+                rebuilds = get_longhorn_client().by_id_volume(volume_name).rebuildStatus
+                logging(f"Got volume {volume_name} rebuild status = {rebuilds}")
+                for rebuild in rebuilds:
+                    replicas = get_longhorn_client().by_id_volume(volume_name).replicas
+                    for replica in replicas:
+                        if rebuild.replica == replica.name and replica.hostId == node_name:
+                            logging(f"Found volume {volume_name} replica {replica.name} rebuilding progress = {rebuild.progress} on node {replica.hostId}")
+                            return int(rebuild.progress)
+            except Exception as e:
+                logging(f"Failed to get volume {volume_name} with error: {e}")
+            time.sleep(self.retry_interval)
+
     def crash_replica_processes(self, volume_name):
         logging(f"Crashing volume {volume_name} replica processes")
         replica_map = {}

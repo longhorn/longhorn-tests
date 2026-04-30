@@ -72,7 +72,6 @@ from common import wait_for_node_tag_update
 from common import wait_for_volume_condition_scheduled
 from common import cleanup_host_disks
 from common import wait_for_volume_delete
-from common import detach_v2_volume_by_killing_instance_manager_process
 
 from common import Mi, Gi
 from common import DATA_SIZE_IN_MB_2
@@ -94,6 +93,7 @@ from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY
 from common import SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE
+from common import SETTING_CSI_STORAGE_CAPACITY_TRACKING
 from common import DATA_ENGINE
 
 from time import sleep
@@ -1647,12 +1647,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     create_and_wait_pod(core_api, pod3)
 
     wait_for_rebuild_start(client, volume3_name)
-    if DATA_ENGINE == "v2":
-        detach_v2_volume_by_killing_instance_manager_process(client,
-                                                             core_api,
-                                                             volume3_name)
-    else:
-        crash_engine_process_with_sigkill(client, core_api, volume3_name)
+    crash_engine_process_with_sigkill(client, core_api, volume3_name)
 
     delete_and_wait_pod(core_api, pod3_name)
     wait_for_volume_detached(client, volume3_name)
@@ -2526,20 +2521,23 @@ def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, 
     node when scheduling pods using a StorageClass with volumeBindingMode set
     to 'WaitForFirstConsumer'.
 
-    1. Update 'storage-over-provisioning-percentage' to 400.
-    2. Reduce the schedulable storage on all nodes (except the current node)
+    1. Enable the 'csi-storage-capacity-tracking' setting.
+    2. Update 'storage-over-provisioning-percentage' to 400.
+    3. Reduce the schedulable storage on all nodes (except the current node)
        to 1Gi.
-    3. Compute max schedulable storage on the current node taking into account
+    4. Compute max schedulable storage on the current node taking into account
        the 'storage-over-provisioning-percentage' setting.
-    4. Create a new StorageClass with volumeBindingMode set
+    5. Create a new StorageClass with volumeBindingMode set
        to 'WaitForFirstConsumer'.
-    5. Create a StatefulSet with 2 replicas, each requesting the max
+    6. Create a StatefulSet with 2 replicas, each requesting the max
        schedulable storage size.
-    6. Verify pod 0 is scheduled to the current node and volume 0 is attached
+    7. Verify pod 0 is scheduled to the current node and volume 0 is attached
        to the current node.
-    7. Verify pod 1 is not scheduled because there is no node with sufficient
+    8. Verify pod 1 is not scheduled because there is no node with sufficient
        storage and that its PVC is in Pending state.
     """
+    update_setting(client, SETTING_CSI_STORAGE_CAPACITY_TRACKING, "true")
+
     # Set storage over-provisioning to 400%
     over_provisioning_percentage = 400
     update_setting(client,

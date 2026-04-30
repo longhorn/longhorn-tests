@@ -1,0 +1,27 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: inject-proxy-env-backing-image-ds
+spec:
+  background: false
+  rules:
+  - name: inject-proxy-env
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - longhorn-system
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - (name): "*"
+            env:
+            - name: HTTP_PROXY
+              value: "http://qa-squid.default.svc.cluster.local:3128"
+            - name: HTTPS_PROXY
+              value: "http://qa-squid.default.svc.cluster.local:3128"
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1,0.0.0.0,.svc,.cluster.local,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,longhorn-system,longhorn-backend,longhorn-backend.longhorn-system,longhorn-backend.longhorn-system.svc,longhorn-backend.longhorn-system.svc.cluster.local"

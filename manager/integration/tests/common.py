@@ -88,11 +88,15 @@ UPGRADE_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:upgrade-test"
 ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
-if os.uname().machine == "x86_64":
-    if os.environ.get("CLOUDPROVIDER") == "harvester":
-        BLOCK_DEV_PATH = "/dev/vdc"
-    else:
+if os.environ.get("CLOUDPROVIDER") == "aws":
+    if os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
+    else:
+        BLOCK_DEV_PATH = "0000:00:1f.0"
+elif os.environ.get("CLOUDPROVIDER") == "harvester":
+    BLOCK_DEV_PATH = "/dev/vdc"
+elif os.environ.get("CLOUDPROVIDER") == "vagrant":
+    BLOCK_DEV_PATH = "/dev/vdb"
 else:
     BLOCK_DEV_PATH = "/dev/nvme1n1"
 
@@ -241,6 +245,7 @@ SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
 SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
 SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES = \
     "default-min-number-of-backing-image-copies"
+SETTING_CSI_STORAGE_CAPACITY_TRACKING = "csi-storage-capacity-tracking"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -344,8 +349,8 @@ BACKINGIMAGE_FAILED_EVICT_MSG = \
 enable_v2 = os.environ.get('RUN_V2_TEST')
 if enable_v2 == "true":
     DATA_ENGINE = "v2"
-    RETRY_COUNTS = RETRY_COUNTS_LONG
-    DEFAULT_POD_TIMEOUT = RETRY_COUNTS_LONG
+    RETRY_COUNTS = 1200
+    DEFAULT_POD_TIMEOUT = 1200
 else:
     DATA_ENGINE = "v1"
 
@@ -3890,6 +3895,12 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
                                  "storageReserved",
                                  expected_reserved_storage)
 
+    # for block type disks added by bdf (nvme disk driver)
+    # disk deletion takes some time, wait the device show up on the host
+    # normally less than 30 seconds
+    # ref: https://github.com/longhorn/longhorn/issues/11860
+    time.sleep(30)
+
 
 def reset_settings(client):
 
@@ -5587,40 +5598,32 @@ def settings_reset():
     reset_settings(client)
 
 
-def detach_v2_volume_by_killing_instance_manager_process(client, core_api, volume_name): # NOQA
-    # Kill the instance manager process will detach all v2 volumes and the
-    # instance manager will be restarted.
-    # This function is crash_engine_process_with_sigkill's alternative for
-    # v2 volume.
-    volume = client.by_id_volume(volume_name)
-    ins_mgr_name = volume.controllers[0].instanceManagerName
-
-    kill_command = [
-        '/bin/sh', '-c',
-        "kill `pgrep -f -- '--spdk-enabled'`"]
-
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message='Timeout on executing stream read'):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)
-
-
 def crash_engine_process_with_sigkill(client, core_api, volume_name):
     volume = client.by_id_volume(volume_name)
     ins_mgr_name = volume.controllers[0].instanceManagerName
 
-    kill_command = [
-            '/bin/sh', '-c',
-            "kill `pgrep -f \"controller " + volume_name + "\"`"]
+    if DATA_ENGINE == "v2":
+        engine_name = volume.controllers[0]["name"]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message='Timeout on executing stream read'):
-        stream(core_api.connect_get_namespaced_pod_exec,
-               ins_mgr_name,
-               LONGHORN_NAMESPACE, command=kill_command,
-               stderr=True, stdin=False, stdout=True, tty=False)
+        delete_raid_command = (
+            f"go-spdk-helper bdev-raid delete {engine_name}"
+        )
+        print(f"Executing command: {delete_raid_command}")
+
+        exec_instance_manager(
+            core_api, ins_mgr_name, delete_raid_command
+        )
+    else:
+        kill_command = [
+                '/bin/sh', '-c',
+                "kill `pgrep -f \"controller " + volume_name + "\"`"]
+
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message='Timeout on executing stream read'):
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   ins_mgr_name,
+                   LONGHORN_NAMESPACE, command=kill_command,
+                   stderr=True, stdin=False, stdout=True, tty=False)
 
 
 def remount_volume_read_only(client, core_api, volume_name):
@@ -5913,9 +5916,9 @@ def recurring_job_feature_supported(client):
 # - v2 backing images are not supported before v1.8.
 def v2_data_engine_cr_supported(client):
     longhorn_version = client.by_id_setting('current-longhorn-version').value
-    version_doesnt_support_v2_backimg_image = ['v1.5', 'v1.6', 'v1.7']
+    version_doesnt_support_v2_backing_image = ['v1.5', 'v1.6', 'v1.7']
     if any(_version in longhorn_version for
-           _version in version_doesnt_support_v2_backimg_image):
+           _version in version_doesnt_support_v2_backing_image):
         print(f'{longhorn_version} doesn\'t support v2 cr for test')
         return False
     else:
@@ -6986,3 +6989,33 @@ def wait_for_all_nodes_disks_schedulable(client):
     raise TimeoutError(
         f"Not all disks across all nodes reached Schedulable=True "
         f"after {RETRY_COUNTS * RETRY_INTERVAL}s")
+
+
+def delete_all_v2_instance_manager_pods():
+    # Keep a v2 volume in the faulted state by deleting all instance-manager
+    # pods until volume salvage is triggered.
+    api = get_core_api_client()
+
+    label_selector = (
+        "longhorn.io/component=instance-manager,"
+        "longhorn.io/data-engine=v2"
+    )
+
+    pods = api.list_namespaced_pod(
+        namespace=LONGHORN_NAMESPACE,
+        label_selector=label_selector
+    )
+
+    for pod in pods.items:
+        pod_name = pod.metadata.name
+        print(f"Force deleting pod {pod_name}")
+
+        api.delete_namespaced_pod(
+            name=pod_name,
+            namespace=LONGHORN_NAMESPACE,
+            grace_period_seconds=0,
+            body=k8sclient.V1DeleteOptions(
+                grace_period_seconds=0,
+                propagation_policy="Background"
+            )
+        )

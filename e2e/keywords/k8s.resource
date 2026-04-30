@@ -15,6 +15,10 @@ Stop volume node kubelet of ${workload_kind} ${workload_id} for ${duration} seco
     ${node_name} =    get_volume_node    ${volume_name}
     restart_kubelet    ${node_name}    ${duration}
 
+Stop kubelet on node ${node_id} for ${duration} seconds
+    ${node_name} =    get_node_by_index    ${node_id}
+    restart_kubelet    ${node_name}    ${duration}
+
 Stop control plane kubelet for ${duration} seconds
     ${control_plane_node_name} =    get_control_plane_node
     restart_kubelet    ${control_plane_node_name}    ${duration}
@@ -159,6 +163,10 @@ The drain process completed
     wait_for_all_pods_evicted    ${drained_node}
     check_drain_process_completed    ${drain_process}
 
+Wait for node ${node_id} ready
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_node_ready    ${node_name}
+
 Check PDB not exist
     [Arguments]    ${instance_manager}
     check_instance_manager_pdb_not_exist    ${instance_manager}
@@ -178,3 +186,6 @@ Get Pod By Label Selector
     [Arguments]    ${label_selector}    ${namespace}
     ${pods}=    get_pods_by_label_selector    ${label_selector}    ${namespace}
     RETURN    ${pods}
+
+Check CSI driver storage capacity is ${expected_value}
+    check_csi_driver_storage_capacity    ${expected_value}
