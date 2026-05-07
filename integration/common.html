@@ -4124,10 +4124,25 @@ greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_nvmf_ip(nvmf):
+    &#34;&#34;&#34;
+    Extract IP address from NVMf endpoint.
+    IPv6 example: fd42:0:0:1::e:20103 -&gt; fd42:0:0:1::e
+    IPv4 example: 10.0.1.24:4420 -&gt; 10.0.1.24
+    &#34;&#34;&#34;
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(&#39;:&#39;)[0]</code></pre>
+    host_port = nvmf_endpoint[0]
+
+    # Port is always after the last colon for both IPv4 and IPv6
+    last_colon_idx = host_port.rfind(&#39;:&#39;)
+    ip = host_port[:last_colon_idx]
+
+    # Validate it&#39;s a valid IP address
+    ipaddress.ip_address(ip)
+    return ip</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Extract IP address from NVMf endpoint.
+IPv6 example: fd42:0:0:1::e:20103 -&gt; fd42:0:0:1::e
+IPv4 example: 10.0.1.24:4420 -&gt; 10.0.1.24</p></div>
 </dd>
 <dt id="tests.common.get_nvmf_nqn"><code class="name flex">
 <span>def <span class="ident">get_nvmf_nqn</span></span>(<span>nvmf)</span>
@@ -4153,7 +4168,8 @@ greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
 </summary>
 <pre><code class="python">def get_nvmf_port(nvmf):
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(&#39;:&#39;)[1]</code></pre>
+    host_port = nvmf_endpoint[0]
+    return host_port.split(&#39;:&#39;)[-1]</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
