@@ -5,6 +5,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from engine import Engine
+from enginefrontend import EngineFrontend
 
 from node_exec import NodeExec
 
@@ -31,6 +32,7 @@ class CRD(Base):
         self.obj_api = client.CustomObjectsApi()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
+        self.enginefrontend = EngineFrontend()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
@@ -456,7 +458,14 @@ class CRD(Base):
             try:
                 engines = self.engine.get_engines(volume_name)
                 volume = self.get(volume_name)
-                engine_check = len(engines) == 1 and engines[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+                data_engine = volume['spec'].get('dataEngine', 'v1')
+
+                if data_engine == 'v2':
+                    enginefrontends = self.enginefrontend.get_enginefrontends(volume_name)
+                    engine_check = len(engines) == 1 and enginefrontends[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+                else:
+                    engine_check = len(engines) == 1 and engines[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+
                 migration_node_check = volume['spec']['migrationNodeID'] == "" and volume['status']['currentMigrationNodeID'] == ""
                 node_check = volume['spec']['nodeID'] == node_name and volume['spec']['nodeID'] == volume['status']['currentNodeID']
                 complete = engine_check and migration_node_check and node_check
@@ -474,7 +483,13 @@ class CRD(Base):
             try:
                 engines = self.engine.get_engines(volume_name)
                 volume = self.get(volume_name)
-                engine_check = len(engines) == 1 and engines[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+                data_engine = volume['spec'].get('dataEngine', 'v1')
+
+                if data_engine == 'v2':
+                    enginefrontends = self.enginefrontend.get_enginefrontends(volume_name)
+                    engine_check = len(engines) == 1 and enginefrontends[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
+                else:
+                    engine_check = len(engines) == 1 and engines[0]['status']['endpoint'] and engines[0]['status']['ownerID'] == node_name
                 migration_node_check = volume['spec']['migrationNodeID'] == "" and volume['status']['currentMigrationNodeID'] == ""
                 node_check = volume['spec']['nodeID'] == node_name and volume['spec']['nodeID'] == volume['status']['currentNodeID']
                 rollback = engine_check and migration_node_check and node_check
