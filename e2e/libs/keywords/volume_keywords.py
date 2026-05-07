@@ -462,3 +462,6 @@ class volume_keywords:
 
     def trim_volume(self, volume_name):
         self.volume.trim_filesystem(volume_name)
+
+    def wait_for_volume_status(self, volume_name, status_name, status_value):
+        self.volume.wait_for_volume_status(volume_name, status_name, status_value)

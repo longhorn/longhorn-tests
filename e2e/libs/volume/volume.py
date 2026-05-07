@@ -216,3 +216,6 @@ class Volume(Base):
 
     def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
         self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)
+
+    def wait_for_volume_status(self, volume_name, status_name, status_value):
+        self.volume.wait_for_volume_status(volume_name, status_name, status_value)

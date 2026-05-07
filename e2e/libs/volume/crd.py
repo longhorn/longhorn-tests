@@ -17,6 +17,7 @@ from utility.utility import get_cr
 from utility.utility import convert_size_to_bytes
 from utility.utility import get_longhorn_client
 from utility.utility import subprocess_exec_cmd
+from utility.utility import is_valid_iso8601
 
 from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
@@ -299,8 +300,13 @@ class CRD(Base):
             logging(f"Waiting for {volume_name} {status}={value} ({i}) ...")
             try:
                 volume = self.get(volume_name)
-                if volume["status"][status] == value:
-                    break
+                if value == "empty" and not volume["status"][status]:
+                    return
+                elif value == "updated" and is_valid_iso8601(volume["status"][status]):
+                    logging(f"Got {volume_name} {status} updated: {volume['status'][status]}")
+                    return
+                elif volume["status"][status] == value:
+                    return
             except Exception as e:
                 logging(f"Getting volume {volume_name} {status} status error: {e}")
             time.sleep(self.retry_interval)
