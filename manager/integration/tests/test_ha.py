@@ -1535,6 +1535,7 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     wait_for_volume_delete(client, res_name)
 
 
+@pytest.mark.v2_volume_test
 def test_single_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if one replica restore failure will lead to the restore volume
@@ -1567,6 +1568,7 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
                                  REPLICA_FAILURE_MODE_CRASH)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_single_replica_unschedulable_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the restore can complete if a restoring replica is killed
