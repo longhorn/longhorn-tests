@@ -14,7 +14,7 @@ Wait to engine image ${custom_engine_image} to be deployed
     wait_for_engine_image_deployed    ${custom_engine_image}
 
 Wait for engine image daemonset pods recreated
-    ${output}=    Run Command And Get Output
+    ${output}=    Run Command
     ...    kubectl -n longhorn-system get ds -l longhorn.io/component=engine-image --no-headers -o custom-columns=NAME:.metadata.name
     @{ds_names}=    Split To Lines    ${output}
     FOR    ${ds_name}    IN    @{ds_names}

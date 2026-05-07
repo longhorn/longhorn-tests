@@ -63,7 +63,7 @@ Verify TooManySnapshots Condition After Creating Snapshots
 
 All engine image daemonset should have liveness probe settings
     [Arguments]    ${timeout}    ${period}    ${failure_threshold}
-    ${count}=    Run Command And Get Output
+    ${count}=    Run Command
     ...    kubectl -n longhorn-system get ds -l longhorn.io/component=engine-image --no-headers | wc -l
     ${count}=    Convert To Integer    ${count}
     FOR    ${index}    IN RANGE    ${count}
