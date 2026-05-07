@@ -77,6 +77,14 @@ def generate_name_random(name_prefix="test-"):
                 for _ in range(6))
 
 
+def is_valid_iso8601(date_string):
+    try:
+        datetime.fromisoformat(date_string)
+        return True
+    except ValueError:
+        return False
+
+
 def is_integer(value):
     try:
         int(value)
