@@ -2919,13 +2919,27 @@ def parse_nvmf_endpoint(nvmf):
 
 
 def get_nvmf_ip(nvmf):
+    """
+    Extract IP address from NVMf endpoint.
+    IPv6 example: fd42:0:0:1::e:20103 -> fd42:0:0:1::e
+    IPv4 example: 10.0.1.24:4420 -> 10.0.1.24
+    """
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[0]
+    host_port = nvmf_endpoint[0]
+
+    # Port is always after the last colon for both IPv4 and IPv6
+    last_colon_idx = host_port.rfind(':')
+    ip = host_port[:last_colon_idx]
+
+    # Validate it's a valid IP address
+    ipaddress.ip_address(ip)
+    return ip
 
 
 def get_nvmf_port(nvmf):
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[1]
+    host_port = nvmf_endpoint[0]
+    return host_port.split(':')[-1]
 
 
 def get_nvmf_nqn(nvmf):
