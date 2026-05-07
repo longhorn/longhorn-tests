@@ -17,13 +17,21 @@ class Nfs(Base):
         self.mount_nfs_backupstore()
 
     def mount_nfs_backupstore(self, mount_path="/mnt/nfs"):
-        cmd = ["mkdir", "-p", mount_path]
-        subprocess.check_output(cmd)
-        nfs_backuptarget = self.backup_target
-        nfs_url = urlparse(nfs_backuptarget).netloc + \
-            urlparse(nfs_backuptarget).path
-        cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
-        subprocess.check_output(cmd)
+        for i in range(self.retry_count):
+            try:
+                logging(f"Trying to mount NFS backupstore ... ({i})")
+                cmd = ["mkdir", "-p", mount_path]
+                subprocess.check_output(cmd)
+                nfs_backuptarget = self.backup_target
+                nfs_url = urlparse(nfs_backuptarget).netloc + \
+                    urlparse(nfs_backuptarget).path
+                cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
+                subprocess.check_output(cmd)
+                return
+            except Exception as e:
+                logging(f"Failed to mount NFS backupstore: {e}")
+                time.sleep(self.retry_interval)
+        assert False, f"Failed to mount NFS backupstore"
 
     def umount_nfs_backupstore(self, mount_path="/mnt/nfs"):
         cmd = ["umount", mount_path]
