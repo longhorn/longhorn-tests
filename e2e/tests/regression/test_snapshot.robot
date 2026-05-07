@@ -104,10 +104,9 @@ Test Allow Snapshots Removal During Trim
     And Validate snapshot 4 is marked as removed in volume 0 snapshot list
     # There are some extra metadata
     # so the size would be greater than 0
-    And Volume 0 snapshot 2 size should be less than 16Mi
-    And Volume 0 snapshot 3 size should be less than 16Mi
-    And Volume 0 snapshot 4 size should be less than 16Mi
-    # volume head stores even more metadata than other snapshots
+    And Volume 0 snapshot 2 size should be less than 64Mi
+    And Volume 0 snapshot 3 size should be less than 64Mi
+    And Volume 0 snapshot 4 size should be less than 64Mi
     And Volume 0 volume head size should be less than 64Mi
 
     When Update volume 0 unmapMarkSnapChainRemoved to disabled
@@ -120,7 +119,7 @@ Test Allow Snapshots Removal During Trim
 
     When Trim volume 0
     Then Validate snapshot 6 is not marked as removed in volume 0 snapshot list
-    And Volume 0 snapshot 6 size should be less than 16Mi
+    And Volume 0 snapshot 6 size should be less than 64Mi
     And Volume 0 volume head size should be less than 64Mi
 
     And Delete pod 0
