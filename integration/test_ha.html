@@ -4365,7 +4365,8 @@ r/w data and creating/removing snapshots.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_single_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test
+def test_single_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if one replica restore failure will lead to the restore volume
     becoming Degraded, and if the restore volume is still usable after
@@ -4429,7 +4430,8 @@ after the attachment.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_single_replica_unschedulable_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
+<pre><code class="python">@pytest.mark.v2_volume_test  # NOQA
+def test_single_replica_unschedulable_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
     &#34;&#34;&#34;
     [HA] Test if the restore can complete if a restoring replica is killed
     while it is ongoing and cannot be recovered.
