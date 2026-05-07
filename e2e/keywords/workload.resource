@@ -517,3 +517,8 @@ Volume of ${workload_kind} ${workload_id} should never have detached during test
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     verify_volume_never_detached_during_test    ${volume_name}    ${volume_monitoring_start_time}
+
+Volume of ${workload_kind} ${workload_id} ${field_name} should be ${field_value}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_status    ${volume_name}    ${field_name}    ${field_value}

@@ -238,7 +238,9 @@ Test Filesystem Trim
     Then Volume of deployment 0 actual size should be less than 256Mi
 
 Test Auto Salvage After Volume Faulted By Instance Manager Deletion
+    [Tags]    auto-salvage
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/8430
+    ...                       https://github.com/longhorn/longhorn/issues/13018
     ...    1. Dynamically provision a v1/v2 volume via storageclass, create a deployment
     ...       workload and write data to it.
     ...    2. Disable auto-salvage setting.
@@ -259,9 +261,11 @@ Test Auto Salvage After Volume Faulted By Instance Manager Deletion
     And Delete ${DATA_ENGINE} instance manager on node 1
     And Delete ${DATA_ENGINE} instance manager on node 2
     Then Check volume of deployment 0 kept in faulted
+    And Volume of deployment 0 lastAutoSalvagedAt should be empty
 
     When Setting auto-salvage is set to true
     Then Wait for volume of deployment 0 healthy
+    And Volume of deployment 0 lastAutoSalvagedAt should be updated
     And Wait for deployment 0 pods stable
     And Check deployment 0 data in file data.txt is intact
 

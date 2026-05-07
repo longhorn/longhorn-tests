@@ -525,3 +525,6 @@ class volume_keywords:
 
     def verify_volume_never_detached_during_test(self, volume_name, start_time=None):
         return self.volume.verify_never_detached_during_test(volume_name, start_time)
+
+    def wait_for_volume_status(self, volume_name, status_name, status_value):
+        self.volume.wait_for_volume_status(volume_name, status_name, status_value)
