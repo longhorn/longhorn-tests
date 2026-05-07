@@ -50,7 +50,7 @@ DR Volume Node Reboot During Initial Restoration
         Then Reboot volume 1 volume node
         And Wait for volume 1 restoration from backup 0 of volume 0 completed
         When Activate DR volume 1
-        And Attach volume 1
+        And Attach volume 1 to healthy node
         And Wait for volume 1 healthy
         Then Check volume 1 data is backup 0 of volume 0
         Then Detach volume 1
@@ -88,7 +88,7 @@ DR Volume Node Reboot During Incremental Restoration
     Then Reboot volume 1 volume node
     Then Wait for volume 1 restoration from backup 1 of volume 0 completed
     And Activate DR volume 1
-    And Attach volume 1
+    And Attach volume 1 to healthy node
     And Wait for volume 1 healthy
     And Check volume 1 data is backup 1 of volume 0
 

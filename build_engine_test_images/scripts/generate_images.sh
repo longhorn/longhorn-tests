@@ -19,6 +19,9 @@ function build_version_test_images() {
   fi
 }
 
+apt install -y docker-buildx
+export DOCKER_BUILDKIT=1
+
 # Build and get API information
 if [ ${commit_id} != '' ]
 then
@@ -26,7 +29,7 @@ then
 else
   git clone https://github.com/longhorn/longhorn-engine.git
 fi
-sed -i "s/.*ARG DAPPER_HOST_ARCH=.*/ARG DAPPER_HOST_ARCH=${arch}/" longhorn-engine/Dockerfile.dapper
+sed -i "s/.*ARG TARGETARCH=.*/ARG TARGETARCH=${arch}/" longhorn-engine/Dockerfile
 cd longhorn-engine
 echo -en test >> README.md
 git config --global user.email mock@gmail.com
