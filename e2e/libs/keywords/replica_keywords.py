@@ -17,3 +17,6 @@ class replica_keywords:
 
     def get_replica_names(self, volume_name, numberOfReplicas=3):
         return self.replica.get_replica_names(volume_name, numberOfReplicas)
+
+    def wait_for_replica_file_size(self, volume_name, expected_size):
+        return self.replica.wait_for_replica_file_size(volume_name, expected_size)
