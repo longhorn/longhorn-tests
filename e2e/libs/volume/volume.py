@@ -187,11 +187,11 @@ class Volume(Base):
     def activate(self, volume_name):
         return self.volume.activate(volume_name)
 
-    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType):
-        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType)
+    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None):
+        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name)
 
-    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry):
-        return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry)
+    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry, sc_name="longhorn"):
+        return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         return self.volume.upgrade_engine_image(volume_name, engine_image_name)

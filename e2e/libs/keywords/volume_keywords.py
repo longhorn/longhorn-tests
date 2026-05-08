@@ -357,11 +357,11 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4"):
-        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None):
+        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name)
 
-    def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True):
-        self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry)
+    def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True, sc_name="longhorn"):
+        self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
 
     def record_volume_replica_names(self, volume_name):
         replica_list = self.replica.get(volume_name, node_name="")

@@ -41,6 +41,14 @@ Create DR volume ${target_volume_id} from backup ${backup_id} of ${workload_kind
     ${backup_url} =    get_backup_url    ${backup_id}    ${volume_name}
     create_volume   ${target_volume_name}    frontend=    Standby=True    fromBackup=${backup_url}    &{config}
 
+Create volume ${target_volume_id} from backup ${backup_id} of ${workload_kind} ${workload_id} volume
+    [Arguments]    &{config}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${workload_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${backup_url} =    get_backup_url    ${backup_id}    ${workload_volume_name}
+    create_volume    ${target_volume_name}    fromBackup=${backup_url}    &{config}
+
 Create volume ${target_volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
     ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}

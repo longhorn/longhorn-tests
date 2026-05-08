@@ -4,6 +4,7 @@ Documentation       Longhorn replica related keywords
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/replica_keywords.py
 Library             ../libs/keywords/node_keywords.py
+Library             ../libs/keywords/workload_keywords.py
 
 *** Keywords ***
 Volume ${volume_id} replica ${setting_name} should be ${setting_value}
@@ -31,3 +32,9 @@ There should be no replica of volume ${volume_id} on node ${node_id} disk ${disk
     ${node_name} =    get_node_by_index    ${node_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0
+
+Assert replica file size of deployment ${deployment_id} is ${expected_size}
+    ${expected_bytes} =    convert_size_to_bytes    ${expected_size}    to_str=True
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    wait_for_replica_file_size    ${volume_name}    ${expected_bytes}

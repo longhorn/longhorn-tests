@@ -4,6 +4,8 @@ import time
 from replica.base import Base
 from replica.rest import Rest
 
+from node_exec import NodeExec
+
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 import utility.constant as constant
@@ -86,3 +88,41 @@ class CRD(Base):
         for replica in replicas:
             assert str(replica["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} replica setting {setting_name} is {value}, but it's {str(replica['spec'][setting_name])}"
+
+    def wait_for_replica_file_size(self, volume_name, expected_size):
+        replicas = self.get(volume_name)
+        for replica in replicas:
+            node_id = replica['spec']['nodeID']
+            dir_name = replica['spec']['dataDirectoryName']
+            cmd = (
+                f"find /var/lib/longhorn/replicas/{dir_name}/ "
+                f"-maxdepth 1 -name 'volume-head-*.img' -exec stat -c%s {{}} \\;"
+            )
+            node_exec = NodeExec(node_id)
+            try:
+                for i in range(self.retry_count):
+                    logging(
+                        f"Waiting for replica file size on node {node_id} for volume {volume_name} "
+                        f"to be {expected_size} ... ({i})"
+                    )
+                    try:
+                        result = node_exec.issue_cmd(cmd).strip()
+                        logging(
+                            f"Replica file size on node {node_id} for volume {volume_name}: "
+                            f"{result}, expected: {expected_size}"
+                        )
+                        if result == expected_size:
+                            break
+                    except Exception as e:
+                        logging(
+                            f"Error checking replica file size on node {node_id} "
+                            f"for volume {volume_name}: {e}"
+                        )
+                    time.sleep(self.retry_interval)
+                else:
+                    assert False, (
+                        f"Replica backend file on node {node_id} for volume {volume_name}: "
+                        f"expected {expected_size} B, got {result} B"
+                    )
+            finally:
+                node_exec.cleanup()
