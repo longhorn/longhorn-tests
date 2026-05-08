@@ -179,7 +179,8 @@ Check longhorn backing image manager image is ${expected_image}
 Assert disk size in instance manager pod for ${workload_kind} ${workload_id} is ${size}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
     ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${volume_name}=    get_workload_volume_name    ${workload_name}
+    ${volume_name}=    Run Keyword If    '${workload_kind}' == 'volume'    Set Variable    ${workload_name}
+    ...    ELSE    get_workload_volume_name    ${workload_name}
     ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
     Wait Until Keyword Succeeds    ${RETRY_COUNT}    ${RETRY_INTERVAL}
     ...    Check disk size in instance manager pod    ${instance_manager_name}    ${volume_name}    ${expected_size_byte}
