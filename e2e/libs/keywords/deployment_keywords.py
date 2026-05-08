@@ -1,6 +1,7 @@
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
+import json
 
 from volume import Volume
 
@@ -8,6 +9,7 @@ from workload.deployment import create_deployment
 from workload.deployment import delete_deployment
 from workload.deployment import list_deployments
 from workload.deployment import scale_deployment
+from workload.deployment import get_deployment_pod_node_name
 
 
 class deployment_keywords:
@@ -24,9 +26,12 @@ class deployment_keywords:
         for deployment in deployments.items:
             self.delete_deployment(deployment.metadata.name)
 
-    def create_deployment(self, name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None):
+    def create_deployment(self, name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None):
         logging(f'Creating deployment {name}')
-        create_deployment(name, claim_name, replicaset=replicaset, enable_pvc_io_and_liveness_probe=enable_pvc_io_and_liveness_probe, block_volume=block_volume, args=args)
+        # Parse node_selector if it's a JSON string
+        if node_selector and isinstance(node_selector, str):
+            node_selector = json.loads(node_selector)
+        create_deployment(name, claim_name, replicaset=replicaset, enable_pvc_io_and_liveness_probe=enable_pvc_io_and_liveness_probe, block_volume=block_volume, args=args, node_selector=node_selector)
 
     def delete_deployment(self, name):
         logging(f'Deleting deployment {name}')
@@ -35,3 +40,10 @@ class deployment_keywords:
     def scale_deployment(self, deployment_name, replica_count):
         logging(f'Scaling deployment {deployment_name} to {replica_count}')
         return scale_deployment(deployment_name, replica_count)
+
+    def check_deployment_pod_is_running_on_node(self, deployment_name, expected_node_name):
+        logging(f'Checking deployment {deployment_name} pod is running on node {expected_node_name}')
+        actual_node_name = get_deployment_pod_node_name(deployment_name)
+        assert actual_node_name == expected_node_name, \
+            f"Expected deployment {deployment_name} pod to be on node {expected_node_name}, but got {actual_node_name}"
+        return actual_node_name

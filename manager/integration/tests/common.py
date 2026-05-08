@@ -68,7 +68,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 5
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 1200
+RETRY_COUNTS_LONG = 600
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
@@ -245,6 +245,7 @@ SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
 SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
 SETTING_MIN_NUMBER_OF_BACKING_IMAGE_COPIES = \
     "default-min-number-of-backing-image-copies"
+SETTING_CSI_STORAGE_CAPACITY_TRACKING = "csi-storage-capacity-tracking"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -348,8 +349,8 @@ BACKINGIMAGE_FAILED_EVICT_MSG = \
 enable_v2 = os.environ.get('RUN_V2_TEST')
 if enable_v2 == "true":
     DATA_ENGINE = "v2"
-    RETRY_COUNTS = RETRY_COUNTS_LONG
-    DEFAULT_POD_TIMEOUT = RETRY_COUNTS_LONG
+    RETRY_COUNTS = 1200
+    DEFAULT_POD_TIMEOUT = 1200
 else:
     DATA_ENGINE = "v1"
 
@@ -2918,13 +2919,27 @@ def parse_nvmf_endpoint(nvmf):
 
 
 def get_nvmf_ip(nvmf):
+    """
+    Extract IP address from NVMf endpoint.
+    IPv6 example: fd42:0:0:1::e:20103 -> fd42:0:0:1::e
+    IPv4 example: 10.0.1.24:4420 -> 10.0.1.24
+    """
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[0]
+    host_port = nvmf_endpoint[0]
+
+    # Port is always after the last colon for both IPv4 and IPv6
+    last_colon_idx = host_port.rfind(':')
+    ip = host_port[:last_colon_idx]
+
+    # Validate it's a valid IP address
+    ipaddress.ip_address(ip)
+    return ip
 
 
 def get_nvmf_port(nvmf):
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[1]
+    host_port = nvmf_endpoint[0]
+    return host_port.split(':')[-1]
 
 
 def get_nvmf_nqn(nvmf):

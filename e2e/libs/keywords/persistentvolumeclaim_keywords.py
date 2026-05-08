@@ -51,3 +51,7 @@ class persistentvolumeclaim_keywords:
 
     def get_pvc_storageclass_name(self, claim_name):
         return self.claim.get_pvc_storageclass_name(claim_name)
+
+    def wait_for_pvc_status_phase(self, claim_name, expected_phase):
+        logging(f'Waiting for persistentvolumeclaim {claim_name} status to be {expected_phase}')
+        self.claim.wait_for_pvc_phase(claim_name, expected_phase)

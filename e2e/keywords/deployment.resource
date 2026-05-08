@@ -121,3 +121,12 @@ Scale up deployment ${deployment_id} to attach volume
 Wait for deployment ${deployment_id} volume size expanded
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     wait_for_workload_claim_size_expanded    ${deployment_name}
+
+Check deployment ${deployment_id} pod is running on node ${node_name}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    check_deployment_pod_is_running_on_node    ${deployment_name}    ${node_name}
+
+Check deployment ${deployment_id} volume replica is not on node ${node_name}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    wait_for_replica_count    ${volume_name}    ${node_name}    0

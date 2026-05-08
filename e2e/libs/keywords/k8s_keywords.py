@@ -27,6 +27,7 @@ from k8s.k8s import get_pods_by_label_selector
 from k8s.k8s import verify_pods_log_after_time_contains
 from k8s.k8s import verify_pods_log_after_time_not_contains
 from k8s.k8s import wait_for_node_ready
+from k8s.k8s import get_csi_driver_storage_capacity
 
 from node import Node
 
@@ -189,3 +190,9 @@ class k8s_keywords:
 
     def is_namespaced_pods_all_running(self, namespace):
         return is_namespaced_pods_all_running(namespace)
+
+    def check_csi_driver_storage_capacity(self, expected_value, driver_name="driver.longhorn.io"):
+        logging(f'Checking CSI driver {driver_name} storage capacity is {expected_value}')
+        actual_value = get_csi_driver_storage_capacity(driver_name)
+        assert actual_value == expected_value, f"Expected CSI driver {driver_name} storageCapacity to be {expected_value}, but got {actual_value}"
+        return actual_value
