@@ -33,9 +33,11 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
 Create deployment ${deployment_id} with volume ${volume_id}
+    [Arguments]    &{config}
     ${volume_id}=  Convert To String  ${volume_id}
-    Create persistentvolume for volume ${volume_id}
-    Create persistentvolumeclaim for volume ${volume_id}
+    Create persistentvolume for volume ${volume_id}    &{config}
+    ${sc_name}=    Evaluate    $config.get('sc_name', 'longhorn')
+    Create persistentvolumeclaim for volume ${volume_id}    sc_name=${sc_name}
     ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
     ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
     create_deployment    ${deployment_name}   ${pvc_name}
@@ -78,6 +80,12 @@ And Write ${size} MB data to block device in deployment ${deployment_id} and che
 Check deployment ${deployment_id} data in file ${file_name} is intact
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     check_workload_pod_data_checksum    ${deployment_name}    ${file_name}
+
+Check deployment ${deployment_id} data in file ${file_name} is intact compared to deployment ${source_deployment_id}
+    ${source_deployment_name} =    generate_name_with_suffix    deployment    ${source_deployment_id}
+    ${expected_checksum} =    get_workload_pod_data_checksum    ${source_deployment_name}    ${file_name}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    check_workload_pod_data_checksum    ${deployment_name}    ${file_name}    ${expected_checksum}
 
 Check deployment ${deployment_id} works    
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
