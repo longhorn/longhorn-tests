@@ -4509,7 +4509,8 @@ def cleanup_storage_class():
                        "premium-rwo", "standard-rwo", "standard",
                        "azurefile-csi", "azurefile-csi-premium",
                        "azurefile-premium", "managed", "managed-csi",
-                       "managed-csi-premium", "managed-premium"]
+                       "managed-csi-premium", "managed-premium",
+                       "dynamic-rwo"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
