@@ -33,7 +33,7 @@ from workload.workload import make_block_device_filesystem_in_workload_pod
 from workload.workload import mount_block_device_in_workload_pod
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
-from workload.workload import wait_for_workload_pods_container_creating
+from workload.workload import wait_for_workload_pods_container_creating_or_running
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pods_recreated
@@ -185,9 +185,9 @@ class workload_keywords:
         logging(f'Running commands {commands} in pod {pod_name}')
         run_commands_in_pod(pod_name, commands)
 
-    def wait_for_workload_pods_container_creating(self, workload_name, namespace="default"):
-        logging(f'Waiting for {namespace} workload {workload_name} pods container creating')
-        wait_for_workload_pods_container_creating(workload_name, namespace=namespace)
+    def wait_for_workload_pods_container_creating_or_running(self, workload_name, namespace="default"):
+        logging(f'Waiting for {namespace} workload {workload_name} pods container creating or running')
+        wait_for_workload_pods_container_creating_or_running(workload_name, namespace=namespace)
 
     def wait_for_workload_pods_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')
