@@ -4,6 +4,7 @@ Documentation       Longhorn replica related keywords
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/replica_keywords.py
 Library             ../libs/keywords/node_keywords.py
+Library             ../libs/keywords/workload_keywords.py
 
 *** Keywords ***
 Volume ${volume_id} replica ${setting_name} should be ${setting_value}
@@ -46,3 +47,8 @@ Verify replica lvol exists in SPDK lvol list on node ${node_id}
     [Arguments]    ${replica_name}
     ${node_name} =    get_node_by_index    ${node_id}
     verify_replica_lvol_exists_in_spdk_lvol    ${node_name}    ${replica_name}
+Assert replica file size of deployment ${deployment_id} is ${expected_size}
+    ${expected_bytes} =    convert_size_to_bytes    ${expected_size}    to_str=True
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    wait_for_replica_file_size    ${volume_name}    ${expected_bytes}
