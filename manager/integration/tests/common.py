@@ -2317,42 +2317,46 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
         completed = 0
         v = client.by_id_volume(volume_name)
         purge_status = v.purgeStatus
-        for status in purge_status:
-            assert status.error == ""
+        if purge_status:
+            for status in purge_status:
+                assert status.error == ""
 
-            progress = status.progress
-            assert progress <= 100
-            replica = status.replica
-            last = last_purge_progress.get(replica)
-            assert last is None or last <= status.progress
-            last_purge_progress["replica"] = progress
+                progress = status.progress
+                assert progress <= 100
+                replica = status.replica
+                last = last_purge_progress.get(replica)
+                assert last is None or last <= status.progress
+                last_purge_progress[replica] = progress
 
-            if status.state == "complete":
-                assert progress == 100
-                completed += 1
-        if completed == len(purge_status):
+                if status.state == "complete":
+                    assert progress == 100
+                    completed += 1
+            if completed == len(purge_status) and \
+                    is_snapshot_purge_completed(v, volume_name, *snaps):
+                break
+        elif is_snapshot_purge_completed(v, volume_name, *snaps):
             break
         time.sleep(RETRY_INTERVAL)
-    assert completed == len(purge_status)
+    assert purge_status is None or completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
     # should be removed or "marked as removed" in the case of
     # the latest snapshot.
-    found = False
-    snapshots = v.snapshotList(volume=volume_name)
+    assert is_snapshot_purge_completed(v, volume_name, *snaps)
+    return v
 
+
+def is_snapshot_purge_completed(v, volume_name, *snaps):
+    snapshots = v.snapshotList(volume=volume_name)
     for snap in snaps:
         for vs in snapshots.data:
             if snap == vs["name"]:
                 if vs["removed"] is False:
-                    found = True
-                    break
+                    return False
 
                 if "volume-head" not in vs["children"]:
-                    found = True
-                    break
-    assert not found
-    return v
+                    return False
+    return True
 
 
 def wait_for_engine_image_creation(client, image_name):

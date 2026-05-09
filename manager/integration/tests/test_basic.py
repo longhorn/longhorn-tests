@@ -5159,6 +5159,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_image=""):  # NOQA
     """
@@ -5175,8 +5176,10 @@ def test_snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing
     7. Mark all snapshots as `Removed`,
        then start snapshot purge and wait for complete.
     8. List snapshot.
-       Make sure there are only 2 snapshots left: `volume-head` and `snap4`.
-       And `snap4` is an empty snapshot.
+       Make sure snapshot purge reaches the expected data-engine-specific
+       result:
+       - v1 data engine: only `volume-head` and empty `snap4` remain.
+       - v2 data engine: only `volume-head` remains.
     9. Make sure volume's data is correct.
     """
     snapshot_prune_and_coalesce_simultaneously(
@@ -5230,17 +5233,20 @@ def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_imag
     # List and validate snap info
     volume = client.by_id_volume(volume_name)
     snaps = volume.snapshotList(volume=volume_name)
-    assert len(snaps) == 2
-    for snap in snaps:
-        if snap.name == VOLUME_HEAD_NAME:
-            assert snap.size == volume_head_before.size
-            assert snap.parent == snap4.name
-        else:
-            assert snap.name == snap4.name
-            assert int(snap.size) == 0
-            assert snap.parent == ""
-            assert VOLUME_HEAD_NAME in snap.children.keys()
-            continue
+    snap_map = {snap.name: snap for snap in snaps}
+    if DATA_ENGINE == "v2":
+        assert len(snap_map) == 1
+        assert VOLUME_HEAD_NAME in snap_map
+        assert snap_map[VOLUME_HEAD_NAME].parent == ""
+    else:
+        assert len(snap_map) == 2
+        assert VOLUME_HEAD_NAME in snap_map
+        assert snap4.name in snap_map
+        assert snap_map[VOLUME_HEAD_NAME].size == volume_head_before.size
+        assert snap_map[VOLUME_HEAD_NAME].parent == snap4.name
+        assert int(snap_map[snap4.name].size) == 0
+        assert snap_map[snap4.name].parent == ""
+        assert VOLUME_HEAD_NAME in snap_map[snap4.name].children.keys()
 
     # Verify the data
     cksum_after = get_device_checksum(volume_endpoint)
