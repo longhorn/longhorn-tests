@@ -37,7 +37,7 @@ from common import create_pvc_spec
 from common import generate_random_data, write_volume_data
 from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
-from common import find_backup, find_replica_for_backup
+from common import find_backup
 from common import wait_for_backup_completion, wait_for_backup_failed
 from common import create_storage_class
 from common import wait_for_backup_restore_completed
@@ -640,25 +640,99 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     write_volume_dev_random_mb_data(
         volume_endpoint, 0, data_size)
 
-    # create a snapshot and backup
-    snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    def wait_for_backup_status(snapshot_name, attempt):
+        last_snapshot_status = None
+        for _ in range(common.RETRY_BACKUP_COUNTS * 2):
+            volume = client.by_id_volume(volume_name)
+            for status in volume.backupStatus:
+                if status.snapshot != snapshot_name:
+                    continue
 
-    bv, b = find_backup(client, volume_name, snap.name)
-    backup_id = b.id
+                last_snapshot_status = {
+                    "id": status.id,
+                    "state": status.state,
+                    "progress": status.progress,
+                    "replica": status.replica,
+                }
 
-    # find the replica for this backup
-    replica_name = find_replica_for_backup(client, volume_name, backup_id)
+                if status.replica:
+                    print(
+                        f"Observed backup status for snapshot {snapshot_name} "
+                        f"during attempt {attempt}/{max_backup_attempts}: "
+                        f"id={status.id}, state={status.state}, "
+                        f"progress={status.progress}, replica={status.replica}"
+                    )
+                    return volume, status
+            time.sleep(common.RETRY_INTERVAL_SHORT)
+        assert False, (
+            f"failed to observe backup status with replica for snapshot "
+            f"{snapshot_name} during attempt {attempt}/{max_backup_attempts}; "
+            f"last seen status={last_snapshot_status}"
+        )
+
+    backup_id = None
+    backup_replica = None
+    max_backup_attempts = common.RETRY_COMMAND_COUNT
+
+    for attempt in range(max_backup_attempts):
+        snap = create_snapshot(client, volume_name)
+        print(
+            f"Starting backup attempt {attempt + 1}/{max_backup_attempts} "
+            f"for snapshot {snap.name}"
+        )
+        volume.snapshotBackup(name=snap.name)
+
+        volume, backup_status = wait_for_backup_status(snap.name,
+                                                       attempt + 1)
+
+        if backup_status.state == "Completed":
+            if attempt == max_backup_attempts - 1:
+                assert False, "backup completed before replica eviction in " \
+                    "every attempt"
+
+            print(
+                f"Backup {backup_status.id} for snapshot {snap.name} "
+                f"completed before replica eviction during attempt "
+                f"{attempt + 1}/{max_backup_attempts}; deleting it and "
+                f"retrying with freshly written data"
+            )
+            bv, completed_backup = find_backup(client, volume_name, snap.name)
+            delete_backup(client, bv, completed_backup.name)
+            volume = wait_for_volume_status(client, volume_name,
+                                            "lastBackup", "")
+            assert volume.lastBackupAt == ""
+
+            write_volume_dev_random_mb_data(volume_endpoint, 0, data_size)
+            continue
+
+        assert backup_status.state != "Error", \
+            f"backup {backup_status.id} unexpectedly entered Error " \
+            f"state: {backup_status.error}"
+        backup_id = backup_status.id
+        backup_replica = backup_status.replica
+        print(
+            f"Using backup {backup_id} from snapshot {snap.name} on "
+            f"replica {backup_replica} after attempt "
+            f"{attempt + 1}/{max_backup_attempts}"
+        )
+        break
+
+    assert backup_id
+    assert backup_replica
 
     # disable scheduling on that node
-    volume = client.by_id_volume(volume_name)
+    node = None
+    replica_name = None
     for r in volume.replicas:
-        if r.name == replica_name:
+        if r.name == backup_replica or r.address == backup_replica:
+            replica_name = r.name
             node = client.by_id_node(r.hostId)
             node = set_node_scheduling(client, node, allowScheduling=False)
             common.wait_for_node_update(client, node.id,
                                         "allowScheduling", False)
+            break
     assert node
+    assert replica_name
 
     # remove the replica with the backup
     volume.replicaRemove(name=replica_name)
@@ -677,7 +751,12 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
                                 "allowScheduling", True)
 
     # delete the old backup
-    delete_backup(client, bv, b.name)
+    # Note: in Longhorn, backupStatus.id and backup.name share the
+    # same value (e.g. "backup-<hex>"), so backup_id is usable as
+    # the backup_name parameter expected by delete_backup().
+    bv = common.find_backup_volume(client, volume_name,
+                                   common.RETRY_BACKUP_COUNTS)
+    delete_backup(client, bv, backup_id)
     volume = wait_for_volume_status(client, volume_name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
