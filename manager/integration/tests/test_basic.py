@@ -5472,15 +5472,18 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     snap = create_snapshot(client, volume_name)
     vol.snapshotBackup(name=snap.name)
 
-    # check backup status is in an InProgress state
-    _, backup = find_backup(client, volume_name, snap.name)
-    backup_id = backup.id
-    backup_name = backup.name
-
-    def backup_inprogress_predicate(b):
-        return b.id == backup_id and "InProgress" in b.state
-    common.wait_for_backup_state(client, volume_name,
-                                 backup_inprogress_predicate)
+    # find_backup() only sees completed backups, so for v2/SPDK we need to
+    # grab the in-progress backup directly from volume.backupStatus first.
+    vol = wait_for_backup_to_start(client, volume_name,
+                                   snapshot_name=snap.name)
+    backup_status = None
+    for b in vol.backupStatus:
+        if b.snapshot == snap.name and "InProgress" in b.state:
+            backup_status = b
+            break
+    assert backup_status is not None
+    backup_id = backup_status.id
+    backup_name = backup_id
 
     # crash all replicas of the volume
     try:
@@ -5497,6 +5500,7 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     return backup_name
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_backup_failed_enable_auto_cleanup(set_random_backupstore,  # NOQA
                                            client, core_api, volume_name):  # NOQA
