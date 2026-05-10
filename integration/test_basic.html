@@ -7349,14 +7349,16 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
             assert volume.conditions.TooManySnapshots.status == &#34;False&#34;
         else:
             expected_message = \
-                f&#34;Snapshots count is {count} over the warning threshold 100&#34;
+                f&#34;Snapshots count is {count} at or over\
+                 the warning threshold 100&#34;
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                        &#34;status&#34;, &#34;True&#34;,
                                                        expected_message)
 
     snap[max_count + 1] = create_snapshot(client, volume_name)
     expected_message = \
-        f&#34;Snapshots count is {max_count + 1} over the warning threshold 100&#34;
+        f&#34;Snapshots count is {max_count + 1} at or over\
+         the warning threshold 100&#34;
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                &#34;status&#34;, &#34;True&#34;,
                                                expected_message)
@@ -7364,6 +7366,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     volume = client.by_id_volume(volume_name)
     volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
+    volume.snapshotDelete(name=snap[99].name)
 
     # TODO: engine doesn&#39;t have purge status for v2 data engine
     # It will be implemented in
@@ -7371,7 +7374,9 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     if DATA_ENGINE == &#34;v1&#34;:
         volume.snapshotPurge()
         volume = wait_for_snapshot_purge(client, volume_name,
-                                         snap[101].name, snap[100].name)
+                                         snap[101].name,
+                                         snap[100].name,
+                                         snap[99].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                &#34;status&#34;, &#34;False&#34;)</code></pre>
