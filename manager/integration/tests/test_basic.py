@@ -5472,8 +5472,9 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     snap = create_snapshot(client, volume_name)
     vol.snapshotBackup(name=snap.name)
 
-    # find_backup() only sees completed backups, so for v2/SPDK we need to
-    # grab the in-progress backup directly from volume.backupStatus first.
+    # find_backup() only sees completed backups. For v2/SPDK this backup can
+    # already be in progress before it is visible in the backup store, so
+    # capture the in-progress backup from volume.backupStatus first.
     vol = wait_for_backup_to_start(client, volume_name,
                                    snapshot_name=snap.name)
     backup_status = None
@@ -5485,11 +5486,25 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     backup_id = backup_status.id
     backup_name = backup_id
 
+    # Keep the original v1 behavior: after crashing the replica processes,
+    # wait until each replica is observed in the failed state.
+    #
+    # For v2, we still use crash_replica_processes() to interrupt the replica
+    # data path, but the backup can fail before wait_for_replica_failed() gets
+    # a stable failedAt/running transition from the replica CR. In that case
+    # this test should validate the backup failure itself rather than require
+    # the transient v2 replica state to be observed here.
+    wait_to_fail = True
+    if DATA_ENGINE == "v2":
+        wait_to_fail = False
+
     # crash all replicas of the volume
     try:
-        crash_replica_processes(client, core_api, volume_name)
+        crash_replica_processes(client, core_api, volume_name,
+                                wait_to_fail=wait_to_fail)
     except AssertionError:
-        crash_replica_processes(client, core_api, volume_name)
+        crash_replica_processes(client, core_api, volume_name,
+                                wait_to_fail=wait_to_fail)
 
     # backup status should be in an Error state and with an error message
     def backup_failure_predicate(b):
@@ -5524,6 +5539,7 @@ def test_backup_failed_enable_auto_cleanup(set_random_backupstore,  # NOQA
     wait_for_backup_delete(client, volume_name, backup_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_backup_failed_disable_auto_cleanup(set_random_backupstore,  # NOQA
                                         client, core_api, volume_name):  # NOQA
