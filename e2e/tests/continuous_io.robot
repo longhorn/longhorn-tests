@@ -79,6 +79,14 @@ Continuous IO Test
         And Check deployment rwx-nfs-soft-mount-deploy data in file data.txt is intact
         And Check deployment bi-deploy data in file data.txt is intact
         ${current}=    Get Time    epoch
-
-        And Check Longhorn components resource usage
     END
+
+    And Stop writing data to pod of deployment rwo-deploy
+    And Stop writing data to pod of deployment rwx-deploy
+    And Stop writing data to pod of deployment strict-local-deploy
+    And Stop writing data to pod of deployment rwx-nfs-4-2rwx-nfs-4-2-deploy
+    And Stop writing data to pod of deployment rwx-nfs-hard-mount-deploy
+    And Stop writing data to pod of deployment rwx-nfs-soft-mount-deploy
+    And Stop writing data to pod of deployment bi-deploy
+
+    And Check Longhorn components resource usage
