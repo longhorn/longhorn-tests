@@ -2539,24 +2539,28 @@ def crash_replica_processes(client, api, volname, replicas=None,
         if DATA_ENGINE == "v2":
             replica_name = r["name"]
 
-            get_nqn_command = (
+            get_nqns_command = (
                 "go-spdk-helper nvmf subsystem-get | "
                 "tr \"'\" '\"' | "
                 "grep '\"nqn\"' | "
                 "grep '%s' | "
-                "head -n 1 | cut -d'\"' -f4"
+                "cut -d'\"' -f4"
             ) % replica_name
-            nqn = exec_instance_manager(api, r.instanceManagerName,
-                                        get_nqn_command).strip()
+            nqns = exec_instance_manager(api, r.instanceManagerName,
+                                         get_nqns_command).splitlines()
+            nqns = list(dict.fromkeys(
+                nqn.strip() for nqn in nqns if nqn.strip()
+            ))
 
-            assert nqn != "", \
-                f"Failed to extract NQN for replica {replica_name}"
+            assert nqns, \
+                f"Failed to extract NQNs for replica {replica_name}"
 
-            stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
-            print(f"Executing command: {stop_expose_command}")
-            exec_instance_manager(
-                api, r.instanceManagerName, stop_expose_command
-            )
+            for nqn in nqns:
+                stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
+                print(f"Executing command: {stop_expose_command}")
+                exec_instance_manager(
+                    api, r.instanceManagerName, stop_expose_command
+                )
         else:
             pgrep_command = f"pgrep -f {r['dataPath']}"
             pid = exec_instance_manager(api, r.instanceManagerName,
