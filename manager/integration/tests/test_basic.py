@@ -4135,14 +4135,16 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
             assert volume.conditions.TooManySnapshots.status == "False"
         else:
             expected_message = \
-                f"Snapshots count is {count} over the warning threshold 100"
+                f"Snapshots count is {count} at or over\
+                 the warning threshold 100"
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                        "status", "True",
                                                        expected_message)
 
     snap[max_count + 1] = create_snapshot(client, volume_name)
     expected_message = \
-        f"Snapshots count is {max_count + 1} over the warning threshold 100"
+        f"Snapshots count is {max_count + 1} at or over\
+         the warning threshold 100"
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "True",
                                                expected_message)
@@ -4150,6 +4152,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     volume = client.by_id_volume(volume_name)
     volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
+    volume.snapshotDelete(name=snap[99].name)
 
     # TODO: engine doesn't have purge status for v2 data engine
     # It will be implemented in
@@ -4157,7 +4160,9 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     if DATA_ENGINE == "v1":
         volume.snapshotPurge()
         volume = wait_for_snapshot_purge(client, volume_name,
-                                         snap[101].name, snap[100].name)
+                                         snap[101].name,
+                                         snap[100].name,
+                                         snap[99].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "False")
