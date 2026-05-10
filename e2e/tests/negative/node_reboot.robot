@@ -584,7 +584,7 @@ Power Off Replica Node Should Not Rebuild New Replica On Same Node
 
     Given Setting replica-replenishment-wait-interval is set to 30
     And Setting replica-soft-anti-affinity is set to false
-    And Create volume 0 with    size=1Gi    numberOfReplicas=3
+    And Create volume 0 with    size=1Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
     And Attach volume 0 to node 0
     And Record volume 0 replica names
 
