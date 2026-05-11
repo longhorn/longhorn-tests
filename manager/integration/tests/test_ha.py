@@ -1015,6 +1015,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     backupstore_cleanup(client)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
@@ -1152,13 +1153,23 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size1)
-    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
-    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    for snap in snapshots:
-        if snap["name"] != "volume-head":
-            assert snap["name"] == "expand-" + str(expand_size1)
-            assert not snap["usercreated"]
-            assert "volume-head" in snap["children"]
+    if DATA_ENGINE == "v1":
+        wait_for_snapshot_count(dr_volume, 2, count_removed=True)
+        snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+        for snap in snapshots:
+            if snap["name"] != "volume-head":
+                assert snap["name"] == "expand-" + str(expand_size1)
+                assert not snap["usercreated"]
+                assert "volume-head" in snap["children"]
+    else:
+        # v2 expansion resizes lvol bdevs directly without creating an
+        # expand-<size> snapshot, so only volume-head remains.
+        wait_for_snapshot_count(dr_volume, 1, count_removed=True)
+        snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+        assert len(snapshots.data) == 1
+        snap = snapshots.data[0]
+        assert snap["name"] == "volume-head"
+        assert snap["parent"] == ""
 
     # Step 14: Do online expansion for the std volume.
     expand_size2 = 3 * Gi
@@ -1187,13 +1198,21 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Then re-verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size2)
-    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
-    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    for snap in snapshots:
-        if snap["name"] != "volume-head":
-            assert snap["name"] == "expand-" + str(expand_size2)
-            assert not snap["usercreated"]
-            assert "volume-head" in snap["children"]
+    if DATA_ENGINE == "v1":
+        wait_for_snapshot_count(dr_volume, 2, count_removed=True)
+        snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+        for snap in snapshots:
+            if snap["name"] != "volume-head":
+                assert snap["name"] == "expand-" + str(expand_size2)
+                assert not snap["usercreated"]
+                assert "volume-head" in snap["children"]
+    else:
+        wait_for_snapshot_count(dr_volume, 1, count_removed=True)
+        snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+        assert len(snapshots.data) == 1
+        snap = snapshots.data[0]
+        assert snap["name"] == "volume-head"
+        assert snap["parent"] == ""
 
     activate_standby_volume(client, dr_volume_name)
     wait_for_volume_detached(client, dr_volume_name)
