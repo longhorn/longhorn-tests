@@ -10,16 +10,32 @@ node {
 
     checkout scm
 
-    withCredentials([usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+    withCredentials([
+        usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME'),
+        usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        string(credentialsId: 'AWS_DEFAULT_REGION', variable: 'AWS_DEFAULT_REGION'),
+        string(credentialsId: 'AWS_PRIVATE_ECR', variable: 'AWS_PRIVATE_ECR'),
+        file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),
+        usernamePassword(credentialsId: 'APPCO_CREDS', passwordVariable: 'APPCO_PASSWORD', usernameVariable: 'APPCO_USERNAME'),
+    ]) {
         stage('build') {
 
+            sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
             sh "mirror_csi_images/scripts/build.sh"
 
             sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                    --env DOCKER_USERNAME="${DOCKER_USERNAME}" \
                                    --env DOCKER_PASSWORD="${DOCKER_PASSWORD}" \
+                                   --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
+                                   --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
+                                   --env AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
+                                   --env AWS_PRIVATE_ECR=${AWS_PRIVATE_ECR} \
                                    --env LONGHORN_IMAGES_FILE_URL=${LONGHORN_IMAGES_FILE_URL} \
                                    --env CSI_IMAGES=${CSI_IMAGES} \
+                                   --env APPCO_USERNAME=${APPCO_USERNAME} \
+                                   --env APPCO_PASSWORD=${APPCO_PASSWORD} \
+                                   --dns=10.113.53.53 \
+                                   --dns=10.113.53.54 \
                                    ${imageName}
             """
         }

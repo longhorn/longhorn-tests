@@ -5,6 +5,8 @@ export DOCKER_CLI_EXPERIMENTAL="enabled"
 
 ARCH_LIST="amd64 arm64 arm s390x"
 
+AWS_PAGER=""
+
 function copy_if_changed {
   SOURCE_REF="${1}"
   DEST_REF="${2}"
@@ -62,6 +64,10 @@ function mirror_image {
   TAG="${3}"
 
   trap 'echo -e "===\nFailed copying image for ${DEST_SPEC}\n==="' ERR
+
+  if [[ "${DEST_SPEC}" =~ "${AWS_PRIVATE_ECR}" ]]; then
+    aws ecr describe-repositories --repository-names "${SOURCE_SPEC}" --region "${AWS_DEFAULT_REGION}" >/dev/null 2>&1 || aws ecr create-repository --repository-name "${SOURCE_SPEC}" --region "${AWS_DEFAULT_REGION}"
+  fi
 
   # ensure that source specifies an explicit registry and repository
   IFS=/ read -a SOURCE <<< ${SOURCE_SPEC}

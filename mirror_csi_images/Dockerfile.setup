@@ -4,7 +4,15 @@ ENV WORKSPACE /src/longhorn-tests
 
 WORKDIR $WORKSPACE
 
-RUN apk add --no-cache skopeo docker jq bash grep
+COPY SUSE_Trust_Root.crt /usr/local/share/ca-certificates/SUSE_Trust_Root.crt
+RUN apk update && \
+    apk add --no-cache ca-certificates yq curl bash openssl && \
+    update-ca-certificates && \
+    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+    chmod 700 get_helm.sh && \
+    ./get_helm.sh
+
+RUN apk add --no-cache skopeo docker jq bash grep aws-cli
 
 COPY --from=docker/buildx-bin:v0.30 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 
