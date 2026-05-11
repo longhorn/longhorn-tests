@@ -9,7 +9,11 @@ create_registry_secret(){
   # set debugging mode off to avoid leaking docker secrets to the logs.
   # DON'T REMOVE!
   set +x
-  if [[ -z "${REGISTRY_URL}" ]]; then
+  if [[ "${REGISTRY_URL}" =~ "dkr.ecr" ]]; then
+    TOKEN=$(aws ecr get-login-password --region "${AWS_DEFAULT_REGION}")
+    kubectl -n default create secret docker-registry docker-registry-secret --docker-server="${REGISTRY_URL}" --docker-username=AWS --docker-password=${TOKEN} --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n "${LONGHORN_NAMESPACE}" create secret docker-registry docker-registry-secret --docker-server="${REGISTRY_URL}" --docker-username=AWS --docker-password=${TOKEN} --dry-run=client -o yaml | kubectl apply -f -
+  elif [[ -z "${REGISTRY_URL}" ]]; then
     # use --dry-run=client -o yaml | kubectl apply -f - to avoid errors when the secret already exists
     kubectl -n default create secret docker-registry docker-registry-secret --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD} --dry-run=client -o yaml | kubectl apply -f -
     kubectl -n "${LONGHORN_NAMESPACE}" create secret docker-registry docker-registry-secret --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD} --dry-run=client -o yaml | kubectl apply -f -
