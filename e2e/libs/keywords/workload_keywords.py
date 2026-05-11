@@ -28,7 +28,7 @@ from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
 from workload.workload import is_workload_pods_has_annotations
 from workload.workload import is_workload_pods_has_cni_interface
-from workload.workload import keep_writing_pod_data
+from workload.workload import keep_writing_pod_data, stop_writing_pod_data
 from workload.workload import make_block_device_filesystem_in_workload_pod
 from workload.workload import mount_block_device_in_workload_pod
 from workload.workload import write_pod_random_data
@@ -173,6 +173,12 @@ class workload_keywords:
 
         logging(f'Keep writing data to pod {pod_name}')
         keep_writing_pod_data(pod_name)
+
+    def stop_writing_workload_pod_data(self, workload_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Stopping writing data to pod {pod_name}')
+        stop_writing_pod_data(pod_name)
 
     def run_commands_workload_pod(self, workload_name, commands):
         pod_name = get_workload_pod_names(workload_name)[0]
