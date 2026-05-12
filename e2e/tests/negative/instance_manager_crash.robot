@@ -10,6 +10,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/host.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backup.resource
@@ -116,3 +117,12 @@ Crash Single Instance Manager While RWX Volume Backup Is Restoring
 Crash Single Instance Manager While RWX Encrypted Volume Backup Is Restoring
     [Tags]    encrypted    rwx    volume    backup-restore
     Test Instance Manager Crash During Backup Restoration    access_mode=RWX    encrypted=${True}
+
+Test Encrypted Volume After Node Reboot And Instance Manager Crash
+    [Tags]    encrypted    rwo
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11510
+    Given Power off node 0
+    And Sleep    300
+    And Power on off nodes
+    And Wait for longhorn ready
+    And Test Instance Manager Crash During Workload Pod Starting    access_mode=RWO    encrypted=${True}
