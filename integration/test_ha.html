@@ -271,7 +271,7 @@ el.replaceWith(d);
     volume = common.wait_for_volume_faulted(client, volume_name)
 
     if DATA_ENGINE == &#34;v2&#34;:
-        wait_for_all_nodes_disks_schedulable(client)
+        wait_for_all_nodes_disks_schedulable(client, disk_type=&#34;block&#34;)
     volume.salvage(names=[replica0_name, replica1_name])
     volume = client.by_id_volume(volume_name)
 

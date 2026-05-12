@@ -1481,24 +1481,28 @@ def core_api(request):
         if DATA_ENGINE == &#34;v2&#34;:
             replica_name = r[&#34;name&#34;]
 
-            get_nqn_command = (
+            get_nqns_command = (
                 &#34;go-spdk-helper nvmf subsystem-get | &#34;
                 &#34;tr \&#34;&#39;\&#34; &#39;\&#34;&#39; | &#34;
                 &#34;grep &#39;\&#34;nqn\&#34;&#39; | &#34;
                 &#34;grep &#39;%s&#39; | &#34;
-                &#34;head -n 1 | cut -d&#39;\&#34;&#39; -f4&#34;
+                &#34;cut -d&#39;\&#34;&#39; -f4&#34;
             ) % replica_name
-            nqn = exec_instance_manager(api, r.instanceManagerName,
-                                        get_nqn_command).strip()
+            nqns = exec_instance_manager(api, r.instanceManagerName,
+                                         get_nqns_command).splitlines()
+            nqns = list(dict.fromkeys(
+                nqn.strip() for nqn in nqns if nqn.strip()
+            ))
 
-            assert nqn != &#34;&#34;, \
-                f&#34;Failed to extract NQN for replica {replica_name}&#34;
+            assert nqns, \
+                f&#34;Failed to extract NQNs for replica {replica_name}&#34;
 
-            stop_expose_command = f&#34;go-spdk-helper expose stop --nqn {nqn}&#34;
-            print(f&#34;Executing command: {stop_expose_command}&#34;)
-            exec_instance_manager(
-                api, r.instanceManagerName, stop_expose_command
-            )
+            for nqn in nqns:
+                stop_expose_command = f&#34;go-spdk-helper expose stop --nqn {nqn}&#34;
+                print(f&#34;Executing command: {stop_expose_command}&#34;)
+                exec_instance_manager(
+                    api, r.instanceManagerName, stop_expose_command
+                )
         else:
             pgrep_command = f&#34;pgrep -f {r[&#39;dataPath&#39;]}&#34;
             pid = exec_instance_manager(api, r.instanceManagerName,
@@ -4708,6 +4712,28 @@ IPv4 example: 10.0.1.24:4420 -&gt; 10.0.1.24</p></div>
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.is_snapshot_purge_completed"><code class="name flex">
+<span>def <span class="ident">is_snapshot_purge_completed</span></span>(<span>v, volume_name, *snaps)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_snapshot_purge_completed(v, volume_name, *snaps):
+    snapshots = v.snapshotList(volume=volume_name)
+    for snap in snaps:
+        for vs in snapshots.data:
+            if snap == vs[&#34;name&#34;]:
+                if vs[&#34;removed&#34;] is False:
+                    return False
+
+                if &#34;volume-head&#34; not in vs[&#34;children&#34;]:
+                    return False
+    return True</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.iscsi_login"><code class="name flex">
 <span>def <span class="ident">iscsi_login</span></span>(<span>iscsi_ep)</span>
 </code></dt>
@@ -7282,14 +7308,14 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_all_nodes_disks_schedulable"><code class="name flex">
-<span>def <span class="ident">wait_for_all_nodes_disks_schedulable</span></span>(<span>client)</span>
+<span>def <span class="ident">wait_for_all_nodes_disks_schedulable</span></span>(<span>client, disk_type=None)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_all_nodes_disks_schedulable(client):
+<pre><code class="python">def wait_for_all_nodes_disks_schedulable(client, disk_type=None):
     for _ in range(RETRY_COUNTS):
         nodes = client.list_node()
         all_disks_ready = True
@@ -7297,6 +7323,11 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
             node_name = getattr(node, &#34;name&#34;, &#34;&lt;unknown&gt;&#34;)
             disk_statuses = getattr(node, &#34;disks&#34;, {})
             for disk_name, disk_status in disk_statuses.items():
+                if disk_type is not None:
+                    dt = getattr(disk_status, &#34;diskType&#34;, None) or \
+                        disk_status.get(&#34;diskType&#34;, None)
+                    if dt != disk_type:
+                        continue
                 schedulable = False
                 conditions = disk_status.get(&#34;conditions&#34;, {})
                 sched_status = conditions.get(&#34;Schedulable&#34;, {}).get(&#34;status&#34;)
@@ -8950,41 +8981,32 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
         completed = 0
         v = client.by_id_volume(volume_name)
         purge_status = v.purgeStatus
-        for status in purge_status:
-            assert status.error == &#34;&#34;
+        if purge_status:
+            for status in purge_status:
+                assert status.error == &#34;&#34;
 
-            progress = status.progress
-            assert progress &lt;= 100
-            replica = status.replica
-            last = last_purge_progress.get(replica)
-            assert last is None or last &lt;= status.progress
-            last_purge_progress[&#34;replica&#34;] = progress
+                progress = status.progress
+                assert progress &lt;= 100
+                replica = status.replica
+                last = last_purge_progress.get(replica)
+                assert last is None or last &lt;= status.progress
+                last_purge_progress[replica] = progress
 
-            if status.state == &#34;complete&#34;:
-                assert progress == 100
-                completed += 1
-        if completed == len(purge_status):
+                if status.state == &#34;complete&#34;:
+                    assert progress == 100
+                    completed += 1
+            if completed == len(purge_status) and \
+                    is_snapshot_purge_completed(v, volume_name, *snaps):
+                break
+        elif is_snapshot_purge_completed(v, volume_name, *snaps):
             break
         time.sleep(RETRY_INTERVAL)
-    assert completed == len(purge_status)
+    assert purge_status is None or completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
     # should be removed or &#34;marked as removed&#34; in the case of
     # the latest snapshot.
-    found = False
-    snapshots = v.snapshotList(volume=volume_name)
-
-    for snap in snaps:
-        for vs in snapshots.data:
-            if snap == vs[&#34;name&#34;]:
-                if vs[&#34;removed&#34;] is False:
-                    found = True
-                    break
-
-                if &#34;volume-head&#34; not in vs[&#34;children&#34;]:
-                    found = True
-                    break
-    assert not found
+    assert is_snapshot_purge_completed(v, volume_name, *snaps)
     return v</code></pre>
 </details>
 <div class="desc"></div>
@@ -10508,6 +10530,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.is_k8s_node_gke_cos" href="#tests.common.is_k8s_node_gke_cos">is_k8s_node_gke_cos</a></code></li>
 <li><code><a title="tests.common.is_k8s_node_label" href="#tests.common.is_k8s_node_label">is_k8s_node_label</a></code></li>
 <li><code><a title="tests.common.is_replica_available" href="#tests.common.is_replica_available">is_replica_available</a></code></li>
+<li><code><a title="tests.common.is_snapshot_purge_completed" href="#tests.common.is_snapshot_purge_completed">is_snapshot_purge_completed</a></code></li>
 <li><code><a title="tests.common.iscsi_login" href="#tests.common.iscsi_login">iscsi_login</a></code></li>
 <li><code><a title="tests.common.iscsi_logout" href="#tests.common.iscsi_logout">iscsi_logout</a></code></li>
 <li><code><a title="tests.common.json_string_go_to_python" href="#tests.common.json_string_go_to_python">json_string_go_to_python</a></code></li>
