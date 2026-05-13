@@ -288,15 +288,16 @@ Test DR Volume Incremental Restore After Source Volume Expansion
     Then Record file data1 checksum in deployment 0 as checksum 1
 
     When Create backup 1 for deployment 0 volume
-    And Wait for volume 1 restoration from backup 1 of deployment 0 volume completed
+    Then Wait for volume 1 restoration from backup 1 of deployment 0 volume completed
+    And Wait for volume 1 size to be 3Gi
 
     # Scenario 3: Volume data verification
-    And Activate DR volume 1
+    When Activate DR volume 1
     Then Wait for volume 1 detached
     And Create persistentvolume for volume 1
     And Create persistentvolumeclaim for volume 1
     And Create pod 1 using volume 1
-    Then Wait for pod 1 running
+    And Wait for pod 1 running
     And Check pod 1 file data0 checksum matches checksum 0
     And Check pod 1 file data1 checksum matches checksum 1
 
