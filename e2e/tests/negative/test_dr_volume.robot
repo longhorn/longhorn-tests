@@ -53,7 +53,7 @@ DR Volume Node Reboot During Initial Restoration
         And Attach volume 1 to healthy node
         And Wait for volume 1 healthy
         Then Check volume 1 data is backup 0 of volume 0
-        Then Detach volume 1
+        Then Detach volume 1 from attached node
         And Delete volume 1
     END
 
