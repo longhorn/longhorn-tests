@@ -1130,7 +1130,8 @@ properly.
                        &#34;premium-rwo&#34;, &#34;standard-rwo&#34;, &#34;standard&#34;,
                        &#34;azurefile-csi&#34;, &#34;azurefile-csi-premium&#34;,
                        &#34;azurefile-premium&#34;, &#34;managed&#34;, &#34;managed-csi&#34;,
-                       &#34;managed-csi-premium&#34;, &#34;managed-premium&#34;]
+                       &#34;managed-csi-premium&#34;, &#34;managed-premium&#34;,
+                       &#34;dynamic-rwo&#34;]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
