@@ -37,7 +37,7 @@ from common import create_pvc_spec
 from common import generate_random_data, write_volume_data
 from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
-from common import find_backup, find_replica_for_backup
+from common import find_backup
 from common import wait_for_backup_completion, wait_for_backup_failed
 from common import create_storage_class
 from common import wait_for_backup_restore_completed
@@ -640,25 +640,99 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     write_volume_dev_random_mb_data(
         volume_endpoint, 0, data_size)
 
-    # create a snapshot and backup
-    snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    def wait_for_backup_status(snapshot_name, attempt):
+        last_snapshot_status = None
+        for _ in range(common.RETRY_BACKUP_COUNTS * 2):
+            volume = client.by_id_volume(volume_name)
+            for status in volume.backupStatus:
+                if status.snapshot != snapshot_name:
+                    continue
 
-    bv, b = find_backup(client, volume_name, snap.name)
-    backup_id = b.id
+                last_snapshot_status = {
+                    "id": status.id,
+                    "state": status.state,
+                    "progress": status.progress,
+                    "replica": status.replica,
+                }
 
-    # find the replica for this backup
-    replica_name = find_replica_for_backup(client, volume_name, backup_id)
+                if status.replica:
+                    print(
+                        f"Observed backup status for snapshot {snapshot_name} "
+                        f"during attempt {attempt}/{max_backup_attempts}: "
+                        f"id={status.id}, state={status.state}, "
+                        f"progress={status.progress}, replica={status.replica}"
+                    )
+                    return volume, status
+            time.sleep(common.RETRY_INTERVAL_SHORT)
+        assert False, (
+            f"failed to observe backup status with replica for snapshot "
+            f"{snapshot_name} during attempt {attempt}/{max_backup_attempts}; "
+            f"last seen status={last_snapshot_status}"
+        )
+
+    backup_id = None
+    backup_replica = None
+    max_backup_attempts = common.RETRY_COMMAND_COUNT
+
+    for attempt in range(max_backup_attempts):
+        snap = create_snapshot(client, volume_name)
+        print(
+            f"Starting backup attempt {attempt + 1}/{max_backup_attempts} "
+            f"for snapshot {snap.name}"
+        )
+        volume.snapshotBackup(name=snap.name)
+
+        volume, backup_status = wait_for_backup_status(snap.name,
+                                                       attempt + 1)
+
+        if backup_status.state == "Completed":
+            if attempt == max_backup_attempts - 1:
+                assert False, "backup completed before replica eviction in " \
+                    "every attempt"
+
+            print(
+                f"Backup {backup_status.id} for snapshot {snap.name} "
+                f"completed before replica eviction during attempt "
+                f"{attempt + 1}/{max_backup_attempts}; deleting it and "
+                f"retrying with freshly written data"
+            )
+            bv, completed_backup = find_backup(client, volume_name, snap.name)
+            delete_backup(client, bv, completed_backup.name)
+            volume = wait_for_volume_status(client, volume_name,
+                                            "lastBackup", "")
+            assert volume.lastBackupAt == ""
+
+            write_volume_dev_random_mb_data(volume_endpoint, 0, data_size)
+            continue
+
+        assert backup_status.state != "Error", \
+            f"backup {backup_status.id} unexpectedly entered Error " \
+            f"state: {backup_status.error}"
+        backup_id = backup_status.id
+        backup_replica = backup_status.replica
+        print(
+            f"Using backup {backup_id} from snapshot {snap.name} on "
+            f"replica {backup_replica} after attempt "
+            f"{attempt + 1}/{max_backup_attempts}"
+        )
+        break
+
+    assert backup_id
+    assert backup_replica
 
     # disable scheduling on that node
-    volume = client.by_id_volume(volume_name)
+    node = None
+    replica_name = None
     for r in volume.replicas:
-        if r.name == replica_name:
+        if r.name == backup_replica or r.address == backup_replica:
+            replica_name = r.name
             node = client.by_id_node(r.hostId)
             node = set_node_scheduling(client, node, allowScheduling=False)
             common.wait_for_node_update(client, node.id,
                                         "allowScheduling", False)
+            break
     assert node
+    assert replica_name
 
     # remove the replica with the backup
     volume.replicaRemove(name=replica_name)
@@ -677,7 +751,12 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
                                 "allowScheduling", True)
 
     # delete the old backup
-    delete_backup(client, bv, b.name)
+    # Note: in Longhorn, backupStatus.id and backup.name share the
+    # same value (e.g. "backup-<hex>"), so backup_id is usable as
+    # the backup_name parameter expected by delete_backup().
+    bv = common.find_backup_volume(client, volume_name,
+                                   common.RETRY_BACKUP_COUNTS)
+    delete_backup(client, bv, backup_id)
     volume = wait_for_volume_status(client, volume_name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
@@ -4135,14 +4214,16 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
             assert volume.conditions.TooManySnapshots.status == "False"
         else:
             expected_message = \
-                f"Snapshots count is {count} over the warning threshold 100"
+                f"Snapshots count is {count} at or over\
+                 the warning threshold 100"
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                        "status", "True",
                                                        expected_message)
 
     snap[max_count + 1] = create_snapshot(client, volume_name)
     expected_message = \
-        f"Snapshots count is {max_count + 1} over the warning threshold 100"
+        f"Snapshots count is {max_count + 1} at or over\
+         the warning threshold 100"
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "True",
                                                expected_message)
@@ -4150,6 +4231,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     volume = client.by_id_volume(volume_name)
     volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
+    volume.snapshotDelete(name=snap[99].name)
 
     # TODO: engine doesn't have purge status for v2 data engine
     # It will be implemented in
@@ -4157,7 +4239,9 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     if DATA_ENGINE == "v1":
         volume.snapshotPurge()
         volume = wait_for_snapshot_purge(client, volume_name,
-                                         snap[101].name, snap[100].name)
+                                         snap[101].name,
+                                         snap[100].name,
+                                         snap[99].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "False")
@@ -4888,6 +4972,7 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
     # step 8 in finalizer
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_snapshot_prune(client, volume_name, backing_image=""):  # NOQA
     """
@@ -4956,35 +5041,73 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     cksum_before = get_device_checksum(volume_endpoint)
 
     # All data in snap1 should be pruned.
-    volume.snapshotDelete(name=snap1_before.name)
-    volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name, snap1_before.name)
-    snap1_after = volume.snapshotGet(name=snap1_before.name)
+    #
+    # Keep the original v1 flow: mark the engine snapshot removed and then
+    # wait for snapshot purge.
+    #
+    # For v2, deleting only the engine snapshot can leave the
+    # snapshot-controller attachment ticket behind even after the snapshot is
+    # already gone from snapshotList(). That stale ticket can block the later
+    # detach/expand flow, so delete the snapshot CR and wait until the CR is
+    # gone as well.
+    if DATA_ENGINE == "v1":
+        volume.snapshotDelete(name=snap1_before.name)
+        volume.snapshotPurge()
+        volume = wait_for_snapshot_purge(client, volume_name,
+                                         snap1_before.name)
+    else:
+        volume.snapshotCRDelete(name=snap1_before.name)
+        wait_for_snapshot_cr_count(volume, 0, count_removed=True)
+        volume = client.by_id_volume(volume_name)
     volume_head1 = volume.snapshotGet(name=VOLUME_HEAD_NAME)
-    snap1_after_size = int(snap1_after.size)
     cksum_after = get_device_checksum(volume_endpoint)
-    assert snap1_after.removed
-    assert snap1_after_size == 0
+    snap1_after_size = 0
+    if DATA_ENGINE == "v1":
+        snap1_after = volume.snapshotGet(name=snap1_before.name)
+        snap1_after_size = int(snap1_after.size)
+        assert snap1_after.removed
+        assert snap1_after_size == 0
+    else:
+        # v2 may remove the pruned snapshot from the engine snapshot list
+        # immediately instead of keeping it queryable with removed=True and
+        # size=0.
+        snapshots = {
+            snap.name: snap for snap in volume.snapshotList(volume=volume_name)
+        }
+        assert snap1_before.name not in snapshots
     assert cksum_before == cksum_after
 
     # Expansion will implicitly created a system snapshot `snap2`
     offline_expand_attached_volume(client, volume_name)
     volume = client.by_id_volume(volume_name)
-    for snap in volume.snapshotList(volume=volume_name):
-        # In the future, there may be an automatic purge operation
-        # after expansion
-        if snap.name == snap1_before.name:
-            assert snap.name == snap1_before.name
-            assert snap.removed
-            assert VOLUME_HEAD_NAME not in snap.children.keys()
-            continue
-        if snap.name != VOLUME_HEAD_NAME:
-            snap2_before = snap
-            assert not snap.usercreated
-            assert snap.size == volume_head1.size
-            assert snap.parent == snap1_before.name
-            assert VOLUME_HEAD_NAME in snap.children.keys()
-            continue
+    snap2_before = None
+    if DATA_ENGINE == "v1":
+        for snap in volume.snapshotList(volume=volume_name):
+            # In the future, there may be an automatic purge operation
+            # after expansion
+            if snap.name == snap1_before.name:
+                assert snap.name == snap1_before.name
+                assert snap.removed
+                assert VOLUME_HEAD_NAME not in snap.children.keys()
+                continue
+            if snap.name != VOLUME_HEAD_NAME:
+                snap2_before = snap
+                assert not snap.usercreated
+                assert snap.size == volume_head1.size
+                assert snap.parent == snap1_before.name
+                assert VOLUME_HEAD_NAME in snap.children.keys()
+                continue
+    else:
+        # v2 expansion does not keep the v1-style implicit system snapshot once
+        # the pruned predecessor is already gone. Create a fresh baseline
+        # snapshot here so the later partial-overlap prune path still exercises
+        # snapshot pruning semantics without changing the v1 assertions.
+        snapshots = {
+            snap.name: snap for snap in volume.snapshotList(volume=volume_name)
+        }
+        assert VOLUME_HEAD_NAME in snapshots
+        assert len(snapshots) == 1
+        snap2_before = create_snapshot(client, volume_name)
     assert snap2_before
     snap2_before_size = int(snap2_before.size)
 
@@ -5002,17 +5125,32 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
                                     snap3_offset2, snap_data_size_in_mb)
     cksum_before = get_device_checksum(volume_endpoint)
 
-    # Pruning snap2 as well as coalescing snap1 with snap2
-    volume.snapshotDelete(name=snap2_before.name)
-    volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name, snap2_before.name)
-    snap2_after = volume.snapshotGet(name=snap2_before.name)
-    snap2_after_size = int(snap2_after.size)
+    # Pruning snap2 as well as coalescing snap1 with snap2.
+    # Keep v1 on snapshotDelete()+snapshotPurge(), but for v2 remove the
+    # snapshot CR so the snapshot-controller ticket is cleaned up too.
+    if DATA_ENGINE == "v1":
+        volume.snapshotDelete(name=snap2_before.name)
+        volume.snapshotPurge()
+        volume = wait_for_snapshot_purge(client, volume_name,
+                                         snap2_before.name)
+    else:
+        volume.snapshotCRDelete(name=snap2_before.name)
+        wait_for_snapshot_cr_count(volume, 0, count_removed=True)
+        volume = client.by_id_volume(volume_name)
     cksum_after = get_device_checksum(volume_endpoint)
-    assert snap2_after.removed
-    assert snap2_before_size >= snap2_after_size - snap1_after_size - \
-           fiemap_max_size + \
-           (snap2_offset + snap_data_size_in_mb - snap3_offset1) * Mi
+    snap2_after_size = 0
+    if DATA_ENGINE == "v1":
+        snap2_after = volume.snapshotGet(name=snap2_before.name)
+        snap2_after_size = int(snap2_after.size)
+        assert snap2_after.removed
+        assert snap2_before_size >= snap2_after_size - snap1_after_size - \
+               fiemap_max_size + \
+               (snap2_offset + snap_data_size_in_mb - snap3_offset1) * Mi
+    else:
+        snapshots = {
+            snap.name: snap for snap in volume.snapshotList(volume=volume_name)
+        }
+        assert snap2_before.name not in snapshots
 
     assert cksum_before == cksum_after
 
@@ -5026,16 +5164,30 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     write_volume_dev_random_mb_data(volume_endpoint,
                                     snap4_offset, snap_data_size_in_mb)
     cksum_before = get_device_checksum(volume_endpoint)
-    # Pruning snap3 then coalescing snap2 with snap3
-    volume.snapshotDelete(name=snap3_before.name)
-    volume.snapshotPurge()
-    volume = wait_for_snapshot_purge(client, volume_name, snap3_before.name)
-    snap3_after = volume.snapshotGet(name=snap3_before.name)
-    snap3_after_size = int(snap3_after.size)
+    # Pruning snap3 then coalescing snap2 with snap3.
+    # Same split as above: preserve the original v1 purge flow and use
+    # snapshotCRDelete() only for v2.
+    if DATA_ENGINE == "v1":
+        volume.snapshotDelete(name=snap3_before.name)
+        volume.snapshotPurge()
+        volume = wait_for_snapshot_purge(client, volume_name,
+                                         snap3_before.name)
+    else:
+        volume.snapshotCRDelete(name=snap3_before.name)
+        wait_for_snapshot_cr_count(volume, 0, count_removed=True)
+        volume = client.by_id_volume(volume_name)
     cksum_after = get_device_checksum(volume_endpoint)
-    assert snap3_after.removed
-    assert snap3_before_size >= snap3_after_size - snap2_after_size - \
-           fiemap_max_size
+    if DATA_ENGINE == "v1":
+        snap3_after = volume.snapshotGet(name=snap3_before.name)
+        snap3_after_size = int(snap3_after.size)
+        assert snap3_after.removed
+        assert snap3_before_size >= snap3_after_size - snap2_after_size - \
+               fiemap_max_size
+    else:
+        snapshots = {
+            snap.name: snap for snap in volume.snapshotList(volume=volume_name)
+        }
+        assert snap3_before.name not in snapshots
     assert cksum_before == cksum_after
 
     snap4 = create_snapshot(client, volume_name)
@@ -5057,7 +5209,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     check_volume_endpoint(volume)
     # Reverting to a removed snapshot should fail
     with pytest.raises(Exception):
-        volume.snapshotRevert(name=snap3_after.name)
+        volume.snapshotRevert(name=snap3_before.name)
     # Reverting to snap4 should succeed
     volume.snapshotRevert(name=snap4.name)
     volume.detach()
@@ -5075,6 +5227,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_image=""):  # NOQA
     """
@@ -5091,8 +5244,10 @@ def test_snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing
     7. Mark all snapshots as `Removed`,
        then start snapshot purge and wait for complete.
     8. List snapshot.
-       Make sure there are only 2 snapshots left: `volume-head` and `snap4`.
-       And `snap4` is an empty snapshot.
+       Make sure snapshot purge reaches the expected data-engine-specific
+       result:
+       - v1 data engine: only `volume-head` and empty `snap4` remain.
+       - v2 data engine: only `volume-head` remains.
     9. Make sure volume's data is correct.
     """
     snapshot_prune_and_coalesce_simultaneously(
@@ -5146,17 +5301,20 @@ def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_imag
     # List and validate snap info
     volume = client.by_id_volume(volume_name)
     snaps = volume.snapshotList(volume=volume_name)
-    assert len(snaps) == 2
-    for snap in snaps:
-        if snap.name == VOLUME_HEAD_NAME:
-            assert snap.size == volume_head_before.size
-            assert snap.parent == snap4.name
-        else:
-            assert snap.name == snap4.name
-            assert int(snap.size) == 0
-            assert snap.parent == ""
-            assert VOLUME_HEAD_NAME in snap.children.keys()
-            continue
+    snap_map = {snap.name: snap for snap in snaps}
+    if DATA_ENGINE == "v2":
+        assert len(snap_map) == 1
+        assert VOLUME_HEAD_NAME in snap_map
+        assert snap_map[VOLUME_HEAD_NAME].parent == ""
+    else:
+        assert len(snap_map) == 2
+        assert VOLUME_HEAD_NAME in snap_map
+        assert snap4.name in snap_map
+        assert snap_map[VOLUME_HEAD_NAME].size == volume_head_before.size
+        assert snap_map[VOLUME_HEAD_NAME].parent == snap4.name
+        assert int(snap_map[snap4.name].size) == 0
+        assert snap_map[snap4.name].parent == ""
+        assert VOLUME_HEAD_NAME in snap_map[snap4.name].children.keys()
 
     # Verify the data
     cksum_after = get_device_checksum(volume_endpoint)
@@ -5382,21 +5540,39 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     snap = create_snapshot(client, volume_name)
     vol.snapshotBackup(name=snap.name)
 
-    # check backup status is in an InProgress state
-    _, backup = find_backup(client, volume_name, snap.name)
-    backup_id = backup.id
-    backup_name = backup.name
+    # find_backup() only sees completed backups. For v2/SPDK this backup can
+    # already be in progress before it is visible in the backup store, so
+    # capture the in-progress backup from volume.backupStatus first.
+    vol = wait_for_backup_to_start(client, volume_name,
+                                   snapshot_name=snap.name)
+    backup_status = None
+    for b in vol.backupStatus:
+        if b.snapshot == snap.name and "InProgress" in b.state:
+            backup_status = b
+            break
+    assert backup_status is not None
+    backup_id = backup_status.id
+    backup_name = backup_id
 
-    def backup_inprogress_predicate(b):
-        return b.id == backup_id and "InProgress" in b.state
-    common.wait_for_backup_state(client, volume_name,
-                                 backup_inprogress_predicate)
+    # Keep the original v1 behavior: after crashing the replica processes,
+    # wait until each replica is observed in the failed state.
+    #
+    # For v2, we still use crash_replica_processes() to interrupt the replica
+    # data path, but the backup can fail before wait_for_replica_failed() gets
+    # a stable failedAt/running transition from the replica CR. In that case
+    # this test should validate the backup failure itself rather than require
+    # the transient v2 replica state to be observed here.
+    wait_to_fail = True
+    if DATA_ENGINE == "v2":
+        wait_to_fail = False
 
     # crash all replicas of the volume
     try:
-        crash_replica_processes(client, core_api, volume_name)
+        crash_replica_processes(client, core_api, volume_name,
+                                wait_to_fail=wait_to_fail)
     except AssertionError:
-        crash_replica_processes(client, core_api, volume_name)
+        crash_replica_processes(client, core_api, volume_name,
+                                wait_to_fail=wait_to_fail)
 
     # backup status should be in an Error state and with an error message
     def backup_failure_predicate(b):
@@ -5407,6 +5583,7 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     return backup_name
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_backup_failed_enable_auto_cleanup(set_random_backupstore,  # NOQA
                                            client, core_api, volume_name):  # NOQA
@@ -5430,6 +5607,7 @@ def test_backup_failed_enable_auto_cleanup(set_random_backupstore,  # NOQA
     wait_for_backup_delete(client, volume_name, backup_name)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 @pytest.mark.coretest  # NOQA
 def test_backup_failed_disable_auto_cleanup(set_random_backupstore,  # NOQA
                                         client, core_api, volume_name):  # NOQA

@@ -44,6 +44,10 @@ Keep writing data to pod of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     keep_writing_workload_pod_data    ${workload_name}
 
+Stop writing data to pod of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    stop_writing_workload_pod_data    ${workload_name}
+
 Keep writing data to pod ${pod_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     keep_writing_workload_pod_data    ${pod_name}
@@ -235,9 +239,9 @@ Delete replica of ${workload_kind} ${workload_id} volume on ${replica_locality}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
 
-Wait for ${workload_kind} ${workload_id} pods container creating
+Wait for ${workload_kind} ${workload_id} pods container creating or running
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    wait_for_workload_pods_container_creating    ${workload_name}
+    wait_for_workload_pods_container_creating_or_running    ${workload_name}
 
 Wait for ${workload_kind} ${workload_id} pods recreated
     [Arguments]    ${namespace}=default

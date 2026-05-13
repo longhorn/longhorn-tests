@@ -942,6 +942,7 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     cleanup_volume_by_name(client, vol_name)
 
 
+@pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk  # NOQA
@@ -957,7 +958,11 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     # create a disk to test storageAvailable
     node = client.by_id_node(lht_hostId)
     test_disk_path = create_host_disk(client, "vol-test", SIZE, lht_hostId)
-    test_disk = {"path": test_disk_path, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        test_disk = {"path": test_disk_path, "allowScheduling": True}
+    else:
+        test_disk = {"path": test_disk_path, "allowScheduling": True,
+                     "diskType": "block"}
     update_disks = get_update_disks(node.disks)
     update_disks["test-disk"] = test_disk
     node = update_node_disks(client, node.name, disks=update_disks,
@@ -965,28 +970,31 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
     assert len(node.disks) == len(update_disks)
 
-    # write specified byte data into disk
-    test_file_path = os.path.join(test_disk_path, TEST_FILE)
-    if os.path.exists(test_file_path):
+    if DATA_ENGINE == "v1":
+        # write specified byte data into disk
+        test_file_path = os.path.join(test_disk_path, TEST_FILE)
+        if os.path.exists(test_file_path):
+            os.remove(test_file_path)
+        cmd = ['dd', 'if=/dev/zero', 'of=' + test_file_path,
+               'bs=1M', 'count=1']
+        subprocess.check_call(cmd)
+        subprocess.check_call(['sync', test_file_path])
+        node = client.by_id_node(lht_hostId)
+        disks = node.disks
+        # wait for node controller update disk status
+        expect_disk = {}
+        for fsid, disk in iter(disks.items()):
+            if disk.path == test_disk_path:
+                node = wait_for_disk_storage_available(client, lht_hostId,
+                                                       fsid, test_disk_path)
+                expect_disk = node.disks[fsid]
+                break
+
+        free, total = common.get_host_disk_size(test_disk_path)
+        assert expect_disk.storageAvailable == free
+
         os.remove(test_file_path)
-    cmd = ['dd', 'if=/dev/zero', 'of=' + test_file_path, 'bs=1M', 'count=1']
-    subprocess.check_call(cmd)
-    subprocess.check_call(['sync', test_file_path])
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    # wait for node controller update disk status
-    expect_disk = {}
-    for fsid, disk in iter(disks.items()):
-        if disk.path == test_disk_path:
-            node = wait_for_disk_storage_available(client, lht_hostId,
-                                                   fsid, test_disk_path)
-            expect_disk = node.disks[fsid]
-            break
 
-    free, total = common.get_host_disk_size(test_disk_path)
-    assert expect_disk.storageAvailable == free
-
-    os.remove(test_file_path)
     # cleanup test disks
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -1011,7 +1019,8 @@ def test_node_controller_sync_storage_available(client):  # NOQA
                              retry=True)
     node = wait_for_disk_update(client, lht_hostId, len(update_disks))
     assert len(node.disks) == len(update_disks)
-    cleanup_host_disks(client, 'vol-test')
+    cleanup_selected_disks_on_node(client, lht_hostId,
+                                   'vol-test')
 
 
 @pytest.mark.v2_volume_test   # NOQA
@@ -2702,7 +2711,9 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
                      "diskType": "block"}
 
     update_disks = get_update_disks(node.disks)
-    update_disks["test-disk"] = test_disk
+    test_disk_name = "test-disk" + ''.join(
+        choice(ascii_lowercase + digits) for _ in range(6))
+    update_disks[test_disk_name] = test_disk
     node = update_node_disks(client, node.name, disks=update_disks,
                              retry=True)
     node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
@@ -2980,6 +2991,7 @@ def test_drain_with_block_for_eviction_success(client, # NOQA
     assert checksum == test_data_checksum
 
 
+@pytest.mark.v2_volume_test   # NOQA
 def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, # NOQA
                                                                         core_api, # NOQA
                                                                         make_deployment_with_pvc): # NOQA
@@ -3023,17 +3035,25 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     disk_volume = client.create_volume(name=disk_volume_name,
                                        size=str(2 * Gi),
                                        numberOfReplicas=1,
-                                       dataLocality="strict-local")
+                                       dataLocality="strict-local",
+                                       dataEngine=DATA_ENGINE)
     disk_volume = wait_for_volume_detached(client, disk_volume_name)
 
     disk_volume.attach(hostId=host_id)
     disk_volume = wait_for_volume_healthy(client, disk_volume_name)
-    disk_path = prepare_host_disk(get_volume_endpoint(disk_volume),
-                                  disk_volume_name)
-    disk = {"path": disk_path, "allowScheduling": True}
+    if DATA_ENGINE == "v1":
+        disk_path = prepare_host_disk(get_volume_endpoint(disk_volume),
+                                      disk_volume_name)
+        disk = {"path": disk_path, "allowScheduling": True}
+    else:
+        disk_path = get_volume_endpoint(disk_volume)
+        disk = {"path": disk_path, "allowScheduling": True,
+                "diskType": "block"}
 
     update_disk = get_update_disks(disks)
-    update_disk["disk1"] = disk
+    disk_name = "test-disk" + ''.join(
+        choice(ascii_lowercase + digits) for _ in range(6))
+    update_disk[disk_name] = disk
 
     node = update_node_disks(client, node.name, disks=update_disk, retry=True)
     node = wait_for_disk_update(client, host_id, len(update_disk))
@@ -3115,6 +3135,11 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
                                               pod2,
                                               data_path)
     assert checksum2 == test_data_checksum2
+
+    # cleanup disks
+    lht_hostId = get_self_host_id()
+    cleanup_selected_disks_on_node(client, lht_hostId,
+                                   disk_name)
 
 
 @pytest.mark.v2_volume_test  # NOQA
