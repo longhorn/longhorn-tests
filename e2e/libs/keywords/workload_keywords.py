@@ -28,12 +28,12 @@ from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
 from workload.workload import is_workload_pods_has_annotations
 from workload.workload import is_workload_pods_has_cni_interface
-from workload.workload import keep_writing_pod_data
+from workload.workload import keep_writing_pod_data, stop_writing_pod_data
 from workload.workload import make_block_device_filesystem_in_workload_pod
 from workload.workload import mount_block_device_in_workload_pod
 from workload.workload import write_pod_random_data
 from workload.workload import write_pod_large_data
-from workload.workload import wait_for_workload_pods_container_creating
+from workload.workload import wait_for_workload_pods_container_creating_or_running
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pods_recreated
@@ -174,14 +174,20 @@ class workload_keywords:
         logging(f'Keep writing data to pod {pod_name}')
         keep_writing_pod_data(pod_name)
 
+    def stop_writing_workload_pod_data(self, workload_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Stopping writing data to pod {pod_name}')
+        stop_writing_pod_data(pod_name)
+
     def run_commands_workload_pod(self, workload_name, commands):
         pod_name = get_workload_pod_names(workload_name)[0]
         logging(f'Running commands {commands} in pod {pod_name}')
         run_commands_in_pod(pod_name, commands)
 
-    def wait_for_workload_pods_container_creating(self, workload_name, namespace="default"):
-        logging(f'Waiting for {namespace} workload {workload_name} pods container creating')
-        wait_for_workload_pods_container_creating(workload_name, namespace=namespace)
+    def wait_for_workload_pods_container_creating_or_running(self, workload_name, namespace="default"):
+        logging(f'Waiting for {namespace} workload {workload_name} pods container creating or running')
+        wait_for_workload_pods_container_creating_or_running(workload_name, namespace=namespace)
 
     def wait_for_workload_pods_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')
@@ -259,7 +265,6 @@ class workload_keywords:
         expanded_size = self.persistentvolumeclaim.get_annotation_value(claim_name, ANNOT_EXPANDED_SIZE)
         volume_name = self.persistentvolumeclaim.get_volume_name(claim_name)
 
-        self.volume.wait_for_volume_attached(volume_name)
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
 

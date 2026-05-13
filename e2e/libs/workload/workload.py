@@ -232,6 +232,37 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
             logging(f"Writing data to pod {pod_name} failed with error: {e}")
             time.sleep(retry_interval)
 
+
+def stop_writing_pod_data(pod_name, path="/data/overwritten-data"):
+
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for _ in range(retry_count):
+        try:
+            api = client.CoreV1Api()
+            stop_cmd = [
+                '/bin/sh',
+                '-c',
+                f"pkill -f 'dd if=/dev/urandom of={path}'"
+            ]
+
+            logging(f"Stopping data writing process {path} in pod {pod_name}")
+            res = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=stop_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False
+            )
+            assert res == "", f"Failed to stop data writing process in pod {pod_name}"
+
+            return
+
+        except Exception as e:
+            logging(f"Stopping data writing in pod {pod_name} failed: {e}")
+            time.sleep(retry_interval)
+
+
 def run_commands_in_pod(pod_name, commands):
     exit_code_prefix = "EXIT_CODE:"
     api = client.CoreV1Api()
@@ -402,19 +433,19 @@ def wait_for_workload_pods_running(workload_name, namespace="default"):
     assert False, f"Timeout waiting for {workload_name} pods running"
 
 
-def wait_for_workload_pods_container_creating(workload_name, namespace="default"):
+def wait_for_workload_pods_container_creating_or_running(workload_name, namespace="default"):
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
         pods = get_workload_pods(workload_name, namespace=namespace)
         if len(pods) > 0:
             for pod in pods:
-                if pod.status.phase == "Pending":
+                if pod.status.phase == "Pending" or pod.status.phase == "Running":
                     return
 
-        logging(f"Waiting for {workload_name} pods {[pod.metadata.name for pod in pods]} container creating, retry ({i}) ...")
+        logging(f"Waiting for {workload_name} pods {[pod.metadata.name for pod in pods]} container creating or running, retry ({i}) ...")
         time.sleep(retry_interval)
 
-    assert False, f"Timeout waiting for {workload_name} pods container creating"
+    assert False, f"Timeout waiting for {workload_name} pods container creating or running"
 
 
 async def wait_for_workload_pods_stable(workload_name, namespace="default"):

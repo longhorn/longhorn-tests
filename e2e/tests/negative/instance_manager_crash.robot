@@ -10,6 +10,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/host.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/backup.resource
@@ -17,6 +18,9 @@ Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
+
+*** Variables ***
+${INSTANCE_MANAGER_CRASH_LOOP_COUNT}    3
 
 *** Keywords ***
 Test Instance Manager Crash During Workload Pod Starting
@@ -36,7 +40,7 @@ Test Instance Manager Crash During Workload Pod Starting
     And Wait for volume of deployment 0 healthy
     And Write 100 MB data to file data.txt in deployment 0
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+    FOR    ${i}    IN RANGE    ${INSTANCE_MANAGER_CRASH_LOOP_COUNT}
         When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
         # after deleting instance manager, the workload pod will be recrated as well
         And Wait for deployment 0 pods stable
@@ -44,7 +48,12 @@ Test Instance Manager Crash During Workload Pod Starting
         Then Check deployment 0 data in file data.txt is intact
 
         And Delete pod of deployment 0    wait=False
-        And Wait for deployment 0 pods container creating
+        # the purpose of this test case is to verify the behavior when the instance manager crashes
+        # while the workload pod is still being created, before it's fully running
+        # but it's hard to catch the timing when the pod is being created
+        # so the test is repeated to increase the chance to catch the timing,
+        # and relax the waiting condition to "creating or running" instead of just "creating"
+        And Wait for deployment 0 pods container creating or running
     END
 
 Test Instance Manager Crash During Backup Restoration
@@ -108,3 +117,12 @@ Crash Single Instance Manager While RWX Volume Backup Is Restoring
 Crash Single Instance Manager While RWX Encrypted Volume Backup Is Restoring
     [Tags]    encrypted    rwx    volume    backup-restore
     Test Instance Manager Crash During Backup Restoration    access_mode=RWX    encrypted=${True}
+
+Test Encrypted Volume After Node Reboot And Instance Manager Crash
+    [Tags]    encrypted    rwo
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11510
+    Given Power off node 0
+    And Sleep    300
+    And Power on off nodes
+    And Wait for longhorn ready
+    And Test Instance Manager Crash During Workload Pod Starting    access_mode=RWO    encrypted=${True}

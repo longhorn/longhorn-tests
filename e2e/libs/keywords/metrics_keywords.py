@@ -64,4 +64,14 @@ class metrics_keywords:
         get_longhorn_components_memory_cpu_usage()
 
     def check_longhorn_components_memory_cpu_usage(self):
-        check_longhorn_components_memory_cpu_usage()
+        # monitor the memory and cpu usage of longhorn components for 30 minutes
+        # to see if the memory or cpu usage is stably high
+        for i in range(30):
+            logging(f"Checking longhorn components memory and cpu usage ... ({i})")
+            high_usage = check_longhorn_components_memory_cpu_usage()
+            if not high_usage:
+                logging("Longhorn components memory and cpu usage are normal")
+                return
+            time.sleep(60)
+        time.sleep(self.retry_count)
+        assert False, "Longhorn components memory or cpu usage is high"

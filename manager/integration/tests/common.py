@@ -2317,42 +2317,46 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
         completed = 0
         v = client.by_id_volume(volume_name)
         purge_status = v.purgeStatus
-        for status in purge_status:
-            assert status.error == ""
+        if purge_status:
+            for status in purge_status:
+                assert status.error == ""
 
-            progress = status.progress
-            assert progress <= 100
-            replica = status.replica
-            last = last_purge_progress.get(replica)
-            assert last is None or last <= status.progress
-            last_purge_progress["replica"] = progress
+                progress = status.progress
+                assert progress <= 100
+                replica = status.replica
+                last = last_purge_progress.get(replica)
+                assert last is None or last <= status.progress
+                last_purge_progress[replica] = progress
 
-            if status.state == "complete":
-                assert progress == 100
-                completed += 1
-        if completed == len(purge_status):
+                if status.state == "complete":
+                    assert progress == 100
+                    completed += 1
+            if completed == len(purge_status) and \
+                    is_snapshot_purge_completed(v, volume_name, *snaps):
+                break
+        elif is_snapshot_purge_completed(v, volume_name, *snaps):
             break
         time.sleep(RETRY_INTERVAL)
-    assert completed == len(purge_status)
+    assert purge_status is None or completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
     # should be removed or "marked as removed" in the case of
     # the latest snapshot.
-    found = False
-    snapshots = v.snapshotList(volume=volume_name)
+    assert is_snapshot_purge_completed(v, volume_name, *snaps)
+    return v
 
+
+def is_snapshot_purge_completed(v, volume_name, *snaps):
+    snapshots = v.snapshotList(volume=volume_name)
     for snap in snaps:
         for vs in snapshots.data:
             if snap == vs["name"]:
                 if vs["removed"] is False:
-                    found = True
-                    break
+                    return False
 
                 if "volume-head" not in vs["children"]:
-                    found = True
-                    break
-    assert not found
-    return v
+                    return False
+    return True
 
 
 def wait_for_engine_image_creation(client, image_name):
@@ -2535,24 +2539,28 @@ def crash_replica_processes(client, api, volname, replicas=None,
         if DATA_ENGINE == "v2":
             replica_name = r["name"]
 
-            get_nqn_command = (
+            get_nqns_command = (
                 "go-spdk-helper nvmf subsystem-get | "
                 "tr \"'\" '\"' | "
                 "grep '\"nqn\"' | "
                 "grep '%s' | "
-                "head -n 1 | cut -d'\"' -f4"
+                "cut -d'\"' -f4"
             ) % replica_name
-            nqn = exec_instance_manager(api, r.instanceManagerName,
-                                        get_nqn_command).strip()
+            nqns = exec_instance_manager(api, r.instanceManagerName,
+                                         get_nqns_command).splitlines()
+            nqns = list(dict.fromkeys(
+                nqn.strip() for nqn in nqns if nqn.strip()
+            ))
 
-            assert nqn != "", \
-                f"Failed to extract NQN for replica {replica_name}"
+            assert nqns, \
+                f"Failed to extract NQNs for replica {replica_name}"
 
-            stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
-            print(f"Executing command: {stop_expose_command}")
-            exec_instance_manager(
-                api, r.instanceManagerName, stop_expose_command
-            )
+            for nqn in nqns:
+                stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
+                print(f"Executing command: {stop_expose_command}")
+                exec_instance_manager(
+                    api, r.instanceManagerName, stop_expose_command
+                )
         else:
             pgrep_command = f"pgrep -f {r['dataPath']}"
             pid = exec_instance_manager(api, r.instanceManagerName,
@@ -2919,13 +2927,27 @@ def parse_nvmf_endpoint(nvmf):
 
 
 def get_nvmf_ip(nvmf):
+    """
+    Extract IP address from NVMf endpoint.
+    IPv6 example: fd42:0:0:1::e:20103 -> fd42:0:0:1::e
+    IPv4 example: 10.0.1.24:4420 -> 10.0.1.24
+    """
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[0]
+    host_port = nvmf_endpoint[0]
+
+    # Port is always after the last colon for both IPv4 and IPv6
+    last_colon_idx = host_port.rfind(':')
+    ip = host_port[:last_colon_idx]
+
+    # Validate it's a valid IP address
+    ipaddress.ip_address(ip)
+    return ip
 
 
 def get_nvmf_port(nvmf):
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[1]
+    host_port = nvmf_endpoint[0]
+    return host_port.split(':')[-1]
 
 
 def get_nvmf_nqn(nvmf):
@@ -4495,7 +4517,8 @@ def cleanup_storage_class():
                        "premium-rwo", "standard-rwo", "standard",
                        "azurefile-csi", "azurefile-csi-premium",
                        "azurefile-premium", "managed", "managed-csi",
-                       "managed-csi-premium", "managed-premium"]
+                       "managed-csi-premium", "managed-premium",
+                       "dynamic-rwo"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
@@ -6966,7 +6989,7 @@ def wait_for_replica_count(client, volume_name, replica_count):
     assert len(volume.replicas) == replica_count
 
 
-def wait_for_all_nodes_disks_schedulable(client):
+def wait_for_all_nodes_disks_schedulable(client, disk_type=None):
     for _ in range(RETRY_COUNTS):
         nodes = client.list_node()
         all_disks_ready = True
@@ -6974,6 +6997,11 @@ def wait_for_all_nodes_disks_schedulable(client):
             node_name = getattr(node, "name", "<unknown>")
             disk_statuses = getattr(node, "disks", {})
             for disk_name, disk_status in disk_statuses.items():
+                if disk_type is not None:
+                    dt = getattr(disk_status, "diskType", None) or \
+                        disk_status.get("diskType", None)
+                    if dt != disk_type:
+                        continue
                 schedulable = False
                 conditions = disk_status.get("conditions", {})
                 sched_status = conditions.get("Schedulable", {}).get("status")
