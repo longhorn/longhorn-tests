@@ -3137,9 +3137,10 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     assert checksum2 == test_data_checksum2
 
     # cleanup disks
-    lht_hostId = get_self_host_id()
-    cleanup_selected_disks_on_node(client, lht_hostId,
-                                   disk_name)
+    if DATA_ENGINE == "v2":
+        lht_hostId = get_self_host_id()
+        cleanup_selected_disks_on_node(client, lht_hostId,
+                                       disk_name)
 
 
 @pytest.mark.v2_volume_test  # NOQA
