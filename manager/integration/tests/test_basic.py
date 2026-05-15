@@ -4213,17 +4213,19 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
             volume = client.by_id_volume(volume_name)
             assert volume.conditions.TooManySnapshots.status == "False"
         else:
-            expected_message = \
-                f"Snapshots count is {count} at or over\
-                 the warning threshold 100"
+            expected_message = (
+                f"Snapshots count is {count} at or over "
+                "the warning threshold 100"
+            )
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                        "status", "True",
                                                        expected_message)
 
     snap[max_count + 1] = create_snapshot(client, volume_name)
-    expected_message = \
-        f"Snapshots count is {max_count + 1} at or over\
-         the warning threshold 100"
+    expected_message = (
+        f"Snapshots count is {max_count + 1} at or over "
+        "the warning threshold 100"
+    )
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "True",
                                                expected_message)
