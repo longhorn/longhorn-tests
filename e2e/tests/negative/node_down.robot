@@ -21,6 +21,8 @@ Test Teardown    Cleanup test resources
 
 *** Keywords ***
 Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod
+    [Documentation]    Automation of the manual test case: Physical Node Down
+    ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/
     [Arguments]    ${node_down_pod_deletion_policy}
     Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
     And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
@@ -39,6 +41,8 @@ Power Off Node And Longhorn Not Force Delete Terminating Statefulset Pod
     And Check statefulset 0 data in file data is intact
 
 Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
+    [Documentation]    Automation of the manual test case: Physical Node Down
+    ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/
     [Arguments]    ${node_down_pod_deletion_policy}
     Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
     And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
@@ -57,6 +61,8 @@ Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
     Then Wait for longhorn ready
 
 Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
+    [Documentation]    Automation of the manual test case: Physical Node Down
+    ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/
     [Arguments]    ${node_down_pod_deletion_policy}
     Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
     And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
@@ -80,6 +86,8 @@ Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
     Then Wait for longhorn ready
 
 Power Off Node And Longhorn Force Delete Terminating Deployment Pod
+    [Documentation]    Automation of the manual test case: Physical Node Down
+    ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/
     [Arguments]    ${node_down_pod_deletion_policy}
     Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
     And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
