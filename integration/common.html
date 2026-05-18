@@ -7488,9 +7488,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == &#34;Completed&#34;:
-                assert b.progress == 100
-                assert b.error == &#34;&#34;
+            if b.state == &#34;Completed&#34; and b.progress == 100 and b.error == &#34;&#34;:
                 completed = True
                 break
         if completed:
