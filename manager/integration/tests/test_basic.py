@@ -111,6 +111,7 @@ from common import DATA_ENGINE
 from common import SETTING_BACKUP_TARGET
 from common import nvmf_login, nvmf_logout
 from common import RETRY_COUNTS_SHORT
+from common import generate_random_suffix
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4175,9 +4176,16 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
         wait_for_volume_healthy(client, volume_name)
 
         volume = client.by_id_volume(volume_name)
-        # For the below assertion, the number of snapshots is compared with 2
-        # as the list of snapshot have the volume-head too.
-        wait_for_snapshot_count(volume, 2, count_removed=True)
+        # The snapshot list includes volume-head.
+        # v1 is expected to expose one additional system-generated snapshot
+        # after rebuilding, while v2 auto cleanup should converge to only
+        # volume-head.
+        if DATA_ENGINE == "v1":
+            expected_snapshot_count = 2
+        else:
+            expected_snapshot_count = 1
+        wait_for_snapshot_count(volume, expected_snapshot_count,
+                                count_removed=True)
 
     read_md5sum1 = get_pod_data_md5sum(core_api, pod_name, "/data/test")
     assert md5sum1 == read_md5sum1
@@ -5344,7 +5352,8 @@ def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
                   "allowScheduling": True,
                   "diskType": disk_type}
     update_disks = get_update_disks(node.disks)
-    update_disks["extra-disk"] = extra_disk
+    disk_name = "extra-disk" + generate_random_suffix()
+    update_disks[disk_name] = extra_disk
     node = update_node_disks(client, node.name, disks=update_disks,
                              retry=True)
     node = common.wait_for_disk_update(client, lht_hostId,
@@ -5362,6 +5371,8 @@ def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
 
             break
 
+    return disk_name
+
 
 @pytest.mark.v2_volume_test  # NOQA
 def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  # NOQA
@@ -5378,7 +5389,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
        won't be greater than 2x of the volume spec size.
     8. Delete the volume.
     """
-    prepare_space_usage_for_rebuilding_only_volume(client)
+    extra_disk_name = prepare_space_usage_for_rebuilding_only_volume(client)
 
     lht_hostId = get_self_host_id()
     volume = create_and_check_volume(client, volume_name, size=str(3 * Gi))
@@ -5424,7 +5435,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
         wait_for_volume_delete(client, volume_name)
 
         cleanup_selected_disks_on_node(client, get_self_host_id(),
-                                       "extra-disk")
+                                       extra_disk_name)
         # Wait for the disk to be fully deleted in the spdk_tgt
         time.sleep(30)
         cleanup_volume_by_name(client, "vol-disk")
@@ -5446,7 +5457,7 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
        won't be greater than 3x of the volume spec size.
     9. Delete the volume.
     """
-    prepare_space_usage_for_rebuilding_only_volume(client)
+    extra_disk_name = prepare_space_usage_for_rebuilding_only_volume(client)
 
     lht_hostId = get_self_host_id()
     volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
@@ -5493,7 +5504,7 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
         wait_for_volume_delete(client, volume_name)
 
         cleanup_selected_disks_on_node(client, get_self_host_id(),
-                                       "extra-disk")
+                                       extra_disk_name)
         # Wait for the disk to be fully deleted in the spdk_tgt
         time.sleep(30)
         cleanup_volume_by_name(client, "vol-disk")
