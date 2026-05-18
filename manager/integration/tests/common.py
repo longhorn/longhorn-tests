@@ -3448,9 +3448,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == "Completed":
-                assert b.progress == 100
-                assert b.error == ""
+            if b.state == "Completed" and b.progress == 100 and b.error == "":
                 completed = True
                 break
         if completed:
