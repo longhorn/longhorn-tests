@@ -562,10 +562,6 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
     assert False, f"Timeout waiting for {workload_name} pod in state: {expect_state})"
 
 
-def get_pod_node(pod):
-    return pod.spec.node_name
-
-
 def is_workload_pods_has_annotations(workload_name, annotation_key, namespace="default", label_selector=""):
     pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
     for pod in pods:

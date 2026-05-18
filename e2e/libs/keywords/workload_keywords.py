@@ -1,5 +1,6 @@
 import multiprocessing
 import asyncio
+import time
 
 from kubernetes import client
 from kubernetes.stream import stream
@@ -38,7 +39,6 @@ from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pods_recreated
 from workload.workload import wait_for_workload_pod_kept_in_state
-from workload.workload import get_pod_node
 from workload.workload import run_commands_in_pod
 from workload.workload import get_workload_node_name
 from workload.workload import get_all_workload_node_names
@@ -53,6 +53,7 @@ import utility.constant as constant
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
+from utility.utility import get_retry_count_and_interval
 
 from volume import Volume
 from datetime import datetime, timezone
@@ -64,6 +65,7 @@ class workload_keywords:
         self.node = Node()
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create_pod(self, pod_name, claim_name):
         logging(f'Creating pod {pod_name} using pvc {claim_name}')
@@ -272,8 +274,27 @@ class workload_keywords:
         assert expect_state in ["Terminating", "ContainerCreating", "Running", "CrashLoopBackOff"], f"Unknown expected pod state: {expect_state}: "
         return wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace=namespace)
 
-    def get_pod_node(self, pod):
-        return get_pod_node(pod)
+    def wait_for_workload_pod_on_node(self, workload_name, node_name, namespace="default"):
+        logging(f"Waiting for workload {workload_name} pod on node {node_name} in namespace {namespace}")
+        pod = get_workload_pods(workload_name, namespace=namespace)[0]
+        for i in range(self.retry_count):
+            logging(f"Waiting for workload {workload_name} pod on node {node_name} ... ({i})")
+            if pod.spec.node_name == node_name:
+                logging(f"Workload {workload_name} pod {pod.metadata.name} is on node {node_name}")
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for workload {workload_name} pod on node {node_name}"
+
+    def wait_for_workload_pod_not_on_node(self, workload_name, node_name, namespace="default"):
+        logging(f"Waiting for workload {workload_name} pod not on node {node_name} in namespace {namespace}")
+        pod = get_workload_pods(workload_name, namespace=namespace)[0]
+        for i in range(self.retry_count):
+            logging(f"Waiting for workload {workload_name} pod not on node {node_name} ... ({i})")
+            if pod.spec.node_name != node_name:
+                logging(f"Workload {workload_name} pod {pod.metadata.name} is not on node {node_name}")
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for workload {workload_name} pod not on node {node_name}"
 
     def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace=constant.LONGHORN_NAMESPACE):
         for workload_name in workload_names:

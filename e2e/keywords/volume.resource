@@ -91,8 +91,7 @@ Attach volume ${volume_id} to node ${node_id}
 Volume ${volume_id} should be attached to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    ${res} =    is_attached_to    ${volume_name}    ${node_name}
-    Should Be True    ${res}
+    wait_for_volume_attached_to_node    ${volume_name}    ${node_name}
 
 Attach volume ${volume_id}
     [Arguments]    &{config}
