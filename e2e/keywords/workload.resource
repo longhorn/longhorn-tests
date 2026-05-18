@@ -217,22 +217,19 @@ Wait for volume of ${workload_kind} ${workload_id} attached to the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_degraded    ${volume_name}
-    ${volume_node} =    get_volume_node    ${volume_name}
-    Should Be Equal    ${last_volume_node}    ${volume_node}
+    wait_for_volume_attached_to_node    ${volume_name}    ${last_volume_node}
 
 Wait for volume of ${workload_kind} ${workload_id} attached to another node and degraded
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_degraded    ${volume_name}
-    ${volume_node} =    get_volume_node    ${volume_name}
-    Should Not Be Equal    ${last_volume_node}    ${volume_node}
+    wait_for_volume_not_attached_to_node    ${volume_name}    ${last_volume_node}
 
 Wait for volume of ${workload_kind} ${workload_id} attached to another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_attached    ${volume_name}
-    ${volume_node} =    get_volume_node    ${volume_name}
-    Should Not Be Equal    ${last_volume_node}    ${volume_node}
+    wait_for_volume_not_attached_to_node   ${volume_name}    ${last_volume_node}
 
 Delete replica of ${workload_kind} ${workload_id} volume on ${replica_locality}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -270,31 +267,27 @@ Update volume of ${workload_kind} ${workload_id} replica count to ${replica_coun
 
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
-    ${node_name} =    get_pod_node    ${pod}
-    Should Be Equal    ${node_name}    ${last_volume_node}
+    wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    wait_for_workload_pod_on_node    ${workload_name}    ${last_volume_node}
 
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
 
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
-    ${node_name} =    get_pod_node    ${pod}
-    Should Not Be Equal    ${node_name}    ${last_volume_node}
+    wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    wait_for_workload_pod_not_on_node    ${workload_name}    ${last_volume_node}
 
 Check ${workload_kind} ${workload_id} pod is ${expect_state} on the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
-    ${node_name} =    get_pod_node    ${pod}
-    Should Be Equal    ${node_name}    ${last_volume_node}
+    wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    wait_for_workload_pod_on_node    ${workload_name}    ${last_volume_node}
 
 Wait for ${workload_kind} ${workload_id} pod is ${expect_state} on another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
-    ${node_name} =    get_pod_node    ${pod}
-    Should Not Be Equal    ${node_name}    ${last_volume_node}
+    wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    wait_for_workload_pod_not_on_node    ${workload_name}    ${last_volume_node}
 
 Trim ${workload_kind} ${workload_id} volume should ${condition}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

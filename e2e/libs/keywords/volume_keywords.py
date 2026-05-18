@@ -48,9 +48,6 @@ class volume_keywords:
         logging(f'Attaching volume {volume_name} to node {node_name}')
         self.volume.attach(volume_name, node_name, disable_frontend=False, wait=wait, retry=retry)
 
-    def is_attached_to(self, volume_name, node_name):
-        return self.volume.is_attached_to(volume_name, node_name)
-
     def attach_volume_in_maintenance_mode(self, volume_name, node_name=None, wait=True, retry=True):
         if not node_name:
             node_name = self.node.get_node_by_index(0)
@@ -76,6 +73,22 @@ class volume_keywords:
 
     def get_volume_node(self, volume_name):
         return self.get_node_id_by_replica_locality(volume_name, "volume node")
+
+    def wait_for_volume_attached_to_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} to be attached to node {node_name} ... ({i})")
+            if self.volume.is_attached_to(volume_name, node_name):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} to be attached to node {node_name}"
+
+    def wait_for_volume_not_attached_to_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} not attached to node {node_name} ... ({i})")
+            if not self.volume.is_attached_to(volume_name, node_name):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} not attached to node {node_name}"
 
     def get_volume_instance_manager(self, volume_name):
         volume = VolumeRest().get(volume_name)
