@@ -22,7 +22,6 @@ source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/create_registry_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/install_csi_snapshotter.sh
-source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/create_appco_secret.sh
 source pipelines/appco/scripts/longhorn_helm_chart.sh
@@ -56,7 +55,6 @@ main(){
   create_harvester_secret
   create_registry_secret
   set -x
-  create_instance_mapping_configmap
 
   if [[ ${CUSTOM_TEST_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
