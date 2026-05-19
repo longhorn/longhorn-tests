@@ -298,6 +298,49 @@ Test TooManySnapshots Volume Condition
     # warning at min(10, 15, -) (10)
     snapshot_max_count=10    warning_threshold=15    volume_snapshot_max_count=0    expected_warning_snapshot_count=10
 
+Test Snapshot Max Count And Snapshot Count Warning Threshold Setting
+    [Tags]    snapshot    upgrade
+    [Documentation]    Test snapshot-max-count and snapshot-count-warning-threshold settings,
+    ...    including upgrade scenario when LONGHORN_STABLE_VERSION is defined.
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12934
+    ...
+    ...    1. Set snapshot-max-count to 5
+    ...    2. Create and attach a volume
+    ...    3. Create 5 snapshots for the volume
+    ...    4. Check TooManySnapshots volume condition is True
+    ...    5. Check TooManySnapshots volume condition message contains
+    ...       "at or over the warning threshold 5"
+    ...    6. Creating one more snapshot for the volume will fail
+    Skip    Known issue: https://github.com/longhorn/longhorn/issues/12934
+
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
+    IF    '${LONGHORN_STABLE_VERSION}' != ''
+        Given Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+        And Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
+    END
+
+    And Setting snapshot-max-count is set to 5
+
+    And Create volume vol
+    And Attach volume vol
+    And Wait for volume vol healthy
+
+    IF    '${LONGHORN_STABLE_VERSION}' != ''
+        And Upgrade Longhorn to custom version
+    END
+
+    When Create 5 snapshot for volume vol
+    Then Run command and wait for output
+    ...    kubectl get volume -n ${LONGHORN_NAMESPACE} vol -o jsonpath='{.status.conditions[?(@.type=="TooManySnapshots")].status}'
+    ...    True
+    And Run command and wait for output
+    ...    kubectl get volume -n ${LONGHORN_NAMESPACE} vol -o jsonpath='{.status.conditions[?(@.type=="TooManySnapshots")].message}'
+    ...    at or over the warning threshold 5
+
+    Then Create snapshot snap of volume vol will fail
+
 Test Setting Read Only Setting Should Fail
     [Documentation]    Test that modifying a read-only setting should fail.
     ...                Issue: https://github.com/longhorn/longhorn/issues/5989
