@@ -23,7 +23,29 @@ from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 
+from ssh.ssh import ssh_exec
+
 from datetime import datetime, timezone
+
+def stop_kubelet(node_name):
+    k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
+    node_type = "control-plane" if node_name in Node().list_node_names_by_role("control-plane") else "worker"
+    if k8s_distro == "k3s":
+        service_name = "k3s-agent" if node_type == "worker" else "k3s"
+    elif k8s_distro == "rke2":
+        service_name = "rke2-agent" if node_type == "worker" else "rke2-server"
+
+    ssh_exec(node_name, f"sudo systemctl stop {service_name}")
+
+def start_kubelet(node_name):
+    k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
+    node_type = "control-plane" if node_name in Node().list_node_names_by_role("control-plane") else "worker"
+    if k8s_distro == "k3s":
+        service_name = "k3s-agent" if node_type == "worker" else "k3s"
+    elif k8s_distro == "rke2":
+        service_name = "rke2-agent" if node_type == "worker" else "rke2-server"
+
+    ssh_exec(node_name, f"sudo systemctl start {service_name}")
 
 async def restart_kubelet(node_name, downtime_in_sec=10):
     k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
