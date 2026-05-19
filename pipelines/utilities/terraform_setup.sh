@@ -22,6 +22,7 @@ if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "aws" ]]; then
   fi
   if [[ "${TF_VAR_k8s_distro_name}" == "k3s" || "${TF_VAR_k8s_distro_name}" == "rke2" ]]; then
     terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw instance_mapping | jq 'map({(.name | split(".")[0]): .id}) | add' | jq -s add > /tmp/instance_mapping
+    terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw public_ip_mapping | jq 'map({(.name | split(".")[0]): .ip}) | add' | jq -s add > /tmp/public_ip_mapping
   fi
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw controlplane_public_ip > /tmp/controlplane_public_ip
 elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
@@ -34,6 +35,18 @@ elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
   KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes --no-headers --selector=node-role.kubernetes.io/control-plane -owide | awk '{print $6}' > /tmp/controlplane_public_ip
   KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes --no-headers -ojson | jq '.items[].metadata.name' | tr -d '"' > /tmp/instance_mapping
   jq -Rn 'reduce inputs as $line ({}; .[$line] = $line)' /tmp/instance_mapping | sponge /tmp/instance_mapping
+  KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes -o json | jq '
+  .items
+  | map({
+      (.spec.providerID | split("/")[-1]):
+      (
+        .status.addresses[]
+        | select(.type=="InternalIP")
+        | .address
+      )
+    })
+  | add
+' > /tmp/public_ip_mapping
 fi
 
 exit $?
