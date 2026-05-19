@@ -6,7 +6,6 @@ source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
-source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_helm_chart.sh
@@ -52,7 +51,6 @@ main(){
   set +x
   create_registry_secret
   set -x
-  create_instance_mapping_configmap
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     get_longhorn_chart "${LONGHORN_STABLE_VERSION}"

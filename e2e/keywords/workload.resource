@@ -7,7 +7,6 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/host_keywords.py
-Library    ../libs/keywords/k8s_keywords.py
 Library    ../libs/keywords/replica_keywords.py
 Library    ../libs/keywords/instancemanager_keywords.py
 
@@ -140,24 +139,6 @@ Reboot volume node of ${workload_kind} ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${volume_name}
     reboot_node_by_name    ${node_name}
-
-Stop volume node kubelet of ${workload_kind} ${workload_id} for ${duration} seconds
-    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${volume_name} =    get_workload_volume_name    ${workload_name}
-    ${node_name} =    get_volume_node    ${volume_name}
-    restart_kubelet    ${node_name}    ${duration}
-
-Stop volume nodes kubelet for ${duration} seconds
-    [Arguments]    @{args}
-    @{node_list} =    Create List
-    FOR    ${arg}    IN    @{args}
-        @{workload} =    Split String    ${arg}
-        ${workload_name} =    generate_name_with_suffix    ${workload}[0]    ${workload}[1]
-        ${volume_name} =    get_workload_volume_name    ${workload_name}
-        ${node_name} =    get_volume_node    ${volume_name}
-        Append To List    ${node_list}    ${node_name}
-    END
-    restart_kubelet_on_nodes    ${duration}    ${node_list}
 
 Wait for volume of ${workload_kind} ${workload_id} detached
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

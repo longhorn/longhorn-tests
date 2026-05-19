@@ -402,7 +402,7 @@ class Node:
         nodes = self.list_node_names_by_role("worker")
         for node_name in nodes:
             logging(f"Cleaning up node {node_name} taints")
-            exec_cmd = f"kubectl taint nodes {node_name} node-role.kubernetes.io/worker=true:NoExecute-"
+            exec_cmd = f"kubectl taint nodes {node_name} node-role.kubernetes.io/worker=true:NoExecute- || true"
             subprocess_exec_cmd(exec_cmd)
             self.check_node_schedulable(node_name, "True")
 
