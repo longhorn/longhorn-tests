@@ -169,6 +169,8 @@ resource "null_resource" "package_install_controlplane_rke2" {
 
     inline = [
       "sudo transactional-update pkg install -y open-iscsi nfs-client jq",
+      "sudo systemctl disable --now transactional-update.timer",
+      "sudo systemctl disable --now rebootmgr",
       "sudo shutdown -r now",
     ]
 
@@ -219,6 +221,8 @@ resource "null_resource" "package_install_worker_rke2" {
 
     inline = [
       "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup device-mapper jq",
+      "sudo systemctl disable --now transactional-update.timer",
+      "sudo systemctl disable --now rebootmgr",
       "sudo shutdown -r now",
     ]
 
