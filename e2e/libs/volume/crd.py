@@ -741,22 +741,12 @@ class CRD(Base):
             name=replica_list['items'][0]['metadata']['name']
         )
 
-    def delete_replica_by_name(self, volume_name, replica_name):
-        replica = self.obj_api.get_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace=constant.LONGHORN_NAMESPACE,
-            plural="replicas",
-            name=replica_name
-        )
-        logging(f"Deleting replica {replica['metadata']['name']}")
-        self.obj_api.delete_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace=constant.LONGHORN_NAMESPACE,
-            plural="replicas",
-            name=replica['metadata']['name']
-        )
+    def delete_replica_by_name(self, replica_name, namespace):
+        namespace = constant.LONGHORN_NAMESPACE
+        logging(f"Deleting replica CR by name: {replica_name} in namespace: {namespace}")
+        cmd = f"kubectl -n {namespace} delete replica {replica_name}"
+        subprocess_exec_cmd(cmd)
+        logging(f"Replica CR {replica_name} deleted successfully")
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
         return Rest().wait_for_replica_rebuilding_start(volume_name, node_name)

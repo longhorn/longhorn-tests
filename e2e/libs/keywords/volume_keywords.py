@@ -167,7 +167,10 @@ class volume_keywords:
         replica_names = [replica['metadata']['name'] for replica in replica_list]
         for i in range(int(count)):
             logging(f"Deleting volume {volume_name} replica volume {replica_names[i]}")
-            self.volume.delete_replica_by_name(volume_name, replica_names[i])
+            self.volume.delete_replica_by_name(replica_names[i], namespace=constant.LONGHORN_NAMESPACE)
+
+    def delete_replica_by_name(self, replica_name, namespace=constant.LONGHORN_NAMESPACE):
+        self.volume.delete_replica_by_name(replica_name, namespace)
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         self.volume.set_annotation(volume_name, annotation_key, annotation_value)
