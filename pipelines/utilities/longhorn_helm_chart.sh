@@ -70,17 +70,15 @@ customize_longhorn_chart(){
 install_longhorn(){
   local custom_cmd="$1"
   if [[ -n "$custom_cmd" ]]; then
+    custom_cmd="${custom_cmd//values.yaml/${LONGHORN_REPO_DIR}/chart/values.yaml}"
     eval "$custom_cmd"
-    CUSTOM_HELM_INSTALLATION="-f values.yaml --reuse-values"
-  else
-    CUSTOM_HELM_INSTALLATION=""
   fi
 
   # remove hard-coded .global.imageRegistry=docker.io
   yq -i '.global.imageRegistry=""' "${LONGHORN_REPO_DIR}/chart/values.yaml"
 
   get_longhorn_namespace
-  helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}" ${CUSTOM_HELM_INSTALLATION}
+  helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
   wait_longhorn_status_running
 }
 
