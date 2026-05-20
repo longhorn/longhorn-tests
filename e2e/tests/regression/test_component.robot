@@ -52,7 +52,7 @@ Test Longhorn Manager Resource Configuration Via Helm Install
     And Check Longhorn Manager Resources Are       cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
 
 Test Longhorn Manager Rolling Update Configuration During Upgrade
-    [Tags]    upgrade
+    [Tags]    upgrade    helm
     [Documentation]    Test that longhorn-manager rolling update works correctly during upgrade
     ...
     ...                https://github.com/longhorn/longhorn/issues/12240
@@ -65,16 +65,15 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     ...                2. Install stable version of Longhorn
     ...                3. Upgrade Longhorn with maxUnavailable=1 for longhorn-manager (don't wait)
     ...                4. Monitor during upgrade that running longhorn-manager pods count is not 0
-    
-    # Uninstall and install stable version
-    Given Setting deleting-confirmation-flag is set to true
-    When Uninstall Longhorn
-    Then Check Longhorn CRD removed
-    
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Skip    LONGHORN_STABLE_VERSION not set - required for upgrade test
     END
+
+    # Uninstall and install stable version
+    Given Setting deleting-confirmation-flag is set to true
+    When Uninstall Longhorn
+    Then Check Longhorn CRD removed
     
     When Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
     
@@ -83,12 +82,12 @@ Test Longhorn Manager Rolling Update Configuration During Upgrade
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         # Start upgrade without waiting - returns process object
         Upgrade Longhorn to custom version
-        ...    custom_cmd=yq eval -i '.longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1' values.yaml
+        ...    custom_cmd=yq -i '.longhornManager.updateStrategy.rollingUpdate.maxUnavailable = 1' values.yaml
         ...    wait=${False}
     ELSE
         # For manifest, maxUnavailable is in longhorn.yaml DaemonSet spec
         Upgrade Longhorn to custom version
-        ...    custom_cmd=yq eval -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.updateStrategy.rollingUpdate.maxUnavailable = 1' longhorn.yaml
+        ...    custom_cmd=yq -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.updateStrategy.rollingUpdate.maxUnavailable = 1' longhorn.yaml
         ...    wait=${False}
     END
     
@@ -130,17 +129,16 @@ Test CSI Components Rolling Update Configuration During Upgrade
     ...                2. Install stable version of Longhorn
     ...                3. Upgrade Longhorn (don't wait)
     ...                4. Monitor during upgrade that running CSI pods count is not 0 for each component
-    
-    # Uninstall and install stable version
-    Given Setting deleting-confirmation-flag is set to true
-    When Uninstall Longhorn
-    Then Check Longhorn CRD removed
-    
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Skip    LONGHORN_STABLE_VERSION not set - required for upgrade test
     END
-    
+
+    # Uninstall and install stable version
+    Given Setting deleting-confirmation-flag is set to true
+    When Uninstall Longhorn
+    Then Check Longhorn CRD removed
+
     When Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
     
     # Start upgrade without waiting (CSI components should have maxUnavailable=1 by default)
