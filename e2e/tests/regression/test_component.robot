@@ -1,6 +1,8 @@
 *** Settings ***
 Documentation    Longhorn Component Test Cases
 
+Test Tags    regression
+
 Library    OperatingSystem
 
 Resource    ../keywords/variables.resource
@@ -12,6 +14,7 @@ Resource    ../keywords/workload.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
+
 *** Keywords ***
 Revert Longhorn Manager Resources
     [Documentation]    Remove CPU/Memory requests and limits for longhorn-manager
