@@ -101,5 +101,15 @@ class common_keywords:
             time.sleep(retry_count)
             assert False, f"Unexpected {output} in {cmd} result: {res}"
 
+    def execute_command_until_output_is_absent(self, cmd, output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for command {cmd} not returning output {output} ... ({i})")
+            res = subprocess_exec_cmd(cmd)
+            if output not in res:
+                return res
+            time.sleep(retry_interval)
+        assert False, f"'{output}' still found in command result: {res}"
+
     def cleanup_events(self):
         cleanup_events()

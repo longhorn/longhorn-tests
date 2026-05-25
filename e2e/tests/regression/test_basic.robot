@@ -311,14 +311,14 @@ Test Instance Manager AWS Role Annotation
     And Wait for volume 0 healthy
     And Write data to volume 0
     And Create backup 0 for volume 0
-    Then Run command and not expect output
+    Then Run command until output is absent
     ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
     ...    iam.amazonaws.com/role
 
     # AWS_IAM_ROLE_ARN: test-aws-iam-role-arn
     When Run command
     ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} -p '{"data": {"AWS_IAM_ROLE_ARN": "dGVzdC1hd3MtaWFtLXJvbGUtYXJu"}}'
-    Then Run command and expect output
+    Then Run command and wait for output
     ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
     ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
     And Create backup 1 for volume 0
@@ -327,13 +327,13 @@ Test Instance Manager AWS Role Annotation
     And Delete ${DATA_ENGINE} instance manager on node 1
     And Delete ${DATA_ENGINE} instance manager on node 2
     And Check volume 0 kept in healthy
-    Then Run command and expect output
+    Then Run command and wait for output
     ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
     ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
     And Create backup 2 for volume 0
 
     When Run command
     ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} --type=json -p='[{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]'
-    Then Run command and not expect output
+    Then Run command until output is absent
     ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
     ...    iam.amazonaws.com/role
