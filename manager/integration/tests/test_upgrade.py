@@ -642,7 +642,7 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
     print("listing available longhorn engine images:")
     for ei in engineimages:
         print(f"{ei.image}")
-        if ei.image == longhorn_engine_image:
+        if longhorn_engine_image in ei.image:
             new_ei = ei
 
     for v in volumes:
