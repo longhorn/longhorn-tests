@@ -4,15 +4,11 @@ import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from engine import Engine
-from enginefrontend import EngineFrontend
-
 from node_exec import NodeExec
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 import utility.constant as constant
-from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
 from utility.utility import convert_size_to_bytes
@@ -30,9 +26,6 @@ class CRD(Base):
         super().__init__()
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
-        self.retry_count, self.retry_interval = get_retry_count_and_interval()
-        self.engine = Engine()
-        self.enginefrontend = EngineFrontend()
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
