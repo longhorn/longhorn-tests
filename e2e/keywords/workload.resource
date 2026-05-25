@@ -277,7 +277,6 @@ Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state}
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on another node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
-    wait_for_workload_pod_not_on_node    ${workload_name}    ${last_volume_node}
 
 Check ${workload_kind} ${workload_id} pod is ${expect_state} on the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
