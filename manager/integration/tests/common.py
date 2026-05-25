@@ -2149,14 +2149,17 @@ def wait_for_volume_status(client, name, key, value,
 
 def wait_for_volume_delete(client, name):
     for i in range(RETRY_COUNTS):
-        volumes = client.list_volume()
-        found = False
-        for volume in volumes:
-            if volume.name == name:
-                found = True
+        try:
+            volumes = client.list_volume()
+            found = False
+            for volume in volumes:
+                if volume.name == name:
+                    found = True
+                    break
+            if not found:
                 break
-        if not found:
-            break
+        except Exception as e:
+            print(f"Exception when waiting for volume deletion: {e}")
         time.sleep(RETRY_INTERVAL)
     assert not found
 
