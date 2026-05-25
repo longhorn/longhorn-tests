@@ -836,8 +836,12 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
         if volume1.rebuildStatus == []:
             break
 
-        assert volume1.rebuildStatus[0].state == "in_progress"
-        assert volume2.rebuildStatus == []
+        assert volume1.rebuildStatus[0].state == "in_progress", (
+            f"volume 1 rebuild status = {volume1.rebuildStatus}"
+        )
+        assert volume2.rebuildStatus == [], (
+            f"volume 2 rebuild status = {volume2.rebuildStatus}"
+        )
 
         time.sleep(RETRY_INTERVAL)
 
@@ -870,7 +874,10 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
         except: # NOQA
             pass
         time.sleep(RETRY_SNAPSHOT_INTERVAL)
-    assert concourent_build is True
+    assert concourent_build is True, (
+        f"volume 1 rebuild status = {volume1.rebuildStatus}, "
+        f"volume 2 rebuild status = {volume2.rebuildStatus}"
+    )
 
     # Step 1-8
     wait_for_rebuild_complete(client, volume1_name,
@@ -893,7 +900,7 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
         if r["hostId"] == current_node:
             replicas.append(r)
 
-    assert len(replicas) > 0
+    assert len(replicas) > 0, replicas
     if DATA_ENGINE == "v2":
         # Crashing all v2 replicas causes them to restart, but not
         # enter the failed state.
@@ -920,11 +927,15 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
                 rebuild_started is True:
             break
         elif volume2.rebuildStatus == []:
-            assert volume1.rebuildStatus[0].state == "in_progress"
+            assert volume1.rebuildStatus[0].state == "in_progress", (
+                f"volume 1 rebuild status = {volume1.rebuildStatus}"
+            )
             rebuild_started = True
             first_rebuild = volume1_name
         elif volume1.rebuildStatus == []:
-            assert volume2.rebuildStatus[0].state == "in_progress"
+            assert volume2.rebuildStatus[0].state == "in_progress", (
+                f"volume 2 rebuild status = {volume1.rebuildStatus}"
+            )
             rebuild_started = True
             first_rebuild = volume2_name
 
@@ -976,7 +987,10 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
         except: # NOQA
             pass
         time.sleep(RETRY_INTERVAL)
-    assert expect_case is True
+    assert expect_case is True, (
+        f"volume 1 rebuild status = {volume1.rebuildStatus}, "
+        f"volume 2 robustness = {volume2.robustness}"
+    )
 
     wait_for_volume_healthy(client, volume1_name)
     volume2.detach(hostId=lht_host_id)
