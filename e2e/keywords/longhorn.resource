@@ -192,6 +192,43 @@ Check disk size in instance manager pod
     ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}
 
+Check data in instance manager pod
+    [Arguments]    ${instance_manager_name}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${result_replicas}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ls -l /host/var/lib/longhorn/replicas/
+    Log    /host/var/lib/longhorn/replicas/:\n${result_replicas}
+    ${result_dev_longhorn}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ls -l /host/dev/longhorn/
+    Log    /host/dev/longhorn/:\n${result_dev_longhorn}
+    ${result_dev_mapper}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ls -l /host/dev/mapper/
+    Log    /host/dev/mapper/:\n${result_dev_mapper}
+    ${result_mapper}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ls -l /dev/mapper/
+    Log    /dev/mapper/:\n${result_mapper}
+
+Log all instance manager pods data
+    [Documentation]    For every running instance manager pod, log the contents of
+    ...                /host/var/lib/longhorn/replicas/, /host/dev/longhorn/, and /host/dev/mapper/.
+    ...                Useful as a diagnostic step before/after volume operations.
+    ${longhorn_namespace} =    get_longhorn_namespace
+    ${pod_names_raw}=    execute_command
+    ...    kubectl -n ${longhorn_namespace} get pods -l longhorn.io/component=instance-manager --field-selector=status.phase=Running -o jsonpath='{range .items[*]}{.metadata.name}{"\\n"}{end}'
+    ${pod_names}=    Evaluate    $pod_names_raw.split()
+    FOR    ${pod_name}    IN    @{pod_names}
+        Log    \n=== Instance Manager: ${pod_name} ===    console=True
+        Check data in instance manager pod    ${pod_name}
+    END
+
+Log instance manager pod data for ${workload_kind} ${workload_id}
+    [Documentation]    Log the contents of /host/var/lib/longhorn/replicas/,
+    ...                /host/dev/longhorn/, and /host/dev/mapper/ for the instance
+    ...                manager pod that owns the given workload's volume.
+    ...                workload_kind: deployment | statefulset | volume
+    ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name}=    Run Keyword If    '${workload_kind}' == 'volume'    Set Variable    ${workload_name}
+    ...    ELSE    get_workload_volume_name    ${workload_name}
+    ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
+    Log    \n=== Instance Manager: ${instance_manager_name} (volume: ${volume_name}) ===    console=True
+    Check data in instance manager pod    ${instance_manager_name}
+
 Patch Longhorn Manager Resources With
     [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
     patch_longhorn_component_resources_limit    longhorn-manager    daemonset    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
