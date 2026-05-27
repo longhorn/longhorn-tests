@@ -2149,14 +2149,17 @@ def wait_for_volume_status(client, name, key, value,
 
 def wait_for_volume_delete(client, name):
     for i in range(RETRY_COUNTS):
-        volumes = client.list_volume()
-        found = False
-        for volume in volumes:
-            if volume.name == name:
-                found = True
+        try:
+            volumes = client.list_volume()
+            found = False
+            for volume in volumes:
+                if volume.name == name:
+                    found = True
+                    break
+            if not found:
                 break
-        if not found:
-            break
+        except Exception as e:
+            print(f"Exception when waiting for volume deletion: {e}")
         time.sleep(RETRY_INTERVAL)
     assert not found
 
@@ -3157,7 +3160,7 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
         conditions = volume.conditions
         if conditions is not None and \
                 conditions != {} and \
-                conditions[VOLUME_CONDITION_SCHEDULED] and \
+                VOLUME_CONDITION_SCHEDULED in conditions and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] == value:
             break
@@ -3617,18 +3620,20 @@ def reset_node(client, core_api):
 
     nodes = client.list_node()
     for node in nodes:
-        try:
-            set_node_cordon(core_api, node.id, False)
-            node = client.by_id_node(node.id)
+        for i in range(NODE_UPDATE_RETRY_COUNT):
+            print(f"Resetting node {node.id} scheduling and tags ... ({i})")
+            try:
+                set_node_cordon(core_api, node.id, False)
+                node = client.by_id_node(node.id)
 
-            node = set_node_tags(client, node, tags=[])
-            node = wait_for_node_tag_update(client, node.id, [])
-            node = set_node_scheduling(client, node, allowScheduling=True)
-            wait_for_node_update(client, node.id,
-                                 "allowScheduling", True)
-        except Exception as e:
-            print("\nException when reset node scheduling and tags", node)
-            print(e)
+                node = set_node_tags(client, node, tags=[])
+                node = wait_for_node_tag_update(client, node.id, [])
+                node = set_node_scheduling(client, node, allowScheduling=True)
+                wait_for_node_update(client, node.id, "allowScheduling", True)
+                break
+            except Exception as e:
+                print(e)
+            time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
     managed_k8s_cluster = os.getenv("MANAGED_K8S_CLUSTER").lower() == 'true'
     if not managed_k8s_cluster:
