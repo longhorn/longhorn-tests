@@ -654,3 +654,45 @@ class Node:
             return node
 
         return self.update_disks(node_name, disks)
+
+    def wait_for_node_disks_schedulable(self, node_name, disk_type=None, expected_schedulable=True):
+        """
+        Wait for all disks on a specific node to reach the expected schedulable state.
+        - disk_type: "block" or "filesystem", set to None for all types
+        - expected_schedulable: True to wait for schedulable, False to wait for unschedulable
+        """
+        client = get_longhorn_client()
+        expected_status = "True" if expected_schedulable else "False"
+        state_name = "schedulable" if expected_schedulable else "unschedulable"
+
+        for i in range(self.retry_count):
+            node = client.by_id_node(node_name)
+            all_disks_match = True
+            disk_statuses = getattr(node, "disks", {})
+            for disk_name, disk_status in disk_statuses.items():
+                # When waiting for schedulable state, skip disks with allowScheduling=False
+                if expected_schedulable:
+                    allow_scheduling = getattr(disk_status, "allowScheduling", None) or \
+                        disk_status.get("allowScheduling", None)
+                    if not allow_scheduling:
+                        continue
+
+                if disk_type is not None:
+                    dt = getattr(disk_status, "diskType", None) or \
+                        disk_status.get("diskType", None)
+                    if dt != disk_type:
+                        continue
+
+                conditions = disk_status.get("conditions", {})
+                sched_status = conditions.get("Schedulable", {}).get("status")
+
+                if sched_status != expected_status:
+                    logging(f"Disk '{disk_name}' on node '{node_name}' is not {state_name} (iteration {i})")
+                    all_disks_match = False
+
+            if all_disks_match:
+                logging(f"All disks on node '{node_name}' are {state_name}")
+                return
+            time.sleep(self.retry_interval)
+
+        assert False, f"Not all disks on node '{node_name}' reached Schedulable={expected_status} after {self.retry_count * self.retry_interval}s"
