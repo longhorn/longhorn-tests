@@ -3,6 +3,7 @@ import json
 from kubernetes import client
 from backup.base import Base
 from utility.utility import logging
+from utility.utility import get_all_crs
 from utility.utility import subprocess_exec_cmd
 import utility.constant as constant
 
@@ -45,7 +46,11 @@ class CRD(Base):
         return NotImplemented
 
     def list_all(self):
-        return NotImplemented
+        return get_all_crs(group="longhorn.io",
+            version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="backups",
+        )["items"]
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         return NotImplemented
@@ -74,11 +79,9 @@ class CRD(Base):
     def cleanup_backups(self):
         # Use k8s api to delete all backup especially backup in error state
         # Because backup in error state does not have backup volume
-        backups = self.obj_api.list_namespaced_custom_object("longhorn.io",
-                                                             "v1beta2",
-                                                             constant.LONGHORN_NAMESPACE,
-                                                             "backups")
-        for backup in backups['items']:
+        backups = self.list_all()
+
+        for backup in backups:
             logging(f"Deleting backup {backup['metadata']['name']}")
             try:
                 self.obj_api.delete_namespaced_custom_object("longhorn.io",

@@ -276,24 +276,26 @@ class workload_keywords:
 
     def wait_for_workload_pod_on_node(self, workload_name, node_name, namespace="default"):
         logging(f"Waiting for workload {workload_name} pod on node {node_name} in namespace {namespace}")
-        pod = get_workload_pods(workload_name, namespace=namespace)[0]
         for i in range(self.retry_count):
             logging(f"Waiting for workload {workload_name} pod on node {node_name} ... ({i})")
-            if pod.spec.node_name == node_name:
-                logging(f"Workload {workload_name} pod {pod.metadata.name} is on node {node_name}")
-                return
+            pods = get_workload_pods(workload_name, namespace=namespace)
+            for pod in pods:
+                if pod.spec.node_name == node_name:
+                    logging(f"Workload {workload_name} pod {pod.metadata.name} is on node {node_name}")
+                    return
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for workload {workload_name} pod on node {node_name}"
 
     def wait_for_workload_pod_not_on_node(self, workload_name, node_name, namespace="default"):
         logging(f"Waiting for workload {workload_name} pod not on node {node_name} in namespace {namespace}")
-        pod = get_workload_pods(workload_name, namespace=namespace)[0]
         for i in range(self.retry_count):
             logging(f"Waiting for workload {workload_name} pod not on node {node_name} ... ({i})")
-            if pod.spec.node_name != node_name:
-                logging(f"Workload {workload_name} pod {pod.metadata.name} is not on node {node_name}")
-                return
-            time.sleep(self.retry_interval)
+            pods = get_workload_pods(workload_name, namespace=namespace)
+            for pod in pods:
+                if pod.spec.node_name != node_name:
+                    logging(f"Workload {workload_name} pod {pod.metadata.name} is not on node {node_name}")
+                    return
+                time.sleep(self.retry_interval)
         assert False, f"Failed to wait for workload {workload_name} pod not on node {node_name}"
 
     def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace=constant.LONGHORN_NAMESPACE):
