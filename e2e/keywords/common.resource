@@ -60,6 +60,10 @@ Run command and not expect output
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_and_not_expect_output    ${command}    ${unexpected_output}
 
+Run command until output is absent
+    [Arguments]    ${command}    ${unexpected_output}
+    execute_command_until_output_is_absent    ${command}    ${unexpected_output}
+
 Test should pass
     No Operation
 
