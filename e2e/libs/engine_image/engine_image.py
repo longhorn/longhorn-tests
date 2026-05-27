@@ -29,6 +29,10 @@ class EngineImage():
         data_minv = default_img.dataFormatMinVersion
         return cli_v, cli_minv, ctl_v, ctl_minv, data_v, data_minv
 
+    def list_engine_images(self):
+        images = get_longhorn_client().list_engine_image()
+        return images
+
     def deploy_compatible_engine_image(self):
         cli_v, cli_minv, ctl_v, ctl_minv, data_v, data_minv = self.get_default_engine_image_versions()
         compatible_engine_image_name = \
