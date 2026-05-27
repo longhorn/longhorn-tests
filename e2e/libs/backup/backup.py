@@ -116,7 +116,7 @@ class Backup(Base):
             raise ValueError(f"Backup {backup_id} not found or missing snapshot name")
 
         snap_name = backup.snapshotName
-        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name)
+        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name, wait=False)
         snap = self.backup.snapshot.get(volume_name, snapshot_id)
-        snap_exists = not snap.removed
+        snap_exists = snap is not None and not snap.removed
         assert snap_exists == exists, f"Snapshot {snap_name} exists: {snap_exists}, expected: {exists}"
