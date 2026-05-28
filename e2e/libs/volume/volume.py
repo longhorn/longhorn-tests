@@ -218,3 +218,9 @@ class Volume(Base):
 
     def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
         self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)
+
+    def get_state(self, volume_name):
+        return self.volume.get_state(volume_name)
+
+    def verify_never_detached_during_test(self, volume_name, start_time=None):
+        return self.volume.verify_never_detached_during_test(volume_name, start_time)
