@@ -7,6 +7,8 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/backing_image.resource
 Resource    ../keywords/proxy.resource
 
+Suite Setup    Skip If    '${DATA_ENGINE}' == 'v2'    reason=v2 data engine doesn't support backing image
+
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
