@@ -82,6 +82,15 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
             # command is already set in the template, so we only need to set args
             manifest_dict['spec']['template']['spec']['containers'][0]['args'] = [args]
 
+            # If args contain apk commands, we need to run as root
+            if 'apk' in args:
+                # Override pod-level securityContext to run as root
+                manifest_dict['spec']['template']['spec']['securityContext'] = {
+                    "runAsUser": 0,
+                    "runAsGroup": 0,
+                    "fsGroup": 0
+                }
+
         api = client.AppsV1Api()
 
         deployment = api.create_namespaced_deployment(
