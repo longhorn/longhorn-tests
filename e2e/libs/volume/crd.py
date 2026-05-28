@@ -19,6 +19,8 @@ from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
 from volume.rest import Rest
 
+from event.event import get_events
+
 
 class CRD(Base):
 
@@ -886,3 +888,49 @@ class CRD(Base):
             logging(f"Failed to find recurring job group {job_group_name} for volume {volume_name}")
             time.sleep(self.retry_interval)
             assert False, f"Failed to find recurring job group {job_group_name} for volume {volume_name}"
+
+    def get_state(self, volume_name):
+        """
+        Get the current state of a volume.
+        """
+        logging(f"Getting state for volume {volume_name}")
+        volume = self.get(volume_name)
+        state = volume["status"]["state"]
+        logging(f"Volume {volume_name} state: {state}")
+        return state
+
+    def verify_never_detached_during_test(self, volume_name, start_time=None):
+        """
+        Verify that the volume never detached during the test by checking
+        Kubernetes events for detachment events since start_time.
+
+        Args:
+            volume_name: Name of the volume to check
+            start_time: datetime object marking when to start checking events.
+                       If None, checks all events (not recommended).
+        """
+        logging(f"Verifying volume {volume_name} never detached during test")
+
+        field_selector = f"involvedObject.name={volume_name},involvedObject.kind=Volume"
+        events = get_events(
+            namespace=constant.LONGHORN_NAMESPACE,
+            field_selector=field_selector,
+            start_time=start_time
+        )
+
+        detachment_keywords = ["detached", "detaching", "disconnected"]
+
+        for event in events:
+            event_message = event.get('message', '').lower()
+            event_reason = event.get('reason', '').lower()
+            event_timestamp = event.get('lastTimestamp', '')
+
+            for keyword in detachment_keywords:
+                if keyword in event_message or keyword in event_reason:
+                    logging(f"Found detachment event: {event.get('reason')}: {event.get('message')} at {event_timestamp}")
+                    raise AssertionError(
+                        f"Volume {volume_name} had a detachment event during test: "
+                        f"{event.get('reason')}: {event.get('message')} at {event_timestamp}"
+                    )
+
+        logging(f"No detachment events found for volume {volume_name} since {start_time}")

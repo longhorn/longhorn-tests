@@ -1,6 +1,8 @@
 import asyncio
 import time
 
+from engine import Engine
+from enginefrontend import EngineFrontend
 from node import Node
 from node.utility import check_replica_locality
 
@@ -22,6 +24,8 @@ from workload.workload import get_workload_volume_name
 class volume_keywords:
 
     def __init__(self):
+        self.engine = Engine()
+        self.enginefrontend = EngineFrontend()
         self.node = Node()
         self.volume = Volume()
         self.replica = Replica()
@@ -89,6 +93,37 @@ class volume_keywords:
                 return
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for volume {volume_name} not attached to node {node_name}"
+
+    def wait_for_volume_engine_node(self, volume_name, expected_node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} engine to be on node {expected_node_name} ... ({i})")
+            engine_node = self.engine.get_node(volume_name)
+            if engine_node == expected_node_name:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} engine on node {expected_node_name}, actual: {engine_node}"
+
+    def wait_for_volume_enginefrontend_node(self, volume_name, expected_node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} enginefrontend to be on node {expected_node_name} ... ({i})")
+            enginefrontend_node = self.enginefrontend.get_node(volume_name)
+            if enginefrontend_node == expected_node_name:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} enginefrontend on node {expected_node_name}, actual: {enginefrontend_node}"
+
+    def wait_for_volume_engine_and_enginefrontend_same_node(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} engine and enginefrontend to be on same node ... ({i})")
+            volume_node = self.get_volume_node(volume_name)
+            engine_node = self.engine.get_node(volume_name)
+            enginefrontend_node = self.enginefrontend.get_node(volume_name)
+
+            if volume_node == engine_node and volume_node == enginefrontend_node:
+                logging(f"Volume {volume_name} engine and enginefrontend are on same node: {volume_node}")
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} engine and enginefrontend on same node. Volume node: {volume_node}, Engine node: {engine_node}, EngineFrontend node: {enginefrontend_node}"
 
     def get_volume_instance_manager(self, volume_name):
         volume = VolumeRest().get(volume_name)
@@ -478,3 +513,15 @@ class volume_keywords:
 
     def trim_volume(self, volume_name):
         self.volume.trim_filesystem(volume_name)
+
+    def get_volume_engine_node(self, volume_name):
+        return self.engine.get_node(volume_name)
+
+    def get_volume_enginefrontend_node(self, volume_name):
+        return self.enginefrontend.get_node(volume_name)
+
+    def get_volume_state(self, volume_name):
+        return self.volume.get_state(volume_name)
+
+    def verify_volume_never_detached_during_test(self, volume_name, start_time=None):
+        return self.volume.verify_never_detached_during_test(volume_name, start_time)

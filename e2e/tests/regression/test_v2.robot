@@ -239,14 +239,12 @@ Test V2 Data Engine Selective Activation With Existing Engine And Replica
 
     Given Create volume 0 attached to node 2 with 2 replicas excluding node 2    dataEngine=v2
 
-    ${node_0}=    Get Node By Index    0
     When Run command and expect output
-    ...    kubectl label node ${node_0} node.longhorn.io/disable-v2-data-engine=true
+    ...    kubectl label node ${NODE_0} node.longhorn.io/disable-v2-data-engine=true
     ...    cannot disable v2 data engine
 
-    ${node_2}=    Get Node By Index    2
     When Run command and expect output
-    ...    kubectl label node ${node_2} node.longhorn.io/disable-v2-data-engine=true
+    ...    kubectl label node ${NODE_2} node.longhorn.io/disable-v2-data-engine=true
     ...    cannot disable v2 data engine
 
 Check Block Device Is Not In Use Before Creating Disk
@@ -322,3 +320,56 @@ Test V2 Orphan Replica Cleanup After Node Power Cycle
     When Wait for orphan count to be 1
     Then Cleanup orphans
     And Verify replica lvol is deleted from SPDK lvol list on node 2    replica_name=${replica_name}
+
+Test V2 Volume Engine Live Switchover
+    [Tags]    v2
+    [Documentation]    Test v2 volume cross-node initiator and target support with live switchover.
+    ...                Verify data integrity is maintained when engine moves across nodes
+    ...                while volume and enginefront remain on the original node.
+    ...
+    ...                Related issue:
+    ...                https://github.com/longhorn/longhorn/issues/7124
+    ...
+    ...                Manual test steps:
+    ...                https://github.com/longhorn/longhorn/issues/7124#issuecomment-4349501341
+
+    Given Create storageclass longhorn-test with    dataEngine=v2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    ...    args=apk add --no-cache fio && sleep infinity
+    ...    node_selector={"kubernetes.io/hostname":"${NODE_0}"}
+    And Wait for volume of deployment 0 healthy
+    And Wait for workloads pods stable    deployment 0
+    And Mark volume monitoring start time for deployment 0
+
+    When Start fio randwrite with crc32c verify in deployment 0
+    Then Volume of deployment 0 engine CR and enginefrontend CR should be on same node
+
+    # Test 1: Move engine to node 1
+    When Update volume of deployment 0 engineNodeID to node 1
+    Then Volume of deployment 0 should be attached to node 0
+    And Volume of deployment 0 engine CR should be on node 1
+    And Volume of deployment 0 enginefrontend CR should be on node 0
+    # Sleep to test I/O stability after engine live switchover
+    And Sleep    3 minutes
+
+    # Test 2: Move engine to node 2
+    When Update volume of deployment 0 engineNodeID to node 2
+    Then Volume of deployment 0 should be attached to node 0
+    And Volume of deployment 0 engine CR should be on node 2
+    And Volume of deployment 0 enginefrontend CR should be on node 0
+    # Sleep to test I/O stability after engine live switchover
+    And Sleep    3 minutes
+
+    # Test 3: Move engine back to node 0
+    When Update volume of deployment 0 engineNodeID to node 0
+    Then Volume of deployment 0 should be attached to node 0
+    And Volume of deployment 0 engine CR should be on node 0
+    And Volume of deployment 0 enginefrontend CR should be on node 0
+    # Sleep to test I/O stability after engine live switchover
+    And Sleep    3 minutes
+
+    When Stop fio in deployment 0
+    Then Verify fio crc32c data in deployment 0 have no errors
+    And Check deployment 0 pods did not restart
+    And Volume of deployment 0 should never have detached during test

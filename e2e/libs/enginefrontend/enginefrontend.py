@@ -43,3 +43,22 @@ class EngineFrontend(Base):
                 logging(f"Getting enginefrontend endpoint for volume {volume_name} error: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to get enginefrontend endpoint for volume {volume_name}"
+
+    def get_node(self, volume_name):
+        """
+        Get the node where the volume's enginefrontend CR is running.
+        """
+        for i in range(self.retry_count):
+            logging(f"Trying to get enginefrontend node for volume {volume_name} ... ({i})")
+            try:
+                enginefrontend = self.get_enginefrontend(volume_name)
+                enginefrontend_node = enginefrontend["spec"]["nodeID"]
+                if enginefrontend_node:
+                    logging(f"Volume {volume_name} enginefrontend is running on node: {enginefrontend_node}")
+                    return enginefrontend_node
+                else:
+                    raise RuntimeError(f"Unexpected empty enginefrontend nodeID: {enginefrontend['spec']}")
+            except Exception as e:
+                logging(f"Getting enginefrontend node for volume {volume_name} error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get enginefrontend node for volume {volume_name}"
