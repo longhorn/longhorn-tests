@@ -332,6 +332,12 @@ Test V2 Volume Engine Live Switchover
     ...
     ...                Manual test steps:
     ...                https://github.com/longhorn/longhorn/issues/7124#issuecomment-4349501341
+<<<<<<< HEAD
+=======
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+>>>>>>> ca56263c (test(robot): fix missing skip step in v2 engine live upgrade)
 
     Given Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
