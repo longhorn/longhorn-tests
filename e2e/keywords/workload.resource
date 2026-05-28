@@ -3,6 +3,7 @@ Documentation    Workload Keywords
 
 Library    Collections
 Library    String
+Library    DateTime
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/workload_keywords.py
@@ -464,3 +465,55 @@ Check volume of ${workload_kind} ${workload_id} kept in faulted
         wait_for_volume_faulted    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
+
+Start fio randwrite with crc32c verify in ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    start_fio_randwrite_with_verify_in_workload    ${workload_name}
+
+Stop fio in ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    stop_fio_in_workload    ${workload_name}
+
+Verify fio crc32c data in ${workload_kind} ${workload_id} have no errors
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    verify_fio_data_integrity_in_workload    ${workload_name}
+
+Update volume of ${workload_kind} ${workload_id} engineNodeID to node ${node_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    update_volume_spec    ${volume_name}    engineNodeID    ${node_name}
+
+Volume of ${workload_kind} ${workload_id} should be attached to node ${node_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${expected_node_name} =    get_node_by_index    ${node_id}
+    ${expected_node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_attached_to_node    ${volume_name}    ${expected_node_name}
+
+Volume of ${workload_kind} ${workload_id} engine CR and enginefrontend CR should be on same node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_engine_and_enginefrontend_same_node    ${volume_name}
+
+Volume of ${workload_kind} ${workload_id} engine CR should be on node ${node_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${expected_node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_engine_node    ${volume_name}    ${expected_node_name}
+
+Volume of ${workload_kind} ${workload_id} enginefrontend CR should be on node ${node_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${expected_node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_enginefrontend_node    ${volume_name}    ${expected_node_name}
+
+Mark volume monitoring start time for ${workload_kind} ${workload_id}
+    ${monitoring_start_time}=    Get Current Date    result_format=datetime
+    Log    Volume monitoring started at ${monitoring_start_time}
+    Set Test Variable    ${volume_monitoring_start_time}    ${monitoring_start_time}
+
+Volume of ${workload_kind} ${workload_id} should never have detached during test
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    verify_volume_never_detached_during_test    ${volume_name}    ${volume_monitoring_start_time}
