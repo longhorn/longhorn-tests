@@ -2,14 +2,12 @@ import multiprocessing
 import asyncio
 import time
 
-from kubernetes import client
-from kubernetes.stream import stream
-
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from utility.utility import get_retry_count_and_interval
+from utility.utility import pod_exec
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
@@ -422,3 +420,68 @@ class workload_keywords:
     def rollout_restart_workload(self, workload_name, workload_kind, namespace="default"):
         logging(f"Triggering rollout restart of {workload_kind} {workload_name} in namespace {namespace}")
         rollout_restart_workload(workload_name, workload_kind, namespace)
+
+    def start_fio_randwrite_with_verify_in_workload(self, workload_name, namespace="default"):
+        """
+        Start fio with randwrite and crc32c verification in workload pod.
+        This runs fio in the background for data integrity testing.
+        """
+        logging(f"Starting fio randwrite with crc32c verification in workload {workload_name}")
+        pod_name = get_workload_pod_names(workload_name, namespace)[0]
+
+        fio_cmd = (
+            "nohup fio --name=mytest "
+            "--filename=/data/testfile.dat "
+            "--size=1400M "
+            "--rw=randwrite "
+            "--bs=4k "
+            "--ioengine=libaio "
+            "--iodepth=32 "
+            "--direct=1 "
+            "--verify=crc32c "
+            "--time_based "
+            "--runtime=999999 "
+            "--verify_state_save=1 "
+            "> /data/fio_write.log 2>&1 &"
+        )
+
+        resp = pod_exec(pod_name, namespace, fio_cmd)
+        logging(f"Started fio in workload {workload_name}: {resp}")
+
+    def stop_fio_in_workload(self, workload_name, namespace="default"):
+        """
+        Stop fio process in workload pod.
+        """
+        logging(f"Stopping fio in workload {workload_name}")
+        pod_name = get_workload_pod_names(workload_name, namespace)[0]
+
+        resp = pod_exec(pod_name, namespace, "pkill -SIGTERM fio || true")
+        logging(f"Stopped fio in workload {workload_name}: {resp}")
+
+    def verify_fio_data_integrity_in_workload(self, workload_name, namespace="default"):
+        """
+        Verify fio data integrity by running fio read with crc32c verification.
+        Should return err=0 if data is intact.
+        """
+        logging(f"Verifying fio data integrity in workload {workload_name}")
+        pod_name = get_workload_pod_names(workload_name, namespace)[0]
+
+        verify_cmd = (
+            "fio --name=mytest "
+            "--filename=/data/testfile.dat "
+            "--rw=read "
+            "--bs=4k "
+            "--ioengine=libaio "
+            "--iodepth=32 "
+            "--direct=1 "
+            "--verify=crc32c "
+            "--verify_state_load=1"
+        )
+
+        resp = pod_exec(pod_name, namespace, verify_cmd)
+        logging(f"FIO verification output: {resp}")
+
+        if "err= 0" not in resp and "err=0" not in resp:
+            raise AssertionError(f"FIO verification failed with errors: {resp}")
+
+        logging(f"FIO data integrity verification passed")
