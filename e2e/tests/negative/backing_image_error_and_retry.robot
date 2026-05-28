@@ -12,6 +12,8 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/node.resource
 
+Suite Setup    Skip If    '${DATA_ENGINE}' == 'v2'    reason=v2 data engine doesn't support backing image
+
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
