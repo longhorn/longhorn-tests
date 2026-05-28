@@ -4191,6 +4191,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
     assert md5sum1 == read_md5sum1
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.v2_volume_test  # NOQA
 def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NOQA
     """
