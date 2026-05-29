@@ -274,7 +274,7 @@ class Rest(Base):
             self.wait_for_backup_volume_delete(backup_volume.name)
 
         backup_volumes = get_longhorn_client().list_backupVolume()
-        assert backup_volumes.data == []
+        assert not backup_volumes.data, f"Failed to cleanup backup volumes, still have backup volumes: {backup_volumes.data}"
 
     def cleanup_backups(self):
         return CRD().cleanup_backups()
