@@ -3621,7 +3621,6 @@ def reset_node(client, core_api):
     nodes = client.list_node()
     for node in nodes:
         for i in range(NODE_UPDATE_RETRY_COUNT):
-            print(f"Resetting node {node.id} scheduling and tags ... ({i})")
             try:
                 set_node_cordon(core_api, node.id, False)
                 node = client.by_id_node(node.id)
@@ -3633,6 +3632,7 @@ def reset_node(client, core_api):
                 break
             except Exception as e:
                 print(e)
+                print(f"\nRetrying resetting node {node.id} scheduling and tags ... ({i})")  # NOQA
             time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
     managed_k8s_cluster = os.getenv("MANAGED_K8S_CLUSTER").lower() == 'true'
