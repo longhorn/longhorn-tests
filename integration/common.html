@@ -5824,7 +5824,6 @@ def random_labels():
     nodes = client.list_node()
     for node in nodes:
         for i in range(NODE_UPDATE_RETRY_COUNT):
-            print(f&#34;Resetting node {node.id} scheduling and tags ... ({i})&#34;)
             try:
                 set_node_cordon(core_api, node.id, False)
                 node = client.by_id_node(node.id)
@@ -5836,6 +5835,7 @@ def random_labels():
                 break
             except Exception as e:
                 print(e)
+            print(f&#34;Resetting node {node.id} scheduling and tags ... ({i})&#34;)
             time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
     managed_k8s_cluster = os.getenv(&#34;MANAGED_K8S_CLUSTER&#34;).lower() == &#39;true&#39;
