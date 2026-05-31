@@ -123,6 +123,17 @@ Wait for volume ${volume_id} snapshot ${snapshot_id} checksum to be calculated
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_snapshot_checksum_to_be_created    ${volume_name}    ${snapshot_id}
 
+Wait for snapshot ${snapshot_id} of ${workload_kind} ${workload_id} volume ready
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_snapshot_ready    ${volume_name}    ${snapshot_id}
+
+Get snapshot name of ${snapshot_id} for ${workload_kind} ${workload_id} volume
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${snapshot_name} =    get_snapshot_name    ${volume_name}    ${snapshot_id}
+    [Return]    ${snapshot_name}
+
 Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should be created
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
     ${longhorn_snapshot_name} =    get_longhorn_snapshot_name_associated_with_csi_volume_snapshot    ${csi_volume_snapshot_name}

@@ -38,9 +38,9 @@ class volume_keywords:
         for volume in volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", retry=True):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", retry=True):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry)
 
     def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
@@ -408,8 +408,8 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None):
-        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
+        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name, node_stage_secret_name, node_stage_secret_namespace)
 
     def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True, sc_name="longhorn"):
         self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
