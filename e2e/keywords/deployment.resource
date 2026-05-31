@@ -7,6 +7,7 @@ Library    ../libs/keywords/deployment_keywords.py
 Library    ../libs/keywords/node_keywords.py
 Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/volume_keywords.py
+Resource    variables.resource
 
 *** Keywords ***
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
@@ -33,10 +34,9 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
 Create deployment ${deployment_id} with volume ${volume_id}
-    [Arguments]    &{config}
+    [Arguments]    ${sc_name}=longhorn    &{config}
     ${volume_id}=  Convert To String  ${volume_id}
-    Create persistentvolume for volume ${volume_id}    &{config}
-    ${sc_name}=    Evaluate    $config.get('sc_name', 'longhorn')
+    Create persistentvolume for volume ${volume_id}    sc_name=${sc_name}    &{config}
     Create persistentvolumeclaim for volume ${volume_id}    sc_name=${sc_name}
     ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
     ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
@@ -80,12 +80,6 @@ And Write ${size} MB data to block device in deployment ${deployment_id} and che
 Check deployment ${deployment_id} data in file ${file_name} is intact
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     check_workload_pod_data_checksum    ${deployment_name}    ${file_name}
-
-Check deployment ${deployment_id} data in file ${file_name} is intact compared to deployment ${source_deployment_id}
-    ${source_deployment_name} =    generate_name_with_suffix    deployment    ${source_deployment_id}
-    ${expected_checksum} =    get_workload_pod_data_checksum    ${source_deployment_name}    ${file_name}
-    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
-    check_workload_pod_data_checksum    ${deployment_name}    ${file_name}    ${expected_checksum}
 
 Check deployment ${deployment_id} works    
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
@@ -138,3 +132,12 @@ Check deployment ${deployment_id} volume replica is not on node ${node_name}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
     wait_for_replica_count    ${volume_name}    ${node_name}    0
+
+Assert block device size in deployment pod for deployment ${deployment_id} is ${size}
+    ${expected_bytes} =    convert_size_to_bytes    ${size}    to_str=True
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${pod_name} =    get_workload_pod_name    ${deployment_name}
+    ${cmd} =    Set Variable    blockdev --getsize64 ${BLOCK_DEVICE_PATH}
+    ${result} =    pod_exec    ${pod_name}    default    ${cmd}
+    Should Be Equal As Integers    ${result.strip()}    ${expected_bytes}
+    ...    msg=Block device size in pod ${pod_name}: expected ${expected_bytes} B, got ${result.strip()} B
