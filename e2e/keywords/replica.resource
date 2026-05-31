@@ -47,8 +47,12 @@ Verify replica lvol exists in SPDK lvol list on node ${node_id}
     [Arguments]    ${replica_name}
     ${node_name} =    get_node_by_index    ${node_id}
     verify_replica_lvol_exists_in_spdk_lvol    ${node_name}    ${replica_name}
-Assert replica file size of deployment ${deployment_id} is ${expected_size}
+
+Assert replica file size of ${resource_kind} ${resource_id} is ${expected_size}
     ${expected_bytes} =    convert_size_to_bytes    ${expected_size}    to_str=True
-    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
-    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    ${resource_name}=    generate_name_with_suffix    ${resource_kind}    ${resource_id}
+    ${volume_name}=    Run Keyword If    '${resource_kind}' == 'volume'
+    ...        Set Variable    ${resource_name}
+    ...    ELSE
+    ...        get_workload_volume_name    ${resource_name}
     wait_for_replica_file_size    ${volume_name}    ${expected_bytes}

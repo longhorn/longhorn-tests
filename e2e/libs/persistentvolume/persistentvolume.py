@@ -16,7 +16,7 @@ class PersistentVolume():
         self.api = client.CoreV1Api()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, storage, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace=None):
+    def create(self, name, storage, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace='longhorn-system'):
         filepath = "./templates/workload/pv.yaml"
         with open(filepath, 'r') as f:
             manifest_dict = yaml.safe_load(f)
@@ -32,7 +32,7 @@ class PersistentVolume():
             if node_stage_secret_name:
                 manifest_dict['spec']['csi']['nodeStageSecretRef'] = {
                     'name': node_stage_secret_name,
-                    'namespace': node_stage_secret_namespace or 'longhorn-system',
+                    'namespace': node_stage_secret_namespace,
                 }
 
             logging(f"yaml = {manifest_dict}")
