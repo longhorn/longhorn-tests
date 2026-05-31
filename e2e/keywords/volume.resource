@@ -5,6 +5,7 @@ Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/backup_keywords.py
+Library    ../libs/keywords/snapshot_keywords.py
 
 *** Variables ***
 ${SCHEDULING_STATUS_CHECK_TIMEOUT}    30
@@ -71,6 +72,23 @@ Create volume ${volume_id} from ${workload_kind} ${workload_id} volume latest ba
     ${volume_name}=    generate_name_with_suffix    volume    ${volume_id}
     ${backup_url}=    get_latest_backup_url    ${workload_volume_name}
     create_volume   ${volume_name}    numberOfReplicas=3    fromBackup=${backup_url}    &{config}
+
+Create volume ${target_volume_id} from snapshot ${snapshot_id} of volume ${source_volume_id}
+    [Arguments]    &{config}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${snapshot_name} =    get_snapshot_name    ${source_volume_name}    ${snapshot_id}
+    ${snapshot_data_source} =    Set Variable    snap://${source_volume_name}/${snapshot_name}
+    create_volume    ${target_volume_name}    numberOfReplicas=3    dataSource=${snapshot_data_source}    &{config}
+
+Create volume ${target_volume_id} from snapshot ${snapshot_id} of ${workload_kind} ${workload_id} volume
+    [Arguments]    &{config}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${source_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${snapshot_name} =    get_snapshot_name    ${source_volume_name}    ${snapshot_id}
+    ${snapshot_data_source} =    Set Variable    snap://${source_volume_name}/${snapshot_name}
+    create_volume    ${target_volume_name}    numberOfReplicas=3    dataSource=${snapshot_data_source}    &{config}
 
 No volume created
     ${volumes} =    list_volumes
