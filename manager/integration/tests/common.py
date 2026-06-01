@@ -6529,10 +6529,11 @@ def create_rwx_volume_with_storageclass(client,
     return volume_name
 
 
-def create_volume(client, vol_name, size, node_id, r_num):
+def create_volume(client, vol_name, size, node_id, r_num,
+                  data_engine=DATA_ENGINE):
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num,
-                                  dataEngine=DATA_ENGINE)
+                                  dataEngine=data_engine)
     assert volume.numberOfReplicas == r_num
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
@@ -6563,10 +6564,12 @@ def cleanup_volume_by_name(client, vol_name):
 
 
 def create_host_disk(client, vol_name, size, node_id):
-    # create a single replica volume and attach it to node
-    volume = create_volume(client, vol_name, size, node_id, 1)
+    # create a single replica v1 volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1,
+                           data_engine="v1")
 
-    # prepare the disk in the host filesystem
+    # For v1 data engine: format as filesystem and mount
+    # For v2 data engine: use raw block device directly
     if DATA_ENGINE == "v1":
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path
