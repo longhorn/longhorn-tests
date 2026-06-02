@@ -56,7 +56,26 @@ class CRD(Base):
         return NotImplemented
 
     def delete(self, volume_name, backup_id):
-        return NotImplemented
+        backups = self.list_all()
+        for backup in backups:
+            annotations = backup['metadata'].get('annotations', {})
+            if annotations.get(self.ANNOT_ID) == str(backup_id) and \
+               backup['metadata']['labels'].get('backup-volume') == volume_name:
+                backup_name = backup['metadata']['name']
+                logging(f"Deleting backup {backup_name} (id={backup_id}) for volume {volume_name}")
+                try:
+                    self.obj_api.delete_namespaced_custom_object(
+                        "longhorn.io",
+                        "v1beta2",
+                        constant.LONGHORN_NAMESPACE,
+                        "backups",
+                        backup_name
+                    )
+                except Exception as e:
+                    if e.reason != "Not Found":
+                        raise Exception(f"Deleting backup {backup_name} failed: {e}")
+                return
+        raise Exception(f"Backup with id={backup_id} for volume {volume_name} not found")
 
     def delete_backup_volume(self, volume_name):
         return NotImplemented

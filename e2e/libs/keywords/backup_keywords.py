@@ -30,6 +30,9 @@ class backup_keywords:
     def wait_for_backup_ready(self, backup_name):
         return self.backup.wait_for_backup_ready(backup_name)
 
+    def wait_for_backup_in_progress(self, volume_name):
+        return self.backup.wait_for_backup_in_progress(volume_name)
+
     def get_backup_name(self, backup_id, volume_name=None):
         return self.backup.get(backup_id, volume_name).name
 
@@ -53,6 +56,9 @@ class backup_keywords:
 
     def delete_backup_volume(self, volume_name):
         return self.backup.delete_backup_volume(volume_name)
+
+    def delete_backup(self, volume_name, backup_id):
+        return self.backup.delete(volume_name, backup_id)
 
     def check_restored_volume_checksum(self, volume_name, backup_name):
         logging(f"Checking restored volume {volume_name} data is backup {backup_name}")
