@@ -156,6 +156,20 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert completed, f"Expected backup from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
 
+    def wait_for_backup_in_progress(self, volume_name):
+        in_progress = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for backup from volume {volume_name} to be in progress ... ({i})")
+            volume = self.volume.get(volume_name)
+            for backup in volume.backupStatus:
+                if backup.state == "InProgress":
+                    in_progress = True
+                    break
+            if in_progress:
+                break
+            time.sleep(self.retry_interval)
+        assert in_progress, f"Expected backup from volume {volume_name} to be in progress, but it's {volume}"
+
     def wait_for_backup_error(self, volume_name):
         error = False
         for i in range(self.retry_count):
@@ -217,7 +231,7 @@ class Rest(Base):
                     break
 
     def delete(self, volume_name, backup_id):
-        return NotImplemented
+        return CRD().delete(volume_name, backup_id)
 
     def delete_backup_volume(self, volume_name):
         bvs = get_longhorn_client().list_backupVolume()
