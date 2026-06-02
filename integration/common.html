@@ -1948,10 +1948,12 @@ backup</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_host_disk(client, vol_name, size, node_id):
-    # create a single replica volume and attach it to node
-    volume = create_volume(client, vol_name, size, node_id, 1)
+    # create a single replica v1 volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1,
+                           data_engine=&#34;v1&#34;)
 
-    # prepare the disk in the host filesystem
+    # For v1 data engine: format as filesystem and mount
+    # For v2 data engine: use raw block device directly
     if DATA_ENGINE == &#34;v1&#34;:
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path
@@ -2222,17 +2224,18 @@ created using a storage class).</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.create_volume"><code class="name flex">
-<span>def <span class="ident">create_volume</span></span>(<span>client, vol_name, size, node_id, r_num)</span>
+<span>def <span class="ident">create_volume</span></span>(<span>client, vol_name, size, node_id, r_num, data_engine='v1')</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_volume(client, vol_name, size, node_id, r_num):
+<pre><code class="python">def create_volume(client, vol_name, size, node_id, r_num,
+                  data_engine=DATA_ENGINE):
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num,
-                                  dataEngine=DATA_ENGINE)
+                                  dataEngine=data_engine)
     assert volume.numberOfReplicas == r_num
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
