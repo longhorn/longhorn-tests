@@ -45,6 +45,10 @@ Delete backup volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_backup_volume    ${volume_name}
 
+Delete backup ${backup_id} of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_backup    ${volume_name}    ${backup_id}
+
 Check volume ${volume_id} data is backup ${backup_id} of volume ${source_volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
@@ -79,6 +83,10 @@ Wait for backup associated with csi volume snapshot ${csi_volume_snapshot_id} of
 Wait for backup ${backup_name} ready
     wait_for_backup_ready    ${backup_name}
 
+Wait for volume ${volume_id} backup to be in progress
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_backup_in_progress    ${volume_name}
+
 Backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} should still exist
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -91,3 +99,6 @@ Verify no backup created
 Verify no new backup created
     [Arguments]    ${expected_count}=${1}
     wait_for_backup_count    ${expected_count}
+
+Delete all backups
+    cleanup_backups

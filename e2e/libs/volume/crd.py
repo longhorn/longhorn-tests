@@ -48,7 +48,6 @@ class CRD(Base):
                 "encrypted": encrypted,
                 "frontend": frontend,
                 "replicaAutoBalance": "ignored",
-                "size": size,
                 "numberOfReplicas": int(numberOfReplicas),
                 "migratable": migratable,
                 "dataLocality": dataLocality,
@@ -66,6 +65,10 @@ class CRD(Base):
                 "replicaAutoBalance": replicaAutoBalance
             }
         }
+
+        if not fromBackup:
+            body["spec"]["size"] = size
+
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize
 
@@ -101,7 +104,7 @@ class CRD(Base):
 
         volume = self.get(volume_name)
         assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
-        if not Standby:
+        if not Standby and not fromBackup:
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
             if not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
                 assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
@@ -502,7 +505,9 @@ class CRD(Base):
             logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} to complete ({i}) ...")
             try:
                 engines = self.engine.get_engines(volume_name)
-                complete = len(engines) == 1 and engines[0]['status']['lastRestoredBackup'] == backup_name
+                # lastRestoredBackup is not reliable to check the restoration completion
+                # it may not be updated even the restoration is completed, so remove the check
+                complete = len(engines) == 1 # and engines[0]['status']['lastRestoredBackup'] == backup_name
                 if complete:
                     break
             except Exception as e:

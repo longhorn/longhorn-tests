@@ -258,3 +258,53 @@ SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
     And Reboot node 1
     And Reboot node 2
     And Wait for longhorn ready
+
+Test Corrupting Source Replica While Backup Creation
+    [Documentation]    Verify that corrupting the source replica while a backup is in progress causes
+    ...    a backup error, and that the volume recovers, and a subsequent backup
+    ...    can be successfully restored with data integrity.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6138#issuecomment-1708355748
+    ...
+    ...    Steps:
+    ...    1. Create and attach a volume
+    ...    2. Write some data to the volume
+    ...    3. Create a backup for the volume without waiting for completion
+    ...    4. Wait for the backup creation to be started (backup state == InProgress)
+    ...    5. While backing creation is still in progress,
+    ...       corrupt the backup's source replica to make the backup to be marked as Error
+    ...       Since the source replica is randomly selected when creating backup,
+    ...       e.g., backup.status.replicaAddress: tcp://10.42.2.16:20001,
+    ...       the instance manager with IP 10.42.2.16 will be the source replica for this backup.
+    ...       We can delete all the instance manager to simulate the source replica corruption.
+    ...       This will cause the backup to be marked as Error.
+    ...    6. The backup should be marked as Error
+    ...    7. Wait for the volume to be re-attached and become healthy
+    ...    8. Delete the Error backup and verify the volume is still healthy
+    ...       (Issue: https://github.com/longhorn/longhorn/issues/7575)
+    ...    9. Create one more backup for the volume
+    ...    10. Restore a volume from the backup
+    ...    11. Attach the restored volume and verify the data checksum matches
+    Given Create volume 0 with    size=3Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write 2 GB data to volume 0
+
+    When Create backup 0 for volume 0    wait=False
+    And Wait for volume 0 backup to be in progress
+    And Delete ${DATA_ENGINE} instance manager on node 0
+    And Delete ${DATA_ENGINE} instance manager on node 1
+    And Delete ${DATA_ENGINE} instance manager on node 2
+    Then Verify backup list contains errors for volume 0
+    And Wait for volume 0 attached
+    And Wait for volume 0 healthy
+
+    When Delete all backups
+    Then Check volume 0 kept in healthy
+
+    When Create backup 1 for volume 0
+    And Create volume 1 from backup 1 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 restoration from backup 1 of volume 0 completed
+    And Attach volume 1
+    And Wait for volume 1 healthy
+    Then Check volume 1 data is backup 1 of volume 0
