@@ -92,7 +92,8 @@ if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
-        BLOCK_DEV_PATH = "0000:00:1f.0"
+        # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
     BLOCK_DEV_PATH = "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
