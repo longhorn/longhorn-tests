@@ -2489,13 +2489,17 @@ def best_effort_data_locality_test(client, volume_name):  # NOQA
                                   numberOfReplicas=number_of_replicas,
                                   dataLocality="best-effort")
 
-    # replica should stay unscheduled until volume is attached
-    for _ in range(10):
-        time.sleep(RETRY_INTERVAL)
+    # Replica should stay unscheduled until volume is attached.
+    wait_for_volume_replica_count(client,
+                                  volume_name,
+                                  number_of_replicas)
+
+    for i in range(10):
         volume = client.by_id_volume(volume_name)
         assert len(volume.replicas) == number_of_replicas
-        assert volume.replicas[0]['hostId'] == ""
+        assert volume.replicas[0]["hostId"] == ""
         assert not volume.replicas[0].running
+        time.sleep(RETRY_INTERVAL)
 
     self_node = get_self_host_id()
     # attach volume to the self_node
