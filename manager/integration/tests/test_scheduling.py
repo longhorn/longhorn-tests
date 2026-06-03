@@ -2458,3 +2458,163 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
     for replica in volume.replicas:
         assert replica.diskID not in disk_id
         disk_id.append(replica.diskID)
+<<<<<<< HEAD
+=======
+
+def test_best_effort_data_locality(client, volume_name):  # NOQA
+    """
+    Scenario: replica should be scheduled only after volume is attached,
+              and it should be scheduled to the local node.
+            - volume data locality is set to `best-effort`
+            - volume has 1 replica
+
+    Issue: https://github.com/longhorn/longhorn/issues/11007
+    """
+    # Repeat test for 10 times to make sure replica
+    # is scheduled to the local node.
+    for i in range(10):
+        best_effort_data_locality_test(client, f'{volume_name}-{i}')
+
+
+def best_effort_data_locality_test(client, volume_name):  # NOQA
+    number_of_replicas = 1
+    volume = client.create_volume(name=volume_name,
+                                  size=str(1 * Gi),
+                                  numberOfReplicas=number_of_replicas,
+                                  dataLocality="best-effort")
+
+    # Replica should stay unscheduled until volume is attached.
+    wait_for_volume_replica_count(client,
+                                  volume_name,
+                                  number_of_replicas)
+
+    for i in range(10):
+        volume = client.by_id_volume(volume_name)
+        assert len(volume.replicas) == number_of_replicas
+        assert volume.replicas[0]["hostId"] == ""
+        assert not volume.replicas[0].running
+        time.sleep(RETRY_INTERVAL)
+
+    self_node = get_self_host_id()
+    # attach volume to the self_node
+    volume.attach(hostId=self_node)
+    volume = wait_for_volume_healthy(client, volume_name)
+    # wait for replica to be on the self_node
+    for _ in range(30):
+        volume = client.by_id_volume(volume_name)
+        assert len(volume.replicas) == number_of_replicas
+        # fail if replica is scheduled to another node
+        assert (volume.replicas[0]['hostId'] == "" or
+                volume.replicas[0]['hostId'] == self_node)
+        if volume.replicas[0]['hostId'] == self_node:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert volume.replicas[0]['hostId'] == self_node
+
+@pytest.mark.csi  # NOQA
+def test_storage_capacity_aware_pod_scheduling(client, core_api, storage_class, statefulset):  # NOQA
+    """
+    Test that kube-scheduler is aware of schedulable storage on each
+    node when scheduling pods using a StorageClass with volumeBindingMode set
+    to 'WaitForFirstConsumer'.
+
+    1. Enable the 'csi-storage-capacity-tracking' setting.
+    2. Update 'storage-over-provisioning-percentage' to 400.
+    3. Reduce the schedulable storage on all nodes (except the current node)
+       to 1Gi.
+    4. Compute max schedulable storage on the current node taking into account
+       the 'storage-over-provisioning-percentage' setting.
+    5. Create a new StorageClass with volumeBindingMode set
+       to 'WaitForFirstConsumer'.
+    6. Create a StatefulSet with 2 replicas, each requesting the max
+       schedulable storage size.
+    7. Verify pod 0 is scheduled to the current node and volume 0 is attached
+       to the current node.
+    8. Verify pod 1 is not scheduled because there is no node with sufficient
+       storage and that its PVC is in Pending state.
+    """
+    update_setting(client, SETTING_CSI_STORAGE_CAPACITY_TRACKING, "true")
+
+    # Set storage over-provisioning to 400%
+    over_provisioning_percentage = 400
+    update_setting(client,
+                   SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
+                   str(over_provisioning_percentage))
+
+    # Calculate max schedulable storage on current node
+    # and limit other nodes to 1Gi
+    lht_hostId = get_self_host_id()
+    nodes = client.list_node()
+    max_schedulable_storage = 0
+    for node in nodes:
+        if node.id == lht_hostId:
+            disks = node.disks
+            for _, disk in disks.items():
+                disk_max = disk.storageMaximum - disk.storageReserved
+                over_provision_limit = \
+                    disk_max * over_provisioning_percentage / 100
+                schedulable_storage = \
+                    over_provision_limit - disk.storageScheduled
+                max_schedulable_storage = \
+                    max(max_schedulable_storage, schedulable_storage)
+        else:
+            disks = node.disks
+            for _, disk in disks.items():
+                disk.storageReserved = disk.storageMaximum - 1 * Gi
+            update_disks = get_update_disks(disks)
+            update_node_disks(client, node.name, disks=update_disks,
+                              retry=True)
+
+    # Create StorageClass with WaitForFirstConsumer
+    sc_name = 'longhorn-wait-for-first-consumer'
+    storage_class['metadata']['name'] = sc_name
+    storage_class['volumeBindingMode'] = 'WaitForFirstConsumer'
+    storage_class['parameters']['numberOfReplicas'] = '1'
+    create_storage_class(storage_class)
+
+    # Wait for CSIStorageCapacity objects to get updated
+    sleep(10)
+
+    # Create StatefulSet with 2 replicas
+    statefulset['spec']['replicas'] = 2
+    volume_claim_template = statefulset['spec']['volumeClaimTemplates'][0]
+    volume_claim_template['spec']['storageClassName'] = sc_name
+    volume_claim_template['spec']['resources']['requests']['storage']\
+        = size_to_string(int(max_schedulable_storage))
+    create_statefulset(statefulset)
+
+    # Verify pod 0 is scheduled to the current node
+    pod_namespace = statefulset["metadata"]["namespace"]
+    pod_0_name = statefulset["metadata"]["name"] + '-0'
+    wait_pod(pod_0_name)
+    pod_0 = core_api.read_namespaced_pod(name=pod_0_name,
+                                         namespace=pod_namespace)
+    assert pod_0.spec.node_name == lht_hostId
+
+    # Verify volume 0 is attached to the current node
+    pvc_0_name = volume_claim_template['metadata']['name'] + '-' + \
+        statefulset["metadata"]["name"] + '-0'
+    pvc_0 = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_0_name, namespace=pod_namespace)
+    volume_0_name = pvc_0.spec.volume_name
+    volume_0 = wait_for_volume_healthy(client, volume_0_name)
+    assert volume_0.replicas[0]['hostId'] == lht_hostId
+
+    # Verify pod 1 is not scheduled (insufficient storage)
+    pod_1_name = statefulset["metadata"]["name"] + '-1'
+    with pytest.raises(AssertionError):
+        wait_pod(pod_1_name)
+    pod_1 = core_api.read_namespaced_pod(name=pod_1_name,
+                                         namespace=pod_namespace)
+    assert pod_1.spec.node_name is None
+    assert pod_1.status.phase == 'Pending'
+
+    # Verify PVC 1 is pending because pod is not scheduled
+    pvc_1_name = volume_claim_template['metadata']['name'] + '-' + \
+        statefulset["metadata"]["name"] + '-1'
+    pvc_1 = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_1_name, namespace=pod_namespace)
+    assert pvc_1.spec.volume_name is None
+    assert pvc_1.status.phase == "Pending"
+>>>>>>> 3d3810c2 (fix: wait for replica creation in best-effort data locality test)
