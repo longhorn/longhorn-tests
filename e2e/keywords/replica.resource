@@ -6,6 +6,7 @@ Library             ../libs/keywords/replica_keywords.py
 Library             ../libs/keywords/instancemanager_keywords.py
 Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/workload_keywords.py
+Library             ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
 Volume ${volume_id} replica ${setting_name} should be ${setting_value}
@@ -53,3 +54,11 @@ Assert replica file size of ${resource_kind} ${resource_id} is ${expected_size}
     ...    ELSE
     ...        get_workload_volume_name    ${resource_name}
     wait_for_replica_file_size    ${volume_name}    ${expected_bytes}
+
+Verify raid bdev exists on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    verify_raid_bdev_exists_on_node    ${node_name}
+
+Verify raid bdev does not exist on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    verify_raid_bdev_not_exists_on_node    ${node_name}

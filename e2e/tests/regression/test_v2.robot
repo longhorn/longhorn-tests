@@ -20,6 +20,7 @@ Resource    ../keywords/k8s.resource
 Resource    ../keywords/orphan.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/engine_frontend.resource
+Resource    ../keywords/engine_image.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -298,7 +299,6 @@ Test Default Block Disks Delete And Re-add
     Then Check volume 0 data is intact
 
 Test V2 Volume Engine Live Switchover
-    [Tags]    v2
     [Documentation]    Test v2 volume cross-node initiator and target support with live switchover.
     ...                Verify data integrity is maintained when engine moves across nodes
     ...                while volume and enginefront remain on the original node.
@@ -396,3 +396,107 @@ Test V2 Instance Manager Pod Recreate Loop When Engine Frontend Recovery Blocks 
     And Wait for volume test-vol healthy
     And Write data to volume test-vol
     Then Check volume test-vol data is intact
+
+Test V2 Volume Upgrade Data Plane
+    [Documentation]    Test v2 volume upgrade data plane scenario.
+    ...
+    ...                Test steps:
+    ...                1. Install a stable Longhorn version.
+    ...                2. Enable the v2 data engine and add block disks.
+    ...                3. Create two v2 RWO volumes with two replicas.
+    ...                4. Create two deployments using the v2 volumes on node 0.
+    ...                5. Wait for both volumes to become healthy.
+    ...                6. Record the v2 instance-manager pod UIDs.
+    ...                7. Upgrade Longhorn to the custom version.
+    ...                8. Verify the v2 instance-manager pods were not recreated.
+    ...                9. Verify both volumes remain healthy after the Longhorn upgrade.
+    ...                10. Disable node 2 scheduling so the volume engines can only move to node 1 later.
+    ...                11. Set upgradeRequested=true on node 0.
+    ...                12. Verify the RAID bdev still exists on node 0 and does not exist on node 1 or node 2.
+    ...                13. Move both volume engines to node 1.
+    ...                14. Verify both engine CRs are on node 1 while both volumes remain attached to node 0.
+    ...                15. Upgrade the v2 volume engine image to the custom engine image.
+    ...                16. Verify the RAID bdev exists on node 1 and does not exist on node 0 or node 2.
+    ...                17. Move both volume engines back to node 0.
+    ...                18. Verify both engine CRs are on node 0 while both volumes remain attached to node 0.
+    ...                19. Verify the RAID bdev exists on node 0 and does not exist on node 1 or node 2.
+    ...                20. Reinstall Longhorn to avoid side effects from upgrading with attached v2 volumes.
+    ...
+    ...                Note:
+    ...                This test does not verify engine state transitions because the engine state changes cannot be reliably observed.
+    ...
+    ...                Reference:
+    ...                https://github.com/longhorn/longhorn/issues/6001#issuecomment-2239541696
+    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn stable version
+    And Wait for longhorn ready
+    And Enable v2 data engine and add block disks
+
+    When Create storageclass longhorn-test with    dataEngine=v2    numberOfReplicas=2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create persistentvolumeclaim 1    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    ...    node_selector={"kubernetes.io/hostname":"${NODE_0}"}
+    And Create deployment 1 with persistentvolumeclaim 1
+    ...    node_selector={"kubernetes.io/hostname":"${NODE_0}"}
+    And Wait for volume of deployment 0 healthy
+    And Wait for volume of deployment 1 healthy
+    And Record v2 instance manager UIDs
+
+    When Upgrade Longhorn to custom version
+    And Wait for longhorn ready
+    Then Check v2 instance manager did not restart
+    And Wait for volume of deployment 0 healthy
+    And Wait for volume of deployment 1 healthy
+
+    # Disable node 2 scheduling to ensure the RAID bdev can only move to node 1 later
+    When Disable node 2 scheduling
+    And Set node 0 upgrade requested to true
+    Then Verify raid bdev exists on node 0
+    And Verify raid bdev does not exist on node 1
+    And Verify raid bdev does not exist on node 2
+
+    When Update volume of deployment 0 engineNodeID to node 1
+    And Update volume of deployment 1 engineNodeID to node 1
+    Then Volume of deployment 0 engine CR should be on node 1
+    And Volume of deployment 1 engine CR should be on node 1
+    And Volume of deployment 0 should be attached to node 0
+    And Volume of deployment 1 should be attached to node 0
+    When Upgrade v2 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+
+    # Verify RAID bdev moved to node 1
+    And Verify raid bdev exists on node 1
+    And Verify raid bdev does not exist on node 0
+    And Verify raid bdev does not exist on node 2
+
+    When Update volume of deployment 0 engineNodeID to node 0
+    And Update volume of deployment 1 engineNodeID to node 0
+    Then Volume of deployment 0 engine CR should be on node 0
+    And Volume of deployment 1 engine CR should be on node 0
+    And Volume of deployment 0 should be attached to node 0
+    And Volume of deployment 1 should be attached to node 0
+
+    And Verify raid bdev exists on node 0
+    And Verify raid bdev does not exist on node 1
+    And Verify raid bdev does not exist on node 2
+
+    # Reinstall to avoid side effects of upgrade with attached v2 volumes
+    When Enable node 2 scheduling
+    And Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn
+    And Wait for longhorn ready
+    And Enable v2 data engine and add block disks

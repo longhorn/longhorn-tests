@@ -173,3 +173,6 @@ class node_keywords:
 
     def remove_dir(self, dir_path, node_name):
         self.node.remove_dir(dir_path, node_name)
+
+    def set_node_upgrade_requested(self, node_name, upgrade_requested=True):
+        self.node.set_node_upgrade_requested(node_name, upgrade_requested)

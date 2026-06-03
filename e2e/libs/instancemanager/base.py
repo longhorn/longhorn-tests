@@ -102,6 +102,58 @@ class Base:
                 time.sleep(self.retry_count)
                 assert False, f"Unexpected instance manager restart: {pod}"
 
+    def record_instance_manager_pod_uids(self, engine_type):
+        ims = get_longhorn_client().list_instance_manager()
+        im_names = [im.name for im in ims if im.dataEngine == engine_type]
+        logging(f"Recording {engine_type} instance manager pod UIDs: {im_names}")
+
+        core_api = client.CoreV1Api()
+        im_pod_uids = {}
+        for im_name in im_names:
+            try:
+                pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
+                im_pod_uids[im_name] = pod.metadata.uid
+                logging(f"Recorded instance manager {im_name} UID: {pod.metadata.uid}")
+            except Exception as e:
+                logging(f"Error reading instance manager pod {im_name}: {e}")
+
+        return im_pod_uids
+
+    def check_instance_managers_not_restarted(self, engine_type, recorded_pod_uids):
+        if recorded_pod_uids is None or not recorded_pod_uids:
+            logging(f"WARN: No recorded instance manager UIDs provided, skipping restart check")
+            return
+
+        logging(f"Checking {engine_type} instance managers didn't restart or recreate")
+        logging(f"Recorded instance managers: {list(recorded_pod_uids.keys())}")
+
+        core_api = client.CoreV1Api()
+
+        # Check each recorded instance manager
+        for im_name, recorded_uid in recorded_pod_uids.items():
+            try:
+                pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
+
+                # Check if pod UID matches (not recreated)
+                if pod.metadata.uid != recorded_uid:
+                    logging(f"FAIL: Instance manager {im_name} was recreated!")
+                    logging(f"  Recorded UID: {recorded_uid}")
+                    logging(f"  Current UID: {pod.metadata.uid}")
+                    assert False, f"Instance manager {im_name} was recreated during upgrade"
+
+                # Check restart count
+                if pod.status.container_statuses[0].restart_count != 0:
+                    logging(f"FAIL: Instance manager {im_name} restarted {pod.status.container_statuses[0].restart_count} times")
+                    assert False, f"Instance manager {im_name} restarted during upgrade"
+
+                logging(f"OK: Instance manager {im_name} - UID matches, restart count: 0")
+
+            except Exception as e:
+                logging(f"FAIL: Error checking instance manager {im_name}: {e}")
+                assert False, f"Instance manager {im_name} not found or error occurred"
+
+        logging(f"All {len(recorded_pod_uids)} {engine_type} instance managers verified - no restarts or recreations")
+
     def check_instance_manager_existence_on_node(self, node_name, engine_type="v1", exist=True):
         longhorn_client = get_longhorn_client()
         worker_nodes = self.node.list_node_names_by_role("worker")

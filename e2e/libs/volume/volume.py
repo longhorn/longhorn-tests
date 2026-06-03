@@ -195,8 +195,8 @@ class Volume(Base):
     def create_persistentvolumeclaim(self, volume_name, volumeMode, retry, sc_name="longhorn"):
         return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
 
-    def upgrade_engine_image(self, volume_name, engine_image_name):
-        return self.volume.upgrade_engine_image(volume_name, engine_image_name)
+    def upgrade_engine_image(self, volume_name, engine_image_name, use_patch=False):
+        return self.volume.upgrade_engine_image(volume_name, engine_image_name, use_patch=use_patch)
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         return self.volume.wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)

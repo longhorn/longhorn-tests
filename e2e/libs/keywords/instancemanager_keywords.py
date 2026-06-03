@@ -56,4 +56,20 @@ class instancemanager_keywords:
 
     def verify_replica_lvol_exists_in_spdk_lvol(self, node_name, replica_name):
         logging(f"Verifying replica {replica_name} exists in SPDK on node {node_name}")
-        self.instancemanager.verify_replica_lvol_exists_in_spdk_lvol(node_name, replica_name)
+        self.v2_instancemanager.verify_replica_lvol_exists_in_spdk_lvol(node_name, replica_name)
+
+    def verify_raid_bdev_exists_on_node(self, node_name):
+        logging(f"Verifying raid bdev exists on node {node_name}")
+        self.v2_instancemanager.verify_raid_bdev_exists_on_node(node_name)
+
+    def verify_raid_bdev_not_exists_on_node(self, node_name):
+        logging(f"Verifying raid bdev does not exist on node {node_name}")
+        self.v2_instancemanager.verify_raid_bdev_not_exists_on_node(node_name)
+
+    def record_instance_manager_pod_uids(self, engine_type="v1"):
+        logging(f"Recording {engine_type} instance manager pod UIDs")
+        return self.instancemanager.record_instance_manager_pod_uids(engine_type)
+
+    def check_instance_managers_not_restarted(self, engine_type="v1", recorded_pod_uids=None):
+        logging(f"Checking {engine_type} instance managers did not restart")
+        self.instancemanager.check_instance_managers_not_restarted(engine_type, recorded_pod_uids)
