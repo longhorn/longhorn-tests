@@ -59,13 +59,17 @@ el.replaceWith(d);
                                   numberOfReplicas=number_of_replicas,
                                   dataLocality=&#34;best-effort&#34;)
 
-    # replica should stay unscheduled until volume is attached
-    for _ in range(10):
-        time.sleep(RETRY_INTERVAL)
+    # Replica should stay unscheduled until volume is attached.
+    wait_for_volume_replica_count(client,
+                                  volume_name,
+                                  number_of_replicas)
+
+    for i in range(10):
         volume = client.by_id_volume(volume_name)
         assert len(volume.replicas) == number_of_replicas
-        assert volume.replicas[0][&#39;hostId&#39;] == &#34;&#34;
+        assert volume.replicas[0][&#34;hostId&#34;] == &#34;&#34;
         assert not volume.replicas[0].running
+        time.sleep(RETRY_INTERVAL)
 
     self_node = get_self_host_id()
     # attach volume to the self_node
