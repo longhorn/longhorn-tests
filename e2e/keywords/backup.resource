@@ -11,10 +11,11 @@ Create backup ${backup_id} for volume ${volume_id}
     create_backup    ${volume_name}    ${backup_id}    &{config}
 
 Create backup ${backup_id} for ${workload_kind} ${workload_id} volume
+    [Arguments]    &{config}
     ${backup_id}=  Convert To String  ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name}=    get_workload_volume_name    ${workload_name}
-    create_backup  ${volume_name}  ${backup_id}
+    create_backup  ${volume_name}  ${backup_id}  &{config}
 
 Verify backup list contains errors for volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -29,17 +30,16 @@ Verify backup list contains backup no error for ${workload_kind} ${workload_id} 
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     verify_no_error    ${volume_name}
 
-Verify backup list contains backup ${backup_id} of volume ${volume_id}
+Wait for backup ${backup_id} of volume ${volume_id} to exist in backup list
+    ${backup_id} =  Convert To String  ${backup_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${backup} =    get_backup_name    ${backup_id}    ${volume_name}
-    Should Not Be Equal    ${backup}    ${None}
+    wait_for_backup_to_exist_in_backup_list    ${backup_id}    ${volume_name}
 
-Verify backup list contains backup ${backup_id} of ${workload_kind} ${workload_id} volume
-    ${backup_id}=  Convert To String  ${backup_id}
+Wait for backup ${backup_id} of ${workload_kind} ${workload_id} volume to exist in backup list
+    ${backup_id} =  Convert To String  ${backup_id}
     ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name}=    get_workload_volume_name    ${workload_name}
-    ${backup}=    get_backup_name    ${backup_id}    ${volume_name}
-    Should Not Be Equal    ${backup}    ${None}
+    wait_for_backup_to_exist_in_backup_list    ${backup_id}    ${volume_name}
 
 Delete backup volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -47,6 +47,12 @@ Delete backup volume ${volume_id}
 
 Delete backup ${backup_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_backup    ${volume_name}    ${backup_id}
+
+Delete backup ${backup_id} of ${workload_kind} ${workload_id} volume
+    ${backup_id} =    Convert To String    ${backup_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
     delete_backup    ${volume_name}    ${backup_id}
 
 Check volume ${volume_id} data is backup ${backup_id} of volume ${source_volume_id}
@@ -61,7 +67,7 @@ Check backup synced from backupstore
 Volume ${volume_id} backup ${backup_id} should be able to create
     Create backup ${backup_id} for volume ${volume_id}
     Verify backup list contains no error for volume ${volume_id}
-    Verify backup list contains backup ${backup_id} of volume ${volume_id}
+    Wait for backup ${backup_id} of volume ${volume_id} to exist in backup list
 
 Check snapshot for backup ${backup_id} of volume ${volume_id} exists ${exists}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
