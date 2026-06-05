@@ -133,6 +133,12 @@ Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}    ${node_name}
 
+Attach volume ${volume_id} to same node as volume ${src_volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${src_volume_name} =    generate_name_with_suffix    volume    ${src_volume_id}
+    ${node_name} =    get_volume_node    ${src_volume_name}
+    attach_volume    ${volume_name}    ${node_name}
+
 Attach volume ${volume_id} to node ${node_id} should fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -213,6 +219,34 @@ Prefill volume ${volume_id} with fio
     ${checksum} =    prefill_volume_with_fio    ${volume_name}    ${size}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
+Write ${size_mb} MB data to volume ${volume_id} at offset ${offset_mb}
+    [Documentation]    Write a data range, identified by an explicit offset and
+    ...    size in MiB, and record its checksum for later verification.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${checksum} =    write_volume_data_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}-offset-${offset_mb}    ${checksum}
+
+Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} is intact
+    [Documentation]    Re-read the data range and compare it against the checksum
+    ...    recorded when that range was written to the same volume.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
+    ${actual_checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}-offset-${offset_mb}
+    Should Be Equal    ${actual_checksum}    ${expected_checksum}
+
+Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches volume ${other_volume_id}
+    [Documentation]    Compare the same data range of two attached volumes by
+    ...    reading both and comparing their checksums.  The range is defined by
+    ...    an explicit offset and size, both in MiB.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${other_volume_name} =    generate_name_with_suffix    volume    ${other_volume_id}
+    wait_for_volume_attached    ${volume_name}
+    wait_for_volume_attached    ${other_volume_name}
+    ${checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    ${other_checksum} =    get_volume_checksum_at_offset    ${other_volume_name}    ${offset_mb}    ${size_mb}
+    Should Be Equal    ${checksum}    ${other_checksum}
+
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
@@ -232,6 +266,10 @@ Wait for volume ${volume_id} to be created
 Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
+
+Wait for all volume ${volume_id} replicas to have HealthyAt set
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_all_replicas_healthy_at    ${volume_name}
 
 Wait for volume ${volume_id} attached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

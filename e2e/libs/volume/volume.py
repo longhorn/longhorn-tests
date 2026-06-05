@@ -17,8 +17,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry)
 
     def delete(self, volume_name, wait):
         return self.volume.delete(volume_name, wait)
@@ -122,6 +122,12 @@ class Volume(Base):
 
     def write_random_data(self, volume_name, size, data_id):
         return self.volume.write_random_data(volume_name, size, data_id)
+
+    def write_data_at_offset(self, volume_name, size_mb, offset_mb):
+        return self.volume.write_data_at_offset(volume_name, size_mb, offset_mb)
+
+    def get_checksum_at_offset(self, volume_name, offset_mb, size_mb):
+        return self.volume.get_checksum_at_offset(volume_name, offset_mb, size_mb)
 
     def prefill_with_fio(self, volume_name, size):
         return self.volume.prefill_with_fio(volume_name, size)
