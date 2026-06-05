@@ -606,19 +606,84 @@ class CRD(Base):
 
         endpoint = self.get_endpoint(volume_name)
 
+        # Limit the checksum to the written region (not the full device) so
+        # that verification is fast even for large volumes.
         cmd = [
             "sh", "-c",
             f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; "
             f"sync {endpoint} 2>/dev/null; "
-            f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
+            f"dd if={endpoint} bs=1M count={size} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
         ]
         checksum = NodeExec(node_name).issue_cmd(cmd)
 
+        self.set_write_size_mb(volume_name, size)
         if data_id:
             logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
             self.set_data_checksum(volume_name, data_id, checksum)
         logging(f"Storing volume {volume_name} data last recorded checksum = {checksum}")
         self.set_last_data_checksum(volume_name, checksum)
+        return checksum
+
+    def write_data_at_offset(self, volume_name, size_mb, offset_mb):
+        """Write random data at offset_mb, store checksum and position for later verification."""
+        self.wait_for_volume_state(volume_name, "attached")
+
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+
+        endpoint = self.get_endpoint(volume_name)
+
+        # Wait for the block device to reflect the expanded size before writing.
+        # After the SPDK engine resizes, the OS block device may lag briefly.
+        required_bytes = (offset_mb + size_mb) * 1024 * 1024
+        for i in range(self.retry_count):
+            size_cmd = ["sh", "-c", f"blockdev --getsize64 {endpoint} 2>/dev/null || echo 0"]
+            dev_size_str = NodeExec(node_name).issue_cmd(size_cmd).strip()
+            try:
+                dev_size = int(dev_size_str)
+            except ValueError:
+                dev_size = 0
+            if dev_size >= required_bytes:
+                break
+            logging(f"Waiting for {endpoint} block device size {dev_size} >= {required_bytes} ({i}) ...")
+            time.sleep(self.retry_interval)
+
+        cmd = [
+            "sh", "-c",
+            f"dd if=/dev/urandom of={endpoint} bs=1M seek={offset_mb} count={size_mb} status=none; "
+            f"sync {endpoint} 2>/dev/null; "
+            f"dd if={endpoint} bs=1M skip={offset_mb} count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        ]
+        checksum = NodeExec(node_name).issue_cmd(cmd)
+        self.set_expanded_data_checksum(volume_name, checksum, offset_mb, size_mb)
+        logging(f"Stored volume {volume_name} data at offset {offset_mb}MB checksum = {checksum}")
+        return checksum
+
+    def check_data_at_offset(self, volume_name):
+        """Verify the data written at the stored expanded-data offset matches the stored checksum."""
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        endpoint = self.get_endpoint(volume_name)
+        offset_mb = self.get_expanded_data_offset_mb(volume_name)
+        size_mb = self.get_expanded_data_size_mb(volume_name)
+        expected_checksum = self.get_expanded_data_checksum(volume_name)
+        cmd = f"dd if={endpoint} bs=1M skip={offset_mb} count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        actual_checksum = NodeExec(node_name).issue_cmd(["sh", "-c", cmd])
+        logging(f"Checked volume {volume_name} expanded data at offset {offset_mb}MB. "
+                f"Expected={expected_checksum}, Actual={actual_checksum}")
+        assert actual_checksum == expected_checksum, \
+            f"Volume {volume_name} data at offset {offset_mb}MB mismatch: " \
+            f"expected={expected_checksum}, actual={actual_checksum}"
+
+    def read_data_at_offset(self, volume_name, offset_mb, size_mb):
+        """Read data at a specific offset and return its checksum."""
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        endpoint = self.get_endpoint(volume_name)
+        cmd = f"dd if={endpoint} bs=1M skip={offset_mb} count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        checksum = NodeExec(node_name).issue_cmd(["sh", "-c", cmd])
+        logging(f"Read volume {volume_name} checksum at offset {offset_mb}MB = {checksum}")
         return checksum
 
     def prefill_with_fio(self, volume_name, size):
@@ -808,8 +873,12 @@ class CRD(Base):
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
-        checksum = NodeExec(node_name).issue_cmd(
-            ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
+        size_mb = self.get_write_size_mb(volume_name)
+        if size_mb:
+            cmd = f"dd if={endpoint} bs=1M count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        else:
+            cmd = f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
+        checksum = NodeExec(node_name).issue_cmd(["sh", "-c", cmd])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 

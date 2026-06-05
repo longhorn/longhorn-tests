@@ -136,6 +136,15 @@ class Rest(Base):
     def write_random_data(self, volume_name, size, data_id):
         return NotImplemented
 
+    def write_data_at_offset(self, volume_name, size_mb, offset_mb):
+        return NotImplemented
+
+    def check_data_at_offset(self, volume_name):
+        return NotImplemented
+
+    def read_data_at_offset(self, volume_name, offset_mb, size_mb):
+        return NotImplemented
+
     def prefill_with_fio(self, volume_name, size):
         return NotImplemented
 
@@ -377,8 +386,12 @@ class Rest(Base):
     def get_checksum(self, volume_name):
         node_name = self.get(volume_name).controllers[0].hostId
         endpoint = self.get_endpoint(volume_name)
-        checksum = NodeExec(node_name).issue_cmd(
-            ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
+        size_mb = self.get_write_size_mb(volume_name)
+        if size_mb:
+            cmd = f"dd if={endpoint} bs=1M count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        else:
+            cmd = f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"
+        checksum = NodeExec(node_name).issue_cmd(["sh", "-c", cmd])
         logging(f"Calculated volume {volume_name} checksum {checksum}")
         return checksum
 

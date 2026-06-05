@@ -133,6 +133,12 @@ Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}    ${node_name}
 
+Attach volume ${volume_id} to same node as volume ${src_volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${src_volume_name} =    generate_name_with_suffix    volume    ${src_volume_id}
+    ${node_name} =    get_volume_node    ${src_volume_name}
+    attach_volume    ${volume_name}    ${node_name}
+
 Attach volume ${volume_id} to node ${node_id} should fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -174,7 +180,7 @@ Delete volume ${volume_id}
 
 Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${checksum} =    write_volume_random_data   ${volume_name}    2048
+    ${checksum} =    write_volume_random_data   ${volume_name}    200
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Write ${size} GB data to volume ${volume_id}
@@ -213,6 +219,14 @@ Prefill volume ${volume_id} with fio
     ${checksum} =    prefill_volume_with_fio    ${volume_name}    ${size}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
+Write data to volume ${volume_id} at offset ${offset_mb}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_data_at_offset    ${volume_name}    ${offset_mb}
+
+Check volume ${volume_id} data at offset is intact
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_volume_data_at_offset    ${volume_name}
+
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
@@ -232,6 +246,10 @@ Wait for volume ${volume_id} to be created
 Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
+
+Wait for all volume ${volume_id} replicas to have HealthyAt set
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_all_replicas_healthy_at    ${volume_name}
 
 Wait for volume ${volume_id} attached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

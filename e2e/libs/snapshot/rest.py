@@ -24,7 +24,14 @@ class Rest(Base):
 
         snapshot_created = False
         for i in range(self.retry_count):
-            snapshots = self.list(volume_name)
+            try:
+                snapshots = volume.snapshotList().data
+            except Exception as e:
+                if i < 10:
+                    logging(f"Waiting for {volume_name} engine to be ready for snapshot ({i}): {e}")
+                    time.sleep(self.retry_interval)
+                    continue
+                raise
             for vs in snapshots:
                 if vs.name == snap_name:
                     snapshot_created = True
