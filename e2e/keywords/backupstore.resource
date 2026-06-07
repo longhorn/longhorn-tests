@@ -39,3 +39,7 @@ Set backupstore secret to ${secret}
 
 Wait for backupstore ready
     wait_for_backupstore_available
+
+Delete random backup block of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_random_backup_block    ${volume_name}
