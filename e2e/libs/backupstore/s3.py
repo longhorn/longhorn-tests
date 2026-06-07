@@ -190,6 +190,9 @@ class S3(Base):
             print(err)
 
     def delete_random_backup_block(self, volume_name):
+
+        process = self.port_forward()
+
         secret_name = self.secret
         assert secret_name != '', f"Secret name is empty for deleting random backup block"
 
@@ -206,8 +209,11 @@ class S3(Base):
 
         try:
             minio_api.remove_object(bucket_name, object_file)
+            logging(f"Removed backup block file {object_file} in backupstore")
         except ResponseError as err:
-            print(err)
+            logging(err)
+
+        process.kill()
 
     def count_backup_block_files(self, volume_name):
         secret_name = self.secret
