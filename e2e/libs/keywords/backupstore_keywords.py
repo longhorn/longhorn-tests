@@ -38,6 +38,9 @@ class backupstore_keywords:
                                                backup_name,
                                                corrupt_backup_cfg_data)
 
+    def delete_random_backup_block(self, volume_name):
+        self.backupstore.delete_random_backup_block(volume_name)
+
     def create_file_in_backups_folder(self, volume_name, file_name):
         prefix = self.backupstore.get_backup_volume_prefix(volume_name)
         file_path = os.path.join(prefix, "backups" ,file_name)
