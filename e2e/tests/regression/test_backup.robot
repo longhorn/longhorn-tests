@@ -558,3 +558,38 @@ Test Restoring Volume From Corrupted Backup
     When Corrupt backup 0 cfg file of volume 0
     And Create volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
     Then Check volume 1 kept in faulted
+
+Test Restoring Volume From Backup With Missing Blocks
+    [Documentation]
+    ...    Verify that restoring a volume from a backup with missing blocks results
+    ...    in the restored volume entering a Faulted state, and that a subsequent
+    ...    clean backup can be successfully restored with correct data integrity.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6138#issuecomment-1879309192
+    ...
+    ...    Steps:
+    ...    1. Create and attach a volume
+    ...    2. Write data to the volume
+    ...    3. Create backup 0 and wait for completion
+    ...    4. Corrupt backup 0 by randomly deleting a block from the backupstore
+    ...    5. Restore a volume from backup 0 — the volume should enter Faulted state
+    ...    6. Create backup 1 from the original volume
+    ...    7. Restore a volume from backup 1 and check data integrity
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create backup 0 for volume 0
+
+    When Delete random backup block of volume 0
+    Then Create volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 faulted
+    And Check volume 1 kept in faulted
+
+    When Create backup 1 for volume 0    backupMode=full
+    And Create volume 2 from backup 1 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 2 restoration from backup 1 of volume 0 completed
+    And Wait for volume 2 detached
+    And Attach volume 2
+    And Wait for volume 2 healthy
+    Then Check volume 2 data is backup 1 of volume 0
