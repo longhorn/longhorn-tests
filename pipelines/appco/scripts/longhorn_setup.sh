@@ -40,6 +40,7 @@ main(){
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     apply_kubectl_retry
+    apply_helm_retry
   fi
 
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
@@ -77,12 +78,30 @@ main(){
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
+
+    if [[ "${USE_REVERSION_IMAGES}" == "true" ]]; then
+      set +x
+      fetch_appco_revision_tags "${LONGHORN_VERSION}"
+      set -x
+
+      if [[ "${APPCO_REVISION_IMAGES_CURRENT}" == "true" ]]; then
+        echo "INFO: Skipping test — chart already contains the latest AppCo revision images. Nothing new to validate."
+        return 0
+      fi
+    fi
+
     run_longhorn_upgrade_test
     run_longhorn_test
   else
     install_longhorn_custom
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
+
+    if [[ "${USE_REVERSION_IMAGES}" == "true" ]] && [[ "${APPCO_REVISION_IMAGES_CURRENT}" == "true" ]]; then
+      echo "INFO: Skipping test — chart already contains the latest AppCo revision images. Nothing new to validate."
+      return 0
+    fi
+
     if [[ "${TEST_TYPE}" == "robot" ]]; then
       if [[ "${OUT_OF_CLUSTER}" == true ]]; then
         run_longhorn_test_out_of_cluster
