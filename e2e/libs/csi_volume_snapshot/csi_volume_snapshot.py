@@ -8,6 +8,8 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import subprocess_exec_cmd
 
+PVC_SOURCE_PROTECTION_FINALIZER = "snapshot.storage.kubernetes.io/pvc-as-source-protection"
+
 class CSIVolumeSnapshot:
 
     def __init__(self):
@@ -185,6 +187,112 @@ class CSIVolumeSnapshot:
                     assert delete_exception.status == 404
         except ApiException as list_exception:
             assert list_exception.status == 404
+
+    def cleanup_csi_volume_snapshot_contents(self):
+
+        logging(f"Cleaning up csi volume snapshot contents")
+
+        try:
+            contents = self.api.list_cluster_custom_object(
+                group=self.group,
+                version=self.version,
+                plural="volumesnapshotcontents"
+            )
+
+            for item in contents.get("items", []):
+                name = item["metadata"]["name"]
+                logging(f"Deleting csi volume snapshot content {name}")
+                try:
+                    self.api.patch_cluster_custom_object(
+                        group=self.group,
+                        version=self.version,
+                        plural="volumesnapshotcontents",
+                        name=name,
+                        body={"metadata": {"finalizers": []}}
+                    )
+                    self.api.delete_cluster_custom_object(
+                        group=self.group,
+                        version=self.version,
+                        plural="volumesnapshotcontents",
+                        name=name
+                    )
+                except ApiException as delete_exception:
+                    assert delete_exception.status == 404
+        except ApiException as list_exception:
+            assert list_exception.status == 404
+
+    def wait_for_pvc_source_protection_finalizers_removed(self, timeout=60):
+        """Wait for snapshot-controller to remove pvc-as-source-protection
+        finalizers from PVCs after VolumeSnapshots are deleted.
+
+        Falls back to force-removing the finalizer if the controller does
+        not reconcile within the timeout.
+        """
+        core_api = client.CoreV1Api()
+        interval = 5
+        for _ in range(timeout // interval):
+            pvcs = core_api.list_namespaced_persistent_volume_claim(
+                namespace="default"
+            )
+            stuck = [
+                pvc.metadata.name for pvc in pvcs.items
+                if PVC_SOURCE_PROTECTION_FINALIZER in
+                (pvc.metadata.finalizers or [])
+            ]
+            if not stuck:
+                logging("All pvc-as-source-protection finalizers removed")
+                return
+            logging(f"Waiting for finalizer removal on PVCs: {stuck}")
+            time.sleep(interval)
+
+        # Fallback: force-remove if snapshot-controller did not reconcile
+        logging("Timeout waiting for snapshot-controller to remove "
+                "pvc-as-source-protection finalizers, force-removing")
+        self._force_remove_pvc_source_protection_finalizers(core_api)
+
+    def _force_remove_pvc_source_protection_finalizers(self, core_api):
+        pvcs = core_api.list_namespaced_persistent_volume_claim(
+            namespace="default"
+        )
+        for pvc in pvcs.items:
+            if PVC_SOURCE_PROTECTION_FINALIZER not in \
+                    (pvc.metadata.finalizers or []):
+                continue
+
+            for attempt in range(5):
+                try:
+                    current = \
+                        core_api.read_namespaced_persistent_volume_claim(
+                            name=pvc.metadata.name, namespace="default"
+                        )
+                    current_finalizers = current.metadata.finalizers or []
+                    if PVC_SOURCE_PROTECTION_FINALIZER not in \
+                            current_finalizers:
+                        break
+                    current.metadata.finalizers = [
+                        f for f in current_finalizers
+                        if f != PVC_SOURCE_PROTECTION_FINALIZER
+                    ]
+                    core_api.replace_namespaced_persistent_volume_claim(
+                        name=pvc.metadata.name,
+                        namespace="default",
+                        body=current
+                    )
+                    logging(f"Removed {PVC_SOURCE_PROTECTION_FINALIZER} "
+                            f"from PVC {pvc.metadata.name}")
+                    break
+                except ApiException as e:
+                    if e.status == 409:
+                        logging(f"Conflict updating PVC "
+                                f"{pvc.metadata.name}, retry {attempt+1}")
+                        time.sleep(1)
+                        continue
+                    elif e.status == 404:
+                        break
+                    else:
+                        logging(f"Error removing finalizer from PVC "
+                                f"{pvc.metadata.name}: {e}")
+                        break
 
     def force_delete_volumesnapshot(self, snapshot_name):
         cmd = (

@@ -23,14 +23,15 @@ class Base(ABC):
             annotation_value=snapshot_id
         )
 
-    def get_snapshot_id(self, snapshot_name):
+    def get_snapshot_id(self, snapshot_name, wait=True):
         return get_annotation_value(
             group="longhorn.io",
             version="v1beta2",
             namespace=constant.LONGHORN_NAMESPACE,
             plural="snapshots",
             name=snapshot_name,
-            annotation_key=self.ANNOT_ID
+            annotation_key=self.ANNOT_ID,
+            wait=wait
         )
 
     @abstractmethod

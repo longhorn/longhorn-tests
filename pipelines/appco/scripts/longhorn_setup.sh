@@ -11,11 +11,13 @@ else
   source pipelines/utilities/run_longhorn_test.sh
 fi
 source pipelines/utilities/kubeconfig.sh
+source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/coredns.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/longhornctl.sh
+source pipelines/utilities/longhorn_status.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/create_registry_secret.sh
 source pipelines/utilities/install_backupstores.sh
@@ -23,11 +25,8 @@ source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/create_appco_secret.sh
-if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]]; then
-  source pipelines/appco/scripts/longhorn_manifest.sh
-elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
-  source pipelines/appco/scripts/longhorn_helm_chart.sh
-fi
+source pipelines/appco/scripts/longhorn_helm_chart.sh
+
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -36,29 +35,6 @@ rm -rf "${TMPDIR}/"
 
 LONGHORN_NAMESPACE="longhorn-system"
 
-
-apply_selinux_workaround(){
-  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/v${LONGHORN_REPO_BRANCH#v}/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
-}
-
-wait_longhorn_status_running(){
-  local RETRY_COUNTS=10 # in minutes
-  local RETRY_INTERVAL="1m"
-
-  # csi and engine image components are installed after longhorn components.
-  # it's possible that all longhorn components are running but csi components aren't created yet.
-  RETRIES=0
-  while [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep csi-` ]] || \
-    [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep engine-image-` ]] || \
-    [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v Running` ]]; do
-    echo "Longhorn is still installing ... re-checking in 1m"
-    sleep ${RETRY_INTERVAL}
-    RETRIES=$((RETRIES+1))
-
-    if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
-  done
-
-}
 
 main(){
   set_kubeconfig
@@ -78,6 +54,7 @@ main(){
   create_aws_secret
   create_appco_secret
   create_harvester_secret
+  create_registry_secret
   set -x
   create_instance_mapping_configmap
 
@@ -96,8 +73,6 @@ main(){
     [[ "${DISTRO}" != "sle-micro" ]]; then
     longhornctl_check
   fi
-
-  create_registry_secret
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_stable

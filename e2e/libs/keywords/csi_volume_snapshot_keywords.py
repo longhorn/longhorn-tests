@@ -26,5 +26,11 @@ class csi_volume_snapshot_keywords:
     def cleanup_csi_volume_snapshots(self):
         self.csi_volume_snapshot.cleanup_csi_volume_snapshots()
 
+    def cleanup_csi_volume_snapshot_contents(self):
+        self.csi_volume_snapshot.cleanup_csi_volume_snapshot_contents()
+
+    def wait_for_pvc_source_protection_finalizers_removed(self):
+        self.csi_volume_snapshot.wait_for_pvc_source_protection_finalizers_removed()
+
     def force_delete_volumesnapshot(self, snapshot_name):
         self.csi_volume_snapshot.force_delete_volumesnapshot(snapshot_name)
