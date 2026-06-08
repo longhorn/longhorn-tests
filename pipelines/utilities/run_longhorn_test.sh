@@ -134,6 +134,7 @@ run_longhorn_upgrade_test(){
 
   ## for appco test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "USE_REVERSION_IMAGES", "value": "'${USE_REVERSION_IMAGES}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
 
   # environment variables for upgrade test
   # install method can be manifest, helm, rancher, flux, fleet and argocd
