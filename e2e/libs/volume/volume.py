@@ -1,3 +1,5 @@
+from asyncio import constants
+
 from strategy import LonghornOperationStrategy
 
 from volume.base import Base
@@ -133,8 +135,8 @@ class Volume(Base):
     def delete_replica(self, volume_name, node_name):
         return self.volume.delete_replica(volume_name, node_name)
 
-    def delete_replica_by_name(self, volume_name, replica_name):
-        return self.volume.delete_replica_by_name(volume_name, replica_name)
+    def delete_replica_by_name(self, replica_name, namespace):
+        return self.volume.delete_replica_by_name(replica_name, namespace)
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name=None):
         return self.volume.wait_for_replica_rebuilding_start(volume_name, node_name)
@@ -216,3 +218,9 @@ class Volume(Base):
 
     def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
         self.volume.check_volume_has_recurringjob_group(volume_name, job_group_name)
+
+    def get_state(self, volume_name):
+        return self.volume.get_state(volume_name)
+
+    def verify_never_detached_during_test(self, volume_name, start_time=None):
+        return self.volume.verify_never_detached_during_test(volume_name, start_time)

@@ -6,7 +6,6 @@ from backup.crd import CRD
 from snapshot import Snapshot as RestSnapshot
 
 from utility.utility import logging
-from utility.utility import get_all_crs
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 import utility.constant as constant
@@ -78,7 +77,7 @@ class Rest(Base):
             return None
 
     def get_from_list(self, backup_list, backup_id):
-        for backup in backup_list["items"]:
+        for backup in backup_list:
             try:
                 if backup['metadata']['annotations']['test.longhorn.io/backup-id'] == backup_id:
                     return backup
@@ -188,11 +187,7 @@ class Rest(Base):
             return backup_volume.backupList().data
 
     def list_all(self):
-        return get_all_crs(group="longhorn.io",
-                      version="v1beta2",
-                      namespace=constant.LONGHORN_NAMESPACE,
-                      plural="backups",
-                      )
+        return CRD().list_all()
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         synced = False
@@ -200,8 +195,8 @@ class Rest(Base):
             time.sleep(self.retry_interval)
             try:
                 current_backups = self.list_all()
-                current_backup_count = len(current_backups["items"])
-                original_backup_count = len(backups_before_uninstall["items"])
+                current_backup_count = len(current_backups)
+                original_backup_count = len(backups_before_uninstall)
                 assert current_backup_count == original_backup_count, f"current backup count ({current_backup_count}) != original backup count ({original_backup_count})"
                 synced = True
                 break
@@ -210,14 +205,14 @@ class Rest(Base):
 
         assert synced, f"Failed to sync backups after re-installation"
 
-        target_backup_names = {(item["metadata"]["name"]) for item in backups_before_uninstall["items"]}
-        for item in current_backups["items"]:
-            backup_name = item["metadata"]["name"]
+        target_backup_names = {(backup["metadata"]["name"]) for backup in backups_before_uninstall}
+        for backup in current_backups:
+            backup_name = backup["metadata"]["name"]
             assert backup_name in target_backup_names, f"Error: Backup {backup_name} not found in {target_backup_names}"
 
             for i in range(self.retry_count):
                 time.sleep(self.retry_interval)
-                volume_name = item["status"]["volumeName"]
+                volume_name = backup["status"]["volumeName"]
                 if self.get_backup_volume(volume_name) != None:
                     break
 
@@ -279,7 +274,7 @@ class Rest(Base):
             self.wait_for_backup_volume_delete(backup_volume.name)
 
         backup_volumes = get_longhorn_client().list_backupVolume()
-        assert backup_volumes.data == []
+        assert not backup_volumes.data, f"Failed to cleanup backup volumes, still have backup volumes: {backup_volumes.data}"
 
     def cleanup_backups(self):
         return CRD().cleanup_backups()

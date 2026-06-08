@@ -86,10 +86,8 @@ Backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${worklo
     wait_for_snapshot_backup_to_be_created    ${volume_name}    ${longhorn_snapshot_name}
 
 Verify no backup created
-    ${backup_count} =   get_all_backup_count
-    Should Be Equal    ${backup_count}    ${0}
+    wait_for_backup_count    ${0}
 
 Verify no new backup created
     [Arguments]    ${expected_count}=${1}
-    ${backup_count} =   get_all_backup_count
-    Should Be Equal    ${backup_count}    ${expected_count}
+    wait_for_backup_count    ${expected_count}

@@ -38,49 +38,6 @@ def RESOURCE_OWNER = "longhorn-infra"
 def TEST_TYPE = params.TEST_TYPE ? params.TEST_TYPE : "pytest"
 def BLOCK_DEVICE_SIZE = params.TEST_TYPE == "robot" ? 80 : 40
 
-def envArgs
-def vars = [
-        'CUSTOM_LONGHORN_ENGINE_IMAGE',
-        'CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE',
-        'CUSTOM_LONGHORN_MANAGER_IMAGE',
-        'CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE',
-        'CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE',
-        'CUSTOM_LONGHORN_UI_IMAGE',
-        'CUSTOM_LONGHORN_SUPPORT_BUNDLE_IMAGE',
-        'CUSTOM_LONGHORN_CSI_ATTACHER_IMAGE',
-        'CUSTOM_LONGHORN_CSI_PROVISIONER_IMAGE',
-        'CUSTOM_LONGHORN_CSI_NODE_DRIVER_REGISTRAR_IMAGE',
-        'CUSTOM_LONGHORN_CSI_RESIZER_IMAGE',
-        'CUSTOM_LONGHORN_CSI_SNAPSHOTTER_IMAGE',
-        'CUSTOM_LONGHORN_CSI_LIVENESSPROBE_IMAGE',
-        'STABLE_MANAGER_IMAGE',
-        'STABLE_ENGINE_IMAGE',
-        'STABLE_INSTANCE_MANAGER_IMAGE',
-        'STABLE_SHARE_MANAGER_IMAGE',
-        'STABLE_BACKING_IMAGE_MANAGER_IMAGE',
-        'STABLE_UI_IMAGE',
-        'STABLE_SUPPORT_BUNDLE_IMAGE',
-        'STABLE_CSI_ATTACHER_IMAGE',
-        'STABLE_CSI_PROVISIONER_IMAGE',
-        'STABLE_CSI_NODE_REGISTRAR_IMAGE',
-        'STABLE_CSI_RESIZER_IMAGE',
-        'STABLE_CSI_SNAPSHOTTER_IMAGE',
-        'STABLE_CSI_LIVENESSPROBE_IMAGE',
-        'TRANSIENT_MANAGER_IMAGE',
-        'TRANSIENT_ENGINE_IMAGE',
-        'TRANSIENT_INSTANCE_MANAGER_IMAGE',
-        'TRANSIENT_SHARE_MANAGER_IMAGE',
-        'TRANSIENT_BACKING_IMAGE_MANAGER_IMAGE',
-        'TRANSIENT_UI_IMAGE',
-        'TRANSIENT_SUPPORT_BUNDLE_IMAGE',
-        'TRANSIENT_CSI_ATTACHER_IMAGE',
-        'TRANSIENT_CSI_PROVISIONER_IMAGE',
-        'TRANSIENT_CSI_NODE_REGISTRAR_IMAGE',
-        'TRANSIENT_CSI_RESIZER_IMAGE',
-        'TRANSIENT_CSI_SNAPSHOTTER_IMAGE',
-        'TRANSIENT_CSI_LIVENESSPROBE_IMAGE'
-        ]
-
 node {
 
     withCredentials([
@@ -92,6 +49,7 @@ node {
         string(credentialsId: 'LAB_URL', variable: 'LAB_URL'),
         file(credentialsId: 'SUSE_INTERNAL_CA', variable: 'CA_CERT_PATH'),  // Add the secret file credential here
         string(credentialsId: 'QASE_TOKEN', variable: 'QASE_TOKEN'),
+        string(credentialsId: 'AWS_PRIVATE_ECR', variable: 'AWS_PRIVATE_ECR'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -101,121 +59,6 @@ node {
         checkout scm
 
         try {
-            stage ('fetch test images list') {
-                sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
-                sh "pipelines/appco/scripts/build.sh"
-                sh """ docker run -itd --name fetch-test-images-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                        -v /var/run/docker.sock:/var/run/docker.sock \
-                                        --env TF_VAR_docker_hub_username="${REGISTRY_USERNAME}" \
-                                        --env TF_VAR_docker_hub_password="${REGISTRY_PASSWORD}" \
-                                        --env APPCO_USERNAME=${APPCO_USERNAME} \
-                                        --env APPCO_PASSWORD=${APPCO_PASSWORD} \
-                                        --dns=10.113.53.53 \
-                                        --dns=10.113.53.54 \
-                                        ${imageName}
-                    """
-
-                sh """ docker exec \
-                        --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
-                        --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                        --env APPCO_LONGHORN_COMPONENT_IMAGE_PATH=${APPCO_LONGHORN_COMPONENT_IMAGE_PATH} \
-                        --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
-                        --env  CSI_ATTACHER_TAG=${CSI_ATTACHER_TAG} \
-                        --env  CSI_PROVISIONER_TAG=${CSI_PROVISIONER_TAG} \
-                        --env  CSI_RESIZER_TAG=${CSI_RESIZER_TAG} \
-                        --env  CSI_SNAPSHOTTER_TAG=${CSI_SNAPSHOTTER_TAG} \
-                        --env  CSI_LIVENESSPROBE_TAG=${CSI_LIVENESSPROBE_TAG} \
-                        --env  CSI_REGISTRAR_TAG=${CSI_REGISTRAR_TAG} \
-                        --env  SUPPORT_BUNDLE_TAG=${SUPPORT_BUNDLE_TAG} \
-                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
-                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
-                        --env LONGHORN_STABLE_VERSION_CHART_URI=${LONGHORN_STABLE_VERSION_CHART_URI} \
-                        --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
-                        --env LONGHORN_TRANSIENT_VERSION_CHART_URI=${LONGHORN_TRANSIENT_VERSION_CHART_URI} \
-                        fetch-test-images-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                        bash -c './pipelines/appco/scripts/fetch_image_list.sh && source /tmp/longhorn_env_vars.sh && env'
-                    """
-
-                // Pull selected variables from inside the container back into Jenkins environment
-                vars.each { varName ->
-                    def value = sh(
-                        script: "docker exec fetch-test-images-${JOB_BASE_NAME}-${BUILD_NUMBER} bash -c 'source /tmp/longhorn_env_vars.sh && echo \$$varName'",
-                        returnStdout: true
-                    ).trim()
-                    env."${varName}" = value
-                    echo "${varName} = ${value}"
-                    }
-
-                envArgs = vars.collect { key ->
-                    def v = env."${key}" ?: ''
-                    "--env ${key}=${v}"
-                }.join(" \\\n ")
-
-
-                sh "docker stop fetch-test-images-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                sh "docker rm -v fetch-test-images-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                sh "docker rmi ${imageName}"
-
-                return
-            }
-
-            if (params.AIR_GAP_INSTALLATION) {
-                stage('private registry build') {
-                    sh "airgap/scripts/build.sh"
-                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                            -v /var/run/docker.sock:/var/run/docker.sock \
-                                            --env TF_VAR_docker_hub_username="${REGISTRY_USERNAME}" \
-                                            --env TF_VAR_docker_hub_password="${REGISTRY_PASSWORD}" \
-                                            --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
-                                            --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
-                                            --env TF_VAR_arch=${ARCH}\
-                                            --env TF_VAR_registry_aws_instance_type=${registry_instance_type}\
-                                            --env TF_VAR_appco_test="true"\
-                                            --dns=10.113.53.53 \
-                                            --dns=10.113.53.54 \
-                                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
-                    """
-                }
-
-                stage ('private registry setup') {
-                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
-                    REGISTRY_URL = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
-                        returnStdout: true
-                    )
-                    println REGISTRY_URL
-                    REGISTRY_USERNAME = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
-                        returnStdout: true
-                    )
-                    REGISTRY_PASSWORD = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
-                        returnStdout: true
-                    )
-                    // Pull appco images and push to private registry
-                    sh """ docker exec \
-                            --env REGISTRY_URL=${REGISTRY_URL} \
-                            --env REGISTRY_USERNAME="${REGISTRY_USERNAME}" \
-                            --env REGISTRY_PASSWORD="${REGISTRY_PASSWORD}" \
-                            --env APPCO_USERNAME=${APPCO_USERNAME} \
-                            --env APPCO_PASSWORD=${APPCO_PASSWORD} \
-                            --env LONGHORN_CHART_URI=${LONGHORN_CHART_URI} \
-                            --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                            --env APPCO_LONGHORN_COMPONENT_IMAGE_PATH=${APPCO_LONGHORN_COMPONENT_IMAGE_PATH} \
-                            --env LONGHORN_COMPONENT_TAG=${LONGHORN_COMPONENT_TAG} \
-                            --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
-                            --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
-                            --env LONGHORN_STABLE_VERSION_CHART_URI=${LONGHORN_STABLE_VERSION_CHART_URI} \
-                            --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
-                            --env LONGHORN_TRANSIENT_VERSION_CHART_URI=${LONGHORN_TRANSIENT_VERSION_CHART_URI} \
-                            ${envArgs} \
-                            airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                            bash -c './pipelines/appco/scripts/prepare_airgap_appco_images.sh'
-                    """
-
-                    return
-                }
-            }
 
             stage('build') {
                 if(JOB_BASE_NAME == "longhorn-tests-regression") {
@@ -231,6 +74,11 @@ node {
                     RESOURCE_OWNER = BUILD_TRIGGER_BY.replace("\nStarted by user ", "")
                 }
 
+                if (params.AIR_GAP_INSTALLATION) {
+                    REGISTRY_URL = AWS_PRIVATE_ECR
+                }
+
+                sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
                 sh "pipelines/appco/scripts/build.sh"
                 sh """ docker run -itd --cap-add=NET_ADMIN \
                                        --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
@@ -250,8 +98,8 @@ node {
                                        --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
-                                       --env REGISTRY_USERNAME="${REGISTRY_USERNAME}" \
-                                       --env REGISTRY_PASSWORD="${REGISTRY_PASSWORD}" \
+                                       --env AWS_PRIVATE_ECR=${AWS_PRIVATE_ECR} \
+                                       --env CUSTOM_LONGHORN_ENGINE_IMAGE=${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}/longhorn-engine:${LONGHORN_COMPONENT_TAG} \
                                        --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                        --env CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS}" \
                                        --env DISTRO=${DISTRO} \
@@ -300,7 +148,6 @@ node {
                                        --env TEST_TYPE=${TEST_TYPE} \
                                        --env OUT_OF_CLUSTER=${OUT_OF_CLUSTER} \
                                        --env IMAGE_NAME=${imageName} \
-                                       ${envArgs} \
                                        ${imageName}
                 """
 

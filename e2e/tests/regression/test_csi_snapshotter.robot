@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    CSI Volume Snapshot Test Cases
 
-Test Tags    regression csi-snapshotter
+Test Tags    regression    csi-snapshotter
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -31,7 +31,7 @@ Test CSI Volume Snapshot Associated With Longhorn Snapshot With Deletion Policy 
     Then Wait for csi volume snapshot 0 to be ready
     And Longhorn snapshot associated with csi volume snapshot 0 of deployment 0 should be created
 
-    When Create persistentvolumeclaim 1 from csi volume snapshot 0
+    When Create persistentvolumeclaim 1 from csi volume snapshot 0    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 1 attached and healthy
     Then Check deployment 1 file data.txt checksum matches checksum 0
@@ -75,7 +75,7 @@ Test CSI Volume Snapshot Associated With Longhorn Snapshot With Deletion Policy 
     Then Wait for csi volume snapshot 0 to be ready
     And Longhorn snapshot associated with csi volume snapshot 0 of deployment 0 should be created
 
-    When Create persistentvolumeclaim 1 from csi volume snapshot 0
+    When Create persistentvolumeclaim 1 from csi volume snapshot 0    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 1 attached and healthy
     Then Check deployment 1 file data.txt checksum matches checksum 0
