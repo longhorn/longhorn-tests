@@ -551,9 +551,8 @@ class CRD(Base):
         engine = None
         engine_current_size = 0
         engine_expected_size = convert_size_to_bytes(expected_size)
-        engine_operation = Engine()
         for i in range(self.retry_count):
-            engine = engine_operation.get_engine(volume_name)
+            engine = self.engine.get_engine(volume_name)
             # there is no current size for a stopped engine
             if engine['status']['currentState'] == 'stopped':
                 engine_current_size = int(engine['spec']['volumeSize'])

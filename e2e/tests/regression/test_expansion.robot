@@ -117,6 +117,30 @@ Test Volume Expansion
     Then Wait for volume of persistentvolumeclaim 0 size to be 4Gi
     And Check pod 0 data in file data.txt is intact
 
+Test Volume Expansion Without Fully Scheduled Replicas
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12606
+    ...    1. Disable a node scheduling
+    ...    2. Create a PVC
+    ...    3. Create a pod to use this PVC, and write some data
+    ...    4. Wait for the volume of the PVC degraded
+    ...    5. Wait for the volume of the PVC condition Scheduled to be false
+    ...    6. Expand the PVC to a larger size
+    ...    7. Wait for the volume of the PVC size to be the larger size
+    ...    8. Check the data is intact
+    Given Disable node 2 scheduling
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test    storage_size=2GiB
+    And Wait for volume of persistentvolumeclaim 0 to be created
+    And Create pod 0 using persistentvolumeclaim 0
+    And Wait for pod 0 running
+    And Write 512 MB data to file data.txt in pod 0
+    And Wait for volume of persistentvolumeclaim 0 degraded
+    And Wait for volume of persistentvolumeclaim 0 condition Scheduled to be false
+
+    When Expand persistentvolumeclaim 0 size to 3Gi
+    Then Wait for volume of persistentvolumeclaim 0 size to be 3Gi
+    And Check pod 0 data in file data.txt is intact
+
 Test RWX Volume Automatic Online Expansion
     [Tags]    rwx    expansion    sharemanager
     [Documentation]    Test automatic online filesystem resize for RWX volumes

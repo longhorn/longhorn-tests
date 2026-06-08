@@ -92,7 +92,8 @@ if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
-        BLOCK_DEV_PATH = "0000:00:1f.0"
+        # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
     BLOCK_DEV_PATH = "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
@@ -3621,7 +3622,6 @@ def reset_node(client, core_api):
     nodes = client.list_node()
     for node in nodes:
         for i in range(NODE_UPDATE_RETRY_COUNT):
-            print(f"Resetting node {node.id} scheduling and tags ... ({i})")
             try:
                 set_node_cordon(core_api, node.id, False)
                 node = client.by_id_node(node.id)
@@ -3633,6 +3633,7 @@ def reset_node(client, core_api):
                 break
             except Exception as e:
                 print(e)
+            print(f"Resetting node {node.id} scheduling and tags ... ({i})")
             time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
     managed_k8s_cluster = os.getenv("MANAGED_K8S_CLUSTER").lower() == 'true'
@@ -6529,10 +6530,11 @@ def create_rwx_volume_with_storageclass(client,
     return volume_name
 
 
-def create_volume(client, vol_name, size, node_id, r_num):
+def create_volume(client, vol_name, size, node_id, r_num,
+                  data_engine=DATA_ENGINE):
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num,
-                                  dataEngine=DATA_ENGINE)
+                                  dataEngine=data_engine)
     assert volume.numberOfReplicas == r_num
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
@@ -6563,10 +6565,12 @@ def cleanup_volume_by_name(client, vol_name):
 
 
 def create_host_disk(client, vol_name, size, node_id):
-    # create a single replica volume and attach it to node
-    volume = create_volume(client, vol_name, size, node_id, 1)
+    # create a single replica v1 volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1,
+                           data_engine="v1")
 
-    # prepare the disk in the host filesystem
+    # For v1 data engine: format as filesystem and mount
+    # For v2 data engine: use raw block device directly
     if DATA_ENGINE == "v1":
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path

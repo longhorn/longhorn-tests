@@ -35,7 +35,7 @@ Test CSI Storage Capacity Without DataEngine Parameter
     # csisc-c8r8z   2025-10-13T03:13:03Z
     # csisc-gl479   2025-10-13T03:13:03Z
     # csisc-2lm6j   2025-10-13T03:13:03Z
-    And Run command and expect output
+    And Run command and wait for output
     ...    kubectl get csistoragecapacity -n longhorn-system
     ...    csisc
 

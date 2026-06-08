@@ -31,7 +31,7 @@ Test CSI Volume Snapshot Associated With Longhorn Snapshot With Deletion Policy 
     Then Wait for csi volume snapshot 0 to be ready
     And Longhorn snapshot associated with csi volume snapshot 0 of deployment 0 should be created
 
-    When Create persistentvolumeclaim 1 from csi volume snapshot 0
+    When Create persistentvolumeclaim 1 from csi volume snapshot 0    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 1 attached and healthy
     Then Check deployment 1 file data.txt checksum matches checksum 0
@@ -75,7 +75,7 @@ Test CSI Volume Snapshot Associated With Longhorn Snapshot With Deletion Policy 
     Then Wait for csi volume snapshot 0 to be ready
     And Longhorn snapshot associated with csi volume snapshot 0 of deployment 0 should be created
 
-    When Create persistentvolumeclaim 1 from csi volume snapshot 0
+    When Create persistentvolumeclaim 1 from csi volume snapshot 0    sc_name=longhorn-test
     And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 1 attached and healthy
     Then Check deployment 1 file data.txt checksum matches checksum 0
@@ -105,6 +105,35 @@ Test CSI Volume Snapshot Associated With Longhorn Backup With Deletion Policy Re
 
     When Delete csi volume snapshot 0
     Then Backup associated with csi volume snapshot 0 of deployment 0 should still exist
+
+Test Concurrent CSI Volume Snapshot Creation
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11429
+    ...    1. Create 2 PVCs with deployments
+    ...    2. Keep writing data to both volumes
+    ...    3. Create a CSI volume snapshot class with type=bak
+    ...    4. Create 10 CSI volume snapshots for each PVC
+    ...    5. Verify all 20 CSI volume snapshots reach ready state
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim pvc-0    sc_name=longhorn-test
+    And Create persistentvolumeclaim pvc-1    sc_name=longhorn-test
+    And Create deployment deploy-0 with persistentvolumeclaim pvc-0
+    And Create deployment deploy-1 with persistentvolumeclaim pvc-1
+    And Wait for volume of deployment deploy-0 attached and healthy
+    And Wait for volume of deployment deploy-1 attached and healthy
+    And Keep writing data to pod of deployment deploy-0
+    And Keep writing data to pod of deployment deploy-1
+
+    When Create csi volume snapshot class 0    type=bak    deletionPolicy=Delete
+    FOR    ${i}    IN RANGE    0    10
+        And Create csi volume snapshot vs-0-${i} for persistentvolumeclaim pvc-0
+        And Create csi volume snapshot vs-1-${i} for persistentvolumeclaim pvc-1
+        And Sleep    5
+    END
+
+    FOR    ${i}    IN RANGE    0    10
+        Then Wait for csi volume snapshot vs-0-${i} to be ready
+        And Wait for csi volume snapshot vs-1-${i} to be ready
+    END
 
 Test CSI Volume Snapshot With Invalid Backup Target
     [Documentation]    https://github.com/longhorn/longhorn/issues/10501
