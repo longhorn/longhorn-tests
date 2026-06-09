@@ -37,3 +37,11 @@ class instancemanager_keywords:
 
     def get_instance_manager_pod_on_node(self, node_name, engine_type):
         return self.instancemanager.get_instance_manager_pod_on_node(node_name, engine_type)
+
+    def verify_replica_lvol_deleted_from_spdk_lvol(self, node_name, replica_name):
+        logging(f"Verifying replica {replica_name} is deleted from SPDK on node {node_name}")
+        self.instancemanager.verify_replica_lvol_deleted_from_spdk_lvol(node_name, replica_name)
+
+    def verify_replica_lvol_exists_in_spdk_lvol(self, node_name, replica_name):
+        logging(f"Verifying replica {replica_name} exists in SPDK on node {node_name}")
+        self.instancemanager.verify_replica_lvol_exists_in_spdk_lvol(node_name, replica_name)

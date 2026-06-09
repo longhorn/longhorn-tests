@@ -191,7 +191,7 @@ Test Replica Rebuild Performance With Concurrent Sync Limit
     ...                - 7. Delete another replica and measure the 2nd rebuild time.
     ...                - 8. Verify the 2nd rebuild time is less than the 1st baseline time.
     IF    '${DATA_ENGINE}' == 'v2'
-        Skip    Test case not support for v2 data engine
+        Skip    v2 volumes doesn't support ReplicaRebuildConcurrentSyncLimit, v1 volumes doesn't support ReplicaRebuildingBandwidthLimit
     END
 
     Given Create volume 0 with    size=5Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
@@ -239,13 +239,12 @@ Test Volume Level Replica Rebuild Concurrent Sync Limit
     ...                - 7. Delete another replica and measure the 2nd baseline rebuild time (with default limit).
     ...                - 8. Verify the 1st optimized rebuild time is less than the 2nd baseline time.
     IF    '${DATA_ENGINE}' == 'v2'
-        Skip    Test case not support for v2 data engine
+        Skip    v2 volumes doesn't support ReplicaRebuildConcurrentSyncLimit, v1 volumes doesn't support ReplicaRebuildingBandwidthLimit
     END
 
     Given Create volume 0 with    size=5Gi    numberOfReplicas=3    rebuildConcurrentSyncLimit=5    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
-
     # Prefill volume with sequential data
     When Prefill volume 0 with fio    size=2G
     And Create snapshot 0 of volume 0

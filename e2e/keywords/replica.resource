@@ -31,3 +31,18 @@ There should be no replica of volume ${volume_id} on node ${node_id} disk ${disk
     ${node_name} =    get_node_by_index    ${node_id}
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0
+
+Delete replica
+    [Arguments]    ${replica_name}
+    [Documentation]    Delete a replica custom resource by its exact name using kubectl.
+    delete_replica_by_name    ${replica_name}
+
+Verify replica lvol is deleted from SPDK lvol list on node ${node_id}
+    [Arguments]    ${replica_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    verify_replica_lvol_deleted_from_spdk_lvol    ${node_name}    ${replica_name}
+
+Verify replica lvol exists in SPDK lvol list on node ${node_id}
+    [Arguments]    ${replica_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    verify_replica_lvol_exists_in_spdk_lvol    ${node_name}    ${replica_name}

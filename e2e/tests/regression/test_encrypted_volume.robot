@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Encrypted Volume Test Cases
 
-Test Tags    encrypted    volume
+Test Tags    regression    encrypted
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

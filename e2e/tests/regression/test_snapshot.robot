@@ -203,7 +203,8 @@ Test Volume Snapshot Checksum Skipped When Less Than 2 Healthy Replicas
 Test Concurrent Job Limit For Snapshot Purge
     [Tags]    snapshot-purge
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11635
-    ...    This test case only supports v1 volumes: https://github.com/longhorn/longhorn/issues/11635#issuecomment-3588360359
+    ...    This test case is only applicable for v1 volumes: https://github.com/longhorn/longhorn/issues/11635#issuecomment-3588360359
+    ...    For v2 volumes, snapshot purge takes almost no time, so it's no need to be restricted by the concurrent job limit setting
     ...    1. Set snapshot-heavy-task-concurrent-limit to 1
     ...    2. Set disable-snapshot-purge to false
     ...    3. Create and Attach a volume
@@ -218,7 +219,7 @@ Test Concurrent Job Limit For Snapshot Purge
     ...    9. It fails with an error: cannot start snapshot purge: concurrent snapshot purge limit reached
     ...    10. Once the snapshot deletion is complete, execute the curl request again. It should succeed
     IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 volume not support snapshot purge now
+        Skip    this test case is only applicable for v1 volumes: v2 volume snapshot purge takes almost no time so it's no need to be restricted by the concurrent job limit setting
     END
 
     Given Setting snapshot-heavy-task-concurrent-limit is set to 1
