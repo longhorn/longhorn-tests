@@ -871,7 +871,17 @@ class CRD(Base):
             assert False, message
 
     def get_checksum(self, volume_name):
-        node_name = self.get(volume_name)["spec"]["nodeID"]
+        self.wait_for_volume_state(volume_name, "attached")
+
+        node_name = None
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+        assert node_name, \
+            f"Volume {volume_name} is attached but spec.nodeID is still empty after retries"
+
         endpoint = self.get_endpoint(volume_name)
         size_mb = self.get_write_size_mb(volume_name)
         if size_mb:
@@ -883,7 +893,17 @@ class CRD(Base):
         return checksum
 
     def get_sha512sum(self, volume_name):
-        node_name = self.get(volume_name)["spec"]["nodeID"]
+        self.wait_for_volume_state(volume_name, "attached")
+
+        node_name = None
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+        assert node_name, \
+            f"Volume {volume_name} is attached but spec.nodeID is still empty after retries"
+
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"sha512sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])

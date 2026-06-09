@@ -447,41 +447,39 @@ Test Linked Clone Volume Advanced Lifecycle
     ...    Step 4   Verify scheduler sets linkedCloneSrcReplicaName and the
     ...             linked-clone-src-replica label on every clone replica; confirm
     ...             each clone replica co-locates with its source replica.
-    ...    Step 5   (Implicit) Ordering guarantee: clone replica instances must not
-    ...             start before linkedCloneSrcReplicaName is set.
-    ...    Step 6   Attach clone BEFORE clone completes, wait for completion,
+    ...    Step 5   Attach clone BEFORE clone completes, wait for completion,
     ...             confirm volume is healthy with 3 running replicas.
-    ...    Step 7   Verify inherited data matches snapshot; write new data to clone.
-    ...    Step 8   Expand the clone volume to 3Gi, then write data to the
+    ...    Step 6   Verify inherited data matches snapshot; write new data to clone.
+    ...    Step 7   Expand the clone volume to 3Gi, then write data to the
     ...             expanded region and verify it is readable.
-    ...    Step 9   Detach and reattach clone to the node the source volume is
+    ...    Step 8   Detach and reattach clone to the node the source volume is
     ...             attached to.  Verify clone status, data, and entrypoint snapshot
     ...             CR preserved across engine restart.
-    ...    Step 10  Post-clone operations for the clone volume:
+    ...    Step 9   Post-clone operations for the clone volume:
     ...             a) Snapshot and backup
     ...             b) Scale replica count down to 1, then back up to 3
-    ...             c) Delete a replica; verify rebuild with auto-assigned src field
-    ...    Step 11  Create a nested linked-clone volume with 1 replica from the clone volume.
+    ...             c) Delete a replica; verify rebuild completes
+    ...    Step 10  Create a nested linked-clone volume with 1 replica from the clone volume.
     ...             Scheduling on nodes 1 and 2 is temporarily disabled so the single
     ...             replica lands on node 0 (the engine node), ensuring the IM crash
-    ...             in step 14 takes down both the engine and the only replica, which
+    ...             in step 13 takes down both the engine and the only replica, which
     ...             triggers auto-salvage recovery.
     ...             Verify the nested clone size matches the expanded clone (3Gi).
-    ...    Step 12  Attach the nested clone to the same node as the source volume.
+    ...    Step 11  Attach the nested clone to the same node as the source volume.
     ...             Verify inherited data from both source and clone volumes.
-    ...    Step 13  Post-clone operations for the nested clone volume:
+    ...    Step 12  Post-clone operations for the nested clone volume:
     ...             a) Snapshot and backup
     ...             b) Expand to 4Gi and write data to the expanded region.
-    ...    Step 14  Crash the instance manager pod on the node all 3 volumes are
+    ...    Step 13  Crash the instance manager pod on the node all 3 volumes are
     ...             attached to. src-vol and clone-vol degrade and recover normally.
     ...             nested-clone-vol loses both its engine and its only replica,
     ...             entering a faulted state that triggers auto-salvage.
-    ...    Step 15  Wait for the instance manager pod to restart, auto-salvage to
+    ...    Step 14  Wait for the instance manager pod to restart, auto-salvage to
     ...             complete for nested-clone-vol, and all 3 volumes to reach healthy.
-    ...    Step 16  Verify the data for all 3 volumes (including expanded regions).
-    ...    Step 17  Delete nested clone volume; verify the clone volume and its
+    ...    Step 15  Verify the data for all 3 volumes (including expanded regions).
+    ...    Step 16  Delete nested clone volume; verify the clone volume and its
     ...             entrypoint snapshot CR still exist.
-    ...    Step 18  Delete clone volume; verify the source volume and its
+    ...    Step 17  Delete clone volume; verify the source volume and its
     ...             entrypoint snapshot CR still exist.
 
     IF    '${DATA_ENGINE}' == 'v1'
@@ -516,7 +514,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Verify linked clone volume clone-vol src replica names unchanged
 
     # ------------------------------------------------------------------
-    # Step 6: Attach clone BEFORE clone completes; wait for healthy
+    # Step 5: Attach clone BEFORE clone completes; wait for healthy
     # ------------------------------------------------------------------
     When Attach volume clone-vol to same node as volume src-vol
     And Wait for linked clone volume clone-vol clone to complete
@@ -524,14 +522,14 @@ Test Linked Clone Volume Advanced Lifecycle
     And Volume clone-vol should have 3 running replicas
 
     # ------------------------------------------------------------------
-    # Step 7: Verify inherited data; write new data to clone
+    # Step 6: Verify inherited data; write new data to clone
     # ------------------------------------------------------------------
     Then Verify linked clone volume clone-vol data matches source volume src-vol
     When Write data to volume clone-vol
     Then Check volume clone-vol data is intact
 
     # ------------------------------------------------------------------
-    # Step 8: Expand clone volume to 3Gi; write to expanded region
+    # Step 7: Expand clone volume to 3Gi; write to expanded region
     # ------------------------------------------------------------------
     When Expand volume clone-vol to 3Gi
     Then Wait for volume clone-vol size to be 3Gi
@@ -539,7 +537,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Check volume clone-vol data at offset is intact
 
     # ------------------------------------------------------------------
-    # Step 9: Detach and reattach clone to the same node as source volume.
+    # Step 8: Detach and reattach clone to the same node as source volume.
     #         Verifies snapshot CR persistence and data integrity across
     #         engine restart.
     # ------------------------------------------------------------------
@@ -554,13 +552,13 @@ Test Linked Clone Volume Advanced Lifecycle
     And Verify linked clone volume clone-vol src replica names unchanged
 
     # ------------------------------------------------------------------
-    # Step 10a: Snapshot and backup operations on clone volume
+    # Step 9a: Snapshot and backup operations on clone volume
     # ------------------------------------------------------------------
     When Create snapshot 2 of volume clone-vol
     And Create backup 0 for volume clone-vol
 
     # ------------------------------------------------------------------
-    # Step 10b: Adjust replica count on clone volume
+    # Step 9b: Adjust replica count on clone volume
     # ------------------------------------------------------------------
     When Update volume clone-vol replica count to 1
     And Wait for volume clone-vol healthy
@@ -569,7 +567,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Wait for all volume clone-vol replicas to have HealthyAt set
 
     # ------------------------------------------------------------------
-    # Step 10c: Replica rebuild on clone volume
+    # Step 9c: Replica rebuild on clone volume
     # ------------------------------------------------------------------
     When Delete volume clone-vol replica on node 0
     Then Wait until volume clone-vol replicas rebuilding completed
@@ -578,14 +576,19 @@ Test Linked Clone Volume Advanced Lifecycle
     And Validate snapshot 2 is in volume clone-vol snapshot list
 
     # ------------------------------------------------------------------
-    # Step 11: Create nested linked-clone with 1 replica.
+    # Step 10: Create nested linked-clone with 1 replica.
     #          Disable scheduling on nodes 1 and 2 so the scheduler is
     #          forced to place the single replica on node 0, which is the
     #          same node as the engine. This ensures the IM crash in
-    #          step 14 takes down both engine and replica simultaneously,
+    #          step 13 takes down both engine and replica simultaneously,
     #          triggering auto-salvage.
+    #          Wait for clone-vol to have 3 replicas with HealthyAt set
+    #          before creating the nested clone, so that a src replica is
+    #          guaranteed to exist on node 0.
     # ------------------------------------------------------------------
     When Create snapshot 3 of volume clone-vol
+    And Wait for all volume clone-vol replicas to have HealthyAt set
+    And Volume clone-vol should have 3 running replicas
     And Disable node 1 scheduling
     And Disable node 2 scheduling
     And Create linked clone volume nested-clone-vol from snapshot 3 of volume clone-vol    numberOfReplicas=1
@@ -596,7 +599,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Volume nested-clone-vol should have 1 running replicas on node 0
 
     # ------------------------------------------------------------------
-    # Step 12: Attach nested clone to same node as source; verify data
+    # Step 11: Attach nested clone to same node as source; verify data
     # ------------------------------------------------------------------
     When Attach volume nested-clone-vol to same node as volume src-vol
     And Wait for linked clone volume nested-clone-vol clone to complete
@@ -605,13 +608,13 @@ Test Linked Clone Volume Advanced Lifecycle
     And Verify linked clone volume nested-clone-vol expanded data matches volume clone-vol
 
     # ------------------------------------------------------------------
-    # Step 13a: Snapshot and backup for nested clone
+    # Step 12a: Snapshot and backup for nested clone
     # ------------------------------------------------------------------
     When Create snapshot 0 of volume nested-clone-vol
     And Create backup 0 for volume nested-clone-vol
 
     # ------------------------------------------------------------------
-    # Step 13b: Expand nested clone to 4Gi; write to expanded region
+    # Step 12b: Expand nested clone to 4Gi; write to expanded region
     # ------------------------------------------------------------------
     When Expand volume nested-clone-vol to 4Gi
     Then Wait for volume nested-clone-vol size to be 4Gi
@@ -619,7 +622,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Check volume nested-clone-vol data at offset is intact
 
     # ------------------------------------------------------------------
-    # Step 14: Crash the instance manager pod on the node all 3 volumes
+    # Step 13: Crash the instance manager pod on the node all 3 volumes
     #          are attached to. src-vol and clone-vol have replicas on
     #          other nodes and degrade then recover normally.
     #          nested-clone-vol has only 1 replica on this node, so both
@@ -629,7 +632,7 @@ Test Linked Clone Volume Advanced Lifecycle
     When Delete v2 instance manager of volume src-vol
 
     # ------------------------------------------------------------------
-    # Step 15: Wait for instance manager restart, auto-salvage for
+    # Step 14: Wait for instance manager restart, auto-salvage for
     #          nested-clone-vol, and all volumes back to healthy.
     # ------------------------------------------------------------------
     Then Wait for longhorn ready
@@ -638,7 +641,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Wait for volume nested-clone-vol healthy
 
     # ------------------------------------------------------------------
-    # Step 16: Verify data integrity for all 3 volumes
+    # Step 15: Verify data integrity for all 3 volumes
     # ------------------------------------------------------------------
     Then Check volume src-vol data is intact
     And Check volume clone-vol data is intact
@@ -648,7 +651,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Check volume nested-clone-vol data at offset is intact
 
     # ------------------------------------------------------------------
-    # Step 17: Delete nested clone; verify clone volume and its
+    # Step 16: Delete nested clone; verify clone volume and its
     #          entrypoint snapshot CR still exist
     # ------------------------------------------------------------------
     ${nested_clone_volume_name} =    generate_name_with_suffix    volume    nested-clone-vol
@@ -663,7 +666,7 @@ Test Linked Clone Volume Advanced Lifecycle
     And Verify named snapshot ${snap_name_v2} of volume clone-vol still exists
 
     # ------------------------------------------------------------------
-    # Step 18: Delete clone volume; verify source volume and its
+    # Step 17: Delete clone volume; verify source volume and its
     #          entrypoint snapshot CR still exist
     # ------------------------------------------------------------------
     ${clone_volume_name} =    generate_name_with_suffix    volume    clone-vol
