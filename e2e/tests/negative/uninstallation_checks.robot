@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Uninstallation Checks
 
-Test Tags    uninstall    negative
+Test Tags    uninstall    negative    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -53,7 +53,7 @@ Uninstallation Checks
 
     When Create backup 0 for volume 0
     Then Verify backup list contains no error for volume 0
-    And Verify backup list contains backup 0 of volume 0
+    And Wait for backup 0 of volume 0 to exist in backup list
 
     Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
@@ -107,7 +107,7 @@ Uninstall Longhorn After Disabling V1 And V2 Data Engines
 
     When Create backup 0 for volume 0
     Then Verify backup list contains no error for volume 0
-    And Verify backup list contains backup 0 of volume 0
+    And Wait for backup 0 of volume 0 to exist in backup list
     And Detach volume 0
     And Setting v1-data-engine is set to false
     And Setting v2-data-engine is set to false
