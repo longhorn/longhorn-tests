@@ -126,6 +126,10 @@ Test Longhorn Backing Image Volume Recovery
     ...                    Delete the IM of the volume and make sure volume recovers. Check the data as well.
     ...                    Start replica rebuilding for the aforementioned volume, and delete the IM-e while it is rebuilding. Verify the recovered volume.    
     ...                    Delete the backing image manager pod and verify the pod gets recreated.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    test only valideate on v1 data engine since v2 doesn't support backing image
+    END
+
     When Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
     And Create volume 0 with    backingImage=bi
     And Attach volume 0

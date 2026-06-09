@@ -60,6 +60,10 @@ Run command and not expect output
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_and_not_expect_output    ${command}    ${unexpected_output}
 
+Run command until output is absent
+    [Arguments]    ${command}    ${unexpected_output}
+    execute_command_until_output_is_absent    ${command}    ${unexpected_output}
+
 Test should pass
     No Operation
 
@@ -125,6 +129,10 @@ Cleanup test resources
     cleanup_deployments
     cleanup_statefulsets
     cleanup_pods
+    cleanup_csi_volume_snapshots
+    wait_for_pvc_source_protection_finalizers_removed
+    cleanup_csi_volume_snapshot_contents
+    cleanup_csi_volume_snapshot_classes
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
@@ -147,7 +155,5 @@ Cleanup test resources
     reset_node_tags
     reset_node_disks_tags
     cleanup_k8s_node_zone
-    cleanup_csi_volume_snapshots
-    cleanup_csi_volume_snapshot_classes
     reset_longhorn_namespace
     cleanup_events

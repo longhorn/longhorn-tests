@@ -50,6 +50,15 @@ class Backup(Base):
     def list_all(self):
         return self.backup.list_all()
 
+    def wait_for_backup_count(self, expected_backup_count):
+        for i in range(self.retry_count):
+            backups = self.list_all()
+            logging(f"Waiting for backup count {expected_backup_count}, current count {len(backups)} ... ({i})")
+            if len(backups) == expected_backup_count:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for backup count {expected_backup_count}, current count {len(backups)}"
+
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         return self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)
 
@@ -61,7 +70,7 @@ class Backup(Base):
     def verify_errors(self, volume_name):
         for i in range(self.retry_count):
             logging(f"Waiting for volume {volume_name} error backups ... ({i})")
-            backups = self.backup.list_all()["items"]
+            backups = self.backup.list_all()
             for backup in backups:
                 if backup["metadata"]["labels"]["backup-volume"] == volume_name and backup["status"]["state"] == "Error":
                     logging(f"Got error backup {backup}")
@@ -116,7 +125,7 @@ class Backup(Base):
             raise ValueError(f"Backup {backup_id} not found or missing snapshot name")
 
         snap_name = backup.snapshotName
-        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name)
+        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name, wait=False)
         snap = self.backup.snapshot.get(volume_name, snapshot_id)
-        snap_exists = not snap.removed
+        snap_exists = snap is not None and not snap.removed
         assert snap_exists == exists, f"Snapshot {snap_name} exists: {snap_exists}, expected: {exists}"

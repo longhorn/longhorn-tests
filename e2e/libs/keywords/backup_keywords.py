@@ -70,9 +70,8 @@ class backup_keywords:
         all_backups = self.backup.list_all()
         return all_backups
 
-    def get_all_backup_count(self):
-        resp = self.list_all_backups()
-        return len(resp.get("items", []))
+    def wait_for_backup_count(self, expected_backup_count):
+        self.backup.wait_for_backup_count(expected_backup_count)
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)

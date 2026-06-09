@@ -59,5 +59,19 @@ class Engine(Base):
     def get_engine_name(self, volume_name):
         return self.engine.get_engine_name(volume_name)
 
+    def get_node(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Trying to get engine node for volume {volume_name} ... ({i})")
+            try:
+                engine = self.get_engine(volume_name)
+                engine_node = engine["spec"]["nodeID"]
+                if engine_node:
+                    logging(f"Volume {volume_name} engine is running on node: {engine_node}")
+                    return engine_node
+            except Exception as e:
+                logging(f"Getting engine node for volume {volume_name} error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get engine node for volume {volume_name}"
+
     def validate_engine_setting(self, volume_name, setting_name, value):
         return self.engine.validate_engine_setting(volume_name, setting_name, value)

@@ -28,9 +28,6 @@ Verify TooManySnapshots Condition After Creating Snapshots
     ...                in the message, then delete all snapshots and purge, and verify the
     ...                condition becomes False with an empty message.
     [Arguments]    ${snapshot_max_count}    ${warning_threshold}    ${volume_snapshot_max_count}    ${expected_warning_snapshot_count}
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 data engine doesn't support snapshot-max-count: https://github.com/longhorn/longhorn/issues/12921
-    END
     Given Setting snapshot-max-count is set to ${snapshot_max_count}
     And Setting snapshot-count-warning-threshold is set to ${warning_threshold}
 
@@ -212,16 +209,12 @@ Test Setting Blacklist For Auto Delete Pod
     ...                Issues:
     ...                    - https://github.com/longhorn/longhorn/issues/12120
     ...                    - https://github.com/longhorn/longhorn/issues/12121
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    Test case not support for v2 data engine
-    END
-
     Given Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/ReplicaSet;apps/DaemonSet
     When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0 and liveness probe
 
-    When Kill volume engine process for deployment 0
+    When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
     And Wait for deployment 0 pod stuck in CrashLoopBackOff
 
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet

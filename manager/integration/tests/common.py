@@ -92,7 +92,8 @@ if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
-        BLOCK_DEV_PATH = "0000:00:1f.0"
+        # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
     BLOCK_DEV_PATH = "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
@@ -2149,14 +2150,17 @@ def wait_for_volume_status(client, name, key, value,
 
 def wait_for_volume_delete(client, name):
     for i in range(RETRY_COUNTS):
-        volumes = client.list_volume()
-        found = False
-        for volume in volumes:
-            if volume.name == name:
-                found = True
+        try:
+            volumes = client.list_volume()
+            found = False
+            for volume in volumes:
+                if volume.name == name:
+                    found = True
+                    break
+            if not found:
                 break
-        if not found:
-            break
+        except Exception as e:
+            print(f"Exception when waiting for volume deletion: {e}")
         time.sleep(RETRY_INTERVAL)
     assert not found
 
@@ -3157,7 +3161,7 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
         conditions = volume.conditions
         if conditions is not None and \
                 conditions != {} and \
-                conditions[VOLUME_CONDITION_SCHEDULED] and \
+                VOLUME_CONDITION_SCHEDULED in conditions and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] == value:
             break
@@ -3448,9 +3452,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == "Completed":
-                assert b.progress == 100
-                assert b.error == ""
+            if b.state == "Completed" and b.progress == 100 and b.error == "":
                 completed = True
                 break
         if completed:
@@ -3619,18 +3621,20 @@ def reset_node(client, core_api):
 
     nodes = client.list_node()
     for node in nodes:
-        try:
-            set_node_cordon(core_api, node.id, False)
-            node = client.by_id_node(node.id)
+        for i in range(NODE_UPDATE_RETRY_COUNT):
+            try:
+                set_node_cordon(core_api, node.id, False)
+                node = client.by_id_node(node.id)
 
-            node = set_node_tags(client, node, tags=[])
-            node = wait_for_node_tag_update(client, node.id, [])
-            node = set_node_scheduling(client, node, allowScheduling=True)
-            wait_for_node_update(client, node.id,
-                                 "allowScheduling", True)
-        except Exception as e:
-            print("\nException when reset node scheduling and tags", node)
-            print(e)
+                node = set_node_tags(client, node, tags=[])
+                node = wait_for_node_tag_update(client, node.id, [])
+                node = set_node_scheduling(client, node, allowScheduling=True)
+                wait_for_node_update(client, node.id, "allowScheduling", True)
+                break
+            except Exception as e:
+                print(e)
+            print(f"Resetting node {node.id} scheduling and tags ... ({i})")
+            time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
     managed_k8s_cluster = os.getenv("MANAGED_K8S_CLUSTER").lower() == 'true'
     if not managed_k8s_cluster:
@@ -6526,10 +6530,11 @@ def create_rwx_volume_with_storageclass(client,
     return volume_name
 
 
-def create_volume(client, vol_name, size, node_id, r_num):
+def create_volume(client, vol_name, size, node_id, r_num,
+                  data_engine=DATA_ENGINE):
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num,
-                                  dataEngine=DATA_ENGINE)
+                                  dataEngine=data_engine)
     assert volume.numberOfReplicas == r_num
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
@@ -6560,10 +6565,12 @@ def cleanup_volume_by_name(client, vol_name):
 
 
 def create_host_disk(client, vol_name, size, node_id):
-    # create a single replica volume and attach it to node
-    volume = create_volume(client, vol_name, size, node_id, 1)
+    # create a single replica v1 volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1,
+                           data_engine="v1")
 
-    # prepare the disk in the host filesystem
+    # For v1 data engine: format as filesystem and mount
+    # For v2 data engine: use raw block device directly
     if DATA_ENGINE == "v1":
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path
