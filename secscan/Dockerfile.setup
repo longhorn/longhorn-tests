@@ -1,17 +1,20 @@
 From alpine:3.22.3
 
-ARG TERRAFORM_VERSION=1.1.7
+ARG TRIVY_VERSION=0.69.3
 
 ENV WORKSPACE /src/longhorn-tests
 
 WORKDIR $WORKSPACE
 
+COPY SUSE_Trust_Root.crt /usr/local/share/ca-certificates/SUSE_Trust_Root.crt
+
 RUN apk add rsync && \
-    wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
-    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
-    mv terraform /usr/bin/terraform && \
-    chmod +x /usr/bin/terraform && \
-    apk add openssh-client ca-certificates git bash && \
-    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+    apk add openssl openssh-client ca-certificates git bash yq curl docker && \
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa && \
+    update-ca-certificates && \
+    wget -qO- "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" | tar -xz -C /usr/local/bin trivy && \
+    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+    chmod 700 get_helm.sh && \
+    ./get_helm.sh
 
 COPY [".", "$WORKSPACE"]

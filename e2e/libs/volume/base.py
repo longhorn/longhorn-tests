@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 import time
 
+from engine import Engine
+from engine_image import EngineImage
+from enginefrontend import EngineFrontend
+
 from persistentvolume.persistentvolume import PersistentVolume
 from persistentvolumeclaim.persistentvolumeclaim import PersistentVolumeClaim
 from utility.utility import set_annotation
@@ -20,6 +24,9 @@ class Base(ABC):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.pv = PersistentVolume()
         self.pvc = PersistentVolumeClaim()
+        self.engine = Engine()
+        self.engineimage = EngineImage()
+        self.enginefrontend = EngineFrontend()
 
     def _get_volume_size(self, volume):
         # CRD returns dict-like payloads, REST returns object-like payloads.

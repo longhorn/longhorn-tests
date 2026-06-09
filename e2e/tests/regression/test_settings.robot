@@ -209,23 +209,19 @@ Test Setting Blacklist For Auto Delete Pod
     ...                Issues:
     ...                    - https://github.com/longhorn/longhorn/issues/12120
     ...                    - https://github.com/longhorn/longhorn/issues/12121
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    Test case not support for v2 data engine
-    END
-
     Given Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/ReplicaSet;apps/DaemonSet
     When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0 and liveness probe
 
-    When Kill volume engine process for deployment 0
+    When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
     And Wait for deployment 0 pod stuck in CrashLoopBackOff
 
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
     And Wait for deployment 0 pods stable
 
 Test Install With Different Format Settings
-    [Tags]    uninstall
+    [Tags]    uninstall    helm
     [Documentation]    Verify that Longhorn correctly handles values with different formats (
     ...                quotes, no quotes, engine specific setting) in default
     ...                settings during installation, for both helm and manifest install methods.
@@ -255,11 +251,8 @@ Test Install With Different Format Settings
     ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         # Patch values.yaml: defaultReplicaCount with a quoted JSON string, deletingConfirmationFlag without quotes.
-        # The custom_cmd outputs a values.yaml file used by helm install via -f values.yaml.
-        ${patch} =    Set Variable
-        ...    .defaultSettings.defaultReplicaCount = "{\\"v1\\":\\"4\\",\\"v2\\":\\"2\\"}" | .defaultSettings.deletingConfirmationFlag = true | .defaultSettings.dataEngineHugepageEnabled = "{\\"v2\\": \\"false\\"}"
-        ${helm_cmd} =    Set Variable    yq eval \'${patch}\' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
-        Install Longhorn    custom_cmd=${helm_cmd}
+        Install Longhorn
+        ...    custom_cmd=yq -i '.defaultSettings.defaultReplicaCount = "{\\"v1\\": \\"4\\", \\"v2\\": \\"2\\"}" | .defaultSettings.deletingConfirmationFlag = true | .defaultSettings.dataEngineHugepageEnabled = "{\\"v2\\": \\"false\\"}"' values.yaml
     ELSE
         # Append two settings lines after the "default-setting.yaml" key in the longhorn.yaml ConfigMap,
         # using sed append. Second sed inserts default-replica-count first so it appears before
@@ -365,8 +358,46 @@ Test Engine Image Liveness Probe Multiple Engine Images
     ...    period=30
     ...    failure_threshold=10
 
+Test Storageclass Annotations
+    [Tags]    upgrade    uninstall    helm
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13137
+    ...    Verify that Longhorn storageclass has the annotations configured via
+    ...    helm chart persistence.annotations during fresh install and upgrade.
+    ...
+    ...    This test case is only applicable for helm installation method.
+    ...
+    ...    Test steps:
+    ...    1. Install Longhorn with persistence.annotations set to
+    ...       e2e-test-annotation-key: e2e-test-annotation-value.
+    ...    2. Verify the longhorn storageclass has that annotation.
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    Test case only applicable for helm installation method
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+
+    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
+    IF    '${LONGHORN_STABLE_VERSION}' != ''
+        And Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
+        And Wait for longhorn ready
+        When Upgrade Longhorn to custom version
+        ...    custom_cmd=yq -i '.persistence.annotations.e2e-test-annotation-key = "e2e-test-annotation-value"' values.yaml
+        And Wait for longhorn ready
+    ELSE
+        When Install Longhorn
+        ...    custom_cmd=yq -i '.persistence.annotations.e2e-test-annotation-key = "e2e-test-annotation-value"' values.yaml
+        And Wait for longhorn ready
+    END
+
+    Then Run command and expect output
+    ...    kubectl get storageclass longhorn -o jsonpath='{.metadata.annotations.e2e-test-annotation-key}'
+    ...    e2e-test-annotation-value
+
 Test Engine Image Liveness Probe Install With Custom Values
-    [Tags]    setting    engine-image    uninstall
+    [Tags]    setting    engine-image    uninstall    helm
     [Documentation]    - Verify that engine-image liveness probe settings can be configured
     ...                  via Helm chart defaultSettings or manifest default-setting.yaml at install time.
     ...                - Issue: https://github.com/longhorn/longhorn/issues/12846
@@ -385,10 +416,8 @@ Test Engine Image Liveness Probe Install With Custom Values
 
     ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
-        ${patch} =    Set Variable
-        ...    .defaultSettings.engineImagePodLivenessProbeTimeout = 15 | .defaultSettings.engineImagePodLivenessProbePeriod = 30 | .defaultSettings.engineImagePodLivenessProbeFailureThreshold = 10
-        ${helm_cmd} =    Set Variable    yq eval '${patch}' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
-        Install Longhorn    custom_cmd=${helm_cmd}
+        Install Longhorn
+        ...    custom_cmd=yq -i '.defaultSettings.engineImagePodLivenessProbeTimeout = 15 | .defaultSettings.engineImagePodLivenessProbePeriod = 30 | .defaultSettings.engineImagePodLivenessProbeFailureThreshold = 10' values.yaml
     ELSE
         ${manifest_cmd} =    Set Variable
         ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}engine-image-pod-liveness-probe-failure-threshold: 10" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}engine-image-pod-liveness-probe-period: 30" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}engine-image-pod-liveness-probe-timeout: 15" longhorn.yaml
@@ -405,7 +434,7 @@ Test Engine Image Liveness Probe Install With Custom Values
     ...    failure_threshold=10
 
 Test Engine Image Liveness Probe Upgrade With Custom Values
-    [Tags]    setting    engine-image    uninstall
+    [Tags]    setting    engine-image    uninstall    helm
     [Documentation]    - Verify that engine-image liveness probe settings can be configured
     ...                  via Helm chart defaultSettings or manifest default-setting.yaml at upgrade time.
     ...                - Issue: https://github.com/longhorn/longhorn/issues/12846
@@ -434,10 +463,8 @@ Test Engine Image Liveness Probe Upgrade With Custom Values
 
     ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
-        ${patch} =    Set Variable
-        ...    .defaultSettings.engineImagePodLivenessProbeTimeout = 15 | .defaultSettings.engineImagePodLivenessProbePeriod = 30 | .defaultSettings.engineImagePodLivenessProbeFailureThreshold = 10
-        ${helm_cmd} =    Set Variable    yq eval '${patch}' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
-        Upgrade Longhorn to custom version    custom_cmd=${helm_cmd}
+        Upgrade Longhorn to custom version
+        ...    custom_cmd=yq -i '.defaultSettings.engineImagePodLivenessProbeTimeout = 15 | .defaultSettings.engineImagePodLivenessProbePeriod = 30 | .defaultSettings.engineImagePodLivenessProbeFailureThreshold = 10' values.yaml
     ELSE
         ${manifest_cmd} =    Set Variable
         ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}engine-image-pod-liveness-probe-failure-threshold: 10" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}engine-image-pod-liveness-probe-period: 30" longhorn.yaml && sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}engine-image-pod-liveness-probe-timeout: 15" longhorn.yaml

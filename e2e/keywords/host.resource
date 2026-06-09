@@ -73,6 +73,11 @@ Power on off nodes
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
 
+Power on node ${node_id}
+    ${powered_on_node} =    get_node_by_index    ${node_id}
+    power_on_node_by_name    ${powered_on_node}
+    Remove Values From List    ${powered_off_nodes}    ${powered_on_node}
+
 Power off node ${node_id}
     ${powered_off_node} =     get_node_by_index    ${node_id}
     Append to list      ${powered_off_nodes}     ${powered_off_node}

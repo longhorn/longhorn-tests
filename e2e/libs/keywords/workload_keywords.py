@@ -1,14 +1,13 @@
 import multiprocessing
 import asyncio
-
-from kubernetes import client
-from kubernetes.stream import stream
+import time
 
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from utility.utility import get_retry_count_and_interval
+from utility.utility import pod_exec
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
@@ -38,7 +37,6 @@ from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pods_recreated
 from workload.workload import wait_for_workload_pod_kept_in_state
-from workload.workload import get_pod_node
 from workload.workload import run_commands_in_pod
 from workload.workload import get_workload_node_name
 from workload.workload import get_all_workload_node_names
@@ -53,6 +51,7 @@ import utility.constant as constant
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
 from utility.utility import list_namespaced_pod
+from utility.utility import get_retry_count_and_interval
 
 from volume import Volume
 from datetime import datetime, timezone
@@ -64,6 +63,7 @@ class workload_keywords:
         self.node = Node()
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create_pod(self, pod_name, claim_name):
         logging(f'Creating pod {pod_name} using pvc {claim_name}')
@@ -272,8 +272,29 @@ class workload_keywords:
         assert expect_state in ["Terminating", "ContainerCreating", "Running", "CrashLoopBackOff"], f"Unknown expected pod state: {expect_state}: "
         return wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace=namespace)
 
-    def get_pod_node(self, pod):
-        return get_pod_node(pod)
+    def wait_for_workload_pod_on_node(self, workload_name, node_name, namespace="default"):
+        logging(f"Waiting for workload {workload_name} pod on node {node_name} in namespace {namespace}")
+        for i in range(self.retry_count):
+            logging(f"Waiting for workload {workload_name} pod on node {node_name} ... ({i})")
+            pods = get_workload_pods(workload_name, namespace=namespace)
+            for pod in pods:
+                if pod.spec.node_name == node_name:
+                    logging(f"Workload {workload_name} pod {pod.metadata.name} is on node {node_name}")
+                    return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for workload {workload_name} pod on node {node_name}"
+
+    def wait_for_workload_pod_not_on_node(self, workload_name, node_name, namespace="default"):
+        logging(f"Waiting for workload {workload_name} pod not on node {node_name} in namespace {namespace}")
+        for i in range(self.retry_count):
+            logging(f"Waiting for workload {workload_name} pod not on node {node_name} ... ({i})")
+            pods = get_workload_pods(workload_name, namespace=namespace)
+            for pod in pods:
+                if pod.spec.node_name != node_name:
+                    logging(f"Workload {workload_name} pod {pod.metadata.name} is not on node {node_name}")
+                    return
+                time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for workload {workload_name} pod not on node {node_name}"
 
     def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace=constant.LONGHORN_NAMESPACE):
         for workload_name in workload_names:
@@ -399,3 +420,68 @@ class workload_keywords:
     def rollout_restart_workload(self, workload_name, workload_kind, namespace="default"):
         logging(f"Triggering rollout restart of {workload_kind} {workload_name} in namespace {namespace}")
         rollout_restart_workload(workload_name, workload_kind, namespace)
+
+    def start_fio_randwrite_with_verify_in_workload(self, workload_name, namespace="default"):
+        """
+        Start fio with randwrite and crc32c verification in workload pod.
+        This runs fio in the background for data integrity testing.
+        """
+        logging(f"Starting fio randwrite with crc32c verification in workload {workload_name}")
+        pod_name = get_workload_pod_names(workload_name, namespace)[0]
+
+        fio_cmd = (
+            "nohup fio --name=mytest "
+            "--filename=/data/testfile.dat "
+            "--size=1400M "
+            "--rw=randwrite "
+            "--bs=4k "
+            "--ioengine=libaio "
+            "--iodepth=32 "
+            "--direct=1 "
+            "--verify=crc32c "
+            "--time_based "
+            "--runtime=999999 "
+            "--verify_state_save=1 "
+            "> /data/fio_write.log 2>&1 &"
+        )
+
+        resp = pod_exec(pod_name, namespace, fio_cmd)
+        logging(f"Started fio in workload {workload_name}: {resp}")
+
+    def stop_fio_in_workload(self, workload_name, namespace="default"):
+        """
+        Stop fio process in workload pod.
+        """
+        logging(f"Stopping fio in workload {workload_name}")
+        pod_name = get_workload_pod_names(workload_name, namespace)[0]
+
+        resp = pod_exec(pod_name, namespace, "pkill -SIGTERM fio || true")
+        logging(f"Stopped fio in workload {workload_name}: {resp}")
+
+    def verify_fio_data_integrity_in_workload(self, workload_name, namespace="default"):
+        """
+        Verify fio data integrity by running fio read with crc32c verification.
+        Should return err=0 if data is intact.
+        """
+        logging(f"Verifying fio data integrity in workload {workload_name}")
+        pod_name = get_workload_pod_names(workload_name, namespace)[0]
+
+        verify_cmd = (
+            "fio --name=mytest "
+            "--filename=/data/testfile.dat "
+            "--rw=read "
+            "--bs=4k "
+            "--ioengine=libaio "
+            "--iodepth=32 "
+            "--direct=1 "
+            "--verify=crc32c "
+            "--verify_state_load=1"
+        )
+
+        resp = pod_exec(pod_name, namespace, verify_cmd)
+        logging(f"FIO verification output: {resp}")
+
+        if "err= 0" not in resp and "err=0" not in resp:
+            raise AssertionError(f"FIO verification failed with errors: {resp}")
+
+        logging(f"FIO data integrity verification passed")
