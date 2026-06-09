@@ -27,8 +27,23 @@ ${LONGHORN_REPO_DIR}    /tmp/longhorn/longhorn
 Wait for longhorn ready
     wait_for_all_instance_manager_running
 
+Wait for all instance managers running with default image
+    wait_for_all_instance_manager_running_with_default_image
+
+Wait for all v2 instance managers running with default image
+    wait_for_all_instance_manager_running_with_default_image
+
+Wait for all instance manager upgrades completed
+    instancemanager_keywords.wait_for_all_instance_manager_upgrades_completed
+
+Wait for all v2 instance manager upgrades completed
+    instancemanager_keywords.wait_for_all_instance_manager_upgrades_completed
+
 Wait for all instance managers removed
     wait_for_all_instance_manager_removed
+
+Wait for Longhorn node named ${node_name} down
+    wait_for_longhorn_node_down    ${node_name}
 
 Wait for Longhorn workloads pods stable
     [Arguments]    @{args}
