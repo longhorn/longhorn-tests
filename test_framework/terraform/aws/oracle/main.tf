@@ -47,9 +47,9 @@ resource "aws_internet_gateway" "lh_aws_igw" {
   }
 }
 
-# Create controlplane security group
-resource "aws_security_group" "lh_aws_secgrp_controlplane" {
-  name        = "lh_aws_secgrp_controlplane"
+# Create security group
+resource "aws_security_group" "lh_aws_secgrp" {
+  name        = "lh_aws_secgrp"
   description = "Allow all inbound traffic"
   vpc_id      = aws_vpc.lh_aws_vpc.id
 
@@ -117,55 +117,10 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
   }
 
   tags = {
-    Name = "lh_aws_sec_grp_controlplane-${random_string.random_suffix.id}"
+    Name = "lh_aws_sec_grp-${random_string.random_suffix.id}"
     Owner = "longhorn-infra"
   }
 }
-
-
-# Create worker security group
-resource "aws_security_group" "lh_aws_secgrp_worker" {
-  name        = "lh_aws_secgrp_worker"
-  description = "Allow all inbound traffic"
-  vpc_id      = aws_vpc.lh_aws_vpc.id
-
-  ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow All Traffic from VPC CIDR block"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [aws_vpc.lh_aws_vpc.cidr_block]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "lh_aws_sec_grp_worker-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
-  }
-}
-
 
 # Create Public subnet
 resource "aws_subnet" "lh_aws_public_subnet" {
@@ -178,47 +133,6 @@ resource "aws_subnet" "lh_aws_public_subnet" {
     Owner = "longhorn-infra"
   }
 }
-
-# Create private subnet
-resource "aws_subnet" "lh_aws_private_subnet" {
-  vpc_id     = aws_vpc.lh_aws_vpc.id
-  availability_zone = var.aws_availability_zone
-  cidr_block = "10.0.2.0/24"
-
-  tags = {
-    Name = "lh_private_subnet-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
-  }
-}
-
-# Create EIP for NATGW
-resource "aws_eip" "lh_aws_eip_nat_gw" {
-  vpc      = true
-
-  tags = {
-    Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
-  }
-}
-
-# Create nat gateway
-resource "aws_nat_gateway" "lh_aws_nat_gw" {
-  depends_on = [
-    aws_internet_gateway.lh_aws_igw,
-    aws_eip.lh_aws_eip_nat_gw,
-    aws_subnet.lh_aws_public_subnet,
-    aws_subnet.lh_aws_private_subnet
-  ]
-
-  allocation_id = aws_eip.lh_aws_eip_nat_gw.id
-  subnet_id     = aws_subnet.lh_aws_public_subnet.id
-
-  tags = {
-    Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
-  }
-}
-
 
 # Create route table for public subnets
 resource "aws_route_table" "lh_aws_public_rt" {
@@ -239,25 +153,6 @@ resource "aws_route_table" "lh_aws_public_rt" {
   }
 }
 
-# Create route table for private subnets
-resource "aws_route_table" "lh_aws_private_rt" {
-  depends_on = [
-    aws_nat_gateway.lh_aws_nat_gw
-  ]
-
-  vpc_id = aws_vpc.lh_aws_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.lh_aws_nat_gw.id
-  }
-
-  tags = {
-    Name = "lh_aws_private_rt-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
-  }
-}
-
 # Associate public subnet to public route table
 resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
   depends_on = [
@@ -267,17 +162,6 @@ resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
 
   subnet_id      = aws_subnet.lh_aws_public_subnet.id
   route_table_id = aws_route_table.lh_aws_public_rt.id
-}
-
-# Associate private subnet to private route table
-resource "aws_route_table_association" "lh_aws_private_subnet_rt_association" {
-  depends_on = [
-    aws_subnet.lh_aws_private_subnet,
-    aws_route_table.lh_aws_private_rt
-  ]
-
-  subnet_id      = aws_subnet.lh_aws_private_subnet.id
-  route_table_id = aws_route_table.lh_aws_private_rt.id
 }
 
 # Create AWS key pair

@@ -64,9 +64,68 @@ run_longhorn_test(){
 
   # add k8s distro for kubelet restart
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "K8S_DISTRO", "value": "'${TF_VAR_k8s_distro_name}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  # add os distro for ssh
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "OS_DISTRO", "value": "'${DISTRO}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
-  ## for appco test
+  # for appco test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
+  # share instance mapping information between jenkins job agent and test pod for later use, e.g. power on/off nodes.
+  kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
+  yq -i '
+select(.kind == "Pod").spec.volumes += [{
+  "name": "instance-mapping",
+  "configMap": {
+    "name": "instance-mapping"
+  }
+}]
+' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq -i '
+select(.kind == "Pod").spec.containers[0].volumeMounts += [{
+  "name": "instance-mapping",
+  "mountPath": "/tmp/instance_mapping",
+  "subPath": "instance_mapping",
+  "readOnly": true
+}]
+' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
+  # share public IP mapping information between jenkins job agent and test pod for later use, e.g. ssh to nodes.
+  kubectl create configmap public-ip-mapping --from-file=/tmp/public_ip_mapping
+  yq -i '
+select(.kind == "Pod").spec.volumes += [{
+  "name": "public-ip-mapping",
+  "configMap": {
+    "name": "public-ip-mapping"
+  }
+}]
+' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+yq -i '
+select(.kind == "Pod").spec.containers[0].volumeMounts += [{
+  "name": "public-ip-mapping",
+  "mountPath": "/tmp/public_ip_mapping",
+  "subPath": "public_ip_mapping",
+  "readOnly": true
+}]
+' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
+  # share ssh key with test pod for later use, e.g. ssh to nodes
+  kubectl create secret generic ssh-key --from-file=$HOME/.ssh/id_rsa
+  yq -i '
+select(.kind == "Pod").spec.volumes += [{
+  "name": "ssh-key",
+  "secret": {
+    "secretName": "ssh-key",
+    "defaultMode": 384
+  }
+}]
+' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq -i '
+select(.kind == "Pod").spec.containers[0].volumeMounts += [{
+  "name": "ssh-key",
+  "mountPath": "/root/.ssh/id_rsa",
+  "subPath": "id_rsa"
+}]
+' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   # upgrade test parameters
   if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]] || [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
@@ -175,6 +234,7 @@ run_longhorn_test_out_of_cluster(){
 
   cat /tmp/instance_mapping
   cp "${KUBECONFIG}" /tmp/kubeconfig
+  cp "$HOME/.ssh/id_rsa" /tmp/id_rsa
   CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
   docker run --pull=always \
              --network=container:"${IMAGE_NAME}" \
@@ -203,7 +263,9 @@ run_longhorn_test_out_of_cluster(){
              -e LONGHORN_STABLE_VERSION="${LONGHORN_STABLE_VERSION}"\
              -e LONGHORN_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"\
              -e K8S_DISTRO="${TF_VAR_k8s_distro_name}"\
+             -e OS_DISTRO="${DISTRO}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
+             --mount source="vol-${IMAGE_NAME}",target=/root/.ssh \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
   docker stop "${CONTAINER_NAME}"
   docker rm "${CONTAINER_NAME}"

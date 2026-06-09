@@ -134,18 +134,6 @@ resource "aws_subnet" "lh_aws_public_subnet" {
   }
 }
 
-# Create private subnet
-resource "aws_subnet" "lh_aws_private_subnet" {
-  vpc_id     = aws_vpc.lh_aws_vpc.id
-  availability_zone = var.aws_availability_zone
-  cidr_block = "10.0.2.0/24"
-
-  tags = {
-    Name = "lh_private_subnet-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
-  }
-}
-
 # Create route table for public subnets
 resource "aws_route_table" "lh_aws_public_rt" {
   depends_on = [

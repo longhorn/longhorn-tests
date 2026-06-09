@@ -77,6 +77,14 @@ def generate_name_random(name_prefix="test-"):
                 for _ in range(6))
 
 
+def is_valid_iso8601(date_string):
+    try:
+        datetime.fromisoformat(date_string)
+        return True
+    except ValueError:
+        return False
+
+
 def is_integer(value):
     try:
         int(value)
@@ -115,15 +123,9 @@ def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
         logging(f"Executing command {cmd}")
 
     if isinstance(cmd, str):
-        try:
-            res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            res = e.output
+        res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
     elif isinstance(cmd, list):
-        try:
-            res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            res = e.output
+        res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
     else:
         raise ValueError("Command must be a string or list")
 
