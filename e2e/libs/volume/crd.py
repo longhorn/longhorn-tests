@@ -860,7 +860,13 @@ class CRD(Base):
             assert False, message
 
     def get_checksum(self, volume_name):
+        """Return the checksum of the volume.
+
+        The caller must make sure the volume is attached before calling this.
+        """
         node_name = self.get(volume_name)["spec"]["nodeID"]
+        assert node_name, \
+            f"Volume {volume_name} has no spec.nodeID; it must be attached before reading"
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
@@ -868,7 +874,13 @@ class CRD(Base):
         return checksum
 
     def get_sha512sum(self, volume_name):
+        """Return the checksum of the volume.
+
+        The caller must make sure the volume is attached before calling this.
+        """
         node_name = self.get(volume_name)["spec"]["nodeID"]
+        assert node_name, \
+            f"Volume {volume_name} has no spec.nodeID; it must be attached before reading"
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"sha512sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
