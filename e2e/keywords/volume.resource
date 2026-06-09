@@ -638,6 +638,7 @@ Volume ${volume_id} should have ${expected_replica_count} running replicas and n
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     ${actual_checksum} =    get_volume_checksum    ${volume_name}
     ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}
     Should Be Equal    ${actual_checksum}    ${expected_checksum}
@@ -737,6 +738,7 @@ Upgrade v1 volumes engine to ${custom_engine_image}
 
 Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     ${current_checksum} =    get_volume_checksum    ${volume_name}
     ${backup_data} =    get_backup_data_from_backup_list    ${backups_before_uninstall}    ${backup_id}
     Should Be Equal    ${current_checksum}    ${backup_data}
