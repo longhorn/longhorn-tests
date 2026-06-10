@@ -5420,6 +5420,39 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
     assert False
 
 
+def wait_and_get_stable_pod(core_api, pod_name, namespace="default",
+                            is_phase="Running",
+                            timeout_cnt=RETRY_COUNTS,
+                            stable_retry=WAIT_FOR_POD_STABLE_MAX_RETRY):
+    """
+    Add mechanism to wait for a stable running pod when workload restarts its
+    pod, since Longhorn manager could create/delete the new workload pod
+    multiple times, it's possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    """
+    stable_pod = None
+    wait_for_stable_retry = 0
+
+    for _ in range(timeout_cnt):
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == is_phase:
+                if stable_pod is None or \
+                        stable_pod.metadata.uid != pod.metadata.uid:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == stable_retry:
+                        return stable_pod
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} {is_phase} failed: {e}")
+
+        time.sleep(RETRY_INTERVAL)
+    assert False
+
+
 def wait_delete_deployment(apps_api, deployment_name, namespace='default'):
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         ret = apps_api.list_namespaced_deployment(namespace=namespace)
