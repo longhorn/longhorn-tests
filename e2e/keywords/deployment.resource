@@ -7,7 +7,6 @@ Library    ../libs/keywords/deployment_keywords.py
 Library    ../libs/keywords/node_keywords.py
 Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/volume_keywords.py
-Resource    variables.resource
 
 *** Keywords ***
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
@@ -137,7 +136,4 @@ Assert block device size in deployment pod for deployment ${deployment_id} is ${
     ${expected_bytes} =    convert_size_to_bytes    ${size}    to_str=True
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${pod_name} =    get_workload_pod_name    ${deployment_name}
-    ${cmd} =    Set Variable    blockdev --getsize64 ${BLOCK_DEVICE_PATH}
-    ${result} =    pod_exec    ${pod_name}    default    ${cmd}
-    Should Be Equal As Integers    ${result.strip()}    ${expected_bytes}
-    ...    msg=Block device size in pod ${pod_name}: expected ${expected_bytes} B, got ${result.strip()} B
+    wait_for_block_device_size_in_pod    ${pod_name}    ${expected_bytes}
