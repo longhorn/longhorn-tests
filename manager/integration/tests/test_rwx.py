@@ -15,6 +15,7 @@ from common import wait_for_volume_creation, DATA_SIZE_IN_MB_3
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL
 from common import wait_for_pod_remount
+from common import wait_for_pod_phase, wait_and_get_stable_pod
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
 from common import core_api, statefulset, pvc, pod, client  # NOQA
@@ -392,7 +393,12 @@ def test_rwx_delete_share_manager_pod(client, core_api, statefulset, storage_cla
     delete_and_wait_pod(core_api, share_manager_name,
                         namespace=LONGHORN_NAMESPACE)
 
+    # Wait for the recreated share-manager pod before checking remount.
+    wait_for_pod_phase(core_api, share_manager_name, "Running",
+                       namespace=LONGHORN_NAMESPACE)
     wait_for_pod_remount(core_api, pod_name)
+
+    wait_and_get_stable_pod(core_api, pod_name, stable_retry=3)
 
     test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data_2, filename='test2')
