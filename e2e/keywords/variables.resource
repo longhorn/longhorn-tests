@@ -12,11 +12,6 @@ ${VOLUME_STATE_CHECK_TIMEOUT}    120
 ${LONGHORN_NAMESPACE}    longhorn-system
 ${DEFAULT_BLOCK_DISK_NAME}    block-disk
 
-# Block volume device path (volumeMode=Block)
-${BLOCK_DEVICE_NAME}    longhorn-testblk
-${BLOCK_DEVICE_DIR}    /dev/longhorn
-${BLOCK_DEVICE_PATH}    ${BLOCK_DEVICE_DIR}/${BLOCK_DEVICE_NAME}
-
 @{powered_off_nodes}=
 
 &{volume_checksums}=
