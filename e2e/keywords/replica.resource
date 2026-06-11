@@ -3,6 +3,7 @@ Documentation       Longhorn replica related keywords
 
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/replica_keywords.py
+Library             ../libs/keywords/instancemanager_keywords.py
 Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 
@@ -33,20 +34,16 @@ There should be no replica of volume ${volume_id} on node ${node_id} disk ${disk
     ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
     wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0
 
-Delete replica
-    [Arguments]    ${replica_name}
-    [Documentation]    Delete a replica custom resource by its exact name using kubectl.
+Delete replica ${replica_name}
     delete_replica_by_name    ${replica_name}
 
-Verify replica lvol is deleted from SPDK lvol list on node ${node_id}
-    [Arguments]    ${replica_name}
+Wait for ${engine_type} replica ${replica_name} deleted from instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    verify_replica_lvol_deleted_from_spdk_lvol    ${node_name}    ${replica_name}
+    wait_for_replica_deleted    ${node_name}    ${replica_name}    ${engine_type}
 
-Verify replica lvol exists in SPDK lvol list on node ${node_id}
-    [Arguments]    ${replica_name}
+Wait for ${engine_type} replica ${replica_name} present in instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    verify_replica_lvol_exists_in_spdk_lvol    ${node_name}    ${replica_name}
+    wait_for_replica_present    ${node_name}    ${replica_name}    ${engine_type}
 
 Assert replica file size of ${resource_kind} ${resource_id} is ${expected_size}
     ${expected_bytes} =    convert_size_to_bytes    ${expected_size}    to_str=True
