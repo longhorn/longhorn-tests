@@ -16,6 +16,7 @@ Resource    ../keywords/statefulset.resource
 Resource    ../keywords/backup.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/snapshot.resource
+Resource    ../keywords/replica.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/orphan.resource
 Resource    ../keywords/support_bundle.resource
@@ -156,7 +157,7 @@ Pre-release Checks
         And Attach volume v1
         And Wait for volume v1 healthy
         And Write data 0 256 MB to volume v1
-        And Create orphan replica for volume v1
+        And Create v1 orphaned replica for volume v1 on node 1
         And Wait for orphan count to be 1
 
         # (13) create snapshot
@@ -196,6 +197,10 @@ Pre-release Checks
 
         # (6) create v2 backup
         And Create backup backup-v2 for volume v2
+
+        # (7) create custom resources
+        And Create v2 orphaned replica for volume v2 on node 1
+        And Wait for orphan count to be 2
 
         # upgrading Longhorn with attached v2 volumes is not allowed
         And Detach volume v2

@@ -460,7 +460,7 @@ Get volume ${volume_id} replica name on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     ${replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
-    Set Test Variable    ${replica_name}
+    [Return]    ${replica_name}
 
 Check volume ${volume_id} crashed replica reused on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
