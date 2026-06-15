@@ -56,3 +56,8 @@ Assert replica file size of ${resource_kind} ${resource_id} is ${expected_size}
     ...    ELSE
     ...        get_workload_volume_name    ${resource_name}
     wait_for_replica_file_size    ${volume_name}    ${expected_bytes}
+
+Wait for volume ${volume_id} replica on node ${node_id} failed
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_replica_failed    ${volume_name}    ${node_name}
