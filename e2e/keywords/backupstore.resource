@@ -29,7 +29,7 @@ Reset default backupstore
     reset_backupstore
 
 Set backupstore poll interval to ${poll_interval} seconds
-    set_backupstore_poll_interval    ${poll_interval}
+    set_backupstore_poll_interval    ${poll_interval}s
 
 Set backupstore url to ${url}
     set_backupstore_url    ${url}
