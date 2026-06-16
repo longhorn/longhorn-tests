@@ -166,3 +166,47 @@ Get host log list on path ${log_path} on node ${node_id}
     ${host_log_files} =    get_host_log_files    ${node_name}    ${log_path}
     log    ${host_log_files}
     Set Test Variable    ${host_log_files}
+
+Check volume endpoint on node of ${resource_kind} ${resource_id}
+    [Documentation]    Find which node ${resource_kind} ${resource_id}'s volume is attached to,
+    ...                then run "ls -l /dev/longhorn/${volume_name}" on that node and log the output.
+    ...                If the directory is empty or doesn't exist, log a WARNING.
+    ${resource_name} =    generate_name_with_suffix    ${resource_kind}    ${resource_id}
+    ${volume_name} =    Run Keyword If    '${resource_kind}' == 'volume'
+    ...        Set Variable    ${resource_name}
+    ...    ELSE
+    ...        get_workload_volume_name    ${resource_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    ${result} =    execute_command_on_node    ls -l /dev/longhorn/${volume_name}    ${node_name}
+
+    # Check if result is empty or contains error
+    ${result_stripped} =    Strip String    ${result}
+    ${is_empty} =    Run Keyword And Return Status    Should Be Empty    ${result_stripped}
+    ${has_error} =    Run Keyword And Return Status    Should Contain    ${result}    No such file or directory
+
+    IF    ${is_empty} or ${has_error}
+        ${warning_msg} =    Set Variable    /dev/longhorn/${volume_name} is empty or doesn't exist on node=${node_name}, ${resource_kind}=${resource_name}, volume=${volume_name}
+        Log    ${warning_msg}    level=WARN    console=True
+    ELSE
+        ${message} =    Set Variable    node=${node_name}, volume=${volume_name}\n/dev/longhorn/${volume_name}:\n${result}
+        Log    ${message}    console=True
+    END
+
+Check volume endpoint on node ${node_id}
+    [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output.
+    ...                If the directory is empty or doesn't exist, log a WARNING.
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${result} =    execute_command_on_node    ls -l /dev/longhorn/    ${node_name}
+
+    # Check if result is empty or contains error
+    ${result_stripped} =    Strip String    ${result}
+    ${is_empty} =    Run Keyword And Return Status    Should Be Empty    ${result_stripped}
+    ${has_error} =    Run Keyword And Return Status    Should Contain    ${result}    No such file or directory
+
+    IF    ${is_empty} or ${has_error}
+        ${warning_msg} =    Set Variable    /dev/longhorn/ is empty or doesn't exist on node=${node_name}
+        Log    ${warning_msg}    level=WARN    console=True
+    ELSE
+        ${message} =    Set Variable    node=${node_name}\n/dev/longhorn/:\n${result}
+        Log    ${message}    console=True
+    END
