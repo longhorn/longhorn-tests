@@ -156,6 +156,44 @@ Test Delete Instance Manager Of Single Replica Volume
     And Wait for volume 0 healthy
     Then Check volume 0 data is intact
 
+Test Node Drain After Node Deletion
+    [Documentation]    Test that draining a node succeeds after another node is deleted, and the
+    ...    volume remains accessible (degraded) with data intact.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/10833
+    ...
+    ...    1. Set node-drain-policy to block-for-eviction-if-contains-last-replica
+    ...    2. Create a volume with 3 replicas
+    ...    3. Create PV/PVC for the volume, and create a pod to use it
+    ...    4. Write some data to the pod
+    ...    5. Delete the pod to detach the volume
+    ...    6. Delete node 1
+    ...    7. Wait for node 1 to be not ready
+    ...    8. Drain node 2
+    ...    9. Recreate a pod to use the volume
+    ...    10. Wait for the pod running
+    ...    11. Wait for the volume degraded
+    ...    12. Check data integrity
+    Given Setting node-drain-policy is set to block-for-eviction-if-contains-last-replica
+    And Create volume 0 with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Wait for volume 0 detached
+    And Create persistentvolume for volume 0
+    And Create persistentvolumeclaim for volume 0
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Write 100 MB data to file data.txt in pod 0
+
+    When Delete pod 0
+    And Wait for volume 0 detached
+    And Delete node 1
+    And Wait for Longhorn node 1 down
+    And Force drain node 2
+
+    Then Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Wait for volume 0 degraded
+    And Check pod 0 data in file data.txt is intact
+
 Test Offline Replica Rebuilding Volume Status Condition
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11246
     Given Setting offline-replica-rebuilding is set to true
