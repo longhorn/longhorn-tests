@@ -89,7 +89,10 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.environ.get("CLOUDPROVIDER") == "aws":
-    if os.uname().machine == "x86_64":
+    if os.environ.get("DISTRO") == "talos":
+        # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
+    elif os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
