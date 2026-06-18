@@ -111,5 +111,22 @@ class common_keywords:
             time.sleep(retry_interval)
         assert False, f"'{output}' still found in command result: {res}"
 
+    def execute_command_in_pod(self, pod_name, namespace, cmd):
+        return pod_exec(pod_name, namespace, cmd)
+
+    def execute_command_in_pod_and_expect_output(self, pod_name, namespace, cmd, expected_output):
+        res = pod_exec(pod_name, namespace, cmd)
+        retry_count, _ = get_retry_count_and_interval()
+
+        try:
+            expected_pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            expected_pattern = re.compile(re.escape(expected_output), re.DOTALL)
+
+        if not expected_pattern.search(res):
+            logging(f"Failed to find '{expected_output}' in output of '{cmd}' in pod {pod_name}: {res}")
+            time.sleep(retry_count)
+            assert False, f"Failed to find '{expected_output}' in output of '{cmd}' in pod {pod_name}: {res}"
+
     def cleanup_events(self):
         cleanup_events()
