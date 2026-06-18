@@ -43,7 +43,7 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         return vol_list
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, backupBlockSize, rebuildConcurrentSyncLimit):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, backupBlockSize, rebuildConcurrentSyncLimit, dataSource=""):
         return NotImplemented
 
     def attach(self, volume_name, node_name, disable_frontend, wait, retry):
@@ -422,18 +422,30 @@ class Rest(Base):
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         logging(f"Upgrading volume {volume_name} engine image to {engine_image_name}")
+        images = self.engineimage.list_engine_images()
+        ei = None
+        for image in images:
+            if engine_image_name in image.image:
+                ei = image
+                break
+        if not ei:
+            logging(f"Failed to find engine image {engine_image_name} in engine images {images}")
+            time.sleep(self.retry_count)
+            assert False, f"Failed to find engine image {engine_image_name} in engine images {images}"
+        else:
+            logging(f"Found engine image {ei.image}")
         volume = self.get(volume_name)
-        volume.engineUpgrade(image=engine_image_name)
+        volume.engineUpgrade(image=ei.image)
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         for i in range(self.retry_count):
             logging(f"Waiting for volume {volume_name} engine image to be upgraded to {engine_image_name} ... ({i})")
             volume = self.get(volume_name)
-            if volume.currentImage == engine_image_name:
+            if engine_image_name in volume.currentImage:
                 break
             time.sleep(self.retry_interval)
-        assert volume.currentImage == engine_image_name, f"Failed to upgrade engine image to {engine_image_name}: {volume}"
-        logging(f"Upgraded volume {volume_name} engine image to {engine_image_name}")
+        assert engine_image_name in volume.currentImage, f"Failed to upgrade engine image to {engine_image_name}: {volume}"
+        logging(f"Upgraded volume {volume_name} engine image to {volume.currentImage}")
 
     def wait_for_replica_ready_to_rw(self, volume_name):
         for i in range(self.retry_count):

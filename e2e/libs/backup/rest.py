@@ -1,4 +1,5 @@
 import time
+import threading
 
 from backup.base import Base
 from backup.crd import CRD
@@ -6,7 +7,6 @@ from backup.crd import CRD
 from snapshot import Snapshot as RestSnapshot
 
 from utility.utility import logging
-from utility.utility import get_all_crs
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 import utility.constant as constant
@@ -34,32 +34,39 @@ class Rest(Base):
         volume = self.volume.get(volume_name)
         volume.snapshotBackup(name=snapshot.name)
 
-        if str(wait) == "False":
-            return
+        def background():
+            # after backup request we need to wait for completion of the backup
+            # before it can be retrieved from the backup volume
+            # since the backup.cfg will only be available after the backup operation
+            # has been completed
 
-        # after backup request we need to wait for completion of the backup
-        # since the backup.cfg will only be available once the backup operation
-        # has been completed
-        self.wait_for_backup_completed(volume_name, snapshot.name)
+            # wait for backup progress to reach 100% and no error in the volume backup status
+            self.wait_for_backup_completed(volume_name, snapshot.name)
 
-        backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot.name)
-        logging(f"Created backup {backup.name} from snapshot {snapshot.name}")
+            # try to retrieve the backup from the backup volume
+            backup = self.wait_for_snapshot_backup_to_be_created(volume_name, snapshot.name)
+            logging(f"Created backup {backup.name} from snapshot {snapshot.name}")
 
-        for i in range(self.retry_count):
-            logging(f"Waiting for volume {volume_name} lastBackup updated to {backup.name} ... ({i})")
-            volume = self.volume.get(volume_name)
-            if volume.lastBackup == backup.name:
-                break
-            time.sleep(self.retry_interval)
-        assert volume.lastBackup == backup.name, \
-            f"expect volume lastBackup is {backup.name}, but it's {volume.lastBackup}"
-        assert volume.lastBackupAt != "", \
-            f"expect volume lastBackupAt is not empty, but it's {volume.lastBackupAt}"
+            self.set_backup_id(backup.name, backup_id)
+            self.set_data_checksum(backup.name, self.volume.get_last_data_checksum(volume_name))
 
-        self.set_backup_id(backup.name, backup_id)
-        self.set_data_checksum(backup.name, self.volume.get_last_data_checksum(volume_name))
+            return backup
 
-        return backup
+        if wait:
+            backup = background()
+            for i in range(self.retry_count):
+                logging(f"Waiting for volume {volume_name} lastBackup updated to {backup.name} ... ({i})")
+                volume = self.volume.get(volume_name)
+                if volume.lastBackup == backup.name:
+                    break
+                time.sleep(self.retry_interval)
+            assert volume.lastBackup == backup.name, \
+                f"expect volume lastBackup is {backup.name}, but it's {volume.lastBackup}"
+            assert volume.lastBackupAt != "", \
+                f"expect volume lastBackupAt is not empty, but it's {volume.lastBackupAt}"
+        else:
+            thread = threading.Thread(target=background)
+            thread.start()
 
     def get(self, backup_id, volume_name):
         backups = self.list(volume_name)
@@ -78,7 +85,7 @@ class Rest(Base):
             return None
 
     def get_from_list(self, backup_list, backup_id):
-        for backup in backup_list["items"]:
+        for backup in backup_list:
             try:
                 if backup['metadata']['annotations']['test.longhorn.io/backup-id'] == backup_id:
                     return backup
@@ -131,12 +138,12 @@ class Rest(Base):
 
     def get_backup_volume(self, volume_name):
         for i in range(self.retry_count):
-            logging(f"Trying to get backup volume {volume_name} ... ({i})")
             backup_volumes = get_longhorn_client().list_backupVolume().data
             for backup_volume in backup_volumes:
                 volumeName = getattr(backup_volume, 'volumeName', backup_volume.name)
                 if volumeName == volume_name and backup_volume.created != "":
                     return backup_volume
+            logging(f"Failed to get backup volume {volume_name} from backup volume list {backup_volumes} ... ({i})")
             time.sleep(self.retry_interval)
         return None
 
@@ -156,6 +163,20 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert completed, f"Expected backup from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
+
+    def wait_for_backup_in_progress(self, volume_name):
+        in_progress = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for backup from volume {volume_name} to be in progress ... ({i})")
+            volume = self.volume.get(volume_name)
+            for backup in volume.backupStatus:
+                if backup.state == "InProgress":
+                    in_progress = True
+                    break
+            if in_progress:
+                break
+            time.sleep(self.retry_interval)
+        assert in_progress, f"Expected backup from volume {volume_name} to be in progress, but it's {volume}"
 
     def wait_for_backup_error(self, volume_name):
         error = False
@@ -188,11 +209,7 @@ class Rest(Base):
             return backup_volume.backupList().data
 
     def list_all(self):
-        return get_all_crs(group="longhorn.io",
-                      version="v1beta2",
-                      namespace=constant.LONGHORN_NAMESPACE,
-                      plural="backups",
-                      )
+        return CRD().list_all()
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         synced = False
@@ -200,8 +217,8 @@ class Rest(Base):
             time.sleep(self.retry_interval)
             try:
                 current_backups = self.list_all()
-                current_backup_count = len(current_backups["items"])
-                original_backup_count = len(backups_before_uninstall["items"])
+                current_backup_count = len(current_backups)
+                original_backup_count = len(backups_before_uninstall)
                 assert current_backup_count == original_backup_count, f"current backup count ({current_backup_count}) != original backup count ({original_backup_count})"
                 synced = True
                 break
@@ -210,19 +227,19 @@ class Rest(Base):
 
         assert synced, f"Failed to sync backups after re-installation"
 
-        target_backup_names = {(item["metadata"]["name"]) for item in backups_before_uninstall["items"]}
-        for item in current_backups["items"]:
-            backup_name = item["metadata"]["name"]
+        target_backup_names = {(backup["metadata"]["name"]) for backup in backups_before_uninstall}
+        for backup in current_backups:
+            backup_name = backup["metadata"]["name"]
             assert backup_name in target_backup_names, f"Error: Backup {backup_name} not found in {target_backup_names}"
 
             for i in range(self.retry_count):
                 time.sleep(self.retry_interval)
-                volume_name = item["status"]["volumeName"]
+                volume_name = backup["status"]["volumeName"]
                 if self.get_backup_volume(volume_name) != None:
                     break
 
     def delete(self, volume_name, backup_id):
-        return NotImplemented
+        return CRD().delete(volume_name, backup_id)
 
     def delete_backup_volume(self, volume_name):
         bvs = get_longhorn_client().list_backupVolume()
@@ -279,7 +296,7 @@ class Rest(Base):
             self.wait_for_backup_volume_delete(backup_volume.name)
 
         backup_volumes = get_longhorn_client().list_backupVolume()
-        assert backup_volumes.data == []
+        assert not backup_volumes.data, f"Failed to cleanup backup volumes, still have backup volumes: {backup_volumes.data}"
 
     def cleanup_backups(self):
         return CRD().cleanup_backups()

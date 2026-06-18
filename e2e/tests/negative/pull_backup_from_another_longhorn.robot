@@ -50,7 +50,7 @@ Pull Backup Created By Another Longhorn System
     And Write data 0 300 MB to volume 0
     When Create backup 0 for volume 0
     Then Verify backup list contains no error for volume 0
-    And Verify backup list contains backup 0 of volume 0
+    And Wait for backup 0 of volume 0 to exist in backup list
     Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
@@ -80,7 +80,7 @@ Pull Backup Created By Another Longhorn System
     And Write data 1 300 MB to volume 2
     When Create backup 1 for volume 2
     Then Verify backup list contains no error for volume 2
-    And Verify backup list contains backup 1 of volume 2
+    And Wait for backup 1 of volume 2 to exist in backup list
     Then Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn stable version
     And Check Longhorn CRD removed

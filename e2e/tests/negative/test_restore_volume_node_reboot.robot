@@ -5,7 +5,7 @@ Documentation    The node the restore volume attached to is down
 ...              - Test the restoration process of a Longhorn volume when the attached node goes down.
 ...              - Includes verification for both encrypted and non-encrypted volumes.
 
-Test Tags    manual    negative    longhorn-9865
+Test Tags    manual    negative    longhorn-9865    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -43,7 +43,7 @@ Restore volume attached node is down
     And Wait for volume 0 healthy
     And Write data 0 to volume 0
     And Create backup 0 for volume 0
-    And Verify backup list contains backup 0 of volume 0
+    And Wait for backup 0 of volume 0 to exist in backup list
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Create volume 1 from backup 0 of volume 0  dataEngine=${DATA_ENGINE}  encrypted=${encrypted}

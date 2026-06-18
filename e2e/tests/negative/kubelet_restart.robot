@@ -81,32 +81,6 @@ Kubelet Restart Immediately Test
     And Check statefulset 0 data in file data is intact
     Then Check statefulset 1 data in file data is intact
 
-Kubelet Restart After Temporary Downtime
-    [Arguments]    ${numberOfReplicas}    ${RWX_VOLUME_FAST_FAILOVER}
-    Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
-    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=${numberOfReplicas}
-    And Create statefulset 0 using RWO volume with longhorn-test storageclass
-    And Create statefulset 1 using RWX volume with longhorn-test storageclass
-    And Write 100 MB data to file data in statefulset 0
-    And Write 100 MB data to file data in statefulset 1
-
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1
-        And Wait for volume of statefulset 0 attached and unknown
-        And Wait for volume of statefulset 1 attached and degraded
-        And Wait for volume of statefulset 0 healthy
-        And Wait for volume of statefulset 1 healthy
-        Then Wait for workloads pods stable    statefulset 0    statefulset 1
-
-        And Scale down statefulset 0 to detach volume
-        And Scale down statefulset 1 to detach volume
-        And Scale up statefulset 0 to attach volume
-        And Scale up statefulset 1 to attach volume
-
-        And Check statefulset 0 data in file data is intact
-        Then Check statefulset 1 data in file data is intact
-    END
-
 Restart Volume Node Kubelet After Temporary Downtime
     [Arguments]    ${RWX_VOLUME_FAST_FAILOVER}
     Given Setting rwx-volume-fast-failover is set to ${RWX_VOLUME_FAST_FAILOVER}
@@ -117,7 +91,7 @@ Restart Volume Node Kubelet After Temporary Downtime
     And Write 100 MB data to file data in statefulset 1
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1
+        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1    wait=False
         And Wait for volume of statefulset 0 attached and unknown
         And Wait for volume of statefulset 1 attached and degraded
         And Wait for volume of statefulset 0 healthy
@@ -145,9 +119,9 @@ Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster
     And Write 100 MB data to file data in statefulset 1
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1
+        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1    wait=False
         And Wait for volume of statefulset 0 attached and unknown
-        And Wait for statefulset 1 volume detached
+        And Wait for volume of statefulset 1 detached
         And Wait for volume of statefulset 0 healthy
         And Wait for volume of statefulset 1 healthy
         Then Wait for workloads pods stable    statefulset 0    statefulset 1

@@ -4,24 +4,23 @@ import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from engine import Engine
-from enginefrontend import EngineFrontend
-
 from node_exec import NodeExec
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 import utility.constant as constant
-from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_cr
 from utility.utility import convert_size_to_bytes
 from utility.utility import get_longhorn_client
 from utility.utility import subprocess_exec_cmd
+from utility.utility import is_valid_iso8601
 
 from volume.base import Base
 from volume.constant import GIBIBYTE, MEBIBYTE
 from volume.rest import Rest
+
+from event.event import get_events
 
 
 class CRD(Base):
@@ -30,11 +29,8 @@ class CRD(Base):
         super().__init__()
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
-        self.retry_count, self.retry_interval = get_retry_count_and_interval()
-        self.engine = Engine()
-        self.enginefrontend = EngineFrontend()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -53,7 +49,6 @@ class CRD(Base):
                 "encrypted": encrypted,
                 "frontend": frontend,
                 "replicaAutoBalance": "ignored",
-                "size": size,
                 "numberOfReplicas": int(numberOfReplicas),
                 "migratable": migratable,
                 "dataLocality": dataLocality,
@@ -71,6 +66,13 @@ class CRD(Base):
                 "replicaAutoBalance": replicaAutoBalance
             }
         }
+
+        if not fromBackup:
+            body["spec"]["size"] = size
+
+        if dataSource:
+            body["spec"]["dataSource"] = dataSource
+
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize
 
@@ -106,7 +108,7 @@ class CRD(Base):
 
         volume = self.get(volume_name)
         assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
-        if not Standby:
+        if not Standby and not fromBackup:
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
             if not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
                 assert volume['spec']['backupBlockSize'] == backupBlockSize, f"expect volume backupBlockSize is {backupBlockSize}, but it's {volume['spec']['backupBlockSize']}"
@@ -301,8 +303,13 @@ class CRD(Base):
             logging(f"Waiting for {volume_name} {status}={value} ({i}) ...")
             try:
                 volume = self.get(volume_name)
-                if volume["status"][status] == value:
-                    break
+                if value == "empty" and not volume["status"][status]:
+                    return
+                elif value == "updated" and is_valid_iso8601(volume["status"][status]):
+                    logging(f"Got {volume_name} {status} updated: {volume['status'][status]}")
+                    return
+                elif volume["status"][status] == value:
+                    return
             except Exception as e:
                 logging(f"Getting volume {volume_name} {status} status error: {e}")
             time.sleep(self.retry_interval)
@@ -507,7 +514,9 @@ class CRD(Base):
             logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} to complete ({i}) ...")
             try:
                 engines = self.engine.get_engines(volume_name)
-                complete = len(engines) == 1 and engines[0]['status']['lastRestoredBackup'] == backup_name
+                # lastRestoredBackup is not reliable to check the restoration completion
+                # it may not be updated even the restoration is completed, so remove the check
+                complete = len(engines) == 1 # and engines[0]['status']['lastRestoredBackup'] == backup_name
                 if complete:
                     break
             except Exception as e:
@@ -550,9 +559,8 @@ class CRD(Base):
         engine = None
         engine_current_size = 0
         engine_expected_size = convert_size_to_bytes(expected_size)
-        engine_operation = Engine()
         for i in range(self.retry_count):
-            engine = engine_operation.get_engine(volume_name)
+            engine = self.engine.get_engine(volume_name)
             # there is no current size for a stopped engine
             if engine['status']['currentState'] == 'stopped':
                 engine_current_size = int(engine['spec']['volumeSize'])
@@ -748,22 +756,12 @@ class CRD(Base):
             name=replica_list['items'][0]['metadata']['name']
         )
 
-    def delete_replica_by_name(self, volume_name, replica_name):
-        replica = self.obj_api.get_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace=constant.LONGHORN_NAMESPACE,
-            plural="replicas",
-            name=replica_name
-        )
-        logging(f"Deleting replica {replica['metadata']['name']}")
-        self.obj_api.delete_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace=constant.LONGHORN_NAMESPACE,
-            plural="replicas",
-            name=replica['metadata']['name']
-        )
+    def delete_replica_by_name(self, replica_name, namespace):
+        namespace = constant.LONGHORN_NAMESPACE
+        logging(f"Deleting replica CR by name: {replica_name} in namespace: {namespace}")
+        cmd = f"kubectl -n {namespace} delete replica {replica_name}"
+        subprocess_exec_cmd(cmd)
+        logging(f"Replica CR {replica_name} deleted successfully")
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
         return Rest().wait_for_replica_rebuilding_start(volume_name, node_name)
@@ -903,3 +901,49 @@ class CRD(Base):
             logging(f"Failed to find recurring job group {job_group_name} for volume {volume_name}")
             time.sleep(self.retry_interval)
             assert False, f"Failed to find recurring job group {job_group_name} for volume {volume_name}"
+
+    def get_state(self, volume_name):
+        """
+        Get the current state of a volume.
+        """
+        logging(f"Getting state for volume {volume_name}")
+        volume = self.get(volume_name)
+        state = volume["status"]["state"]
+        logging(f"Volume {volume_name} state: {state}")
+        return state
+
+    def verify_never_detached_during_test(self, volume_name, start_time=None):
+        """
+        Verify that the volume never detached during the test by checking
+        Kubernetes events for detachment events since start_time.
+
+        Args:
+            volume_name: Name of the volume to check
+            start_time: datetime object marking when to start checking events.
+                       If None, checks all events (not recommended).
+        """
+        logging(f"Verifying volume {volume_name} never detached during test")
+
+        field_selector = f"involvedObject.name={volume_name},involvedObject.kind=Volume"
+        events = get_events(
+            namespace=constant.LONGHORN_NAMESPACE,
+            field_selector=field_selector,
+            start_time=start_time
+        )
+
+        detachment_keywords = ["detached", "detaching", "disconnected"]
+
+        for event in events:
+            event_message = event.get('message', '').lower()
+            event_reason = event.get('reason', '').lower()
+            event_timestamp = event.get('lastTimestamp', '')
+
+            for keyword in detachment_keywords:
+                if keyword in event_message or keyword in event_reason:
+                    logging(f"Found detachment event: {event.get('reason')}: {event.get('message')} at {event_timestamp}")
+                    raise AssertionError(
+                        f"Volume {volume_name} had a detachment event during test: "
+                        f"{event.get('reason')}: {event.get('message')} at {event_timestamp}"
+                    )
+
+        logging(f"No detachment events found for volume {volume_name} since {start_time}")
