@@ -339,11 +339,21 @@ Pre-release Checks
         And Check volume v1 data is data 0
 
         # (14) restore volume from backup
-        When Create volume vol-restore from backup backup-v1 of volume v1    size=1Gi
-        Then Wait for volume vol-restore restoration from backup backup-v1 of volume v1 start
-        And Wait for volume vol-restore detached
-        And Attach volume vol-restore
-        And Check volume vol-restore data is backup backup-v1 of volume v1
+        # v1 -> v1
+        When Create volume vol-restore-v1-0 from backup backup-v1 of volume v1    size=1Gi    dataEngine=v1
+        Then Wait for volume vol-restore-v1-0 restoration from backup backup-v1 of volume v1 start
+        And Wait for volume vol-restore-v1-0 restoration from backup backup-v1 of volume v1 completed
+        And Wait for volume vol-restore-v1-0 detached
+        And Attach volume vol-restore-v1-0
+        And Check volume vol-restore-v1-0 data is backup backup-v1 of volume v1
+
+        # v1 -> v2
+        When Create volume vol-restore-v1-1 from backup backup-v1 of volume v1    size=1Gi    dataEngine=v2
+        Then Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 start
+        And Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 completed
+        And Wait for volume vol-restore-v1-1 detached
+        And Attach volume vol-restore-v1-1
+        And Check volume vol-restore-v1-1 data is backup backup-v1 of volume v1
 
         # (15) check a volume can be detached and re-attached
         When Detach volume vol-rebuild
@@ -396,11 +406,21 @@ Pre-release Checks
         And Check volume v2 data is data 0
 
         # (6) restore v2 volume from backup
-        When Create volume vol-restore-v2 from backup backup-v2 of volume v2    size=1Gi    dataEngine=v2
-        Then Wait for volume vol-restore-v2 restoration from backup backup-v2 of volume v2 start
-        And Wait for volume vol-restore-v2 detached
-        And Attach volume vol-restore-v2
-        And Check volume vol-restore-v2 data is backup backup-v2 of volume v2
+        # v2 -> v2
+        When Create volume vol-restore-v2-0 from backup backup-v2 of volume v2    size=1Gi    dataEngine=v2
+        Then Wait for volume vol-restore-v2-0 restoration from backup backup-v2 of volume v2 start
+        And Wait for volume vol-restore-v2-0 restoration from backup backup-v2 of volume v2 completed
+        And Wait for volume vol-restore-v2-0 detached
+        And Attach volume vol-restore-v2-0
+        And Check volume vol-restore-v2-0 data is backup backup-v2 of volume v2
+
+        # v2 -> v1
+        When Create volume vol-restore-v2-1 from backup backup-v2 of volume v2    size=1Gi    dataEngine=v1
+        Then Wait for volume vol-restore-v2-1 restoration from backup backup-v2 of volume v2 start
+        And Wait for volume vol-restore-v2-1 restoration from backup backup-v2 of volume v2 completed
+        And Wait for volume vol-restore-v2-1 detached
+        And Attach volume vol-restore-v2-1
+        And Check volume vol-restore-v2-1 data is backup backup-v2 of volume v2
 
         # (7) trigger v2 replica rebuilding after upgrade
         When Delete volume v2 replica on node 1

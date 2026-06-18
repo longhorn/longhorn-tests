@@ -176,17 +176,20 @@ Check longhorn manager pods not restarted after test start
 Check longhorn backing image manager image is ${expected_image}
     check_backing_image_manager_images    ${expected_image}
 
-Assert disk size in instance manager pod for ${workload_kind} ${workload_id} is ${size}
+Assert disk size in instance manager pod for ${resource_kind} ${resource_id} is ${size}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
-    ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${volume_name}=    get_workload_volume_name    ${workload_name}
+    ${resource_name}=    generate_name_with_suffix    ${resource_kind}    ${resource_id}
+    ${volume_name}=    Run Keyword If    '${resource_kind}' == 'volume'
+    ...        Set Variable    ${resource_name}
+    ...    ELSE
+    ...        get_workload_volume_name    ${resource_name}
     ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
     Wait Until Keyword Succeeds    ${RETRY_COUNT}    ${RETRY_INTERVAL}
     ...    Check disk size in instance manager pod    ${instance_manager_name}    ${volume_name}    ${expected_size_byte}
 
 Check disk size in instance manager pod
     [Arguments]    ${instance_manager_name}    ${volume_name}    ${expected_size}
-    ${cmd}=    Set Variable    fdisk -l | grep /dev/mapper/${volume_name}
+    ${cmd} =    Set Variable    fdisk -l /dev/mapper/${volume_name}
     ${longhorn_namespace} =    get_longhorn_namespace
     ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
     Should Contain    ${result}    ${expected_size}
