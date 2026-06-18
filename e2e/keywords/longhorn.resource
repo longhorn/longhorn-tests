@@ -116,6 +116,11 @@ Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     delete_instance_manager_on_node    ${node_name}    ${engine_type}
 
+Get ${engine_type} instance manager pod on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${instance_manager_pod} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    RETURN    ${instance_manager_pod}
+
 Delete ${engine_type} instance manager of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_volume_node    ${volume_name}

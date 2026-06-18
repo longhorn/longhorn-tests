@@ -64,6 +64,15 @@ Run command until output is absent
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_until_output_is_absent    ${command}    ${unexpected_output}
 
+Run command in pod
+    [Arguments]    ${pod_name}    ${namespace}    ${command}
+    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}
+    RETURN    ${result}
+
+Run command in pod and expect output
+    [Arguments]    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+    execute_command_in_pod_and_expect_output    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+
 Test should pass
     No Operation
 
