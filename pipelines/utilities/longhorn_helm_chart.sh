@@ -4,6 +4,7 @@ set -x
 
 source pipelines/utilities/longhorn_status.sh
 source pipelines/utilities/longhorn_namespace.sh
+source pipelines/utilities/create_network_policies.sh
 
 get_longhorn_chart(){
   CHART_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
@@ -80,6 +81,7 @@ install_longhorn(){
   get_longhorn_namespace
   helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
   wait_longhorn_status_running
+  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){
