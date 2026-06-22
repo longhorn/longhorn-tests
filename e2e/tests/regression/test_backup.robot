@@ -481,3 +481,23 @@ Test Backup Creation And Deletion At The Same Time
     And Wait for pod 0 running
     Then Check pod 0 file file1.bin checksum matches checksum 0
     And Check pod 0 file file2.bin checksum matches checksum 1
+
+Test Restoring Volume From Corrupted Backup
+    [Documentation]
+    ...    Verify that restoring a volume from a corrupted backup cfg file results
+    ...    in the restored volume staying in a Detached and Faulted state.
+    ...    1. Create and attach a volume
+    ...    2. Write data to the volume
+    ...    3. Create backup 0 and wait for completion
+    ...    4. Verify no errors in backup list
+    ...    5. Corrupt the backup 0 cfg file on the backupstore
+    ...    6. Restore a volume from backup 0 — the volume should enter Faulted state
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create backup 0 for volume 0
+
+    When Corrupt backup 0 cfg file of volume 0
+    And Create volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
+    Then Check volume 1 kept in faulted
