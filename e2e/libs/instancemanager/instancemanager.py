@@ -135,7 +135,7 @@ class InstanceManager:
             for im in ims:
                 logging(f"Got {engine_type} instance manager running on node {node_name}: {im.metadata.name}")
                 delete_pod(im.metadata.name, namespace=constant.LONGHORN_NAMESPACE, wait=False)
-                return
+            return
         except Exception as e:
             logging(f"Deleting {engine_type} instance manager on node {node_name} error: {e}")
 

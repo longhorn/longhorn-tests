@@ -47,6 +47,7 @@ from workload.workload import rollout_restart_workload
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
+from utility.constant import BLOCK_PVC_VOLUME_DEVICE_PATH
 import utility.constant as constant
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
@@ -485,3 +486,20 @@ class workload_keywords:
             raise AssertionError(f"FIO verification failed with errors: {resp}")
 
         logging(f"FIO data integrity verification passed")
+
+    def wait_for_block_device_size_in_pod(self, pod_name, expected_size, namespace="default"):
+        for i in range(self.retry_count):
+            logging(f"Waiting for block device size in pod {pod_name} to be {expected_size} ... ({i})")
+            time.sleep(self.retry_interval)
+            cmd = f"blockdev --getsize64 {BLOCK_PVC_VOLUME_DEVICE_PATH}"
+            try:
+                result = pod_exec(pod_name, namespace, cmd)
+                actual_size = result.strip()
+                logging(f"Current block device size in pod {pod_name}: {actual_size}, expected: {expected_size}")
+                if actual_size == expected_size:
+                    return
+            except Exception as e:
+                logging(f"Error checking block device size in pod {pod_name}: {e}")
+                continue
+
+        assert False, f"Block device size in pod {pod_name} is not {expected_size}"

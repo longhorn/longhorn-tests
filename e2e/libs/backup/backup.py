@@ -89,6 +89,9 @@ class Backup(Base):
     def wait_for_snapshot_backup_to_be_deleted(self, volume_name, snapshot_name):
         return self.backup.wait_for_snapshot_backup_to_be_deleted(volume_name, snapshot_name)
 
+    def wait_for_backup_in_progress(self, volume_name):
+        return self.backup.wait_for_backup_in_progress(volume_name)
+
     def wait_for_backup_ready(self, backup_name):
         for i in range(self.retry_count):
             logging(f"Waiting for backup {backup_name} ready ... ({i})")
@@ -99,7 +102,7 @@ class Backup(Base):
         assert False, f"Failed to wait for backup {backup_name} ready"
 
     def delete(self, volume_name, backup_id):
-        return NotImplemented
+        return self.backup.delete(volume_name, backup_id)
 
     def delete_backup_volume(self, volume_name):
         return self.backup.delete_backup_volume(volume_name)
@@ -125,7 +128,7 @@ class Backup(Base):
             raise ValueError(f"Backup {backup_id} not found or missing snapshot name")
 
         snap_name = backup.snapshotName
-        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name)
+        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name, wait=False)
         snap = self.backup.snapshot.get(volume_name, snapshot_id)
-        snap_exists = not snap.removed
+        snap_exists = snap is not None and not snap.removed
         assert snap_exists == exists, f"Snapshot {snap_name} exists: {snap_exists}, expected: {exists}"

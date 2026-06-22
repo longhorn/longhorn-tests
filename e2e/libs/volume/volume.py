@@ -17,8 +17,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry)
 
     def delete(self, volume_name, wait):
         return self.volume.delete(volume_name, wait)
@@ -189,11 +189,11 @@ class Volume(Base):
     def activate(self, volume_name):
         return self.volume.activate(volume_name)
 
-    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType):
-        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType)
+    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
+        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name, node_stage_secret_namespace=node_stage_secret_namespace)
 
-    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry):
-        return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry)
+    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry, sc_name="longhorn"):
+        return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         return self.volume.upgrade_engine_image(volume_name, engine_image_name)
@@ -224,3 +224,6 @@ class Volume(Base):
 
     def verify_never_detached_during_test(self, volume_name, start_time=None):
         return self.volume.verify_never_detached_during_test(volume_name, start_time)
+
+    def wait_for_volume_status(self, volume_name, status_name, status_value):
+        self.volume.wait_for_volume_status(volume_name, status_name, status_value)

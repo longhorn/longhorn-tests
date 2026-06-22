@@ -1,7 +1,10 @@
+import time
+
 from backup import Backup
 
 from utility.utility import logging
 from utility.utility import get_backupstore
+from utility.utility import get_retry_count_and_interval
 
 
 class backup_keywords:
@@ -30,6 +33,9 @@ class backup_keywords:
     def wait_for_backup_ready(self, backup_name):
         return self.backup.wait_for_backup_ready(backup_name)
 
+    def wait_for_backup_in_progress(self, volume_name):
+        return self.backup.wait_for_backup_in_progress(volume_name)
+
     def get_backup_name(self, backup_id, volume_name=None):
         return self.backup.get(backup_id, volume_name).name
 
@@ -54,6 +60,9 @@ class backup_keywords:
     def delete_backup_volume(self, volume_name):
         return self.backup.delete_backup_volume(volume_name)
 
+    def delete_backup(self, volume_name, backup_id):
+        return self.backup.delete(volume_name, backup_id)
+
     def check_restored_volume_checksum(self, volume_name, backup_name):
         logging(f"Checking restored volume {volume_name} data is backup {backup_name}")
         self.backup.check_restored_volume_checksum(volume_name, backup_name)
@@ -72,6 +81,16 @@ class backup_keywords:
 
     def wait_for_backup_count(self, expected_backup_count):
         self.backup.wait_for_backup_count(expected_backup_count)
+
+    def wait_for_backup_to_exist_in_backup_list(self, backup_id, volume_name):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            logging(f"Waiting for backup {backup_id} of volume {volume_name} to exist in backup list ... ({i})")
+            backup = self.backup.get(backup_id, volume_name)
+            if backup:
+                return
+            time.sleep(retry_interval)
+        assert False, f"Failed to wait for backup {backup_id} of volume {volume_name} to exist in backup list"
 
     def assert_all_backups_before_uninstall_exist(self, backups_before_uninstall):
         self.backup.assert_all_backups_before_uninstall_exist(backups_before_uninstall)

@@ -119,3 +119,22 @@ class snapshot_keywords:
                 return
             time.sleep(self.retry_interval)
         assert False, f"Volume {volume_name} head size {volume_head.size} should be less than {size}"
+
+    def wait_for_snapshot_ready(self, volume_name, snapshot_id):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} snapshot {snapshot_id} to be ready ... ({i})")
+            try:
+                snapshot = self.snapshot.get(volume_name, snapshot_id)
+                if snapshot and not snapshot.removed:
+                    logging(f"Volume {volume_name} snapshot {snapshot_id} is ready")
+                    return
+            except Exception as e:
+                logging(f"Failed to get volume {volume_name} snapshot {snapshot_id}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Timed out waiting for volume {volume_name} snapshot {snapshot_id} to be ready"
+
+    def get_snapshot_name(self, volume_name, snapshot_id):
+        snapshot = self.snapshot.get(volume_name, snapshot_id)
+        assert snapshot is not None, f"Snapshot {snapshot_id} not found in volume {volume_name}"
+        logging(f"Got snapshot name {snapshot.name} for snapshot {snapshot_id} of volume {volume_name}")
+        return snapshot.name

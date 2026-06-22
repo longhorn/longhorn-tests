@@ -113,11 +113,14 @@ class S3(Base):
                     assert read_back.data.decode("utf-8") == json.dumps(data), f"{read_back.data.decode('utf-8')}, {json.dumps(data)}"
                     logging(f"Created file {file_path} in backupstore")
             except ResponseError as err:
-                print(err)
+                logging(err)
 
         process.kill()
 
     def write_backup_cfg_file(self, volume_name, backup_name, backup_cfg_data): # NOQA
+
+        process = self.port_forward()
+
         secret_name = self.secret
         assert secret_name != '', f"Secret name is empty for writing backup config file"
 
@@ -126,7 +129,7 @@ class S3(Base):
         minio_backup_cfg_file_path = self.get_backup_cfg_file_path(volume_name,
                                                                    backup_name)
 
-        with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+        with tempfile.NamedTemporaryFile(delete_on_close=False, mode='w') as fp:
             fp.write(str(backup_cfg_data))
             fp.close()
             try:
@@ -136,8 +139,11 @@ class S3(Base):
                                          minio_backup_cfg_file_path,
                                          f,
                                          tmp_bkp_cfg_file_stat.st_size)
+                logging(f"Overwrote file {volume_name}/{backup_name} cfg file to {backup_cfg_data}")
             except ResponseError as err:
-                print(err)
+                logging(err)
+
+        process.kill()
 
     def delete_file_in_backupstore(self, file_path):
 

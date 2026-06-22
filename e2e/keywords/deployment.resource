@@ -33,9 +33,10 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
 Create deployment ${deployment_id} with volume ${volume_id}
+    [Arguments]    ${sc_name}=longhorn    &{config}
     ${volume_id}=  Convert To String  ${volume_id}
-    Create persistentvolume for volume ${volume_id}
-    Create persistentvolumeclaim for volume ${volume_id}
+    Create persistentvolume for volume ${volume_id}    sc_name=${sc_name}    &{config}
+    Create persistentvolumeclaim for volume ${volume_id}    sc_name=${sc_name}
     ${deployment_name}=    generate_name_with_suffix    deployment    ${deployment_id}
     ${pvc_name}=    generate_name_with_suffix    volume    ${volume_id}
     create_deployment    ${deployment_name}   ${pvc_name}
@@ -130,3 +131,9 @@ Check deployment ${deployment_id} volume replica is not on node ${node_name}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${volume_name} =    get_workload_volume_name    ${deployment_name}
     wait_for_replica_count    ${volume_name}    ${node_name}    0
+
+Assert block device size in deployment pod for deployment ${deployment_id} is ${size}
+    ${expected_bytes} =    convert_size_to_bytes    ${size}    to_str=True
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${pod_name} =    get_workload_pod_name    ${deployment_name}
+    wait_for_block_device_size_in_pod    ${pod_name}    ${expected_bytes}

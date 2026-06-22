@@ -10,7 +10,6 @@ source pipelines/utilities/storage_network.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_harvester_secret.sh
 source pipelines/utilities/create_registry_secret.sh
-source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/install_metrics_server.sh
 source pipelines/utilities/create_longhorn_namespace.sh
@@ -44,7 +43,6 @@ main(){
   create_aws_secret
   create_harvester_secret
   set -x
-  create_instance_mapping_configmap
 
   install_backupstores
   if [[ "${TF_VAR_cis_hardening}" == true ]]; then

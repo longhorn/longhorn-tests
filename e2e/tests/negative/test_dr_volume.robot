@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Test DR volume
 
-Test Tags    manual    negative    dr-volume
+Test Tags    manual    negative    dr-volume    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -178,7 +178,7 @@ Test DR Volume Live Upgrade And Rebuild
     Then Record file data0 checksum in deployment 0 as checksum 0
 
     When Create backup 0 for deployment 0 volume
-    Then Verify backup list contains backup 0 of deployment 0 volume
+    Then Wait for backup 0 of deployment 0 volume to exist in backup list
     And Create DR volume 1 from backup 0 of deployment 0 volume
     And Create DR volume 2 from backup 0 of deployment 0 volume
 
@@ -273,7 +273,7 @@ Test DR Volume Incremental Restore After Source Volume Expansion
     Then Record file data0 checksum in deployment 0 as checksum 0
 
     When Create backup 0 for deployment 0 volume
-    Then Verify backup list contains backup 0 of deployment 0 volume
+    Then Wait for backup 0 of deployment 0 volume to exist in backup list
     And Create DR volume 1 from backup 0 of deployment 0 volume    dataEngine=${DATA_ENGINE}
 
     # Scenario 2: Volume expansion and data restoration
