@@ -71,8 +71,9 @@ run_longhorn_test(){
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
   # share instance mapping information between jenkins job agent and test pod for later use, e.g. power on/off nodes.
-  kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
-  yq -i '
+  if [[ -f /tmp/instance_mapping ]]; then
+    kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
+    yq -i '
 select(.kind == "Pod").spec.volumes += [{
   "name": "instance-mapping",
   "configMap": {
@@ -80,7 +81,7 @@ select(.kind == "Pod").spec.volumes += [{
   }
 }]
 ' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-  yq -i '
+    yq -i '
 select(.kind == "Pod").spec.containers[0].volumeMounts += [{
   "name": "instance-mapping",
   "mountPath": "/tmp/instance_mapping",
@@ -88,10 +89,14 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
   "readOnly": true
 }]
 ' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  else
+    echo "/tmp/instance_mapping not found, skipping instance mapping configmap setup"
+  fi
 
   # share public IP mapping information between jenkins job agent and test pod for later use, e.g. ssh to nodes.
-  kubectl create configmap public-ip-mapping --from-file=/tmp/public_ip_mapping
-  yq -i '
+  if [[ -f /tmp/public_ip_mapping ]]; then
+    kubectl create configmap public-ip-mapping --from-file=/tmp/public_ip_mapping
+    yq -i '
 select(.kind == "Pod").spec.volumes += [{
   "name": "public-ip-mapping",
   "configMap": {
@@ -99,7 +104,7 @@ select(.kind == "Pod").spec.volumes += [{
   }
 }]
 ' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-yq -i '
+    yq -i '
 select(.kind == "Pod").spec.containers[0].volumeMounts += [{
   "name": "public-ip-mapping",
   "mountPath": "/tmp/public_ip_mapping",
@@ -107,6 +112,9 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
   "readOnly": true
 }]
 ' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  else
+    echo "/tmp/public_ip_mapping not found, skipping public IP mapping configmap setup"
+  fi
 
   # share ssh key with test pod for later use, e.g. ssh to nodes
   kubectl create secret generic ssh-key --from-file=$HOME/.ssh/id_rsa
