@@ -7098,6 +7098,51 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_and_get_stable_pod"><code class="name flex">
+<span>def <span class="ident">wait_and_get_stable_pod</span></span>(<span>core_api,<br>pod_name,<br>namespace='default',<br>is_phase='Running',<br>timeout_cnt=150,<br>stable_retry=90)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_and_get_stable_pod(core_api, pod_name, namespace=&#34;default&#34;,
+                            is_phase=&#34;Running&#34;,
+                            timeout_cnt=RETRY_COUNTS,
+                            stable_retry=WAIT_FOR_POD_STABLE_MAX_RETRY):
+    &#34;&#34;&#34;
+    Add mechanism to wait for a stable running pod when workload restarts its
+    pod, since Longhorn manager could create/delete the new workload pod
+    multiple times, it&#39;s possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    &#34;&#34;&#34;
+    stable_pod = None
+    wait_for_stable_retry = 0
+
+    for _ in range(timeout_cnt):
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == is_phase:
+                if stable_pod is None or \
+                        stable_pod.metadata.uid != pod.metadata.uid:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == stable_retry:
+                        return stable_pod
+        except Exception as e:
+            print(f&#34;Waiting for pod {pod_name} {is_phase} failed: {e}&#34;)
+
+        time.sleep(RETRY_INTERVAL)
+    assert False</code></pre>
+</details>
+<div class="desc"><p>Add mechanism to wait for a stable running pod when workload restarts its
+pod, since Longhorn manager could create/delete the new workload pod
+multiple times, it's possible that we get an unstable pod which will be
+deleted immediately, so add a wait mechanism to get a stable running pod.</p></div>
+</dd>
 <dt id="tests.common.wait_delete_deployment"><code class="name flex">
 <span>def <span class="ident">wait_delete_deployment</span></span>(<span>apps_api, deployment_name, namespace='default')</span>
 </code></dt>
@@ -10611,6 +10656,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.volume_write" href="#tests.common.volume_write">volume_write</a></code></li>
 <li><code><a title="tests.common.wait_and_get_any_deployment_pod" href="#tests.common.wait_and_get_any_deployment_pod">wait_and_get_any_deployment_pod</a></code></li>
 <li><code><a title="tests.common.wait_and_get_pv_for_pvc" href="#tests.common.wait_and_get_pv_for_pvc">wait_and_get_pv_for_pvc</a></code></li>
+<li><code><a title="tests.common.wait_and_get_stable_pod" href="#tests.common.wait_and_get_stable_pod">wait_and_get_stable_pod</a></code></li>
 <li><code><a title="tests.common.wait_delete_deployment" href="#tests.common.wait_delete_deployment">wait_delete_deployment</a></code></li>
 <li><code><a title="tests.common.wait_delete_dm_device" href="#tests.common.wait_delete_dm_device">wait_delete_dm_device</a></code></li>
 <li><code><a title="tests.common.wait_delete_pod" href="#tests.common.wait_delete_pod">wait_delete_pod</a></code></li>

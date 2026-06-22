@@ -242,7 +242,12 @@ def test_rwx_delete_share_manager_pod(client, core_api, statefulset, storage_cla
     delete_and_wait_pod(core_api, share_manager_name,
                         namespace=LONGHORN_NAMESPACE)
 
+    # Wait for the recreated share-manager pod before checking remount.
+    wait_for_pod_phase(core_api, share_manager_name, &#34;Running&#34;,
+                       namespace=LONGHORN_NAMESPACE)
     wait_for_pod_remount(core_api, pod_name)
+
+    wait_and_get_stable_pod(core_api, pod_name, stable_retry=3)
 
     test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data_2, filename=&#39;test2&#39;)
