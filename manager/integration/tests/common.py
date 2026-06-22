@@ -92,7 +92,8 @@ if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
-        BLOCK_DEV_PATH = "0000:00:1f.0"
+        # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
     BLOCK_DEV_PATH = "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
@@ -2149,14 +2150,17 @@ def wait_for_volume_status(client, name, key, value,
 
 def wait_for_volume_delete(client, name):
     for i in range(RETRY_COUNTS):
-        volumes = client.list_volume()
-        found = False
-        for volume in volumes:
-            if volume.name == name:
-                found = True
+        try:
+            volumes = client.list_volume()
+            found = False
+            for volume in volumes:
+                if volume.name == name:
+                    found = True
+                    break
+            if not found:
                 break
-        if not found:
-            break
+        except Exception as e:
+            print(f"Exception when waiting for volume deletion: {e}")
         time.sleep(RETRY_INTERVAL)
     assert not found
 
@@ -2317,42 +2321,46 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
         completed = 0
         v = client.by_id_volume(volume_name)
         purge_status = v.purgeStatus
-        for status in purge_status:
-            assert status.error == ""
+        if purge_status:
+            for status in purge_status:
+                assert status.error == ""
 
-            progress = status.progress
-            assert progress <= 100
-            replica = status.replica
-            last = last_purge_progress.get(replica)
-            assert last is None or last <= status.progress
-            last_purge_progress["replica"] = progress
+                progress = status.progress
+                assert progress <= 100
+                replica = status.replica
+                last = last_purge_progress.get(replica)
+                assert last is None or last <= status.progress
+                last_purge_progress[replica] = progress
 
-            if status.state == "complete":
-                assert progress == 100
-                completed += 1
-        if completed == len(purge_status):
+                if status.state == "complete":
+                    assert progress == 100
+                    completed += 1
+            if completed == len(purge_status) and \
+                    is_snapshot_purge_completed(v, volume_name, *snaps):
+                break
+        elif is_snapshot_purge_completed(v, volume_name, *snaps):
             break
         time.sleep(RETRY_INTERVAL)
-    assert completed == len(purge_status)
+    assert purge_status is None or completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
     # should be removed or "marked as removed" in the case of
     # the latest snapshot.
-    found = False
-    snapshots = v.snapshotList(volume=volume_name)
+    assert is_snapshot_purge_completed(v, volume_name, *snaps)
+    return v
 
+
+def is_snapshot_purge_completed(v, volume_name, *snaps):
+    snapshots = v.snapshotList(volume=volume_name)
     for snap in snaps:
         for vs in snapshots.data:
             if snap == vs["name"]:
                 if vs["removed"] is False:
-                    found = True
-                    break
+                    return False
 
                 if "volume-head" not in vs["children"]:
-                    found = True
-                    break
-    assert not found
-    return v
+                    return False
+    return True
 
 
 def wait_for_engine_image_creation(client, image_name):
@@ -2535,24 +2543,28 @@ def crash_replica_processes(client, api, volname, replicas=None,
         if DATA_ENGINE == "v2":
             replica_name = r["name"]
 
-            get_nqn_command = (
+            get_nqns_command = (
                 "go-spdk-helper nvmf subsystem-get | "
                 "tr \"'\" '\"' | "
                 "grep '\"nqn\"' | "
                 "grep '%s' | "
-                "head -n 1 | cut -d'\"' -f4"
+                "cut -d'\"' -f4"
             ) % replica_name
-            nqn = exec_instance_manager(api, r.instanceManagerName,
-                                        get_nqn_command).strip()
+            nqns = exec_instance_manager(api, r.instanceManagerName,
+                                         get_nqns_command).splitlines()
+            nqns = list(dict.fromkeys(
+                nqn.strip() for nqn in nqns if nqn.strip()
+            ))
 
-            assert nqn != "", \
-                f"Failed to extract NQN for replica {replica_name}"
+            assert nqns, \
+                f"Failed to extract NQNs for replica {replica_name}"
 
-            stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
-            print(f"Executing command: {stop_expose_command}")
-            exec_instance_manager(
-                api, r.instanceManagerName, stop_expose_command
-            )
+            for nqn in nqns:
+                stop_expose_command = f"go-spdk-helper expose stop --nqn {nqn}"
+                print(f"Executing command: {stop_expose_command}")
+                exec_instance_manager(
+                    api, r.instanceManagerName, stop_expose_command
+                )
         else:
             pgrep_command = f"pgrep -f {r['dataPath']}"
             pid = exec_instance_manager(api, r.instanceManagerName,
@@ -2919,13 +2931,27 @@ def parse_nvmf_endpoint(nvmf):
 
 
 def get_nvmf_ip(nvmf):
+    """
+    Extract IP address from NVMf endpoint.
+    IPv6 example: fd42:0:0:1::e:20103 -> fd42:0:0:1::e
+    IPv4 example: 10.0.1.24:4420 -> 10.0.1.24
+    """
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[0]
+    host_port = nvmf_endpoint[0]
+
+    # Port is always after the last colon for both IPv4 and IPv6
+    last_colon_idx = host_port.rfind(':')
+    ip = host_port[:last_colon_idx]
+
+    # Validate it's a valid IP address
+    ipaddress.ip_address(ip)
+    return ip
 
 
 def get_nvmf_port(nvmf):
     nvmf_endpoint = parse_nvmf_endpoint(nvmf)
-    return nvmf_endpoint[0].split(':')[1]
+    host_port = nvmf_endpoint[0]
+    return host_port.split(':')[-1]
 
 
 def get_nvmf_nqn(nvmf):
@@ -3135,7 +3161,7 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
         conditions = volume.conditions
         if conditions is not None and \
                 conditions != {} and \
-                conditions[VOLUME_CONDITION_SCHEDULED] and \
+                VOLUME_CONDITION_SCHEDULED in conditions and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] == value:
             break
@@ -3426,9 +3452,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == "Completed":
-                assert b.progress == 100
-                assert b.error == ""
+            if b.state == "Completed" and b.progress == 100 and b.error == "":
                 completed = True
                 break
         if completed:
@@ -3597,18 +3621,20 @@ def reset_node(client, core_api):
 
     nodes = client.list_node()
     for node in nodes:
-        try:
-            set_node_cordon(core_api, node.id, False)
-            node = client.by_id_node(node.id)
+        for i in range(NODE_UPDATE_RETRY_COUNT):
+            try:
+                set_node_cordon(core_api, node.id, False)
+                node = client.by_id_node(node.id)
 
-            node = set_node_tags(client, node, tags=[])
-            node = wait_for_node_tag_update(client, node.id, [])
-            node = set_node_scheduling(client, node, allowScheduling=True)
-            wait_for_node_update(client, node.id,
-                                 "allowScheduling", True)
-        except Exception as e:
-            print("\nException when reset node scheduling and tags", node)
-            print(e)
+                node = set_node_tags(client, node, tags=[])
+                node = wait_for_node_tag_update(client, node.id, [])
+                node = set_node_scheduling(client, node, allowScheduling=True)
+                wait_for_node_update(client, node.id, "allowScheduling", True)
+                break
+            except Exception as e:
+                print(e)
+            print(f"Resetting node {node.id} scheduling and tags ... ({i})")
+            time.sleep(NODE_UPDATE_RETRY_INTERVAL)
 
     managed_k8s_cluster = os.getenv("MANAGED_K8S_CLUSTER").lower() == 'true'
     if not managed_k8s_cluster:
@@ -4495,7 +4521,8 @@ def cleanup_storage_class():
                        "premium-rwo", "standard-rwo", "standard",
                        "azurefile-csi", "azurefile-csi-premium",
                        "azurefile-premium", "managed", "managed-csi",
-                       "managed-csi-premium", "managed-premium"]
+                       "managed-csi-premium", "managed-premium",
+                       "dynamic-rwo"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
@@ -5390,6 +5417,39 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
                         return stable_pod
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert False
+
+
+def wait_and_get_stable_pod(core_api, pod_name, namespace="default",
+                            is_phase="Running",
+                            timeout_cnt=RETRY_COUNTS,
+                            stable_retry=WAIT_FOR_POD_STABLE_MAX_RETRY):
+    """
+    Add mechanism to wait for a stable running pod when workload restarts its
+    pod, since Longhorn manager could create/delete the new workload pod
+    multiple times, it's possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    """
+    stable_pod = None
+    wait_for_stable_retry = 0
+
+    for _ in range(timeout_cnt):
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == is_phase:
+                if stable_pod is None or \
+                        stable_pod.metadata.uid != pod.metadata.uid:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == stable_retry:
+                        return stable_pod
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} {is_phase} failed: {e}")
+
+        time.sleep(RETRY_INTERVAL)
     assert False
 
 
@@ -6503,10 +6563,11 @@ def create_rwx_volume_with_storageclass(client,
     return volume_name
 
 
-def create_volume(client, vol_name, size, node_id, r_num):
+def create_volume(client, vol_name, size, node_id, r_num,
+                  data_engine=DATA_ENGINE):
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num,
-                                  dataEngine=DATA_ENGINE)
+                                  dataEngine=data_engine)
     assert volume.numberOfReplicas == r_num
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
@@ -6537,10 +6598,12 @@ def cleanup_volume_by_name(client, vol_name):
 
 
 def create_host_disk(client, vol_name, size, node_id):
-    # create a single replica volume and attach it to node
-    volume = create_volume(client, vol_name, size, node_id, 1)
+    # create a single replica v1 volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1,
+                           data_engine="v1")
 
-    # prepare the disk in the host filesystem
+    # For v1 data engine: format as filesystem and mount
+    # For v2 data engine: use raw block device directly
     if DATA_ENGINE == "v1":
         disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
         return disk_path
@@ -6966,7 +7029,7 @@ def wait_for_replica_count(client, volume_name, replica_count):
     assert len(volume.replicas) == replica_count
 
 
-def wait_for_all_nodes_disks_schedulable(client):
+def wait_for_all_nodes_disks_schedulable(client, disk_type=None):
     for _ in range(RETRY_COUNTS):
         nodes = client.list_node()
         all_disks_ready = True
@@ -6974,6 +7037,11 @@ def wait_for_all_nodes_disks_schedulable(client):
             node_name = getattr(node, "name", "<unknown>")
             disk_statuses = getattr(node, "disks", {})
             for disk_name, disk_status in disk_statuses.items():
+                if disk_type is not None:
+                    dt = getattr(disk_status, "diskType", None) or \
+                        disk_status.get("diskType", None)
+                    if dt != disk_type:
+                        continue
                 schedulable = False
                 conditions = disk_status.get("conditions", {})
                 sched_status = conditions.get("Schedulable", {}).get("status")

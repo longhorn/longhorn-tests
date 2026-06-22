@@ -77,6 +77,14 @@ def generate_name_random(name_prefix="test-"):
                 for _ in range(6))
 
 
+def is_valid_iso8601(date_string):
+    try:
+        datetime.fromisoformat(date_string)
+        return True
+    except ValueError:
+        return False
+
+
 def is_integer(value):
     try:
         int(value)
@@ -115,15 +123,9 @@ def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
         logging(f"Executing command {cmd}")
 
     if isinstance(cmd, str):
-        try:
-            res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            res = e.output
+        res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
     elif isinstance(cmd, list):
-        try:
-            res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            res = e.output
+        res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
     else:
         raise ValueError("Command must be a string or list")
 
@@ -194,17 +196,26 @@ def apply_cr_from_yaml(filepath):
         apply_cr(manifest_dict)
 
 
-def get_cr(group, version, namespace, plural, name):
+def get_cr(group, version, namespace, plural, name, wait=True):
     api = client.CustomObjectsApi()
-    retry_count, retry_interval = get_retry_count_and_interval()
-    for _ in range(retry_count):
+
+    if not wait:
         try:
             resp = api.get_namespaced_custom_object(group, version, namespace, plural, name)
             return resp
         except ApiException as e:
             logging(f"Getting namespaced custom object error: {e}")
-        time.sleep(retry_interval)
-    assert False, "Getting namespaced custom object error"
+            return None
+    else:
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for _ in range(retry_count):
+            try:
+                resp = api.get_namespaced_custom_object(group, version, namespace, plural, name)
+                return resp
+            except ApiException as e:
+                logging(f"Getting namespaced custom object error: {e}")
+            time.sleep(retry_interval)
+        assert False, "Getting namespaced custom object error"
 
 
 def get_all_crs(group, version, namespace, plural):
@@ -272,9 +283,9 @@ def set_annotation(group, version, namespace, plural, name, annotation_key, anno
         time.sleep(retry_interval)
 
 
-def get_annotation_value(group, version, namespace, plural, name, annotation_key):
+def get_annotation_value(group, version, namespace, plural, name, annotation_key, wait=True):
     try:
-        cr = get_cr(group, version, namespace, plural, name)
+        cr = get_cr(group, version, namespace, plural, name, wait)
         return cr['metadata']['annotations'].get(annotation_key)
     except Exception as e:
         logging(f"Failed to get annotation {annotation_key} from {plural} {name} in {namespace}: {e}")

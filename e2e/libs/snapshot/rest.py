@@ -28,7 +28,7 @@ class Rest(Base):
             for vs in snapshots:
                 if vs.name == snap_name:
                     snapshot_created = True
-                    snapshot = vs 
+                    snapshot = vs
                     break
             if snapshot_created is True:
                 break

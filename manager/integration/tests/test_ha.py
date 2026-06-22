@@ -79,6 +79,7 @@ from common import update_setting
 from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
+from common import wait_for_system_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 from common import wait_scheduling_failure
 from common import set_tags_for_node_and_its_disks
@@ -342,7 +343,7 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = common.wait_for_volume_faulted(client, volume_name)
 
     if DATA_ENGINE == "v2":
-        wait_for_all_nodes_disks_schedulable(client)
+        wait_for_all_nodes_disks_schedulable(client, disk_type="block")
     volume.salvage(names=[replica0_name, replica1_name])
     volume = client.by_id_volume(volume_name)
 
@@ -1015,6 +1016,35 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     backupstore_cleanup(client)
 
 
+def verify_v2_restored_snapshot_info(volume, vol_name):
+    # For V2, restore completion leaves the latest restore snapshot as the
+    # only non-system snapshot and volume-head points to it. Rebuild may
+    # create temporary system snapshots, so wait for them to be purged.
+    wait_for_system_snapshot_count(volume, 0)
+    wait_for_snapshot_count(volume, 2, count_removed=True)
+    snapshots = volume.snapshotList(volume=vol_name)
+    assert len(snapshots.data) == 2
+
+    snapshot_map = {snap["name"]: snap for snap in snapshots.data}
+    assert "volume-head" in snapshot_map
+
+    restore_snapshot_names = [
+        name for name in snapshot_map if name != "volume-head"
+    ]
+    assert len(restore_snapshot_names) == 1
+
+    restore_snapshot_name = restore_snapshot_names[0]
+    restore_snapshot = snapshot_map[restore_snapshot_name]
+    volume_head = snapshot_map["volume-head"]
+
+    assert restore_snapshot_name.startswith("restore-")
+    assert restore_snapshot["usercreated"]
+    assert restore_snapshot["parent"] == ""
+    assert "volume-head" in restore_snapshot["children"]
+    assert volume_head["parent"] == restore_snapshot_name
+
+
+@pytest.mark.v2_volume_test  # NOQA
 def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
@@ -1033,8 +1063,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     11. For the DR volume, delete one replica and trigger incremental restore
         simultaneously.
     12. Wait for the inc restoration complete and the volume becoming Healthy.
-    13. Check the DR volume size and snapshot info. Make sure there is only
-        one snapshot in the volume.
+    13. Check the DR volume size and snapshot info.
     14. Online expand the std volume and wait for expansion complete.
     15. Write data to the std volume then create the 3rd backup.
     16. Trigger the inc restore then re-verify the snapshot info.
@@ -1152,13 +1181,16 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size1)
-    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
-    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    for snap in snapshots:
-        if snap["name"] != "volume-head":
-            assert snap["name"] == "expand-" + str(expand_size1)
-            assert not snap["usercreated"]
-            assert "volume-head" in snap["children"]
+    if DATA_ENGINE == "v1":
+        wait_for_snapshot_count(dr_volume, 2, count_removed=True)
+        snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+        for snap in snapshots:
+            if snap["name"] != "volume-head":
+                assert snap["name"] == "expand-" + str(expand_size1)
+                assert not snap["usercreated"]
+                assert "volume-head" in snap["children"]
+    else:
+        verify_v2_restored_snapshot_info(dr_volume, dr_volume_name)
 
     # Step 14: Do online expansion for the std volume.
     expand_size2 = 3 * Gi
@@ -1187,13 +1219,16 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Then re-verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size2)
-    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
-    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    for snap in snapshots:
-        if snap["name"] != "volume-head":
-            assert snap["name"] == "expand-" + str(expand_size2)
-            assert not snap["usercreated"]
-            assert "volume-head" in snap["children"]
+    if DATA_ENGINE == "v1":
+        wait_for_snapshot_count(dr_volume, 2, count_removed=True)
+        snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+        for snap in snapshots:
+            if snap["name"] != "volume-head":
+                assert snap["name"] == "expand-" + str(expand_size2)
+                assert not snap["usercreated"]
+                assert "volume-head" in snap["children"]
+    else:
+        verify_v2_restored_snapshot_info(dr_volume, dr_volume_name)
 
     activate_standby_volume(client, dr_volume_name)
     wait_for_volume_detached(client, dr_volume_name)
@@ -1535,6 +1570,7 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     wait_for_volume_delete(client, res_name)
 
 
+@pytest.mark.v2_volume_test
 def test_single_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if one replica restore failure will lead to the restore volume
@@ -1567,6 +1603,7 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
                                  REPLICA_FAILURE_MODE_CRASH)
 
 
+@pytest.mark.v2_volume_test  # NOQA
 def test_single_replica_unschedulable_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the restore can complete if a restoring replica is killed

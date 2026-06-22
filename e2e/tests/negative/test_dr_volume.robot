@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Test DR volume
 
-Test Tags    manual    negative    dr-volume
+Test Tags    manual    negative    dr-volume    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -53,7 +53,7 @@ DR Volume Node Reboot During Initial Restoration
         And Attach volume 1 to healthy node
         And Wait for volume 1 healthy
         Then Check volume 1 data is backup 0 of volume 0
-        Then Detach volume 1
+        Then Detach volume 1 from attached node
         And Delete volume 1
     END
 
@@ -178,7 +178,7 @@ Test DR Volume Live Upgrade And Rebuild
     Then Record file data0 checksum in deployment 0 as checksum 0
 
     When Create backup 0 for deployment 0 volume
-    Then Verify backup list contains backup 0 of deployment 0 volume
+    Then Wait for backup 0 of deployment 0 volume to exist in backup list
     And Create DR volume 1 from backup 0 of deployment 0 volume
     And Create DR volume 2 from backup 0 of deployment 0 volume
 
@@ -273,7 +273,7 @@ Test DR Volume Incremental Restore After Source Volume Expansion
     Then Record file data0 checksum in deployment 0 as checksum 0
 
     When Create backup 0 for deployment 0 volume
-    Then Verify backup list contains backup 0 of deployment 0 volume
+    Then Wait for backup 0 of deployment 0 volume to exist in backup list
     And Create DR volume 1 from backup 0 of deployment 0 volume    dataEngine=${DATA_ENGINE}
 
     # Scenario 2: Volume expansion and data restoration
@@ -288,15 +288,16 @@ Test DR Volume Incremental Restore After Source Volume Expansion
     Then Record file data1 checksum in deployment 0 as checksum 1
 
     When Create backup 1 for deployment 0 volume
-    And Wait for volume 1 restoration from backup 1 of deployment 0 volume completed
+    Then Wait for volume 1 restoration from backup 1 of deployment 0 volume completed
+    And Wait for volume 1 size to be 3Gi
 
     # Scenario 3: Volume data verification
-    And Activate DR volume 1
+    When Activate DR volume 1
     Then Wait for volume 1 detached
     And Create persistentvolume for volume 1
     And Create persistentvolumeclaim for volume 1
     And Create pod 1 using volume 1
-    Then Wait for pod 1 running
+    And Wait for pod 1 running
     And Check pod 1 file data0 checksum matches checksum 0
     And Check pod 1 file data1 checksum matches checksum 1
 

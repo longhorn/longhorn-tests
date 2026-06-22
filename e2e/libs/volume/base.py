@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 import time
 
+from engine import Engine
+from engine_image import EngineImage
+from enginefrontend import EngineFrontend
+
 from persistentvolume.persistentvolume import PersistentVolume
 from persistentvolumeclaim.persistentvolumeclaim import PersistentVolumeClaim
 from utility.utility import set_annotation
@@ -20,6 +24,9 @@ class Base(ABC):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.pv = PersistentVolume()
         self.pvc = PersistentVolumeClaim()
+        self.engine = Engine()
+        self.engineimage = EngineImage()
+        self.enginefrontend = EngineFrontend()
 
     def _get_volume_size(self, volume):
         # CRD returns dict-like payloads, REST returns object-like payloads.
@@ -32,7 +39,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, rebuildConcurrentSyncLimit):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, rebuildConcurrentSyncLimit, dataSource=""):
         return NotImplemented
 
     def set_data_checksum(self, volume_name, data_id, checksum):
@@ -169,13 +176,13 @@ class Base(ABC):
     def activate(self, volume_name):
         return NotImplemented
 
-    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType):
+    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
         logging(f'Creating PV {volume_name} for volume {volume_name}')
         volume = self.get(volume_name)
         volume_size = self._get_volume_size(volume)
         assert volume_size is not None, f"Cannot determine size for volume {volume_name}"
         storage = str(convert_size_to_bytes(str(volume_size)))
-        self.pv.create(volume_name, storage, volumeMode, fsType)
+        self.pv.create(volume_name, storage, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name, node_stage_secret_namespace=node_stage_secret_namespace)
 
         if not retry:
             return
@@ -188,13 +195,13 @@ class Base(ABC):
             time.sleep(self.retry_interval)
         assert created
 
-    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry):
+    def create_persistentvolumeclaim(self, volume_name, volumeMode, retry, sc_name="longhorn"):
         logging(f'Creating PVC {volume_name} for volume {volume_name}')
         volume = self.get(volume_name)
         volume_size = self._get_volume_size(volume)
         assert volume_size is not None, f"Cannot determine size for volume {volume_name}"
         storage = str(convert_size_to_bytes(str(volume_size)))
-        self.pvc.create(volume_name, "RWO", "longhorn", storage_size=storage, volume_name=volume_name, volumeMode=volumeMode)
+        self.pvc.create(volume_name, "RWO", sc_name, storage_size=storage, volume_name=volume_name, volumeMode=volumeMode)
 
         if not retry:
             return

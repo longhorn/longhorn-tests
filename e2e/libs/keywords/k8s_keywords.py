@@ -1,8 +1,8 @@
+import time
+import threading
 from robot.libraries.BuiltIn import BuiltIn
 
-import asyncio
-
-from k8s.k8s import restart_kubelet
+from k8s.k8s import restart_kubelet, stop_kubelet, start_kubelet
 from k8s.k8s import delete_node
 from k8s.k8s import drain_node, force_drain_node
 from k8s.k8s import cordon_node, uncordon_node
@@ -38,27 +38,38 @@ import utility.constant as constant
 
 class k8s_keywords:
 
-    async def restart_kubelet(self, node_name, downtime_in_sec):
+    def restart_kubelet(self, node_name, downtime_in_sec, wait=True):
         logging(f'Restarting kubelet on node {node_name} with downtime {downtime_in_sec} seconds')
-        await restart_kubelet(node_name, int(downtime_in_sec))
+        stop_kubelet(node_name)
 
-    async def restart_kubelet_on_nodes(self, downtime_in_sec, node_list):
+        def background():
+            time.sleep(int(downtime_in_sec))
+            start_kubelet(node_name)
+            logging(f'Kubelet on node {node_name} is restarted')
+
+        if wait:
+            background()
+        else:
+            thread = threading.Thread(target=background)
+            thread.start()
+
+    def restart_kubelet_on_nodes(self, downtime_in_sec, node_list, wait=True):
         logging(f'Restarting kubelet on nodes {node_list} with downtime {downtime_in_sec} seconds')
+        for node_name in node_list:
+            logging(f"Stopping kubelet on node {node_name}")
+            stop_kubelet(node_name)
 
-        async def restart_kubelet_tasks():
-            tasks = []
+        def background():
+            time.sleep(int(downtime_in_sec))
             for node_name in node_list:
-                tasks.append(
-                    asyncio.create_task(restart_kubelet(node_name, int(downtime_in_sec)), name=node_name)
-                )
+                logging(f"Starting kubelet on node {node_name}")
+                start_kubelet(node_name)
 
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
-            for task in done:
-                if task.exception():
-                    assert False, task.exception()
-            logging(f"All kubelets on nodes {node_list} are restarted after downtime {downtime_in_sec} seconds")
-
-        await restart_kubelet_tasks()
+        if wait:
+            background()
+        else:
+            thread = threading.Thread(target=background)
+            thread.start()
 
     def delete_volume_node(self, volume_name):
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')

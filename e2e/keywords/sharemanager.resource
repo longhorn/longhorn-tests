@@ -49,7 +49,6 @@ Wait for sharemanager pod of ${workload_kind} ${workload_id} deleted
 
 Assert disk size in sharemanager pod for ${workload_kind} ${workload_id} is ${size}
     ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
-
     ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name}=    get_workload_volume_name    ${workload_name}
     ${share_manager_pod}=    Set Variable    share-manager-${volume_name}

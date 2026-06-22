@@ -35,12 +35,12 @@ Test CSI Storage Capacity Without DataEngine Parameter
     # csisc-c8r8z   2025-10-13T03:13:03Z
     # csisc-gl479   2025-10-13T03:13:03Z
     # csisc-2lm6j   2025-10-13T03:13:03Z
-    And Run command and expect output
+    And Run command and wait for output
     ...    kubectl get csistoragecapacity -n longhorn-system
     ...    csisc
 
 Test CSI Pod Soft Anti Affinity
-    [Tags]    custom-setting    uninstall
+    [Tags]    custom-setting    uninstall    helm
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11617
     ...    1. Create a single node cluster by cordoning and tainting the rest of worker nodes with NoExecute
     ...    2. Edit deployment YAML. Add the environment variable CSI_POD_ANTI_AFFINITY_PRESET = soft
@@ -68,7 +68,7 @@ Test CSI Pod Soft Anti Affinity
         ...    custom_cmd=sed -i '/- name: CSI_ATTACHER_IMAGE/i\\${SPACE * 10}- name: CSI_POD_ANTI_AFFINITY_PRESET' longhorn.yaml && sed -i '/- name: CSI_POD_ANTI_AFFINITY_PRESET/a\\${SPACE * 12}value: soft' longhorn.yaml
     ELSE IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         When Install Longhorn
-        ...    custom_cmd=echo -e 'csi:\n${SPACE * 2}podAntiAffinityPreset: soft' > values.yaml
+        ...    custom_cmd=yq -i '.csi.podAntiAffinityPreset = "soft"' values.yaml
     ELSE
         Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
     END
@@ -94,7 +94,7 @@ Test CSI Pod Soft Anti Affinity
     And Wait for Longhorn components all running
 
 Test CSI Pod Hard Anti Affinity
-    [Tags]    custom-setting    uninstall
+    [Tags]    custom-setting    uninstall    helm
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11617
     ...    1. Create a single node cluster by cordoning and tainting the rest of worker nodes with NoExecute
     ...    2. Edit deployment YAML. Add the environment variable CSI_POD_ANTI_AFFINITY_PRESET = hard
@@ -124,7 +124,7 @@ Test CSI Pod Hard Anti Affinity
         ...    custom_cmd=sed -i '/- name: CSI_ATTACHER_IMAGE/i\\${SPACE * 10}- name: CSI_POD_ANTI_AFFINITY_PRESET' longhorn.yaml && sed -i '/- name: CSI_POD_ANTI_AFFINITY_PRESET/a\\${SPACE * 12}value: hard' longhorn.yaml
     ELSE IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         When Install Longhorn
-        ...    custom_cmd=echo -e 'csi:\n${SPACE * 2}podAntiAffinityPreset: hard' > values.yaml
+        ...    custom_cmd=yq -i '.csi.podAntiAffinityPreset = "hard"' values.yaml
     ELSE
         Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
     END
@@ -188,7 +188,7 @@ Test CSI Pod Hard Anti Affinity
     And Wait for Longhorn components all running
 
 Test CSI Pod Anti Affinity Update
-    [Tags]    custom-setting    uninstall
+    [Tags]    custom-setting    uninstall    helm
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12100
     ...    1. Create a single node cluster by cordoning and tainting the rest of worker nodes with NoExecute
     ...    2. Edit deployment YAML. Add the environment variable CSI_POD_ANTI_AFFINITY_PRESET = soft
@@ -218,7 +218,7 @@ Test CSI Pod Anti Affinity Update
         ...    custom_cmd=sed -i '/- name: CSI_ATTACHER_IMAGE/i\\${SPACE * 10}- name: CSI_POD_ANTI_AFFINITY_PRESET' longhorn.yaml && sed -i '/- name: CSI_POD_ANTI_AFFINITY_PRESET/a\\${SPACE * 12}value: soft' longhorn.yaml
     ELSE IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         When Install Longhorn
-        ...    custom_cmd=echo -e 'csi:\n${SPACE * 2}podAntiAffinityPreset: soft' > values.yaml
+        ...    custom_cmd=yq -i '.csi.podAntiAffinityPreset = "soft"' values.yaml
     ELSE
         Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
     END
@@ -244,7 +244,7 @@ Test CSI Pod Anti Affinity Update
     ELSE IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         # update the value by helm upgrade
         When Install Longhorn
-        ...    custom_cmd=echo -e 'csi:\n${SPACE * 2}podAntiAffinityPreset: hard' > values.yaml
+        ...    custom_cmd=yq -i '.csi.podAntiAffinityPreset = "hard"' values.yaml
     ELSE
         Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
     END

@@ -6,7 +6,6 @@ source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
-source pipelines/utilities/create_instance_mapping_configmap.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/storage_network.sh
 source pipelines/utilities/coredns.sh
@@ -45,7 +44,6 @@ main(){
   set +x
   create_aws_secret
   set -x
-  create_instance_mapping_configmap
 
   if [[ "${TF_VAR_thick_plugin}" == true ]]; then
     deploy_multus_thick_plugin_daemonset

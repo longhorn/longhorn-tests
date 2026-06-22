@@ -1,6 +1,8 @@
 import asyncio
 import time
 
+from engine import Engine
+from enginefrontend import EngineFrontend
 from node import Node
 from node.utility import check_replica_locality
 
@@ -22,6 +24,8 @@ from workload.workload import get_workload_volume_name
 class volume_keywords:
 
     def __init__(self):
+        self.engine = Engine()
+        self.enginefrontend = EngineFrontend()
         self.node = Node()
         self.volume = Volume()
         self.replica = Replica()
@@ -34,9 +38,9 @@ class volume_keywords:
         for volume in volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", retry=True):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", retry=True):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, retry)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry)
 
     def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
@@ -47,9 +51,6 @@ class volume_keywords:
             node_name = self.node.get_node_by_index(0)
         logging(f'Attaching volume {volume_name} to node {node_name}')
         self.volume.attach(volume_name, node_name, disable_frontend=False, wait=wait, retry=retry)
-
-    def is_attached_to(self, volume_name, node_name):
-        return self.volume.is_attached_to(volume_name, node_name)
 
     def attach_volume_in_maintenance_mode(self, volume_name, node_name=None, wait=True, retry=True):
         if not node_name:
@@ -76,6 +77,53 @@ class volume_keywords:
 
     def get_volume_node(self, volume_name):
         return self.get_node_id_by_replica_locality(volume_name, "volume node")
+
+    def wait_for_volume_attached_to_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} to be attached to node {node_name} ... ({i})")
+            if self.volume.is_attached_to(volume_name, node_name):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} to be attached to node {node_name}"
+
+    def wait_for_volume_not_attached_to_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} not attached to node {node_name} ... ({i})")
+            if not self.volume.is_attached_to(volume_name, node_name):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} not attached to node {node_name}"
+
+    def wait_for_volume_engine_node(self, volume_name, expected_node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} engine to be on node {expected_node_name} ... ({i})")
+            engine_node = self.engine.get_node(volume_name)
+            if engine_node == expected_node_name:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} engine on node {expected_node_name}, actual: {engine_node}"
+
+    def wait_for_volume_enginefrontend_node(self, volume_name, expected_node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} enginefrontend to be on node {expected_node_name} ... ({i})")
+            enginefrontend_node = self.enginefrontend.get_node(volume_name)
+            if enginefrontend_node == expected_node_name:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} enginefrontend on node {expected_node_name}, actual: {enginefrontend_node}"
+
+    def wait_for_volume_engine_and_enginefrontend_same_node(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} engine and enginefrontend to be on same node ... ({i})")
+            volume_node = self.get_volume_node(volume_name)
+            engine_node = self.engine.get_node(volume_name)
+            enginefrontend_node = self.enginefrontend.get_node(volume_name)
+
+            if volume_node == engine_node and volume_node == enginefrontend_node:
+                logging(f"Volume {volume_name} engine and enginefrontend are on same node: {volume_node}")
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} engine and enginefrontend on same node. Volume node: {volume_node}, Engine node: {engine_node}, EngineFrontend node: {enginefrontend_node}"
 
     def get_volume_instance_manager(self, volume_name):
         volume = VolumeRest().get(volume_name)
@@ -154,7 +202,10 @@ class volume_keywords:
         replica_names = [replica['metadata']['name'] for replica in replica_list]
         for i in range(int(count)):
             logging(f"Deleting volume {volume_name} replica volume {replica_names[i]}")
-            self.volume.delete_replica_by_name(volume_name, replica_names[i])
+            self.volume.delete_replica_by_name(replica_names[i], namespace=constant.LONGHORN_NAMESPACE)
+
+    def delete_replica_by_name(self, replica_name, namespace=constant.LONGHORN_NAMESPACE):
+        self.volume.delete_replica_by_name(replica_name, namespace)
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         self.volume.set_annotation(volume_name, annotation_key, annotation_value)
@@ -357,11 +408,11 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4"):
-        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
+        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name, node_stage_secret_name, node_stage_secret_namespace)
 
-    def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True):
-        self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry)
+    def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True, sc_name="longhorn"):
+        self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
 
     def record_volume_replica_names(self, volume_name):
         replica_list = self.replica.get(volume_name, node_name="")
@@ -462,3 +513,18 @@ class volume_keywords:
 
     def trim_volume(self, volume_name):
         self.volume.trim_filesystem(volume_name)
+
+    def get_volume_engine_node(self, volume_name):
+        return self.engine.get_node(volume_name)
+
+    def get_volume_enginefrontend_node(self, volume_name):
+        return self.enginefrontend.get_node(volume_name)
+
+    def get_volume_state(self, volume_name):
+        return self.volume.get_state(volume_name)
+
+    def verify_volume_never_detached_during_test(self, volume_name, start_time=None):
+        return self.volume.verify_never_detached_during_test(volume_name, start_time)
+
+    def wait_for_volume_status(self, volume_name, status_name, status_value):
+        self.volume.wait_for_volume_status(volume_name, status_name, status_value)

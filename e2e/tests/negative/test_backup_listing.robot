@@ -7,7 +7,7 @@ Documentation    Test backup listing
 ...              - 248 regular snapshots and one volume-head and one hidden system snapshot, 
 ...              - which resulted in a failed to create backup error.
 
-Test Tags    manual    negative
+Test Tags    manual    negative    backup
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -89,7 +89,7 @@ Perform backup 1001 times for deployment 0 volume
         END
         Verify backup list contains backup no error for deployment 0 volume
         Verify backup ${i} count for deployment 0 volume
-        Verify backup list contains backup ${i} of deployment 0 volume 
+        Wait for backup ${i} of deployment 0 volume to exist in backup list
     END
 
 Create pod ${pod_id} mount ${size} GB volume ${volume_id}

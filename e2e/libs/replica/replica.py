@@ -33,3 +33,6 @@ class Replica(Base):
 
     def validate_replica_setting(self, volume_name, setting_name, value):
         return self.replica.validate_replica_setting(volume_name, setting_name, value)
+
+    def wait_for_replica_file_size(self, volume_name, expected_size):
+        return self.replica.wait_for_replica_file_size(volume_name, expected_size)

@@ -189,3 +189,11 @@ Record node ${node_id} default disk uuid
 Wait for Longhorn node ${node_id} up
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_longhorn_node_up    ${node_name}
+
+Wait for node ${node_id} ${disk_type} disk schedulable
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_node_disks_schedulable    ${node_name}    disk_type=${disk_type}    expected_schedulable=${True}
+
+Wait for node ${node_id} ${disk_type} disk unschedulable
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_node_disks_schedulable    ${node_name}    disk_type=${disk_type}    expected_schedulable=${False}

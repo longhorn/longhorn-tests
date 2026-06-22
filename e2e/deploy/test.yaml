@@ -120,9 +120,6 @@ spec:
       mountPropagation: Bidirectional
     - name: test-report
       mountPath: /tmp/test-report
-    - name: instance-mapping
-      mountPath: /tmp/instance_mapping
-      subPath: instance_mapping
   - name: longhorn-test-report
     image: public.ecr.aws/docker/library/busybox:1.34.1
     securityContext:
@@ -151,8 +148,5 @@ spec:
   - name: test-report
     hostPath:
       path: /tmp/test-report/
-  - name: instance-mapping
-    configMap:
-      name: instance-mapping
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account
