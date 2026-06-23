@@ -38,6 +38,8 @@ def RESOURCE_OWNER = "longhorn-infra"
 
 def BLOCK_DEVICE_SIZE = params.BLOCK_DEVICE_SIZE ? params.BLOCK_DEVICE_SIZE : 80
 
+def CNI = params.CNI ? params.CNI : "default"
+
 node {
 
     withCredentials([
@@ -113,6 +115,7 @@ node {
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
+                                       --env TF_VAR_cni="${CNI}" \
                                        --env QASE_TOKEN=${QASE_TOKEN} \
                                        --env QASE_PROJECT=LH \
                                        --env OUT_OF_CLUSTER=${OUT_OF_CLUSTER} \
