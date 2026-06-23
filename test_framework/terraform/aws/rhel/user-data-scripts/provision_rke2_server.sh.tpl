@@ -29,6 +29,12 @@ node-taint:
   - "node-role.kubernetes.io/control-plane:NoSchedule"
 EOF
 
+if [[ "${cni}" != "default" ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+cni: ${cni}
+EOF
+fi
+
 sudo systemctl enable rke2-server.service
 sudo systemctl start rke2-server.service
 
