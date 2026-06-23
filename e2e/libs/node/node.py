@@ -696,3 +696,8 @@ class Node:
             time.sleep(self.retry_interval)
 
         assert False, f"Not all disks on node '{node_name}' reached Schedulable={expected_status} after {self.retry_count * self.retry_interval}s"
+
+    def remove_dir(self, dir_path, node_name):
+        logging(f"Removing directory {dir_path} on node {node_name}")
+        cmd = f"rm -rf {dir_path}"
+        NodeExec(node_name).issue_cmd(cmd)
