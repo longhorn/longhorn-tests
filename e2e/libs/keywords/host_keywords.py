@@ -145,3 +145,11 @@ class host_keywords:
     def ssh_exec_on_node(self, node_name, cmd):
         logging(f"SSH into node {node_name} and run command: {cmd}")
         return ssh_exec(node_name, cmd)
+
+    def check_volume_endpoint_on_node(self, volume_name, node_name):
+        cmd = f"ls -l /dev/longhorn/{volume_name}"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        assert res.strip() and "No such file or directory" not in res, \
+            f"Volume endpoint /dev/longhorn/{volume_name} is empty or doesn't exist on node {node_name}"
+        logging(f"node={node_name}, volume={volume_name}\n/dev/longhorn/{volume_name}:\n{res}")
+
