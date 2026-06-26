@@ -40,7 +40,6 @@ ADD e2e /e2e
 WORKDIR /e2e
 
 ADD pipelines ./pipelines
-ADD manager/integration/deploy/network-policies ./manager/integration/deploy/network-policies
 
 RUN pip install -r requirements.txt
 
