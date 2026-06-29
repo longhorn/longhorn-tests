@@ -11,7 +11,6 @@ if ! SUSEConnect --status 2>/dev/null | grep -q "Registered"; then
   sudo registercloudguest --force-new || true
 fi
 sudo zypper --gpg-auto-import-keys ref
-sudo zypper install -y -t pattern devel_basis 
 sudo zypper install -y open-iscsi nfs-client jq iptables
 
 sudo mkdir -p /etc/certs
