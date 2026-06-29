@@ -36,6 +36,12 @@ kubectl port-forward services/longhorn-frontend 8080:http -n longhorn-system
 export KUBECONFIG=/path/to/your/kubeconfig.yaml
 ```
 
+1. Apply the test NetworkPolicy so Robot test pods in the `default` namespace can access the `longhorn-manager` API before testing. The NetworkPolicy helper requires `yq`:
+```
+# from the longhorn-tests repository root
+./pipelines/utilities/create_network_policies.sh install_longhorn_manager_networkpolicy
+```
+
 1. Export environment variable `LONGHORN_CLIENT_URL`:
 ```
 # for example, if it's exposed by nodeport:

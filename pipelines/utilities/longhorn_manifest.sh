@@ -4,6 +4,7 @@ set -x
 
 source pipelines/utilities/longhorn_status.sh
 source pipelines/utilities/longhorn_namespace.sh
+source pipelines/utilities/create_network_policies.sh
 
 get_longhorn_repo(){
   CHART_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
@@ -102,6 +103,7 @@ install_longhorn(){
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
   kubectl apply -f "${LONGHORN_MANIFEST_PATH}"
   wait_longhorn_status_running
+  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){

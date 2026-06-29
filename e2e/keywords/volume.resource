@@ -353,6 +353,13 @@ Wait for volume ${target_volume_id} restoration from backup ${backup_id} of ${wo
     ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
     wait_for_volume_restoration_to_complete    ${target_volume_name}    ${backup_name}
 
+Wait for volume ${target_volume_id} restoration from backup ${backup_id} of ${workload_kind} ${workload_id} volume start
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${source_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
+    wait_for_volume_restoration_start    ${target_volume_name}    ${backup_name}
+
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
