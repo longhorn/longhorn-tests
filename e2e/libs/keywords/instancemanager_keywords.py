@@ -2,7 +2,6 @@ from instancemanager import InstanceManager
 
 from utility.utility import logging
 
-
 class instancemanager_keywords:
 
     def __init__(self):

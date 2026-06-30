@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/create_network_policies.sh
 
 install_rancher() {
 
@@ -62,6 +63,7 @@ install_longhorn() {
             -var="registry_secret=docker-registry-secret" \
             -auto-approve -no-color
   wait_longhorn_status_running
+  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable() {
@@ -91,6 +93,7 @@ upgrade_longhorn() {
             -var="registry_secret=docker-registry-secret" \
             -auto-approve -no-color
   wait_longhorn_status_running
+  install_longhorn_manager_networkpolicy
 }
 
 upgrade_longhorn_transient() {
