@@ -24,6 +24,7 @@ Resource    ../keywords/system_backup.resource
 Resource    ../keywords/engine_image.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -222,33 +223,40 @@ Pre-release Checks
     IF    '${test_v2_only}' == 'false'
 
         # (1-1) check the data integrity of the volume with revision counter enabled
+        And Check volume endpoint on node of volume vol-revision-enabled
         And Check volume vol-revision-enabled data is intact
         And Check volume vol-revision-enabled works
 
         # (2-1) check the data integrity of the volume with revision counter disabled
+        And Check volume endpoint on node of volume vol-revision-disabled
         And Check volume vol-revision-disabled data is intact
         And Check volume vol-revision-disabled works
 
         # (3-1) check pod didn't restart and the data integrity of the volume used by a pod
+        And Check volume endpoint on node of volume vol-pod
         And Check pod vol-pod did not restart
         And Check pod vol-pod data in file data.txt is intact
         And Check pod vol-pod works
 
         # (4-1) check statefulset pod didn't restart and the data integrity of the volume used by a statefulset
+        And Check volume endpoint on node of statefulset ss-upgrade
         And Check statefulset ss-upgrade pods did not restart
         And Check statefulset ss-upgrade data in file data.txt is intact
         And Check statefulset ss-upgrade works
 
         # (5-1) check the data integrity of the strict-local volume
+        And Check volume endpoint on node of volume vol-strict-local
         And Check volume vol-strict-local data is intact
         And Check volume vol-strict-local works
 
         # (6-1) check deployment pod didn't restart and the data integrity of the volume of the rwx workload
+        And Check volume endpoint on node of deployment deploy-upgrade
         And Check deployment deploy-upgrade pods did not restart
         And Check deployment deploy-upgrade data in file data.txt is intact
         And Check deployment deploy-upgrade works
 
         # (7-1) check pod didn't restart and the data integrity of the volume with a backing image
+        And Check volume endpoint on node of volume vol-bi
         And Check pod vol-pod-bi did not restart
         And Check file guests/catparrot.gif exists in pod vol-pod-bi
         And Check pod vol-pod-bi data in file data.txt is intact
@@ -267,33 +275,40 @@ Pre-release Checks
     IF    '${test_v2_only}' == 'false'
 
         # (1-2) check the data integrity of the volume with revision counter enabled
-        Then Check volume vol-revision-enabled data is intact
+        Then Check volume endpoint on node of volume vol-revision-enabled
+        And Check volume vol-revision-enabled data is intact
         And Check volume vol-revision-enabled works
     
         # (2-2) check the data integrity of the volume with revision counter disabled
+        And Check volume endpoint on node of volume vol-revision-disabled
         And Check volume vol-revision-disabled data is intact
         And Check volume vol-revision-disabled works
 
         # (3-2) check pod didn't restart and the data integrity of the volume used by a pod
+        And Check volume endpoint on node of volume vol-pod
         And And Check pod vol-pod did not restart
         And Check pod vol-pod data in file data.txt is intact
         And Check pod vol-pod works
 
        # (4-2) check statefulset pod didn't restart and the data integrity of the volume used by a statefulset
+        And Check volume endpoint on node of statefulset ss-upgrade
         And Check statefulset ss-upgrade pods did not restart
         And Check statefulset ss-upgrade data in file data.txt is intact
         And Check statefulset ss-upgrade works
 
         # (5-2) check the data integrity of the strict-local volume
+        And Check volume endpoint on node of volume vol-strict-local
         And Check volume vol-strict-local data is intact
         And Check volume vol-strict-local works
 
         # (6-2) check deployment pod didn't restart and the data integrity of the volume of the rwx workload
+        And Check volume endpoint on node of deployment deploy-upgrade
         And Check deployment deploy-upgrade pods did not restart
         And Check deployment deploy-upgrade data in file data.txt is intact
         And Check deployment deploy-upgrade works
 
         # (7-2) check pod didn't restart and the data integrity of the volume with a backing image
+        And Check volume endpoint on node of volume vol-bi
         And Check pod vol-pod-bi did not restart
         And Check file guests/catparrot.gif exists in pod vol-pod-bi
         And Check pod vol-pod-bi data in file data.txt is intact

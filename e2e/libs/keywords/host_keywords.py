@@ -140,3 +140,11 @@ class host_keywords:
 
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)
+
+    def check_volume_endpoint_on_node(self, volume_name, node_name):
+        cmd = f"ls -l /dev/longhorn/{volume_name}"
+        res = NodeExec(node_name).issue_cmd(cmd)
+        assert res.strip() and "No such file or directory" not in res, \
+            f"Volume endpoint /dev/longhorn/{volume_name} is empty or doesn't exist on node {node_name}"
+        logging(f"node={node_name}, volume={volume_name}\n/dev/longhorn/{volume_name}:\n{res}")
+
