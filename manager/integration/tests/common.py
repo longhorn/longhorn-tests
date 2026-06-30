@@ -3810,6 +3810,7 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
             }
             default_disks["v1"]["default"] = False
 
+    block_disk_deleted = False
     nodes = client.list_node()
     for n in nodes:
         node = n  # Captures the correct value of n in the closure.
@@ -3838,6 +3839,10 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
                     break
 
         if cleanup_required:
+            for _, disk in iter(node.disks.items()):
+                if disk.diskType == "block":
+                    block_disk_deleted = True
+                    break
             update_disks = get_update_disks(node.disks)
             for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
@@ -3899,7 +3904,8 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
     # disk deletion takes some time, wait the device show up on the host
     # normally less than 30 seconds
     # ref: https://github.com/longhorn/longhorn/issues/11860
-    time.sleep(30)
+    if block_disk_deleted and BLOCK_DEV_PATH.startswith("/dev/nvme"):
+        time.sleep(30)
 
 
 def reset_settings(client):
