@@ -7,6 +7,7 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from utility.constant import DISK_BEING_SYNCING
 from utility.constant import NODE_UPDATE_RETRY_INTERVAL
+from utility.constant import DEFAULT_BLOCK_DISK_NAME
 import utility.constant as constant
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
@@ -18,7 +19,6 @@ class Node:
 
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
-    DEFAULT_BLOCK_DISK_NAME = "block-disk"
 
     all_nodes = None
     control_plane_nodes = None
@@ -106,7 +106,7 @@ class Node:
         # copy Longhorn RestObject into a normal Python dict
         # otherwise we got TypeError: 'RestObject' object does not support item assignment
         for disk_name, disk in node.disks.items():
-            allow_sched = disk.path == self.DEFAULT_DISK_PATH or disk_name == self.DEFAULT_BLOCK_DISK_NAME
+            allow_sched = disk.path == self.DEFAULT_DISK_PATH or disk_name == DEFAULT_BLOCK_DISK_NAME
             disks[disk_name] = {
                 "path": disk.path,
                 "diskType": disk.diskType,
@@ -127,9 +127,9 @@ class Node:
         if data_engine == "v2" and not any(disk.get("path") == default_block_disk_path for disk in disks.values()):
             setting = client.by_id_setting("v2-data-engine")
             client.update(setting, value="true")
-            logging(f"Block disk {self.DEFAULT_BLOCK_DISK_NAME} not found on node {node_name}, re-adding it for v2")
+            logging(f"Block disk {DEFAULT_BLOCK_DISK_NAME} not found on node {node_name}, re-adding it for v2")
 
-            disks[self.DEFAULT_BLOCK_DISK_NAME] = {
+            disks[DEFAULT_BLOCK_DISK_NAME] = {
                 "diskType": "block",
                 "path": default_block_disk_path,
                 "allowScheduling": True,
@@ -142,7 +142,7 @@ class Node:
 
         for disk_name, disk in iter(node.disks.items()):
             # do not disable block-disk if v2 data engine enabled
-            if disk.path != self.DEFAULT_DISK_PATH and not (data_engine == "v2" and disk_name == self.DEFAULT_BLOCK_DISK_NAME):
+            if disk.path != self.DEFAULT_DISK_PATH and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disk.allowScheduling = False
                 logging(f"Disabling scheduling disk {disk_name} on node {node_name}")
             else:
@@ -153,7 +153,7 @@ class Node:
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
             # do not delete block-disk if v2 data engine enabled
-            if disk.path == self.DEFAULT_DISK_PATH or (data_engine == "v2" and disk_name == self.DEFAULT_BLOCK_DISK_NAME):
+            if disk.path == self.DEFAULT_DISK_PATH or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disks[disk_name] = disk
                 disk.allowScheduling = True
                 logging(f"Keeping disk {disk_name} on node {node_name}")
@@ -654,3 +654,50 @@ class Node:
             return node
 
         return self.update_disks(node_name, disks)
+
+    def wait_for_node_disks_schedulable(self, node_name, disk_type=None, expected_schedulable=True):
+        """
+        Wait for all disks on a specific node to reach the expected schedulable state.
+        - disk_type: "block" or "filesystem", set to None for all types
+        - expected_schedulable: True to wait for schedulable, False to wait for unschedulable
+        """
+        client = get_longhorn_client()
+        expected_status = "True" if expected_schedulable else "False"
+        state_name = "schedulable" if expected_schedulable else "unschedulable"
+
+        for i in range(self.retry_count):
+            node = client.by_id_node(node_name)
+            all_disks_match = True
+            disk_statuses = getattr(node, "disks", {})
+            for disk_name, disk_status in disk_statuses.items():
+                # When waiting for schedulable state, skip disks with allowScheduling=False
+                if expected_schedulable:
+                    allow_scheduling = getattr(disk_status, "allowScheduling", None) or \
+                        disk_status.get("allowScheduling", None)
+                    if not allow_scheduling:
+                        continue
+
+                if disk_type is not None:
+                    dt = getattr(disk_status, "diskType", None) or \
+                        disk_status.get("diskType", None)
+                    if dt != disk_type:
+                        continue
+
+                conditions = disk_status.get("conditions", {})
+                sched_status = conditions.get("Schedulable", {}).get("status")
+
+                if sched_status != expected_status:
+                    logging(f"Disk '{disk_name}' on node '{node_name}' is not {state_name} (iteration {i})")
+                    all_disks_match = False
+
+            if all_disks_match:
+                logging(f"All disks on node '{node_name}' are {state_name}")
+                return
+            time.sleep(self.retry_interval)
+
+        assert False, f"Not all disks on node '{node_name}' reached Schedulable={expected_status} after {self.retry_count * self.retry_interval}s"
+
+    def remove_dir(self, dir_path, node_name):
+        logging(f"Removing directory {dir_path} on node {node_name}")
+        cmd = f"rm -rf {dir_path}"
+        NodeExec(node_name).issue_cmd(cmd)

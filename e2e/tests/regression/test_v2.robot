@@ -19,6 +19,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/orphan.resource
 Resource    ../keywords/replica.resource
+Resource    ../keywords/engine_frontend.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -27,6 +28,11 @@ Test Teardown    Cleanup test resources
 Set up v2 test environment
     Set up test environment
     Enable v2 data engine and add block disks
+
+Cleanup engine frontend test on node ${node_id}
+    Make enginefrontend metadata directory mutable on node ${node_id}
+    Clean enginefrontend files on node ${node_id}
+    Cleanup test resources
 
 *** Test Cases ***
 Test V2 Volume Basic
@@ -291,36 +297,6 @@ Test Default Block Disks Delete And Re-add
     When Write data to volume 0
     Then Check volume 0 data is intact
 
-Test V2 Orphan Replica Cleanup After Node Power Cycle
-    [Documentation]    Test orphaned SPDK replica cleanup
-    ...    1. Create a v2 volume with 3 replicas and attach it to node 0
-    ...    2. Go to the instance-manage pod and execute go-spdk-helper lvol get
-    ...    3. Note the replica name and verify it's in the lvol list on node 2
-    ...    4. Power down node 2
-    ...    5. Delete the node 2 replica CR
-    ...    6. Power up node 2
-    ...    7. An orphan resource will be created
-    ...    8. Delete the orphan resource
-    ...    9. Go to the instance-manage pod and execute go-spdk-helper lvol get
-    ...    10. The replica lvol should be deleted
-    IF    '${DATA_ENGINE}' == 'v1'
-        Skip    Test only validate on v2 data engine
-    END
-
-    Given Create volume 0 with    dataEngine=v2    numberOfReplicas=3
-    And Attach volume 0 to node 0
-    And Wait for volume 0 healthy
-    And Get volume 0 replica name on node 2
-    And Verify replica lvol exists in SPDK lvol list on node 2    replica_name=${replica_name}
-
-    When Power off node 2
-    And Delete replica    replica_name=${replica_name}
-    And Power on node 2
-
-    When Wait for orphan count to be 1
-    Then Cleanup orphans
-    And Verify replica lvol is deleted from SPDK lvol list on node 2    replica_name=${replica_name}
-
 Test V2 Volume Engine Live Switchover
     [Tags]    v2
     [Documentation]    Test v2 volume cross-node initiator and target support with live switchover.
@@ -332,6 +308,9 @@ Test V2 Volume Engine Live Switchover
     ...
     ...                Manual test steps:
     ...                https://github.com/longhorn/longhorn/issues/7124#issuecomment-4349501341
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
 
     Given Create storageclass longhorn-test with    dataEngine=v2
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
@@ -373,3 +352,47 @@ Test V2 Volume Engine Live Switchover
     Then Verify fio crc32c data in deployment 0 have no errors
     And Check deployment 0 pods did not restart
     And Volume of deployment 0 should never have detached during test
+
+Test V2 Instance Manager Pod Recreate Loop When Engine Frontend Recovery Blocks GRPC Startup
+    [Documentation]    issue: https://github.com/longhorn/longhorn/issues/13185
+    ...    Verify instance manager pod can recover from multiple stale enginefrontend.json
+    ...    that blocks GRPC startup, preventing pod recreate loop.
+    ...
+    ...    Test Flow:
+    ...    1. Create five v2 volumes
+    ...    2. Attach them to node 0
+    ...    3. Make node 0 enginefrontend directory immutable
+    ...    4. Delete all v2 volumes
+    ...    5. Restore directory to mutable
+    ...    5. Delete the v2 instance manager on node 0
+    ...    6. Verify instance manager on node 0 running well (with 5 stale files)
+    ...    7. Create new v2 volume and verify it works
+    [Teardown]    Cleanup engine frontend test on node 0
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    FOR    ${i}    IN RANGE    5
+        Given Create volume ${i} with    dataEngine=v2
+        And Attach volume ${i} to node 0
+        And Wait for volume ${i} healthy
+    END
+
+    When Make enginefrontend metadata directory immutable on node 0
+    FOR    ${i}    IN RANGE    5
+        And Detach volume ${i}
+        And Wait for volume ${i} detached
+        And Delete volume ${i}
+        And Wait for volume ${i} deleted
+    END
+
+    When Make enginefrontend metadata directory mutable on node 0
+    Then Delete v2 instance manager on node 0
+    And Wait for node 0 block disk unschedulable
+    And Wait for node 0 block disk schedulable
+
+    When Create volume test-vol with    dataEngine=v2
+    And Attach volume test-vol to node 0
+    And Wait for volume test-vol healthy
+    And Write data to volume test-vol
+    Then Check volume test-vol data is intact

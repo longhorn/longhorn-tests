@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/create_network_policies.sh
 
 init_flux(){
   flux install
@@ -22,7 +23,9 @@ privateRegistry:
   registrySecret: docker-registry-secret
 EOF
   flux create helmrelease longhorn --chart longhorn --source HelmRepository/longhorn --chart-version "${HELM_CHART_VERSION}" --namespace "${LONGHORN_NAMESPACE}" --values "/tmp/values.yaml"
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
+  setup_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){

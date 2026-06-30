@@ -41,6 +41,9 @@ spec:
   completions: 10
   backoffLimit: 0
   template:
+    metadata:
+      labels:
+        longhorn-test: test-job
     spec:
       containers:
       - name: longhorn-test-pod
