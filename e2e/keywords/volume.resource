@@ -451,6 +451,11 @@ Record volume ${volume_id} replica name on node ${node_id}
     ${original_replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
     Set Test Variable    ${original_replica_name}
 
+Check volume ${volume_id} replica reused on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    check_volume_replica_reused_on_node    ${volume_name}    ${node_name}    ${original_replica_name}
+
 Get volume ${volume_id} replica name on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -535,6 +540,11 @@ Volume ${volume_id} should have running replicas on node ${node_id}
     Set Test Variable    ${volume_name}
     Set Test Variable    ${node_name}
     Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have no running replica on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=0
 
 Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id} and no additional scheduling occurs
     Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id}
