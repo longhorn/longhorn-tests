@@ -20,6 +20,7 @@ Resource    ../keywords/k8s.resource
 Resource    ../keywords/orphan.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/engine_frontend.resource
+Resource    ../keywords/io.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -426,3 +427,31 @@ Test V2 Instance Manager Pod Recreate Loop When Engine Frontend Recovery Blocks 
     And Wait for volume test-vol healthy
     And Write data to volume test-vol
     Then Check volume test-vol data is intact
+
+V2 Replica Migration Should Not Cause IO Stall
+    [Documentation]    issue: https://github.com/longhorn/longhorn/issues/13309
+    ...    Test steps:
+    ...    1. Create v2 SC with dataLocality: best-effort, numberOfReplicas: 2
+    ...    2. Create deployment using the volume, running an fsync writer logging per-write timing
+    ...    3. Cordon volume attached node
+    ...    4. Delete replica on volume attached node
+    ...    5. Wait for volume healthy
+    ...    6. Check no IO stall observed (max latency < 3 sec)
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    Given Create storageclass longhorn-test with
+    ...    dataEngine=v2
+    ...    dataLocality=best-effort
+    ...    numberOfReplicas=2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    When Start fsync writer on deployment 0 and log per-write latency to lat.log
+    And Cordon deployment 0 volume node
+    Then Delete replica of deployment 0 volume on volume node
+    And Wait for volume of deployment 0 attached and degraded
+    And Wait for volume of deployment 0 healthy
+    And Assert no IO stall from deployment 0 latency log lat.log
