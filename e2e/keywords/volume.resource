@@ -353,6 +353,13 @@ Wait for volume ${target_volume_id} restoration from backup ${backup_id} of ${wo
     ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
     wait_for_volume_restoration_to_complete    ${target_volume_name}    ${backup_name}
 
+Wait for volume ${target_volume_id} restoration from backup ${backup_id} of ${workload_kind} ${workload_id} volume start
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${source_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${backup_name} =    get_backup_name    ${backup_id}    ${source_volume_name}
+    wait_for_volume_restoration_start    ${target_volume_name}    ${backup_name}
+
 Wait for volume ${volume_id} restoration from backup ${backup_id} of volume ${source_volume_id} completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
@@ -444,6 +451,11 @@ Record volume ${volume_id} replica name on node ${node_id}
     ${original_replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
     Set Test Variable    ${original_replica_name}
 
+Check volume ${volume_id} replica reused on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    check_volume_replica_reused_on_node    ${volume_name}    ${node_name}    ${original_replica_name}
+
 Get volume ${volume_id} replica name on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -528,6 +540,11 @@ Volume ${volume_id} should have running replicas on node ${node_id}
     Set Test Variable    ${volume_name}
     Set Test Variable    ${node_name}
     Set Test Variable    ${replica_count}
+
+Volume ${volume_id} should have no running replica on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=0
 
 Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id} and no additional scheduling occurs
     Volume ${volume_id} should have ${expected_replica_count} running replicas on node ${node_id}

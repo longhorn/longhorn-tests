@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/create_network_policies.sh
 
 install_fleet(){
   helm repo add fleet https://rancher.github.io/fleet-helm-charts/
@@ -30,6 +31,7 @@ EOF
   kubectl apply -f longhorn-gitrepo.yaml
   wait_for_bundle_deployment_applied
   wait_for_bundle_deployment_ready
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
 }
 
