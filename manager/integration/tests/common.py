@@ -3904,7 +3904,7 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
     # disk deletion takes some time, wait the device show up on the host
     # normally less than 30 seconds
     # ref: https://github.com/longhorn/longhorn/issues/11860
-    if block_disk_deleted and BLOCK_DEV_PATH.startswith("/dev/nvme"):
+    if block_disk_deleted:
         time.sleep(30)
 
 
