@@ -166,3 +166,50 @@ Test RWX Volume Automatic Online Expansion
     And Write 60 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
     And Check deployment 0 data in file data2.txt is intact
+
+Test Volume Offline Expansion With Unscheduled Replica
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13355
+    ...    Test offline expansion of direct volume (non-dynamic provisioning) with unscheduled replica
+    ...    1. Disable node 0 scheduling
+    ...    2. Create a 1Gi direct volume, support v1 and v2 data engine, do not attach it
+    ...    3. Expand the detached volume to 2Gi
+    ...    4. Wait for the volume expansion to complete
+    ...    5. Attach the volume
+    ...    6. Write 1.5 Gi data and check data
+    Given Disable node 0 scheduling
+    And Create volume 0 with    size=1Gi    dataEngine=${DATA_ENGINE}
+
+    When Expand volume 0 to 2Gi
+    Then Wait for volume 0 size to be 2Gi
+    And Wait for volume 0 detached
+
+    When Attach volume 0
+    And Wait for volume 0 degraded
+    And Write 1536 Mi data to volume 0
+    Then Check volume 0 data is intact
+
+Test Dynamic Provisioned Volume Offline Expansion With Unscheduled Replica
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13355
+    ...    Test offline expansion of dynamically provisioned volume with unscheduled replica
+    ...    1. Disable node 0 scheduling
+    ...    2. Create a 1Gi PVC, support v1 and v2 data engine
+    ...    3. Wait for volume to be created and detached
+    ...    4. Expand the PVC to 2Gi while volume is detached
+    ...    5. Wait for the volume expansion to complete
+    ...    6. Attach the volume by creating a pod
+    ...    7. Write 1.5 Gi data and check data
+    Given Disable node 0 scheduling
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test    storage_size=1GiB
+    And Wait for volume of persistentvolumeclaim 0 to be created
+    And Wait for volume of persistentvolumeclaim 0 detached
+
+    When Expand persistentvolumeclaim 0 size to 2Gi
+    Then Wait for volume of persistentvolumeclaim 0 size to be 2Gi
+    And Wait for volume of persistentvolumeclaim 0 detached
+
+    When Create pod 0 using persistentvolumeclaim 0
+    And Wait for pod 0 running
+    And Wait for volume of persistentvolumeclaim 0 degraded
+    And Write 1536 MB data to file data.txt in pod 0
+    Then Check pod 0 data in file data.txt is intact
