@@ -29,6 +29,8 @@ from k8s.k8s import verify_pods_log_after_time_not_contains
 from k8s.k8s import wait_for_node_ready
 from k8s.k8s import get_csi_driver_storage_capacity
 
+from utility.utility import wait_for_cluster_ready
+
 from node import Node
 
 from utility.utility import logging
@@ -207,3 +209,8 @@ class k8s_keywords:
         actual_value = get_csi_driver_storage_capacity(driver_name)
         assert actual_value == expected_value, f"Expected CSI driver {driver_name} storageCapacity to be {expected_value}, but got {actual_value}"
         return actual_value
+
+    def wait_for_cluster_ready(self):
+        logging("Waiting for all Kubernetes nodes to be ready")
+        wait_for_cluster_ready()
+

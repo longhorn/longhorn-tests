@@ -119,5 +119,41 @@ class common_keywords:
             time.sleep(retry_count)
             assert False, f"Failed to find '{expected_output}' in output of '{cmd}' in pod {pod_name}: {res}"
 
+    def execute_command_in_pod_and_wait_for_output(self, pod_name, namespace, cmd, expected_output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        try:
+            pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            pattern = re.compile(re.escape(expected_output), re.DOTALL)
+        for i in range(retry_count):
+            logging(f"Waiting for command '{cmd}' in pod {pod_name} to return output matching '{expected_output}' ... ({i})")
+            try:
+                res = pod_exec(pod_name, namespace, cmd)
+                if pattern.search(res):
+                    return
+            except Exception as e:
+                logging(f"Execute command '{cmd}' in pod {pod_name} and wait for output '{expected_output}' error: {e}")
+            time.sleep(retry_interval)
+        assert False, f"Failed to wait for command '{cmd}' in pod {pod_name} returning output matching '{expected_output}'"
+
+    def execute_command_in_pod_and_not_expect_output(self, pod_name, namespace, cmd, unexpected_output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        try:
+            pattern = re.compile(unexpected_output, re.DOTALL)
+        except re.error:
+            pattern = re.compile(re.escape(unexpected_output), re.DOTALL)
+        for i in range(retry_count):
+            logging(f"Checking command '{cmd}' in pod {pod_name} does not return output matching '{unexpected_output}' ... ({i})")
+            try:
+                res = pod_exec(pod_name, namespace, cmd)
+                if pattern.search(res):
+                    logging(f"Unexpected output matching '{unexpected_output}' found in command '{cmd}' result in pod {pod_name}: {res}")
+                else:
+                    return
+            except Exception as e:
+                logging(f"Execute command '{cmd}' in pod {pod_name} and check for unexpected output '{unexpected_output}' error: {e}")
+            time.sleep(retry_interval)
+        assert False, f"Unexpected output matching '{unexpected_output}' found in command '{cmd}' result in pod {pod_name}: {res}"
+
     def cleanup_events(self):
         cleanup_events()
