@@ -193,6 +193,9 @@ Wait for node ${node_id} down
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_node_down    ${node_name}
 
+Wait for k8s cluster ready
+    wait_for_cluster_ready
+
 Check PDB not exist
     [Arguments]    ${instance_manager}
     check_instance_manager_pdb_not_exist    ${instance_manager}
