@@ -4,6 +4,7 @@ Documentation       Physical Node Keywords
 Library             Collections
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/host_keywords.py
+Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/workload_keywords.py
@@ -127,6 +128,9 @@ SSH into node ${node_id} and run command
     [Arguments]    ${command}
     ${node_name} =    get_node_by_index    ${node_id}
     ssh_exec_on_node    ${node_name}    ${command}
+
+Set cpu-manager-policy to ${policy} on all worker nodes
+    set_cpu_manager_policy_on_all_worker_nodes    ${policy}
 
 Corrupt CSI block volume staging mount point on node ${node_id} for volume ${volume_name}
     [Documentation]    Corrupt the CSI block volume staging mount point with explicit host operations.
