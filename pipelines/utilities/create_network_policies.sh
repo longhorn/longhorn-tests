@@ -8,6 +8,8 @@ source "${SCRIPT_DIR}/longhorn_namespace.sh"
 
 
 longhorn_internal_networkpolicies_exist(){
+  echo "Checking if Longhorn internal NetworkPolicies exist..."
+  sleep 300
   kubectl get networkpolicy longhorn-manager -n "${LONGHORN_NAMESPACE}" >/dev/null 2>&1 &&
     kubectl get networkpolicy instance-manager -n "${LONGHORN_NAMESPACE}" >/dev/null 2>&1
 }
