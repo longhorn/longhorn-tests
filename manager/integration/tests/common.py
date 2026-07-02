@@ -3924,12 +3924,6 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
                                  "storageReserved",
                                  expected_reserved_storage)
 
-    # for block type disks added by bdf (nvme disk driver)
-    # disk deletion takes some time, wait the device show up on the host
-    # normally less than 30 seconds
-    # ref: https://github.com/longhorn/longhorn/issues/11860
-    time.sleep(30)
-
 
 def reset_settings(client):
 
