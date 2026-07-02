@@ -14,6 +14,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/storageclass.resource
+Resource    ../keywords/node.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/engine_image.resource
@@ -220,6 +221,19 @@ Test Setting Blacklist For Auto Delete Pod
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
     And Wait for deployment 0 pods stable
 
+Test Validate Duplicate Disk Paths Are Rejected Via Kubectl Patch
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12480
+    [Tags]    setting
+
+    ${node_name}=    Get Node By Index    0
+    ${disk_name}=    Generate random disk name    test-disk
+    ${disk_type}=    Set Variable If    '${DATA_ENGINE}' == 'v1'    filesystem    block
+    ${first_disk_name}=    Set Variable    ${disk_name}-0
+    ${second_disk_name}=    Set Variable    ${disk_name}-1
+
+    Given Create 1 Gi ${disk_type} type device ${disk_name} on node 0
+    When Add ${disk_type} device ${first_disk_name} on node 0 mounted at ${mount_path} should success
+    Then Add ${disk_type} device ${second_disk_name} on node 0 mounted at ${mount_path} should fail with message duplicate disk paths on node ${node_name}
 Test Install With Different Format Settings
     [Tags]    uninstall    helm
     [Documentation]    Verify that Longhorn correctly handles values with different formats (
