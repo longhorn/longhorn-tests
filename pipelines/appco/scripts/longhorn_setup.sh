@@ -77,6 +77,13 @@ main(){
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
+
+    if [[ "${USE_REVERSION_IMAGES}" == "true" ]]; then
+      set +x
+      fetch_appco_revision_tags "${LONGHORN_VERSION}"
+      set -x
+    fi
+
     run_longhorn_upgrade_test
     run_longhorn_test
   else
