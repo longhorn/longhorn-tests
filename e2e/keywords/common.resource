@@ -43,6 +43,19 @@ Generate random disk name
     ${disk_name}=    Set Variable    ${prefix}-${suffix}
     [Return]    ${disk_name}
 
+Run command in pod ${pod_name} and wait for output
+    [Arguments]    ${command}    ${expected_output}    ${namespace}=${LONGHORN_NAMESPACE}
+    pod_exec_and_wait_for_output    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+
+Run command in pod ${pod_name} and not expect output
+    [Arguments]    ${command}    ${unexpected_output}    ${namespace}=${LONGHORN_NAMESPACE}
+    pod_exec_and_not_expect_output    ${pod_name}    ${namespace}    ${command}    ${unexpected_output}
+
+Run command in pod ${pod_name} and get output
+    [Arguments]    ${command}    ${namespace}=${LONGHORN_NAMESPACE}
+    ${result} =    pod_exec    ${pod_name}    ${namespace}    ${command}
+    RETURN    ${result}
+
 Run command
     [Arguments]    ${command}
     ${result} =    execute_command    ${command}

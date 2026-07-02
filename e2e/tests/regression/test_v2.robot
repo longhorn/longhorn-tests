@@ -396,3 +396,96 @@ Test V2 Instance Manager Pod Recreate Loop When Engine Frontend Recovery Blocks 
     And Wait for volume test-vol healthy
     And Write data to volume test-vol
     Then Check volume test-vol data is intact
+
+Test CPU Manager Policy And V2 Data Engine CPU Core Number
+    [Documentation]    Verify that Longhorn v2 data engine respects the Kubernetes CPU manager policy.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13248
+    ...
+    ...                When the cluster CPU manager policy is `none` (default):
+    ...                - Setting data-engine-cpu-core-number must be rejected.
+    ...                - data-engine-cpu-mask (e.g. 0x3) is accepted and spdk_tgt honours it.
+    ...                - /proc/self/status Cpus_allowed_list is unrestricted (a range like 0-N).
+    ...
+    ...                When the cluster CPU manager policy is `static`:
+    ...                - data-engine-cpu-core-number can be set to 1.
+    ...                - spdk_tgt no longer shows the explicit cpu-mask 0x3.
+    ...                - Cpus_allowed_list becomes a single CPU index (not a range).
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only runs on v2 data engine
+    END
+
+    # --- Phase 1: cpu-manager-policy=none (default) ---
+
+    # Step 2: data-engine-cpu-core-number must be rejected when policy is none
+    Then Set setting data-engine-cpu-core-number to {"v2":"1"} will fail
+
+    # Step 3: data-engine-cpu-mask is accepted
+    And Setting data-engine-cpu-mask is set to 0x3
+
+    # Step 4 & 5: check spdk_tgt cpu-mask and Cpus_allowed_list via a v2 instance manager pod
+    ${im_pod} =    Get v2 instance manager pod name on node 0
+
+    # Step 4: spdk_tgt should be started with the cpu-mask 0x3
+    And Run command in pod ${im_pod} and wait for output
+    ...    pgrep -af ^spdk_tgt
+    ...    0x3
+
+    # Step 5: Cpus_allowed_list should be unrestricted (range like 0-N) since cpu-manager-policy=none
+    And Run command in pod ${im_pod} and wait for output
+    ...    awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status
+    ...    ^[0-9]+-[0-9]+$
+
+    # --- Phase 2: switch cluster to cpu-manager-policy=static ---
+
+    # Step 6: SSH into each worker node and set cpu-manager-policy=static, then restart the agent
+    When Set cpu-manager-policy to static on all worker nodes
+
+    # Step 7: Wait for the Kubernetes cluster to recover
+    Then Wait for k8s cluster ready
+
+    # Step 8: Wait for Longhorn to be fully operational again
+    And Wait for longhorn ready
+
+    # Step 9: Now data-engine-cpu-core-number can be set to 1
+    And Setting data-engine-cpu-core-number is set to {"v2":"1"}
+
+    # Step 10: Wait for the v2 instance managers to restart after the setting change
+    And Wait for v2 instance manager pods restarted
+
+    # Step 11 & 12: re-resolve the pod name after the restart, then check cpu pinning
+    ${im_pod} =    Get v2 instance manager pod name on node 0
+
+    # Step 11: spdk_tgt should no longer carry the explicit 0x3 cpu-mask
+    Then Run command in pod ${im_pod} and not expect output
+    ...    pgrep -af ^spdk_tgt
+    ...    0x3
+
+    # Step 12: Cpus_allowed_list should now be a single CPU index (not a range, not a list)
+    # because data-engine-cpu-core-number=1 pins the process to exactly one CPU
+    And Run command in pod ${im_pod} and not expect output
+    ...    awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status
+    ...    ^[0-9]+-[0-9]+$
+    # Also verify it is not a comma-separated list of CPUs (e.g. 1,3 or 0,1)
+    And Run command in pod ${im_pod} and not expect output
+    ...    awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status
+    ...    ^[0-9]+(,[0-9]+)+$
+
+    # Step 13: v2 workload I/O must still work correctly
+    And Create storageclass longhorn-test with    dataEngine=v2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write data to deployment 0
+    Then Check deployment 0 works
+
+    # --- Phase 3: revert cluster to cpu-manager-policy=none ---
+
+    # Step 14: Revert cpu-manager-policy to none on all worker nodes
+    When Set cpu-manager-policy to none on all worker nodes
+
+    # Step 15: Wait for v2 instance manager pods to restart after the policy revert
+    Then Wait for k8s cluster ready
+    And Wait for longhorn ready
+    And Wait for v2 instance manager pods restarted
+    And Set setting data-engine-cpu-core-number to {"v2":"0"} will fail

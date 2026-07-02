@@ -111,5 +111,34 @@ class common_keywords:
             time.sleep(retry_interval)
         assert False, f"'{output}' still found in command result: {res}"
 
+    def pod_exec_and_wait_for_output(self, pod_name, namespace, cmd, expected_output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        try:
+            pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            pattern = re.compile(re.escape(expected_output), re.DOTALL)
+        for i in range(retry_count):
+            logging(f"Waiting for command '{cmd}' in pod {pod_name} to return output matching '{expected_output}' ... ({i})")
+            try:
+                res = pod_exec(pod_name, namespace, cmd)
+                if pattern.search(res):
+                    return
+            except Exception as e:
+                logging(f"Execute command '{cmd}' in pod {pod_name} and wait for output '{expected_output}' error: {e}")
+            time.sleep(retry_interval)
+        assert False, f"Failed to wait for command '{cmd}' in pod {pod_name} returning output matching '{expected_output}'"
+
+    def pod_exec_and_not_expect_output(self, pod_name, namespace, cmd, unexpected_output):
+        retry_count, _ = get_retry_count_and_interval()
+        try:
+            pattern = re.compile(unexpected_output, re.DOTALL)
+        except re.error:
+            pattern = re.compile(re.escape(unexpected_output), re.DOTALL)
+        res = pod_exec(pod_name, namespace, cmd)
+        if pattern.search(res):
+            logging(f"Unexpected output matching '{unexpected_output}' found in command '{cmd}' result in pod {pod_name}: {res}")
+            time.sleep(retry_count)
+            assert False, f"Unexpected output matching '{unexpected_output}' found in command '{cmd}' result in pod {pod_name}: {res}"
+
     def cleanup_events(self):
         cleanup_events()
