@@ -90,6 +90,13 @@ Check v1 instance manager pods did not restart
 Check v1 instance manager pods recreated
     wait_all_instance_managers_recreated
 
+Record ${engine_type} instance manager UIDs
+    ${im_pod_uids} =    record_instance_manager_pod_uids    ${engine_type}
+    Set Test Variable    ${im_pod_uids}
+
+Check ${engine_type} instance manager did not restart
+    check_instance_managers_not_restarted    ${engine_type}    ${im_pod_uids}
+
 Wait for engine instances in ${engine_type} instance manager CR on node ${node_id} to be cleaned up
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_instance_manager_cr_engine_instances_to_be_cleaned_up    ${node_name}    ${engine_type}

@@ -850,8 +850,15 @@ class CRD(Base):
     def activate(self, volume_name):
         return Rest().activate(volume_name)
 
-    def upgrade_engine_image(self, volume_name, engine_image_name):
-        return Rest().upgrade_engine_image(volume_name, engine_image_name)
+    def upgrade_engine_image(self, volume_name, engine_image_name, use_patch=False):
+        if use_patch:
+            logging(f"Upgrading volume {volume_name} engine image to {engine_image_name} using kubectl patch")
+            exec_cmd = f"""
+            kubectl -n {constant.LONGHORN_NAMESPACE} patch volume.longhorn.io {volume_name} --type='merge' -p '{{"spec":{{"image": "{engine_image_name}"}}}}'
+            """
+            subprocess_exec_cmd(exec_cmd)
+        else:
+            return Rest().upgrade_engine_image(volume_name, engine_image_name)
 
     def wait_for_engine_image_upgrade_completed(self, volume_name, engine_image_name):
         return Rest().wait_for_engine_image_upgrade_completed(volume_name, engine_image_name)

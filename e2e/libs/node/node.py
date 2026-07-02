@@ -346,6 +346,17 @@ class Node:
         """
         subprocess_exec_cmd(exec_cmd)
 
+    def set_node_upgrade_requested(self, node_name, upgrade_requested=True):
+        logging(f"Setting node {node_name} upgradeRequested to {upgrade_requested}")
+        exec_cmd = f"""
+            kubectl patch nodes.longhorn.io {node_name} -n {constant.LONGHORN_NAMESPACE} --type=merge -p '{{
+                \"spec\": {{
+                    \"upgradeRequested\": {str(upgrade_requested).lower()}
+                }}
+            }}'
+        """
+        subprocess_exec_cmd(exec_cmd)
+
     def set_default_disk_scheduling(self, node_name, allowScheduling):
         node = get_longhorn_client().by_id_node(node_name)
 

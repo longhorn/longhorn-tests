@@ -697,6 +697,12 @@ Upgrade v1 volumes engine to ${custom_engine_image}
         wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
     END
 
+Upgrade v2 volumes engine to ${custom_engine_image}
+    ${volume_names} =    list_volumes    dataEngine=v2
+    FOR    ${volume_name}    IN    @{volume_names}
+        upgrade_engine_image    ${volume_name}    ${custom_engine_image}    use_patch=${True}
+    END
+
 Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${current_checksum} =    get_volume_checksum    ${volume_name}
