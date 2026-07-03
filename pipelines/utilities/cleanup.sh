@@ -12,8 +12,14 @@ fi
 sleep 30
 
 if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
-  terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -target=rancher2_cluster_v2.e2e-cluster -auto-approve -no-color
-  terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color
+  while ! terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -target=rancher2_cluster_v2.e2e-cluster -auto-approve -no-color; do
+    echo "Terraform destroy failed, retrying in 10 seconds..."
+    sleep 10
+  done
+  while ! terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color; do
+    echo "Terraform destroy failed, retrying in 10 seconds..."
+    sleep 10
+  done
 else
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color
 fi

@@ -2,15 +2,18 @@
 
 set -x
 
-if [[ ${TF_VAR_arch} == "amd64" ]]; then
+# terraform encountered a self-signed untrusted certificate when attempting to connect to the HAL API
+# underlying HTTP request became stuck during SSL/TLS certificate validation, eventually leading to a timeout.
+# we need to temporarily trust or ignore the HAL self-signed certificate
+if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
+  openssl s_client -showcerts -connect rancher.10.115.253.200.sslip.io:443 </dev/null 2>/dev/null | openssl x509 -outform PEM > /tmp/rancher.crt
+  cp /tmp/rancher.crt /usr/local/share/ca-certificates/rancher.crt
+  update-ca-certificates
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} init
-  terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color
-  if [[ ${TF_VAR_k8s_distro_name} == "rke" ]]; then
-    terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color -refresh-only
-    terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw rke_config > test_framework/rke.yml
-    sleep 30
-    rke up --config test_framework/rke.yml
-  fi
+  while ! terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve; do
+    echo "Terraform failed, retrying in 10 seconds..."
+    sleep 10
+  done
 else
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} init
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color

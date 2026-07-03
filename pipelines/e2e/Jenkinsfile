@@ -123,7 +123,7 @@ node {
                 """
             }
 
-            timeout(60) {
+            timeout(300) {
                 stage ('terraform') {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/terraform_setup.sh"
                 }

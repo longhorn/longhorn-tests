@@ -12,6 +12,7 @@ provider "rancher2" {
   insecure  = true
   access_key = var.lab_access_key
   secret_key = var.lab_secret_key
+  timeout    = "600s"
 }
 
 resource "random_string" "random_suffix" {
