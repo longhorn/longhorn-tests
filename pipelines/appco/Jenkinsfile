@@ -134,8 +134,6 @@ node {
                                        --env QASE_PROJECT=LH \
                                        --env APPCO_TEST="true" \
                                        --env LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD} \
-                                       --dns=10.113.53.53 \
-                                       --dns=10.113.53.54 \
                                        -v /var/run/docker.sock:/var/run/docker.sock \
                                        --mount source="vol-${imageName}",target=/tmp \
                                        --env TF_VAR_do_token=${env.TF_VAR_do_token} \
