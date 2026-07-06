@@ -7,6 +7,7 @@ from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
 
 from node import Node
 from node_exec import NodeExec
+from ssh.ssh import ssh_exec
 
 from utility.utility import logging
 
@@ -140,3 +141,7 @@ class host_keywords:
 
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)
+
+    def ssh_exec_on_node(self, node_name, cmd):
+        logging(f"SSH into node {node_name} and run command: {cmd}")
+        return ssh_exec(node_name, cmd)

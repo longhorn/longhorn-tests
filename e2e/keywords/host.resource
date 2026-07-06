@@ -123,6 +123,11 @@ Run command on node ${node_id} and get output string
     ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
     RETURN    ${result}
 
+SSH into node ${node_id} and run command
+    [Arguments]    ${command}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ssh_exec_on_node    ${node_name}    ${command}
+
 Corrupt CSI block volume staging mount point on node ${node_id} for volume ${volume_name}
     [Documentation]    Corrupt the CSI block volume staging mount point with explicit host operations.
     ...    1. Create fake device symlink /dev/longhorn/${volume_name} -> /dev/zero.

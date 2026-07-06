@@ -1,5 +1,19 @@
 #!/bin/bash
 
+apk add dnsmasq
+mkdir -p /etc/dnsmasq.d
+cat >/etc/dnsmasq.d/suse.conf <<EOF
+server=/suse.de/10.113.53.53
+server=8.8.8.8
+EOF
+cat >/etc/resolv.conf <<EOF
+nameserver 127.0.0.1
+EOF
+dnsmasq
+ps aux | grep dnsmasq
+nslookup google.com
+nslookup registry.suse.de
+
 INFILE="${PWD}/infile"
 touch "${INFILE}"
 
