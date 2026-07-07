@@ -17,7 +17,7 @@ from node_exec import NodeExec
 
 class Node:
 
-    DEFAULT_DISK_PATH = "/var/lib/longhorn/"
+    DEFAULT_DISK_PATH = "/var/lib/longhorn"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
 
     all_nodes = None
