@@ -58,8 +58,14 @@ class common_keywords:
         return subprocess_exec_cmd(cmd)
 
     def execute_command_and_expect_output(self, cmd, expected_output):
-        res = subprocess_exec_cmd(cmd)
-        retry_count, _ = get_retry_count_and_interval()
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            try:
+                res = subprocess_exec_cmd(cmd)
+                break
+            except Exception as e:
+                logging(f"Execute command {cmd} and expect output {expected_output} error: {e}")
+            time.sleep(retry_interval)
 
         try:
             expected_pattern = re.compile(expected_output, re.DOTALL)
@@ -70,15 +76,6 @@ class common_keywords:
             logging(f"Failed to find {expected_output} in {cmd} result: {res}")
             time.sleep(retry_count)
             assert False, f"Failed to find {expected_output} in {cmd} result: {res}"
-
-    def execute_command_until_success(self, cmd, expected_output):
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for _ in range(retry_count):
-            res = subprocess_exec_cmd(cmd)
-            if expected_output in res:
-                return res
-            time.sleep(retry_interval)
-        assert False, f"'{expected_output}' not found in command result: {res}"
 
     def execute_command_and_wait_for_output(self, cmd, output):
         retry_count, retry_interval = get_retry_count_and_interval()

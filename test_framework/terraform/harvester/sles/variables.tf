@@ -61,7 +61,7 @@ variable "custom_ssh_public_key" {
 
 variable "block_device_size_controlplane" {
   type        = number
-  default     = 64
+  default     = 32
 }
 
 variable "block_device_size_worker" {

@@ -210,7 +210,7 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
 
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
-    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
+    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test --follow --since=10s
   done
 
   kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/log.html "log.html" -c longhorn-test-report

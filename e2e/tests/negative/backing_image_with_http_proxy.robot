@@ -1,5 +1,5 @@
 *** Settings ***
-Test Tags    regression    backing-image    proxy
+Test Tags    backing-image    proxy    manual
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
@@ -25,7 +25,6 @@ Cleanup proxy testing environment
 
 *** Test Cases ***
 Backing image creation works with HTTP proxy enabled
-    [Tags]    backing-image    proxy    regression
     [Documentation]    Test for https://github.com/longhorn/longhorn/issues/12779
     ...                Verify backing images can be created when HTTP_PROXY env vars are injected.
     ...                Uses Kyverno to inject proxy env vars into backing image data source pods.

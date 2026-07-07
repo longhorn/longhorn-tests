@@ -1,7 +1,7 @@
 set_kubeconfig(){
   if [[ "${DISTRO}" == "talos" ]]; then
     export KUBECONFIG="test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/kubeconfig"
-    until [ $(kubectl get node -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true) -eq 4 ]; do
+    until [ $(kubectl get node -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true) -ge 4 ]; do
       echo "waiting for talos cluster nodes to be running";
       sleep 30;
     done

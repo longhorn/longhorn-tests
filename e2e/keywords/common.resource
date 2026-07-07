@@ -27,6 +27,7 @@ Library             ../libs/keywords/system_backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
+Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 Library             String
@@ -107,6 +108,7 @@ Init worker node variables
 Set up test environment
     set_backupstore
     Init worker node variables
+    start_node_monitoring
     IF     "${DATA_ENGINE}" == "v2"
         Enable v2 data engine and add block disks
     END

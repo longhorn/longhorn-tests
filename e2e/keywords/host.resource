@@ -59,10 +59,19 @@ Power off volume ${volume_id} replica node without waiting
 Power off node ${node_id} for ${power_off_time_in_min} mins
     [Documentation]    Power off a node for specified duration in minutes.
     ...                Example: Power off node 0 for 6 mins
+    ${powered_off_node} =    get_node_by_index    ${node_id}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
     reboot_node_by_index    ${node_id}    ${power_off_time_in_min}
+    Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
 
 Power off all worker nodes for ${power_off_time_in_min} mins
+    Append to list    ${powered_off_nodes}    ${NODE_0}
+    Append to list    ${powered_off_nodes}    ${NODE_1}
+    Append to list    ${powered_off_nodes}    ${NODE_2}
     reboot_all_worker_nodes    ${power_off_time_in_min}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_0}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_1}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_2}
 
 Restart cluster
     reboot_all_nodes
