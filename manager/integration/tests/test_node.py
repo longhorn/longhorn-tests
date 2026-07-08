@@ -17,7 +17,6 @@ from common import get_core_api_client, get_longhorn_api_client, \
     get_self_host_id, get_apps_api_client
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
-    SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE, \
@@ -1588,18 +1587,18 @@ def test_node_default_disk_labeled(client, core_api, reset_default_disk_label,  
     node = client.by_id_node(cases["disk_exists"])
     if DATA_ENGINE == "v1":
         assert len(node.disks) == 1
-        assert node.disks[list(node.disks)[0]].path.rstrip('/') == \
-            DEFAULT_DISK_PATH.rstrip('/')
+        assert node.disks[list(node.disks)[0]].path == \
+            DEFAULT_DISK_PATH
     else:
         assert len(node.disks) == 2
-        disk_paths = [disk.path.rstrip('/') for disk in node.disks.values()]
-        assert DEFAULT_DISK_PATH.rstrip('/') in disk_paths
+        disk_paths = [disk.path for disk in node.disks.values()]
+        assert DEFAULT_DISK_PATH in disk_paths
         assert BLOCK_DEV_PATH in disk_paths
 
     node = client.by_id_node(cases["labeled"])
     assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path.rstrip('/') == \
-        DEFAULT_DISK_PATH.rstrip('/')
+    assert node.disks[list(node.disks)[0]].path == \
+        DEFAULT_DISK_PATH
 
     # Remove the Disk from the Node used for this test case so we can have the
     # fixtures clean up after.
