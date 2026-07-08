@@ -140,16 +140,12 @@ def reset_disk_settings():
     api = get_longhorn_api_client()
     setting = api.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     api.update(setting, value="false")
-    setting = api.by_id_setting(SETTING_DEFAULT_DATA_PATH)
-    api.update(setting, value=DEFAULT_DISK_PATH)
 
     yield
 
     api = get_longhorn_api_client()
     setting = api.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     api.update(setting, value="false")
-    setting = api.by_id_setting(SETTING_DEFAULT_DATA_PATH)
-    api.update(setting, value=DEFAULT_DISK_PATH)
 
 
 def get_default_disk_path():
@@ -1534,21 +1530,20 @@ def test_replica_datapath_cleanup(client):  # NOQA
 
 @pytest.mark.v2_volume_test   # NOQA
 @pytest.mark.node  # NOQA
-def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  reset_disk_settings):  # NOQA
+def test_node_default_disk_labeled(client, core_api, reset_default_disk_label,  reset_disk_settings):  # NOQA
     """
     Test node feature: create default Disk according to the node label
 
-    Makes sure the created Disk matches the Default Data Path Setting.
+    Makes sure the created Disk is at the Default Data Path.
 
     1. Add labels to node 0 and 1, don't add label to node 2.
     2. Remove all the disks on node 1 and 2.
         1. The initial default disk will not be recreated.
-    3. Set setting `default disk path` to a random disk path.
-    4. Set setting `create default disk labeled node` to true.
-    5. Check node 0. It should still use the previous default disk path.
+    3. Set setting `create default disk labeled node` to true.
+    4. Check node 0. It should still use the previous default disk path.
         1. Due to we didn't remove the disk from node 0.
-    6. Check node 1. A new disk should be created at the random disk path.
-    7. Check node 2. There is still no disks
+    5. Check node 1. A new disk should be created at the default disk path.
+    6. Check node 2. There is still no disks
     """
     # Set up cases.
     cases = {
@@ -1585,8 +1580,6 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     cleanup_node_disks(client, node.id)
 
     # Set disk creation and path Settings.
-    setting = client.by_id_setting(SETTING_DEFAULT_DATA_PATH)
-    client.update(setting, value=random_disk_path)
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="true")
     wait_for_disk_update(client, cases["labeled"], 1)
@@ -1595,18 +1588,18 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     node = client.by_id_node(cases["disk_exists"])
     if DATA_ENGINE == "v1":
         assert len(node.disks) == 1
-        assert node.disks[list(node.disks)[0]].path == \
-            DEFAULT_DISK_PATH
+        assert node.disks[list(node.disks)[0]].path.rstrip('/') == \
+            DEFAULT_DISK_PATH.rstrip('/')
     else:
         assert len(node.disks) == 2
-        disk_paths = [disk.path for disk in node.disks.values()]
-        assert DEFAULT_DISK_PATH in disk_paths
+        disk_paths = [disk.path.rstrip('/') for disk in node.disks.values()]
+        assert DEFAULT_DISK_PATH.rstrip('/') in disk_paths
         assert BLOCK_DEV_PATH in disk_paths
 
     node = client.by_id_node(cases["labeled"])
     assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path == \
-        random_disk_path
+    assert node.disks[list(node.disks)[0]].path.rstrip('/') == \
+        DEFAULT_DISK_PATH.rstrip('/')
 
     # Remove the Disk from the Node used for this test case so we can have the
     # fixtures clean up after.
