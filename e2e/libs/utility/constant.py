@@ -46,3 +46,5 @@ LABEL_SELECTOR_DRIVER_DEPLOYER = "app=longhorn-driver-deployer"
 LABEL_SELECTOR_LONGHORN_UI = "app=longhorn-ui"
 
 DISK_UNSCHEDULABLE_KEEP_ROUNDS = 30
+
+DEFAULT_BLOCK_DISK_NAME = "block-disk"

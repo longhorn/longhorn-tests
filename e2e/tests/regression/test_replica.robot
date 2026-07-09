@@ -13,6 +13,8 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/snapshot.resource
+Resource    ../keywords/k8s.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -269,3 +271,35 @@ Test Volume Level Replica Rebuild Concurrent Sync Limit
     # Verify improvement
     Then Should Be True    ${rebuild_time} < ${2nd_rebuild_time}
     ...    msg=The 1st replica rebuilding time (${rebuild_time}s) should be faster than 2nd (${2nd_rebuild_time}s)
+
+Test Reusing Failed Replica After Node Back
+    [Documentation]
+    ...    Verify that when a Kubernetes node is removed and then added back
+    ...    to the cluster, Longhorn reuses the existing failed replica on that
+    ...    node instead of creating a brand-new one.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/11657
+    ...
+    ...    Steps:
+    ...    1. Create and attach a volume, then write data to the volume.
+    ...    2. Record the replica name on a replica node, then directly remove
+    ...       that Kubernetes node.
+    ...    3. Wait for the related replica failure (volume becomes degraded).
+    ...    4. Reboot the removed node to add it back to the cluster.
+    ...    5. Wait for the volume to become healthy again.
+    ...    6. Verify the failed replica on the returned node was reused
+    ...       (same replica name, not a fresh replacement).
+    ...    7. Verify the data of the volume is intact.
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Record volume 0 replica name on node 1
+
+    When Delete node 1
+    Then Wait for volume 0 degraded
+
+    When Reboot node 1
+    Then Wait for volume 0 healthy
+    And Check volume 0 replica reused on node 1
+    And Check volume 0 data is intact
