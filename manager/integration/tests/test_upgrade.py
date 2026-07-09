@@ -401,13 +401,6 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
 
     # v2 data engine CRs
     if v2_data_engine_crs_before_upgrade:
-        v2_backing_image_name = BACKING_IMAGE_NAME + "-v2"
-        create_backing_image_with_matching_url(
-            client,
-            v2_backing_image_name,
-            BACKING_IMAGE_QCOW2_URL,
-            dataEngine="v2")
-
         vol_detached_v2_name = "vol-detached-v2"
         vol_detached_v2 = create_and_check_volume(client, vol_detached_v2_name,
                                                   data_engine="v2")

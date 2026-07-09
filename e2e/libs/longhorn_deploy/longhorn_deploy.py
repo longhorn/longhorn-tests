@@ -43,16 +43,16 @@ class LonghornDeploy(Base):
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
 
-    def apply_longhorn_manager_networkpolicy(self):
-        logging(f"Applying Longhorn manager test NetworkPolicy")
+    def setup_longhorn_manager_networkpolicy(self):
+        logging(f"Reconciling Longhorn manager test NetworkPolicy")
         command = "./pipelines/utilities/create_network_policies.sh"
-        process = subprocess.Popen([command, "install_longhorn_manager_networkpolicy"],
+        process = subprocess.Popen([command, "setup_longhorn_manager_networkpolicy"],
                                    shell=False)
         process.wait()
         if process.returncode != 0:
-            logging(f"Applying Longhorn manager test NetworkPolicy failed")
+            logging(f"Reconciling Longhorn manager test NetworkPolicy failed")
             time.sleep(self.retry_count)
-            assert False, "Applying Longhorn manager test NetworkPolicy failed"
+            assert False, "Reconciling Longhorn manager test NetworkPolicy failed"
 
     def install(self, custom_cmd, install_stable_version, longhorn_namespace):
         logging(f"Installing Longhorn {'stable' if install_stable_version else 'the latest'} version")
@@ -69,7 +69,7 @@ class LonghornDeploy(Base):
             logging(f"Installing Longhorn failed")
             time.sleep(self.retry_count)
             assert False, "Installing Longhorn failed"
-        self.apply_longhorn_manager_networkpolicy()
+        self.setup_longhorn_manager_networkpolicy()
         self.longhorn.setup_longhorn_ui_nodeport()
         logging(f"Installed Longhorn")
 
@@ -87,7 +87,7 @@ class LonghornDeploy(Base):
                 time.sleep(self.retry_count)
             return False
         else:
-            self.apply_longhorn_manager_networkpolicy()
+            self.setup_longhorn_manager_networkpolicy()
             # add some delay between 2 upgrades
             time.sleep(60)
         logging(f"Upgraded Longhorn")

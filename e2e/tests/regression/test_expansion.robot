@@ -12,6 +12,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -166,3 +167,54 @@ Test RWX Volume Automatic Online Expansion
     And Write 60 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data.txt is intact
     And Check deployment 0 data in file data2.txt is intact
+
+Test Volume Expansion After Iscsid Restart
+    [Documentation]    Verify that volumes can still be expanded correctly after iscsid
+    ...                is restarted on all worker nodes.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/10544
+    ...
+    ...                Steps:
+    ...                1. Create a RWO and a RWX deployment, each with a 1GiB volume.
+    ...                2. Write data to both deployments.
+    ...                3. Restart iscsid on every worker node.
+    ...                4. Expand the RWO deployment volume to 2GiB.
+    ...                5. Wait for the RWO volume size to be expanded.
+    ...                6. Assert the filesystem size in the RWO deployment is 2GiB.
+    ...                7. Check RWO data integrity.
+    ...                8. Expand the RWX deployment volume to 2GiB.
+    ...                9. Wait for the RWX volume size to be expanded.
+    ...                10. Assert the filesystem size in the RWX deployment is 2GiB.
+    ...                11. Assert the disk size in the sharemanager pod is 2GiB.
+    ...                12. Check RWX data integrity.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volume doesn't rely on iscsid
+    END
+
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test    storage_size=1GiB
+    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test    storage_size=1GiB
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Create deployment 1 with persistentvolumeclaim 1
+    And Wait for volume of deployment 0 healthy
+    And Wait for volume of deployment 1 healthy
+    And Write 512 MB data to file data.txt in deployment 0
+    And Write 512 MB data to file data.txt in deployment 1
+
+    # Restart iscsid on all worker nodes
+    When SSH into node 0 and run command    sudo systemctl restart iscsid
+    And SSH into node 1 and run command    sudo systemctl restart iscsid
+    And SSH into node 2 and run command    sudo systemctl restart iscsid
+
+    # Expand RWO deployment and verify
+    And Expand deployment 0 volume to 2GiB
+    Then Wait for deployment 0 volume size expanded
+    And Assert filesystem size in deployment 0 is 2GiB
+    And Check deployment 0 data in file data.txt is intact
+
+    # Expand RWX deployment and verify
+    When Expand deployment 1 volume to 2GiB
+    Then Wait for deployment 1 volume size expanded
+    And Assert filesystem size in deployment 1 is 2GiB
+    And Assert disk size in sharemanager pod for deployment 1 is 2GiB
+    And Check deployment 1 data in file data.txt is intact

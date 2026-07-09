@@ -14,7 +14,7 @@ from workload.pod import list_pods
 from datetime import datetime, timezone, timedelta
 
 
-class InstanceManager:
+class Base:
 
     def __init__(self):
         self.node = Node()
@@ -87,6 +87,7 @@ class InstanceManager:
             time.sleep(retry_interval)
 
         assert False, f"Instance managers never recreated after {retry_count} attempts"
+
     def check_all_instance_managers_not_restart(self):
 
         ims = get_longhorn_client().list_instance_manager()
@@ -152,57 +153,7 @@ class InstanceManager:
                 return
         assert False, f"Failed to clean up engine instances in {engine_type} instance manager on node {node_name}: {cr}"
 
-    def kill_engine_process(self, instance_manager_name, volume_name):
-        exec_cmd = [
-            "kubectl", "exec",
-            "-n", "longhorn-system",
-            instance_manager_name,
-            "--",
-            "sh", "-c",
-            f'kill -9 $(pgrep -f "controller {volume_name}")'
-        ]
-
-        subprocess_exec_cmd(exec_cmd)
-
     def get_instance_manager_pod_on_node(self, node_name, engine_type):
         label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
         ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
         return ims[0].metadata.name
-
-    def get_spdk_lvols(self, node_name):
-        logging(f"Getting SPDK lvols on node {node_name}")
-        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v2")
-        cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- go-spdk-helper lvol get"
-        output = subprocess_exec_cmd(cmd)
-        logging(f"SPDK lvols output on node {node_name}:\n{output}")
-        return output
-
-    def verify_replica_lvol_deleted_from_spdk_lvol(self, node_name, replica_name):
-        logging(f"Verifying replica {replica_name} is deleted from SPDK on node {node_name}")
-        for i in range(self.retry_count):
-            try:
-                lvols_output = self.get_spdk_lvols(node_name)
-                if replica_name not in lvols_output:
-                    logging(f"Verified replica {replica_name} is deleted from SPDK on node {node_name}")
-                    return
-                logging(f"Replica {replica_name} still exists in SPDK on node {node_name}, retrying ... ({i})")
-                time.sleep(self.retry_interval)
-            except Exception as e:
-                logging(f"Error checking SPDK lvols: {e}")
-                time.sleep(self.retry_interval)
-        assert False, f"Replica {replica_name} still exists in SPDK on node {node_name} after {self.retry_count} retries"
-
-    def verify_replica_lvol_exists_in_spdk_lvol(self, node_name, replica_name):
-        logging(f"Verifying replica {replica_name} exists in SPDK on node {node_name}")
-        for i in range(self.retry_count):
-            try:
-                lvols_output = self.get_spdk_lvols(node_name)
-                if replica_name in lvols_output:
-                    logging(f"Verified replica {replica_name} exists in SPDK on node {node_name}")
-                    return
-                logging(f"Replica {replica_name} not found in SPDK on node {node_name}, retrying ... ({i})")
-                time.sleep(self.retry_interval)
-            except Exception as e:
-                logging(f"Error checking SPDK lvols: {e}")
-                time.sleep(self.retry_interval)
-        assert False, f"Replica {replica_name} not found in SPDK on node {node_name} after {self.retry_count} retries"
