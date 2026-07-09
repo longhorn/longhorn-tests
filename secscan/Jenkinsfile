@@ -20,8 +20,6 @@ node {
                              --env LONGHORN_VERSION=${TF_VAR_LONGHORN_VERSION} \
                              --env APPCO_USERNAME=${APPCO_USERNAME} \
                              --env APPCO_PASSWORD=${APPCO_PASSWORD} \
-                             --dns=10.113.53.53 \
-                             --dns=10.113.53.54 \
                              ${imageName}
             """
         }

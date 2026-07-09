@@ -261,6 +261,63 @@ SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
     And Reboot node 2
     And Wait for longhorn ready
 
+Test Deleting Backup While Volume Restoration
+    [Documentation]
+    ...    Verify that deleting a backup while a volume is being restored from
+    ...    that backup does not break the in-progress restoration. The restoration
+    ...    should still complete successfully and the restored data should be intact.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6138
+    ...           https://github.com/longhorn/longhorn/issues/7584
+    ...
+    ...    Steps:
+    ...    1. Create a PVC and a workload (deployment) to use that PVC.
+    ...    2. Write data.bin to the workload and record the checksum.
+    ...    3. Create a backup.
+    ...    4. Restore a volume from the backup.
+    ...    5. Wait for the restoration to start.
+    ...    6. While the restoration is still in progress, delete the backup.
+    ...    7. Wait for the restoration to complete.
+    ...    8. Wait for the restored volume to be detached.
+    ...    9. Create PV/PVC for the restored volume and create a pod to use it.
+    ...    10. Check the data integrity of the data.bin file.
+    ...    11. Create a new backup.
+    ...    12. Restore a volume from the backup.
+    ...    13. Wait for the restoration to complete.
+    ...    14. Wait for the restored volume to be detached.
+    ...    15. Create PV/PVC for the restored volume and create a pod to use it.
+    ...    16. Check the data integrity of the data.bin file.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    When Write 1024 MB data to file data.bin in deployment 0
+    And Record file data.bin checksum in deployment 0 as checksum 0
+    And Create backup 0 for deployment 0 volume
+
+    And Create volume 1 from deployment 0 volume backup 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 restoration from backup 0 of deployment 0 volume start
+    And Delete backup 0 of deployment 0 volume
+
+    Then Wait for volume 1 restoration to complete
+    And Wait for volume 1 detached
+    And Create persistentvolume for volume 1
+    And Create persistentvolumeclaim for volume 1
+    And Create pod 1 using volume 1
+    And Wait for pod 1 running
+    And Check pod 1 file data.bin checksum matches checksum 0
+
+    When Create backup 1 for deployment 0 volume
+    Then Create volume 2 from deployment 0 volume backup 1    dataEngine=${DATA_ENGINE}
+    And Wait for volume 2 restoration to complete
+    And Wait for volume 2 detached
+    And Create persistentvolume for volume 2
+    And Create persistentvolumeclaim for volume 2
+    And Create pod 2 using volume 2
+    And Wait for pod 2 running
+    And Check pod 2 file data.bin checksum matches checksum 0
+
 Test Corrupting Source Replica While Backup Creation
     [Documentation]    Verify that corrupting the source replica while a backup is in progress causes
     ...    a backup error, and that the volume recovers, and a subsequent backup
@@ -501,3 +558,38 @@ Test Restoring Volume From Corrupted Backup
     When Corrupt backup 0 cfg file of volume 0
     And Create volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
     Then Check volume 1 kept in faulted
+
+Test Restoring Volume From Backup With Missing Blocks
+    [Documentation]
+    ...    Verify that restoring a volume from a backup with missing blocks results
+    ...    in the restored volume entering a Faulted state, and that a subsequent
+    ...    clean backup can be successfully restored with correct data integrity.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6138#issuecomment-1879309192
+    ...
+    ...    Steps:
+    ...    1. Create and attach a volume
+    ...    2. Write data to the volume
+    ...    3. Create backup 0 and wait for completion
+    ...    4. Corrupt backup 0 by randomly deleting a block from the backupstore
+    ...    5. Restore a volume from backup 0 — the volume should enter Faulted state
+    ...    6. Create backup 1 from the original volume
+    ...    7. Restore a volume from backup 1 and check data integrity
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Create backup 0 for volume 0
+
+    When Delete random backup block of volume 0
+    Then Create volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 faulted
+    And Check volume 1 kept in faulted
+
+    When Create backup 1 for volume 0    backupMode=full
+    And Create volume 2 from backup 1 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 2 restoration from backup 1 of volume 0 completed
+    And Wait for volume 2 detached
+    And Attach volume 2
+    And Wait for volume 2 healthy
+    Then Check volume 2 data is backup 1 of volume 0

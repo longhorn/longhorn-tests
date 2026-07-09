@@ -188,3 +188,15 @@ Wait for node ${node_id} ${disk_type} disk schedulable
 Wait for node ${node_id} ${disk_type} disk unschedulable
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_node_disks_schedulable    ${node_name}    disk_type=${disk_type}    expected_schedulable=${False}
+
+Add ${disk_type} disk ${disk_name} to node ${node_id} with path ${mount_path}
+   ${node_name} =    get_node_by_index    ${node_id}
+   add_disk    ${disk_name}    ${node_name}    ${disk_type}    ${mount_path}
+
+Remove dir ${dir_path} on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    remove_dir    ${dir_path}    ${node_name}
+
+Wait for Longhorn node ${node_id} down
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_longhorn_node_down    ${node_name}

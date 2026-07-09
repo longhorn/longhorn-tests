@@ -20,3 +20,6 @@ class replica_keywords:
 
     def wait_for_replica_file_size(self, volume_name, expected_size):
         return self.replica.wait_for_replica_file_size(volume_name, expected_size)
+
+    def wait_for_replica_failed(self, volume_name, node_name):
+        return self.replica.wait_for_replica_failed(volume_name, node_name)

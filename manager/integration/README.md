@@ -24,8 +24,9 @@ kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn-tests/mast
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml
 ```
-2. Deploy the test script to the Kubernetes cluster.
+2. From the `manager` directory, reconcile the adaptive test NetworkPolicy, then deploy the test script to the Kubernetes cluster. The NetworkPolicy helper requires `yq` when it applies policies.
 ```
+../pipelines/utilities/create_network_policies.sh setup_longhorn_manager_networkpolicy
 kubectl create -f integration/deploy/test.yaml
 ```
 
