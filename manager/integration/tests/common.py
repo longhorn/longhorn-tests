@@ -89,7 +89,10 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.environ.get("CLOUDPROVIDER") == "aws":
-    if os.uname().machine == "x86_64":
+    if os.environ.get("DISTRO") == "talos":
+        # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
+    elif os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
@@ -144,7 +147,7 @@ WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn/')
+DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn')
 DIRECTORY_PATH = os.path.join(DEFAULT_DISK_PATH, 'longhorn-test')
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
@@ -3920,12 +3923,6 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
             wait_for_disk_status(client, node.name, name,
                                  "storageReserved",
                                  expected_reserved_storage)
-
-    # for block type disks added by bdf (nvme disk driver)
-    # disk deletion takes some time, wait the device show up on the host
-    # normally less than 30 seconds
-    # ref: https://github.com/longhorn/longhorn/issues/11860
-    time.sleep(30)
 
 
 def reset_settings(client):

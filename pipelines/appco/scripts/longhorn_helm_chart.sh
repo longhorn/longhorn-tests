@@ -141,8 +141,8 @@ install_longhorn_custom(){
     "${REPOSITORY_ARGS[@]}" \
     "${TAG_ARGS[@]}" \
     "${SECRET_ARGS[@]}"
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
-  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_version() {
@@ -158,8 +158,8 @@ install_longhorn_version() {
     --namespace "${LONGHORN_NAMESPACE}" \
     "${SECRET_ARGS[@]}"
 
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
-  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){
