@@ -243,6 +243,9 @@ Any ${label_selector} Pods Log Should Have ${expect_log} After Test Start
     ...                  longhorn.io/component=engine-image
     verify_pods_log_after_time_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
+Any ${label_selector} Pods Log Should Have ${expect_log} In Container ${container} After Test Start
+    verify_pods_log_after_time_contains    ${label_selector}    ${expect_log}    ${test_start_time}    container=${container}
+
 Any ${label_selector} Pods Log Should Not Have ${expect_log} After Test Start
     verify_pods_log_after_time_not_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
@@ -276,3 +279,10 @@ Verify ${engine_type} instance manager log on node ${node_id} not contain ${expe
     ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
     Log    ${pod_name}
     verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+
+Disable Longhorn Webhook Validator
+    execute_command    kubectl delete validatingwebhookconfiguration longhorn-webhook-validator --ignore-not-found
+
+Restore Longhorn Webhook Validator
+    execute_command    kubectl rollout restart daemonset/longhorn-manager -n longhorn-system
+    execute_command    kubectl rollout status daemonset/longhorn-manager -n longhorn-system --timeout=300s

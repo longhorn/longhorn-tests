@@ -25,6 +25,15 @@ Create volume with invalid name should fail
   Given Create volume     ${invalid_volume_name}
   Then No volume created
 
+Cleanup Faulted Volume Attachment Test
+    Recover Persistentvolumeclaim 0 Volume From Faulted State
+    Restore Longhorn Webhook Validator
+    Cleanup test resources
+
+Recover Persistentvolumeclaim 0 Volume From Faulted State
+    Update volume of persistentvolumeclaim 0 replica count to 1
+    Wait for volume of persistentvolumeclaim 0 healthy
+
 *** Test Cases ***
 
 Test RWX Volume Data Integrity After CSI Plugin Pod Restart
@@ -123,3 +132,34 @@ Test Block Volume Should Reject Filesystem Trim
     And Write 10 MB data to file data1.txt in deployment 0
     When Trim deployment 0 volume should fail
     Then Check deployment 0 data in file data1.txt is intact
+
+Test Faulted Volume Attachment Error Log
+    [Tags]    volume    faulted
+    [Documentation]    Verify that when a volume is faulted, the longhorn-csi-plugin logs
+    ...                "is not ready for workloads: volume is faulted" when a deployment tries to attach it.
+    ...                Issue: https://github.com/longhorn/longhorn/issues/9968
+    ...
+    ...                Steps:
+    ...                1. Record test start time.
+    ...                2. Create a storageclass with 3 replicas and configured data engine.
+    ...                3. Create a PVC using the storageclass.
+    ...                4. Delete longhorn-webhook-validator to allow numberOfReplicas=0.
+    ...                5. Set volume numberOfReplicas to 0.
+    ...                6. Delete all 3 replicas of the volume.
+    ...                7. Wait for volume to become faulted.
+    ...                8. Create a deployment using the PVC (do not wait for it to be ready).
+    ...                9. Verify longhorn-csi-plugin logs contain the faulted error message.
+    ...                10. Restore the longhorn-webhook-validator by restarting longhorn-manager.
+    [Teardown]    Cleanup Faulted Volume Attachment Test
+    Given Get test start time
+    And Create storageclass longhorn-test with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+
+    When Disable Longhorn Webhook Validator
+    And Update volume of persistentvolumeclaim 0 replica count to 0
+    And Delete 3 replicas of persistentvolumeclaim 0 volume
+    Then Wait for volume of persistentvolumeclaim 0 faulted
+
+    When Create deployment 0 with persistentvolumeclaim 0    replicaset=1    wait=${FALSE}
+    Then Wait Until Keyword Succeeds    60s    5s
+    ...    Any app=longhorn-csi-plugin Pods Log Should Have is not ready for workloads: volume is faulted In Container longhorn-csi-plugin After Test Start
