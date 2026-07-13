@@ -12,6 +12,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   instance_type = var.lh_aws_instance_type_controlplane
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
+  source_dest_check = var.cni == "default"
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp.id
   ]
@@ -49,6 +50,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   instance_type = var.lh_aws_instance_type_worker
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
+  source_dest_check = var.cni == "default"
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp.id
   ]
