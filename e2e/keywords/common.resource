@@ -45,7 +45,7 @@ Generate random disk name
 
 Run command
     [Arguments]    ${command}
-    ${result} =    execute_command    ${command}
+    ${result}=    execute_command    ${command}
     RETURN    ${result}
 
 Run command and expect output
@@ -117,6 +117,8 @@ Cleanup test resources
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
+    Run keyword And Ignore Error    reboot_node_by_name    ${deleted_node}
+    Run keyword And Ignore Error    wait_for_node_ready    ${deleted_node}
     uncordon_all_nodes
     cleanup_node_taints
     cleanup_node_labels
