@@ -147,9 +147,18 @@ class host_keywords:
         return ssh_exec(node_name, cmd)
 
     def check_volume_endpoint_on_node(self, volume_name, node_name):
-        cmd = f"ls -l /dev/longhorn/{volume_name}"
-        res = NodeExec(node_name).issue_cmd(cmd)
-        assert res.strip() and "No such file or directory" not in res, \
-            f"Volume endpoint /dev/longhorn/{volume_name} is empty or doesn't exist on node {node_name}"
-        logging(f"node={node_name}, volume={volume_name}\n/dev/longhorn/{volume_name}:\n{res}")
+        from utility.utility import get_retry_count_and_interval
+        import time
 
+        retry_count, retry_interval = get_retry_count_and_interval()
+        cmd = f"ls -l /dev/longhorn/{volume_name}"
+        for i in range(retry_count):
+            logging(f"Checking volume endpoint /dev/longhorn/{volume_name} on node {node_name} ... ({i})")
+            res = self.execute_command_on_node_and_get_output_string(cmd, node_name)
+            if res.strip() and "No such file or directory" not in res:
+                logging(f"node={node_name}, volume={volume_name}\n/dev/longhorn/{volume_name}:\n{res}")
+                return
+            time.sleep(retry_interval)
+
+        assert False, \
+            f"Volume endpoint /dev/longhorn/{volume_name} is empty or doesn't exist on node {node_name}"
