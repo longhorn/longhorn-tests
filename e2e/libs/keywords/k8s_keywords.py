@@ -143,11 +143,11 @@ class k8s_keywords:
     def get_longhorn_node_condition_status(self, node_name, type):
         return get_longhorn_node_condition_status(node_name, type)
 
-    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
-        return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
+    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
+        return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace, container=container)
 
-    def verify_pod_log_after_time_not_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
-        return verify_pod_log_after_time_not_contains(pod_name, expect_log, test_start_time, namespace)
+    def verify_pod_log_after_time_not_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
+        return verify_pod_log_after_time_not_contains(pod_name, expect_log, test_start_time, namespace, container=container)
 
     def deploy_system_upgrade_controller(self):
         return deploy_system_upgrade_controller()
@@ -197,8 +197,8 @@ class k8s_keywords:
     def get_pods_by_label_selector(self, label_selector, namespace=constant.LONGHORN_NAMESPACE):
         return get_pods_by_label_selector(label_selector, namespace)
 
-    def verify_pods_log_after_time_contains(self, label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
-        return verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace)
+    def verify_pods_log_after_time_contains(self, label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
+        return verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace, container)
 
     def verify_pods_log_after_time_not_contains(self, label_selector, unexpected_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
         return verify_pods_log_after_time_not_contains(label_selector, unexpected_log, test_start_time, namespace)
