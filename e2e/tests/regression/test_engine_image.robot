@@ -66,7 +66,7 @@ Test Replicas Not Accumulate During Engine Upgrade
     IF    '${LONGHORN_STABLE_VERSION}' != ''
         ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
     ELSE
-        Fail    Environment variable LONGHORN_STABLE_VERSION is not set
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
     Given Setting deleting-confirmation-flag is set to true

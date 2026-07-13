@@ -8,6 +8,7 @@ from longhorn_deploy.longhorn_argocd import LonghornArgocd
 from utility.utility import logging
 import utility.utility
 import os
+import subprocess
 import time
 
 class LonghornDeploy(Base):
@@ -42,6 +43,17 @@ class LonghornDeploy(Base):
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
 
+    def setup_longhorn_manager_networkpolicy(self):
+        logging(f"Reconciling Longhorn manager test NetworkPolicy")
+        command = "./pipelines/utilities/create_network_policies.sh"
+        process = subprocess.Popen([command, "setup_longhorn_manager_networkpolicy"],
+                                   shell=False)
+        process.wait()
+        if process.returncode != 0:
+            logging(f"Reconciling Longhorn manager test NetworkPolicy failed")
+            time.sleep(self.retry_count)
+            assert False, "Reconciling Longhorn manager test NetworkPolicy failed"
+
     def install(self, custom_cmd, install_stable_version, longhorn_namespace):
         logging(f"Installing Longhorn {'stable' if install_stable_version else 'the latest'} version")
         utility.utility.set_longhorn_namespace(longhorn_namespace)
@@ -57,6 +69,7 @@ class LonghornDeploy(Base):
             logging(f"Installing Longhorn failed")
             time.sleep(self.retry_count)
             assert False, "Installing Longhorn failed"
+        self.setup_longhorn_manager_networkpolicy()
         self.longhorn.setup_longhorn_ui_nodeport()
         logging(f"Installed Longhorn")
 
@@ -74,6 +87,7 @@ class LonghornDeploy(Base):
                 time.sleep(self.retry_count)
             return False
         else:
+            self.setup_longhorn_manager_networkpolicy()
             # add some delay between 2 upgrades
             time.sleep(60)
         logging(f"Upgraded Longhorn")

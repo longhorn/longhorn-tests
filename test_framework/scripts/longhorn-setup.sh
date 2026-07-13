@@ -47,6 +47,7 @@ enable_mtls(){
 
 main(){
   set_kubeconfig
+  kubectl get pods -A | grep -E 'calico|cilium|flannel|canal'
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     apply_kubectl_retry

@@ -3,6 +3,7 @@
 set -x
 
 source pipelines/utilities/longhorn_status.sh
+source pipelines/utilities/create_network_policies.sh
 TAG_ARGS=()
 SECRET_ARGS=()
 LONGHORN_NAMESPACE="longhorn-system"
@@ -140,6 +141,7 @@ install_longhorn_custom(){
     "${REPOSITORY_ARGS[@]}" \
     "${TAG_ARGS[@]}" \
     "${SECRET_ARGS[@]}"
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
 }
 
@@ -156,6 +158,7 @@ install_longhorn_version() {
     --namespace "${LONGHORN_NAMESPACE}" \
     "${SECRET_ARGS[@]}"
 
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
 }
 

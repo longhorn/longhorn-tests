@@ -165,3 +165,11 @@ class node_keywords:
 
     def wait_disk_kept_unschedulable(self, disk_name, node_name, keep_rounds=DISK_UNSCHEDULABLE_KEEP_ROUNDS):
         return self.node.wait_disk_kept_unschedulable(disk_name, node_name, keep_rounds)
+
+    def wait_for_node_disks_schedulable(self, node_name, disk_type=None, expected_schedulable=True):
+        state_name = "schedulable" if expected_schedulable else "unschedulable"
+        logging(f"Waiting for disks on node {node_name} to be {state_name} (disk_type filter: {disk_type})")
+        self.node.wait_for_node_disks_schedulable(node_name, disk_type, expected_schedulable)
+
+    def remove_dir(self, dir_path, node_name):
+        self.node.remove_dir(dir_path, node_name)

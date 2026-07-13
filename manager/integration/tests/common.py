@@ -89,7 +89,10 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.environ.get("CLOUDPROVIDER") == "aws":
-    if os.uname().machine == "x86_64":
+    if os.environ.get("DISTRO") == "talos":
+        # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
+    elif os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
@@ -144,7 +147,7 @@ WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn/')
+DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn')
 DIRECTORY_PATH = os.path.join(DEFAULT_DISK_PATH, 'longhorn-test')
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
@@ -3921,12 +3924,6 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
                                  "storageReserved",
                                  expected_reserved_storage)
 
-    # for block type disks added by bdf (nvme disk driver)
-    # disk deletion takes some time, wait the device show up on the host
-    # normally less than 30 seconds
-    # ref: https://github.com/longhorn/longhorn/issues/11860
-    time.sleep(30)
-
 
 def reset_settings(client):
 
@@ -5417,6 +5414,39 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
                         return stable_pod
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert False
+
+
+def wait_and_get_stable_pod(core_api, pod_name, namespace="default",
+                            is_phase="Running",
+                            timeout_cnt=RETRY_COUNTS,
+                            stable_retry=WAIT_FOR_POD_STABLE_MAX_RETRY):
+    """
+    Add mechanism to wait for a stable running pod when workload restarts its
+    pod, since Longhorn manager could create/delete the new workload pod
+    multiple times, it's possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    """
+    stable_pod = None
+    wait_for_stable_retry = 0
+
+    for _ in range(timeout_cnt):
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == is_phase:
+                if stable_pod is None or \
+                        stable_pod.metadata.uid != pod.metadata.uid:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == stable_retry:
+                        return stable_pod
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} {is_phase} failed: {e}")
+
+        time.sleep(RETRY_INTERVAL)
     assert False
 
 
