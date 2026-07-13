@@ -7,11 +7,14 @@ Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/recurringjob.resource
+Resource    ../keywords/replica.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/snapshot.resource
+Resource    ../keywords/setting.resource
+Resource    ../keywords/host.resource
 
 Library    random
 
@@ -148,3 +151,24 @@ Test Recurring Job Concurrency
 
     When Update snapshot recurringjob 0    concurrency=3
     Then There should be 3 jobs created concurrently for snapshot recurringjob 0
+
+Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
+    [Documentation]
+    ...    Issue: https://github.com/longhorn/longhorn/issues/10711
+    ...    1. Enable the setting `Snapshot Data Integrity` and `Immediate Snapshot Data Integrity Check After Creating a Snapshot`
+    ...    2. Create a 50 Gi volume. write around 30 Gi data into it.
+    ...    3. Create a recurring job of snapshot & backup.
+    ...    4. Delete a replica and wait for the replica rebuilding.
+    ...    5. Check volume data is intact
+    Given Setting snapshot-data-integrity is set to enabled
+    And Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to true
+    And Create volume 0 with    size=50Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 1
+    And Wait for volume 0 healthy
+    And Write 30 GB data to volume 0
+    And Create recurringjob for volume 0 with    task=backup    cron=*/3 * * * *
+    And Create recurringjob for volume 0 with    task=snapshot    cron=*/3 * * * *
+    When Delete volume 0 replica on node 0
+    Then Wait until volume 0 replica rebuilding completed on node 0
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact

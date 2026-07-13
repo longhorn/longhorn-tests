@@ -135,13 +135,17 @@ def wait_all_pods_evicted(node_name):
     assert evicted, 'failed to evict pods'
 
 def is_node_ready(node_name):
-    api = client.CoreV1Api()
-    node = api.read_node(node_name)
-    conditions = node.status.conditions
-    for condition in conditions:
-        if condition.type == "Ready" and condition.status == "True":
-            return True
-    return False
+    try:
+        api = client.CoreV1Api()
+        node = api.read_node(node_name)
+        conditions = node.status.conditions
+        for condition in conditions:
+            if condition.type == "Ready" and condition.status == "True":
+                return True
+        return False
+    except Exception as e:
+        logging(f"Error while checking node {node_name} ready status: {e}")
+        return False
 
 def wait_for_node_ready(node_name):
     retry_count, retry_interval = get_retry_count_and_interval()

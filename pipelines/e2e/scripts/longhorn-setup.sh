@@ -23,6 +23,7 @@ LONGHORN_INSTALL_METHOD="manifest"
 
 main(){
   set_kubeconfig
+  kubectl get pods -A | grep -E 'calico|cilium|flannel|canal'
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     apply_kubectl_retry

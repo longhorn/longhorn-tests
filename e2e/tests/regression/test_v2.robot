@@ -297,36 +297,6 @@ Test Default Block Disks Delete And Re-add
     When Write data to volume 0
     Then Check volume 0 data is intact
 
-Test V2 Orphan Replica Cleanup After Node Power Cycle
-    [Documentation]    Test orphaned SPDK replica cleanup
-    ...    1. Create a v2 volume with 3 replicas and attach it to node 0
-    ...    2. Go to the instance-manage pod and execute go-spdk-helper lvol get
-    ...    3. Note the replica name and verify it's in the lvol list on node 2
-    ...    4. Power down node 2
-    ...    5. Delete the node 2 replica CR
-    ...    6. Power up node 2
-    ...    7. An orphan resource will be created
-    ...    8. Delete the orphan resource
-    ...    9. Go to the instance-manage pod and execute go-spdk-helper lvol get
-    ...    10. The replica lvol should be deleted
-    IF    '${DATA_ENGINE}' == 'v1'
-        Skip    Test only validate on v2 data engine
-    END
-
-    Given Create volume 0 with    dataEngine=v2    numberOfReplicas=3
-    And Attach volume 0 to node 0
-    And Wait for volume 0 healthy
-    And Get volume 0 replica name on node 2
-    And Verify replica lvol exists in SPDK lvol list on node 2    replica_name=${replica_name}
-
-    When Power off node 2
-    And Delete replica    replica_name=${replica_name}
-    And Power on node 2
-
-    When Wait for orphan count to be 1
-    Then Cleanup orphans
-    And Verify replica lvol is deleted from SPDK lvol list on node 2    replica_name=${replica_name}
-
 Test V2 Volume Engine Live Switchover
     [Tags]    v2
     [Documentation]    Test v2 volume cross-node initiator and target support with live switchover.

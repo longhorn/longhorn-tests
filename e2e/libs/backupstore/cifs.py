@@ -47,9 +47,9 @@ class Cifs(Base):
         try:
             os.remove(file_path)
         except Exception as ex:
-            print("error while deleting file:",
+            logging("error while deleting file:",
                   file_path)
-            print(ex)
+            logging(ex)
 
     def delete_backup_cfg_file(self, volume_name, backup_name):
         nfs_backup_cfg_file_path = self.get_backup_cfg_file_path(volume_name,
@@ -57,17 +57,17 @@ class Cifs(Base):
         try:
             os.remove(nfs_backup_cfg_file_path)
         except Exception as ex:
-            print("error while deleting backup cfg file:",
+            logging("error while deleting backup cfg file:",
                   nfs_backup_cfg_file_path)
-            print(ex)
+            logging(ex)
 
     def delete_volume_cfg_file(self, volume_name):
         nfs_volume_cfg_path = self.get_volume_cfg_file_path(volume_name)
         try:
             os.remove(nfs_volume_cfg_path)
         except Exception as ex:
-            print("error while deleting backup cfg file:", nfs_volume_cfg_path)
-            print(ex)
+            logging("error while deleting backup cfg file:", nfs_volume_cfg_path)
+            logging(ex)
 
     def delete_random_backup_block(self, volume_name):
         backup_blocks_dir = self.get_backup_blocks_dir(volume_name)
@@ -78,10 +78,11 @@ class Cifs(Base):
 
         try:
             os.remove(backup_block_file_path)
+            logging(f"Removed backup block file {backup_block_file_path} in backupstore")
         except Exception as ex:
-            print("error while deleting backup block file:",
+            logging("error while deleting backup block file:",
                   backup_block_file_path)
-            print(ex)
+            logging(ex)
 
     def count_backup_block_files(self, volume_name):
         backup_blocks_dir = self.get_backup_blocks_dir(volume_name)
