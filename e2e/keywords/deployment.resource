@@ -42,7 +42,7 @@ Create deployment ${deployment_id} with volume ${volume_id}
     create_deployment    ${deployment_name}   ${pvc_name}
 
 Create deployment ${deployment_id} using volume ${volume_id}
-    [Arguments]    ${num_replicaset}
+    [Arguments]    ${num_replicaset}    ${wait}=${TRUE}
 
     ${node_count} =    Set Variable    3
     IF    '${num_replicaset}' == 'max'
@@ -54,7 +54,7 @@ Create deployment ${deployment_id} using volume ${volume_id}
 
     ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
-    create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
+    create_deployment    ${deployment_name}    ${claim_name}   ${node_count}    wait=${wait}
 
 Delete deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}

@@ -13,7 +13,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None, wait=True):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -102,7 +102,8 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
         deployment_name = deployment.metadata.name
         replicas = deployment.spec.replicas
 
-        wait_for_deployment_replicas_ready(deployment_name, replicas)
+        if wait:
+            wait_for_deployment_replicas_ready(deployment_name, replicas)
 
 def wait_for_deployment_replicas_ready(deployment_name, expected_ready_count, namespace='default'):
     api = client.AppsV1Api()

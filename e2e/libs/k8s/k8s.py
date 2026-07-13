@@ -304,7 +304,7 @@ def is_namespaced_pods_all_running(namespace):
     
     return True
 
-def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace):
+def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace, container=None):
     # Convert test_start_time to UTC and format it for kubectl --since-time use
     test_start_time = test_start_time.astimezone(timezone.utc)
     test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -314,13 +314,17 @@ def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, na
         "-n", namespace,
         f"--since-time={test_start_time}"
     ]
+    if container:
+        exec_cmd += ["-c", container]
+    else:
+        exec_cmd += ["--all-containers=true"]
 
     pod_log = subprocess_exec_cmd(exec_cmd)
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
 
     assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
 
-def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace):
+def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace, container=None):
     # Convert test_start_time to UTC and format it for kubectl --since-time use
     test_start_time = test_start_time.astimezone(timezone.utc)
     test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -330,6 +334,10 @@ def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_
         "-n", namespace,
         f"--since-time={test_start_time}"
     ]
+    if container:
+        exec_cmd += ["-c", container]
+    else:
+        exec_cmd += ["--all-containers=true"]
 
     pod_log = subprocess_exec_cmd(exec_cmd)
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")

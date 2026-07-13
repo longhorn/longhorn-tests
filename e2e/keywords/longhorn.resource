@@ -265,3 +265,35 @@ Verify ${engine_type} instance manager log on node ${node_id} not contain ${expe
     ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
     Log    ${pod_name}
     verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+
+Remove ${operation} Operation From Longhorn Webhook Validator For ${resource}
+    ${cmd}=    Catenate
+    ...    kubectl get validatingwebhookconfiguration longhorn-webhook-validator -o json |
+    ...    jq -j '[.webhooks[0].rules | to_entries[] | select(.value.resources | index("${resource}")) | select(.value.operations | index("${operation}")) | .key] | first'
+    ${rule_index}=    execute_command    ${cmd}
+
+    ${cmd}=    Catenate
+    ...    kubectl get validatingwebhookconfiguration longhorn-webhook-validator -o json |
+    ...    jq -j '.webhooks[0].rules[${rule_index}].operations | index("${operation}")'
+    ${operation_index}=    execute_command    ${cmd}
+
+    ${cmd}=    Catenate
+    ...    kubectl patch validatingwebhookconfiguration longhorn-webhook-validator --type=json
+    ...    -p='[{"op":"test","path":"/webhooks/0/rules/${rule_index}/operations/${operation_index}","value":"${operation}"},{"op":"remove","path":"/webhooks/0/rules/${rule_index}/operations/${operation_index}"}]'
+    execute_command    ${cmd}
+
+Restore ${operation} Operation To Longhorn Webhook Validator For ${resource}
+    ${cmd}=    Catenate
+    ...    kubectl get validatingwebhookconfiguration longhorn-webhook-validator -o json |
+    ...    jq -j '[.webhooks[0].rules | to_entries[] | select(.value.resources | index("${resource}")) | .key] | first'
+    ${rule_index}=    execute_command    ${cmd}
+
+    ${cmd}=    Catenate
+    ...    kubectl get validatingwebhookconfiguration longhorn-webhook-validator -o json |
+    ...    jq -j 'if .webhooks[0].rules[${rule_index}].operations | index("${operation}") == null then "true" else "false" end'
+    ${operation_missing}=    execute_command    ${cmd}
+
+    ${cmd}=    Catenate
+    ...    kubectl patch validatingwebhookconfiguration longhorn-webhook-validator --type=json
+    ...    -p='[{"op":"add","path":"/webhooks/0/rules/${rule_index}/operations/-","value":"${operation}"}]'
+    Run Keyword If    '${operation_missing}' == 'true'    execute_command    ${cmd}

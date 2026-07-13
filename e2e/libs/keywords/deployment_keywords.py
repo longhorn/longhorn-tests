@@ -26,12 +26,12 @@ class deployment_keywords:
         for deployment in deployments.items:
             self.delete_deployment(deployment.metadata.name)
 
-    def create_deployment(self, name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None):
+    def create_deployment(self, name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None, wait=True):
         logging(f'Creating deployment {name}')
         # Parse node_selector if it's a JSON string
         if node_selector and isinstance(node_selector, str):
             node_selector = json.loads(node_selector)
-        create_deployment(name, claim_name, replicaset=replicaset, enable_pvc_io_and_liveness_probe=enable_pvc_io_and_liveness_probe, block_volume=block_volume, args=args, node_selector=node_selector)
+        create_deployment(name, claim_name, replicaset=replicaset, enable_pvc_io_and_liveness_probe=enable_pvc_io_and_liveness_probe, block_volume=block_volume, args=args, node_selector=node_selector, wait=wait)
 
     def delete_deployment(self, name):
         logging(f'Deleting deployment {name}')

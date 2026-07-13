@@ -54,6 +54,21 @@ Wait for volume of persistentvolumeclaim ${claim_id} detached
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     wait_for_volume_detached    ${volume_name}
 
+Wait for volume of persistentvolumeclaim ${claim_id} faulted
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_faulted    ${volume_name}
+
+Update volume of persistentvolumeclaim ${claim_id} replica count to ${replica_count}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    update_volume_spec    ${volume_name}    numberOfReplicas    ${replica_count}
+
+Delete ${count} replicas of persistentvolumeclaim ${claim_id} volume
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    delete_replicas    ${volume_name}    ${count}
+
 Delete persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     delete_persistentvolumeclaim    ${claim_name}
