@@ -186,6 +186,9 @@ class Node:
             return None
 
     def get_node_by_index(self, index, role="worker"):
+        # If the index is not numeric, it is already a node name, return it directly.
+        if not str(index).isdigit():
+            return index
         nodes = self.list_node_names_by_role(role)
         return nodes[int(index)]
 
