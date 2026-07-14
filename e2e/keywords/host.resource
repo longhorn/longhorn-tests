@@ -177,7 +177,7 @@ Check volume endpoint on node of ${resource_kind} ${resource_id}
     ...    ELSE
     ...        get_workload_volume_name    ${resource_name}
     ${node_name} =    get_volume_node    ${volume_name}
-    check_volume_endpoint_on_node    ${volume_name}    ${node_name}
+    execute_command_on_node_and_wait_for_output    ls -l /dev/longhorn/${volume_name}    ${node_name}    brw
 
 Check volume endpoint on node ${node_id}
     [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output as a WARNING.
