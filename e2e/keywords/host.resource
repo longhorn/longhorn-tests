@@ -111,6 +111,12 @@ Run command on node ${node_id} and wait for output
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node_and_wait_for_output    ${command}    ${node_name}    ${expected_output}
 
+Get ${workload_kind} ${workload_id} volume node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    RETURN    ${node_name}
+
 Run command on node ${node_id} and get output
     [Arguments]    ${command}    ${expected_output}
     ${node_name} =    get_node_by_index    ${node_id}
