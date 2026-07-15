@@ -32,6 +32,9 @@ if [[ "${extra_block_device}" != true ]] && [[ -b "/dev/xvdh" ]]; then
   mount /dev/xvdh /var/lib/longhorn
 fi
 
+mkdir -p /data/longhorn
+chmod 755 /data/longhorn
+
 until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s agent did not install correctly'
   sleep 2

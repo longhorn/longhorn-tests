@@ -53,6 +53,22 @@ def get_longhorn_namespace():
     return utility.constant.LONGHORN_NAMESPACE
 
 
+def set_default_data_path(path):
+    utility.constant.DEFAULT_DATA_PATH = path
+
+
+def get_default_data_path():
+    return utility.constant.DEFAULT_DATA_PATH
+
+
+def set_default_control_path(path):
+    utility.constant.DEFAULT_CONTROL_PATH = path
+
+
+def get_default_control_path():
+    return utility.constant.DEFAULT_CONTROL_PATH
+
+
 def logging(msg, also_report=False):
     if also_report:
         logger.info(msg, also_console=True)

@@ -81,6 +81,12 @@ Get test start time
     Log    ${test_start_time}
     Set Test Variable    ${test_start_time}
 
+Set Default Data Path To ${path}
+    set_default_data_path    ${path}
+
+Set Default Control Path To ${path}
+    set_default_control_path    ${path}
+
 Set disk path based on host provider and architecture
     ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
     ${ARCH}=    Get Environment Variable    ARCH    amd64

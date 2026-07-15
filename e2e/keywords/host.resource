@@ -183,3 +183,22 @@ Check volume endpoint on node ${node_id}
     [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output as a WARNING.
     ${result} =    Run command on node ${node_id} and get output string    ls -l /dev/longhorn/
     Log    /dev/longhorn/ on node ${node_id}:\n${result}    level=WARN    console=True
+
+Check Engine Images Created In Default Control Path
+    [Documentation]    SSH into each worker node and verify that non-empty engine-binaries
+    ...    folder exist under the current default control path (waiting for them to appear if needed).
+    ...    If the default control path is not the default /var/lib/longhorn, also verify that
+    ...    no engine-binaries folder exist under /var/lib/longhorn.
+    ${default_control_path} =    get_default_control_path
+    ${worker_nodes} =    get_worker_nodes
+    ${worker_count} =    Get Length    ${worker_nodes}
+    FOR    ${node_id}    IN RANGE    ${worker_count}
+        Run command on node ${node_id} and wait for output
+        ...    test -d ${default_control_path}/engine-binaries && [ "$(ls -A ${default_control_path}/engine-binaries)" ] && echo non_empty || echo empty
+        ...    non_empty
+        IF    '${default_control_path}' != '/var/lib/longhorn'
+            Run command on node ${node_id} and wait for output
+            ...    test -d /var/lib/longhorn/engine-binaries && echo exists || echo not_exists
+            ...    not_exists
+        END
+    END

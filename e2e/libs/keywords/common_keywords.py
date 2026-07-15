@@ -13,6 +13,10 @@ from utility.utility import subprocess_exec_cmd
 from utility.utility import get_retry_count_and_interval
 from utility.utility import set_longhorn_namespace
 from utility.utility import get_longhorn_namespace
+from utility.utility import get_default_data_path
+from utility.utility import get_default_control_path
+from utility.utility import set_default_data_path
+from utility.utility import set_default_control_path
 from event.event import cleanup_events
 
 
@@ -38,6 +42,18 @@ class common_keywords:
 
     def get_longhorn_namespace(self):
         return get_longhorn_namespace()
+
+    def get_default_data_path(self):
+        return get_default_data_path()
+
+    def get_default_control_path(self):
+        return get_default_control_path()
+
+    def set_default_data_path(self, path):
+        set_default_data_path(path)
+
+    def set_default_control_path(self, path):
+        set_default_control_path(path)
 
     def get_node_by_index(self, node_id):
         return Node().get_node_by_index(node_id)
