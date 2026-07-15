@@ -39,6 +39,9 @@ if [[ "${extra_block_device}" != true ]]; then
   fi
 fi
 
+mkdir -p /data/longhorn
+chmod 755 /data/longhorn
+
 mkdir -p /etc/rancher/k3s
 
 cat <<EOF >> /etc/rancher/k3s/config.yaml
@@ -50,6 +53,7 @@ kubelet-arg:
 EOF
 
 curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC="agent" INSTALL_K3S_VERSION="${k3s_version}" sh -
+
 sudo systemctl start k3s-agent
 
 if [[ -n "${custom_ssh_public_key}" ]]; then

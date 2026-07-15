@@ -39,6 +39,9 @@ if [[ "${extra_block_device}" != true ]] && [[ -b "/dev/xvdh" ]]; then
   sudo mount /dev/xvdh /var/lib/longhorn
 fi
 
+mkdir -p /data/longhorn
+chmod 755 /data/longhorn
+
 RKE_SERVER_IP=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $1}'`
 RKE_SERVER_PORT=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $2}'`
 

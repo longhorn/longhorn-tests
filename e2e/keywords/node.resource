@@ -197,6 +197,25 @@ Remove dir ${dir_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     remove_dir    ${dir_path}    ${node_name}
 
+Remove dir ${dir_path} on all worker nodes
+    ${worker_nodes}=    get_worker_nodes
+    FOR    ${worker_node}    IN    @{worker_nodes}
+        remove_dir    ${dir_path}    ${worker_node}
+    END
+
+Empty dir ${dir_path} on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    empty_dir    ${dir_path}    ${node_name}
+
+Empty dir ${dir_path} on all worker nodes
+    ${worker_nodes}=    get_worker_nodes
+    FOR    ${worker_node}    IN    @{worker_nodes}
+        empty_dir    ${dir_path}    ${worker_node}
+    END
+
 Wait for Longhorn node ${node_id} down
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_longhorn_node_down    ${node_name}
+
+Check Default Disks Created On Default Data Path
+    wait_for_default_disks_created_on_default_data_path

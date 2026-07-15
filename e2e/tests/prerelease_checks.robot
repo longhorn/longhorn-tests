@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pre-release Checks Test Case
 
-Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job    backing-image    non-default-namespace
+Test Tags    pre-release    recurring-job    backing-image
 
 Library    OperatingSystem
 
@@ -25,6 +25,7 @@ Resource    ../keywords/system_backup.resource
 Resource    ../keywords/engine_image.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
@@ -33,8 +34,9 @@ Test Teardown    Cleanup test resources
 *** Variables ***
 ${test_v2_only}    false
 
-*** Test Cases ***
-Pre-release Checks
+*** Keywords ***
+Pre-release Checks Template
+    [Arguments]    ${longhorn_namespace}=longhorn-system    ${custom_cmd}=${EMPTY}    ${default_data_path}=/var/lib/longhorn    ${default_control_path}=/var/lib/longhorn
     [Documentation]    Pre-release Checks
     ...    1. Uninstall existing Longhorn
     ...    2. Install stable version of Longhorn
@@ -46,7 +48,12 @@ Pre-release Checks
     ...    8. Restore backups
     ...    9. Uninstall Longhorn
     ...    10. Re-install Longhorn back for subsequent tests
+    Set Test Variable    ${LONGHORN_NAMESPACE}    ${longhorn_namespace}
+    Set Default Data Path To ${default_data_path}
+    Set Default Control Path To ${default_control_path}
+
     # if Longhorn stable version is provided or Longhorn is required to be installed in a non-default namespace,
+    # or with a custom install command (e.g. custom default-data-path/default-control-path),
     # uninstall the existing Longhorn and install/configure the desired version of Longhorn
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
@@ -54,18 +61,32 @@ Pre-release Checks
         And Uninstall Longhorn
         And Check Longhorn CRD removed
 
-        And Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
+        # clean up /var/lib/longhorn and /data/longhorn folders on all worker nodes
+        # before installing Longhorn, to avoid stale data/control path data affecting the test
+        And Empty dir /var/lib/longhorn on all worker nodes
+        And Empty dir /data/longhorn on all worker nodes
+
+        And Install Longhorn stable version    longhorn_namespace=${longhorn_namespace}    custom_cmd=${custom_cmd}
         And Set default backupstore
         And Enable v2 data engine and add block disks
-    ELSE IF    '${LONGHORN_NAMESPACE}' != 'longhorn-system'
+    ELSE IF    '${longhorn_namespace}' != 'longhorn-system' or $custom_cmd != '${EMPTY}'
         Given Setting deleting-confirmation-flag is set to true
         And Uninstall Longhorn
         And Check Longhorn CRD removed
 
-        And Install Longhorn    longhorn_namespace=${LONGHORN_NAMESPACE}
+        # clean up /var/lib/longhorn and /data/longhorn folders on all worker nodes
+        # before installing Longhorn, to avoid stale data/control path data affecting the test
+        And Empty dir /var/lib/longhorn on all worker nodes
+        And Empty dir /data/longhorn on all worker nodes
+
+        And Install Longhorn    longhorn_namespace=${longhorn_namespace}    custom_cmd=${custom_cmd}
         And Set default backupstore
         And Enable v2 data engine and add block disks
     END
+
+    # verify default-data-path/default-control-path took effect right after installation
+    And Check Default Disks Created On Default Data Path
+    And Check Engine Images Created In Default Control Path
 
     # after correct version of Longhorn is installed, start the test
 
@@ -367,8 +388,8 @@ Pre-release Checks
         And Attach volume vol-restore-v1-0
         And Check volume vol-restore-v1-0 data is backup backup-v1 of volume v1
 
+        # v1 -> v2
         IF    "${DATA_ENGINE}" == "v2"
-            # v1 -> v2
             When Create volume vol-restore-v1-1 from backup backup-v1 of volume v1    size=1Gi    dataEngine=v2
             Then Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 start
             And Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 completed
@@ -458,4 +479,52 @@ Pre-release Checks
     And Check Longhorn CRD removed
 
     # install Longhorn back for subsequent tests
+    Set Default Data Path To /var/lib/longhorn
+    Set Default Control Path To /var/lib/longhorn
     And Install Longhorn
+
+*** Test Cases ***
+Pre-release Checks
+    [Tags]    2-stage-upgrade    upgrade    uninstall
+    Pre-release Checks Template    longhorn_namespace=longhorn-system
+
+Pre-release Checks With Non-default Namespace
+    [Tags]    uninstall    non-default-namespace
+    Pre-release Checks Template    longhorn_namespace=custom-longhorn
+
+Pre-release Checks With Custom Data Path
+    [Tags]    uninstall
+    ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        Pre-release Checks Template
+        ...    custom_cmd=yq -i '.defaultSettings.defaultDataPath = "/data/longhorn"' values.yaml
+        ...    default_data_path=/data/longhorn
+    ELSE
+        Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
+    END
+
+Pre-release Checks With Custom Control Path
+    [Tags]    uninstall
+    ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        Pre-release Checks Template
+        ...    custom_cmd=yq -i '.defaultSettings.defaultControlPath = "/data/longhorn"' values.yaml
+        ...    default_control_path=/data/longhorn
+    ELSE
+        Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
+    END
+
+Pre-release Checks With Custom Data Path And Custom Control Path
+    [Tags]    uninstall
+    ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    # defaultDataPath and defaultControlPath can only be tested with helm installation
+    # because the feature is not controlled solely by Longhorn settings
+    # manifest installation requires additional manual modifications in multiple places within longhorn.yaml file
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        Pre-release Checks Template
+        ...    custom_cmd=yq -i '.defaultSettings.defaultDataPath = "/data/longhorn" | .defaultSettings.defaultControlPath = "/data/longhorn"' values.yaml
+        ...    default_data_path=/data/longhorn
+        ...    default_control_path=/data/longhorn
+    ELSE
+        Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
+    END

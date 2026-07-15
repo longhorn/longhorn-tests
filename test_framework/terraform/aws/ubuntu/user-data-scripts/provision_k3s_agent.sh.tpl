@@ -32,6 +32,9 @@ if [[ "${extra_block_device}" != true ]] && [[ -b "/dev/xvdh" ]]; then
   mount /dev/xvdh /var/lib/longhorn
 fi
 
+mkdir -p /data/longhorn
+chmod 755 /data/longhorn
+
 mkdir -p /etc/rancher/k3s
 
 cat <<EOF >> /etc/rancher/k3s/config.yaml
