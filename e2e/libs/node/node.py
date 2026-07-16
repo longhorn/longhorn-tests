@@ -106,7 +106,7 @@ class Node:
         # copy Longhorn RestObject into a normal Python dict
         # otherwise we got TypeError: 'RestObject' object does not support item assignment
         for disk_name, disk in node.disks.items():
-            allow_sched = disk.path == self.DEFAULT_DISK_PATH or disk_name == DEFAULT_BLOCK_DISK_NAME
+            allow_sched = self.DEFAULT_DISK_PATH in disk.path or disk_name == DEFAULT_BLOCK_DISK_NAME
             disks[disk_name] = {
                 "path": disk.path,
                 "diskType": disk.diskType,
@@ -114,7 +114,7 @@ class Node:
             }
 
         # add default back if not exist
-        if not any(disk.get("path") == self.DEFAULT_DISK_PATH for disk in disks.values()):
+        if not any(self.DEFAULT_DISK_PATH in disk.get("path") for disk in disks.values()):
             logging(f"Default disk with path {self.DEFAULT_DISK_PATH} not found on node {node_name}, re-adding it")
 
             disks["default-disk"] = {
@@ -142,7 +142,7 @@ class Node:
 
         for disk_name, disk in iter(node.disks.items()):
             # do not disable block-disk if v2 data engine enabled
-            if disk.path != self.DEFAULT_DISK_PATH and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
+            if self.DEFAULT_DISK_PATH not in disk.path and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disk.allowScheduling = False
                 logging(f"Disabling scheduling disk {disk_name} on node {node_name}")
             else:
@@ -154,7 +154,7 @@ class Node:
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
             # do not delete block-disk if v2 data engine enabled
-            if disk.path == self.DEFAULT_DISK_PATH or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
+            if self.DEFAULT_DISK_PATH in disk.path or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disks[disk_name] = disk
                 disk.allowScheduling = True
                 logging(f"Keeping disk {disk_name} on node {node_name}")
