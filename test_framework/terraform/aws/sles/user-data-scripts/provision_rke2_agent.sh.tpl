@@ -67,6 +67,7 @@ nameserver 8.8.8.8
 nameserver 1.1.1.1
 EOF
   chattr +i /etc/resolv.conf || true
+  rke2_agent_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
 fi
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_VERSION="${rke2_version}" sh -
@@ -77,6 +78,12 @@ cat << EOF > /etc/rancher/rke2/config.yaml
 server: ${rke2_server_url}
 token: ${rke2_cluster_secret}
 EOF
+
+if [[ "${network_stack}" == "ipv6" ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+node-ip: "$rke2_agent_public_ip"
+EOF
+fi
 
 systemctl enable rke2-agent.service
 
