@@ -243,7 +243,7 @@ Delete Longhorn node ${node_id}
     execute_command
     ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute
     wait_for_longhorn_node_down    ${node_name}
-    execute_command_until_success
+    execute_command_and_wait_for_output
     ...    kubectl -n longhorn-system delete nodes.longhorn.io ${node_name}
     ...    node.longhorn.io "${node_name}" deleted
 
