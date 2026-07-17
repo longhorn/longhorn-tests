@@ -2453,6 +2453,24 @@ def delete_replica_on_test_node(client, volume_name): # NOQA
             replica_name = replica.name
     volume.replicaRemove(name=replica_name)
     wait_for_volume_degraded(client, volume_name)
+    return replica_name
+
+
+def wait_for_replica_deleted(client, volume_name, replica_name):
+    found = True
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        found = False
+        for replica in volume.replicas:
+            if replica.name == replica_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found, \
+        f"assert replica {replica_name} deleted from volume {volume_name}"
+    return volume
 
 
 def delete_replica_processes(client, api, volname):
