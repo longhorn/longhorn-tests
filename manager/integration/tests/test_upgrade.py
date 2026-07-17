@@ -11,7 +11,6 @@ from common import wait_for_volume_creation
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_degraded
-from common import wait_for_volume_replica_count
 from common import write_volume_random_data
 from common import check_volume_data
 from common import get_longhorn_api_client
@@ -39,6 +38,7 @@ from common import client, core_api # NOQA
 from common import SETTING_DISABLE_REVISION_COUNTER
 from common import update_setting
 from common import delete_replica_on_test_node
+from common import wait_for_replica_deleted
 from common import get_volume_engine
 from common import create_backup
 from common import BACKUP_BLOCK_SIZE, DEFAULT_VOLUME_SIZE, Gi
@@ -704,11 +704,10 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
 
     def test_replica_rebuilding(client, volume_name):
         # Delete one healthy replica for vol_rebuild to trigger the rebuilding
-        delete_replica_on_test_node(client, volume_name)
+        replica_name = delete_replica_on_test_node(client, volume_name)
         # Make sure vol_rebuild replica is deleted
-        replica_count = 2
-        vol_rebuild = wait_for_volume_replica_count(client, volume_name,
-                                                    replica_count)
+        vol_rebuild = wait_for_replica_deleted(client, volume_name,
+                                               replica_name)
         # vol_rebuild will become degraded and start replica rebuilding
         # Wait for replica rebuilding to complete
         # Verify the vol_rebuild is still healthy
