@@ -109,8 +109,9 @@ function mirror_image {
 
     # Handle manifest lists by copying all the architectures (and their variants) out to individual suffixed tags in the destination,
     # then recombining them into a single manifest list on the bare tags.
-    if [ "${MEDIATYPE}" == "application/vnd.docker.distribution.manifest.list.v2+json" ]; then
-      echo "${SOURCE}:${TAG} is manifest.list.v2"
+    if [[ "${MEDIATYPE}" == "application/vnd.docker.distribution.manifest.list.v2+json" || \
+         "${MEDIATYPE}" == "application/vnd.oci.image.index.v1+json" ]]; then
+      echo "${SOURCE}:${TAG} is ${MEDIATYPE}"
       for ARCH in ${ARCH_LIST}; do
         VARIANT_INDEX="0"
         DIGEST_VARIANT_LIST=$(jq -r --arg ARCH "${ARCH}" \
