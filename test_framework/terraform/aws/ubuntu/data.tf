@@ -13,6 +13,7 @@ data "aws_ami" "aws_ami_ubuntu" {
 data "template_file" "provision_k3s_server" {
   template = var.k8s_distro_name == "k3s" ? file("${path.module}/user-data-scripts/provision_k3s_server.sh.tpl") : null
   vars = {
+    cni = var.cni
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     k3s_version =  var.k8s_distro_version
@@ -37,6 +38,7 @@ data "template_file" "provision_k3s_agent" {
 data "template_file" "provision_rke2_server" {
   template = var.k8s_distro_name == "rke2" ? file("${path.module}/user-data-scripts/provision_rke2_server.sh.tpl") : null
   vars = {
+    cni = var.cni
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     rke2_version =  var.k8s_distro_version

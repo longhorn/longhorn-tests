@@ -570,6 +570,11 @@ Test Encrypted Volume Upgrade
 
     # ==================== Upgrade Longhorn (Keep Old Engine) ====================
     When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+
+    FOR    ${i}    IN RANGE    7
+        Check volume endpoint on node of deployment ${i}
+    END
+
     When Upgrade Longhorn to custom version
     And Wait for volume of deployment 0 healthy
     And Wait for volume of deployment 1 healthy
@@ -578,6 +583,10 @@ Test Encrypted Volume Upgrade
     And Wait for volume of deployment 4 healthy
     And Wait for volume of deployment 5 healthy
     And Wait for volume of deployment 6 healthy
+
+    FOR    ${i}    IN RANGE    7
+        Check volume endpoint on node of deployment ${i}
+    END
 
     # ==================== Post-Upgrade: Initial State Verification ====================
     # Verify old engine semantics are preserved after Longhorn system upgrade

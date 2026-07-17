@@ -56,7 +56,11 @@ service-cidr: fd00:20::/112
 EOF
 fi
 
-systemctl enable rke2-server.service
+if [[ "${cni}" != "default" ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+cni: ${cni}
+EOF
+fi
 
 if [ "${cis_hardening}" == true ]; then
     cat << EOF > /etc/sysctl.d/60-rke2-cis.conf
@@ -74,6 +78,7 @@ kube-apiserver-arg:
 EOF
 fi
 
+systemctl enable rke2-server.service
 systemctl start rke2-server.service
 
 # TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.

@@ -110,6 +110,18 @@ resource "aws_security_group" "lh_aws_secgrp" {
     cidr_blocks = ["10.0.0.0/8"]
   }
 
+  dynamic "ingress" {
+    for_each = var.cni == "calico" ? [1] : []
+
+    content {
+      description = "Allow Calico IP-in-IP between cluster nodes"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "4"
+      cidr_blocks = [aws_vpc.lh_aws_vpc.cidr_block]
+    }
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -163,17 +175,6 @@ resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
 
   subnet_id      = aws_subnet.lh_aws_public_subnet.id
   route_table_id = aws_route_table.lh_aws_public_rt.id
-}
-
-# Associate private subnet to private route table
-resource "aws_route_table_association" "lh_aws_private_subnet_rt_association" {
-  depends_on = [
-    aws_subnet.lh_aws_private_subnet,
-    aws_route_table.lh_aws_private_rt
-  ]
-
-  subnet_id      = aws_subnet.lh_aws_private_subnet.id
-  route_table_id = aws_route_table.lh_aws_private_rt.id
 }
 
 # Create AWS key pair

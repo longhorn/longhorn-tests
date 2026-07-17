@@ -15,6 +15,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/host.resource
+Resource    ../keywords/replica.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -154,6 +155,44 @@ Test Delete Instance Manager Of Single Replica Volume
     And Wait for volume 0 unknown
     And Wait for volume 0 healthy
     Then Check volume 0 data is intact
+
+Test Node Drain After Node Deletion
+    [Documentation]    Test that draining a node succeeds after another node is deleted, and the
+    ...    volume remains accessible (degraded) with data intact.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/10833
+    ...
+    ...    1. Set node-drain-policy to block-for-eviction-if-contains-last-replica
+    ...    2. Create a volume with 3 replicas
+    ...    3. Create PV/PVC for the volume, and create a pod to use it
+    ...    4. Write some data to the pod
+    ...    5. Delete the pod to detach the volume
+    ...    6. Delete node 1
+    ...    7. Wait for node 1 to be not ready
+    ...    8. Drain node 2
+    ...    9. Recreate a pod to use the volume
+    ...    10. Wait for the pod running
+    ...    11. Wait for the volume degraded
+    ...    12. Check data integrity
+    Given Setting node-drain-policy is set to block-for-eviction-if-contains-last-replica
+    And Create volume 0 with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Wait for volume 0 detached
+    And Create persistentvolume for volume 0
+    And Create persistentvolumeclaim for volume 0
+    And Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Write 100 MB data to file data.txt in pod 0
+
+    When Delete pod 0
+    And Wait for volume 0 detached
+    And Delete node 1
+    And Wait for Longhorn node 1 down
+    And Force drain node 2
+
+    Then Create pod 0 using volume 0
+    And Wait for pod 0 running
+    And Wait for volume 0 degraded
+    And Check pod 0 data in file data.txt is intact
 
 Test Offline Replica Rebuilding Volume Status Condition
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11246
@@ -303,3 +342,118 @@ Test Reusing Failed Replica After Node Back
     Then Wait for volume 0 healthy
     And Check volume 0 replica reused on node 1
     And Check volume 0 data is intact
+
+Test Large Volume Fast Replica Rebuilding Performance
+    [Tags]    snapshot-purge
+    [Documentation]
+    ...    Issue: https://github.com/longhorn/longhorn/issues/4210
+    ...           https://github.com/longhorn/longhorn/issues/10711
+    ...    1. Create a 50 Gi volume. write around 30 Gi data into it.
+    ...    2. Fail one of the replica (node down or network partition) and wait for the replica becomes failed.
+    ...    3. Power on node (or recover network)
+    ...    4. Rebuilding (record rebuild time)
+    ...    5. Enable `Snapshot Data Integrity` and `Immediate Snapshot Data Integrity Check After Creating a Snapshot`
+    ...    6. Take a snapshot
+    ...    7. Wait for N minutes. Or check if the snapshot checksum file is generated
+    ...    8. Fail one of the replica (node down or network partition) and wait for the replica becomes failed.
+    ...    9. Power on node (or recover network)
+    ...    10. Rebuilding (expect faster than without the two settings enabled)
+    Given Create volume 0 with    size=50Gi    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write 30 GB data to volume 0
+    When Power off node 1 for 4 mins
+
+    Then Wait for longhorn ready
+    And Wait until volume 0 replica rebuilding started on node 1
+    ${rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 1
+    And Wait for volume 0 healthy
+
+    When Setting snapshot-data-integrity is set to enabled
+    And Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to true
+    And Create snapshot 0 of volume 0
+    And Validate snapshot 0 is in volume 0 snapshot list
+    # Longhorn creates a snapshot A (data size 30 GiB) without a checksum during the first rebuild.
+    # After creating snapshot 0 for volume 0, the snapshot A must be purged.
+    # Once purged, snapshot 0 for volume 0 will generate a new checksum.
+    IF    "${DATA_ENGINE}" == "v1"
+        And Purge volume 0 snapshot
+    ELSE
+        # v2 volume purge status is always null
+        # so we can't monitor the purge status of a v2 volume to ensure the purge is completed
+        And Purge volume 0 snapshot    wait=False
+    END
+    # Since this test involves writing 30 GB of data to the volume.
+    # Based on observations on AWS, generating the snapshot checksum
+    # in such cases can take up to approximately 18 minutes.
+    # Make sure to set RETRY_COUNT to a sufficiently large value
+    # to wait until the checksum is calculated
+    And Wait for volume 0 snapshot 0 checksum to be calculated
+    And Power off node 1 for 4 mins
+
+    Then Wait for longhorn ready
+    ${2nd_rebuild_time}=    Wait until volume 0 replica rebuilding completed on node 1
+    And Wait for volume 0 healthy
+    ${status}=    Evaluate    ${2nd_rebuild_time} <= ${rebuild_time}
+    Run Keyword If    not ${status}
+    ...    Fail    The 2nd replica rebuilding time ${2nd_rebuild_time}s > 1st ${rebuild_time}s
+
+Test Large Volume Delta Replica Rebuilding Performance
+    [Documentation]
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13082
+    ...
+    ...    1. Set replica-replenishment-wait-interval to a very large value to make the failed replica
+    ...       to be reused later
+    ...    2. Disable snapshot-data-integrity and snapshot-data-integrity-immediate-check-after-snapshot-creation
+    ...       to prevent fast rebuilding since we are testing snapshot-based delta rebuilding here.
+    ...       Ref: https://longhorn.io/docs/1.12.0/advanced-resources/rebuilding/#replica-rebuilding-workflow
+    ...    3. Create a 50 Gi volume. Write around 30 Gi data into it.
+    ...    4. Delete volume replica on node 1
+    ...    5. Wait for replica rebuilding started on node 1. A full rebuilding will be triggered
+    ...       since there is no snapshot or checksum.
+    ...    6. Wait for replica rebuilding completed and record the rebuild time
+    ...    7. Wait for volume healthy
+    ...    8. Take a snapshot to ensure the snapshot file exists in the target replica's data directory
+    ...    9. Power off node 1
+    ...    10. Wait for the replica on node 1 to be failed
+    ...    11. Power on node 1
+    ...    12. Wait for replica rebuilding started on node 1. A delta rebuilding will be triggered
+    ...        since there is a snapshot existing.
+    ...    13. Wait for replica rebuilding completed and record the rebuild time
+    ...    14. Compare the rebuild times. The delta rebuild time should be less than the full rebuild time.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    v2 volumes don't support delta rebuilding, only support fast rebuilding
+    END
+
+    Given Setting replica-replenishment-wait-interval is set to 86400
+    And Setting fast-replica-rebuild-enabled is set to false
+    And Setting snapshot-data-integrity is set to disabled
+    And Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to false
+    And Create volume 0 with    size=50Gi    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write 30 GB data to volume 0
+
+    # First cycle: full rebuild
+    When Delete volume 0 replica on node 1
+    Then Wait until volume 0 replica rebuilding started on node 1
+    ${full_rebuild_time} =    Wait until volume 0 replica rebuilding completed on node 1
+    And Wait for volume 0 healthy
+
+    # Create a snapshot so the replica has a checkpoint for delta rebuilding
+    And Create snapshot 0 of volume 0
+    And Validate snapshot 0 is in volume 0 snapshot list
+
+    # Second cycle: delta rebuild (snapshot exists)
+    When Power off node 1
+    And Wait for volume 0 replica on node 1 failed
+    And Record volume 0 replica name on node 1
+    And Power on node 1
+    Then Wait until volume 0 replica rebuilding started on node 1
+    ${delta_rebuild_time} =    Wait until volume 0 replica rebuilding completed on node 1
+    And Wait for volume 0 healthy
+    And Check volume 0 replica reused on node 1
+    And Check volume 0 data is intact
+    ${status}=    Evaluate    ${delta_rebuild_time} <= ${full_rebuild_time}
+    Run Keyword If    not ${status}
+    ...    Fail    The delta rebuild time ${delta_rebuild_time}s > full rebuild time ${full_rebuild_time}s

@@ -1,10 +1,10 @@
-# Create controlplane instances for rke2
-resource "aws_instance" "lh_aws_instance_controlplane_rke2" {
- depends_on = [
+# Create controlplane instances
+resource "aws_instance" "lh_aws_instance_controlplane" {
+  depends_on = [
     aws_subnet.lh_aws_public_subnet,
   ]
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+  count = var.lh_aws_instance_count_controlplane
 
   availability_zone = var.aws_availability_zone
 
@@ -12,6 +12,7 @@ resource "aws_instance" "lh_aws_instance_controlplane_rke2" {
   instance_type = var.lh_aws_instance_type_controlplane
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
+  source_dest_check = var.cni == "default"
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp_public.id
   ]
@@ -30,15 +31,15 @@ resource "aws_instance" "lh_aws_instance_controlplane_rke2" {
   }
 }
 
-# Create worker instances for rke2
-resource "aws_instance" "lh_aws_instance_worker_rke2" {
+# Create worker instances
+resource "aws_instance" "lh_aws_instance_worker" {
   depends_on = [
     aws_internet_gateway.lh_aws_igw,
-    aws_subnet.lh_aws_private_subnet,
-    aws_instance.lh_aws_instance_controlplane_rke2
+    aws_subnet.lh_aws_public_subnet,
+    aws_instance.lh_aws_instance_controlplane
   ]
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+  count = var.lh_aws_instance_count_worker
 
   availability_zone = var.aws_availability_zone
 
@@ -47,6 +48,7 @@ resource "aws_instance" "lh_aws_instance_worker_rke2" {
   associate_public_ip_address = true
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
+  source_dest_check = var.cni == "default"
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp_public.id
   ]
@@ -65,57 +67,58 @@ resource "aws_instance" "lh_aws_instance_worker_rke2" {
   }
 }
 
-resource "aws_volume_attachment" "lh_aws_hdd_volume_att_rke2" {
+resource "aws_volume_attachment" "lh_aws_hdd_volume_att" {
 
-  count = var.use_hdd && var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+  count = var.use_hdd ? var.lh_aws_instance_count_worker : 0
 
   device_name  = "/dev/xvdh"
   volume_id    = aws_ebs_volume.lh_aws_hdd_volume[count.index].id
-  instance_id  = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker[count.index].id
   force_detach = true
 }
 
-resource "aws_volume_attachment" "lh_aws_ssd_volume_att_rke2" {
+resource "aws_volume_attachment" "lh_aws_ssd_volume_att" {
 
-  count = var.extra_block_device && var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
 
   device_name  = "/dev/xvdh"
   volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
-  instance_id  = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker[count.index].id
   force_detach = true
 }
 
-resource "aws_lb_target_group_attachment" "lh_aws_lb_tg_443_attachment_rke2" {
+resource "aws_lb_target_group_attachment" "lh_aws_lb_tg_443_attachment" {
 
   depends_on = [
     aws_lb_target_group.lh_aws_lb_tg_443,
-    aws_instance.lh_aws_instance_worker_rke2
+    aws_instance.lh_aws_instance_worker
   ]
 
-  count            = var.create_load_balancer ? length(aws_instance.lh_aws_instance_worker_rke2) : 0
+  count            = var.create_load_balancer ? length(aws_instance.lh_aws_instance_worker) : 0
   target_group_arn = aws_lb_target_group.lh_aws_lb_tg_443[0].arn
-  target_id        = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  target_id        = aws_instance.lh_aws_instance_worker[count.index].id
 }
 
 # Associate every EIP with controlplane instance
-resource "aws_eip_association" "lh_aws_eip_assoc_rke2" {
+resource "aws_eip_association" "lh_aws_eip_assoc" {
   depends_on = [
-    aws_instance.lh_aws_instance_controlplane_rke2,
+    aws_instance.lh_aws_instance_controlplane,
     aws_eip.lh_aws_eip_controlplane
   ]
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+  count = var.lh_aws_instance_count_controlplane
 
-  instance_id   = element(aws_instance.lh_aws_instance_controlplane_rke2, count.index).id
+  instance_id   = element(aws_instance.lh_aws_instance_controlplane, count.index).id
   allocation_id = element(aws_eip.lh_aws_eip_controlplane, count.index).id
 }
 
 # node initialization step 1: register the system to get repos
-resource "null_resource" "registration_controlplane_rke2" {
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+resource "null_resource" "registration_controlplane" {
+
+  count = var.lh_aws_instance_count_controlplane
 
   depends_on = [
-    aws_instance.lh_aws_instance_controlplane_rke2
+    aws_instance.lh_aws_instance_controlplane
   ]
 
   provisioner "remote-exec" {
@@ -135,11 +138,12 @@ resource "null_resource" "registration_controlplane_rke2" {
 }
 
 # node initialization step 1: register the system to get repos
-resource "null_resource" "registration_worker_rke2" {
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+resource "null_resource" "registration_worker" {
+
+  count = var.lh_aws_instance_count_worker
 
   depends_on = [
-    aws_instance.lh_aws_instance_worker_rke2
+    aws_instance.lh_aws_instance_worker
   ]
 
   provisioner "remote-exec" {
@@ -151,18 +155,19 @@ resource "null_resource" "registration_worker_rke2" {
     connection {
       type     = "ssh"
       user     = "ec2-user"
-      host     = aws_instance.lh_aws_instance_worker_rke2[count.index].public_ip
+      host     = aws_instance.lh_aws_instance_worker[count.index].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
 }
 
 # node initialization step 2: install required packages after get repos
-resource "null_resource" "package_install_controlplane_rke2" {
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+resource "null_resource" "package_install_controlplane" {
+
+  count = var.lh_aws_instance_count_controlplane
 
   depends_on = [
-    null_resource.registration_controlplane_rke2
+    null_resource.registration_controlplane
   ]
 
   provisioner "remote-exec" {
@@ -186,35 +191,36 @@ resource "null_resource" "package_install_controlplane_rke2" {
 
 }
 
-resource "time_sleep" "wait_controlplane_1_minute_rke2" {
+resource "time_sleep" "wait_controlplane_1_minute" {
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+  count = var.lh_aws_instance_count_controlplane
 
   depends_on = [
-    null_resource.package_install_controlplane_rke2
+    null_resource.package_install_controlplane
   ]
 
   create_duration = "60s"
 }
 
-resource "aws_ec2_instance_state" "controlplane_state_rke2" {
+resource "aws_ec2_instance_state" "controlplane_state" {
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
+  count = var.lh_aws_instance_count_controlplane
 
   depends_on = [
-    time_sleep.wait_controlplane_1_minute_rke2
+    time_sleep.wait_controlplane_1_minute
   ]
 
-  instance_id = aws_instance.lh_aws_instance_controlplane_rke2[count.index].id
+  instance_id = aws_instance.lh_aws_instance_controlplane[count.index].id
   state       = "running"
 }
 
 # node initialization step 2: install required packages after get repos
-resource "null_resource" "package_install_worker_rke2" {
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+resource "null_resource" "package_install_worker" {
+
+  count = var.lh_aws_instance_count_worker
 
   depends_on = [
-    null_resource.registration_worker_rke2
+    null_resource.registration_worker
   ]
 
   provisioner "remote-exec" {
@@ -231,42 +237,90 @@ resource "null_resource" "package_install_worker_rke2" {
     connection {
       type     = "ssh"
       user     = "ec2-user"
-      host     = aws_instance.lh_aws_instance_worker_rke2[count.index].public_ip
+      host     = aws_instance.lh_aws_instance_worker[count.index].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
 
 }
 
-resource "time_sleep" "wait_worker_1_minute_rke2" {
+resource "time_sleep" "wait_worker_1_minute" {
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+  count = var.lh_aws_instance_count_worker
 
   depends_on = [
-    null_resource.package_install_worker_rke2
+    null_resource.package_install_worker
   ]
 
   create_duration = "60s"
 }
 
-resource "aws_ec2_instance_state" "worker_state_rke2" {
+resource "aws_ec2_instance_state" "worker_state" {
 
-  count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+  count = var.lh_aws_instance_count_worker
 
   depends_on = [
-    time_sleep.wait_worker_1_minute_rke2
+    time_sleep.wait_worker_1_minute
   ]
 
-  instance_id = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  instance_id = aws_instance.lh_aws_instance_worker[count.index].id
   state       = "running"
+}
+
+# node initialization step 3: setup k3s cluster for master node
+resource "null_resource" "cluster_setup_controlplane_k3s" {
+
+  count = var.k8s_distro_name == "k3s" ? var.lh_aws_instance_count_controlplane : 0
+
+  depends_on = [
+    aws_ec2_instance_state.controlplane_state
+  ]
+
+  provisioner "remote-exec" {
+
+    inline = [data.template_file.provision_k3s_server.rendered]
+
+    connection {
+      type     = "ssh"
+      user     = "ec2-user"
+      host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
+      private_key = file(var.aws_ssh_private_key_file_path)
+    }
+  }
+
+}
+
+# node initialization step 3: setup k3s cluster for worker node
+resource "null_resource" "cluster_setup_worker_k3s" {
+
+  count = var.k8s_distro_name == "k3s" ? var.lh_aws_instance_count_worker : 0
+
+  depends_on = [
+    aws_ec2_instance_state.worker_state,
+    null_resource.cluster_setup_controlplane_k3s
+  ]
+
+  provisioner "remote-exec" {
+
+    inline = [data.template_file.provision_k3s_agent.rendered]
+
+    connection {
+      type     = "ssh"
+      user     = "ec2-user"
+      host     = aws_instance.lh_aws_instance_worker[count.index].public_ip
+      private_key = file(var.aws_ssh_private_key_file_path)
+    }
+  }
+
 }
 
 # node initialization step 3: setup rke2 cluster for master node
 resource "null_resource" "cluster_setup_controlplane_rke2" {
+
   count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_controlplane : 0
 
   depends_on = [
-    aws_ec2_instance_state.controlplane_state_rke2
+    aws_ec2_instance_state.controlplane_state
   ]
 
   provisioner "remote-exec" {
@@ -285,10 +339,11 @@ resource "null_resource" "cluster_setup_controlplane_rke2" {
 
 # node initialization step 3: setup rke2 cluster for worker node
 resource "null_resource" "cluster_setup_worker_rke2" {
+
   count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
 
   depends_on = [
-    aws_ec2_instance_state.worker_state_rke2,
+    aws_ec2_instance_state.worker_state,
     null_resource.cluster_setup_controlplane_rke2
   ]
 
@@ -299,7 +354,33 @@ resource "null_resource" "cluster_setup_worker_rke2" {
     connection {
       type     = "ssh"
       user     = "ec2-user"
-      host     = aws_instance.lh_aws_instance_worker_rke2[count.index].public_ip
+      host     = aws_instance.lh_aws_instance_worker[count.index].public_ip
+      private_key = file(var.aws_ssh_private_key_file_path)
+    }
+  }
+
+}
+
+# node initialization step 4: make sure k8s components running
+resource "null_resource" "make_sure_k8s_components_running_controlplane_k3s" {
+
+  count = var.k8s_distro_name == "k3s" ? 1 : 0
+
+  depends_on = [
+    null_resource.cluster_setup_controlplane_k3s,
+    null_resource.cluster_setup_worker_k3s
+  ]
+
+  provisioner "remote-exec" {
+
+    inline = [
+      "until (kubectl get pods -A | grep 'Running'); do echo 'Waiting for k3s startup'; sleep 5; done"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = "ec2-user"
+      host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
@@ -308,6 +389,7 @@ resource "null_resource" "cluster_setup_worker_rke2" {
 
 # node initialization step 4: make sure k8s components running
 resource "null_resource" "make_sure_k8s_components_running_controlplane_rke2" {
+
   count = var.k8s_distro_name == "rke2" ? 1 : 0
 
   depends_on = [
@@ -331,14 +413,46 @@ resource "null_resource" "make_sure_k8s_components_running_controlplane_rke2" {
 
 }
 
+# node initialization step 5: download KUBECONFIG file for k3s
+resource "null_resource" "rsync_kubeconfig_file" {
+
+  count = var.k8s_distro_name == "k3s" ? 1 : 0
+
+  depends_on = [
+    aws_instance.lh_aws_instance_controlplane,
+    aws_eip.lh_aws_eip_controlplane,
+    aws_eip_association.lh_aws_eip_assoc,
+    null_resource.make_sure_k8s_components_running_controlplane_k3s
+  ]
+
+  provisioner "remote-exec" {
+
+    inline = [
+      "until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = "ec2-user"
+      host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
+      private_key = file(var.aws_ssh_private_key_file_path)
+    }
+  }
+
+  provisioner "local-exec" {
+    command = "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"
+  }
+}
+
 # node initialization step 5: download KUBECONFIG file for rke2
 resource "null_resource" "rsync_kubeconfig_file_rke2" {
+
   count = var.k8s_distro_name == "rke2" ? 1 : 0
 
   depends_on = [
-    aws_instance.lh_aws_instance_controlplane_rke2,
+    aws_instance.lh_aws_instance_controlplane,
     aws_eip.lh_aws_eip_controlplane,
-    aws_eip_association.lh_aws_eip_assoc_rke2,
+    aws_eip_association.lh_aws_eip_assoc,
     null_resource.make_sure_k8s_components_running_controlplane_rke2
   ]
 
