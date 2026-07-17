@@ -58,7 +58,7 @@ if [[ "${extra_block_device}" != true ]]; then
 fi
 
 if [[ "${network_stack}" == "ipv6" ]]; then
-  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
+  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2\nnet.ipv6.conf.all.forwarding = 1" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
 nameserver 2606:4700:4700::1111
