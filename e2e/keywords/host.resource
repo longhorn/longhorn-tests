@@ -177,7 +177,7 @@ Check volume endpoint on node of ${resource_kind} ${resource_id}
     ...    ELSE
     ...        get_workload_volume_name    ${resource_name}
     ${node_name} =    get_volume_node    ${volume_name}
-    execute_command_on_node_and_wait_for_output    ls -l /dev/longhorn/${volume_name}    ${node_name}    brw
+    execute_command_on_node_and_not_expect_output    ls -l /dev/longhorn/${volume_name}    ${node_name}    No such file or directory
 
 Check volume endpoint on node ${node_id}
     [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output as a WARNING.
