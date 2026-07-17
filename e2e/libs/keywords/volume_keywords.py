@@ -417,8 +417,8 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
-        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name, node_stage_secret_name, node_stage_secret_namespace)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system", node_publish_secret_name=None, node_publish_secret_namespace="longhorn-system"):
+        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name, node_stage_secret_name, node_stage_secret_namespace, node_publish_secret_name, node_publish_secret_namespace)
 
     def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True, sc_name="longhorn"):
         self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
