@@ -2760,7 +2760,8 @@ if a nonexistent Pod is specified.</p>
         if replica.hostId == lht_host_id:
             replica_name = replica.name
     volume.replicaRemove(name=replica_name)
-    wait_for_volume_degraded(client, volume_name)</code></pre>
+    wait_for_volume_degraded(client, volume_name)
+    return replica_name</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -8750,6 +8751,32 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_replica_deleted"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_deleted</span></span>(<span>client, volume_name, replica_name)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_replica_deleted(client, volume_name, replica_name):
+    found = True
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        found = False
+        for replica in volume.replicas:
+            if replica.name == replica_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found, \
+        f&#34;assert replica {replica_name} deleted from volume {volume_name}&#34;
+    return volume</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_replica_directory"><code class="name flex">
 <span>def <span class="ident">wait_for_replica_directory</span></span>(<span>)</span>
 </code></dt>
@@ -10713,6 +10740,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_rebuild_start" href="#tests.common.wait_for_rebuild_start">wait_for_rebuild_start</a></code></li>
 <li><code><a title="tests.common.wait_for_recurring_jobs_cleanup" href="#tests.common.wait_for_recurring_jobs_cleanup">wait_for_recurring_jobs_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_count" href="#tests.common.wait_for_replica_count">wait_for_replica_count</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_deleted" href="#tests.common.wait_for_replica_deleted">wait_for_replica_deleted</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_directory" href="#tests.common.wait_for_replica_directory">wait_for_replica_directory</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>

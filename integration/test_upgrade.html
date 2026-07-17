@@ -643,11 +643,10 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
 
     def test_replica_rebuilding(client, volume_name):
         # Delete one healthy replica for vol_rebuild to trigger the rebuilding
-        delete_replica_on_test_node(client, volume_name)
+        replica_name = delete_replica_on_test_node(client, volume_name)
         # Make sure vol_rebuild replica is deleted
-        replica_count = 2
-        vol_rebuild = wait_for_volume_replica_count(client, volume_name,
-                                                    replica_count)
+        vol_rebuild = wait_for_replica_deleted(client, volume_name,
+                                               replica_name)
         # vol_rebuild will become degraded and start replica rebuilding
         # Wait for replica rebuilding to complete
         # Verify the vol_rebuild is still healthy
