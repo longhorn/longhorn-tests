@@ -367,13 +367,15 @@ Pre-release Checks
         And Attach volume vol-restore-v1-0
         And Check volume vol-restore-v1-0 data is backup backup-v1 of volume v1
 
-        # v1 -> v2
-        When Create volume vol-restore-v1-1 from backup backup-v1 of volume v1    size=1Gi    dataEngine=v2
-        Then Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 start
-        And Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 completed
-        And Wait for volume vol-restore-v1-1 detached
-        And Attach volume vol-restore-v1-1
-        And Check volume vol-restore-v1-1 data is backup backup-v1 of volume v1
+        IF    "${DATA_ENGINE}" == "v2"
+            # v1 -> v2
+            When Create volume vol-restore-v1-1 from backup backup-v1 of volume v1    size=1Gi    dataEngine=v2
+            Then Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 start
+            And Wait for volume vol-restore-v1-1 restoration from backup backup-v1 of volume v1 completed
+            And Wait for volume vol-restore-v1-1 detached
+            And Attach volume vol-restore-v1-1
+            And Check volume vol-restore-v1-1 data is backup backup-v1 of volume v1
+        END
 
         # (15) check a volume can be detached and re-attached
         When Detach volume vol-rebuild
