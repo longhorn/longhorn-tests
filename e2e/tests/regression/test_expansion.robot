@@ -89,9 +89,10 @@ Test Volume Expansion Without Schedulable Nodes
     And Disable node 2 scheduling
     And Create volume vol with    size=2Gi    dataEngine=${DATA_ENGINE}
 
-    When Run command and expect output
+    When Run Keyword And Expect Error
+    ...    *The request is invalid*
+    ...    Run command
     ...    kubectl patch volume -n longhorn-system vol --type='merge' -p '{"spec": {"size": "3221225472"}}'
-    ...    The request is invalid
     Then Wait for volume vol size to be 2Gi
 
 Test Volume Expansion
