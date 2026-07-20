@@ -165,7 +165,8 @@ Test Encrypted Volume Snapshot Clone
     And Wait for volume 1 detached
 
     # Attach cloned volume to new deployment with crypto SC (to trigger luksOpen)
-    And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto
+    And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 1 healthy
 
     # Verify cloned volume size and data integrity
@@ -309,9 +310,6 @@ Test Encrypted Volume Backup Restore To Encrypted Volume
     ...                  - Restored volumes' replica backend file is exactly 100 Mi + 16 Mi.
     ...                  - The 10 Mi payload checksum matches the original.
     ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 data engine does not support encrypted volume restore with encrypted=True (https://github.com/longhorn/longhorn/issues/13163)
-    END
     Given Create crypto secret
     And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=100Mi
@@ -339,8 +337,10 @@ Test Encrypted Volume Backup Restore To Encrypted Volume
     And Wait for volume 3 detached
     # Mount the restored volumes via deployments so that CSI opens the LUKS container.
     # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
-    And Create deployment 2 with volume 2    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto
-    And Create deployment 3 with volume 3    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto
+    And Create deployment 2 with volume 2    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
+    And Create deployment 3 with volume 3    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 2 healthy
     And Wait for volume of deployment 3 healthy
     Then Assert disk size in instance manager pod for deployment 2 is 100Mi
@@ -570,6 +570,11 @@ Test Encrypted Volume Upgrade
 
     # ==================== Upgrade Longhorn (Keep Old Engine) ====================
     When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+
+    FOR    ${i}    IN RANGE    7
+        Check volume endpoint on node of deployment ${i}
+    END
+
     When Upgrade Longhorn to custom version
     And Wait for volume of deployment 0 healthy
     And Wait for volume of deployment 1 healthy
@@ -578,6 +583,10 @@ Test Encrypted Volume Upgrade
     And Wait for volume of deployment 4 healthy
     And Wait for volume of deployment 5 healthy
     And Wait for volume of deployment 6 healthy
+
+    FOR    ${i}    IN RANGE    7
+        Check volume endpoint on node of deployment ${i}
+    END
 
     # ==================== Post-Upgrade: Initial State Verification ====================
     # Verify old engine semantics are preserved after Longhorn system upgrade
@@ -782,7 +791,8 @@ Test Encrypted Volume Upgrade
     # Deployment 7: Restore from Backup 0 (RWO Filesystem)
     When Create volume 7 from backup 0 of deployment 0 volume    size=100Mi    encrypted=True    dataEngine=${DATA_ENGINE}
     Then Wait for volume 7 detached
-    And Create deployment 7 with volume 7    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto
+    And Create deployment 7 with volume 7    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 7 healthy
     Then Assert disk size in instance manager pod for deployment 7 is 100Mi
     And Assert replica file size of deployment 7 is 116Mi
@@ -791,7 +801,8 @@ Test Encrypted Volume Upgrade
     # Deployment 8: Restore from Backup 1 (RWX Filesystem)
     When Create volume 8 from backup 1 of deployment 1 volume    size=100Mi    encrypted=True    dataEngine=${DATA_ENGINE}
     Then Wait for volume 8 detached
-    And Create deployment 8 with volume 8    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto
+    And Create deployment 8 with volume 8    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 8 healthy
     Then Assert disk size in instance manager pod for deployment 8 is 100Mi
     And Assert replica file size of deployment 8 is 116Mi
