@@ -417,8 +417,8 @@ class volume_keywords:
     def activate_dr_volume(self, volume_name):
         self.volume.activate(volume_name)
 
-    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
-        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name, node_stage_secret_name, node_stage_secret_namespace)
+    def create_persistentvolume_for_volume(self, volume_name, retry=True, volumeMode="Filesystem", fsType="ext4", sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system", node_publish_secret_name=None, node_publish_secret_namespace="longhorn-system"):
+        self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name, node_stage_secret_name, node_stage_secret_namespace, node_publish_secret_name, node_publish_secret_namespace)
 
     def create_persistentvolumeclaim_for_volume(self, volume_name, volumeMode="Filesystem", retry=True, sc_name="longhorn"):
         self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)
@@ -435,10 +435,14 @@ class volume_keywords:
         replica_names_str = self.volume.get_annotation_value(volume_name, ANNOT_REPLICA_NAMES)
         expected_replica_names = sorted(replica_names_str.split(","))
 
-        replica_list = self.replica.get(volume_name, node_name="")
-        actual_replica_names = [replica['metadata']['name'] for replica in replica_list]
-        actual_replica_names = sorted(actual_replica_names)
-
+        actual_replica_names = []
+        for i in range(self.retry_count):
+            replica_list = self.replica.get(volume_name, node_name="")
+            actual_replica_names = sorted([replica['metadata']['name'] for replica in replica_list])
+            logging(f"Checking volume {volume_name} replica names recorded ... ({i})")
+            if actual_replica_names == expected_replica_names:
+                return
+            time.sleep(self.retry_interval)
         assert actual_replica_names == expected_replica_names, \
             f"The volume should reuse the failed replica to rebuild instead of creating a new one.\n" \
             f"Volume {volume_name} replica names mismatched:\n" \
