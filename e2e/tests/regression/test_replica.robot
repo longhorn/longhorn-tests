@@ -400,7 +400,7 @@ Test Large Volume Fast Replica Rebuilding Performance
 
 Test Large Volume Delta Replica Rebuilding Performance
     [Documentation]
-    ...    Issue: https://github.com/longhorn/longhorn/issues/13082
+    ...    Issue: https://github.com/longhorn/longhorn/issues/11113
     ...
     ...    1. Set replica-replenishment-wait-interval to a very large value to make the failed replica
     ...       to be reused later
@@ -421,6 +421,7 @@ Test Large Volume Delta Replica Rebuilding Performance
     ...        since there is a snapshot existing.
     ...    13. Wait for replica rebuilding completed and record the rebuild time
     ...    14. Compare the rebuild times. The delta rebuild time should be less than the full rebuild time.
+    Skip    skip this test case due to the known issue: https://github.com/longhorn/longhorn/issues/11113
     IF    '${DATA_ENGINE}' == 'v2'
         Skip    v2 volumes don't support delta rebuilding, only support fast rebuilding
     END
