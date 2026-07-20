@@ -152,7 +152,7 @@ Test Backing Image On Two Nodes Down
     ...                - https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
     ...                - https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
     ...                - https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso
-    IF    DATA_ENGINE == 'v2'
+    IF    '${DATA_ENGINE}' == 'v2'
         Skip    v2 data engine doesn't support backing image
     END
 
