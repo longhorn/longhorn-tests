@@ -435,10 +435,14 @@ class volume_keywords:
         replica_names_str = self.volume.get_annotation_value(volume_name, ANNOT_REPLICA_NAMES)
         expected_replica_names = sorted(replica_names_str.split(","))
 
-        replica_list = self.replica.get(volume_name, node_name="")
-        actual_replica_names = [replica['metadata']['name'] for replica in replica_list]
-        actual_replica_names = sorted(actual_replica_names)
-
+        actual_replica_names = []
+        for i in range(self.retry_count):
+            replica_list = self.replica.get(volume_name, node_name="")
+            actual_replica_names = sorted([replica['metadata']['name'] for replica in replica_list])
+            logging(f"Checking volume {volume_name} replica names recorded ... ({i})")
+            if actual_replica_names == expected_replica_names:
+                return
+            time.sleep(self.retry_interval)
         assert actual_replica_names == expected_replica_names, \
             f"The volume should reuse the failed replica to rebuild instead of creating a new one.\n" \
             f"Volume {volume_name} replica names mismatched:\n" \
