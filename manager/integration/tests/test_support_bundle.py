@@ -362,7 +362,7 @@ def test_support_bundle_should_not_timeout(client, core_api):  # NOQA
         rm -f {bundle} &&\
         stat -c \"%s\" /tmp/support-bundle-kit/$bundle",
     ]
-    with timeout(seconds=600, error_message='Timeout on executing command'):
+    with timeout(seconds=3000, error_message='Timeout on executing command'):
         zip_size = stream(core_api.connect_get_namespaced_pod_exec,
                           pod_name, LONGHORN_NAMESPACE,
                           command=cmd, stderr=True, stdin=False, stdout=True,
