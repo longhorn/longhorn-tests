@@ -120,7 +120,7 @@ Check node ${node_id} disk ${disk_name} is not in pressure
 
 Create ${disk_size} Gi ${disk_type} type disk ${disk_name} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
-    create_volume   ${disk_name}    size=${disk_size}Gi    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    create_volume   ${disk_name}    size=${disk_size}Gi    numberOfReplicas=1    dataEngine=v1
     attach_volume    ${disk_name}    ${node_name}
     wait_for_volume_healthy    ${disk_name}
     IF    "${disk_type}" == "filesystem"
