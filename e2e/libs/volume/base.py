@@ -176,13 +176,13 @@ class Base(ABC):
     def activate(self, volume_name):
         return NotImplemented
 
-    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
+    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system", node_publish_secret_name=None, node_publish_secret_namespace="longhorn-system"):
         logging(f'Creating PV {volume_name} for volume {volume_name}')
         volume = self.get(volume_name)
         volume_size = self._get_volume_size(volume)
         assert volume_size is not None, f"Cannot determine size for volume {volume_name}"
         storage = str(convert_size_to_bytes(str(volume_size)))
-        self.pv.create(volume_name, storage, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name, node_stage_secret_namespace=node_stage_secret_namespace)
+        self.pv.create(volume_name, storage, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name, node_stage_secret_namespace=node_stage_secret_namespace, node_publish_secret_name=node_publish_secret_name, node_publish_secret_namespace=node_publish_secret_namespace)
 
         if not retry:
             return
