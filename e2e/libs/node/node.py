@@ -257,12 +257,15 @@ class Node:
         )
         Node.control_plane_nodes = sorted(filter_nodes(nodes, condition))
 
-        def has_no_schedule_taint(node):
-            if not node.spec.taints:
-                return False
-            return any(taint.effect == "NoSchedule" for taint in node.spec.taints)
+        ROLE_TAINT_KEYS = {
+            "node-role.kubernetes.io/etcd",
+            "node-role.kubernetes.io/control-plane",
+        }
 
-        Node.worker_nodes = sorted([node.metadata.name for node in nodes if not has_no_schedule_taint(node)])
+        def has_role_taint(node):
+            return any(taint.key in ROLE_TAINT_KEYS for taint in (node.spec.taints or []))
+
+        Node.worker_nodes = sorted([node.metadata.name for node in nodes if not has_role_taint(node)])
 
     def set_node(self, node_name: str, allowScheduling: bool, evictionRequested: bool) -> object:
         for _ in range(self.retry_count):

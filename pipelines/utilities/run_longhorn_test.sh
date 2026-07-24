@@ -79,7 +79,7 @@ run_longhorn_test(){
 
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
-    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
+    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test --follow --since=10s
   done
 
   kubectl cp ${LONGHORN_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "longhorn-test-junit-report.xml" -c longhorn-test-report
@@ -211,7 +211,7 @@ run_longhorn_upgrade_test(){
 
   # wait upgrade test to complete
   while [[ -n "`kubectl get pod ${LONGHORN_UPGRADE_TEST_POD_NAME} -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
-    kubectl logs ${LONGHORN_UPGRADE_TEST_POD_NAME} -c longhorn-test -f --since=10s
+    kubectl logs ${LONGHORN_UPGRADE_TEST_POD_NAME} -c longhorn-test --follow --since=10s
   done
 
   # get upgrade test junit xml report

@@ -68,7 +68,7 @@ Test Volume Deletion During Recurring Job Execution
         Then Delete volume ${i}    wait=False
     END
     And Run command and not expect output
-    ...    kubectl logs -l recurring-job.longhorn.io=snapshot-cleanup-job -n longhorn-system -f
+    ...    kubectl logs -l recurring-job.longhorn.io=snapshot-cleanup-job -n longhorn-system --follow
     ...    panic
 
 Test System Backup Recurring Job When volume-backup-policy is disabled

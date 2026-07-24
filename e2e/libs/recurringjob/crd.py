@@ -421,21 +421,21 @@ class CRD(Base):
         for i in range(60):
             try:
                 logs = subprocess_exec_cmd(cmd)
+                timestamps = pattern.findall(logs)
+                if not timestamps:
+                    logging(f"No job created for {job_name}")
+                else:
+                    counts = Counter(timestamps)
+                    for timestamp, count in sorted(counts.items()):
+                        logging(f"{count} jobs created at {timestamp} for {job_name}")
+                        if count == int(concurrency):
+                            checked = True
+                        elif count > int(concurrency):
+                            logging(f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently")
+                            time.sleep(self.retry_count)
+                            assert False, f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently"
             except Exception as e:
                 logging(f"Failed to get {job_name} logs: {e}")
-            timestamps = pattern.findall(logs)
-            if not timestamps:
-                logging(f"No job created for {job_name}")
-            else:
-                counts = Counter(timestamps)
-                for timestamp, count in sorted(counts.items()):
-                    logging(f"{count} jobs created at {timestamp} for {job_name}")
-                    if count == int(concurrency):
-                        checked = True
-                    elif count > int(concurrency):
-                        logging(f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently")
-                        time.sleep(self.retry_count)
-                        assert False, f"Recurring job {job_name} concurrency is {concurrency}, but there are {count} jobs created concurrently"
             time.sleep(5)
         assert checked, f"Recurring job {job_name} concurrency is {concurrency}, but can't find {concurrency} jobs created concurrently"
 
