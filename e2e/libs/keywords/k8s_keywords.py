@@ -139,11 +139,11 @@ class k8s_keywords:
     def get_longhorn_node_condition_status(self, node_name, type):
         return get_longhorn_node_condition_status(node_name, type)
 
-    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
-        return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace)
+    def verify_pod_log_after_time_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
+        return verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace, container=container)
 
-    def verify_pod_log_after_time_not_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
-        return verify_pod_log_after_time_not_contains(pod_name, expect_log, test_start_time, namespace)
+    def verify_pod_log_after_time_not_contains(self, pod_name, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
+        return verify_pod_log_after_time_not_contains(pod_name, expect_log, test_start_time, namespace, container=container)
 
     def deploy_system_upgrade_controller(self):
         return deploy_system_upgrade_controller()
