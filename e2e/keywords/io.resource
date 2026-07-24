@@ -3,6 +3,7 @@ Library             ../libs/keywords/io_keywords.py
 Library             ../libs/keywords/instancemanager_keywords.py
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/node_keywords.py
+Library             ../libs/keywords/workload_keywords.py
 
 *** Keywords ***
 Create dm linear device from block device ${block_disk_path} as ${dm_device_name} on node ${node_id}
@@ -44,3 +45,12 @@ Wipe block device ${block_device_path} on node ${node_id}
     [Documentation]    Wipe filesystem and partition signatures from a block device.
     ${node_name} =    get_node_by_index    ${node_id}
     wipe_block_device_signatures    ${block_device_path}    ${node_name}
+
+Start fsync writer on ${workload_kind} ${workload_id}
+    [Documentation]    Start a background fsync writer that tracks max per-write latency in memory.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    get_workload_pod_name    ${workload_name}
+    start_fsync_writer    ${pod_name}
+
+Assert no IO stall greater than ${threshold_sec} seconds
+    assert_no_io_stall    ${threshold_sec}

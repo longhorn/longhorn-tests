@@ -6,6 +6,7 @@ source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/kubectl_retry.sh
 source pipelines/utilities/selinux_workaround.sh
 source pipelines/utilities/install_csi_snapshotter.sh
+source pipelines/utilities/install_cni.sh
 source pipelines/utilities/storage_network.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_harvester_secret.sh
@@ -23,6 +24,7 @@ LONGHORN_INSTALL_METHOD="manifest"
 
 main(){
   set_kubeconfig
+  setup_cni || return 1
   kubectl get pods -A | grep -E 'calico|cilium|flannel|canal'
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
