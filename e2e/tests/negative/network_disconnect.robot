@@ -16,6 +16,7 @@ Resource    ../keywords/network.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/host.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -279,3 +280,30 @@ Test Large Volume Replica Rebuilding Resilience
 
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Disrupt Data Plane Traffic While Workload Heavy Writing
+    [Documentation]    Disrupt the data plane traffic of a workload while it is heavily writing data.
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13452
+    ...                Test Steps:
+    ...                1. Create a statefulset.
+    ...                2. Keep writing data to the statefulset.
+    ...                3. Disrupt the data plane traffic of the statefulset for a few minutes.
+    ...                4. Wait for the volume's globalmount show emergency_ro by running
+    ...                   `grep emergency_ro /proc/mounts` on the volume node.
+    ...                5. After the data plane traffic recovered, wait for the statefulset pod stable,
+    ...                   it should still be able to read/write data without problems.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create statefulset 0 using RWO volume with longhorn-test storageclass
+
+    And Keep writing data to pod of statefulset 0
+    ${volume_node} =    Get statefulset 0 volume node
+    When Drop instance-manager egress traffic of statefulset 0 for 180 seconds without waiting for completion
+    Then Run command on node ${volume_node} and wait for output
+    ...    grep emergency_ro /proc/mounts
+    ...    emergency_ro
+    # to ensure the data plane traffic has been recovered
+    And Sleep    180
+
+    And Wait for volume of statefulset 0 healthy
+    And Wait for statefulset 0 pods stable
+    And Check statefulset 0 works
