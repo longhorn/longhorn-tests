@@ -299,6 +299,11 @@ class CRD(Base):
         """
         timeout_seconds = 30 * 60   # 30 minutes timeout
 
+        def pod_info(pod_name):
+            subprocess_exec_cmd(f"kubectl get pods {pod_name} -n {namespace} -oyaml")
+            subprocess_exec_cmd(f"kubectl describe pod {pod_name} -n {namespace}")
+            subprocess_exec_cmd(f"kubectl logs {pod_name} -n {namespace} --previous")
+
         w = watch.Watch()
         for event in w.stream(
             self.core_v1_api.list_namespaced_pod,
@@ -323,6 +328,8 @@ class CRD(Base):
                         logging(f"Container {name} is waiting: {reason}")
                         if reason in ["CrashLoopBackOff", "Error"]:
                             w.stop()
+                            pod_info(pod_name)
+                            time.sleep(self.retry_count)
                             raise Exception(
                                 f"Pod {pod_name} container {name} is in {reason} state. "
                                 "Recurring job may have failed."
@@ -334,6 +341,8 @@ class CRD(Base):
                         logging(f"Container {name} is terminated with exit code {exit_code}")
                         if exit_code != 0:
                             w.stop()
+                            pod_info(pod_name)
+                            time.sleep(self.retry_count)
                             raise Exception(
                                 f"Pod {pod_name} container {name} terminated with exit code {exit_code}. "
                                 "Recurring job may have failed."
@@ -345,6 +354,8 @@ class CRD(Base):
                         exit_code = last_state.terminated.exit_code
                         logging(f"Container {name} previously terminated with exit code {exit_code} (reason: {reason})")
                         w.stop()
+                        pod_info(pod_name)
+                        time.sleep(self.retry_count)
                         raise Exception(
                             f"Container '{name}' in pod '{pod_name}' previously terminated with exit code {exit_code} "
                             f"(reason: {reason}). Recurring job may have crashed and restarted."
@@ -355,6 +366,8 @@ class CRD(Base):
                     if container_status.restart_count > 0:
                         logging(f"Container {name} has restarted {container_status.restart_count} times")
                         w.stop()
+                        pod_info(pod_name)
+                        time.sleep(self.retry_count)
                         raise Exception(
                             f"Pod {pod_name} container {name} restarted {container_status.restart_count} times. "
                             "Recurring job may have been unstable even if it eventually succeeded."
@@ -367,6 +380,8 @@ class CRD(Base):
             elif status == "Failed":
                 logging(f"Pod {pod_name} for recurring job {job_name} failed.")
                 w.stop()
+                pod_info(pod_name)
+                time.sleep(self.retry_count)
                 raise Exception(f"Recurring job {job_name} pod failed.")
 
         w.stop()

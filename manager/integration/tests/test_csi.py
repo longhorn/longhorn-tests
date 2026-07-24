@@ -41,7 +41,7 @@ from common import DATA_ENGINE
 from common import update_setting
 from common import SETTING_CSI_STORAGE_CAPACITY_TRACKING
 from common import RETRY_COUNTS_SHORT
-from common import RETRY_INTERVAL_LONG
+from common import RETRY_COUNTS_LONG, RETRY_INTERVAL_LONG
 from backupstore import set_random_backupstore  # NOQA
 from kubernetes.stream import stream
 from kubernetes import client as k8sclient
@@ -568,11 +568,11 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
     expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE+1)*Gi)
     wait_for_volume_expansion(client, volume_name)
 
-    thread_timeout = 120
+    pod_dev_md5 = None
     try:
-        pod_dev_md5 = future.result(timeout=thread_timeout)
+        pod_dev_md5 = future.result(timeout=RETRY_COUNTS_LONG)
     except TimeoutError:
-        print("md5 thread exceed timeout ({})s".format(thread_timeout))
+        print("md5 thread exceed timeout ({})s".format(RETRY_COUNTS_LONG))
 
     volume_dev_md5 = subprocess.check_output(["md5sum", dev_volume])\
                                .strip().decode('utf-8').split(" ")[0]
@@ -644,11 +644,11 @@ def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc,
     expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE+1)*Gi)
     wait_for_volume_expansion(client, volume_name)
 
-    thread_timeout = 60
+    md5_after_expanding = None
     try:
-        md5_after_expanding = future.result(timeout=thread_timeout)
+        md5_after_expanding = future.result(timeout=RETRY_COUNTS_LONG)
     except TimeoutError:
-        print("md5 thread exceed timeout ({})s".format(thread_timeout))
+        print("md5 thread exceed timeout ({})s".format(RETRY_COUNTS_LONG))
 
     assert md5_after_expanding == md5_before_expanding
 

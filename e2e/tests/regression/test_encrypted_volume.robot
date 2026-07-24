@@ -50,7 +50,7 @@ Test Encrypted Volume Basic
         Assert replica file size of deployment 1 is 116Mi
     END
     # Verify sizes at different layers: backend replica → dm-crypt device → mounted filesystem
-    And Assert disk size in instance manager pod for deployment 0 is 100Mi
+    And Assert disk size in instance manager for deployment 0    expected_disk_size=100Mi
     And Assert encrypted disk size in sharemanager pod for deployment 1 is 100Mi
     And Write 10 MB data to file data.txt in deployment 0
     And Write 10 MB data to file data.txt in deployment 1
@@ -70,7 +70,7 @@ Test Encrypted Volume Basic
         Assert replica file size of deployment 1 is 116Mi
     END
     # Re-verify sizes after scale down/up cycle
-    And Assert disk size in instance manager pod for deployment 0 is 100Mi
+    And Assert disk size in instance manager for deployment 0    expected_disk_size=100Mi
     And Assert encrypted disk size in sharemanager pod for deployment 1 is 100Mi
     Then Check deployment 0 data in file data.txt is intact
     And Check deployment 1 data in file data.txt is intact
@@ -114,7 +114,7 @@ Test Encrypted Volume Cloning
         Assert replica file size of deployment cloned-rwo-deployment is 116Mi
         Assert replica file size of deployment cloned-rwx-deployment is 116Mi
     END
-    And Assert disk size in instance manager pod for deployment cloned-rwo-deployment is 100Mi
+    And Assert disk size in instance manager for deployment cloned-rwo-deployment    expected_disk_size=100Mi
     And Assert encrypted disk size in sharemanager pod for deployment cloned-rwx-deployment is 100Mi
     And Check deployment cloned-rwo-deployment file data.txt checksum matches checksum source-rwo-pvc
     And Check deployment cloned-rwx-deployment file data.txt checksum matches checksum source-rwx-pvc
@@ -151,7 +151,7 @@ Test Encrypted Volume Snapshot Clone
     And Record file data.txt checksum in deployment 0 as checksum 0
 
     # Verify source volume size
-    Assert disk size in instance manager pod for deployment 0 is 100Mi
+    And Assert disk size in instance manager for deployment 0    expected_disk_size=100Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 116Mi
     END
@@ -165,12 +165,13 @@ Test Encrypted Volume Snapshot Clone
     And Wait for volume 1 detached
 
     # Attach cloned volume to new deployment with crypto SC (to trigger luksOpen)
-    And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto
+    And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 1 healthy
 
     # Verify cloned volume size and data integrity
     Then Check deployment 1 file data.txt checksum matches checksum 0
-    And Assert disk size in instance manager pod for deployment 1 is 100Mi
+    And Assert disk size in instance manager for deployment 1    expected_disk_size=100Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 1 is 116Mi
     END
@@ -208,7 +209,7 @@ Test Encrypted Volume Expansion
     And Check deployment 0 pods did not restart
     And Check deployment 1 pods did not restart
     And Check no sharemanager pod of deployment 1 recreation
-    And Assert disk size in instance manager pod for deployment 0 is 200Mi
+    And Assert disk size in instance manager for deployment 0    expected_disk_size=200Mi
     And Assert encrypted disk size in sharemanager pod for deployment 1 is 200Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 216Mi
@@ -237,7 +238,7 @@ Test Encrypted RWO Block Volume Online Expansion
     # in the replica backend file (replica size = requested size + 16 Mi).
     # The dm-crypt device therefore presents the full requested size to the workload.
     # Therefore, after expansion to 200 Mi, the dm-crypt device shows 200 Mi.
-    And Assert disk size in instance manager pod for deployment 0 is 200Mi
+    And Assert disk size in instance manager for deployment 0    expected_disk_size=200Mi
     And Assert block device size in deployment pod for deployment 0 is 200Mi
     When Scale down deployment 0 to detach volume
     And Scale up deployment 0 to attach volume
@@ -279,7 +280,7 @@ Test Encrypted Volume Replica Rebuild
     When Delete replica of deployment 0 volume on replica node
     And Wait until volume of deployment 0 replica rebuilding completed on replica node
     Then Wait for volume of deployment 0 healthy
-    And Assert disk size in instance manager pod for deployment 0 is 100Mi
+    And Assert disk size in instance manager for deployment 0    expected_disk_size=100Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 116Mi
     END
@@ -309,9 +310,6 @@ Test Encrypted Volume Backup Restore To Encrypted Volume
     ...                  - Restored volumes' replica backend file is exactly 100 Mi + 16 Mi.
     ...                  - The 10 Mi payload checksum matches the original.
     ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 data engine does not support encrypted volume restore with encrypted=True (https://github.com/longhorn/longhorn/issues/13163)
-    END
     Given Create crypto secret
     And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
     When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=100Mi
@@ -339,12 +337,14 @@ Test Encrypted Volume Backup Restore To Encrypted Volume
     And Wait for volume 3 detached
     # Mount the restored volumes via deployments so that CSI opens the LUKS container.
     # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
-    And Create deployment 2 with volume 2    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto
-    And Create deployment 3 with volume 3    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto
+    And Create deployment 2 with volume 2    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
+    And Create deployment 3 with volume 3    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 2 healthy
     And Wait for volume of deployment 3 healthy
-    Then Assert disk size in instance manager pod for deployment 2 is 100Mi
-    And Assert disk size in instance manager pod for deployment 3 is 100Mi
+    Then Assert disk size in instance manager for deployment 2    expected_disk_size=100Mi
+    And Assert disk size in instance manager for deployment 3    expected_disk_size=100Mi
     # v1 only: v2 replica backend uses a different format (no .img files)
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 2 is 116Mi
@@ -527,7 +527,7 @@ Test Encrypted Volume Upgrade
     # ==================== Pre-Upgrade: Initial State Verification ====================
     # All deployments should show old-engine semantics: device = requested_size - 16 Mi
     # Deployment 0 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    Then Assert disk size in instance manager pod for deployment 0 is 84Mi
+    Then Assert disk size in instance manager for deployment 0    expected_disk_size=84Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 100Mi
     END
@@ -545,7 +545,7 @@ Test Encrypted Volume Upgrade
     END
 
     # Deployment 3 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    And Assert disk size in instance manager pod for deployment 3 is 84Mi
+    And Assert disk size in instance manager for deployment 3    expected_disk_size=84Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 3 is 100Mi
     END
@@ -557,7 +557,7 @@ Test Encrypted Volume Upgrade
     END
 
     # Deployment 5 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    And Assert disk size in instance manager pod for deployment 5 is 84Mi
+    And Assert disk size in instance manager for deployment 5    expected_disk_size=84Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 5 is 100Mi
     END
@@ -591,7 +591,7 @@ Test Encrypted Volume Upgrade
     # ==================== Post-Upgrade: Initial State Verification ====================
     # Verify old engine semantics are preserved after Longhorn system upgrade
     # Deployment 0 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    Then Assert disk size in instance manager pod for deployment 0 is 84Mi
+    Then Assert disk size in instance manager for deployment 0    expected_disk_size=84Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 100Mi
     END
@@ -609,7 +609,7 @@ Test Encrypted Volume Upgrade
     END
 
     # Deployment 3 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    And Assert disk size in instance manager pod for deployment 3 is 84Mi
+    And Assert disk size in instance manager for deployment 3    expected_disk_size=84Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 3 is 100Mi
     END
@@ -621,7 +621,7 @@ Test Encrypted Volume Upgrade
     END
 
     # Deployment 5 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    And Assert disk size in instance manager pod for deployment 5 is 84Mi
+    And Assert disk size in instance manager for deployment 5    expected_disk_size=84Mi
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 5 is 100Mi
     END
@@ -660,7 +660,7 @@ Test Encrypted Volume Upgrade
     And Check deployment 4 pods did not restart
 
     # After expansion: device = 184 Mi, replica = 20 Mi (old engine)
-    And Assert disk size in instance manager pod for deployment 3 is 184Mi
+    And Assert disk size in instance manager for deployment 3    expected_disk_size=184Mi
     And Check no sharemanager pod of deployment 4 recreation
     And Assert encrypted disk size in sharemanager pod for deployment 4 is 184Mi
     IF    '${DATA_ENGINE}' == 'v1'
@@ -695,9 +695,11 @@ Test Encrypted Volume Upgrade
     Then Wait for volume of deployment 5 healthy
     And Wait for workloads pods stable    deployment 5
     # Deployment 5 (RWO Filesystem): device = 84 Mi, replica = 100 Mi
-    And Assert disk size in instance manager pod for deployment 5 is 84Mi
     IF    '${DATA_ENGINE}' == 'v1'
+        And Assert disk size in instance manager for deployment 5    expected_disk_size=84Mi
         Assert replica file size of deployment 5 is 100Mi
+    ELSE
+        And Assert disk size in instance manager for deployment 5    expected_disk_size=84Mi    raw_size=100Mi
     END
     And Check deployment 5 data in file data.txt is intact
 
@@ -731,7 +733,7 @@ Test Encrypted Volume Upgrade
         When Delete replica of deployment 0 volume on replica node
         Then Wait until volume of deployment 0 replica rebuilding completed on replica node
         And Wait for volume of deployment 0 healthy
-        Then Assert disk size in instance manager pod for deployment 0 is 100Mi
+        Then Assert disk size in instance manager for deployment 0    expected_disk_size=100Mi
         And Assert replica file size of deployment 0 is 116Mi
         And Check deployment 0 data in file data.txt is intact
 
@@ -751,7 +753,7 @@ Test Encrypted Volume Upgrade
 
         # Deployment 3 (RWO Filesystem, 200 Mi after expansion):
         # device = 200 Mi, replica = 200 Mi + 16 Mi = 216 Mi
-        Then Assert disk size in instance manager pod for deployment 3 is 200Mi
+        Then Assert disk size in instance manager for deployment 3    expected_disk_size=200Mi
         And Assert replica file size of deployment 3 is 216Mi
         And Check deployment 3 data in file data.txt is intact
 
@@ -768,7 +770,7 @@ Test Encrypted Volume Upgrade
         And Wait for workloads pods stable    deployment 5
         # Deployment 5 (RWO Filesystem, 100 Mi):
         # device = 100 Mi, replica = 100 Mi + 16 Mi = 116 Mi
-        Then Assert disk size in instance manager pod for deployment 5 is 100Mi
+        Then Assert disk size in instance manager for deployment 5    expected_disk_size=100Mi
         And Assert replica file size of deployment 5 is 116Mi
         And Check deployment 5 data in file data.txt is intact
 
@@ -791,18 +793,20 @@ Test Encrypted Volume Upgrade
     # Deployment 7: Restore from Backup 0 (RWO Filesystem)
     When Create volume 7 from backup 0 of deployment 0 volume    size=100Mi    encrypted=True    dataEngine=${DATA_ENGINE}
     Then Wait for volume 7 detached
-    And Create deployment 7 with volume 7    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto
+    And Create deployment 7 with volume 7    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 7 healthy
-    Then Assert disk size in instance manager pod for deployment 7 is 100Mi
+    Then Assert disk size in instance manager for deployment 7    expected_disk_size=100Mi
     And Assert replica file size of deployment 7 is 116Mi
     And Check deployment 7 file data.txt checksum matches checksum 0
 
     # Deployment 8: Restore from Backup 1 (RWX Filesystem)
     When Create volume 8 from backup 1 of deployment 1 volume    size=100Mi    encrypted=True    dataEngine=${DATA_ENGINE}
     Then Wait for volume 8 detached
-    And Create deployment 8 with volume 8    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto
+    And Create deployment 8 with volume 8    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
     And Wait for volume of deployment 8 healthy
-    Then Assert disk size in instance manager pod for deployment 8 is 100Mi
+    Then Assert disk size in instance manager for deployment 8    expected_disk_size=100Mi
     And Assert replica file size of deployment 8 is 116Mi
     And Check deployment 8 file data.txt checksum matches checksum 1
 
