@@ -6160,7 +6160,13 @@ def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
             break
         except AssertionError:
             time.sleep(RETRY_INTERVAL)
-    assert ok
+    assert ok, (
+        f"Failed to wait for volume recurring job update, "
+        f"expected jobs: {jobs}, "
+        f"expected groups: {groups}, "
+        f"current jobs: {volumeJobs}, "
+        f"current groups: {volumeGroups}"
+    )
 
 
 def wait_for_cron_job_create(batch_v1_api, label="",
