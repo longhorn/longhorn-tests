@@ -32,23 +32,6 @@ until kubectl get nodes >/dev/null 2>&1; do
   sleep 5
 done
 
-if [[ "${cni}" == "calico" ]]; then
-  kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.32.0/manifests/calico.yaml
-elif [[ "${cni}" == "cilium" ]]; then
-  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-  curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
-  chmod 700 get_helm.sh
-  ./get_helm.sh
-  helm install cilium oci://quay.io/cilium/charts/cilium \
-    --version 1.19.5 \
-    --set operator.replicas=1 \
-    --set mtu=9001 \
-    --set bpf.masquerade=true \
-    --set hostFirewall.enabled=false \
-    --set endpointRoutes.enabled=true \
-    --set ipam.mode=kubernetes \
-    --namespace kube-system
-fi
 
 if [[ -n "${custom_ssh_public_key}" ]]; then
   echo "${custom_ssh_public_key}" >> /home/ubuntu/.ssh/authorized_keys

@@ -38,7 +38,7 @@ if [[ "${network_stack}" == "ipv6" ]]; then
     --flannel-ipv6-masq \
     --cluster-cidr=fd00:10::/56 \
     --service-cidr=fd00:20::/112"
-  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
+  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2\nnet.ipv6.conf.all.forwarding = 1" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
 nameserver 2606:4700:4700::1111
@@ -65,23 +65,6 @@ until kubectl get nodes >/dev/null 2>&1; do
   sleep 5
 done
 
-if [[ "${cni}" == "calico" ]]; then
-  kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.32.0/manifests/calico.yaml
-elif [[ "${cni}" == "cilium" ]]; then
-  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-  curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
-  chmod 700 get_helm.sh
-  ./get_helm.sh
-  helm install cilium oci://quay.io/cilium/charts/cilium \
-    --version 1.19.5 \
-    --set operator.replicas=1 \
-    --set mtu=9001 \
-    --set bpf.masquerade=true \
-    --set hostFirewall.enabled=false \
-    --set endpointRoutes.enabled=true \
-    --set ipam.mode=kubernetes \
-    --namespace kube-system
-fi
 
 if [[ -n "${custom_ssh_public_key}" ]]; then
   echo "${custom_ssh_public_key}" >> /home/ec2-user/.ssh/authorized_keys

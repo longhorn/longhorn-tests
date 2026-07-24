@@ -51,6 +51,7 @@ EOF
 if [[ "${network_stack}" == "ipv6" ]]; then
   cat << EOF >> /etc/rancher/rke2/config.yaml
 advertise-address: $rke2_server_public_ip
+node-ip: "$rke2_server_public_ip"
 cluster-cidr: fd00:10::/56
 service-cidr: fd00:20::/112
 EOF
@@ -59,6 +60,24 @@ fi
 if [[ "${cni}" != "default" ]]; then
   cat << EOF >> /etc/rancher/rke2/config.yaml
 cni: ${cni}
+EOF
+fi
+
+# RKE2 IPv6-only Cilium networking:
+# https://docs.rke2.io/networking/basic_network_options#ipv6-setup
+if [[ "${network_stack}" == "ipv6" && "${cni}" == "cilium" ]]; then
+  mkdir -p /var/lib/rancher/rke2/server/manifests
+  cat << EOF > /var/lib/rancher/rke2/server/manifests/rke2-cilium-config.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-cilium
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    routingMode: tunnel
+    tunnelProtocol: vxlan
+    underlayProtocol: ipv6
 EOF
 fi
 
