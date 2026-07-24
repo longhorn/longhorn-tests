@@ -17,6 +17,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/engine_image.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -522,3 +523,56 @@ Test Engine Image Liveness Probe Upgrade With Custom Values
     ...    timeout=15
     ...    period=30
     ...    failure_threshold=10
+
+Test Longhorn UI PodDisruptionBudget
+    [Tags]    setting    uninstall    helm
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13466
+    ...
+    ...                Verify that the longhorn-ui PodDisruptionBudget is created
+    ...                when longhornUI.podDisruptionBudget.enabled is set via the
+    ...                Helm chart, and that it prevents eviction of the longhorn-ui
+    ...                pod when a node is drained.
+    ...
+    ...                This test case is only applicable for helm installation method.
+    ...
+    ...                Test steps:
+    ...                1. Uninstall Longhorn.
+    ...                2. Drain node 0.
+    ...                3. Install Longhorn helm chart with custom settings:
+    ...                   longhornUI.podDisruptionBudget.enabled = true
+    ...                   longhornUI.podDisruptionBudget.minAvailable = 2
+    ...                4. After Longhorn installed, check longhorn-ui pdb exists
+    ...                   with minAvailable = 2.
+    ...                5. Force drain node 1 should fail with error messages
+    ...                   *error when evicting pods*longhorn-ui*
+    ...                6. Uninstall Longhorn, uncordon node 0, then re-install Longhorn
+    ...                   without custom settings to restore the environment.
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    Test case only applicable for helm installation method
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Force drain node 0
+
+    When Install Longhorn
+    ...    custom_cmd=yq -i '.longhornUI.podDisruptionBudget.enabled = true | .longhornUI.podDisruptionBudget.minAvailable = 2' values.yaml
+
+    Then Run command and expect output
+    ...    kubectl get pdb longhorn-ui -n ${LONGHORN_NAMESPACE}
+    ...    longhorn-ui
+    And Run command and expect output
+    ...    kubectl get pdb longhorn-ui -n ${LONGHORN_NAMESPACE} -o jsonpath='{.spec.minAvailable}'
+    ...    2
+
+    And Force drain node 1 and expect failure
+    ...    *error when evicting pods*longhorn-ui*
+
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Uncordon node 0
+    And Install Longhorn
+    And Wait for longhorn ready
+

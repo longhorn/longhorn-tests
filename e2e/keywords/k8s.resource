@@ -159,9 +159,10 @@ Get healthy node names
     [Return]    ${healthy_node_names}
 
 Force drain node ${node_id} and expect failure
+    [Arguments]    ${expected_error}=*
     ${drained_node} =    get_node_by_index    ${node_id}
     ${instance_manager_name} =     get_instance_manager_on_node    ${drained_node}
-    Run Keyword And Expect Error    *    force_drain_node    ${drained_node}
+    Run Keyword And Expect Error    ${expected_error}    force_drain_node    ${drained_node}    timeout=600
     Set Test Variable    ${instance_manager_name}
     Set Test Variable    ${drained_node}
 
@@ -171,6 +172,7 @@ Force drain node ${node_id} and expect success
     force_drain_node    ${drained_node}
     Set Test Variable    ${instance_manager_name}
     Set Test Variable    ${drained_node}
+
 
 The drain process not completed
     check_drain_process_not_completed    ${drain_process}

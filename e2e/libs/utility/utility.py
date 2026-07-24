@@ -124,16 +124,14 @@ def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
 
     if isinstance(cmd, str):
         try:
-            res = subprocess.check_output(cmd, input=input, timeout=timeout, shell=True, text=True, stderr=subprocess.STDOUT)
+            res = subprocess.check_output(cmd, input=input, timeout=float(timeout), shell=True, text=True, stderr=subprocess.STDOUT)
         except Exception as e:
             raise Exception(f"{e}, {e.output}")
     elif isinstance(cmd, list):
         try:
-            res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
+            res = subprocess.check_output(cmd, input=input, timeout=float(timeout), text=True, stderr=subprocess.STDOUT)
         except Exception as e:
-            logging(f"Executing command {cmd} error: {e}")
-            logging(f"Command output: {e.output}")
-            raise e
+            raise Exception(f"{e}, {e.output}")
     else:
         raise ValueError("Command must be a string or list")
 
