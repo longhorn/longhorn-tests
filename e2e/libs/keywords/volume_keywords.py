@@ -464,6 +464,10 @@ class volume_keywords:
     def validate_volume_setting(self, volume_name, setting_name, value):
         return self.volume.validate_volume_setting(volume_name, setting_name, value)
 
+    def wait_for_volume_setting(self, volume_name, setting_name, value):
+        logging(f'Waiting for volume {volume_name} setting {setting_name} to be {value!r}')
+        return self.volume.wait_for_volume_setting(volume_name, setting_name, value)
+
     def get_volume_size(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['size']

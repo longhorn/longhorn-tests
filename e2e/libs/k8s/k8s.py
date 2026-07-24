@@ -158,6 +158,17 @@ def wait_for_node_ready(node_name):
 
     assert False, f"Node {node_name} is not ready after waiting for {retry_count * retry_interval} seconds."
 
+def wait_for_node_down(node_name):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        if not is_node_ready(node_name):
+            logging(f"Node {node_name} is down.")
+            return
+        logging(f"Waiting for node {node_name} down ... ({i})")
+        time.sleep(retry_interval)
+
+    assert False, f"Node {node_name} is still ready after waiting for {retry_count * retry_interval} seconds."
+
 def check_node_cordoned(node_name):
     api = client.CoreV1Api()
     node = api.read_node(node_name)
