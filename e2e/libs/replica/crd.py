@@ -107,7 +107,7 @@ class CRD(Base):
             node_id = replica['spec']['nodeID']
             dir_name = replica['spec']['dataDirectoryName']
             cmd = (
-                f"find /var/lib/longhorn/replicas/{dir_name}/ "
+                f"find {constant.DEFAULT_DATA_PATH}/replicas/{dir_name}/ "
                 f"-maxdepth 1 -name 'volume-head-*.img' -exec stat -c%s {{}} \\;"
             )
             node_exec = NodeExec(node_id)

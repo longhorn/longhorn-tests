@@ -15,7 +15,7 @@ class V1_InstanceManager(Base):
 
     def get_replicas(self, node_name):
         im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
-        cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- ls /host/var/lib/longhorn/replicas"
+        cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- ls /host{constant.DEFAULT_DATA_PATH}/replicas"
         output = subprocess_exec_cmd(cmd)
         return output
 
@@ -35,7 +35,7 @@ class V1_InstanceManager(Base):
         logging(f"Creating orphaned replica {orphaned_replica} from {src_replica} on node {node_name}")
 
         im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
-        replicas_dir = "/host/var/lib/longhorn/replicas"
+        replicas_dir = f"/host{constant.DEFAULT_DATA_PATH}/replicas"
         cmd = (f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- "
                f"cp -r {replicas_dir}/{src_replica} {replicas_dir}/{orphaned_replica}")
         subprocess_exec_cmd(cmd)
@@ -58,15 +58,15 @@ class V1_InstanceManager(Base):
             # since it was created it copying the replica directory name
             replica_dir = replica_name
         for i in range(self.retry_count):
-            logging(f"Waiting for replica directory {replica_dir} for replica {replica_name} to be deleted from host /var/lib/longhorn/replicas on node {node_name} ... ({i})")
+            logging(f"Waiting for replica directory {replica_dir} for replica {replica_name} to be deleted from host {constant.DEFAULT_DATA_PATH}/replicas on node {node_name} ... ({i})")
             try:
                 replicas_output = self.get_replicas(node_name)
                 if replica_dir not in replicas_output:
                     return
             except Exception as e:
-                logging(f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be deleted from host /var/lib/longhorn/replicas on node {node_name}: {e}")
+                logging(f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be deleted from host {constant.DEFAULT_DATA_PATH}/replicas on node {node_name}: {e}")
             time.sleep(self.retry_interval)
-        assert False, f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be deleted from host /var/lib/longhorn/replicas on node {node_name}"
+        assert False, f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be deleted from host {constant.DEFAULT_DATA_PATH}/replicas on node {node_name}"
 
     def wait_for_replica_present(self, node_name, replica_name):
         try:
@@ -78,12 +78,12 @@ class V1_InstanceManager(Base):
             # since it was created it copying the replica directory name
             replica_dir = replica_name
         for i in range(self.retry_count):
-            logging(f"Waiting for replica directory {replica_dir} for replica {replica_name} to be present in host /var/lib/longhorn/replicas on node {node_name} ... ({i})")
+            logging(f"Waiting for replica directory {replica_dir} for replica {replica_name} to be present in host {constant.DEFAULT_DATA_PATH}/replicas on node {node_name} ... ({i})")
             try:
                 replicas_output = self.get_replicas(node_name)
                 if replica_dir in replicas_output:
                     return
             except Exception as e:
-                logging(f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be present in host /var/lib/longhorn/replicas on node {node_name}: {e}")
+                logging(f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be present in host {constant.DEFAULT_DATA_PATH}/replicas on node {node_name}: {e}")
             time.sleep(self.retry_interval)
-        assert False, f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be present in host /var/lib/longhorn/replicas on node {node_name}"
+        assert False, f"Failed to wait for replica directory {replica_dir} for replica {replica_name} to be present in host {constant.DEFAULT_DATA_PATH}/replicas on node {node_name}"

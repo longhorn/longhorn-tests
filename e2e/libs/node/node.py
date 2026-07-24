@@ -17,12 +17,15 @@ from node_exec import NodeExec
 
 class Node:
 
-    DEFAULT_DISK_PATH = "/var/lib/longhorn"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
 
     all_nodes = None
     control_plane_nodes = None
     worker_nodes = None
+
+    @property
+    def DEFAULT_DISK_PATH(self):
+        return constant.DEFAULT_DATA_PATH
 
     def __init__(self):
         if not Node.all_nodes:
@@ -536,17 +539,17 @@ class Node:
         return res
 
     def remove_backing_image_files_on_node(self, bi_name, node_name):
-        cmd = f"rm /var/lib/longhorn/backing-images/{bi_name}-*/backing*"
+        cmd = f"rm {constant.DEFAULT_CONTROL_PATH}/backing-images/{bi_name}-*/backing*"
         res = NodeExec(node_name).issue_cmd(cmd)
         return res
 
     def set_backing_image_folder_immutable_on_node(self, bi_name, node_name):
-        cmd = f"chattr +i /var/lib/longhorn/backing-images/{bi_name}-*/"
+        cmd = f"chattr +i {constant.DEFAULT_CONTROL_PATH}/backing-images/{bi_name}-*/"
         res = NodeExec(node_name).issue_cmd(cmd)
         return res
 
     def set_backing_image_folder_mutable_on_node(self, bi_name, node_name):
-        cmd = f"chattr -i /var/lib/longhorn/backing-images/{bi_name}-*/"
+        cmd = f"chattr -i {constant.DEFAULT_CONTROL_PATH}/backing-images/{bi_name}-*/"
         res = NodeExec(node_name).issue_cmd(cmd)
         return res
 
@@ -701,7 +704,37 @@ class Node:
 
         assert False, f"Not all disks on node '{node_name}' reached Schedulable={expected_status} after {self.retry_count * self.retry_interval}s"
 
+    def wait_for_default_disks_created_on_default_data_path(self):
+        """
+        Check that the default filesystem disk on every worker node is created
+        with a path matching the current default data path (constant.DEFAULT_DATA_PATH).
+        """
+        client = get_longhorn_client()
+        worker_nodes = self.list_node_names_by_role("worker")
+        default_data_path = constant.DEFAULT_DATA_PATH
+
+        for node_name in worker_nodes:
+            found = False
+            for i in range(self.retry_count):
+                node = client.by_id_node(node_name)
+                found = False
+                for disk_name, disk in iter(node.disks.items()):
+                    if disk.diskType == "filesystem" and disk.path == default_data_path:
+                        found = True
+                        break
+                if found:
+                    logging(f"Found default filesystem disk with path {default_data_path} on node {node_name}")
+                    break
+                logging(f"Waiting for default filesystem disk with path {default_data_path} on node {node_name} ... ({i})")
+                time.sleep(self.retry_interval)
+            assert found, f"Default filesystem disk with path {default_data_path} not found on node {node_name}"
+
     def remove_dir(self, dir_path, node_name):
         logging(f"Removing directory {dir_path} on node {node_name}")
         cmd = f"rm -rf {dir_path}"
+        NodeExec(node_name).issue_cmd(cmd)
+
+    def empty_dir(self, dir_path, node_name):
+        logging(f"Emptying directory {dir_path} on node {node_name}")
+        cmd = f"mkdir -p {dir_path} && find {dir_path} -mindepth 1 -maxdepth 1 -exec rm -rf {{}} +"
         NodeExec(node_name).issue_cmd(cmd)

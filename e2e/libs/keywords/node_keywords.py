@@ -171,5 +171,12 @@ class node_keywords:
         logging(f"Waiting for disks on node {node_name} to be {state_name} (disk_type filter: {disk_type})")
         self.node.wait_for_node_disks_schedulable(node_name, disk_type, expected_schedulable)
 
+    def wait_for_default_disks_created_on_default_data_path(self):
+        logging(f"Waiting for default filesystem disks to be created on default data path on all worker nodes")
+        self.node.wait_for_default_disks_created_on_default_data_path()
+
     def remove_dir(self, dir_path, node_name):
         self.node.remove_dir(dir_path, node_name)
+
+    def empty_dir(self, dir_path, node_name):
+        self.node.empty_dir(dir_path, node_name)
