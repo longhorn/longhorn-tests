@@ -1354,7 +1354,7 @@ def clients(request):
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.copy_file_to_volume_dev_mb_data"><code class="name flex">
-<span>def <span class="ident">copy_file_to_volume_dev_mb_data</span></span>(<span>src_path, dest_path, src_offset, dest_offset, size_in_mb, timeout_cnt=5)</span>
+<span>def <span class="ident">copy_file_to_volume_dev_mb_data</span></span>(<span>src_path, dest_path, src_offset, dest_offset, size_in_mb, stream_exec_timeout=600)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1363,14 +1363,14 @@ def clients(request):
 </summary>
 <pre><code class="python">def copy_file_to_volume_dev_mb_data(src_path, dest_path,
                                     src_offset, dest_offset, size_in_mb,
-                                    timeout_cnt=5):
+                                    stream_exec_timeout=RETRY_COUNTS_LONG):
     cmd = [
         &#39;/bin/sh&#39;,
         &#39;-c&#39;,
         &#39;dd if=%s of=%s bs=1M count=%d skip=%d seek=%d&#39; %
         (src_path, dest_path, size_in_mb, src_offset, dest_offset)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+    with timeout(seconds=stream_exec_timeout,
                  error_message=&#39;Timeout on copying file to dev&#39;):
         subprocess.check_call(cmd)</code></pre>
 </details>
@@ -1452,7 +1452,7 @@ def core_api(request):
                 &#39;/bin/sh&#39;, &#39;-c&#39;,
                 &#34;kill `pgrep -f \&#34;controller &#34; + volume_name + &#34;\&#34;`&#34;]
 
-        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+        with timeout(seconds=RETRY_COUNTS_LONG,
                      error_message=&#39;Timeout on executing stream read&#39;):
             stream(core_api.connect_get_namespaced_pod_exec,
                    ins_mgr_name,
@@ -2980,7 +2980,7 @@ def disable_auto_salvage(client):
         &#39;-c&#39;,
         command
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream read/write&#39;):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, namespace,
@@ -3013,7 +3013,7 @@ def disable_auto_salvage(client):
 <pre><code class="python">def exec_instance_manager(api, im_name, cmd):
     exec_cmd = [&#39;/bin/sh&#39;, &#39;-c&#39;, cmd]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream read&#39;):
         output = stream(api.connect_get_namespaced_pod_exec,
                         im_name,
@@ -4194,7 +4194,7 @@ IPv4 example: 10.0.1.24:4420 -&gt; 10.0.1.24</p></div>
     md5sum_command = [
         &#39;/bin/sh&#39;, &#39;-c&#39;, &#39;md5sum &#39; + path + &#34; | awk &#39;{print $1}&#39;&#34;
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream md5sum&#39;):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
@@ -4504,7 +4504,7 @@ IPv4 example: 10.0.1.24:4420 -&gt; 10.0.1.24</p></div>
         (path, offset_in_mb, length_in_mb)
     ]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 5,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on computing dev md5sum&#39;):
         output = subprocess.check_output(
             md5sum_command).strip().decode(&#39;utf-8&#39;)
@@ -5542,7 +5542,7 @@ def random_labels():
         &#39;dd if=&#39; + device_path +
         &#39; status=none bs=&#39; + str(data_size) + &#39; count=1 skip=&#39; + str(offset)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream read&#39;):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
@@ -5575,7 +5575,7 @@ def random_labels():
         &#39;-c&#39;,
         &#39;cat /data/&#39; + filename
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream read&#39;):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
@@ -5630,7 +5630,7 @@ def random_labels():
             f&#34;mount -o remount,ro /host/var/lib/kubelet/plugins/kubernetes.io/csi/driver.longhorn.io/{volume_name_hash}/globalmount&#34;    # NOQA
     ]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream read&#39;):
         stream(core_api.connect_get_namespaced_pod_exec,
                instance_manager_name, LONGHORN_NAMESPACE, command=command,
@@ -10100,7 +10100,7 @@ volume. Trigger a failed assertion of one is detected.
         &#39;dd if=&#39; + tmp_file + &#39; of=&#39; + device_path +
         &#39; bs=&#39; + str(len(test_data)) + &#39; count=1 seek=&#39; + str(offset)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream write&#39;):
         stream(api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
                command=pre_write_cmd, stderr=True, stdin=False, stdout=True,
@@ -10134,7 +10134,7 @@ volume. Trigger a failed assertion of one is detected.
         &#39;-c&#39;,
         &#39;echo -ne &#39; + test_data + &#39; &gt; /data/&#39; + filename
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message=&#39;Timeout on executing stream write&#39;):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
@@ -10198,7 +10198,7 @@ volume. Trigger a failed assertion of one is detected.
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.write_volume_dev_random_mb_data"><code class="name flex">
-<span>def <span class="ident">write_volume_dev_random_mb_data</span></span>(<span>path, offset_in_mb, length_in_mb, timeout_cnt=3)</span>
+<span>def <span class="ident">write_volume_dev_random_mb_data</span></span>(<span>path, offset_in_mb, length_in_mb, stream_exec_timeout=600)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -10206,14 +10206,14 @@ volume. Trigger a failed assertion of one is detected.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
-                                    timeout_cnt=3):
+                                    stream_exec_timeout=RETRY_COUNTS_LONG):
     write_cmd = [
         &#39;/bin/sh&#39;,
         &#39;-c&#39;,
         &#39;dd if=/dev/urandom of=%s bs=1M seek=%d count=%d&#39; %
         (path, offset_in_mb, length_in_mb)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+    with timeout(seconds=stream_exec_timeout,
                  error_message=&#39;Timeout on writing dev&#39;):
         subprocess.check_call(write_cmd)</code></pre>
 </details>
