@@ -97,8 +97,8 @@ class k8s_keywords:
     def drain_node(self, node_name):
         drain_node(node_name)
 
-    def force_drain_node(self, node_name):
-        force_drain_node(node_name)
+    def force_drain_node(self, node_name, timeout=None):
+        force_drain_node(node_name, timeout)
 
     def uncordon_node(self, node_name):
         uncordon_node(node_name)
