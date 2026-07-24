@@ -93,10 +93,11 @@ def drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--ignore-daemonsets", "--delete-emptydir-data"]
     res = subprocess_exec_cmd(exec_cmd)
 
-def force_drain_node(node_name):
-    retry_count, _ = get_retry_count_and_interval()
+def force_drain_node(node_name, timeout=None):
+    if timeout is None:
+        timeout, _ = get_retry_count_and_interval()
     exec_cmd = ["kubectl", "drain", node_name, "--force", "--ignore-daemonsets", "--delete-emptydir-data"]
-    res = subprocess_exec_cmd(exec_cmd, timeout=retry_count)
+    res = subprocess_exec_cmd(exec_cmd, timeout=timeout)
 
 def cordon_node(node_name):
     exec_cmd = ["kubectl", "cordon", node_name]
