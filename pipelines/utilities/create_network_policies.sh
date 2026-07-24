@@ -8,8 +8,32 @@ source "${SCRIPT_DIR}/longhorn_namespace.sh"
 
 
 longhorn_internal_networkpolicies_exist(){
-  kubectl get networkpolicy longhorn-manager -n "${LONGHORN_NAMESPACE}" >/dev/null 2>&1 &&
-    kubectl get networkpolicy instance-manager -n "${LONGHORN_NAMESPACE}" >/dev/null 2>&1
+  echo "Checking if Longhorn internal NetworkPolicies exist in namespace ${LONGHORN_NAMESPACE}..."
+
+  local found_manager=false
+  local found_instance=false
+
+  if kubectl get networkpolicy longhorn-manager -n "${LONGHORN_NAMESPACE}" --request-timeout=300s >/dev/null 2>&1; then
+    found_manager=true
+    echo "DEBUG: NetworkPolicy 'longhorn-manager' found in ${LONGHORN_NAMESPACE}"
+  else
+    echo "DEBUG: NetworkPolicy 'longhorn-manager' NOT found in ${LONGHORN_NAMESPACE} (or API server unreachable)"
+  fi
+
+  if kubectl get networkpolicy instance-manager -n "${LONGHORN_NAMESPACE}" --request-timeout=300s >/dev/null 2>&1; then
+    found_instance=true
+    echo "DEBUG: NetworkPolicy 'instance-manager' found in ${LONGHORN_NAMESPACE}"
+  else
+    echo "DEBUG: NetworkPolicy 'instance-manager' NOT found in ${LONGHORN_NAMESPACE} (or API server unreachable)"
+  fi
+
+  if [[ "${found_manager}" == true && "${found_instance}" == true ]]; then
+    echo "DEBUG: Both internal NetworkPolicies exist — will apply test NetworkPolicies"
+    return 0
+  else
+    echo "DEBUG: One or both internal NetworkPolicies missing — will skip test NetworkPolicies"
+    return 1
+  fi
 }
 
 apply_longhorn_test_networkpolicy(){
