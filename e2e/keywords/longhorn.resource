@@ -87,6 +87,9 @@ Check ${engine_type} instance manager is not running on node ${node_id}
 Check v1 instance manager pods did not restart
     check_all_instance_managers_not_restart
 
+Check v2 instance manager pods did not restart
+    check_all_instance_managers_not_restart    data_engine=v2
+
 Check v1 instance manager pods recreated
     wait_all_instance_managers_recreated
 
@@ -276,3 +279,11 @@ Verify ${engine_type} instance manager log on node ${node_id} not contain ${expe
     ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
     Log    ${pod_name}
     verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+
+Get ${engine_type} instance manager pod name on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    RETURN    ${pod_name}
+
+Wait for v2 instance manager pods restarted
+    wait_all_instance_managers_recreated    data_engine=v2

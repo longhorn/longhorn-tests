@@ -47,6 +47,9 @@ sudo mkdir -p /etc/rancher/rke2
 sudo tee -a /etc/rancher/rke2/config.yaml >/dev/null <<EOF
 server: ${rke2_server_url}
 token: ${rke2_cluster_secret}
+kubelet-arg:
+  - cpu-manager-policy=none
+  - reserved-cpus=0
 EOF
 
 sudo systemctl enable rke2-agent.service
