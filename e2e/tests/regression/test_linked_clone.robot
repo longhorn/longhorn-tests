@@ -55,6 +55,7 @@ Resource    ../keywords/engine.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/linked_clone.resource
+Resource    ../keywords/setting.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -679,3 +680,57 @@ Test Linked Clone Volume Advanced Lifecycle
 
     Then Verify volume src-vol still exists
     And Verify named snapshot ${snap_name_v1} of volume src-vol still exists
+
+Test Linked Clone Volume Extra Replica Cleanup
+    [Documentation]
+    ...    Verifies that the extra-replica cleanup correctly deletes only the
+    ...    src volume replica that has no linked-clone children, preserving
+    ...    replicas referenced by clone volumes.
+    ...
+    ...    Step 1  Set replica-auto-balance to least-effort.
+    ...    Step 2  Create a 3-replica V2 source volume, attach, write data,
+    ...            and create a snapshot.
+    ...    Step 3  Create a 2-replica linked-clone volume from the source
+    ...            volume and wait for clone to complete.
+    ...    Step 4  Scale down the source volume replica count to 2.
+    ...    Step 5  Verify that only the replica without linked-clone children
+    ...            is cleaned up; the 2 remaining replicas are exactly those
+    ...            referenced by the clone volume's replicas.
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Linked-clone volumes require the V2 data engine
+    END
+
+    # ------------------------------------------------------------------
+    # Step 1: Set auto-balance to least-effort
+    # ------------------------------------------------------------------
+    Given Setting replica-auto-balance is set to least-effort
+
+    # ------------------------------------------------------------------
+    # Step 2: Create 3-replica V2 source volume, attach, write data, snapshot
+    # ------------------------------------------------------------------
+    And Create volume src-vol with    dataEngine=v2    numberOfReplicas=3
+    And Attach volume src-vol
+    And Wait for volume src-vol healthy
+    And Write data to volume src-vol
+    And Create snapshot 0 of volume src-vol
+
+    # ------------------------------------------------------------------
+    # Step 3: Create 2-replica linked-clone volume and wait for completion
+    # ------------------------------------------------------------------
+    When Create linked clone volume clone-vol from snapshot 0 of volume src-vol    numberOfReplicas=2
+    And Wait for linked clone volume clone-vol replica fields set
+    And Attach volume clone-vol to same node as volume src-vol
+    And Wait for linked clone volume clone-vol clone to complete
+    And Wait for volume clone-vol healthy
+
+    # ------------------------------------------------------------------
+    # Step 4: Scale down source volume replica count to 2
+    # ------------------------------------------------------------------
+    And Update volume src-vol replica count to 2
+
+    # ------------------------------------------------------------------
+    # Step 5: Verify only the unreferenced replica is cleaned up
+    # ------------------------------------------------------------------
+    Then Volume src-vol should have 2 running replicas
+    And Verify all replicas of volume src-vol are referenced by clone clone-vol

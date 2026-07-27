@@ -545,3 +545,34 @@ class linked_clone_keywords:
             f"Timed out waiting for snapshot CR {snapshot_name} of volume " \
             f"{volume_name} to be deleted"
 
+    def verify_all_src_replicas_referenced_by_clone(self, src_volume_name,
+                                                    clone_volume_name):
+        """Assert every remaining src replica is referenced by at least one
+        clone replica's linkedCloneSrcReplicaName field.
+
+        Retries to allow recently deleted replica CRs to disappear.
+        """
+        for i in range(self.retry_count):
+            src_replicas = self.replica.get(src_volume_name, node_name=None)
+            clone_replicas = self.replica.get(clone_volume_name, node_name=None)
+
+            referenced_src_names = set()
+            for cr in clone_replicas:
+                src_name = cr.get("spec", {}).get("linkedCloneSrcReplicaName", "")
+                if src_name:
+                    referenced_src_names.add(src_name)
+
+            src_names = set(r["metadata"]["name"] for r in src_replicas)
+            unreferenced = src_names - referenced_src_names
+            if not unreferenced:
+                logging(f"All {len(src_names)} replicas of {src_volume_name} "
+                        f"are referenced by clone {clone_volume_name}")
+                return
+
+            time.sleep(self.retry_interval)
+
+        assert False, \
+            f"Src volume {src_volume_name} has unreferenced replicas " \
+            f"{unreferenced} (clone {clone_volume_name} references: " \
+            f"{referenced_src_names})"
+
