@@ -20,6 +20,7 @@ from common import get_longhorn_api_client
 from common import get_self_host_id
 from common import update_setting
 from common import size_to_string
+from common import generate_random_suffix
 
 from common import cleanup_disks_on_node
 from common import cleanup_node_disks
@@ -955,7 +956,7 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
     volume_size = int(disk_storage_available/expected_replica_count)
 
     # Create 3 statefulsets with 1 replica each.
-    statefulset_names = [f'sts-{i}' for i in range(expected_replica_count)]
+    statefulset_names = [f'sts-{generate_random_suffix()}' for i in range(expected_replica_count)] # NOQA
     for _statefulset_name in statefulset_names:
         _create_statefulset(statefulset, _statefulset_name,
                             storage_class, volume_size,
