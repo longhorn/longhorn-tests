@@ -83,6 +83,7 @@ class host_keywords:
             logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
             time.sleep(retry_count)  # Long sleep for debugging
             assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
+        NodeExec(node_name).cleanup()
 
     def execute_command_on_node_and_wait_for_output(self, cmd, node_name, expected_output):
         retry_count, retry_interval = get_retry_count_and_interval()
