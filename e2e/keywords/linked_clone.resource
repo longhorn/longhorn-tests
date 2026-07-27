@@ -181,3 +181,10 @@ Verify linked clone volume ${clone_id} has entrypoint snapshot label set
     ...    the clone volume, confirming Longhorn auto-created the snapshot.
     ${clone_volume_name} =    generate_name_with_suffix    volume    ${clone_id}
     verify_linked_clone_entrypoint_snapshot_label_set    ${clone_volume_name}
+
+Verify all replicas of volume ${src_id} are referenced by clone ${clone_id}
+    [Documentation]    Assert that every replica of the src volume is referenced
+    ...    by at least one clone replica's linkedCloneSrcReplicaName field.
+    ${src_volume_name} =    generate_name_with_suffix    volume    ${src_id}
+    ${clone_volume_name} =    generate_name_with_suffix    volume    ${clone_id}
+    verify_all_src_replicas_referenced_by_clone    ${src_volume_name}    ${clone_volume_name}
