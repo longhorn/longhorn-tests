@@ -9655,7 +9655,13 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
             break
         except AssertionError:
             time.sleep(RETRY_INTERVAL)
-    assert ok</code></pre>
+    assert ok, (
+        f&#34;Failed to wait for volume recurring job update, &#34;
+        f&#34;expected jobs: {jobs}, &#34;
+        f&#34;expected groups: {groups}, &#34;
+        f&#34;current jobs: {volumeJobs}, &#34;
+        f&#34;current groups: {volumeGroups}&#34;
+    )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
