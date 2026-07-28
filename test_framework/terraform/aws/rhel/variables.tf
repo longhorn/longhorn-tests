@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "10.1.0"
+  default     = "10.2.0"
 }
 
 variable "aws_ami_rhel_account_number" {
@@ -132,4 +132,9 @@ variable "custom_ssh_public_key" {
 variable "extra_block_device" {
   type = bool
   default = true
+}
+
+variable "cni" {
+  type      = string
+  default   = "default"
 }

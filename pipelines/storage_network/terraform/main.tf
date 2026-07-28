@@ -72,7 +72,7 @@ resource "aws_route_table" "aws_public_rt" {
 
 resource "aws_subnet" "aws_subnet_1" {
   vpc_id                          = aws_vpc.aws_vpc.id
-  availability_zone               = "us-east-1c"
+  availability_zone               = "us-east-1b"
   cidr_block                      = "10.0.1.0/24"
   ipv6_cidr_block                 = cidrsubnet(aws_vpc.aws_vpc.ipv6_cidr_block, 8, 0)
   assign_ipv6_address_on_creation = true
@@ -85,7 +85,7 @@ resource "aws_subnet" "aws_subnet_1" {
 
 resource "aws_subnet" "aws_subnet_2" {
   vpc_id                          = aws_vpc.aws_vpc.id
-  availability_zone               = "us-east-1c"
+  availability_zone               = "us-east-1b"
   cidr_block                      = "10.0.2.0/24"
   ipv6_cidr_block                 = cidrsubnet(aws_vpc.aws_vpc.ipv6_cidr_block, 8, 1)
   assign_ipv6_address_on_creation = true
@@ -211,7 +211,7 @@ resource "aws_ebs_volume" "lh_aws_ssd_volume" {
 
   count = var.aws_instance_count
 
-  availability_zone = "us-east-1c"
+  availability_zone = "us-east-1b"
   size              = var.block_device_size_worker
   type              = "gp2"
 

@@ -24,7 +24,7 @@ class Rest(Base):
 
         snapshot_created = False
         for i in range(self.retry_count):
-            snapshots = volume.snapshotList().data
+            snapshots = self.list(volume_name)
             for vs in snapshots:
                 if vs.name == snap_name:
                     snapshot_created = True
@@ -88,7 +88,13 @@ class Rest(Base):
         assert False, f"Failed to wait for volume {volume_name} snapshot {snapshot_name} to be deleted"
 
     def list(self, volume_name):
-        return self.volume.get(volume_name).snapshotList().data
+        for i in range(self.retry_count):
+            try:
+                return self.volume.get(volume_name).snapshotList().data
+            except Exception as e:
+                logging(f"Failed to list volume {volume_name} snapshots: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to list volume {volume_name} snapshots"
 
     def delete(self, volume_name, snapshot_id):
         logging(f"Deleting volume {volume_name} snapshot {snapshot_id}")

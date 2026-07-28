@@ -51,8 +51,9 @@ Delete volume of ${workload_kind} ${workload_id} replica node
     Set Test Variable    ${deleted_node}
 
 Delete node ${node_id}
-    ${node_name} =    get_node_by_index    ${node_id}
-    delete_node    ${node_name}
+    ${deleted_node} =    get_node_by_index    ${node_id}
+    delete_node    ${deleted_node}
+    Set Test Variable    ${deleted_node}
 
 Add deleted node back
     reboot_node_by_name    ${deleted_node}

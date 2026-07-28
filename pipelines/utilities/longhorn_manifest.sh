@@ -102,8 +102,8 @@ install_longhorn(){
   get_longhorn_namespace
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
   kubectl apply -f "${LONGHORN_MANIFEST_PATH}"
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
-  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){

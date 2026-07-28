@@ -71,15 +71,6 @@ class common_keywords:
             time.sleep(retry_count)
             assert False, f"Failed to find {expected_output} in {cmd} result: {res}"
 
-    def execute_command_until_success(self, cmd, expected_output):
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for _ in range(retry_count):
-            res = subprocess_exec_cmd(cmd)
-            if expected_output in res:
-                return res
-            time.sleep(retry_interval)
-        assert False, f"'{expected_output}' not found in command result: {res}"
-
     def execute_command_and_wait_for_output(self, cmd, output):
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
@@ -110,6 +101,23 @@ class common_keywords:
                 return res
             time.sleep(retry_interval)
         assert False, f"'{output}' still found in command result: {res}"
+
+    def execute_command_in_pod(self, pod_name, namespace, cmd):
+        return pod_exec(pod_name, namespace, cmd)
+
+    def execute_command_in_pod_and_expect_output(self, pod_name, namespace, cmd, expected_output):
+        res = pod_exec(pod_name, namespace, cmd)
+        retry_count, _ = get_retry_count_and_interval()
+
+        try:
+            expected_pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            expected_pattern = re.compile(re.escape(expected_output), re.DOTALL)
+
+        if not expected_pattern.search(res):
+            logging(f"Failed to find '{expected_output}' in output of '{cmd}' in pod {pod_name}: {res}")
+            time.sleep(retry_count)
+            assert False, f"Failed to find '{expected_output}' in output of '{cmd}' in pod {pod_name}: {res}"
 
     def cleanup_events(self):
         cleanup_events()

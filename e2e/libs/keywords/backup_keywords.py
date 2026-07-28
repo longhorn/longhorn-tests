@@ -12,8 +12,8 @@ class backup_keywords:
     def __init__(self):
         self.backup = Backup()
 
-    def create_backup(self, volume_name, backup_id, wait=True, snapshot_id=None):
-        self.backup.create(volume_name, backup_id, wait, snapshot_id)
+    def create_backup(self, volume_name, backup_id, wait=True, snapshot_id=None, backupMode="incremental"):
+        self.backup.create(volume_name, backup_id, wait, snapshot_id, backupMode)
 
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)

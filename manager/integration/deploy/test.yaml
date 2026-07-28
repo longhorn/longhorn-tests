@@ -58,7 +58,7 @@ spec:
     - name: RESOURCE_SUFFIX
       value: ""
     - name: DEFAULT_DATA_PATH
-      value: "/var/lib/longhorn/"
+      value: "/var/lib/longhorn"
     volumeMounts:
     - name: dev
       mountPath: /dev

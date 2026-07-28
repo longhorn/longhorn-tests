@@ -20,6 +20,7 @@ Resource    ../keywords/k8s.resource
 Resource    ../keywords/orphan.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/engine_frontend.resource
+Resource    ../keywords/io.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -297,36 +298,6 @@ Test Default Block Disks Delete And Re-add
     When Write data to volume 0
     Then Check volume 0 data is intact
 
-Test V2 Orphan Replica Cleanup After Node Power Cycle
-    [Documentation]    Test orphaned SPDK replica cleanup
-    ...    1. Create a v2 volume with 3 replicas and attach it to node 0
-    ...    2. Go to the instance-manage pod and execute go-spdk-helper lvol get
-    ...    3. Note the replica name and verify it's in the lvol list on node 2
-    ...    4. Power down node 2
-    ...    5. Delete the node 2 replica CR
-    ...    6. Power up node 2
-    ...    7. An orphan resource will be created
-    ...    8. Delete the orphan resource
-    ...    9. Go to the instance-manage pod and execute go-spdk-helper lvol get
-    ...    10. The replica lvol should be deleted
-    IF    '${DATA_ENGINE}' == 'v1'
-        Skip    Test only validate on v2 data engine
-    END
-
-    Given Create volume 0 with    dataEngine=v2    numberOfReplicas=3
-    And Attach volume 0 to node 0
-    And Wait for volume 0 healthy
-    And Get volume 0 replica name on node 2
-    And Verify replica lvol exists in SPDK lvol list on node 2    replica_name=${replica_name}
-
-    When Power off node 2
-    And Delete replica    replica_name=${replica_name}
-    And Power on node 2
-
-    When Wait for orphan count to be 1
-    Then Cleanup orphans
-    And Verify replica lvol is deleted from SPDK lvol list on node 2    replica_name=${replica_name}
-
 Test V2 Volume Engine Live Switchover
     [Tags]    v2
     [Documentation]    Test v2 volume cross-node initiator and target support with live switchover.
@@ -426,3 +397,31 @@ Test V2 Instance Manager Pod Recreate Loop When Engine Frontend Recovery Blocks 
     And Wait for volume test-vol healthy
     And Write data to volume test-vol
     Then Check volume test-vol data is intact
+
+V2 Replica Migration Should Not Cause IO Stall
+    [Documentation]    issue: https://github.com/longhorn/longhorn/issues/13309
+    ...    Test steps:
+    ...    1. Create v2 SC with dataLocality: best-effort, numberOfReplicas: 2
+    ...    2. Create deployment using the volume, running an fsync writer logging per-write timing
+    ...    3. Cordon volume attached node
+    ...    4. Delete replica on volume attached node
+    ...    5. Wait for volume healthy
+    ...    6. Check no IO stall observed (max latency < 3 sec)
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    Given Create storageclass longhorn-test with
+    ...    dataEngine=v2
+    ...    dataLocality=best-effort
+    ...    numberOfReplicas=2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    When Start fsync writer on deployment 0
+    And Cordon deployment 0 volume node
+    Then Delete replica of deployment 0 volume on volume node
+    And Wait for volume of deployment 0 attached and degraded
+    And Wait for volume of deployment 0 healthy
+    And Assert no IO stall greater than 3 seconds

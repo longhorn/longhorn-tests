@@ -123,6 +123,11 @@ Run command on node ${node_id} and get output string
     ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
     RETURN    ${result}
 
+SSH into node ${node_id} and run command
+    [Arguments]    ${command}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ssh_exec_on_node    ${node_name}    ${command}
+
 Corrupt CSI block volume staging mount point on node ${node_id} for volume ${volume_name}
     [Documentation]    Corrupt the CSI block volume staging mount point with explicit host operations.
     ...    1. Create fake device symlink /dev/longhorn/${volume_name} -> /dev/zero.
@@ -161,3 +166,20 @@ Get host log list on path ${log_path} on node ${node_id}
     ${host_log_files} =    get_host_log_files    ${node_name}    ${log_path}
     log    ${host_log_files}
     Set Test Variable    ${host_log_files}
+
+Check volume endpoint on node of ${resource_kind} ${resource_id}
+    [Documentation]    Find which node ${resource_kind} ${resource_id}'s volume is attached to,
+    ...                then run "ls -l /dev/longhorn/${volume_name}" on that node and log the output.
+    ...                Fails the test if the endpoint is empty or doesn't exist.
+    ${resource_name} =    generate_name_with_suffix    ${resource_kind}    ${resource_id}
+    ${volume_name} =    Run Keyword If    '${resource_kind}' == 'volume'
+    ...        Set Variable    ${resource_name}
+    ...    ELSE
+    ...        get_workload_volume_name    ${resource_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    execute_command_on_node_and_not_expect_output    ls -l /dev/longhorn/${volume_name}    ${node_name}    No such file or directory
+
+Check volume endpoint on node ${node_id}
+    [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output as a WARNING.
+    ${result} =    Run command on node ${node_id} and get output string    ls -l /dev/longhorn/
+    Log    /dev/longhorn/ on node ${node_id}:\n${result}    level=WARN    console=True

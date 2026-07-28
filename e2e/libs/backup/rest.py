@@ -21,7 +21,7 @@ class Rest(Base):
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, backup_id, wait, snapshot_id=None):
+    def create(self, volume_name, backup_id, wait, snapshot_id=None, backupMode="incremental"):
         if not snapshot_id:
             # create snapshot
             snapshot = self.snapshot.create(volume_name, backup_id)
@@ -32,7 +32,7 @@ class Rest(Base):
                 raise Exception(f"Snapshot {snapshot_id} not found for volume {volume_name}")
 
         volume = self.volume.get(volume_name)
-        volume.snapshotBackup(name=snapshot.name)
+        volume.snapshotBackup(name=snapshot.name, backupMode=backupMode)
 
         def background():
             # after backup request we need to wait for completion of the backup

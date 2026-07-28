@@ -45,7 +45,7 @@ Generate random disk name
 
 Run command
     [Arguments]    ${command}
-    ${result} =    execute_command    ${command}
+    ${result}=    execute_command    ${command}
     RETURN    ${result}
 
 Run command and expect output
@@ -63,6 +63,15 @@ Run command and not expect output
 Run command until output is absent
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_until_output_is_absent    ${command}    ${unexpected_output}
+
+Run command in pod
+    [Arguments]    ${pod_name}    ${namespace}    ${command}
+    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}
+    RETURN    ${result}
+
+Run command in pod and expect output
+    [Arguments]    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+    execute_command_in_pod_and_expect_output    ${pod_name}    ${namespace}    ${command}    ${expected_output}
 
 Test should pass
     No Operation
@@ -117,6 +126,8 @@ Cleanup test resources
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
+    Run keyword And Ignore Error    reboot_node_by_name    ${deleted_node}
+    Run keyword And Ignore Error    wait_for_node_ready    ${deleted_node}
     uncordon_all_nodes
     cleanup_node_taints
     cleanup_node_labels

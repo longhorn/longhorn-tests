@@ -127,3 +127,8 @@ variable "extra_block_device" {
   type = bool
   default = true
 }
+
+variable "cni" {
+  type      = string
+  default   = "default"
+}

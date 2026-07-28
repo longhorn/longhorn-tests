@@ -146,3 +146,8 @@ variable "network_stack" {
     error_message = "network_stack must be one of ipv4 or ipv6"
   }
 }
+
+variable "cni" {
+  type      = string
+  default   = "default"
+}

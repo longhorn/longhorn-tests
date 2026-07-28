@@ -29,6 +29,8 @@ kubectl() {
     fi
     sleep $delay
   done
+
+  return $exit_code
 }
 EOF
 

@@ -20,6 +20,7 @@ data "template_file" "provision_k3s_server" {
   template = var.k8s_distro_name == "k3s" ? file("${path.module}/user-data-scripts/provision_k3s_server.sh.tpl") : null
   vars = {
     network_stack = var.network_stack
+    cni = var.cni
     control_plane_ipv4 = local.control_plane_ipv4
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
@@ -45,6 +46,7 @@ data "template_file" "provision_rke2_server" {
   template = var.k8s_distro_name == "rke2" ? file("${path.module}/user-data-scripts/provision_rke2_server.sh.tpl") : null
   vars = {
     network_stack = var.network_stack
+    cni = var.cni
     control_plane_ipv4 = local.control_plane_ipv4
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_version =  var.k8s_distro_version

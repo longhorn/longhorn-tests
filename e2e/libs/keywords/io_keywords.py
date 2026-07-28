@@ -1,12 +1,70 @@
-from utility.utility import logging
+from utility.utility import logging, get_retry_count_and_interval
 from node_exec import NodeExec
 
+import subprocess
+import threading
 import time
 
 class io_keywords:
 
     def __init__(self):
-        pass
+        self._fsync_writer_process = None
+        self._fsync_writer_thread = None
+        self._max_elapsed = 0.0
+        self._max_elapsed_lock = threading.Lock()
+
+    def start_fsync_writer(self, pod_name, namespace="default"):
+        logging(f"Starting fsync writer on pod {pod_name}")
+
+        cmd = [
+            "kubectl", "exec", pod_name, "-n", namespace, "--",
+            "sh", "-c",
+            "mkdir -p /data && while true; do"
+            " dd if=/dev/zero of=/data/io_scratch bs=64k count=1 conv=fsync 2>&1"
+            r" | awk -F'copied, ' '/copied/ {print $2+0}';"
+            " done",
+        ]
+
+        self._max_elapsed = 0.0
+        self._fsync_writer_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+
+        def _reader():
+            for line in self._fsync_writer_process.stdout:
+                try:
+                    elapsed = float(line.strip().split()[0])
+                    logging(f"fsync latency: {elapsed}s")
+                    with self._max_elapsed_lock:
+                        if elapsed > self._max_elapsed:
+                            self._max_elapsed = elapsed
+                except (ValueError, IndexError):
+                    pass
+
+        self._fsync_writer_thread = threading.Thread(target=_reader, daemon=True)
+        self._fsync_writer_thread.start()
+        time.sleep(1)
+
+    def get_max_fsync_latency(self):
+        if self._fsync_writer_process is not None:
+            self._fsync_writer_process.terminate()
+            try:
+                self._fsync_writer_process.wait(timeout=10.0)
+            except subprocess.TimeoutExpired:
+                self._fsync_writer_process.kill()
+                self._fsync_writer_process.wait()
+            self._fsync_writer_thread.join(timeout=5.0)
+            self._fsync_writer_process = None
+        with self._max_elapsed_lock:
+            return self._max_elapsed
+
+    def assert_no_io_stall(self, threshold_sec=3.0):
+        max_latency = self.get_max_fsync_latency()
+        logging(f"Maximum fsync latency: {max_latency}s (threshold: {threshold_sec}s)")
+        if max_latency >= float(threshold_sec):
+            retry_count, retry_interval = get_retry_count_and_interval()
+            for i in range(retry_count):
+                logging(f"IO stall detected, keeping env for debugging ({i+1}/{retry_count}) ...")
+                time.sleep(int(retry_interval))
+            assert False, f"IO stall detected: max latency {max_latency}s >= {threshold_sec}s threshold"
 
     def setup_dm_linear_device_from_block_disk(self, block_disk_path, dm_device_name, node_name):
         """

@@ -196,3 +196,7 @@ Add ${disk_type} disk ${disk_name} to node ${node_id} with path ${mount_path}
 Remove dir ${dir_path} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     remove_dir    ${dir_path}    ${node_name}
+
+Wait for Longhorn node ${node_id} down
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_longhorn_node_down    ${node_name}

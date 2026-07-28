@@ -80,8 +80,8 @@ install_longhorn(){
 
   get_longhorn_namespace
   helm upgrade --install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace "${LONGHORN_NAMESPACE}"
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
-  install_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){

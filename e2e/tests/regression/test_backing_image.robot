@@ -63,6 +63,22 @@ Test Backup Backing Image
     When Create backup backing image bi-backup for backing image bi
     Then Wait for backing image backup for backing image bi ready
 
+Test Backing image With Invalid URL Scheme
+    [Documentation]    Issue: https://github.com/rancher/suse-storage-mgmt/issues/149
+    Run Keyword And Expect Error    *invalid download URL scheme*    Create backing image bi-test    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+    Run Keyword And Expect Error    *invalid download URL scheme*    Create backing image bi-test    url=file:///etc/passwd
+    Run Keyword And Expect Error    *invalid download URL scheme*    Create backing image bi-test    url=ftp://example.com/image.img
+    Run Keyword And Expect Error    *invalid URI for request*    Create backing image bi-test    url=example.com/image.img
+    Run Keyword And Expect Error    *invalid download URL scheme*    Create backing image bi-test    url=//example.com/image.img
+    Run Keyword And Expect Error    *must not target a loopback address*    Create backing image bi-test    url=http://127.0.0.1/metadata
+    Run Keyword And Expect Error    *must not target a loopback address*    Create backing image bi-test    url=http://0.0.0.0/metadata
+    Run Keyword And Expect Error    *must not target a loopback address*    Create backing image bi-test    url=http://localhost/metadata
+    Run Keyword And Expect Error    *must not target a loopback address*    Create backing image bi-test    url=http://[::1]/path
+    Create backing image bi-test    url=https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img
+    Run Keyword And Expect Error    *invalid download URL scheme*    Update backing image bi-test sourceParameters to {"url":"file:///etc/passwd"}
+    Run Keyword And Expect Error    *must not target a loopback address*    Update backing image bi-test sourceParameters to {"url":"http://127.0.0.1/metadata"}
+    Run Keyword And Expect Error    *download URL is not provided*    Update backing image bi-test sourceParameters to {"url":""}
+
 Test Backing Image Download Timeout
     [Documentation]    Test the backing image context timeout is enlarged to 30 sec
     ...                Issue: https://github.com/longhorn/longhorn/issues/11309
@@ -206,7 +222,7 @@ Test Reduce Backing Image Min Number Of Copies
     And Create backing image bi    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
     And Wait for disk file status of backing image bi are expected    expected_ready_count=3
 
-    When Update backing image bi min number of copies to 1
+    When Update backing image bi minNumberOfCopies to 1
     And Wait for disk file status of backing image bi are expected    expected_ready_count=1
 
     Then Run command and expect output

@@ -38,7 +38,7 @@ if [[ "${network_stack}" == "ipv6" ]]; then
     --flannel-ipv6-masq \
     --cluster-cidr=fd00:10::/56 \
     --service-cidr=fd00:20::/112"
-  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
+  echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2\nnet.ipv6.conf.all.forwarding = 1" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
 nameserver 2606:4700:4700::1111
@@ -49,21 +49,22 @@ EOF
   chattr +i /etc/resolv.conf || true
 fi
 
+if [[ "${cni}" != "default" ]]; then
+  K3S_EXEC="$K3S_EXEC \
+    --flannel-backend=none \
+    --disable-network-policy"
+fi
+
 until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="$K3S_EXEC" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s server did not install correctly'
   sleep 2
 done
 
-RETRY=0
-MAX_RETRY=180
-until (kubectl get pods -A | grep 'Running'); do
-  echo 'Waiting for k3s startup'
+until kubectl get nodes >/dev/null 2>&1; do
+  echo "Waiting for k3s startup"
   sleep 5
-  if [ $RETRY -eq $MAX_RETRY ]; then
-    break
-  fi
-  RETRY=$((RETRY+1))
 done
+
 
 if [[ -n "${custom_ssh_public_key}" ]]; then
   echo "${custom_ssh_public_key}" >> /home/ec2-user/.ssh/authorized_keys

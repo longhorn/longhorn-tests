@@ -101,8 +101,8 @@ update_argocd_app_target_revision(){
 
 sync_argocd_app(){
   argocd app sync longhorn
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
-  install_longhorn_manager_networkpolicy
   kubectl config set-context --current --namespace=default
   kubectl config get-contexts
   kubectl config view

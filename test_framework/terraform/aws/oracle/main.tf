@@ -108,6 +108,17 @@ resource "aws_security_group" "lh_aws_secgrp" {
     protocol    = "udp"
     cidr_blocks = ["10.0.0.0/8"]
   }
+  dynamic "ingress" {
+    for_each = var.cni == "calico" ? [1] : []
+
+    content {
+      description = "Allow Calico IP-in-IP between cluster nodes"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "4"
+      cidr_blocks = [aws_vpc.lh_aws_vpc.cidr_block]
+    }
+  }
 
   egress {
     from_port   = 0

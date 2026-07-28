@@ -237,7 +237,8 @@ data "talos_machine_configuration" "worker" {
   examples           = false
   kubernetes_version = "${var.k8s_distro_version}"
   config_patches = [
-    file("${path.module}/talos-patch-worker.yaml")
+    file("${path.module}/talos-patch-worker.yaml"),
+    file("${path.module}/user-volumes-patch.yaml")
   ]
 }
 
@@ -259,12 +260,43 @@ resource "talos_machine_configuration_apply" "worker" {
   node                        = aws_instance.lh_aws_instance_worker[count.index].private_ip
 }
 
-resource "talos_machine_bootstrap" "this" {
-  depends_on = [talos_machine_configuration_apply.controlplane]
+resource "null_resource" "bootstrap" {
+  depends_on = [
+    talos_machine_configuration_apply.controlplane,
+    local_file.talosconfig,
+  ]
 
-  client_configuration = talos_machine_secrets.machine_secrets.client_configuration
-  endpoint             = aws_instance.lh_aws_instance_controlplane[0].public_ip
-  node                 = aws_instance.lh_aws_instance_controlplane[0].private_ip
+  triggers = {
+    controlplane_id = aws_instance.lh_aws_instance_controlplane[0].id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      for i in $(seq 1 30); do
+        output=$(talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
+          bootstrap \
+          -n ${aws_instance.lh_aws_instance_controlplane[0].private_ip} \
+          -e ${aws_instance.lh_aws_instance_controlplane[0].public_ip} 2>&1)
+        rc=$?
+        if [ $rc -eq 0 ]; then
+          exit 0
+        fi
+        if echo "$output" | grep -q "AlreadyExists"; then
+          echo "Bootstrap already completed, continuing..."
+          exit 0
+        fi
+        if echo "$output" | grep -q "FailedPrecondition\|Unavailable\|connection refused"; then
+          echo "Node not ready yet, retrying ($i/30)..."
+          sleep 20
+          continue
+        fi
+        echo "Bootstrap failed: $output"
+        exit $rc
+      done
+      echo "Bootstrap timed out after 10 minutes"
+      exit 1
+    EOT
+  }
 }
 
 data "talos_client_configuration" "this" {
@@ -279,7 +311,7 @@ resource "local_file" "talosconfig" {
 }
 
 resource "talos_cluster_kubeconfig" "this" {
-  depends_on = [talos_machine_bootstrap.this]
+  depends_on = [null_resource.bootstrap]
 
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
   endpoint             = aws_instance.lh_aws_instance_controlplane.0.public_ip
@@ -334,40 +366,15 @@ locals {
   talos_version = "v${var.os_distro_version}"
 }
 
-# Patch Talos cluster worker nodes to mount /var/mnt/longhorn
-resource "null_resource" "patch_worker_nodes" {
-  depends_on = [null_resource.upload_schematic]
-  count = var.lh_aws_instance_count_worker
-
-  provisioner "local-exec" {
-    command = <<EOT
-talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
-  -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get disks
-talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config \
-  --endpoints ${aws_instance.lh_aws_instance_controlplane[0].public_ip} \
-  -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} \
-  patch mc --patch @${path.module}/user-volumes-patch.yaml
-while true; do
-  if talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get volumestatus u-longhorn &>/dev/null; then
-    echo "Volume u-longhorn is now available on ${aws_instance.lh_aws_instance_worker[count.index].private_ip}"
-    break
-  fi
-  sleep 1
-done
-while true; do
-  if talosctl --talosconfig ${abspath(path.module)}/talos_k8s_config -n ${aws_instance.lh_aws_instance_worker[count.index].private_ip} get mountstatus u-longhorn &>/dev/null; then
-    echo "Mount u-longhorn is now available on ${aws_instance.lh_aws_instance_worker[count.index].private_ip}"
-    break
-  fi
-  sleep 1
-done
-EOT
-  }
-}
+# User volume is now configured at initial deployment via config_patches in worker machine configuration
+# No need to patch after deployment
 
 # Upgrade Talos cluster worker nodes using schematic ID
 resource "null_resource" "upgrade_worker_nodes" {
-  depends_on = [null_resource.patch_worker_nodes]
+  depends_on = [
+    null_resource.upload_schematic,
+    talos_machine_configuration_apply.worker
+  ]
   count = var.lh_aws_instance_count_worker
 
   provisioner "local-exec" {

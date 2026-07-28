@@ -89,7 +89,10 @@ ISCSI_DEV_PATH = "/dev/disk/by-path"
 ISCSI_PROCESS = "iscsid"
 
 if os.environ.get("CLOUDPROVIDER") == "aws":
-    if os.uname().machine == "x86_64":
+    if os.environ.get("DISTRO") == "talos":
+        # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
+        BLOCK_DEV_PATH = "/dev/nvme1n1"
+    elif os.uname().machine == "x86_64":
         BLOCK_DEV_PATH = "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
@@ -144,7 +147,7 @@ WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn/')
+DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn')
 DIRECTORY_PATH = os.path.join(DEFAULT_DISK_PATH, 'longhorn-test')
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
@@ -173,8 +176,6 @@ NODE_CONDITION_MOUNTPROPAGATION = "MountPropagation"
 NODE_CONDITION_SCHEDULABLE = "Schedulable"
 DISK_CONDITION_SCHEDULABLE = "Schedulable"
 DISK_CONDITION_READY = "Ready"
-
-STREAM_EXEC_TIMEOUT = 60
 
 EXCEPTION_ERROR_REASON_NOT_FOUND = "Not Found"
 
@@ -362,7 +363,6 @@ if disktype == "hdd":
     DEFAULT_POD_TIMEOUT *= 32
     DEFAULT_DEPLOYMENT_TIMEOUT *= 32
     DEFAULT_STATEFULSET_TIMEOUT *= 32
-    STREAM_EXEC_TIMEOUT *= 32
 
 
 def load_k8s_config():
@@ -823,7 +823,7 @@ def read_volume_data(api, pod_name, filename='test'):
         '-c',
         'cat /data/' + filename
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream read'):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -845,7 +845,7 @@ def write_pod_volume_data(api, pod_name, test_data, filename='test'):
         '-c',
         'echo -ne ' + test_data + ' > /data/' + filename
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream write'):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -866,7 +866,7 @@ def write_pod_block_volume_data(api, pod_name, test_data, offset, device_path):
         'dd if=' + tmp_file + ' of=' + device_path +
         ' bs=' + str(len(test_data)) + ' count=1 seek=' + str(offset)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream write'):
         stream(api.connect_get_namespaced_pod_exec, pod_name, 'default',
                command=pre_write_cmd, stderr=True, stdin=False, stdout=True,
@@ -884,7 +884,7 @@ def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
         'dd if=' + device_path +
         ' status=none bs=' + str(data_size) + ' count=1 skip=' + str(offset)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream read'):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -908,7 +908,7 @@ def exec_command_in_pod(api, command, pod_name, namespace, container=None):
         '-c',
         command
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream read/write'):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, namespace,
@@ -920,7 +920,7 @@ def get_pod_data_md5sum(api, pod_name, path):
     md5sum_command = [
         '/bin/sh', '-c', 'md5sum ' + path + " | awk '{print $1}'"
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream md5sum'):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -956,27 +956,27 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
 
 def copy_file_to_volume_dev_mb_data(src_path, dest_path,
                                     src_offset, dest_offset, size_in_mb,
-                                    timeout_cnt=5):
+                                    stream_exec_timeout=RETRY_COUNTS_LONG):
     cmd = [
         '/bin/sh',
         '-c',
         'dd if=%s of=%s bs=1M count=%d skip=%d seek=%d' %
         (src_path, dest_path, size_in_mb, src_offset, dest_offset)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+    with timeout(seconds=stream_exec_timeout,
                  error_message='Timeout on copying file to dev'):
         subprocess.check_call(cmd)
 
 
 def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
-                                    timeout_cnt=3):
+                                    stream_exec_timeout=RETRY_COUNTS_LONG):
     write_cmd = [
         '/bin/sh',
         '-c',
         'dd if=/dev/urandom of=%s bs=1M seek=%d count=%d' %
         (path, offset_in_mb, length_in_mb)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+    with timeout(seconds=stream_exec_timeout,
                  error_message='Timeout on writing dev'):
         subprocess.check_call(write_cmd)
 
@@ -988,7 +988,7 @@ def get_volume_dev_mb_data_md5sum(path, offset_in_mb, length_in_mb):
         (path, offset_in_mb, length_in_mb)
     ]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 5,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on computing dev md5sum'):
         output = subprocess.check_output(
             md5sum_command).strip().decode('utf-8')
@@ -2453,6 +2453,24 @@ def delete_replica_on_test_node(client, volume_name): # NOQA
             replica_name = replica.name
     volume.replicaRemove(name=replica_name)
     wait_for_volume_degraded(client, volume_name)
+    return replica_name
+
+
+def wait_for_replica_deleted(client, volume_name, replica_name):
+    found = True
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        found = False
+        for replica in volume.replicas:
+            if replica.name == replica_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found, \
+        f"assert replica {replica_name} deleted from volume {volume_name}"
+    return volume
 
 
 def delete_replica_processes(client, api, volname):
@@ -2588,7 +2606,7 @@ def crash_replica_processes(client, api, volname, replicas=None,
 def exec_instance_manager(api, im_name, cmd):
     exec_cmd = ['/bin/sh', '-c', cmd]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream read'):
         output = stream(api.connect_get_namespaced_pod_exec,
                         im_name,
@@ -3920,12 +3938,6 @@ def reset_disks_for_all_nodes(client, add_block_disks=False):  # NOQA
             wait_for_disk_status(client, node.name, name,
                                  "storageReserved",
                                  expected_reserved_storage)
-
-    # for block type disks added by bdf (nvme disk driver)
-    # disk deletion takes some time, wait the device show up on the host
-    # normally less than 30 seconds
-    # ref: https://github.com/longhorn/longhorn/issues/11860
-    time.sleep(30)
 
 
 def reset_settings(client):
@@ -5678,7 +5690,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
                 '/bin/sh', '-c',
                 "kill `pgrep -f \"controller " + volume_name + "\"`"]
 
-        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+        with timeout(seconds=RETRY_COUNTS_LONG,
                      error_message='Timeout on executing stream read'):
             stream(core_api.connect_get_namespaced_pod_exec,
                    ins_mgr_name,
@@ -5699,7 +5711,7 @@ def remount_volume_read_only(client, core_api, volume_name):
             f"mount -o remount,ro /host/var/lib/kubelet/plugins/kubernetes.io/csi/driver.longhorn.io/{volume_name_hash}/globalmount"    # NOQA
     ]
 
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+    with timeout(seconds=RETRY_COUNTS_LONG,
                  error_message='Timeout on executing stream read'):
         stream(core_api.connect_get_namespaced_pod_exec,
                instance_manager_name, LONGHORN_NAMESPACE, command=command,
@@ -6151,7 +6163,13 @@ def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
             break
         except AssertionError:
             time.sleep(RETRY_INTERVAL)
-    assert ok
+    assert ok, (
+        f"Failed to wait for volume recurring job update, "
+        f"expected jobs: {jobs}, "
+        f"expected groups: {groups}, "
+        f"current jobs: {volumeJobs}, "
+        f"current groups: {volumeGroups}"
+    )
 
 
 def wait_for_cron_job_create(batch_v1_api, label="",

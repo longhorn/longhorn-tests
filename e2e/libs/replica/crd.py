@@ -77,6 +77,18 @@ class CRD(Base):
             )
         logging(f"Finished replicas deletion")
 
+    def wait_for_replica_failed(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} replica on node {node_name} to be failed ... ({i})")
+            replicas = self.get(volume_name, node_name)
+            for replica in replicas:
+                current_state = replica.get("status", {}).get("currentState", "")
+                failed_at = replica.get("spec", {}).get("failedAt", "")
+                if current_state == "stopped" and failed_at:
+                    return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} replica on node {node_name} to be failed"
+
     def wait_for_rebuilding_start(self, volume_name, node_name):
         Rest().wait_for_rebuilding_start(volume_name, node_name)
 

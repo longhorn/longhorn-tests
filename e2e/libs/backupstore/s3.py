@@ -157,7 +157,7 @@ class S3(Base):
         try:
             minio_api.remove_object(bucket_name, file_path)
         except ResponseError as err:
-            print(err)
+            logging(err)
         logging(f"Deleted file {file_path} in backupstore")
 
         process.kill()
@@ -174,7 +174,7 @@ class S3(Base):
         try:
             minio_api.remove_object(bucket_name, minio_backup_cfg_file_path)
         except ResponseError as err:
-            print(err)
+            logging(err)
 
     def delete_volume_cfg_file(self, volume_name):
         secret_name = self.secret
@@ -187,9 +187,12 @@ class S3(Base):
         try:
             minio_api.remove_object(bucket_name, minio_volume_cfg_file_path)
         except ResponseError as err:
-            print(err)
+            logging(err)
 
     def delete_random_backup_block(self, volume_name):
+
+        process = self.port_forward()
+
         secret_name = self.secret
         assert secret_name != '', f"Secret name is empty for deleting random backup block"
 
@@ -206,8 +209,11 @@ class S3(Base):
 
         try:
             minio_api.remove_object(bucket_name, object_file)
+            logging(f"Removed backup block file {object_file} in backupstore")
         except ResponseError as err:
-            print(err)
+            logging(err)
+
+        process.kill()
 
     def count_backup_block_files(self, volume_name):
         secret_name = self.secret

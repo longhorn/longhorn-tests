@@ -189,8 +189,8 @@ class Volume(Base):
     def activate(self, volume_name):
         return self.volume.activate(volume_name)
 
-    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system"):
-        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name, node_stage_secret_namespace=node_stage_secret_namespace)
+    def create_persistentvolume(self, volume_name, retry, volumeMode, fsType, sc_name="longhorn", node_stage_secret_name=None, node_stage_secret_namespace="longhorn-system", node_publish_secret_name=None, node_publish_secret_namespace="longhorn-system"):
+        return self.volume.create_persistentvolume(volume_name, retry, volumeMode, fsType, sc_name=sc_name, node_stage_secret_name=node_stage_secret_name, node_stage_secret_namespace=node_stage_secret_namespace, node_publish_secret_name=node_publish_secret_name, node_publish_secret_namespace=node_publish_secret_namespace)
 
     def create_persistentvolumeclaim(self, volume_name, volumeMode, retry, sc_name="longhorn"):
         return self.volume.create_persistentvolumeclaim(volume_name, volumeMode, retry, sc_name=sc_name)

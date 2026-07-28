@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "1.11.5"
+  default     = "1.13.4"
 }
 
 variable "aws_ami_talos_account_number" {
@@ -61,14 +61,14 @@ variable "lh_aws_instance_name_worker" {
 
 variable "lh_aws_instance_type_controlplane" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
-  default     = "t2.xlarge"
+  description = "Recommended instance types t3.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "t3.xlarge"
 }
 
 variable "lh_aws_instance_type_worker" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
-  default     = "t2.xlarge"
+  description = "Recommended instance types t3.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "t3.xlarge"
 }
 
 variable "block_device_size_controlplane" {
@@ -83,7 +83,7 @@ variable "block_device_size_worker" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.34.2"
+  default     = "v1.36.1"
 }
 
 variable "use_hdd" {

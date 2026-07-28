@@ -31,8 +31,8 @@ EOF
   kubectl apply -f longhorn-gitrepo.yaml
   wait_for_bundle_deployment_applied
   wait_for_bundle_deployment_ready
+  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
-  install_longhorn_manager_networkpolicy
 }
 
 wait_for_bundle_deployment_applied(){

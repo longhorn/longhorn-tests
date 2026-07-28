@@ -5,6 +5,7 @@ set -x
 source pipelines/utilities/kubeconfig.sh
 source pipelines/utilities/kubectl_retry.sh
 source pipelines/utilities/install_csi_snapshotter.sh
+source pipelines/utilities/install_cni.sh
 source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/create_registry_secret.sh
 source pipelines/utilities/install_backupstores.sh
@@ -45,8 +46,10 @@ enable_mtls(){
 }
 
 
+
 main(){
   set_kubeconfig
+  setup_cni || return 1
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     apply_kubectl_retry

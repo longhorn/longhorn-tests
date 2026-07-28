@@ -52,6 +52,9 @@ run_longhorn_test(){
   ## inject cloudprovider
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "'${LONGHORN_TEST_CLOUDPROVIDER}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  ## inject distro
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "DISTRO", "value": "'${DISTRO}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   ## for v2 volume test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_TEST", "value": "'${RUN_V2_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "DISABLE_V1_DATA_ENGINE", "value": "'${DISABLE_V1_DATA_ENGINE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"

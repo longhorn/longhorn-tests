@@ -13,20 +13,6 @@ class Orphan:
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create_orphaned_replica_for_volume(self, volume_name):
-
-        logging(f"Creating orphaned replica for volume {volume_name}")
-
-        volume = Volume().get(volume_name)
-        node_name = volume.replicas[0].hostId
-        replica_data_path = volume.replicas[0].dataPath
-
-        orphaned_replica_dir_name = volume_name + "-" + generate_random_id(8)
-        orphaned_replica_dir_path = os.path.join("/var/lib/longhorn", "replicas", orphaned_replica_dir_name)
-
-        NodeExec(node_name).issue_cmd(f"cp -a {replica_data_path} {orphaned_replica_dir_path}")
-        logging(f"Created orphaned replica directory {orphaned_replica_dir_path}")
-
     def wait_for_orphan_count(self, count):
         longhorn_client = get_longhorn_client()
         for i in range(self.retry_count):

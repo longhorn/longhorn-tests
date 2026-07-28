@@ -1,1 +1,2 @@
-from instancemanager.instancemanager import InstanceManager
+from instancemanager.v1_instancemanager import V1_InstanceManager
+from instancemanager.v2_instancemanager import V2_InstanceManager
