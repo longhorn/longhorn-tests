@@ -531,3 +531,63 @@ Test Linked Clone Volume Extra Replica Cleanup
     # ------------------------------------------------------------------
     Then Volume src-vol should have 2 running replicas
     And Verify all replicas of volume src-vol are referenced by clone clone-vol
+
+Test Linked Clone Volume Stale Replica Protection
+    [Documentation]
+    ...    Verifies that stale replica cleanup does not delete a src volume
+    ...    replica that is referenced by a linked-clone volume, even after the
+    ...    src volume's staleReplicaTimeout expires.
+    ...
+    ...    Step 1  Create a 3-replica V2 source volume with staleReplicaTimeout=1
+    ...            (minute), attach, write data, and create a snapshot.
+    ...    Step 2  Create a 3-replica linked-clone volume with
+    ...            staleReplicaTimeout=60, and wait for clone to complete.
+    ...    Step 3  Disable scheduling on node 0 and kill the instance manager
+    ...            pod on that node to fail both the src and clone replicas.
+    ...    Step 4  Wait for both replicas on node 0 to become failed.
+    ...    Step 5  Sleep 90s (exceeding the src volume's 1-minute
+    ...            staleReplicaTimeout) and verify neither failed replica
+    ...            has been cleaned up.
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Linked-clone volumes require the V2 data engine
+    END
+
+    # ------------------------------------------------------------------
+    # Step 1: Create src volume with short stale timeout
+    # ------------------------------------------------------------------
+    Given Create volume src-vol with    dataEngine=v2    numberOfReplicas=3
+    And Update volume src-vol staleReplicaTimeout to 1
+    And Attach volume src-vol
+    And Wait for volume src-vol healthy
+    And Write ${WRITE_SIZE_MB} MB data to volume src-vol at offset 0
+    And Create snapshot 0 of volume src-vol
+
+    # ------------------------------------------------------------------
+    # Step 2: Create 3-replica linked-clone with long stale timeout
+    # ------------------------------------------------------------------
+    When Create linked clone volume clone-vol from snapshot 0 of volume src-vol    numberOfReplicas=3
+    And Update volume clone-vol staleReplicaTimeout to 60
+    And Wait for linked clone volume clone-vol replica fields set
+    And Attach volume clone-vol to same node as volume src-vol
+    And Wait for linked clone volume clone-vol clone to complete
+    And Wait for volume clone-vol healthy
+
+    # ------------------------------------------------------------------
+    # Step 3: Disable scheduling on node 0 and kill IM to fail replicas
+    # ------------------------------------------------------------------
+    And Disable node 0 scheduling
+    And Delete v2 instance manager on node 0
+
+    # ------------------------------------------------------------------
+    # Step 4: Wait for both replicas on node 0 to become failed
+    # ------------------------------------------------------------------
+    And Wait for volume src-vol replica on node 0 failed
+    And Wait for volume clone-vol replica on node 0 failed
+
+    # ------------------------------------------------------------------
+    # Step 5: Sleep past src staleReplicaTimeout, verify no cleanup
+    # ------------------------------------------------------------------
+    And Sleep    90
+    Then Volume src-vol should have 3 replicas
+    And Volume clone-vol should have 3 replicas
