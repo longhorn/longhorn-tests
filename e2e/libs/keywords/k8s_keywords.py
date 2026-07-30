@@ -27,6 +27,7 @@ from k8s.k8s import get_pods_by_label_selector
 from k8s.k8s import verify_pods_log_after_time_contains
 from k8s.k8s import verify_pods_log_after_time_not_contains
 from k8s.k8s import wait_for_node_ready
+from k8s.k8s import wait_for_node_down
 from k8s.k8s import get_csi_driver_storage_capacity
 
 from node import Node
@@ -123,6 +124,9 @@ class k8s_keywords:
 
     def wait_for_node_ready(self, node_name):
         return wait_for_node_ready(node_name)
+
+    def wait_for_node_down(self, node_name):
+        return wait_for_node_down(node_name)
 
     def check_node_cordoned(self, node_name):
         check_node_cordoned(node_name)
