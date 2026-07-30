@@ -479,3 +479,42 @@ Heavy Writing Between Migration And Rollback
     When Detach volume 0 from node 1
     Then Wait for volume 0 to stay on node 0
     And Check volume 0 works
+
+Node Down Between Migration And Confirmation
+    [Documentation]    Verify that when a node is powered off before volume migration is
+    ...                triggered, Longhorn correctly defers setting migrationNodeID until
+    ...                the target node is back online and the migration can proceed.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13109
+    ...
+    ...                Steps:
+    ...                1.  Create a migratable volume and attach to node 0.
+    ...                2.  Write some data.
+    ...                3.  Power off node 1 and wait until it is down.
+    ...                4.  Trigger volume migration to node 1 by also attaching to node 1.
+    ...                5.  While node 1 is still down, migrationNodeID must remain empty.
+    ...                6.  Power on node 1 and wait for it to be ready.
+    ...                7.  After node 1 comes back, migrationNodeID should be set to node 1.
+    ...                8.  Detach volume from node 0 to confirm the migration.
+    ...                9.  Wait for the volume to migrate to node 1.
+    ...                10. Wait for the volume to be healthy.
+    ...                11. Check data integrity.
+    Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    When Power off node 1
+    And Wait for node 1 down
+    And Attach volume 0 to node 1
+
+    Then Volume 0 migrationNodeID should remain empty
+
+    When Power on off nodes
+    And Wait for node 1 ready
+    Then Volume 0 migrationNodeID should be set to node 1
+
+    When Detach volume 0 from node 0
+    Then Wait for volume 0 to migrate to node 1
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact

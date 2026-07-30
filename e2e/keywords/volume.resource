@@ -778,3 +778,16 @@ Expand volume ${volume_id} to ${size} should fail
 Trim volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     trim_volume    ${volume_name}
+
+Volume ${volume_id} migrationNodeID should remain empty
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${VOLUME_STATE_CHECK_TIMEOUT}
+        validate_volume_setting    ${volume_name}    migrationNodeID    ${EMPTY}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Volume ${volume_id} migrationNodeID should be set to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_setting    ${volume_name}    migrationNodeID    ${node_name}
+
