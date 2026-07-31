@@ -794,3 +794,71 @@ Test Linked Clone Volume Stale Replica Protection
     And Sleep    90
     Then Volume src-vol should have 3 replicas
     And Volume clone-vol should have 3 replicas
+
+Test Linked Clone Volume Auto Balance
+    [Documentation]
+    ...    Verifies that auto-balance correctly rebalances both the source
+    ...    volume and the linked-clone volume when a new node becomes available.
+    ...
+    ...    Step 1  Enable disk-level soft anti-affinity and set auto-balance
+    ...            to least-effort.
+    ...    Step 2  Disable scheduling on nodes 1 and 2, so all replicas land
+    ...            on node 0.
+    ...    Step 3  Create a 2-replica V2 source volume, attach, write data,
+    ...            and create a snapshot.
+    ...    Step 4  Create a 2-replica linked-clone volume and wait for clone
+    ...            to complete.
+    ...    Step 5  Enable scheduling on node 1 and verify both volumes move
+    ...            one replica to node 1.
+    ...    Step 6  Verify data integrity after rebalance
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Linked-clone volumes require the V2 data engine
+    END
+
+    # ------------------------------------------------------------------
+    # Step 1: Configure settings
+    # ------------------------------------------------------------------
+    Given Setting replica-soft-anti-affinity is set to true
+    And Setting replica-disk-soft-anti-affinity is set to true
+    And Setting replica-auto-balance is set to least-effort
+
+    # ------------------------------------------------------------------
+    # Step 2: Disable scheduling on nodes 1 and 2
+    # ------------------------------------------------------------------
+    And Disable node 1 scheduling
+    And Disable node 2 scheduling
+
+    # ------------------------------------------------------------------
+    # Step 3: Create 2-replica src volume on node 0
+    # ------------------------------------------------------------------
+    And Create volume src-vol with    dataEngine=v2    numberOfReplicas=2
+    And Attach volume src-vol
+    And Wait for volume src-vol healthy
+    And Write data to volume src-vol
+    And Create snapshot 0 of volume src-vol
+
+    # ------------------------------------------------------------------
+    # Step 4: Create 2-replica linked-clone and wait for completion
+    # ------------------------------------------------------------------
+    When Create linked clone volume clone-vol from snapshot 0 of volume src-vol    numberOfReplicas=2
+    And Wait for linked clone volume clone-vol replica fields set
+    And Attach volume clone-vol to same node as volume src-vol
+    And Wait for linked clone volume clone-vol clone to complete
+    And Wait for volume clone-vol healthy
+    And Volume src-vol should have 2 running replicas on node 0
+    And Volume clone-vol should have 2 running replicas on node 0
+
+    # ------------------------------------------------------------------
+    # Step 5: Enable node 1 and verify auto-balance
+    # ------------------------------------------------------------------
+    When Enable node 1 scheduling
+    Then Volume src-vol should have 1 running replicas on node 0
+    And Volume src-vol should have 1 running replicas on node 1
+    And Volume clone-vol should have 1 running replicas on node 0
+    And Volume clone-vol should have 1 running replicas on node 1
+
+    # ------------------------------------------------------------------
+    # Step 6: Verify data integrity after rebalance
+    # ------------------------------------------------------------------
+    And Verify linked clone volume clone-vol data matches source volume src-vol
