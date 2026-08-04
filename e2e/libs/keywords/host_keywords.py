@@ -1,6 +1,7 @@
 from robot.libraries.BuiltIn import BuiltIn
 
 import os
+import time
 
 from host import Harvester, Aws, Vagrant
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
@@ -10,6 +11,7 @@ from node_exec import NodeExec
 from ssh.ssh import ssh_exec
 
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 
 
 class host_keywords:
@@ -75,20 +77,15 @@ class host_keywords:
         return NodeExec(node_name).issue_cmd(cmd)
 
     def execute_command_on_node_and_not_expect_output(self, cmd, node_name, output):
-        from utility.utility import get_retry_count_and_interval
-        import time
-        
         retry_count, _ = get_retry_count_and_interval()
         res = NodeExec(node_name).issue_cmd(cmd)
         if output in res:
             logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
             time.sleep(retry_count)  # Long sleep for debugging
             assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
+        NodeExec(node_name).cleanup()
 
     def execute_command_on_node_and_wait_for_output(self, cmd, node_name, expected_output):
-        from utility.utility import get_retry_count_and_interval
-        import time
-        
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
             logging(f"Waiting for command {cmd} on node {node_name} returning output {expected_output} ... ({i})")

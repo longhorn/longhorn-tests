@@ -374,7 +374,7 @@ resource "null_resource" "make_sure_k8s_components_running_controlplane_k3s" {
   provisioner "remote-exec" {
 
     inline = [
-      "until (kubectl get pods -A | grep 'Running'); do echo 'Waiting for k3s startup'; sleep 5; done"
+      "RETRY=0; MAX_RETRY=180; until kubectl get nodes >/dev/null 2>&1; do echo 'Waiting for k3s startup'; sleep 5; if [ $RETRY -eq $MAX_RETRY ]; then echo 'k3s API initialization timeout'; exit 1; fi; RETRY=$((RETRY+1)); done"
     ]
 
     connection {
@@ -428,7 +428,7 @@ resource "null_resource" "rsync_kubeconfig_file" {
   provisioner "remote-exec" {
 
     inline = [
-      "until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"
+      "RETRY=0; MAX_RETRY=450; until([ -f /etc/rancher/k3s/k3s.yaml ] && kubectl get nodes >/dev/null 2>&1); do echo \"waiting for k3s cluster nodes to be available\"; sleep 2; if [ $RETRY -eq $MAX_RETRY ]; then echo \"k3s kubeconfig initialization timeout\"; exit 1; fi; RETRY=$((RETRY+1)); done"
     ]
 
     connection {

@@ -202,6 +202,7 @@ class CRD(Base):
     def detach(self, volume_name, node_name):
         for i in range(self.retry_count):
             logging(f"Detaching volume {volume_name} from node {node_name} ... ({i})")
+            deleted = False
             try:
                 body = get_cr(
                     group="longhorn.io",
@@ -210,7 +211,20 @@ class CRD(Base):
                     plural="volumeattachments",
                     name=volume_name
                 )
-                del body['spec']['attachmentTickets'][node_name]
+                try:
+                    del body['spec']['attachmentTickets'][node_name]
+                    deleted = True
+                except Exception as e:
+                    logging(f"Failed to delete attachment ticket {node_name}: {e}")
+                    logging(f"Trying to delete attachment ticket with nodeID {node_name} ...")
+                    for ticket in body['spec']['attachmentTickets']:
+                        if body['spec']['attachmentTickets'][ticket]['nodeID'] == node_name:
+                            del body['spec']['attachmentTickets'][ticket]
+                            deleted = True
+                            break
+
+                if not deleted:
+                    raise RuntimeError(f"Failed to find attachment ticket for {node_name} from volume {volume_name}")
 
                 self.obj_api.replace_namespaced_custom_object(
                     group="longhorn.io",
@@ -862,6 +876,23 @@ class CRD(Base):
         volume = self.get(volume_name)
         assert str(volume["spec"][setting_name]) == value, \
             f"Expected volume {volume_name} setting {setting_name} is {value}, but it's {str(volume['spec'][setting_name])}"
+
+    def wait_for_volume_setting(self, volume_name, setting_name, value):
+        if isinstance(value, str) and value[-2:] in ("Gi", "Mi"):
+            value = str(convert_size_to_bytes(value))
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} setting {setting_name} to be {value!r} ... ({i})")
+            try:
+                volume = self.get(volume_name)
+                if str(volume["spec"][setting_name]) == value:
+                    return
+            except Exception as e:
+                logging(f"Getting volume {volume_name} error: {e}")
+            time.sleep(self.retry_interval)
+        volume = self.get(volume_name)
+        assert False, \
+            f"Timed out waiting for volume {volume_name} setting {setting_name} to be {value!r}, " \
+            f"current value is {str(volume['spec'][setting_name])!r}"
 
     def trim_filesystem(self, volume_name, is_expect_fail=False):
         return Rest().trim_filesystem(volume_name, is_expect_fail=is_expect_fail)
