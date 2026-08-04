@@ -703,14 +703,11 @@ def test_upgrade(client, core_api, volume_name, csi_pv, # NOQA
 <p>TODO
 The test will cover both volume has revision counter enabled and
 disabled cases.</p>
-<h2 id="prerequisite">Prerequisite</h2>
-<ul>
-<li>
-<p>Disable Auto Salvage Setting</p>
-</li>
-<li>
-<p>Add block disks</p>
-</li>
+<p>Prerequisite
+-----=
+- Disable Auto Salvage Setting</p>
+<ol>
+<li>Add block disks</li>
 <li>Find the upgrade image tag</li>
 <li>Create a volume, generate and write data into the volume.<ol>
 <li>Create vol_revision_enabled with revision counter enabled case.</li>
@@ -753,7 +750,7 @@ and Delete Pod, and StatefulSet to detach theirvolumes</li>
 <li>Check All volumes data</li>
 <li>Delete one replica for vol_rebuild to trigger the rebuilding</li>
 <li>Verify the vol_rebuild is still healthy</li>
-</ul></div>
+</ol></div>
 </dd>
 <dt id="tests.test_upgrade.test_upgrade_with_auto_upgrade_latest_engine_enabled"><code class="name flex">
 <span>def <span class="ident">test_upgrade_with_auto_upgrade_latest_engine_enabled</span></span>(<span>)</span>

@@ -112,8 +112,9 @@ def apps_api(request):
     return apps_api</code></pre>
 </details>
 <div class="desc"><p>Create a new AppsV1API instance.</p>
-<h2 id="returns">Returns</h2>
-<p>A new AppsV1API Instance.</p></div>
+<p>Returns
+-----=
+A new AppsV1API Instance.</p></div>
 </dd>
 <dt id="tests.common.assert_backup_state"><code class="name flex">
 <span>def <span class="ident">assert_backup_state</span></span>(<span>b_actual, b_expected)</span>
@@ -164,8 +165,9 @@ def apps_api(request):
         assert False, err_list</code></pre>
 </details>
 <div class="desc"><p>Check all threads in thrd_list are done and their status</p>
-<h2 id="parameters">Parameters</h2>
-<p>thrd_list: thread list created by create_assert_error_check_thread.</p></div>
+<p>Parameters
+-----=
+thrd_list: thread list created by create_assert_error_check_thread.</p></div>
 </dd>
 <dt id="tests.common.backing_image_feature_supported"><code class="name flex">
 <span>def <span class="ident">backing_image_feature_supported</span></span>(<span>client)</span>
@@ -207,8 +209,9 @@ def batch_v1_api(request):
     return api</code></pre>
 </details>
 <div class="desc"><p>Create a new BatchV1Api instance.</p>
-<h2 id="returns">Returns</h2>
-<p>A new BatchV1Api Instance.</p></div>
+<p>Returns
+-----=
+A new BatchV1Api Instance.</p></div>
 </dd>
 <dt id="tests.common.check_all_support_bundle_managers_deleted"><code class="name flex">
 <span>def <span class="ident">check_all_support_bundle_managers_deleted</span></span>(<span>)</span>
@@ -1421,8 +1424,9 @@ def core_api(request):
     return core_api</code></pre>
 </details>
 <div class="desc"><p>Create a new CoreV1API instance.</p>
-<h2 id="returns">Returns</h2>
-<p>A new CoreV1API Instance.</p></div>
+<p>Returns
+-----=
+A new CoreV1API Instance.</p></div>
 </dd>
 <dt id="tests.common.crash_engine_process_with_sigkill"><code class="name flex">
 <span>def <span class="ident">crash_engine_process_with_sigkill</span></span>(<span>client, core_api, volume_name)</span>
@@ -1637,8 +1641,9 @@ of bytes.
 <p>The function will block until the Pod is online or until it times out,
 whichever occurs first. The volume created by the manifest passed in will
 be mounted to '/data'.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>api</code></strong></dt>
 <dd>An instance of CoreV1API.</dd>
 <dt><strong><code>pod_name</code></strong></dt>
@@ -1693,8 +1698,9 @@ or it times out, whichever occurs first.</p></div>
     return t</code></pre>
 </details>
 <div class="desc"><p>Do func by threading with arguments</p>
-<h2 id="parameters">Parameters</h2>
-<p>func:
+<p>Parameters
+-----=
+func:
 function that want to do things in parallel.
 args:
 arguments for function.</p></div>
@@ -1854,8 +1860,9 @@ arguments for function.</p></div>
     return backup_volume, backup, data_checksum</code></pre>
 </details>
 <div class="desc"><p>Write data in the pod and take a backup.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>client</code></strong></dt>
 <dd>The Longhorn client to use in the request.</dd>
 <dt><strong><code>core_api</code></strong></dt>
@@ -1869,8 +1876,9 @@ arguments for function.</p></div>
 <dt><strong><code>data_size</code></strong></dt>
 <dd>Size of the data to be written in the pod.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>The backup volume name, backup, checksum of data written in the
+<p>Returns
+-----=
+The backup volume name, backup, checksum of data written in the
 backup</p></div>
 </dd>
 <dt id="tests.common.create_crypto_secret"><code class="name flex">
@@ -2550,8 +2558,9 @@ def csi_pvc_name(request):
 <div class="desc"><p>Delete a specified Pod.</p>
 <p>This function does not check if the Pod does exist and will throw an error
 if a nonexistent Pod is specified.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>api</code></strong></dt>
 <dd>An instance of CoreV1API.</dd>
 <dt><strong><code>pod_name</code></strong></dt>
@@ -2988,8 +2997,9 @@ def disable_auto_salvage(client):
             container=container, tty=False)</code></pre>
 </details>
 <div class="desc"><p>Execute command in the pod.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>api</code></strong></dt>
 <dd>An instance of CoreV1API.</dd>
 <dt><strong><code>pod_name</code></strong></dt>
@@ -2999,8 +3009,9 @@ def disable_auto_salvage(client):
 <dt><strong><code>namespace</code></strong></dt>
 <dd>The namespace where the pod exists.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>The output of the command.</p></div>
+<p>Returns
+-----=
+The output of the command.</p></div>
 </dd>
 <dt id="tests.common.exec_instance_manager"><code class="name flex">
 <span>def <span class="ident">exec_instance_manager</span></span>(<span>api, im_name, cmd)</span>
@@ -3546,8 +3557,9 @@ been completed successfully</p></div>
 <div class="desc"><p>Generate support bundle into folder ./support_bundle/case_name.zip</p>
 <p>Won't generate support bundle if current support bundle count
 greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>case_name</code></strong></dt>
 <dd>support bundle will named case_name.zip</dd>
 </dl></div>
@@ -5583,15 +5595,17 @@ def random_labels():
             tty=False)</code></pre>
 </details>
 <div class="desc"><p>Retrieve data from a Pod's volume.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>api</code></strong></dt>
 <dd>An instance of CoreV1API.</dd>
 <dt><strong><code>pod_name</code></strong></dt>
 <dd>The name of the Pod.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>The data contained within the volume.</p></div>
+<p>Returns
+-----=
+The data contained within the volume.</p></div>
 </dd>
 <dt id="tests.common.recurring_job_feature_supported"><code class="name flex">
 <span>def <span class="ident">recurring_job_feature_supported</span></span>(<span>client)</span>
@@ -6050,8 +6064,9 @@ daemonset restart</p></div>
 </details>
 <div class="desc"><p>Restore the backup in a pod and get the checksum of all the files
 or checksum of a particular file.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>client</code></strong></dt>
 <dd>The Longhorn client to use in the request.</dd>
 <dt><strong><code>core_api</code></strong></dt>
@@ -6065,8 +6080,9 @@ or checksum of a particular file.</p>
 <dt><strong><code>command</code></strong></dt>
 <dd>Optional - command to be executed in the pod.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>The checksum as a dictionary as in file_name=checksum and the
+<p>Returns
+-----=
+The checksum as a dictionary as in file_name=checksum and the
 output of the command executed in the pod.</p></div>
 </dd>
 <dt id="tests.common.rwx_statefulset"><code class="name flex">
@@ -6203,8 +6219,9 @@ def scheduling_api(request):
     return scheduling_api</code></pre>
 </details>
 <div class="desc"><p>Create a new SchedulingV1API instance.</p>
-<h2 id="returns">Returns</h2>
-<p>A new CoreV1API Instance.</p></div>
+<p>Returns
+-----=
+A new CoreV1API Instance.</p></div>
 </dd>
 <dt id="tests.common.set_and_wait_k8s_nodes_zone_label"><code class="name flex">
 <span>def <span class="ident">set_and_wait_k8s_nodes_zone_label</span></span>(<span>core_api, node_zone_map)</span>
@@ -6483,13 +6500,15 @@ def settings_reset():
         return str(volume_size &gt;&gt; 10) + &#39;Ki&#39;</code></pre>
 </details>
 <div class="desc"><p>Convert a volume size to string format to pass into Kubernetes.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>volume_size</code></strong></dt>
 <dd>The size of the volume in bytes.</dd>
 </dl>
-<h2 id="returns">Returns</h2>
-<p>The size of the volume in gigabytes as a passable string to Kubernetes.</p></div>
+<p>Returns
+-----=
+The size of the volume in gigabytes as a passable string to Kubernetes.</p></div>
 </dd>
 <dt id="tests.common.statefulset"><code class="name flex">
 <span>def <span class="ident">statefulset</span></span>(<span>request)</span>
@@ -10148,8 +10167,9 @@ volume. Trigger a failed assertion of one is detected.
             tty=False)</code></pre>
 </details>
 <div class="desc"><p>Write data into a Pod's volume.</p>
-<h2 id="args">Args</h2>
 <dl>
+<dt>Args</dt>
+<dt>-----=</dt>
 <dt><strong><code>api</code></strong></dt>
 <dd>An instance of CoreV1API.</dd>
 <dt><strong><code>pod_name</code></strong></dt>
@@ -10281,8 +10301,9 @@ volume. Trigger a failed assertion of one is detected.
 </details>
 <div class="desc"><p>This class is used for catching exception caused in threads,
 especially for AssertionError now.</p>
-<h2 id="parameters">Parameters</h2>
-<p>target
+<p>Parameters
+-----=
+target
 :
 The threading function.
 args
