@@ -3978,6 +3978,15 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
+        if setting_name == "guaranteed-instance-manager-cpu":
+            setting = client.by_id_setting("guaranteed-instance-manager-cpu")
+            try:
+                client.update(setting, value="{\"v1\":\"12\",\"v2\":\"36\"}")
+            except Exception as e:
+                print(f"\nException setting {setting_name} to {{\"v1\":\"12\",\"v2\":\"36\"}}") # NOQA
+                print(e)
+            continue
+
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
