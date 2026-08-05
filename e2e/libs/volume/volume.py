@@ -123,6 +123,24 @@ class Volume(Base):
     def write_random_data(self, volume_name, size, data_id):
         return self.volume.write_random_data(volume_name, size, data_id)
 
+    def write_data_at_offset(self, volume_name, size_mb, offset_mb):
+        return self.volume.write_data_at_offset(volume_name, size_mb, offset_mb)
+
+    def check_data_at_offset(self, volume_name):
+        return self.volume.check_data_at_offset(volume_name)
+
+    def read_data_at_offset(self, volume_name, offset_mb, size_mb):
+        return self.volume.read_data_at_offset(volume_name, offset_mb, size_mb)
+
+    def get_expanded_data_offset_mb(self, volume_name):
+        return self.volume.get_expanded_data_offset_mb(volume_name)
+
+    def get_expanded_data_size_mb(self, volume_name):
+        return self.volume.get_expanded_data_size_mb(volume_name)
+
+    def get_expanded_data_checksum(self, volume_name):
+        return self.volume.get_expanded_data_checksum(volume_name)
+
     def prefill_with_fio(self, volume_name, size):
         return self.volume.prefill_with_fio(volume_name, size)
 

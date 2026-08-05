@@ -19,6 +19,10 @@ class Base(ABC):
 
     ANNOT_DATA_CHECKSUM = "test.longhorn.io/data-checksum-"
     ANNOT_LAST_CHECKSUM = "test.longhorn.io/last-recorded-checksum"
+    ANNOT_WRITE_SIZE_MB = "test.longhorn.io/write-size-mb"
+    ANNOT_EXPANDED_DATA_CHECKSUM = "test.longhorn.io/expanded-data-checksum"
+    ANNOT_EXPANDED_DATA_OFFSET_MB = "test.longhorn.io/expanded-data-offset-mb"
+    ANNOT_EXPANDED_DATA_SIZE_MB = "test.longhorn.io/expanded-data-size-mb"
 
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
@@ -87,6 +91,81 @@ class Base(ABC):
         except Exception as e:
             logging(f"Getting volume {volume_name} last data checksum failed: {e}")
             return ""
+
+    def set_write_size_mb(self, volume_name, size_mb):
+        set_annotation(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="volumes",
+            name=volume_name,
+            annotation_key=self.ANNOT_WRITE_SIZE_MB,
+            annotation_value=str(size_mb)
+        )
+
+    def get_write_size_mb(self, volume_name):
+        """Return the write size in MB stored by write_random_data, or None."""
+        try:
+            v = get_annotation_value(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="volumes",
+                name=volume_name,
+                annotation_key=self.ANNOT_WRITE_SIZE_MB,
+            )
+            return int(v) if v else None
+        except Exception:
+            return None
+
+    def set_expanded_data_checksum(self, volume_name, checksum, offset_mb, size_mb):
+        """Store checksum and position metadata for data written at an offset."""
+        for key, val in [
+            (self.ANNOT_EXPANDED_DATA_CHECKSUM, checksum),
+            (self.ANNOT_EXPANDED_DATA_OFFSET_MB, str(offset_mb)),
+            (self.ANNOT_EXPANDED_DATA_SIZE_MB, str(size_mb)),
+        ]:
+            set_annotation(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="volumes",
+                name=volume_name,
+                annotation_key=key,
+                annotation_value=val,
+            )
+
+    def get_expanded_data_checksum(self, volume_name):
+        return get_annotation_value(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="volumes",
+            name=volume_name,
+            annotation_key=self.ANNOT_EXPANDED_DATA_CHECKSUM,
+        )
+
+    def get_expanded_data_offset_mb(self, volume_name):
+        v = get_annotation_value(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="volumes",
+            name=volume_name,
+            annotation_key=self.ANNOT_EXPANDED_DATA_OFFSET_MB,
+        )
+        return int(v) if v else 0
+
+    def get_expanded_data_size_mb(self, volume_name):
+        v = get_annotation_value(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="volumes",
+            name=volume_name,
+            annotation_key=self.ANNOT_EXPANDED_DATA_SIZE_MB,
+        )
+        return int(v) if v else 200
 
     @abstractmethod
     def attach(self, volume_name, node_name, disable_frontend, wait, retry):
