@@ -23,11 +23,11 @@ class instancemanager_keywords:
         logging(f'Waiting for all instance manager removed')
         self.instancemanager.wait_for_all_instance_manager_removed()
 
-    def check_all_instance_managers_not_restart(self):
-        self.instancemanager.check_all_instance_managers_not_restart()
+    def check_all_instance_managers_not_restart(self, data_engine="v1"):
+        self.instancemanager.check_all_instance_managers_not_restart(data_engine)
 
-    def wait_all_instance_managers_recreated(self):
-        self.instancemanager.wait_all_instance_managers_recreated()
+    def wait_all_instance_managers_recreated(self, data_engine="v1"):
+        self.instancemanager.wait_all_instance_managers_recreated(data_engine)
 
     def check_instance_manager_existence_on_node(self, node_name, engine_type, exist):
         logging(f"Checking {engine_type} instance manager exist = {exist} on node {node_name}")
