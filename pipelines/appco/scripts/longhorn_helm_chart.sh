@@ -4,6 +4,7 @@ set -x
 
 source pipelines/utilities/longhorn_status.sh
 source pipelines/utilities/create_network_policies.sh
+source pipelines/appco/scripts/fetch-revision-tag.sh
 TAG_ARGS=()
 SECRET_ARGS=()
 LONGHORN_NAMESPACE="longhorn-system"
@@ -129,19 +130,49 @@ install_longhorn_custom(){
   set +x
   prepare_chart_source "${chart_uri}"
   set -x
-  set_longhorn_registry_args
-  set_longhorn_repository_args
-  set_longhorn_tag_args
-  set_secret_args "${chart_uri}" true
 
-  helm upgrade --install longhorn "${chart_uri}" \
-    --namespace "${LONGHORN_NAMESPACE}" \
-    --version "${LONGHORN_VERSION}" \
-    "${REGISTRY_ARGS[@]}" \
-    "${REPOSITORY_ARGS[@]}" \
-    "${TAG_ARGS[@]}" \
-    "${SECRET_ARGS[@]}"
-  setup_longhorn_manager_networkpolicy
+  # If USE_REVERSION_IMAGES is true, use the released SUSE Storage chart with latest revision tags
+  if [[ "${USE_REVERSION_IMAGES}" == "true" ]]; then
+    # Fetch latest revision tags from AppCo API
+    set +x
+    fetch_appco_revision_tags "${LONGHORN_VERSION}"
+    set -x
+
+    set_secret_args "${chart_uri}"
+
+    helm upgrade --install longhorn "${chart_uri}" \
+      --namespace "${LONGHORN_NAMESPACE}" \
+      --version "${LONGHORN_VERSION}" \
+      --set image.longhorn.engine.tag="${LONGHORN_ENGINE_TAG}" \
+      --set image.longhorn.manager.tag="${LONGHORN_MANAGER_TAG}" \
+      --set image.longhorn.ui.tag="${LONGHORN_UI_TAG}" \
+      --set image.longhorn.instanceManager.tag="${LONGHORN_INSTANCE_MANAGER_TAG}" \
+      --set image.longhorn.shareManager.tag="${LONGHORN_SHARE_MANAGER_TAG}" \
+      --set image.longhorn.backingImageManager.tag="${LONGHORN_BACKING_IMAGE_MANAGER_TAG}" \
+      --set image.longhorn.supportBundleKit.tag="${RANCHER_SUPPORT_BUNDLE_KIT_TAG}" \
+      --set image.csi.attacher.tag="${KUBERNETES_CSI_EXTERNAL_ATTACHER_TAG}" \
+      --set image.csi.provisioner.tag="${KUBERNETES_CSI_EXTERNAL_PROVISIONER_TAG}" \
+      --set image.csi.nodeDriverRegistrar.tag="${KUBERNETES_CSI_NODE_DRIVER_REGISTRAR_TAG}" \
+      --set image.csi.resizer.tag="${KUBERNETES_CSI_EXTERNAL_RESIZER_TAG}" \
+      --set image.csi.snapshotter.tag="${KUBERNETES_CSI_EXTERNAL_SNAPSHOTTER_TAG}" \
+      --set image.csi.livenessProbe.tag="${KUBERNETES_CSI_LIVENESSPROBE_TAG}" \
+      "${SECRET_ARGS[@]}"
+      setup_longhorn_manager_networkpolicy
+  else
+    set_longhorn_registry_args
+    set_longhorn_repository_args
+    set_longhorn_tag_args
+    set_secret_args "${chart_uri}" true
+
+    helm upgrade --install longhorn "${chart_uri}" \
+      --namespace "${LONGHORN_NAMESPACE}" \
+      --version "${LONGHORN_VERSION}" \
+      "${REGISTRY_ARGS[@]}" \
+      "${REPOSITORY_ARGS[@]}" \
+      "${TAG_ARGS[@]}" \
+      "${SECRET_ARGS[@]}"
+      setup_longhorn_manager_networkpolicy
+  fi
   wait_longhorn_status_running
 }
 
