@@ -103,6 +103,46 @@ Test Encrypted Volume Cloning
     END
     And Check deployment cloned-deployment file data.txt checksum matches checksum source-pvc
 
+Test Encrypted Volume Expansion
+    [Arguments]    ${volume_type}
+    [Documentation]    Test Plan: Volume Expansion – new engine path
+    ...
+    ...                Create a 512 Mi encrypted volume (new engine), write 256 Mi of data,
+    ...                then expand to 768 Mi.
+    ...
+    ...                Expected after expansion:
+    ...                  - Instance manager (RWO) shows 768 Mi.
+    ...                  - Share manager pod (RWX) shows 768 Mi; pod is NOT recreated.
+    ...                  - Replica image file on the worker node shows 768 Mi + 16 Mi = 784 Mi.
+    ...                  - Previously written data is intact.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 256 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+
+    When Expand deployment 0 volume to 768Mi
+    Then Wait for deployment 0 volume size expanded
+
+    And Check deployment 0 pods did not restart
+    IF    '${volume_type}' == 'RWX'
+        And Check no sharemanager pod of deployment 0 recreation
+    END
+
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=768Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 768Mi
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment 0 is 784Mi
+    END
+    And Check deployment 0 data in file data.txt is intact
+
 *** Test Cases ***
 Test Encrypted RWO Volume Basic
     [Tags]    rwo
@@ -181,47 +221,15 @@ Test Encrypted Volume Snapshot Clone
         Assert replica file size of deployment 1 is 528Mi
     END
 
-Test Encrypted Volume Expansion
-    [Tags]    rwo    rwx    expansion
-    [Documentation]    Test Plan: Volume Expansion – new engine path (RWO + RWX)
-    ...
-    ...                Create a 512 Mi encrypted volume (new engine), write 256 Mi of data,
-    ...                then expand to 768 Mi. Deployment 0 = RWO, Deployment 1 = RWX.
-    ...
-    ...                Expected after expansion:
-    ...                  - Instance manager (RWO) shows 768 Mi.
-    ...                  - Share manager pod (RWX) shows 768 Mi; pod is NOT recreated.
-    ...                  - Replica image file on the worker node shows 768 Mi + 16 Mi = 784 Mi.
-    ...                  - Previously written data is intact.
-    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
-    Given Create crypto secret
-    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWO Volume Expansion
+    [Tags]    rwo    expansion
+    [Template]    Test Encrypted Volume Expansion
+        RWO
 
-    When Expand deployment 0 volume to 768Mi
-    And Expand deployment 1 volume to 768Mi
-    Then Wait for deployment 0 volume size expanded
-    And Wait for deployment 1 volume size expanded
-    And Check deployment 0 pods did not restart
-    And Check deployment 1 pods did not restart
-    And Check no sharemanager pod of deployment 1 recreation
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=768Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 768Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 784Mi
-        Assert replica file size of deployment 1 is 784Mi
-    END
-    And Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWX Volume Expansion
+    [Tags]    rwx    expansion
+    [Template]    Test Encrypted Volume Expansion
+        RWX
 
 Test Encrypted RWO Block Volume Online Expansion
     [Tags]    rwo    expansion    block-volume
