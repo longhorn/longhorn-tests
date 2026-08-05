@@ -25,9 +25,9 @@ Resource    ../keywords/setting.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
+*** Keywords ***
 Test Encrypted Volume Basic
-    [Tags]    rwo    rwx
+    [Arguments]    ${volume_type}
     [Documentation]    Test basic encrypted volume operations for both RWO and RWX volumes.
     ...                Deployment 0 = RWO, Deployment 1 = RWX.
     ...
@@ -39,41 +39,48 @@ Test Encrypted Volume Basic
     ...                    - Mounted filesystem (workload pod, RWO/RWX) = ~512 Mi (accounting for filesystem overhead).
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
     And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
-        Assert replica file size of deployment 1 is 528Mi
     END
     # Verify sizes at different layers: backend replica → dm-crypt device → mounted filesystem
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
+    END
+
     And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
     Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
 
     When Scale down deployment 0 to detach volume
-    And Scale down deployment 1 to detach volume
     And Scale up deployment 0 to attach volume
-    And Scale up deployment 1 to attach volume
     And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
     And Wait for workloads pods stable    deployment 0
-    And Wait for workloads pods stable    deployment 1
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
-        Assert replica file size of deployment 1 is 528Mi
     END
     # Re-verify sizes after scale down/up cycle
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
+    END
     Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+
+
+*** Test Cases ***
+Test Encrypted RWO Volume Basic
+    [Tags]    rwo
+    [Template]    Test Encrypted Volume Basic
+        RWO
+
+Test Encrypted RWX Volume Basic
+    [Tags]    rwx
+    [Template]    Test Encrypted Volume Basic
+        RWX
 
 Test Encrypted Volume Cloning
     [Tags]    rwo    rwx
