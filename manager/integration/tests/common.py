@@ -3978,6 +3978,15 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
+        if setting_name == "data-engine-cpu-mask":
+            setting = client.by_id_setting("data-engine-cpu-mask")
+            try:
+                client.update(setting, value="{\"v2\":\"0x1\"}")
+            except Exception as e:
+                print(f"\nException setting {setting_name} to {{\"v2\":\"0x1\"}}") # NOQA
+                print(e)
+            continue
+
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
