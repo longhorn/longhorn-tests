@@ -70,6 +70,38 @@ Test Encrypted Volume Basic
     END
     Then Check deployment 0 data in file data.txt is intact
 
+Test Encrypted Volume Cloning
+    [Arguments]    ${volume_type}
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim source-pvc    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Wait for volume of persistentvolumeclaim source-pvc to be created
+    And Wait for volume of persistentvolumeclaim source-pvc detached
+
+    And Create deployment source-deployment with persistentvolumeclaim source-pvc
+    And Wait for volume of deployment source-deployment healthy
+    And Wait for workloads pods stable    deployment source-deployment
+    And Write 256 MB data to file data.txt in deployment source-deployment
+    And Record file data.txt checksum in deployment source-deployment as checksum source-pvc
+
+
+    When Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Wait for volume of persistentvolumeclaim cloned-pvc detached
+
+    And Create deployment cloned-deployment with persistentvolumeclaim cloned-pvc
+    And Wait for volume of deployment cloned-deployment healthy
+    And Wait for workloads pods stable    deployment cloned-deployment
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment cloned-deployment is 528Mi
+    END
+    
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment cloned-deployment    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment cloned-deployment is 512Mi
+    END
+    And Check deployment cloned-deployment file data.txt checksum matches checksum source-pvc
 
 *** Test Cases ***
 Test Encrypted RWO Volume Basic
@@ -82,49 +114,15 @@ Test Encrypted RWX Volume Basic
     [Template]    Test Encrypted Volume Basic
         RWX
 
-Test Encrypted Volume Cloning
-    [Tags]    rwo    rwx
-    Given Create crypto secret
-    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim source-rwo-pvc    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim source-rwx-pvc    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Wait for volume of persistentvolumeclaim source-rwo-pvc to be created
-    And Wait for volume of persistentvolumeclaim source-rwx-pvc to be created
-    And Wait for volume of persistentvolumeclaim source-rwo-pvc detached
-    And Wait for volume of persistentvolumeclaim source-rwx-pvc detached
+Test Encrypted RWO Volume Cloning
+    [Tags]    rwo
+    [Template]    Test Encrypted Volume Cloning
+        RWO
 
-    And Create deployment source-rwo-deployment with persistentvolumeclaim source-rwo-pvc
-    And Create deployment source-rwx-deployment with persistentvolumeclaim source-rwx-pvc
-    And Wait for volume of deployment source-rwo-deployment healthy
-    And Wait for volume of deployment source-rwx-deployment healthy
-    And Wait for workloads pods stable    deployment source-rwo-deployment
-    And Wait for workloads pods stable    deployment source-rwx-deployment
-    And Write 256 MB data to file data.txt in deployment source-rwo-deployment
-    And Write 256 MB data to file data.txt in deployment source-rwx-deployment
-    And Record file data.txt checksum in deployment source-rwo-deployment as checksum source-rwo-pvc
-    And Record file data.txt checksum in deployment source-rwx-deployment as checksum source-rwx-pvc
-
-
-    When Create persistentvolumeclaim cloned-rwo-pvc from persistentvolumeclaim source-rwo-pvc    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim cloned-rwx-pvc from persistentvolumeclaim source-rwx-pvc    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Wait for volume of persistentvolumeclaim cloned-rwo-pvc detached
-    And Wait for volume of persistentvolumeclaim cloned-rwx-pvc detached
-
-    And Create deployment cloned-rwo-deployment with persistentvolumeclaim cloned-rwo-pvc
-    And Create deployment cloned-rwx-deployment with persistentvolumeclaim cloned-rwx-pvc
-
-    And Wait for volume of deployment cloned-rwo-deployment healthy
-    And Wait for volume of deployment cloned-rwx-deployment healthy
-    And Wait for workloads pods stable    deployment cloned-rwo-deployment
-    And Wait for workloads pods stable    deployment cloned-rwx-deployment
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment cloned-rwo-deployment is 528Mi
-        Assert replica file size of deployment cloned-rwx-deployment is 528Mi
-    END
-    And Assert disk size in instance manager for deployment cloned-rwo-deployment    expected_disk_size=512Mi
-    And Assert encrypted disk size in sharemanager pod for deployment cloned-rwx-deployment is 512Mi
-    And Check deployment cloned-rwo-deployment file data.txt checksum matches checksum source-rwo-pvc
-    And Check deployment cloned-rwx-deployment file data.txt checksum matches checksum source-rwx-pvc
+Test Encrypted RWX Volume Cloning
+    [Tags]    rwx
+    [Template]    Test Encrypted Volume Cloning
+        RWX
 
 Test Encrypted Volume Snapshot Clone
     [Tags]    rwo    snapshot    clone
