@@ -89,6 +89,10 @@ Force drain node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     force_drain_node    ${node_name}
 
+Drain node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    drain_node    ${node_name}
+
 Drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
