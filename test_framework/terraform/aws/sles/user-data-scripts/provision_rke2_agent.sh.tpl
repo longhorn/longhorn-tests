@@ -57,6 +57,9 @@ if [[ "${extra_block_device}" != true ]]; then
   fi
 fi
 
+mkdir -p /data/longhorn
+chmod 755 /data/longhorn
+
 if [[ "${network_stack}" == "ipv6" ]]; then
   echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system

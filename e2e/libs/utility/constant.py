@@ -16,6 +16,9 @@ STREAM_EXEC_TIMEOUT = 300
 
 LONGHORN_NAMESPACE = 'longhorn-system'
 
+DEFAULT_DATA_PATH = '/var/lib/longhorn'
+DEFAULT_CONTROL_PATH = '/var/lib/longhorn'
+
 DISK_BEING_SYNCING = "being syncing and please retry later"
 NODE_UPDATE_RETRY_INTERVAL = 6
 
