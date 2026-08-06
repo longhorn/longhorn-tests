@@ -42,23 +42,27 @@ Delete volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${deleted_node} =    delete_volume_node    ${volume_name}
-    Set Test Variable    ${deleted_node}
+    Append To List    ${deleted_nodes}    ${deleted_node}
 
 Delete volume of ${workload_kind} ${workload_id} replica node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${deleted_node} =    delete_replica_node    ${volume_name}
-    Set Test Variable    ${deleted_node}
+    Append To List    ${deleted_nodes}    ${deleted_node}
 
 Delete node ${node_id}
     ${deleted_node} =    get_node_by_index    ${node_id}
     delete_node    ${deleted_node}
-    Set Test Variable    ${deleted_node}
+    Append To List    ${deleted_nodes}    ${deleted_node}
 
 Add deleted node back
-    reboot_node_by_name    ${deleted_node}
-    IF     "${DATA_ENGINE}" == "v2"
-        add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+    FOR    ${deleted_node}    IN    @{deleted_nodes}
+        reboot_node_by_name    ${deleted_node}
+        wait_for_node_ready    ${deleted_node}
+        IF     "${DATA_ENGINE}" == "v2"
+            add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+        END
+        Remove Values From List    ${deleted_nodes}    ${deleted_node}
     END
 
 Set k8s node ${node_id} zone ${zone_name}
