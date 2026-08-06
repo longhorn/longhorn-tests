@@ -14,6 +14,8 @@ ${DEFAULT_BLOCK_DISK_NAME}    block-disk
 
 @{powered_off_nodes}=
 
+@{deleted_nodes}=
+
 &{volume_checksums}=
 
 @{evicted_nodes}=
