@@ -143,6 +143,43 @@ Test Encrypted Volume Expansion
     END
     And Check deployment 0 data in file data.txt is intact
 
+Test Encrypted Volume Replica Rebuild
+    [Arguments]    ${volume_type}
+    [Documentation]    Test Plan: Replica Rebuild – new engine path
+    ...
+    ...                Create a 512 Mi encrypted volume (deployment 0).
+    ...                Write 256 Mi of data, then delete one replica to trigger a rebuild.
+    ...
+    ...                Expected after rebuild:
+    ...                  - Rebuild completes successfully (volume returns to healthy).
+    ...                    The dm-crypt device size is unchanged: 512 Mi (RWO instance manager)
+    ...                    and 512 Mi (RWX share manager pod).
+    ...                  - The newly rebuilt replica file size is 512 Mi + 16 Mi = 528 Mi,
+    ...                    matching the existing replicas (v1 only).
+    ...                  - Data integrity (md5sum / checksum) is intact.
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 256 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+
+    When Delete replica of deployment 0 volume on replica node
+    And Wait until volume of deployment 0 replica rebuilding completed on replica node
+    Then Wait for volume of deployment 0 healthy
+
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment 0 is 528Mi
+    END
+    And Check deployment 0 data in file data.txt is intact
+
 *** Test Cases ***
 Test Encrypted RWO Volume Basic
     [Tags]    rwo
@@ -261,52 +298,15 @@ Test Encrypted RWO Block Volume Online Expansion
     And Write 384 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data2.txt is intact
 
-Test Encrypted Volume Replica Rebuild
-    [Tags]    rwo    rwx    replica-rebuild
-    [Documentation]    Test Plan: Replica Rebuild – new engine path (RWO + RWX)
-    ...
-    ...                Create a 512 Mi encrypted RWO volume (deployment 0) and RWX volume
-    ...                (deployment 1) with the new engine.
-    ...                Write 256 Mi of data to each, then delete one replica per volume
-    ...                to trigger a rebuild.
-    ...
-    ...                Expected after rebuild:
-    ...                  - Rebuild completes successfully (volume returns to healthy).
-    ...                    The dm-crypt device size is unchanged: 512 Mi (RWO instance manager)
-    ...                    and 512 Mi (RWX share manager pod).
-    ...                  - The newly rebuilt replica file size is 512 Mi + 16 Mi = 528 Mi,
-    ...                    matching the existing replicas (v1 only).
-    ...                  - Data integrity (md5sum / checksum) is intact.
-    Given Create crypto secret
-    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWO Volume Replica Rebuild
+    [Tags]    rwo    replica-rebuild
+    [Template]    Test Encrypted Volume Replica Rebuild
+        RWO
 
-    When Delete replica of deployment 0 volume on replica node
-    And Wait until volume of deployment 0 replica rebuilding completed on replica node
-    Then Wait for volume of deployment 0 healthy
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 528Mi
-    END
-    And Check deployment 0 data in file data.txt is intact
-
-    When Delete replica of deployment 1 volume on replica node
-    And Wait until volume of deployment 1 replica rebuilding completed on replica node
-    Then Wait for volume of deployment 1 healthy
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 1 is 528Mi
-    END
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWX Volume Replica Rebuild
+    [Tags]    rwx    replica-rebuild
+    [Template]    Test Encrypted Volume Replica Rebuild
+        RWX
 
 Test Encrypted Volume Backup Restore To Encrypted Volume
     [Tags]    rwo    rwx    backup    restore
