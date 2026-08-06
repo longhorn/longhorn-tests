@@ -180,6 +180,46 @@ Test Encrypted Volume Replica Rebuild
     END
     And Check deployment 0 data in file data.txt is intact
 
+Test Encrypted Volume Backup Restore To Encrypted Volume
+    [Arguments]    ${volume_type}
+    [Documentation]    Test Plan: Backup Restore – restore as encrypted
+    ...
+    ...                Create a 512 Mi encrypted volume (deployment 0), write 256 Mi of data to each, take backups.
+    ...                Restore each backup to a new encrypted volume.
+    ...                Deployment 1 = restored from dep 0 backup.
+    ...
+    ...                Expected:
+    ...                  - Restored volumes' dm-crypt device shows exactly 512 Mi.
+    ...                  - Restored volumes' replica backend file is exactly 512 Mi + 16 Mi.
+    ...                  - The 256 Mi payload checksum matches the original.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
+    Given Create crypto secret
+    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    When Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 256 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+    And Record file data.txt checksum in deployment 0 as checksum 0
+
+    When Create backup 0 for deployment 0 volume
+    And Verify backup list contains backup no error for deployment 0 volume
+
+    # Restore to new encrypted volumes (encrypted=True)
+    When Create volume 1 from backup 0 of deployment 0 volume    accessMode=${volume_type}    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 detached
+    # Mount the restored volumes via deployments so that CSI opens the LUKS container.
+    # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
+    And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment 1 healthy
+    Then Assert disk size in instance manager for deployment 1    expected_disk_size=512Mi
+
+    # v1 only: v2 replica backend uses a different format (no .img files)
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment 1 is 528Mi
+    END
+    And Check deployment 1 file data.txt checksum matches checksum 0
+
 *** Test Cases ***
 Test Encrypted RWO Volume Basic
     [Tags]    rwo
@@ -308,63 +348,15 @@ Test Encrypted RWX Volume Replica Rebuild
     [Template]    Test Encrypted Volume Replica Rebuild
         RWX
 
-Test Encrypted Volume Backup Restore To Encrypted Volume
-    [Tags]    rwo    rwx    backup    restore
-    [Documentation]    Test Plan: Backup Restore – restore as encrypted (RWO + RWX)
-    ...
-    ...                Create a 512 Mi encrypted RWO volume (deployment 0) and RWX volume
-    ...                (deployment 1), write 256 Mi of data to each, take backups.
-    ...                Restore each backup to a new encrypted volume.
-    ...                Deployment 0 = RWO source, Deployment 1 = RWX source.
-    ...                Deployment 2 = restored from dep 0 backup, Deployment 3 = restored from dep 1 backup.
-    ...
-    ...                Expected:
-    ...                  - Restored volumes' dm-crypt device shows exactly 512 Mi.
-    ...                  - Restored volumes' replica backend file is exactly 512 Mi + 16 Mi.
-    ...                  - The 256 Mi payload checksum matches the original.
-    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
-    Given Create crypto secret
-    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
-    And Record file data.txt checksum in deployment 0 as checksum 0
-    And Record file data.txt checksum in deployment 1 as checksum 1
+Test Encrypted RWO Volume Backup Restore To Encrypted Volume
+    [Tags]    rwo    backup    restore
+    [Template]    Test Encrypted Volume Backup Restore To Encrypted Volume
+        RWO
 
-    When Create backup 0 for deployment 0 volume
-    And Verify backup list contains backup no error for deployment 0 volume
-    When Create backup 1 for deployment 1 volume
-    And Verify backup list contains backup no error for deployment 1 volume
-
-    # Restore to new encrypted volumes (encrypted=True)
-    When Create volume 2 from backup 0 of deployment 0 volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    And Create volume 3 from backup 1 of deployment 1 volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    And Wait for volume 2 detached
-    And Wait for volume 3 detached
-    # Mount the restored volumes via deployments so that CSI opens the LUKS container.
-    # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
-    And Create deployment 2 with volume 2    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-
-    And Create deployment 3 with volume 3    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-
-    And Wait for volume of deployment 2 healthy
-    And Wait for volume of deployment 3 healthy
-    Then Assert disk size in instance manager for deployment 2    expected_disk_size=512Mi
-    And Assert disk size in instance manager for deployment 3    expected_disk_size=512Mi
-    # v1 only: v2 replica backend uses a different format (no .img files)
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 2 is 528Mi
-        Assert replica file size of deployment 3 is 528Mi
-    END
-    And Check deployment 2 file data.txt checksum matches checksum 0
-    And Check deployment 3 file data.txt checksum matches checksum 1
+Test Encrypted RWX Volume Backup Restore To Encrypted Volume
+    [Tags]    rwx    backup    restore
+    [Template]    Test Encrypted Volume Backup Restore To Encrypted Volume
+        RWX
 
 Test Encrypted Volume Backup Restore To Unencrypted Volume
     [Tags]    rwo    rwx    backup    restore
