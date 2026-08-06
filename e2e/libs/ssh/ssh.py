@@ -1,9 +1,31 @@
-import yaml
+import json
 import os
-import time
+import boto3
+
 from utility.utility import subprocess_exec_cmd
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
+
+
+def get_public_ip(node_name):
+    host_provider = os.environ.get("HOST_PROVIDER", "aws")
+    if host_provider == "aws":
+        with open('/tmp/instance_mapping', 'r') as f:
+            instance_mapping = json.load(f)
+        instance_id = instance_mapping[node_name]
+        ec2 = boto3.client('ec2')
+        resp = ec2.describe_instances(InstanceIds=[instance_id])
+        return resp['Reservations'][0]['Instances'][0]['PublicIpAddress']
+    elif host_provider == "harvester":
+        result = json.loads(subprocess_exec_cmd(["kubectl", "get", "nodes", "-o", "json"]))
+        for node in result['items']:
+            provider_id = node['spec'].get('providerID', '')
+            key = provider_id.split('/')[-1] if provider_id else node['metadata']['name']
+            if key == node_name:
+                for addr in node['status']['addresses']:
+                    if addr['type'] == 'InternalIP':
+                        return addr['address']
+    raise Exception(f"Cannot determine public IP for node {node_name} with HOST_PROVIDER={host_provider!r}")
 
 
 def ssh_exec(node_name, cmd):
@@ -15,9 +37,7 @@ def ssh_exec(node_name, cmd):
     else:
         username = "ec2-user"
 
-    with open('/tmp/public_ip_mapping', 'r') as f:
-        mapping = yaml.safe_load(f)
-    ip = mapping[node_name]
+    ip = get_public_ip(node_name)
 
     cmd = f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {username}@{ip} {cmd}"
 
