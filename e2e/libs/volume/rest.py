@@ -50,9 +50,10 @@ class Rest(Base):
         return NotImplemented
 
     def is_attached_to(self, volume_name, node_name):
-        logging(f"Checking volume {volume_name} is attached to node {node_name}")
+        logging(f"Checking if volume {volume_name} is attached to node {node_name}")
         v = self.get(volume_name)
         for attachment in v.volumeAttachment.attachments.values():
+            logging(f"Volume {volume_name} is attached to node {attachment.nodeID}")
             if attachment.nodeID == node_name:
                 return True
         return False
