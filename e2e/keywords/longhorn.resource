@@ -87,8 +87,8 @@ Check ${engine_type} instance manager is not running on node ${node_id}
 Check v1 instance manager pods did not restart
     check_all_instance_managers_not_restart
 
-Check v1 instance manager pods recreated
-    wait_all_instance_managers_recreated
+Check ${engine_type} instance manager pods recreated
+    wait_all_instance_managers_recreated    ${engine_type}
 
 Wait for engine instances in ${engine_type} instance manager CR on node ${node_id} to be cleaned up
     ${node_name} =    get_node_by_index    ${node_id}

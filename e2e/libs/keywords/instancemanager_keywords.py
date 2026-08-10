@@ -26,8 +26,8 @@ class instancemanager_keywords:
     def check_all_instance_managers_not_restart(self):
         self.instancemanager.check_all_instance_managers_not_restart()
 
-    def wait_all_instance_managers_recreated(self):
-        self.instancemanager.wait_all_instance_managers_recreated()
+    def wait_all_instance_managers_recreated(self, engine_type="v1"):
+        self.instancemanager.wait_all_instance_managers_recreated(engine_type)
 
     def check_instance_manager_existence_on_node(self, node_name, engine_type, exist):
         logging(f"Checking {engine_type} instance manager exist = {exist} on node {node_name}")
