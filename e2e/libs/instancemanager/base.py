@@ -58,18 +58,18 @@ class Base:
 
         assert False, f"Expected all instance managers to be removed, but still found {len(instance_managers)} instance managers: {instance_managers}"
 
-    def wait_all_instance_managers_recreated(self):
+    def wait_all_instance_managers_recreated(self, engine_type="v1"):
         retry_count, retry_interval = get_retry_count_and_interval()
         core_api = client.CoreV1Api()
         baseline_time = datetime.now(timezone.utc)- timedelta(seconds=10)
 
         for i in range(retry_count):
             ims = get_longhorn_client().list_instance_manager()
-            v1_im_names = [im.name for im in ims if im.dataEngine == "v1"]
+            im_names = [im.name for im in ims if im.dataEngine == engine_type]
             recreated = []
-            logging(f"Checking v1 instance managers {v1_im_names} have recreated")
+            logging(f"Checking {engine_type} instance managers {im_names} have recreated")
 
-            for im_name in v1_im_names:
+            for im_name in im_names:
                 try:
                     pod = core_api.read_namespaced_pod(name=im_name, namespace=constant.LONGHORN_NAMESPACE)
                     creation_time = pod.metadata.creation_timestamp
@@ -81,8 +81,8 @@ class Base:
                     logging(f"Checking instance manager existence error: {e}")
                     continue
 
-            if len(recreated) == len(v1_im_names):
-                logging(f"All instance-manager pods have restarted")
+            if len(recreated) == len(im_names):
+                logging(f"All {engine_type} instance-manager pods have restarted")
                 return
             time.sleep(retry_interval)
 
