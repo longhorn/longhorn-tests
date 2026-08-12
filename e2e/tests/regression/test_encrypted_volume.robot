@@ -1454,3 +1454,222 @@ Test Encrypted Volume Upgrade - Replica Rebuild
         And Assert replica file size of deployment rebuild-rwx is 528Mi
         And Check deployment rebuild-rwx data in file data.txt is intact
     END
+
+Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
+    [Tags]    rwo    rwx    expansion    replica-rebuild    upgrade
+    [Documentation]    Scenario A + C + E + B (post-Expansion variant): Full lifecycle
+    ...                verification — Manager Upgrade (old engine preserved) → Expansion
+    ...                under OLD engine (512 Mi → 768 Mi) → Replica Rebuild verification
+    ...                (post-Expansion, old engine) → Live Engine Upgrade (768 Mi baseline)
+    ...                → Expansion under NEW engine (768 Mi → 896 Mi) → Replica Rebuild
+    ...                verification (post-Expansion, new engine).
+    ...                  - expand-rwo: RWO Filesystem
+    ...                  - expand-rwx: RWX Filesystem
+    ...
+    ...                Expansion is verified TWICE, to confirm disk/replica size
+    ...                calculation is correct under BOTH the old and the new engine:
+    ...                  - Part C1 (v1: Old Engine, v2: Upgraded Manager, 512 Mi → 768 Mi):
+    ...                      device = 752 Mi, replica = 768 Mi (replica size checked on v1 only)
+    ...                  - Part C2 (New Engine, 768 Mi → 896 Mi):
+    ...                      device = 896 Mi, replica = 912 Mi
+    ...
+    ...                Replica Rebuild is ALSO verified immediately after EACH Expansion,
+    ...                to cover the edge case where a rebuild happens right after a size
+    ...                change (distinct from the standalone "Replica Rebuild" case, which
+    ...                covers rebuild on volumes at a STATIC size):
+    ...                  - Part B1 (post-C1, v1: Old Engine, v2: Upgraded Manager, 768 Mi): rebuilt replica,
+    ...                    device = 752 Mi, replica = 768 Mi
+    ...                  - Part B2 (post-C2, New Engine, 896 Mi): rebuilt replica,
+    ...                    device = 896 Mi, replica = 912 Mi
+    ...
+    ...                Part A (Manager Upgrade Only, Old Engine Preserved, 512 Mi):
+    ...                  - device = 496 Mi, replica = 512 Mi
+    ...                  - Verified both before AND after the Longhorn manager upgrade.
+    ...
+    ...                Part E (Live Engine Upgrade, 768 Mi baseline):
+    ...                  - device = 768 Mi (full size), replica = 784 Mi
+    ...
+    ...                - Requires LONGHORN_STABLE_VERSION to be set (v1.11.x).
+    ...                - Applies to BOTH v1 and v2 data engines.
+    ...                - Part E, Part C2, and Part B2 (Live Engine Upgrade and post-actions) are v1 ONLY.
+    ...                - For v1, Part E / C2 / B2 require CUSTOM_LONGHORN_ENGINE_IMAGE to
+    ...                  be set; if not set, they are skipped but Part A / C1 / B1 still run.
+    ...
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    When Create persistentvolumeclaim expand-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment expand-rwo with persistentvolumeclaim expand-rwo
+    And Create persistentvolumeclaim expand-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment expand-rwx with persistentvolumeclaim expand-rwx
+
+    Then Wait for volume of deployment expand-rwo healthy
+    And Wait for volume of deployment expand-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment expand-rwo
+    And Write 256 MB data to file data.txt in deployment expand-rwx
+    Then Check deployment expand-rwo data in file data.txt is intact
+    And Check deployment expand-rwx data in file data.txt is intact
+
+    # ==================== Part A: Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment expand-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment expand-rwx is 512Mi
+    END
+
+
+    # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine) ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment expand-rwo
+    And Check volume endpoint on node of deployment expand-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    expand-rwo    expand-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+
+    When Upgrade Longhorn to custom version
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    expand-rwo    expand-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+
+
+    And Wait for volume of deployment expand-rwo healthy
+    And Wait for volume of deployment expand-rwx healthy
+    Check volume endpoint on node of deployment expand-rwo
+    Check volume endpoint on node of deployment expand-rwx
+
+    # ==================== Part A: Post-Upgrade Verification (Old Engine Preserved) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment expand-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert replica file size of deployment expand-rwx is 512Mi
+    END
+
+    # ==================== Part C1: Expansion after Manager Upgrade (v1: OLD Engine, v2: Upgraded Manager) (512 Mi → 768 Mi) ====================
+    When Expand deployment expand-rwo volume to 768Mi
+    And Expand deployment expand-rwx volume to 768Mi
+    Then Wait for deployment expand-rwo volume size expanded
+    And Wait for deployment expand-rwx volume size expanded
+    And Check deployment expand-rwo pods did not restart
+    And Check deployment expand-rwx pods did not restart
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi
+        And Assert replica file size of deployment expand-rwo is 768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 752Mi    
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment expand-rwx is 768Mi
+    END
+    And Check deployment expand-rwo data in file data.txt is intact
+    And Check deployment expand-rwx data in file data.txt is intact
+
+    # ==================== Part B1: Replica Rebuild (Post-Expansion, v1: OLD Engine, v2: Upgraded Manager, 768 Mi) ====================
+    When Delete replica of deployment expand-rwo volume on replica node
+    Then Wait until volume of deployment expand-rwo replica rebuilding completed on replica node
+    And Wait for volume of deployment expand-rwo healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi
+        And Assert replica file size of deployment expand-rwo is 768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Check deployment expand-rwo data in file data.txt is intact
+
+    When Delete replica of deployment expand-rwx volume on replica node
+    Then Wait until volume of deployment expand-rwx replica rebuilding completed on replica node
+    And Wait for volume of deployment expand-rwx healthy
+    Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 752Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert replica file size of deployment expand-rwx is 768Mi
+    END
+    And Check deployment expand-rwx data in file data.txt is intact
+
+    # ==================== Part E: Live Engine Upgrade (768 Mi Baseline , v1 only) ====================
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment expand-rwo healthy
+        And Wait for volume of deployment expand-rwx healthy
+
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=768Mi
+        And Assert replica file size of deployment expand-rwo is 784Mi
+        And Check deployment expand-rwo data in file data.txt is intact
+
+        Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 768Mi
+        And Assert replica file size of deployment expand-rwx is 784Mi
+        And Check deployment expand-rwx data in file data.txt is intact
+
+        # ==================== Part C2: Expansion under NEW Engine (768 Mi → 896 Mi) ====================
+        When Expand deployment expand-rwo volume to 896Mi
+        And Expand deployment expand-rwx volume to 896Mi
+        Then Wait for deployment expand-rwo volume size expanded
+        And Wait for deployment expand-rwx volume size expanded
+        And Check deployment expand-rwo pods did not restart
+        And Check deployment expand-rwx pods did not restart
+
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=896Mi
+        And Assert replica file size of deployment expand-rwo is 912Mi
+        And Check deployment expand-rwo data in file data.txt is intact
+
+        Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 896Mi
+        And Assert replica file size of deployment expand-rwx is 912Mi
+        And Check deployment expand-rwx data in file data.txt is intact
+
+        # ==================== Part B2: Replica Rebuild (Post-Expansion, NEW Engine, 896 Mi) ====================
+        When Delete replica of deployment expand-rwo volume on replica node
+        Then Wait until volume of deployment expand-rwo replica rebuilding completed on replica node
+        And Wait for volume of deployment expand-rwo healthy
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=896Mi
+        And Assert replica file size of deployment expand-rwo is 912Mi
+        And Check deployment expand-rwo data in file data.txt is intact
+
+        When Delete replica of deployment expand-rwx volume on replica node
+        Then Wait until volume of deployment expand-rwx replica rebuilding completed on replica node
+        And Wait for volume of deployment expand-rwx healthy
+        Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 896Mi
+        And Assert replica file size of deployment expand-rwx is 912Mi
+        And Check deployment expand-rwx data in file data.txt is intact
+    END
