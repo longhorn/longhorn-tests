@@ -1673,3 +1673,90 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
         And Assert replica file size of deployment expand-rwx is 912Mi
         And Check deployment expand-rwx data in file data.txt is intact
     END
+
+Test Encrypted Volume Upgrade - Workload Reattach
+    [Tags]    rwo    rwx    reattach    upgrade
+    [Documentation]    Scenario F: Verifies that after Longhorn upgrade, volumes can be
+    ...                correctly detached and reattached to a workload (e.g. via pod
+    ...                deletion / rescheduling), and that data + encryption remain intact
+    ...                across the reattach cycle.
+    ...                  - reattach-rwo: RWO Filesystem
+    ...                  - reattach-rwx: RWX Filesystem
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    When Create persistentvolumeclaim reattach-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment reattach-rwo with persistentvolumeclaim reattach-rwo
+    And Create persistentvolumeclaim reattach-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment reattach-rwx with persistentvolumeclaim reattach-rwx
+
+    Then Wait for volume of deployment reattach-rwo healthy
+    And Wait for volume of deployment reattach-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment reattach-rwo
+    And Write 256 MB data to file data.txt in deployment reattach-rwx
+    Then Check deployment reattach-rwo data in file data.txt is intact
+    And Check deployment reattach-rwx data in file data.txt is intact
+
+    # ==================== Upgrade Longhorn ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment reattach-rwo
+    And Check volume endpoint on node of deployment reattach-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    reattach-rwo    reattach-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+    And Upgrade Longhorn to custom version
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    reattach-rwo    reattach-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+    And Wait for volume of deployment reattach-rwo healthy
+    And Wait for volume of deployment reattach-rwx healthy
+
+    # ==================== Reattach: Delete Workload Pod and Verify Reattach ====================
+    When Scale down deployment reattach-rwo to detach volume
+    Then Scale up deployment reattach-rwo to attach volume
+    And Wait for volume of deployment reattach-rwo healthy
+    And Check deployment reattach-rwo data in file data.txt is intact
+
+    When Scale down deployment reattach-rwx to detach volume
+    Then Scale up deployment reattach-rwx to attach volume
+    And Wait for volume of deployment reattach-rwx healthy
+    And Check deployment reattach-rwx data in file data.txt is intact
+
+    # ==================== Reattach: Delete Workload Pod and Verify Reattach under NEW Engine , v1 only ====================
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment reattach-rwo healthy
+        And Wait for volume of deployment reattach-rwx healthy
+
+        When Scale down deployment reattach-rwo to detach volume
+        Then Scale up deployment reattach-rwo to attach volume
+        And Wait for volume of deployment reattach-rwo healthy
+        And Check deployment reattach-rwo data in file data.txt is intact
+
+        When Scale down deployment reattach-rwx to detach volume
+        Then Scale up deployment reattach-rwx to attach volume
+        And Wait for volume of deployment reattach-rwx healthy
+        And Check deployment reattach-rwx data in file data.txt is intact
+    END
