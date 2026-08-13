@@ -279,3 +279,47 @@ Test Large Volume Replica Rebuilding Resilience
 
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Replica Rebuild Survives Lost TCP Keepalive Response
+    [Tags]    replica-rebuilding    v1
+    [Documentation]    Test that losing replies on an idle FileSend connection does not cancel an active replica rebuild.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13703
+    ...                The affected listener resets this connection after one unanswered TCP keepalive,
+    ...                canceling the independent ssync HTTP transfer.
+    ...
+    ...                Test Steps:
+    ...                1. Cordon node 2 and create a V1 volume with replicas on nodes 0 and 1.
+    ...                2. Attach the volume to node 0 and write 512 MiB of allocated data.
+    ...                3. Limit source-to-target rebuild traffic to 50 Mbit so the rebuild lasts over 40 seconds.
+    ...                   Traffic from the source sync-agent port is exempt from the limit.
+    ...                4. Delete the replica on node 1, making node 0 the source and node 1 the rebuild target.
+    ...                5. Find the established FileSend connection from the target to the source sync-agent.
+    ...                6. Drop replies on only that connection for 45 seconds. The ssync HTTP data connections remain active.
+    ...                7. After 40 seconds, verify that the original FileSend connection is still established.
+    ...                8. Verify that rebuilding completes and the data is intact.
+    IF    '${DATA_ENGINE}' != 'v1'
+        Skip    This test only applies to the V1 data engine
+    END
+
+    Given Cordon node 2
+    And Create volume 0    size=1Gi    numberOfReplicas=2    dataEngine=v1
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Prefill volume 0 with fio    size=512M
+
+    ${rebuild_network} =    Limit V1 volume 0 rebuild traffic from node 0 to node 1 to 50 Mbit
+    TRY
+        When Delete volume 0 replica on node 1
+        And Wait until volume 0 replica rebuilding started on node 1
+        ${file_send_connection} =    Wait for FileSend connection    ${rebuild_network}
+
+        When Drop replies to FileSend connection for 45 seconds    ${file_send_connection}
+        And Sleep    40
+        Then FileSend connection should remain established    ${file_send_connection}
+
+        And Wait for volume 0 healthy
+        And Check volume 0 data is intact
+    FINALLY
+        Remove V1 replica rebuild traffic limit    ${rebuild_network}
+    END
