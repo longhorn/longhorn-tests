@@ -1760,3 +1760,108 @@ Test Encrypted Volume Upgrade - Workload Reattach
         And Wait for volume of deployment reattach-rwx healthy
         And Check deployment reattach-rwx data in file data.txt is intact
     END
+
+Test Encrypted Volume Upgrade - Backup And Restore
+    [Tags]    rwo    rwx    backup    restore    upgrade
+    [Documentation]    Scenario G: Verifies that after Longhorn upgrade, encrypted volumes
+    ...                can be restored correctly, with data integrity and
+    ...                encryption preserved across the backup/restore cycle.
+    ...                  - backup-src-rwo: RWO Filesystem (backup source)
+    ...                  - backup-src-rwx: RWX Filesystem (backup source)
+    ...                  - restore-rwo: RWO Filesystem (restored from backup-src-rwo)
+    ...                  - restore-rwx: RWX Filesystem (restored from backup-src-rwx)
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    When Create persistentvolumeclaim backup-src-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment backup-src-rwo with persistentvolumeclaim backup-src-rwo
+    And Create persistentvolumeclaim backup-src-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment backup-src-rwx with persistentvolumeclaim backup-src-rwx
+
+    Then Wait for volume of deployment backup-src-rwo healthy
+    And Wait for volume of deployment backup-src-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment backup-src-rwo
+    And Write 256 MB data to file data.txt in deployment backup-src-rwx
+    Then Check deployment backup-src-rwo data in file data.txt is intact
+    And Record file data.txt checksum in deployment backup-src-rwo as checksum backup-src-rwo
+    And Check deployment backup-src-rwx data in file data.txt is intact
+    And Record file data.txt checksum in deployment backup-src-rwx as checksum backup-src-rwx
+
+    # ==================== Create Backup ====================
+    When Create backup 0 for deployment backup-src-rwo volume
+    And Create backup 0 for deployment backup-src-rwx volume
+    Then Verify backup list contains backup no error for deployment backup-src-rwo volume
+    And Verify backup list contains backup no error for deployment backup-src-rwx volume
+
+    # ==================== Upgrade Longhorn ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment backup-src-rwo
+    And Check volume endpoint on node of deployment backup-src-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    backup-src-rwo    backup-src-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+    When Upgrade Longhorn to custom version
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    backup-src-rwo    backup-src-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+    And Wait for volume of deployment backup-src-rwo healthy
+    And Wait for volume of deployment backup-src-rwx healthy
+
+    # ==================== Restore Backup to New Volumes ====================
+    # Deployment restore-rwo: Restore from Backup 0 (RWO Filesystem)
+    When Create volume restore-rwo from backup 0 of deployment backup-src-rwo volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume restore-rwo detached
+    And Create deployment restore-rwo with volume restore-rwo    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
+    And Wait for volume of deployment restore-rwo healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment restore-rwo    expected_disk_size=512Mi
+        And Assert replica file size of deployment restore-rwo is 528Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment restore-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Check deployment restore-rwo file data.txt checksum matches checksum backup-src-rwo
+
+    # Deployment restore-rwx: Restore from Backup 0 (RWX Filesystem)
+    When Create volume restore-rwx from backup 0 of deployment backup-src-rwx volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume restore-rwx detached
+    And Create deployment restore-rwx with volume restore-rwx    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
+    And Wait for volume of deployment restore-rwx healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=512Mi
+        And Assert replica file size of deployment restore-rwx is 528Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Check deployment restore-rwx file data.txt checksum matches checksum backup-src-rwx
