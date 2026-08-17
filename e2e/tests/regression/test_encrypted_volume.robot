@@ -1865,3 +1865,264 @@ Test Encrypted Volume Upgrade - Backup And Restore
         Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=496Mi    raw_size=512Mi
     END
     And Check deployment restore-rwx file data.txt checksum matches checksum backup-src-rwx
+
+Test Encrypted Volume Upgrade - DR Volume
+    [Tags]    rwo    dr-volume    expansion    replica-rebuild    backup    restore    upgrade
+    [Documentation]    Scenario H: DR (Standby) Volume behavior across a Longhorn upgrade.
+    ...                Covers 3 gaps NOT addressed by the other upgrade test cases:
+    ...                  1. Creating a DR volume AFTER upgrade from a backup taken BEFORE
+    ...                     the upgrade (cross-version DR compatibility).
+    ...                  2. DR volume size auto-tracking after the source volume is
+    ...                     expanded and a new backup is taken.
+    ...                  3. Restoring a POST-expansion backup to a plain (non-DR) volume.
+    ...
+    ...                Entities:
+    ...                  - vol-a: source volume created BEFORE the upgrade (512 Mi RWO).
+    ...                    The old Longhorn engine binary is preserved on vol-a until it is
+    ...                    explicitly live-upgraded in Part E. (DATA_ENGINE=v1 only).
+    ...                  - dr-a: DR volume created from vol-a's PRE-upgrade backup, AFTER
+    ...                    the upgrade — tests cross-version backup compatibility
+    ...                  - bk-a: plain (non-DR) volume restored from vol-a's POST-expansion
+    ...                    backup — tests restoring an already-expanded backup
+    ...                  - vol-b: source volume created AFTER the Longhorn manager upgrade
+    ...                    (512 Mi RWO). Since the manager itself is already upgraded,
+    ...                    vol-b is a brand-new volume and therefore ALWAYS gets the
+    ...                    NEW-engine default from the upgraded manager — this does NOT
+    ...                    depend on CUSTOM_LONGHORN_ENGINE_IMAGE, which only controls
+    ...                    the LIVE upgrade of an already-running volume like vol-a.
+    ...                  - dr-b / bk-b: same roles as dr-a / bk-a, but for vol-b
+    ...                  - size assertions differ:
+    ...                  - old-engine: raw = PVC,        disk = PVC − 16Mi
+    ...                  - new-engine: raw = PVC + 16Mi, disk = PVC
+    ...
+    ...                Applies to BOTH v1 and v2 data engines, with different
+    ...                LONGHORN_STABLE_VERSION requirements:
+    ...                  - v1: LONGHORN_STABLE_VERSION must be v1.11.x
+    ...                  - v2: LONGHORN_STABLE_VERSION must be v1.11.x OR exactly v1.12.0
+    ...
+    ...                v2 has no live engine upgrade concept for either existing or new
+    ...                volumes. vol-a is scaled down (detached) before "Upgrade Longhorn
+    ...                to custom version" and scaled back up (reattached) afterward, so
+    ...                it adopts the upgraded v2 instance manager. This does NOT apply to v1.
+    ...
+    ...                For v1 ONLY, a Live Engine Upgrade is additionally performed on
+    ...                vol-a (the pre-existing volume) right after Gap 3 completes, to
+    ...                verify a running volume can transition to the new engine live.
+    ...                Requires CUSTOM_LONGHORN_ENGINE_IMAGE; if not set, this step is
+    ...                skipped, but vol-a stays on the OLD engine for the rest of the test
+    ...                while vol-b (created afterward) still runs on the NEW engine by
+    ...                default — this asymmetry is intentional and documents the real
+    ...                behavioral difference between existing vs newly-created volumes.
+    ...
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    # ==================== Setup ====================
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    # ==================== vol-a: Create BEFORE Upgrade, Write Data, Backup ====================
+    When Create persistentvolumeclaim vol-a    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment vol-a with persistentvolumeclaim vol-a
+    And Wait for volume of deployment vol-a healthy
+    And Write 256 MB data to file data.txt in deployment vol-a
+    Then Check deployment vol-a data in file data.txt is intact
+
+    # Pre-upgrade backup 0 — this is the backup used later to test CROSS-VERSION DR compatibility
+    When Create backup 0 for deployment vol-a volume
+    Then Verify backup list contains backup no error for deployment vol-a volume
+
+    # ==================== Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi
+        And Assert replica file size of deployment vol-a is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
+    END
+
+    # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine for v1) ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment vol-a
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        When Scale down deployment vol-a to detach volume
+        Then Wait for volume of deployment vol-a detached
+    END
+
+    When Upgrade Longhorn to custom version
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        And Scale up deployment vol-a to attach volume
+    END
+
+    And Wait for volume of deployment vol-a healthy
+    And Check volume endpoint on node of deployment vol-a
+    Then Check deployment vol-a data in file data.txt is intact
+
+    # ==================== Post-Manager-Upgrade Verification (Old Engine Preserved for v1) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi
+        And Assert replica file size of deployment vol-a is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
+    END
+
+    # ==================== Part E: Live Engine Upgrade of vol-a (v1 ONLY) ====================
+    # Verifies an EXISTING, already-attached volume can transition to the new engine
+    # live, without needing to be recreated.
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment vol-a healthy
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=512Mi
+        And Assert replica file size of deployment vol-a is 528Mi
+        And Check deployment vol-a data in file data.txt is intact
+    END
+
+    # ==================== Gap 1: DR-A from a PRE-Upgrade Backup (Cross-Version Compatibility) ====================
+    When Create DR volume dr-a from backup 0 of deployment vol-a volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume dr-a restoration from backup 0 of deployment vol-a volume completed
+
+    # ==================== Replica Rebuild on vol-a (Post-Upgrade, Pre-Expansion) ====================
+    When Delete replica of deployment vol-a volume on replica node
+    Then Wait until volume of deployment vol-a replica rebuilding completed on replica node
+    And Wait for volume of deployment vol-a healthy
+    And Check deployment vol-a data in file data.txt is intact
+
+    # ==================== Gap 2: Expand vol-a, Take New Backup, Verify DR-A Auto-Tracks Size ====================
+    When Write 256 MB data to file data.txt in deployment vol-a
+    Then Check deployment vol-a data in file data.txt is intact
+    And Record file data.txt checksum in deployment vol-a as checksum vol-a-2
+
+    When Expand deployment vol-a volume to 768Mi
+    Then Wait for deployment vol-a volume size expanded
+    And Check deployment vol-a pods did not restart
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=768Mi
+        And Assert replica file size of deployment vol-a is 784Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Check deployment vol-a data in file data.txt is intact
+
+    # Post-expansion backup — this is the backup used later to test restoring an
+    # ALREADY-EXPANDED backup (Gap 3, via bk-a)
+    When Create backup 1 for deployment vol-a volume
+    Then Verify backup list contains backup no error for deployment vol-a volume
+    And Wait for volume dr-a restoration from backup 1 of deployment vol-a volume completed
+    And Wait for volume dr-a size to be 768Mi
+
+    # ==================== Activate DR-A, Attach, Verify Data ====================
+    When Activate DR volume dr-a
+    Then Wait for volume dr-a detached
+    And Create deployment dr-a with volume dr-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment dr-a healthy
+    Then Check deployment dr-a file data.txt checksum matches checksum vol-a-2
+
+    # ==================== Gap 3: Restore the POST-Expansion Backup to a Plain Volume (bk-a) ====================
+    When Create volume bk-a from backup 1 of deployment vol-a volume    size=768Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume bk-a detached
+    And Create deployment bk-a with volume bk-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment bk-a healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment bk-a    expected_disk_size=768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment bk-a    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Check deployment bk-a file data.txt checksum matches checksum vol-a-2
+
+    # ==================== vol-b: Fully New Volume, Created AFTER the Manager Upgrade ====================
+    # Runs UNCONDITIONALLY (v1 and v2 alike, regardless of CUSTOM_LONGHORN_ENGINE_IMAGE).
+    # The Longhorn manager is already upgraded at this point, so any brand-new volume
+    # naturally gets the NEW-engine default — this has nothing to do with whether an
+    # EXISTING volume (vol-a) was live-upgraded above.
+    When Create persistentvolumeclaim vol-b    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment vol-b with persistentvolumeclaim vol-b
+    And Wait for volume of deployment vol-b healthy
+    And Write 256 MB data to file data.txt in deployment vol-b
+    Then Check deployment vol-b data in file data.txt is intact
+    And Record file data.txt checksum in deployment vol-b as checksum vol-b-1
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi
+        And Assert replica file size of deployment vol-b is 528Mi
+    ELSE
+        # vol-b was created by the NEW upgraded Longhorn manager.
+        # New-engine allocation:            raw = PVC + 16Mi, disk = raw - 16Mi = PVC.
+        # Contrast with vol-a (old engine): raw = PVC       , disk = raw - 16Mi = PVC - 16Mi.
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi    raw_size=528Mi
+    END
+
+    # ---- DR-B from vol-b's first backup (both backup and DR created fully post-upgrade) ----
+    When Create backup 0 for deployment vol-b volume
+    Then Verify backup list contains backup no error for deployment vol-b volume
+    And Create DR volume dr-b from backup 0 of deployment vol-b volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume dr-b restoration from backup 0 of deployment vol-b volume completed
+
+    # ---- Replica rebuild on vol-b before expansion ----
+    When Delete replica of deployment vol-b volume on replica node
+    Then Wait until volume of deployment vol-b replica rebuilding completed on replica node
+    And Wait for volume of deployment vol-b healthy
+    And Check deployment vol-b data in file data.txt is intact
+
+    # ---- Expand vol-b, verify DR-B auto-tracks size ----
+    When Write 256 MB data to file data.txt in deployment vol-b
+    Then Check deployment vol-b data in file data.txt is intact
+    And Record file data.txt checksum in deployment vol-b as checksum vol-b-2
+
+    When Expand deployment vol-b volume to 768Mi
+    Then Wait for deployment vol-b volume size expanded
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi
+        And Assert replica file size of deployment vol-b is 784Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi    raw_size=784Mi
+    END
+    And Check deployment vol-b data in file data.txt is intact
+
+    When Create backup 1 for deployment vol-b volume
+    Then Verify backup list contains backup no error for deployment vol-b volume
+    And Wait for volume dr-b restoration from backup 1 of deployment vol-b volume completed
+    And Wait for volume dr-b size to be 768Mi
+
+    # ---- Activate DR-B, attach, verify data ----
+    When Activate DR volume dr-b
+    Then Wait for volume dr-b detached
+    And Create deployment dr-b with volume dr-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment dr-b healthy
+    Then Check deployment dr-b file data.txt checksum matches checksum vol-b-2
+
+    # ---- Restore vol-b's post-expansion backup to a plain volume (bk-b) ----
+    When Create volume bk-b from backup 1 of deployment vol-b volume    size=768Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume bk-b detached
+    And Create deployment bk-b with volume bk-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment bk-b healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment bk-b    expected_disk_size=768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment bk-b    expected_disk_size=768Mi    raw_size=784Mi
+    END
+    And Check deployment bk-b file data.txt checksum matches checksum vol-b-2
