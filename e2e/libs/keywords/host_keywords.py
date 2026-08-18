@@ -1,6 +1,8 @@
 from robot.libraries.BuiltIn import BuiltIn
 
 import os
+import threading
+import time
 
 from host import Harvester, Aws, Vagrant
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
@@ -10,6 +12,7 @@ from node_exec import NodeExec
 from ssh.ssh import ssh_exec
 
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 
 
 class host_keywords:
@@ -18,6 +21,9 @@ class host_keywords:
         "harvester": Harvester,
         "vagrant": Vagrant,
     }
+
+    # Class-level monitor thread shared across all instances
+    _monitor_thread = None
 
     def __init__(self):
         self.volume_keywords = BuiltIn().get_library_instance('volume_keywords')
@@ -75,20 +81,15 @@ class host_keywords:
         return NodeExec(node_name).issue_cmd(cmd)
 
     def execute_command_on_node_and_not_expect_output(self, cmd, node_name, output):
-        from utility.utility import get_retry_count_and_interval
-        import time
-        
         retry_count, _ = get_retry_count_and_interval()
         res = NodeExec(node_name).issue_cmd(cmd)
         if output in res:
             logging(f"Unexpected {output} in {cmd} result on node {node_name}: {res}")
             time.sleep(retry_count)  # Long sleep for debugging
             assert False, f"Unexpected {output} in {cmd} result on node {node_name}: {res}"
+        NodeExec(node_name).cleanup()
 
     def execute_command_on_node_and_wait_for_output(self, cmd, node_name, expected_output):
-        from utility.utility import get_retry_count_and_interval
-        import time
-        
         retry_count, retry_interval = get_retry_count_and_interval()
         for i in range(retry_count):
             logging(f"Waiting for command {cmd} on node {node_name} returning output {expected_output} ... ({i})")
@@ -138,6 +139,64 @@ class host_keywords:
         except Exception as e:
             logging(f"Execute command {cmd} on node {node_name} error: {e}")
             return ""
+
+    def start_node_monitoring(self):
+        """Start a background thread that monitors worker-node reachability.
+
+        Only active when HOST_PROVIDER is 'harvester'.  Every 5 minutes the
+        thread SSHs into each worker node that is *not* in the intentionally-
+        powered-off set.  If SSH fails it calls power_on_node so the cloud VM
+        is brought back up automatically.
+        """
+        if os.getenv('HOST_PROVIDER', 'vagrant') != 'harvester':
+            logging('Node monitor: skipped (HOST_PROVIDER is not harvester)')
+            return
+
+        if (host_keywords._monitor_thread is not None
+                and host_keywords._monitor_thread.is_alive()):
+            logging('Node monitor: already running')
+            return
+
+        host_keywords._monitor_thread = threading.Thread(
+            target=self._monitor_worker_nodes,
+            name='NodeHealthMonitor',
+            daemon=True,
+        )
+        host_keywords._monitor_thread.start()
+        logging('Node monitor: started')
+
+    def _monitor_worker_nodes(self):
+        """Background worker: check every 5 minutes that all non-powered-off
+        worker nodes are reachable via SSH; power on any that are not."""
+        CHECK_INTERVAL_SECONDS = 300  # 5 minutes
+
+        while True:
+            time.sleep(CHECK_INTERVAL_SECONDS)
+
+            try:
+                worker_nodes = self.node.list_node_names_by_role('worker')
+            except Exception as e:
+                logging(f'Node monitor: could not list worker nodes: {e}')
+                continue
+
+            for node_name in worker_nodes:
+                powered_off_nodes = BuiltIn().get_variable_value("${powered_off_nodes}") or []
+                if node_name in powered_off_nodes:
+                    logging(f'Node monitor: skipping {node_name} '
+                            f'(intentionally powered off)')
+                    continue
+
+                try:
+                    ssh_exec(node_name, 'echo alive')
+                    logging(f'Node monitor: {node_name} is reachable via SSH')
+                except Exception as e:
+                    logging(f'Node monitor: SSH into {node_name} failed ({e}); '
+                            f'attempting power on')
+                    try:
+                        self.host.power_on_node(node_name)
+                        logging(f'Node monitor: power-on triggered for {node_name}')
+                    except Exception as pe:
+                        logging(f'Node monitor: failed to power on {node_name}: {pe}')
 
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)

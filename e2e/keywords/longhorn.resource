@@ -87,8 +87,8 @@ Check ${engine_type} instance manager is not running on node ${node_id}
 Check v1 instance manager pods did not restart
     check_all_instance_managers_not_restart
 
-Check v1 instance manager pods recreated
-    wait_all_instance_managers_recreated
+Check ${engine_type} instance manager pods recreated
+    wait_all_instance_managers_recreated    ${engine_type}
 
 Wait for engine instances in ${engine_type} instance manager CR on node ${node_id} to be cleaned up
     ${node_name} =    get_node_by_index    ${node_id}
@@ -181,23 +181,34 @@ Check longhorn manager pods not restarted after test start
 Check longhorn backing image manager image is ${expected_image}
     check_backing_image_manager_images    ${expected_image}
 
-Assert disk size in instance manager pod for ${resource_kind} ${resource_id} is ${size}
-    ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+Assert disk size in instance manager for ${resource_kind} ${resource_id}
+    [Documentation]    Single keyword for volume disk size checks.
+    ...                Required: expected_disk_size in all engines.
+    ...                raw_size is optional; if set, RAW device size is checked.
+    ...                For v1, raw_size must not be set.
+    [Arguments]    ${expected_disk_size}    ${raw_size}=${EMPTY}
+    Run Keyword If    '${expected_disk_size}' == '${EMPTY}'
+    ...    Fail    expected_disk_size is required
+    Run Keyword If    '${DATA_ENGINE}' == 'v1' and '${raw_size}' != '${EMPTY}'
+    ...    Fail    raw_size must not be set when DATA_ENGINE is v1
+
+    ${expected_disk_size_byte} =    convert_size_to_bytes    ${expected_disk_size}    to_str=True
     ${resource_name}=    generate_name_with_suffix    ${resource_kind}    ${resource_id}
     ${volume_name}=    Run Keyword If    '${resource_kind}' == 'volume'
     ...        Set Variable    ${resource_name}
     ...    ELSE
     ...        get_workload_volume_name    ${resource_name}
     ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
-    Wait Until Keyword Succeeds    ${RETRY_COUNT}    ${RETRY_INTERVAL}
-    ...    Check disk size in instance manager pod    ${instance_manager_name}    ${volume_name}    ${expected_size_byte}
+    ${encrypted_device_name} =    Set Variable If    "${DATA_ENGINE}" == "v2"    ${volume_name}-encrypted    ${volume_name}
+    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${encrypted_device_name}    ${expected_disk_size_byte}
 
-Check disk size in instance manager pod
-    [Arguments]    ${instance_manager_name}    ${volume_name}    ${expected_size}
-    ${cmd} =    Set Variable    fdisk -l /dev/mapper/${volume_name}
-    ${longhorn_namespace} =    get_longhorn_namespace
-    ${result}=    pod_exec    ${instance_manager_name}    ${longhorn_namespace}    ${cmd}
-    Should Contain    ${result}    ${expected_size}
+    Run Keyword If    '${DATA_ENGINE}' == 'v2' and '${raw_size}' != '${EMPTY}'
+    ...    Assert v2 raw disk size in instance manager    ${instance_manager_name}    ${volume_name}    ${raw_size}
+
+Assert v2 raw disk size in instance manager
+    [Arguments]    ${instance_manager_name}    ${volume_name}    ${raw_size}
+    ${raw_size_byte} =    convert_size_to_bytes    ${raw_size}    to_str=True
+    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${volume_name}    ${raw_size_byte}
 
 Patch Longhorn Manager Resources With
     [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}
@@ -232,6 +243,9 @@ Any ${label_selector} Pods Log Should Have ${expect_log} After Test Start
     ...                  longhorn.io/component=engine-image
     verify_pods_log_after_time_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
+Any ${label_selector} Pods Log Should Have ${expect_log} In Container ${container} After Test Start
+    verify_pods_log_after_time_contains    ${label_selector}    ${expect_log}    ${test_start_time}    container=${container}
+
 Any ${label_selector} Pods Log Should Not Have ${expect_log} After Test Start
     verify_pods_log_after_time_not_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
@@ -243,7 +257,7 @@ Delete Longhorn node ${node_id}
     execute_command
     ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute
     wait_for_longhorn_node_down    ${node_name}
-    execute_command_until_success
+    execute_command_and_wait_for_output
     ...    kubectl -n longhorn-system delete nodes.longhorn.io ${node_name}
     ...    node.longhorn.io "${node_name}" deleted
 
@@ -265,3 +279,10 @@ Verify ${engine_type} instance manager log on node ${node_id} not contain ${expe
     ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
     Log    ${pod_name}
     verify_pod_log_after_time_not_contains    ${pod_name}    ${expect_log}    ${test_start_time}
+
+Disable Longhorn Webhook Validator
+    execute_command    kubectl delete validatingwebhookconfiguration longhorn-webhook-validator --ignore-not-found
+
+Restore Longhorn Webhook Validator
+    execute_command    kubectl rollout restart daemonset/longhorn-manager -n longhorn-system
+    execute_command    kubectl rollout status daemonset/longhorn-manager -n longhorn-system --timeout=300s

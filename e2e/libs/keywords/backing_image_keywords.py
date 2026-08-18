@@ -11,8 +11,8 @@ class backing_image_keywords:
     def create_backing_image(self, name, url, expectedChecksum="", dataEngine="v1", minNumberOfCopies=1, parameters=None, wait=True):
         self.backing_image.create(name, url, expectedChecksum, dataEngine, minNumberOfCopies, parameters, wait)
 
-    def update_min_number_of_copies(self, name, minNumberOfCopies):
-        self.backing_image.update(name, "minNumberOfCopies", minNumberOfCopies)
+    def update_backing_image(self, name, field_name, field_value):
+        self.backing_image.update(name, field_name, field_value)
 
     def all_disk_file_status_are_ready(self, bi_name):
         self.backing_image.all_disk_file_status_are_ready(bi_name)

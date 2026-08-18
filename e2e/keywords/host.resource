@@ -59,10 +59,19 @@ Power off volume ${volume_id} replica node without waiting
 Power off node ${node_id} for ${power_off_time_in_min} mins
     [Documentation]    Power off a node for specified duration in minutes.
     ...                Example: Power off node 0 for 6 mins
+    ${powered_off_node} =    get_node_by_index    ${node_id}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
     reboot_node_by_index    ${node_id}    ${power_off_time_in_min}
+    Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
 
 Power off all worker nodes for ${power_off_time_in_min} mins
+    Append to list    ${powered_off_nodes}    ${NODE_0}
+    Append to list    ${powered_off_nodes}    ${NODE_1}
+    Append to list    ${powered_off_nodes}    ${NODE_2}
     reboot_all_worker_nodes    ${power_off_time_in_min}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_0}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_1}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_2}
 
 Restart cluster
     reboot_all_nodes
@@ -172,3 +181,25 @@ Get host log list on path ${log_path} on node ${node_id}
     ${host_log_files} =    get_host_log_files    ${node_name}    ${log_path}
     log    ${host_log_files}
     Set Test Variable    ${host_log_files}
+
+Check volume endpoint on node of ${resource_kind} ${resource_id}
+    [Documentation]    Find which node ${resource_kind} ${resource_id}'s volume is attached to,
+    ...                then run "ls -l /dev/longhorn/${volume_name}" on that node and log the output.
+    ...                Fails the test if the endpoint is empty or doesn't exist.
+    ...                The node-exec pod must be cleaned up immediately after use.
+    ...                Leaving a privileged pod with host /var/run bind-mounted on the
+    ...                same node as an encrypted volume will cause the volume to become
+    ...                stuck in the attached state and fail to detach.
+    ...                See: https://github.com/longhorn/longhorn/issues/13603
+    ${resource_name} =    generate_name_with_suffix    ${resource_kind}    ${resource_id}
+    ${volume_name} =    Run Keyword If    '${resource_kind}' == 'volume'
+    ...        Set Variable    ${resource_name}
+    ...    ELSE
+    ...        get_workload_volume_name    ${resource_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    execute_command_on_node_and_not_expect_output    ls -l /dev/longhorn/${volume_name}    ${node_name}    No such file or directory
+
+Check volume endpoint on node ${node_id}
+    [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output as a WARNING.
+    ${result} =    Run command on node ${node_id} and get output string    ls -l /dev/longhorn/
+    Log    /dev/longhorn/ on node ${node_id}:\n${result}    level=WARN    console=True

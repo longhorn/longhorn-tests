@@ -216,6 +216,18 @@ resource "aws_security_group" "lh_aws_secgrp" {
     ipv6_cidr_blocks = [aws_vpc.lh_aws_vpc.ipv6_cidr_block]
   }
 
+  dynamic "ingress" {
+    for_each = var.cni == "calico" ? [1] : []
+
+    content {
+      description = "Allow Calico IP-in-IP between cluster nodes"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "4"
+      cidr_blocks = [aws_vpc.lh_aws_vpc.cidr_block]
+    }
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

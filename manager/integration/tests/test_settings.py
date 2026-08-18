@@ -820,9 +820,9 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     volume1_endpoint = get_volume_endpoint(volume1)
     volume2_endpoint = get_volume_endpoint(volume2)
     write_volume_dev_random_mb_data(volume1_endpoint,
-                                    1, 3500, 5)
+                                    1, 3500)
     write_volume_dev_random_mb_data(volume2_endpoint,
-                                    1, 3500, 5)
+                                    1, 3500)
 
     # Step 1-4, 1-5
     delete_replica_on_test_node(client, volume1_name)

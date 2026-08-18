@@ -11,8 +11,8 @@ Create backing image ${backing_image_name}
     [Arguments]    &{config}
     create_backing_image    ${backing_image_name}    &{config}
 
-Update backing image ${backing_image_name} min number of copies to ${minimal_number_of_copies}
-    update_min_number_of_copies    ${backing_image_name}    ${minimal_number_of_copies}
+Update backing image ${backing_image_name} ${field_name} to ${field_value}
+    update_backing_image    ${backing_image_name}    ${field_name}    ${field_value}
 
 Verify all disk file status of backing image ${backing_image_name} are ready
     all_disk_file_status_are_ready    ${backing_image_name}

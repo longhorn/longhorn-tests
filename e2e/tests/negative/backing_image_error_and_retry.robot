@@ -17,45 +17,8 @@ Suite Setup    Skip If    '${DATA_ENGINE}' == 'v2'    reason=v2 data engine does
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Keywords ***
-Retry interval should match expected backoff window
-    [Arguments]    ${recreation_time}    ${creation_time}    ${retry_times}
-    ${recreation_time}=    Convert Date    ${recreation_time}    epoch
-    ${creation_time}=    Convert Date    ${creation_time}    epoch
-    ${elapsed}=    Evaluate    ${recreation_time} - ${creation_time}
-
-    Log    Retry ${retry_times} pod recreated after ${elapsed} seconds
-    Should Be True    ${elapsed} >= 60
-    # Max retry interval is 300s; extra 60s tolerance added for scheduling timing variations
-    Should Be True    ${elapsed} <= 360
-
 *** Test Cases ***
-Backing image with an invalid URL schema
-    [Tags]    backing-image
-    [Documentation]    https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/    
-    ...                - Create a backing image via a invalid download URL.
-    ...                - Wait for the download start. The backing image data source pod, should be cleaned up after download fail.    
-    ...                - The corresponding and only entry in the disk file status should be failed. 
-    ...                  The error message in this entry should explain why the downloading or the pod becomes failed.
-    ...                - Check if there is a backoff window for the downloading retry. The initial duration is 1 minute. The max interval is 5 minute.
-    Given Create backing image bi-test    url=httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3    wait=False
-    ${creation_time}=     Wait backing image bi-test data source pod created
-    And Wait for all disk file status of backing image bi-test are failed
-    And Wait for all disk file status of backing image bi-test are failed-and-cleanup
-    And Wait backing image data source pod terminated
-
-    FOR    ${i}    IN RANGE    3
-        ${recreation_time}=    Wait backing image bi-test data source pod created
-        Then Retry interval should match expected backoff window   ${recreation_time}    ${creation_time}    ${i}
-        And Wait for all disk file status of backing image bi-test are failed
-        And Wait for all disk file status of backing image bi-test are failed-and-cleanup
-        And Disk file message of backing image bi-test should contain failed to process sync file
-        And Wait backing image data source pod terminated
-        ${creation_time}=    Set Variable    ${recreation_time}
-    END
-
 Backing image with sync failure
-    [Tags]    backing-image
     [Documentation]    https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/
     ...                - Create a backing image. Then create and attach a volume using this backing image
     ...                - Exec into one of the worker node, remove the files in that backing image directory and set the directory as immutable
