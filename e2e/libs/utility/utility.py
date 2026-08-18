@@ -131,9 +131,7 @@ def subprocess_exec_cmd(cmd, input=None, timeout=None, verbose=True):
         try:
             res = subprocess.check_output(cmd, input=input, timeout=timeout, text=True, stderr=subprocess.STDOUT)
         except Exception as e:
-            logging(f"Executing command {cmd} error: {e}")
-            logging(f"Command output: {e.output}")
-            raise e
+            raise Exception(f"{e}, {e.output}")
     else:
         raise ValueError("Command must be a string or list")
 

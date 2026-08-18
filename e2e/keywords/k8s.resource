@@ -89,6 +89,10 @@ Force drain node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     force_drain_node    ${node_name}
 
+Drain node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    drain_node    ${node_name}
+
 Drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
@@ -159,9 +163,10 @@ Get healthy node names
     [Return]    ${healthy_node_names}
 
 Force drain node ${node_id} and expect failure
+    [Arguments]    ${expected_error}=*
     ${drained_node} =    get_node_by_index    ${node_id}
     ${instance_manager_name} =     get_instance_manager_on_node    ${drained_node}
-    Run Keyword And Expect Error    *    force_drain_node    ${drained_node}
+    Run Keyword And Expect Error    ${expected_error}    force_drain_node    ${drained_node}    timeout=600
     Set Test Variable    ${instance_manager_name}
     Set Test Variable    ${drained_node}
 
@@ -171,6 +176,7 @@ Force drain node ${node_id} and expect success
     force_drain_node    ${drained_node}
     Set Test Variable    ${instance_manager_name}
     Set Test Variable    ${drained_node}
+
 
 The drain process not completed
     check_drain_process_not_completed    ${drain_process}
