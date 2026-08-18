@@ -93,10 +93,11 @@ def drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--ignore-daemonsets", "--delete-emptydir-data"]
     res = subprocess_exec_cmd(exec_cmd)
 
-def force_drain_node(node_name):
-    retry_count, _ = get_retry_count_and_interval()
+def force_drain_node(node_name, timeout=None):
+    if timeout is None:
+        timeout, _ = get_retry_count_and_interval()
     exec_cmd = ["kubectl", "drain", node_name, "--force", "--ignore-daemonsets", "--delete-emptydir-data"]
-    res = subprocess_exec_cmd(exec_cmd, timeout=retry_count)
+    res = subprocess_exec_cmd(exec_cmd, timeout=float(timeout))
 
 def cordon_node(node_name):
     exec_cmd = ["kubectl", "cordon", node_name]
@@ -334,7 +335,7 @@ def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, na
 
     assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
 
-def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace):
+def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace, container=None):
     # Convert test_start_time to UTC and format it for kubectl --since-time use
     test_start_time = test_start_time.astimezone(timezone.utc)
     test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -344,6 +345,9 @@ def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_
         "-n", namespace,
         f"--since-time={test_start_time}"
     ]
+
+    if container:
+        exec_cmd += ["-c", container]
 
     pod_log = subprocess_exec_cmd(exec_cmd)
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
