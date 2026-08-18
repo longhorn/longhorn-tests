@@ -1,5 +1,6 @@
 import yaml
 import os
+import time
 from utility.utility import subprocess_exec_cmd
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
@@ -20,12 +21,9 @@ def ssh_exec(node_name, cmd):
 
     cmd = f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {username}@{ip} {cmd}"
 
-    retry_count, retry_interval = get_retry_count_and_interval()
-    for i in range(retry_count):
-        try:
-            res = subprocess_exec_cmd(cmd)
-            return res
-        except Exception as e:
-            logging(f"SSH command {cmd} on node {node_name} failed: {e} ... ({i})")
-            time.sleep(retry_interval)
-    assert False, f"Failed to SSH command {cmd} on node {node_name}"
+    try:
+        res = subprocess_exec_cmd(cmd)
+        return res
+    except Exception as e:
+        logging(f"SSH command {cmd} on node {node_name} failed: {e}")
+        raise Exception(f"{e}, {e.output}")

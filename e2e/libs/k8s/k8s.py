@@ -159,6 +159,17 @@ def wait_for_node_ready(node_name):
 
     assert False, f"Node {node_name} is not ready after waiting for {retry_count * retry_interval} seconds."
 
+def wait_for_node_down(node_name):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        if not is_node_ready(node_name):
+            logging(f"Node {node_name} is down.")
+            return
+        logging(f"Waiting for node {node_name} down ... ({i})")
+        time.sleep(retry_interval)
+
+    assert False, f"Node {node_name} is still ready after waiting for {retry_count * retry_interval} seconds."
+
 def check_node_cordoned(node_name):
     api = client.CoreV1Api()
     node = api.read_node(node_name)
@@ -305,7 +316,7 @@ def is_namespaced_pods_all_running(namespace):
     
     return True
 
-def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace):
+def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, namespace, container=None):
     # Convert test_start_time to UTC and format it for kubectl --since-time use
     test_start_time = test_start_time.astimezone(timezone.utc)
     test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -315,13 +326,16 @@ def verify_pod_log_after_time_contains(pod_name, expect_log, test_start_time, na
         "-n", namespace,
         f"--since-time={test_start_time}"
     ]
+
+    if container:
+        exec_cmd += ["-c", container]
 
     pod_log = subprocess_exec_cmd(exec_cmd)
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
 
     assert expect_log in pod_log, f"Expected log '{expect_log}' was not found in pod '{pod_name}' logs"
 
-def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace):
+def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_time, namespace, container=None):
     # Convert test_start_time to UTC and format it for kubectl --since-time use
     test_start_time = test_start_time.astimezone(timezone.utc)
     test_start_time = test_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -331,6 +345,9 @@ def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_
         "-n", namespace,
         f"--since-time={test_start_time}"
     ]
+
+    if container:
+        exec_cmd += ["-c", container]
 
     pod_log = subprocess_exec_cmd(exec_cmd)
     logging(f"logs in pod {pod_name} after {test_start_time}:\n {pod_log}")
@@ -341,7 +358,7 @@ def get_pods_by_label_selector(label_selector, namespace=constant.LONGHORN_NAMES
     pods = list_namespaced_pod(namespace=namespace, label_selector=label_selector)
     return [pod.metadata.name for pod in pods]
 
-def verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE):
+def verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
     pods = get_pods_by_label_selector(label_selector, namespace)
     if not pods:
         raise AssertionError(
@@ -350,7 +367,7 @@ def verify_pods_log_after_time_contains(label_selector, expect_log, test_start_t
     failures = []
     for pod in pods:
         try:
-            verify_pod_log_after_time_contains(pod, expect_log, test_start_time, namespace)
+            verify_pod_log_after_time_contains(pod, expect_log, test_start_time, namespace, container)
             logging(f"Found expected log in pod '{pod}'")
             return
         except AssertionError as e:
@@ -521,4 +538,3 @@ def get_csi_driver_storage_capacity(driver_name="driver.longhorn.io"):
     result = subprocess_exec_cmd(cmd)
     logging(f"CSI driver {driver_name} storageCapacity: {result}")
     return result
-

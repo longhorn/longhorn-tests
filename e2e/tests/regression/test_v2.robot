@@ -398,6 +398,79 @@ Test V2 Instance Manager Pod Recreate Loop When Engine Frontend Recovery Blocks 
     And Write data to volume test-vol
     Then Check volume test-vol data is intact
 
+Test Configuring SPDK Iobuf Small Pool Size
+    [Tags]    setting    uninstall
+    [Documentation]    Verify that data-engine-iobuf-small-pool-size (dataEngineIobufSmallPoolSize)
+    ...    can be configured at Longhorn install time via Helm/manifest, and can be updated
+    ...    afterwards, triggering v2 instance manager recreation with the new
+    ...    --spdk-iobuf-small-pool-size argument.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13674
+    ...
+    ...    Test steps:
+    ...    1. Uninstall Longhorn.
+    ...    2. Install Longhorn with dataEngineIobufSmallPoolSize set to {"v2":"16384"}.
+    ...       For helm, set defaultSettings.dataEngineIobufSmallPoolSize.
+    ...       For manifest, append data-engine-iobuf-small-pool-size to default-setting.yaml.
+    ...    3. Enable v2 data engine and add block disks.
+    ...    4. Verify longhorn-manager pod logs contain
+    ...       ".*Creating instance manager pod instance-manager.*with args.* --spdk-iobuf-small-pool-size 16384.*"
+    ...    5. Create a v2 workload and write some data.
+    ...    6. Update setting data-engine-iobuf-small-pool-size to {"v2":"65536"}.
+    ...    7. Scale down the v2 workload to detach the v2 volume.
+    ...    8. Wait for v2 instance manager pods to be recreated.
+    ...    9. Verify longhorn-manager pod logs contain
+    ...       ".*Creating instance manager pod instance-manager.*with args.* --spdk-iobuf-small-pool-size 65536.*"
+    ...    10. Scale up the v2 workload to attach the v2 volume.
+    ...    11. Check the data integrity.
+    ...    12. Write some more data to the workload.
+    ...    13. Uninstall and reinstall Longhorn to recover the environment.
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        When Install Longhorn
+        ...    custom_cmd=yq -i '.defaultSettings.dataEngineIobufSmallPoolSize = "{\\"v2\\": \\"16384\\"}"' values.yaml
+    ELSE
+        When Install Longhorn
+        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}data-engine-iobuf-small-pool-size: '{\\"v2\\":\\"16384\\"}'" longhorn.yaml
+    END
+
+    And Wait for longhorn ready
+    And Enable v2 data engine and add block disks
+    Then Setting data-engine-iobuf-small-pool-size should be {"v2":"16384"}
+    And Run command and expect output
+    ...    kubectl logs -l app=longhorn-manager -n longhorn-system --tail=-1 --prefix --since=5m
+    ...    .*Creating instance manager pod instance-manager.*with args.* --spdk-iobuf-small-pool-size 16384.*
+
+    And Create storageclass longhorn-test with    dataEngine=v2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 128 MB data to file data.txt in deployment 0
+
+    Given Setting data-engine-iobuf-small-pool-size is set to {"v2":"65536"}
+    When Scale down deployment 0 to detach volume
+    Then Check v2 instance manager pods recreated
+    And Run command and expect output
+    ...    kubectl logs -l app=longhorn-manager -n longhorn-system --tail=-1 --prefix --since=5m
+    ...    .*Creating instance manager pod instance-manager.*with args.* --spdk-iobuf-small-pool-size 65536.*
+
+    And Scale up deployment 0 to attach volume
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 data in file data.txt is intact
+    And Write 128 MB data to file data2.txt in deployment 0
+    And Check deployment 0 data in file data2.txt is intact
+
+    And Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn
+    And Wait for longhorn ready
+
 V2 Replica Migration Should Not Cause IO Stall
     [Documentation]    issue: https://github.com/longhorn/longhorn/issues/13309
     ...    Test steps:

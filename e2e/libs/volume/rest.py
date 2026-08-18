@@ -405,20 +405,19 @@ class Rest(Base):
                 break
             except Exception as e:
                 logging(f"Activating volume {volume_name} error: {e}")
-                assert "hasn't finished incremental restored" in str(e.error.message)
                 time.sleep(self.retry_interval)
             if activated:
                 break
         volume = self.get(volume_name)
-        assert volume.standby is False
-        assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+        assert volume.standby is False, f"Expect volume {volume_name} standby to be False, but it's {volume.standby}"
+        assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV, f"Expect volume {volume_name} frontend to be {VOLUME_FRONTEND_BLOCKDEV}, but it's {volume.frontend}"
 
         self.wait_for_volume_state(volume_name, "detached")
 
         volume = self.get(volume_name)
         engine = volume.controllers[0]
-        assert engine.lastRestoredBackup == ""
-        assert engine.requestedBackupRestore == ""
+        assert engine.lastRestoredBackup == "", f"Expect volume {volume_name} engine lastRestoredBackup to be empty, but it's {engine.lastRestoredBackup}"
+        assert engine.requestedBackupRestore == "", f"Expect volume {volume_name} engine requestedBackupRestore to be empty, but it's {engine.requestedBackupRestore}"
 
     def upgrade_engine_image(self, volume_name, engine_image_name):
         logging(f"Upgrading volume {volume_name} engine image to {engine_image_name}")

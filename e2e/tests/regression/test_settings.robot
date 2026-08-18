@@ -372,9 +372,9 @@ Test Engine Image Liveness Probe DaemonSet Auto Update
     ...    timeout=15
     ...    period=30
     ...    failure_threshold=10
-    And Run command and expect output
-    ...    kubectl -n longhorn-system get pod -l longhorn.io/component=engine-image -o jsonpath='{range .items[*]}{.status.containerStatuses[0].restartCount}{"\n"}{end}'
-    ...    0
+    And Run command and not expect output
+    ...    kubectl -n longhorn-system get pod -l longhorn.io/component=engine-image -o jsonpath='{range .items[*]}{.status.containerStatuses[0].restartCount}{"\\n"}{end}' | grep -qv '^0$' && echo "non-zero restart count" || echo "zero restart count"
+    ...    non-zero restart count
 
 Test Engine Image Liveness Probe Invalid Value Rejection
     [Tags]    setting    engine-image
