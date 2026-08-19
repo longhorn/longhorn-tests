@@ -6,6 +6,8 @@ from volume.base import Base
 from volume.crd import CRD
 from volume.rest import Rest
 
+from utility.utility import convert_size_to_bytes
+
 
 class Volume(Base):
 
@@ -135,8 +137,9 @@ class Volume(Base):
     def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         return self.volume.write_scattered_data_with_fio(volume_name, size, bs, ratio)
 
-    def keep_writing_data(self, volume_name):
-        return self.volume.keep_writing_data(volume_name, 256)
+    def keep_writing_data(self, volume_name, size="256Mi"):
+        size_in_mb = convert_size_to_bytes(size) // (1024 * 1024)
+        return self.volume.keep_writing_data(volume_name, size_in_mb)
 
     def delete_replica(self, volume_name, node_name):
         return self.volume.delete_replica(volume_name, node_name)
