@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, nvmeTcpNrIoQueues=None):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -70,6 +70,9 @@ class StorageClass():
 
             if backingImageDataSourceParameters:
                 manifest_dict['parameters']['backingImageDataSourceParameters'] = backingImageDataSourceParameters
+
+            if nvmeTcpNrIoQueues:
+                manifest_dict['parameters']['nvmeTcpNrIoQueues'] = nvmeTcpNrIoQueues
 
             self.api.create_storage_class(body=manifest_dict)
 
