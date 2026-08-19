@@ -168,9 +168,9 @@ class volume_keywords:
         logging(f'Getting checksum of {size_mb} MB region of volume {volume_name} at offset {offset_mb} MB')
         return self.volume.get_checksum_at_offset(volume_name, int(offset_mb), int(size_mb))
 
-    def keep_writing_data(self, volume_name):
-        logging(f'Keep writing data to volume {volume_name}')
-        self.volume.keep_writing_data(volume_name)
+    def keep_writing_data(self, volume_name, size="256Mi"):
+        logging(f'Keep writing data to volume {volume_name} with size {size}')
+        self.volume.keep_writing_data(volume_name, size)
 
     def write_volume_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         logging(f'Writing scattered data to volume {volume_name} with fio (size={size}, bs={bs}, ratio={ratio})')

@@ -204,8 +204,9 @@ Write data ${data_id} ${size} MB to volume ${volume_id}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Keep writing data to volume ${volume_id}
+    [Arguments]    ${size}=256Mi
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    keep_writing_data    ${volume_name}
+    keep_writing_data    ${volume_name}    ${size}
 
 Write scattered data to volume ${volume_id} with fio
     [Arguments]    ${size}=2G    ${bs}=4k    ${ratio}=0.2

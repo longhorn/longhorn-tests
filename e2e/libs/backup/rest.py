@@ -72,8 +72,10 @@ class Rest(Base):
         backups = self.list(volume_name)
         for backup in backups:
             if self.get_backup_id(backup.name) == backup_id:
+                logging(f"Got backup {backup.name} from volume {volume_name} with backup id {backup_id}")
                 return backup
             elif backup.name == backup_id:
+                logging(f"Got backup {backup.name} from volume {volume_name} directly from backup name {backup_id}")
                 return backup
         return None
 
