@@ -172,12 +172,12 @@ Test Cleanup Snapshot With The Global Setting After Backup Completed
 
     When Write data 0 to volume 0
     And Create backup 0 for volume 0
-    And Check snapshot for backup 0 of volume 0 exists True
+    And Check snapshot for backup 0 of volume 0 exists
 
     When Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to true
     And Write data 1 to volume 0
     And Create backup 1 for volume 0
-    And Check snapshot for backup 1 of volume 0 exists False
+    And Check snapshot for backup 1 of volume 0 not exist
     And Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to false
 
 Test Backupstore With Existing Backups

@@ -69,9 +69,13 @@ Volume ${volume_id} backup ${backup_id} should be able to create
     Verify backup list contains no error for volume ${volume_id}
     Wait for backup ${backup_id} of volume ${volume_id} to exist in backup list
 
-Check snapshot for backup ${backup_id} of volume ${volume_id} exists ${exists}
+Check snapshot for backup ${backup_id} of volume ${volume_id} exists
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    check_snapshot_exists_for_backup    ${volume_name}    ${backup_id}    ${exists}
+    check_snapshot_exists_for_backup    ${volume_name}    ${backup_id}    ${True}
+
+Check snapshot for backup ${backup_id} of volume ${volume_id} not exist
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_snapshot_exists_for_backup    ${volume_name}    ${backup_id}    ${False}
 
 Wait for backup associated with csi volume snapshot ${csi_volume_snapshot_id} of ${workload_kind} ${workload_id} to be created
     ${csi_volume_snapshot_name} =    generate_name_with_suffix    csi-volume-snapshot    ${csi_volume_snapshot_id}
