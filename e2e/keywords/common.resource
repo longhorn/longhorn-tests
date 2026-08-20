@@ -97,7 +97,9 @@ Set disk path based on host provider and architecture
         IF    "${ARCH}" == "amd64"
             Set Test Variable    ${DISK_PATH}    /dev/xvdh
         ELSE IF    "${ARCH}" == "arm64"
-            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+            # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
+            # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
+            Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
         END
     ELSE IF    '${HOST_PROVIDER}' == "harvester"
         Set Test Variable    ${DISK_PATH}    /dev/vdc
