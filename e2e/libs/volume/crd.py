@@ -834,6 +834,48 @@ class CRD(Base):
             node_set.add(replica['status']['ownerID'])
         assert len(replica_list) == len(node_set), f"unexpected replicas on the same node: {replica_list}"
 
+    def wait_for_volume_replicas_in_topology_domain(self, volume_name, topology_key, domain_value):
+        mismatched_replicas = {}
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} replicas to be in {topology_key}={domain_value} ... ({i})")
+            try:
+                cmd = f"kubectl get replicas.longhorn.io -n {constant.LONGHORN_NAMESPACE} " \
+                      f"-l longhornvolume={volume_name} -o yaml"
+                res = yaml.safe_load(subprocess_exec_cmd(cmd))
+                replica_list = res.get("items", [])
+
+                mismatched_replicas = {}
+                for replica in replica_list:
+                    if replica['status'].get('currentState') != 'running':
+                        continue
+
+                    node_name = replica['status'].get('ownerID', '')
+                    if not node_name:
+                        continue
+
+                    node_cmd = f"kubectl get node {node_name} " \
+                               f"-o jsonpath='{{.metadata.labels.{topology_key.replace('.', '\\.')}}}'"
+                    actual_value = subprocess_exec_cmd(node_cmd).strip()
+
+                    if actual_value != domain_value:
+                        mismatched_replicas[replica['metadata']['name']] = {
+                            "node": node_name,
+                            topology_key: actual_value
+                        }
+
+                if not mismatched_replicas:
+                    return
+            except Exception as e:
+                logging(f"Getting volume {volume_name} replicas error: {e}")
+            time.sleep(self.retry_interval)
+        assert not mismatched_replicas, \
+            f"Expected all replicas of volume {volume_name} to be in {topology_key}={domain_value}, " \
+            f"but found mismatched replicas: {mismatched_replicas}"
+
+    def get_topology_requirement(self, volume_name):
+        volume = self.get(volume_name)
+        return volume['spec'].get('topologyRequirement', None)
+
     def update_volume_spec(self, volume_name, key, value):
         # retry conflict error
         for i in range(self.retry_count):

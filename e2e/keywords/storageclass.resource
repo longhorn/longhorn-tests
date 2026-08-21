@@ -10,6 +10,10 @@ Create storageclass ${storageclass_name} with
     [Arguments]    &{config}
     create_storageclass   ${storageclass_name}    &{config}
 
+
+Delete storageclass ${storageclass_name}
+    delete_storageclass    ${storageclass_name}
+
 Set storageclass ${storageclass_name} as default
     set_storageclass_default_state    ${storageclass_name}    ${True}
 
