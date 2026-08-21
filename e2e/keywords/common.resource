@@ -181,6 +181,7 @@ Cleanup test resources
     reset_settings    data_engine=${DATA_ENGINE}
     reset_node_tags
     reset_node_disks_tags
-    cleanup_k8s_node_zone
+    cleanup_node_zone
+    cleanup_node_region
     reset_longhorn_namespace
     cleanup_events
