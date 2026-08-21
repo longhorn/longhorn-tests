@@ -40,6 +40,16 @@ Set node ${node_id} with
     ${node_name} =    get_node_by_index    ${node_id}
     set_node   ${node_name}    &{config}
 
+Get node ${node_id} zone
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${zone} =    get_node_label_value    ${node_name}    topology.kubernetes.io/zone
+    RETURN    ${zone}
+
+Get node ${node_id} region
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${region} =    get_node_label_value    ${node_name}    topology.kubernetes.io/region
+    RETURN    ${region}
+
 Set node ${node_id} tags
     [Arguments]    @{tags}
     ${node_name} =    get_node_by_index    ${node_id}

@@ -192,6 +192,12 @@ class Volume(Base):
     def validate_volume_replicas_anti_affinity(self, volume_name):
         return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
+    def wait_for_volume_replicas_in_topology_domain(self, volume_name, topology_key, domain_value):
+        return self.volume.wait_for_volume_replicas_in_topology_domain(volume_name, topology_key, domain_value)
+
+    def get_topology_requirement(self, volume_name):
+        return self.volume.get_topology_requirement(volume_name)
+
     def update_volume_spec(self, volume_name, key, value):
         return self.volume.update_volume_spec(volume_name, key, value)
 

@@ -446,6 +446,12 @@ class volume_keywords:
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
+    def wait_for_volume_replicas_in_topology_domain(self, volume_name, topology_key, domain_value):
+        self.volume.wait_for_volume_replicas_in_topology_domain(volume_name, topology_key, domain_value)
+
+    def get_volume_topology_requirement(self, volume_name):
+        return self.volume.get_topology_requirement(volume_name)
+
     def wait_for_volume_degraded(self, volume_name):
         self.volume.wait_for_volume_degraded(volume_name)
 
