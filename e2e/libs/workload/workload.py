@@ -682,3 +682,7 @@ def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="d
 def rollout_restart_workload(workload_kind, workload_name, namespace="default"):
     cmd = f"kubectl rollout restart {workload_kind}/{workload_name} -n {namespace}"
     subprocess_exec_cmd(cmd)
+
+def rollout_status_workload(workload_kind, workload_name, namespace="default", timeout="300s"):
+    cmd = f"kubectl rollout status {workload_kind}/{workload_name} -n {namespace} --timeout={timeout}"
+    subprocess_exec_cmd(cmd)
