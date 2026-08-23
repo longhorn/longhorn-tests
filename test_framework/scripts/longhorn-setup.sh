@@ -87,7 +87,7 @@ main(){
     enable_mtls
   fi
 
-  patch_coredns_ipv6_name_servers
+  #patch_coredns_ipv6_name_servers
   scale_up_coredns
 
   if [[ "${DISTRO}" != "talos" ]]; then
