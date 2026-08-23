@@ -10,7 +10,7 @@ data "aws_ami" "aws_ami_oraclelinux" {
 
   filter {
     name   = "name"
-    values = ["ProComputers Oracle-Linux-${var.os_distro_version}-${local.aws_ami_oraclelinux_arch}-Minimal-*"]
+    values = ["ProComputers - Oracle Linux ${var.os_distro_version} ${local.aws_ami_oraclelinux_arch} MINIMAL*"]
   }
 
   filter {
