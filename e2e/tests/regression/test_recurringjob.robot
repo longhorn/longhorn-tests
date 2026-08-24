@@ -152,6 +152,61 @@ Test Recurring Job Concurrency
     When Update snapshot recurringjob 0    concurrency=3
     Then There should be 3 jobs created concurrently for snapshot recurringjob 0
 
+Test Snapshot Cleanup Recurring Job Cleans System Generated Snapshots During Replica Rebuild
+    [Tags]    snapshot-cleanup
+    [Documentation]    https://github.com/longhorn/longhorn/issues/13784
+    ...    Verify snapshot-cleanup recurring job cleans system-generated snapshots on
+    ...    an idle volume while another volume's replica is still rebuilding.
+    ...
+    ...    1. Set auto-cleanup-system-generated-snapshot to false.
+    ...    2. Create volume 0 (2Gi) and volume 1 (15Gi), attach both and wait until healthy.
+    ...       Write 14 GB of data to volume 1 to ensure its rebuild takes enough time
+    ...       for the recurring job to run concurrently.
+    ...    3. Delete one replica on volume 0 and wait for rebuild to complete.
+    ...       Verify 1 system-generated snapshot now exists on volume 0.
+    ...    4. Delete one replica on volume 0 again and wait for rebuild to complete.
+    ...       Verify 2 system-generated snapshots now exist on volume 0.
+    ...    5. Delete one replica on volume 1 (node 1) and wait for the rebuild to
+    ...       start on node 0, so the recurring job runs while a rebuild is in progress.
+    ...    6. Create a snapshot-cleanup recurring job targeting the default group
+    ...       and wait for it to complete.
+    ...    7. Verify volume 0 has 1 system-generated snapshot remaining (v1: the
+    ...       snapshot immediately before volume-head cannot be deleted) or 0 (v2).
+    ...    8. Wait for volume 1 to return to healthy.
+    Given Setting auto-cleanup-system-generated-snapshot is set to false
+    And Create volume 0 with    size=2Gi    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Create volume 1 with    size=15Gi    dataEngine=${DATA_ENGINE}
+    And Attach volume 1
+    And Wait for volume 1 healthy
+    And Write 14 GB data to volume 1
+
+    # Rebuild volume 0 twice to accumulate 2 system-generated snapshots on v1
+    When Delete volume 0 replica on node 0
+    Then Wait until volume 0 replicas rebuilding completed
+    And Wait for volume 0 healthy
+    And Wait for volume 0 to have 1 system generated snapshots
+    When Delete volume 0 replica on node 0
+    Then Wait until volume 0 replicas rebuilding completed
+    And Wait for volume 0 healthy
+    And Wait for volume 0 to have 2 system generated snapshots
+
+    When Delete volume 1 replica on node 1
+    And Wait until volume 1 replica rebuilding started on node 0
+    And Create snapshot-cleanup recurringjob snapshot-cleanup-job
+    ...    groups=["default"]
+    ...    cron=1 minutes from now
+    And Wait for snapshot-cleanup recurringjob snapshot-cleanup-job complete
+
+    # v1: 1 snapshot remains (direct parent of volume-head is undeletable)
+    # v2: all cleaned up
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Wait for volume 0 to have 1 system generated snapshots
+    ELSE
+        Then Wait for volume 0 to have 0 system generated snapshots
+    END
+
 Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
     [Documentation]
     ...    Issue: https://github.com/longhorn/longhorn/issues/10711

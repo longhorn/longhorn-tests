@@ -138,3 +138,18 @@ class snapshot_keywords:
         assert snapshot is not None, f"Snapshot {snapshot_id} not found in volume {volume_name}"
         logging(f"Got snapshot name {snapshot.name} for snapshot {snapshot_id} of volume {volume_name}")
         return snapshot.name
+
+    def wait_for_volume_system_generated_snapshot_count(self, volume_name, count):
+        count = int(count)
+        system_snapshots = []
+        for i in range(self.retry_count):
+            snapshots = self.snapshot.list(volume_name)
+            system_snapshots = [s for s in snapshots
+                                if not s.usercreated and s.name != "volume-head"]
+            logging(f"Waiting for volume {volume_name} to have {count} system-generated snapshots, "
+                    f"currently {len(system_snapshots)} ... ({i})")
+            if len(system_snapshots) == count:
+                return
+            time.sleep(self.retry_interval)
+        assert False, (f"Timed out waiting for volume {volume_name} to have {count} "
+                       f"system-generated snapshots; got {len(system_snapshots)}")
