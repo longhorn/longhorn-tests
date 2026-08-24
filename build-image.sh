@@ -4,6 +4,7 @@ REPO=${REPO:-longhornio}
 
 version=$(./manager/integration/scripts/version)
 image="$REPO/longhorn-manager-test:${version}"
+e2e_image="$REPO/longhorn-e2e-test:${version}"
 
 case $(uname -m) in
         aarch64 | arm64)
@@ -26,3 +27,7 @@ docker build --build-arg TARGETPLATFORM="linux/${ARCH}" -t ${image} -f manager/i
 mkdir -p bin
 echo ${image} > bin/latest_image
 echo Built image ${image}
+
+docker build --build-arg TARGETPLATFORM="linux/${ARCH}" -t ${e2e_image} -f e2e/Dockerfile .
+echo ${e2e_image} > bin/latest_e2e_image
+echo Built image ${e2e_image}
