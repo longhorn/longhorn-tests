@@ -138,3 +138,25 @@ class snapshot_keywords:
         assert snapshot is not None, f"Snapshot {snapshot_id} not found in volume {volume_name}"
         logging(f"Got snapshot name {snapshot.name} for snapshot {snapshot_id} of volume {volume_name}")
         return snapshot.name
+
+    def assert_expansion_snapshot_name_contains_volume_name(self, volume_name):
+        snapshot_name = self.snapshot.get_expansion_snapshot_name(volume_name)
+        assert volume_name in snapshot_name, \
+            f"Expect expansion snapshot {snapshot_name} to contain volume " \
+            f"name {volume_name}"
+
+    def assert_volumes_have_distinct_expansion_snapshots(self, volume_name_1,
+                                                         volume_name_2):
+        snapshot_name_1 = \
+            self.snapshot.get_expansion_snapshot_name(volume_name_1)
+        snapshot_name_2 = \
+            self.snapshot.get_expansion_snapshot_name(volume_name_2)
+        assert volume_name_1 in snapshot_name_1, \
+            f"Expect expansion snapshot {snapshot_name_1} to contain volume " \
+            f"name {volume_name_1}"
+        assert volume_name_2 in snapshot_name_2, \
+            f"Expect expansion snapshot {snapshot_name_2} to contain volume " \
+            f"name {volume_name_2}"
+        assert snapshot_name_1 != snapshot_name_2, \
+            f"Expect distinct expansion snapshot CR names for different " \
+            f"volumes, but both are {snapshot_name_1}"

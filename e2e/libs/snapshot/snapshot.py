@@ -4,6 +4,12 @@ from snapshot.rest import Rest
 
 from strategy import LonghornOperationStrategy
 
+import time
+
+from utility.utility import filter_cr
+from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
+
 
 class Snapshot(Base):
 
@@ -74,3 +80,23 @@ class Snapshot(Base):
 
     def wait_for_snapshot_checksum_to_be_created(self, volume_name, snapshot_id):
         return self.snapshot.wait_for_snapshot_checksum_to_be_created(volume_name, snapshot_id)
+
+    def get_expansion_snapshot_name(self, volume_name):
+        # The volume-expansion system snapshot CR is named
+        # "expand-<size>-<volume_name>". Wait for the manager to create it,
+        # then return its name.
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            snapshots = filter_cr(
+                "longhorn.io", "v1beta2", "longhorn-system", "snapshots",
+                label_selector=f"longhornvolume={volume_name}")
+            items = snapshots.get("items", []) if snapshots else []
+            for snapshot in items:
+                name = snapshot["metadata"]["name"]
+                if name.startswith("expand-"):
+                    return name
+            logging(f"Waiting for expansion snapshot CR of volume "
+                    f"{volume_name} ... ({i})")
+            time.sleep(retry_interval)
+        assert False, \
+            f"Expansion snapshot CR of volume {volume_name} not found"

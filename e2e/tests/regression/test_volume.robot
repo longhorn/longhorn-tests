@@ -163,3 +163,42 @@ Test Faulted Volume Attachment Error Log
     When Create deployment 0 with persistentvolumeclaim 0    replicaset=1    wait=${FALSE}
     Then Wait Until Keyword Succeeds    60s    5s
     ...    Any app=longhorn-csi-plugin Pods Log Should Have is not ready for workloads: volume is faulted In Container longhorn-csi-plugin After Test Start
+
+Test Volume Expansion Snapshot Name Contains Volume Name
+    [Tags]    volume    expansion    snapshot
+    [Documentation]    Verify that the volume-expansion system snapshot is named
+    ...                after the volume so its cluster-scoped Snapshot CR is unique.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13386
+
+    Given Create volume 0 with    size=1Gi
+    And Attach volume 0
+    And Wait for volume 0 healthy
+
+    When Expand volume 0 to 2GiB
+    And Wait for volume 0 size to be 2GiB
+
+    Then Volume 0 should have expansion snapshot containing volume name
+
+Test Volume Expansion Snapshot Name Not Colliding Across Volumes
+    [Tags]    volume    expansion    snapshot
+    [Documentation]    Two different volumes expanded to the same size must not
+    ...                collide on the cluster-scoped expansion Snapshot CR. Each
+    ...                volume must end up with its own distinct expansion snapshot.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13386
+
+    Given Create volume 0 with    size=1Gi
+    And Create volume 1 with    size=1Gi
+    And Attach volume 0
+    And Attach volume 1
+    And Wait for volume 0 healthy
+    And Wait for volume 1 healthy
+
+    When Expand volume 0 to 2GiB
+    And Expand volume 1 to 2GiB
+    And Wait for volume 0 size to be 2GiB
+    And Wait for volume 1 size to be 2GiB
+
+    Then Volume 0 and volume 1 should have distinct expansion snapshots
+

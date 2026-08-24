@@ -152,3 +152,12 @@ Longhorn snapshot associated with csi volume snapshot ${csi_volume_snapshot_id} 
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_snapshot_to_be_created    ${volume_name}    ${longhorn_snapshot_name}
+
+Volume ${volume_id} should have expansion snapshot containing volume name
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    assert_expansion_snapshot_name_contains_volume_name    ${volume_name}
+
+Volume ${volume_id_1} and volume ${volume_id_2} should have distinct expansion snapshots
+    ${volume_name_1} =    generate_name_with_suffix    volume    ${volume_id_1}
+    ${volume_name_2} =    generate_name_with_suffix    volume    ${volume_id_2}
+    assert_volumes_have_distinct_expansion_snapshots    ${volume_name_1}    ${volume_name_2}
