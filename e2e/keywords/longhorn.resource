@@ -87,8 +87,11 @@ Check ${engine_type} instance manager is not running on node ${node_id}
 Check v1 instance manager pods did not restart
     check_all_instance_managers_not_restart
 
-Check v1 instance manager pods recreated
-    wait_all_instance_managers_recreated
+Check ${data_engine} instance manager pods recreated
+    wait_all_instance_managers_recreated    ${data_engine}
+
+Check v2 instance manager pods did not restart
+    check_all_instance_managers_not_restart    data_engine=v2
 
 Wait for engine instances in ${engine_type} instance manager CR on node ${node_id} to be cleaned up
     ${node_name} =    get_node_by_index    ${node_id}
@@ -286,3 +289,11 @@ Disable Longhorn Webhook Validator
 Restore Longhorn Webhook Validator
     execute_command    kubectl rollout restart daemonset/longhorn-manager -n longhorn-system
     execute_command    kubectl rollout status daemonset/longhorn-manager -n longhorn-system --timeout=300s
+
+Get ${engine_type} instance manager pod name on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
+    RETURN    ${pod_name}
+
+Wait for v2 instance manager pods restarted
+    wait_all_instance_managers_recreated    data_engine=v2

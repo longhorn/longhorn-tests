@@ -84,6 +84,56 @@ EOF
   }
 }
 
+resource "rancher2_machine_config_v2" "e2e-machine-config-etcd" {
+
+  generate_name = "e2e-machine-config-etcd-${random_string.random_suffix.id}"
+
+  depends_on = [rancher2_cloud_credential.e2e-credential]
+
+  harvester_config {
+
+    vm_namespace = "longhorn-qa"
+
+    cpu_count = "8"
+    memory_size = "16"
+
+    disk_info = <<EOF
+    {
+        "disks": [{
+            "imageName": "longhorn-qa/image-69wt4",
+            "size": 8,
+            "bootOrder": 1
+        }]
+    }
+    EOF
+
+    network_info = <<EOF
+    {
+        "interfaces": [{
+            "networkName": "longhorn-qa/vlan-2011"
+        }]
+    }
+    EOF
+
+    ssh_user = "sles"
+
+    user_data = <<EOF
+#cloud-config
+ssh_authorized_keys:
+  - >-
+    ${file(var.ssh_public_key_file_path)}
+  - ${var.custom_ssh_public_key}
+runcmd:
+  - SUSEConnect -r ${var.registration_code}
+  - zypper install -y qemu-guest-agent iptables samba cifs-utils
+  - - systemctl
+    - enable
+    - '--now'
+    - qemu-guest-agent.service
+EOF
+  }
+}
+
 resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 
   generate_name = "e2e-machine-config-worker-${random_string.random_suffix.id}"
@@ -168,6 +218,7 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
   depends_on = [
     rancher2_cloud_credential.e2e-credential,
     rancher2_machine_config_v2.e2e-machine-config-controlplane,
+    rancher2_machine_config_v2.e2e-machine-config-etcd,
     rancher2_machine_config_v2.e2e-machine-config-worker
   ]
 
@@ -182,12 +233,24 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
       name = "control-plane-pool"
       cloud_credential_secret_name = rancher2_cloud_credential.e2e-credential.id
       control_plane_role = true
-      etcd_role = true
+      etcd_role = false
       worker_role = false
       quantity = 1
       machine_config {
         kind = rancher2_machine_config_v2.e2e-machine-config-controlplane.kind
         name = rancher2_machine_config_v2.e2e-machine-config-controlplane.name
+      }
+    }
+    machine_pools {
+      name = "etcd-pool"
+      cloud_credential_secret_name = rancher2_cloud_credential.e2e-credential.id
+      control_plane_role = false
+      etcd_role = true
+      worker_role = false
+      quantity = 1
+      machine_config {
+        kind = rancher2_machine_config_v2.e2e-machine-config-etcd.kind
+        name = rancher2_machine_config_v2.e2e-machine-config-etcd.name
       }
     }
     machine_pools {
@@ -223,14 +286,14 @@ resource "rancher2_cluster_role_template_binding" "dev-longhorn" {
   name = "dev-longhorn-binding"
   cluster_id = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
   role_template_id = "cluster-owner"
-  group_principal_id = "github_team://3300040"  
+  group_principal_id = "github_team://3300040"
 }
 
 resource "rancher2_cluster_role_template_binding" "qa-longhorn" {
   name = "qa-longhorn-binding"
   cluster_id = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
   role_template_id = "cluster-owner"
-  group_principal_id = "github_team://10714512"  
+  group_principal_id = "github_team://10714512"
 }
 
 output "kube_config" {
