@@ -7924,12 +7924,14 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <pre><code class="python">def wait_for_device_login(dest_path, name):
     dev = &#34;&#34;
     for i in range(RETRY_COUNTS):
-        for j in range(RETRY_COMMAND_COUNT):
+        for j in range(RETRY_COMMAND_COUNT*2):
             files = []
             try:
                 files = os.listdir(dest_path)
                 break
-            except Exception:
+            except Exception as e:
+                print(f&#34;[wait_for_device_login] &#34;
+                      f&#34;Failed to list {dest_path} (attempt {j+1}): {e}&#34;)
                 time.sleep(1)
         assert files
         if name in files:
