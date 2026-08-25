@@ -42,6 +42,12 @@ class instancemanager_keywords:
     def get_instance_manager_pod_on_node(self, node_name, engine_type):
         return self.instancemanager.get_instance_manager_pod_on_node(node_name, engine_type)
 
+    def create_stale_stopped_engine_process(self, node_name, engine_name):
+        self.instancemanager.create_stale_stopped_engine_process(node_name, engine_name)
+
+    def is_engine_process_present(self, node_name, engine_name):
+        return self.instancemanager.is_engine_process_present(node_name, engine_name)
+
     def create_orphaned_replica(self, node_name, volume_name, engine_type):
         if engine_type == "v1":
             return self.instancemanager.create_orphaned_replica(node_name, volume_name)
