@@ -2026,12 +2026,14 @@ def wait_scheduling_failure(client, volume_name):
 def wait_for_device_login(dest_path, name):
     dev = ""
     for i in range(RETRY_COUNTS):
-        for j in range(RETRY_COMMAND_COUNT):
+        for j in range(RETRY_COMMAND_COUNT*2):
             files = []
             try:
                 files = os.listdir(dest_path)
                 break
-            except Exception:
+            except Exception as e:
+                print(f"[wait_for_device_login] "
+                      f"Failed to list {dest_path} (attempt {j+1}): {e}")
                 time.sleep(1)
         assert files
         if name in files:
