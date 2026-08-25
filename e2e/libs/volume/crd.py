@@ -30,7 +30,7 @@ class CRD(Base):
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -72,6 +72,9 @@ class CRD(Base):
 
         if dataSource:
             body["spec"]["dataSource"] = dataSource
+
+        if cloneMode:
+            body["spec"]["cloneMode"] = cloneMode
 
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize
@@ -621,6 +624,57 @@ class CRD(Base):
         self.set_last_data_checksum(volume_name, checksum)
         return checksum
 
+    def write_data_at_offset(self, volume_name, size_mb, offset_mb):
+        """Write random data at offset_mb, store checksum and position for later verification."""
+        self.wait_for_volume_state(volume_name, "attached")
+
+        for i in range(self.retry_count):
+            node_name = self.get(volume_name)["spec"]["nodeID"]
+            if node_name:
+                break
+            time.sleep(self.retry_interval)
+
+        endpoint = self.get_endpoint(volume_name)
+
+        # Wait for the block device to reflect the expanded size before writing.
+        # After the SPDK engine resizes, the OS block device may lag briefly.
+        required_bytes = (offset_mb + size_mb) * 1024 * 1024
+        for i in range(self.retry_count):
+            size_cmd = ["sh", "-c", f"blockdev --getsize64 {endpoint} 2>/dev/null || echo 0"]
+            dev_size_str = NodeExec(node_name).issue_cmd(size_cmd).strip()
+            try:
+                dev_size = int(dev_size_str)
+            except ValueError:
+                dev_size = 0
+            if dev_size >= required_bytes:
+                break
+            logging(f"Waiting for {endpoint} block device size {dev_size} >= {required_bytes} ({i}) ...")
+            time.sleep(self.retry_interval)
+
+        cmd = [
+            "sh", "-c",
+            f"dd if=/dev/urandom of={endpoint} bs=1M seek={offset_mb} count={size_mb} status=none; "
+            f"sync {endpoint} 2>/dev/null; "
+            f"dd if={endpoint} bs=1M skip={offset_mb} count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        ]
+        checksum = NodeExec(node_name).issue_cmd(cmd)
+        logging(f"Wrote volume {volume_name} data at offset {offset_mb}MB, checksum = {checksum}")
+        return checksum
+
+    def get_checksum_at_offset(self, volume_name, offset_mb, size_mb):
+        """Return the checksum of the region at the given offset.
+
+        The caller must make sure the volume is attached before calling this.
+        """
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        assert node_name, \
+            f"Volume {volume_name} has no spec.nodeID; it must be attached before reading"
+        endpoint = self.get_endpoint(volume_name)
+        cmd = f"dd if={endpoint} bs=1M skip={offset_mb} count={size_mb} 2>/dev/null | md5sum | awk '{{print $1}}' | tr -d ' \n'"
+        checksum = NodeExec(node_name).issue_cmd(["sh", "-c", cmd])
+        logging(f"Volume {volume_name} checksum at offset {offset_mb}MB (size {size_mb}MB) = {checksum}")
+        return checksum
+
     def prefill_with_fio(self, volume_name, size):
         """Prefill volume with sequential data using fio"""
         self.wait_for_volume_state(volume_name, "attached")
@@ -806,7 +860,13 @@ class CRD(Base):
             assert False, message
 
     def get_checksum(self, volume_name):
+        """Return the checksum of the volume.
+
+        The caller must make sure the volume is attached before calling this.
+        """
         node_name = self.get(volume_name)["spec"]["nodeID"]
+        assert node_name, \
+            f"Volume {volume_name} has no spec.nodeID; it must be attached before reading"
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"md5sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
@@ -814,7 +874,13 @@ class CRD(Base):
         return checksum
 
     def get_sha512sum(self, volume_name):
+        """Return the checksum of the volume.
+
+        The caller must make sure the volume is attached before calling this.
+        """
         node_name = self.get(volume_name)["spec"]["nodeID"]
+        assert node_name, \
+            f"Volume {volume_name} has no spec.nodeID; it must be attached before reading"
         endpoint = self.get_endpoint(volume_name)
         checksum = NodeExec(node_name).issue_cmd(
             ["sh", "-c", f"sha512sum {endpoint} | awk '{{print $1}}' | tr -d ' \n'"])
