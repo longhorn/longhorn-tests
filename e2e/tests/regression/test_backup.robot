@@ -231,6 +231,7 @@ Test DR Volume Backup Block Size
     And DR volume 1 setting backupBlockSize should be 16Mi
 
 SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
+    [Tags]    node-delete
     [Documentation]
     ...    Verify snapshot backup goes to the correct instance-manager pod.
     ...
@@ -257,9 +258,6 @@ SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
     And Create backup 1 for volume 1
     And Verify v2 instance manager log on node 0 contain backup after test start
     And Verify v1 instance manager log on node 0 not contain backup after test start
-    And Reboot node 1
-    And Reboot node 2
-    And Wait for longhorn ready
 
 Test Deleting Backup While Volume Restoration
     [Documentation]
@@ -593,3 +591,26 @@ Test Restoring Volume From Backup With Missing Blocks
     And Attach volume 2
     And Wait for volume 2 healthy
     Then Check volume 2 data is backup 1 of volume 0
+
+Test Backup On Cluster With Drained Nodes
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12562
+    ...    Verify that backups can be created successfully on a cluster where nodes
+    ...    are drained and have Longhorn scheduling disabled.
+    ...    1. Force drain node 0 and node 1
+    ...    2. Disable node 0 and node 1 Longhorn scheduling
+    ...    3. Create a volume with 1 replica and data engine ${DATA_ENGINE}
+    ...    4. Attach the volume to node 2
+    ...    5. Wait for the volume to become healthy
+    ...    6. For each of 10 iterations: write 100 MB data, create a backup, and wait for the backup to complete
+    Given Force drain node 0
+    And Force drain node 1
+    And Disable node 0 scheduling
+    And Disable node 1 scheduling
+    And Create volume 0 with    numberOfReplicas=1    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 2
+    And Wait for volume 0 healthy
+
+    FOR    ${i}    IN RANGE    10
+        And Write data ${i} 10 MB to volume 0
+        Then Create backup ${i} for volume 0
+    END

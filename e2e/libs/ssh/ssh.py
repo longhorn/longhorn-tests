@@ -49,5 +49,6 @@ def ssh_exec(node_name, cmd):
         res = subprocess_exec_cmd(cmd)
         return res
     except Exception as e:
-        logging(f"SSH command {cmd} on node {node_name} failed: {e}")
-        raise Exception(f"{e}, {e.output}")
+        output = getattr(e, 'output', None)
+        logging(f"SSH command {cmd} on node {node_name} failed: {e}, output: {output}")
+        raise Exception(f"SSH command {cmd} on node {node_name} failed: {e}, output: {output}")

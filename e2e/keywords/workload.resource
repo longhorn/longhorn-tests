@@ -115,7 +115,9 @@ Power off volume node of ${workload_kind} ${workload_id} for ${duration} minutes
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${volume_name}
+    Append to list    ${powered_off_nodes}    ${node_name}
     reboot_node_by_name    ${node_name}    ${duration}
+    Remove Values From List    ${powered_off_nodes}    ${node_name}
 
 Power off volume node of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -139,7 +141,9 @@ Reboot volume node of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${volume_name}
+    Append to list    ${powered_off_nodes}    ${node_name}
     reboot_node_by_name    ${node_name}
+    Remove Values From List    ${powered_off_nodes}    ${node_name}
 
 Wait for volume of ${workload_kind} ${workload_id} detached
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

@@ -138,7 +138,7 @@ uninstall_longhorn(){
   kubectl wait --for=condition=complete job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --timeout=10m
   exit_code=$?
   kubectl get job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}"
-  kubectl logs job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" -f
+  kubectl logs job/longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --follow
   exit $exit_code
 }
 
