@@ -27,6 +27,7 @@ Library             ../libs/keywords/system_backup_keywords.py
 Library             ../libs/keywords/sharemanager_keywords.py
 Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
+Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
 Library             DateTime
 Library             String
@@ -64,14 +65,22 @@ Run command until output is absent
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_until_output_is_absent    ${command}    ${unexpected_output}
 
-Run command in pod
-    [Arguments]    ${pod_name}    ${namespace}    ${command}
+Run command in pod ${namespace}/${pod_name}
+    [Arguments]    ${command}
     ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}
     RETURN    ${result}
 
-Run command in pod and expect output
-    [Arguments]    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+Run command in pod ${namespace}/${pod_name} and expect output
+    [Arguments]    ${command}    ${expected_output}
     execute_command_in_pod_and_expect_output    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+
+Run command in pod ${namespace}/${pod_name} and wait for output
+    [Arguments]    ${command}    ${expected_output}
+    execute_command_in_pod_and_wait_for_output    ${pod_name}    ${namespace}    ${command}    ${expected_output}
+
+Run command in pod ${namespace}/${pod_name} and not expect output
+    [Arguments]    ${command}    ${unexpected_output}
+    execute_command_in_pod_and_not_expect_output    ${pod_name}    ${namespace}    ${command}    ${unexpected_output}
 
 Test should pass
     No Operation
@@ -116,6 +125,7 @@ Init worker node variables
 Set up test environment
     set_backupstore
     Init worker node variables
+    start_node_monitoring
     IF     "${DATA_ENGINE}" == "v2"
         Enable v2 data engine and add block disks
     END

@@ -25,9 +25,9 @@ Resource    ../keywords/setting.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
-*** Test Cases ***
+*** Keywords ***
 Test Encrypted Volume Basic
-    [Tags]    rwo    rwx
+    [Arguments]    ${volume_type}
     [Documentation]    Test basic encrypted volume operations for both RWO and RWX volumes.
     ...                Deployment 0 = RWO, Deployment 1 = RWX.
     ...
@@ -39,85 +39,207 @@ Test Encrypted Volume Basic
     ...                    - Mounted filesystem (workload pod, RWO/RWX) = ~512 Mi (accounting for filesystem overhead).
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
     And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
     And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
-        Assert replica file size of deployment 1 is 528Mi
     END
     # Verify sizes at different layers: backend replica → dm-crypt device → mounted filesystem
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
+    END
+
     And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
     Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
 
     When Scale down deployment 0 to detach volume
-    And Scale down deployment 1 to detach volume
     And Scale up deployment 0 to attach volume
-    And Scale up deployment 1 to attach volume
     And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
     And Wait for workloads pods stable    deployment 0
-    And Wait for workloads pods stable    deployment 1
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
-        Assert replica file size of deployment 1 is 528Mi
     END
     # Re-verify sizes after scale down/up cycle
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
+    END
     Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
 
 Test Encrypted Volume Cloning
-    [Tags]    rwo    rwx
+    [Arguments]    ${volume_type}
     Given Create crypto secret
     When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim source-rwo-pvc    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim source-rwx-pvc    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Wait for volume of persistentvolumeclaim source-rwo-pvc to be created
-    And Wait for volume of persistentvolumeclaim source-rwx-pvc to be created
-    And Wait for volume of persistentvolumeclaim source-rwo-pvc detached
-    And Wait for volume of persistentvolumeclaim source-rwx-pvc detached
+    And Create persistentvolumeclaim source-pvc    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Wait for volume of persistentvolumeclaim source-pvc to be created
+    And Wait for volume of persistentvolumeclaim source-pvc detached
 
-    And Create deployment source-rwo-deployment with persistentvolumeclaim source-rwo-pvc
-    And Create deployment source-rwx-deployment with persistentvolumeclaim source-rwx-pvc
-    And Wait for volume of deployment source-rwo-deployment healthy
-    And Wait for volume of deployment source-rwx-deployment healthy
-    And Wait for workloads pods stable    deployment source-rwo-deployment
-    And Wait for workloads pods stable    deployment source-rwx-deployment
-    And Write 256 MB data to file data.txt in deployment source-rwo-deployment
-    And Write 256 MB data to file data.txt in deployment source-rwx-deployment
-    And Record file data.txt checksum in deployment source-rwo-deployment as checksum source-rwo-pvc
-    And Record file data.txt checksum in deployment source-rwx-deployment as checksum source-rwx-pvc
+    And Create deployment source-deployment with persistentvolumeclaim source-pvc
+    And Wait for volume of deployment source-deployment healthy
+    And Wait for workloads pods stable    deployment source-deployment
+    And Write 256 MB data to file data.txt in deployment source-deployment
+    And Record file data.txt checksum in deployment source-deployment as checksum source-pvc
 
 
-    When Create persistentvolumeclaim cloned-rwo-pvc from persistentvolumeclaim source-rwo-pvc    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim cloned-rwx-pvc from persistentvolumeclaim source-rwx-pvc    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Wait for volume of persistentvolumeclaim cloned-rwo-pvc detached
-    And Wait for volume of persistentvolumeclaim cloned-rwx-pvc detached
+    When Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Wait for volume of persistentvolumeclaim cloned-pvc detached
 
-    And Create deployment cloned-rwo-deployment with persistentvolumeclaim cloned-rwo-pvc
-    And Create deployment cloned-rwx-deployment with persistentvolumeclaim cloned-rwx-pvc
+    And Create deployment cloned-deployment with persistentvolumeclaim cloned-pvc
+    And Wait for volume of deployment cloned-deployment healthy
+    And Wait for workloads pods stable    deployment cloned-deployment
 
-    And Wait for volume of deployment cloned-rwo-deployment healthy
-    And Wait for volume of deployment cloned-rwx-deployment healthy
-    And Wait for workloads pods stable    deployment cloned-rwo-deployment
-    And Wait for workloads pods stable    deployment cloned-rwx-deployment
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment cloned-rwo-deployment is 528Mi
-        Assert replica file size of deployment cloned-rwx-deployment is 528Mi
+        Assert replica file size of deployment cloned-deployment is 528Mi
     END
-    And Assert disk size in instance manager for deployment cloned-rwo-deployment    expected_disk_size=512Mi
-    And Assert encrypted disk size in sharemanager pod for deployment cloned-rwx-deployment is 512Mi
-    And Check deployment cloned-rwo-deployment file data.txt checksum matches checksum source-rwo-pvc
-    And Check deployment cloned-rwx-deployment file data.txt checksum matches checksum source-rwx-pvc
+    
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment cloned-deployment    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment cloned-deployment is 512Mi
+    END
+    And Check deployment cloned-deployment file data.txt checksum matches checksum source-pvc
+
+Test Encrypted Volume Expansion
+    [Arguments]    ${volume_type}
+    [Documentation]    Test Plan: Volume Expansion – new engine path
+    ...
+    ...                Create a 512 Mi encrypted volume (new engine), write 256 Mi of data,
+    ...                then expand to 768 Mi.
+    ...
+    ...                Expected after expansion:
+    ...                  - Instance manager (RWO) shows 768 Mi.
+    ...                  - Share manager pod (RWX) shows 768 Mi; pod is NOT recreated.
+    ...                  - Replica image file on the worker node shows 768 Mi + 16 Mi = 784 Mi.
+    ...                  - Previously written data is intact.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 256 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+
+    When Expand deployment 0 volume to 768Mi
+    Then Wait for deployment 0 volume size expanded
+
+    And Check deployment 0 pods did not restart
+    IF    '${volume_type}' == 'RWX'
+        And Check no sharemanager pod of deployment 0 recreation
+    END
+
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=768Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 768Mi
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment 0 is 784Mi
+    END
+    And Check deployment 0 data in file data.txt is intact
+
+Test Encrypted Volume Replica Rebuild
+    [Arguments]    ${volume_type}
+    [Documentation]    Test Plan: Replica Rebuild – new engine path
+    ...
+    ...                Create a 512 Mi encrypted volume (deployment 0).
+    ...                Write 256 Mi of data, then delete one replica to trigger a rebuild.
+    ...
+    ...                Expected after rebuild:
+    ...                  - Rebuild completes successfully (volume returns to healthy).
+    ...                    The dm-crypt device size is unchanged: 512 Mi (RWO instance manager)
+    ...                    and 512 Mi (RWX share manager pod).
+    ...                  - The newly rebuilt replica file size is 512 Mi + 16 Mi = 528 Mi,
+    ...                    matching the existing replicas (v1 only).
+    ...                  - Data integrity (md5sum / checksum) is intact.
+    Given Create crypto secret
+    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 256 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+
+    When Delete replica of deployment 0 volume on replica node
+    And Wait until volume of deployment 0 replica rebuilding completed on replica node
+    Then Wait for volume of deployment 0 healthy
+
+    IF    '${volume_type}' == 'RWO'
+        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    ELSE IF    '${volume_type}' == 'RWX'
+        And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment 0 is 528Mi
+    END
+    And Check deployment 0 data in file data.txt is intact
+
+Test Encrypted Volume Backup Restore To Encrypted Volume
+    [Arguments]    ${volume_type}
+    [Documentation]    Test Plan: Backup Restore – restore as encrypted
+    ...
+    ...                Create a 512 Mi encrypted volume (deployment 0), write 256 Mi of data to each, take backups.
+    ...                Restore each backup to a new encrypted volume.
+    ...                Deployment 1 = restored from dep 0 backup.
+    ...
+    ...                Expected:
+    ...                  - Restored volumes' dm-crypt device shows exactly 512 Mi.
+    ...                  - Restored volumes' replica backend file is exactly 512 Mi + 16 Mi.
+    ...                  - The 256 Mi payload checksum matches the original.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
+    Given Create crypto secret
+    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    When Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 256 MB data to file data.txt in deployment 0
+    Then Check deployment 0 data in file data.txt is intact
+    And Record file data.txt checksum in deployment 0 as checksum 0
+
+    When Create backup 0 for deployment 0 volume
+    And Verify backup list contains backup no error for deployment 0 volume
+
+    # Restore to new encrypted volumes (encrypted=True)
+    When Create volume 1 from backup 0 of deployment 0 volume    accessMode=${volume_type}    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    And Wait for volume 1 detached
+    # Mount the restored volumes via deployments so that CSI opens the LUKS container.
+    # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
+    And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment 1 healthy
+    Then Assert disk size in instance manager for deployment 1    expected_disk_size=512Mi
+
+    # v1 only: v2 replica backend uses a different format (no .img files)
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment 1 is 528Mi
+    END
+    And Check deployment 1 file data.txt checksum matches checksum 0
+
+*** Test Cases ***
+Test Encrypted RWO Volume Basic
+    [Tags]    rwo
+    [Template]    Test Encrypted Volume Basic
+        RWO
+
+Test Encrypted RWX Volume Basic
+    [Tags]    rwx
+    [Template]    Test Encrypted Volume Basic
+        RWX
+
+Test Encrypted RWO Volume Cloning
+    [Tags]    rwo
+    [Template]    Test Encrypted Volume Cloning
+        RWO
+
+Test Encrypted RWX Volume Cloning
+    [Tags]    rwx
+    [Template]    Test Encrypted Volume Cloning
+        RWX
 
 Test Encrypted Volume Snapshot Clone
     [Tags]    rwo    snapshot    clone
@@ -176,47 +298,15 @@ Test Encrypted Volume Snapshot Clone
         Assert replica file size of deployment 1 is 528Mi
     END
 
-Test Encrypted Volume Expansion
-    [Tags]    rwo    rwx    expansion
-    [Documentation]    Test Plan: Volume Expansion – new engine path (RWO + RWX)
-    ...
-    ...                Create a 512 Mi encrypted volume (new engine), write 256 Mi of data,
-    ...                then expand to 768 Mi. Deployment 0 = RWO, Deployment 1 = RWX.
-    ...
-    ...                Expected after expansion:
-    ...                  - Instance manager (RWO) shows 768 Mi.
-    ...                  - Share manager pod (RWX) shows 768 Mi; pod is NOT recreated.
-    ...                  - Replica image file on the worker node shows 768 Mi + 16 Mi = 784 Mi.
-    ...                  - Previously written data is intact.
-    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
-    Given Create crypto secret
-    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWO Volume Expansion
+    [Tags]    rwo    expansion
+    [Template]    Test Encrypted Volume Expansion
+        RWO
 
-    When Expand deployment 0 volume to 768Mi
-    And Expand deployment 1 volume to 768Mi
-    Then Wait for deployment 0 volume size expanded
-    And Wait for deployment 1 volume size expanded
-    And Check deployment 0 pods did not restart
-    And Check deployment 1 pods did not restart
-    And Check no sharemanager pod of deployment 1 recreation
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=768Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 768Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 784Mi
-        Assert replica file size of deployment 1 is 784Mi
-    END
-    And Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWX Volume Expansion
+    [Tags]    rwx    expansion
+    [Template]    Test Encrypted Volume Expansion
+        RWX
 
 Test Encrypted RWO Block Volume Online Expansion
     [Tags]    rwo    expansion    block-volume
@@ -248,110 +338,25 @@ Test Encrypted RWO Block Volume Online Expansion
     And Write 384 MB data to file data2.txt in deployment 0
     Then Check deployment 0 data in file data2.txt is intact
 
-Test Encrypted Volume Replica Rebuild
-    [Tags]    rwo    rwx    replica-rebuild
-    [Documentation]    Test Plan: Replica Rebuild – new engine path (RWO + RWX)
-    ...
-    ...                Create a 512 Mi encrypted RWO volume (deployment 0) and RWX volume
-    ...                (deployment 1) with the new engine.
-    ...                Write 256 Mi of data to each, then delete one replica per volume
-    ...                to trigger a rebuild.
-    ...
-    ...                Expected after rebuild:
-    ...                  - Rebuild completes successfully (volume returns to healthy).
-    ...                    The dm-crypt device size is unchanged: 512 Mi (RWO instance manager)
-    ...                    and 512 Mi (RWX share manager pod).
-    ...                  - The newly rebuilt replica file size is 512 Mi + 16 Mi = 528 Mi,
-    ...                    matching the existing replicas (v1 only).
-    ...                  - Data integrity (md5sum / checksum) is intact.
-    Given Create crypto secret
-    When Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWO Volume Replica Rebuild
+    [Tags]    rwo    replica-rebuild
+    [Template]    Test Encrypted Volume Replica Rebuild
+        RWO
 
-    When Delete replica of deployment 0 volume on replica node
-    And Wait until volume of deployment 0 replica rebuilding completed on replica node
-    Then Wait for volume of deployment 0 healthy
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 528Mi
-    END
-    And Check deployment 0 data in file data.txt is intact
+Test Encrypted RWX Volume Replica Rebuild
+    [Tags]    rwx    replica-rebuild
+    [Template]    Test Encrypted Volume Replica Rebuild
+        RWX
 
-    When Delete replica of deployment 1 volume on replica node
-    And Wait until volume of deployment 1 replica rebuilding completed on replica node
-    Then Wait for volume of deployment 1 healthy
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 1 is 528Mi
-    END
-    And Check deployment 1 data in file data.txt is intact
+Test Encrypted RWO Volume Backup Restore To Encrypted Volume
+    [Tags]    rwo    backup    restore
+    [Template]    Test Encrypted Volume Backup Restore To Encrypted Volume
+        RWO
 
-Test Encrypted Volume Backup Restore To Encrypted Volume
-    [Tags]    rwo    rwx    backup    restore
-    [Documentation]    Test Plan: Backup Restore – restore as encrypted (RWO + RWX)
-    ...
-    ...                Create a 512 Mi encrypted RWO volume (deployment 0) and RWX volume
-    ...                (deployment 1), write 256 Mi of data to each, take backups.
-    ...                Restore each backup to a new encrypted volume.
-    ...                Deployment 0 = RWO source, Deployment 1 = RWX source.
-    ...                Deployment 2 = restored from dep 0 backup, Deployment 3 = restored from dep 1 backup.
-    ...
-    ...                Expected:
-    ...                  - Restored volumes' dm-crypt device shows exactly 512 Mi.
-    ...                  - Restored volumes' replica backend file is exactly 512 Mi + 16 Mi.
-    ...                  - The 256 Mi payload checksum matches the original.
-    ...                - Issue: https://github.com/longhorn/longhorn/issues/9205
-    Given Create crypto secret
-    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
-    When Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-    And Create deployment 1 with persistentvolumeclaim 1
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
-    And Record file data.txt checksum in deployment 0 as checksum 0
-    And Record file data.txt checksum in deployment 1 as checksum 1
-
-    When Create backup 0 for deployment 0 volume
-    And Verify backup list contains backup no error for deployment 0 volume
-    When Create backup 1 for deployment 1 volume
-    And Verify backup list contains backup no error for deployment 1 volume
-
-    # Restore to new encrypted volumes (encrypted=True)
-    When Create volume 2 from backup 0 of deployment 0 volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    And Create volume 3 from backup 1 of deployment 1 volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    And Wait for volume 2 detached
-    And Wait for volume 3 detached
-    # Mount the restored volumes via deployments so that CSI opens the LUKS container.
-    # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
-    And Create deployment 2 with volume 2    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-
-    And Create deployment 3 with volume 3    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-
-    And Wait for volume of deployment 2 healthy
-    And Wait for volume of deployment 3 healthy
-    Then Assert disk size in instance manager for deployment 2    expected_disk_size=512Mi
-    And Assert disk size in instance manager for deployment 3    expected_disk_size=512Mi
-    # v1 only: v2 replica backend uses a different format (no .img files)
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 2 is 528Mi
-        Assert replica file size of deployment 3 is 528Mi
-    END
-    And Check deployment 2 file data.txt checksum matches checksum 0
-    And Check deployment 3 file data.txt checksum matches checksum 1
+Test Encrypted RWX Volume Backup Restore To Encrypted Volume
+    [Tags]    rwx    backup    restore
+    [Template]    Test Encrypted Volume Backup Restore To Encrypted Volume
+        RWX
 
 Test Encrypted Volume Backup Restore To Unencrypted Volume
     [Tags]    rwo    rwx    backup    restore
@@ -396,654 +401,6 @@ Test Encrypted Volume Backup Restore To Unencrypted Volume
         Assert replica file size of volume 2 is 512Mi
         Assert replica file size of volume 3 is 512Mi
     END
-
-Test Encrypted Volume Upgrade
-    [Tags]    rwo    rwx    block-volume    expansion    replica-rebuild    engine-upgrade    old-engine
-    [Documentation]    Test Plan: Old Engine – LUKS Header Pre-allocation across Volume Modes + Upgrade
-    ...
-    ...                - Requires LONGHORN_STABLE_VERSION to be set.
-    ...                - Covers old-engine (v1.11) LUKS header sizing behavior across ALL volume modes.
-    ...                - Each deployment is dedicated to a specific test scenario for better isolation.
-    ...                - v2 data engine has no live engine upgrade. All deployments are scaled down (detached)
-    ...                  before the Longhorn upgrade and scaled back up (reattached) afterward 
-    ...                  so each volume adopts the upgraded v2 instance manager.
-    ...
-    ...                Deployment Layout:
-    ...                  - Deployment 0: RWO Filesystem (initial state + replica rebuild at 512 Mi)
-    ...                  - Deployment 1: RWX Filesystem (initial state + replica rebuild at 512 Mi)
-    ...                  - Deployment 2: RWO Block (initial state + engine upgrade)
-    ...                  - Deployment 3: RWO Filesystem (expansion + replica rebuild at 768 Mi)
-    ...                  - Deployment 4: RWX Filesystem (expansion + replica rebuild at 768 Mi)
-    ...                  - Deployment 5: RWO Filesystem (workload reattach test)
-    ...                  - Deployment 6: RWX Filesystem (workload reattach test)
-    ...                  - Deployment 7: RWO Filesystem (backup/restore with new-engine semantics)
-    ...                  - Deployment 8: RWX Filesystem (backup/restore with new-engine semantics)
-    ...
-    ...                Test Scenarios:
-    ...                  A. Initial State Verification (deployments 0-4):
-    ...                     - Old engine: device = requested_size - 16 Mi, replica = requested_size
-    ...
-    ...                  B. Replica Rebuild at 512 Mi (deployments 0, 1):
-    ...                     - Verify rebuilt replica = 512 Mi (old engine)
-    ...
-    ...                  C. Expansion (deployments 3, 4):
-    ...                     - Expand 512 Mi → 768 Mi
-    ...                     - Device = 752 Mi, replica = 768 Mi (old engine)
-    ...
-    ...                  D. Replica Rebuild at 768 Mi (deployments 3, 4):
-    ...                     - Verify rebuilt replica = 768 Mi (old engine)
-    ...
-    ...                  E. Engine Upgrade (deployments 0-4, v1 only):
-    ...                     - After upgrade: device = full size, replica = requested_size + 16 Mi
-    ...
-    ...                  F. Workload Reattach test (deployments 5, 6):
-    ...                     - Test old-engine and new-engine workload reattach behavior
-    ...                     - Old engine: device = 496 Mi, replica = 512 Mi
-    ...                     - New engine: device = 512 Mi, replica = 528 Mi
-    ...
-    ...                  G. Backup/Restore (deployments 7, 8):
-    ...                     - Restore pre-upgrade backups with new-engine semantics
-    ...                     - v1: Device = 512 Mi, replica = 528 Mi
-    ...                     - v2: Device (encrypted) = 496 Mi, raw device = 512 Mi
-    ...
-    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
-    ...                          https://github.com/longhorn/longhorn/issues/13163
-    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
-    IF    '${LONGHORN_STABLE_VERSION}' == ''
-        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
-    ELSE IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
-        Skip    This test only applies to the v1.11.x → v1.12+ upgrade path; got stable version ${LONGHORN_STABLE_VERSION}
-    END
-
-    # ==================== Setup ====================
-    Given Setting deleting-confirmation-flag is set to true
-    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
-    And Uninstall Longhorn
-    And Check Longhorn CRD removed
-    And Install Longhorn stable version
-    And Set default backupstore
-    And Enable v2 data engine and add block disks
-
-    # ==================== Create All Volumes (Pre-Upgrade) ====================
-    When Create crypto secret
-    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
-
-    # Deployment 0: RWO Filesystem (initial state + replica rebuild at 512 Mi)
-    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 0 with persistentvolumeclaim 0
-
-    # Deployment 1: RWX Filesystem (initial state + replica rebuild at 512 Mi)
-    And Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 1 with persistentvolumeclaim 1
-
-    # Deployment 2: RWO Block (initial state + engine upgrade)
-    And Create persistentvolumeclaim 2    volumeMode=Block    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 2 with block persistentvolumeclaim 2
-
-    # Deployment 3: RWO Filesystem (expansion + replica rebuild at 768 Mi)
-    And Create persistentvolumeclaim 3    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 3 with persistentvolumeclaim 3
-
-    # Deployment 4: RWX Filesystem (expansion + replica rebuild at 768 Mi)
-    And Create persistentvolumeclaim 4    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 4 with persistentvolumeclaim 4
-
-    # Deployment 5: RWO Filesystem (initial state + workload reattach at 512 Mi)
-    And Create persistentvolumeclaim 5    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 5 with persistentvolumeclaim 5
-
-    # Deployment 6: RWX Filesystem (initial state + workload reattach at 512 Mi)
-    And Create persistentvolumeclaim 6    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment 6 with persistentvolumeclaim 6
-
-    Then Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Wait for volume of deployment 2 healthy
-    And Wait for volume of deployment 3 healthy
-    And Wait for volume of deployment 4 healthy
-    And Wait for volume of deployment 5 healthy
-    And Wait for volume of deployment 6 healthy
-
-    # ==================== Pre-Upgrade: Write Data & Backup ====================
-    # Write data to filesystem deployments for data integrity verification
-    When Write 256 MB data to file data.txt in deployment 0
-    And Write 256 MB data to file data.txt in deployment 1
-    And Write 256 MB data to file data.txt in deployment 3
-    And Write 256 MB data to file data.txt in deployment 4
-    And Write 256 MB data to file data.txt in deployment 5
-    And Write 256 MB data to file data.txt in deployment 6
-
-    Then Check deployment 0 data in file data.txt is intact
-    And Check deployment 1 data in file data.txt is intact
-    And Check deployment 3 data in file data.txt is intact
-    And Check deployment 4 data in file data.txt is intact
-    And Check deployment 5 data in file data.txt is intact
-    And Check deployment 6 data in file data.txt is intact
-    And Record file data.txt checksum in deployment 0 as checksum 0
-    And Record file data.txt checksum in deployment 1 as checksum 1
-
-    # Create backups for later restore testing
-    When Create backup 0 for deployment 0 volume
-    And Verify backup list contains backup no error for deployment 0 volume
-    And Create backup 1 for deployment 1 volume
-    And Verify backup list contains backup no error for deployment 1 volume
-
-    # ==================== Pre-Upgrade: Initial State Verification ====================
-    # All deployments should show old-engine semantics: device = requested_size - 16 Mi
-    # Deployment 0 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    Then Assert disk size in instance manager for deployment 0    expected_disk_size=496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 512Mi
-    END
-
-    # Deployment 1 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 1 is 512Mi
-    END
-
-    # Deployment 2 (RWO Block): blockdev = 496 Mi, replica = 512 Mi
-    And Assert block device size in deployment pod for deployment 2 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 2 is 512Mi
-    END
-
-    # Deployment 3 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert disk size in instance manager for deployment 3    expected_disk_size=496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 3 is 512Mi
-    END
-
-    # Deployment 4 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 4 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 4 is 512Mi
-    END
-
-    # Deployment 5 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert disk size in instance manager for deployment 5    expected_disk_size=496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 5 is 512Mi
-    END
-
-    # Deployment 6 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 6 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 6 is 512Mi
-    END
-
-    # ==================== Upgrade Longhorn (Keep Old Engine) ====================
-    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
-
-    FOR    ${i}    IN RANGE    7
-        Check volume endpoint on node of deployment ${i}
-    END
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${i}    IN RANGE    7
-            Scale down deployment ${i} to detach volume
-        END
-    END
-
-    When Upgrade Longhorn to custom version
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${i}    IN RANGE    7
-            Scale up deployment ${i} to attach volume
-        END
-    END
-
-    And Wait for volume of deployment 0 healthy
-    And Wait for volume of deployment 1 healthy
-    And Wait for volume of deployment 2 healthy
-    And Wait for volume of deployment 3 healthy
-    And Wait for volume of deployment 4 healthy
-    And Wait for volume of deployment 5 healthy
-    And Wait for volume of deployment 6 healthy
-
-    FOR    ${i}    IN RANGE    7
-        Check volume endpoint on node of deployment ${i}
-    END
-
-    # ==================== Post-Upgrade: Initial State Verification ====================
-    # Verify old engine semantics are preserved after Longhorn system upgrade
-    # Deployment 0 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    Then Assert disk size in instance manager for deployment 0    expected_disk_size=496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 512Mi
-    END
-
-    # Deployment 1 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 1 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 1 is 512Mi
-    END
-
-    # Deployment 2 (RWO Block): blockdev = 496 Mi, replica = 512 Mi
-    And Assert block device size in deployment pod for deployment 2 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 2 is 512Mi
-    END
-
-    # Deployment 3 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert disk size in instance manager for deployment 3    expected_disk_size=496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 3 is 512Mi
-    END
-
-    # Deployment 4 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 4 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 4 is 512Mi
-    END
-
-    # Deployment 5 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert disk size in instance manager for deployment 5    expected_disk_size=496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 5 is 512Mi
-    END
-
-    # Deployment 6 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 6 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 6 is 512Mi
-    END
-
-    # ==================== Replica Rebuild at 512 Mi (Deployment 0, 1) ====================
-    # Test replica rebuild on old engine at original size (512 Mi)
-    When Delete replica of deployment 0 volume on replica node
-    Then Wait until volume of deployment 0 replica rebuilding completed on replica node
-    And Wait for volume of deployment 0 healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 0 is 512Mi
-    END
-    And Check deployment 0 data in file data.txt is intact
-
-    When Delete replica of deployment 1 volume on replica node
-    Then Wait until volume of deployment 1 replica rebuilding completed on replica node
-    And Wait for volume of deployment 1 healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 1 is 512Mi
-    END
-    And Check deployment 1 data in file data.txt is intact
-
-    # ==================== Expansion (Deployment 3, 4) ====================
-    # Expand dedicated deployments from 512 Mi to 768 Mi
-    When Expand deployment 3 volume to 768Mi
-    And Expand deployment 4 volume to 768Mi
-    Then Wait for deployment 3 volume size expanded
-    And Wait for deployment 4 volume size expanded
-    And Check deployment 3 pods did not restart
-    And Check deployment 4 pods did not restart
-
-    # After expansion: device = 752 Mi, replica = 768 Mi (old engine)
-    And Assert disk size in instance manager for deployment 3    expected_disk_size=752Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 4 is 752Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 3 is 768Mi
-        Assert replica file size of deployment 4 is 768Mi
-    END
-    And Check deployment 3 data in file data.txt is intact
-    And Check deployment 4 data in file data.txt is intact
-
-    # ==================== Replica Rebuild at 768 Mi (Deployment 3, 4) ====================
-    # Test replica rebuild on old engine after expansion (768 Mi)
-    When Delete replica of deployment 3 volume on replica node
-    Then Wait until volume of deployment 3 replica rebuilding completed on replica node
-    And Wait for volume of deployment 3 healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 3 is 768Mi
-    END
-    And Check deployment 3 data in file data.txt is intact
-
-    When Delete replica of deployment 4 volume on replica node
-    Then Wait until volume of deployment 4 replica rebuilding completed on replica node
-    And Wait for volume of deployment 4 healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 4 is 768Mi
-    END
-    And Check deployment 4 data in file data.txt is intact
-
-    # ==================== Workload Reattach at 512 Mi (Deployment 5, 6) ====================
-    # Test workload reattach on old engine at original size (512 Mi)
-    Then Scale down deployment 5 to detach volume
-    And Scale up deployment 5 to attach volume
-    Then Wait for volume of deployment 5 healthy
-    And Wait for workloads pods stable    deployment 5
-    # Deployment 5 (RWO Filesystem): device = 496 Mi, replica = 512 Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        And Assert disk size in instance manager for deployment 5    expected_disk_size=496Mi
-        Assert replica file size of deployment 5 is 512Mi
-    ELSE
-        And Assert disk size in instance manager for deployment 5    expected_disk_size=496Mi    raw_size=512Mi
-    END
-    And Check deployment 5 data in file data.txt is intact
-
-    Then Scale down deployment 6 to detach volume
-    And Scale up deployment 6 to attach volume
-    Then Wait for volume of deployment 6 healthy
-    And Wait for workloads pods stable    deployment 6
-    # Deployment 6 (RWX Filesystem): device = 496 Mi, replica = 512 Mi
-    And Assert encrypted disk size in sharemanager pod for deployment 6 is 496Mi
-    IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment 6 is 512Mi
-    END
-    And Check deployment 6 data in file data.txt is intact
-
-    # ==================== Engine Upgrade (Deployment 0-4, v1 only) ====================
-    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
-    IF    '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != '' and '${DATA_ENGINE}' == 'v1'
-        # Upgrade all volumes to the new engine image
-        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
-        And Wait for volume of deployment 0 healthy
-        And Wait for volume of deployment 1 healthy
-        And Wait for volume of deployment 2 healthy
-        And Wait for volume of deployment 3 healthy
-        And Wait for volume of deployment 4 healthy
-        And Wait for volume of deployment 5 healthy
-        And Wait for volume of deployment 6 healthy
-
-        # Test replica rebuild on new engine at original size (Deployment 0, 1)
-        # Deployment 0 (RWO Filesystem, 512 Mi):
-        # device = 512 Mi, replica = 512 Mi + 16 Mi = 528 Mi
-        When Delete replica of deployment 0 volume on replica node
-        Then Wait until volume of deployment 0 replica rebuilding completed on replica node
-        And Wait for volume of deployment 0 healthy
-        Then Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
-        And Assert replica file size of deployment 0 is 528Mi
-        And Check deployment 0 data in file data.txt is intact
-
-        # Deployment 1 (RWX Filesystem, 512 Mi):
-        # device = 512 Mi, replica = 512 Mi + 16 Mi = 528 Mi
-        When Delete replica of deployment 1 volume on replica node
-        Then Wait until volume of deployment 1 replica rebuilding completed on replica node
-        And Wait for volume of deployment 1 healthy
-        Then Assert encrypted disk size in sharemanager pod for deployment 1 is 512Mi
-        And Assert replica file size of deployment 1 is 528Mi
-        And Check deployment 1 data in file data.txt is intact
-
-        # Deployment 2 (RWO Block, 512 Mi):
-        # blockdev = 512 Mi, replica = 512 Mi + 16 Mi = 528 Mi
-        Then Assert block device size in deployment pod for deployment 2 is 512Mi
-        And Assert replica file size of deployment 2 is 528Mi
-
-        # Deployment 3 (RWO Filesystem, 768 Mi after expansion):
-        # device = 768 Mi, replica = 768 Mi + 16 Mi = 784 Mi
-        Then Assert disk size in instance manager for deployment 3    expected_disk_size=768Mi
-        And Assert replica file size of deployment 3 is 784Mi
-        And Check deployment 3 data in file data.txt is intact
-
-        # Deployment 4 (RWX Filesystem, 768 Mi after expansion):
-        # device = 768 Mi, replica = 768 Mi + 16 Mi = 784 Mi
-        Then Assert encrypted disk size in sharemanager pod for deployment 4 is 768Mi
-        And Assert replica file size of deployment 4 is 784Mi
-        And Check deployment 4 data in file data.txt is intact
-
-        # Test workload reattach on new engine at original size (512 Mi)
-        Then Scale down deployment 5 to detach volume
-        And Scale up deployment 5 to attach volume
-        Then Wait for volume of deployment 5 healthy
-        And Wait for workloads pods stable    deployment 5
-        # Deployment 5 (RWO Filesystem, 512 Mi):
-        # device = 512 Mi, replica = 512 Mi + 16 Mi = 528 Mi
-        Then Assert disk size in instance manager for deployment 5    expected_disk_size=512Mi
-        And Assert replica file size of deployment 5 is 528Mi
-        And Check deployment 5 data in file data.txt is intact
-
-        Then Scale down deployment 6 to detach volume
-        And Scale up deployment 6 to attach volume
-        Then Wait for volume of deployment 6 healthy
-        And Wait for workloads pods stable    deployment 6
-        # Deployment 6 (RWX Filesystem, 512 Mi):
-        # device = 512 Mi, replica = 512 Mi + 16 Mi = 528 Mi
-        Then Assert encrypted disk size in sharemanager pod for deployment 6 is 512Mi
-        And Assert replica file size of deployment 6 is 528Mi
-        And Check deployment 6 data in file data.txt is intact
-    END
-
-    # ==================== Backup/Restore (Deployment 7, 8) =============================
-    # Restore pre-upgrade (v1.11 old-engine) backups with new Longhorn (v1.12+).
-    # New Longhorn provisions the restored volume with new-engine semantics:
-    # v1: 16 Mi pre-allocated in the backend → device = full 512 Mi, replica = 528 Mi.
-    # v2: encrypted device = 496 Mi (requested - 16 Mi), raw device = 512 Mi.
-    # https://longhorn.io/docs/1.12.1/important-notes/#luks2-header-overhead-for-existing-encrypted-volumes
-
-    # Deployment 7: Restore from Backup 0 (RWO Filesystem)
-    When Create volume 7 from backup 0 of deployment 0 volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    Then Wait for volume 7 detached
-    And Create deployment 7 with volume 7    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-
-    And Wait for volume of deployment 7 healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment 7    expected_disk_size=512Mi
-        And Assert replica file size of deployment 7 is 528Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment 7    expected_disk_size=496Mi    raw_size=512Mi
-    END
-    And Check deployment 7 file data.txt checksum matches checksum 0
-
-    # Deployment 8: Restore from Backup 1 (RWX Filesystem)
-    When Create volume 8 from backup 1 of deployment 1 volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    Then Wait for volume 8 detached
-    And Create deployment 8 with volume 8    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-
-    And Wait for volume of deployment 8 healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment 8    expected_disk_size=512Mi
-        And Assert replica file size of deployment 8 is 528Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment 8    expected_disk_size=496Mi    raw_size=512Mi
-    END
-    And Check deployment 8 file data.txt checksum matches checksum 1
-
-Test Encrypted Volume Upgrade For v2
-    [Tags]    rwo    expansion    replica-rebuild    upgrade    dr-volume    backup    restore    v2
-    [Documentation]    Test Plan: v2 Data Engine – Upgrade Behavior (v1.11.3/v1.12.0 → v1.12.1/master-head)
-    ...
-    ...                - Requires LONGHORN_STABLE_VERSION to be set.
-    ...                - Only applies to the v2 data engine.
-    ...                - Sizes in this automated version use 512 Mi / 768 Mi 
-    ...                - v2 has no live-volume engine upgrade like v1. To make an already-attached v2
-    ...                  volume adopt the upgraded v2 instance manager, the workload must be
-    ...                  scaled down (detach) so the old instance manager pod can be replaced,
-    ...                  then scaled back up (reattach). Volume/Workload A is scaled down
-    ...                  BEFORE the Longhorn upgrade.
-    ...
-    ...                Entities:
-    ...                  - Volume/Workload A: created BEFORE the upgrade (512 Mi RWO)
-    ...                  - DR-A: DR (Standby) volume created from volume A's backup, AFTER
-    ...                    the upgrade
-    ...                  - bk-A: volume restored (non-standby) from volume A's post-expansion
-    ...                    backup
-    ...                  - Volume/Workload B: created AFTER the upgrade (512 Mi RWO)
-    ...                  - DR-B: DR (Standby) volume created from volume B's backup, AFTER
-    ...                    the upgrade
-    ...                  - bk-B: volume restored (non-standby) from volume B's post-expansion
-    ...                    backup
-    ...
-    ...                Steps (see also the manual test plan referenced by the issues below):
-    ...                  - 1.  Install Longhorn v1.11.3 or v1.12.0.
-    ...                  - 2.  Create a 512 Mi v2 encrypted volume A with workload A.
-    ...                  - 3.  Scale down workload A and wait for volume A to be detached.
-    ...                  - 4.  Upgrade Longhorn to master-head/v1.12.1; wait for all pods ready.
-    ...                  - 5.  Scale up workload A.
-    ...                  - 6.  Check volume A data is correct, and that /dev/mapper/<volume>
-    ...                      (raw) size on the host equals volume A's size.
-    ...                  - 7.  Create a DR volume DR-A from volume A (via a backup).
-    ...                  - 8.  Delete a replica of volume A and wait for it to be healthy.
-    ...                  - 9.  Check volume A data is correct.
-    ...                  - 10. Expand volume A to 768 Mi.
-    ...                  - 11. Create backup A and check DR-A size expands to volume A's size.
-    ...                  - 12. Activate DR-A and attach it to workload DR-A.
-    ...                  - 13. Check the data in DR-A is correct.
-    ...                  - 14. Restore backup A to volume bk-A; check its data is correct.
-    ...                  - 15. Create a 512 Mi v2 encrypted volume B with workload B, using the
-    ...                      already-upgraded v2 instance manager. Wait for it to be running.
-    ...                  - 16. Check /dev/mapper/<volume>-encrypted size on host == volume B size.
-    ...                  - 17. Write data to volume B and save the checksum.
-    ...                  - 18. Create a DR volume DR-B.
-    ...                  - 19. Expand volume B to 768 Mi.
-    ...                  - 20. Write more data to volume B and save the checksum.
-    ...                  - 21. Wait for /dev/mapper/<volume>-encrypted size to be 768 Mi.
-    ...                  - 22. Scale down/up workload B.
-    ...                  - 23. Check the encrypted device size is 768 Mi and data is correct.
-    ...                  - 24. Create backup B and check DR-B size expands to volume B's size.
-    ...                  - 25. Delete a replica of volume B; wait for it to be rebuilt.
-    ...                  - 26. Activate DR-B and attach it to workload DR-B.
-    ...                  - 27. Check the data in DR-B is correct.
-    ...                  - 28. Restore backup B to volume bk-B; check its data is correct.
-    ...
-    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
-    ...                          https://github.com/longhorn/longhorn/issues/13163
-    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
-    IF    '${DATA_ENGINE}' != 'v2'
-        Skip    This test only applies to the v2 data engine
-    END
-    IF    '${LONGHORN_STABLE_VERSION}' == ''
-        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
-    ELSE IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
-        Skip    This test only applies to the v1.11.3/v1.12.0 → v1.12.1/master-head upgrade path; got stable version ${LONGHORN_STABLE_VERSION}
-    END
-
-    # ==================== Step 1: Setup ====================
-    Given Setting deleting-confirmation-flag is set to true
-    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
-    And Uninstall Longhorn
-    And Check Longhorn CRD removed
-    And Install Longhorn stable version
-    And Set default backupstore
-    And Enable v2 data engine and add block disks
-    And Create crypto secret
-    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
-
-    # ==================== Step 2: Volume A + Workload A, write data, save checksum ====================
-    When Create persistentvolumeclaim vol-a    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment vol-a with persistentvolumeclaim vol-a
-    And Wait for volume of deployment vol-a healthy
-    And Write 256 MB data to file data.txt in deployment vol-a
-    Then Check deployment vol-a data in file data.txt is intact
-    And Record file data.txt checksum in deployment vol-a as checksum vol-a-1
-
-    # ==================== Step 3: Scale down workload A and wait for volume A detached ====================
-    When Scale down deployment vol-a to detach volume
-    Then Wait for volume of deployment vol-a detached
-
-    # ==================== Step 4: Upgrade Longhorn to master-head/v1.12.1 ====================
-    When Upgrade Longhorn to custom version
-    And Wait for Longhorn components all running
-
-    # ==================== Step 5: Scale up workload A ====================
-    When Scale up deployment vol-a to attach volume
-    Then Wait for volume of deployment vol-a healthy
-    And Wait for workloads pods stable    deployment vol-a
-
-    # ==================== Step 6: Check volume A data and raw device size ====================
-    Then Check deployment vol-a data in file data.txt is intact
-    # /dev/mapper/<volume> (raw, pre-encryption) == volume A size
-    And Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
-
-    # ==================== Step 7: Write more data to volume A, save checksum ====================
-    When Write 256 MB data to file data.txt in deployment vol-a
-    Then Check deployment vol-a data in file data.txt is intact
-    And Record file data.txt checksum in deployment vol-a as checksum vol-a-2
-
-    # ==================== Step 8: Create DR volume DR-A from volume A ====================
-    # A DR (Standby) volume is created from an existing backup of the source volume.
-    When Create backup 0 for deployment vol-a volume
-    And Verify backup list contains backup no error for deployment vol-a volume
-    And Create DR volume dr-a from backup 0 of deployment vol-a volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    Then Wait for volume dr-a restoration from backup 0 of deployment vol-a volume completed
-
-    # ==================== Step 9-10: Delete a replica of volume A, wait healthy, check data ====================
-    When Delete replica of deployment vol-a volume on replica node
-    Then Wait until volume of deployment vol-a replica rebuilding completed on replica node
-    And Wait for volume of deployment vol-a healthy
-    And Check deployment vol-a data in file data.txt is intact
-
-    # ==================== Step 11: Expand volume A to 768 Mi ====================
-    When Expand deployment vol-a volume to 768Mi
-    Then Wait for deployment vol-a volume size expanded
-    And Check deployment vol-a pods did not restart
-
-    # ==================== Step 12: Create backup A; DR-A size should expand to volume A's size ====================
-    When Create backup 1 for deployment vol-a volume
-    And Verify backup list contains backup no error for deployment vol-a volume
-    Then Wait for volume dr-a restoration from backup 1 of deployment vol-a volume completed
-    And Wait for volume dr-a size to be 768Mi
-
-    # ==================== Step 13-14: Activate DR-A, attach to workload DR-A, check data ====================
-    When Activate DR volume dr-a
-    Then Wait for volume dr-a detached
-    And Create deployment dr-a with volume dr-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-    And Wait for volume of deployment dr-a healthy
-    Then Check deployment dr-a file data.txt checksum matches checksum vol-a-2
-
-    # ==================== Step 15: Restore backup A to volume bk-A; check data ====================
-    When Create volume bk-a from backup 1 of deployment vol-a volume    size=768Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    Then Wait for volume bk-a detached
-    And Create deployment bk-a with volume bk-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-    And Wait for volume of deployment bk-a healthy
-    Then Check deployment bk-a file data.txt checksum matches checksum vol-a-2
-
-    # ==================== Step 16-17: Volume B + Workload B, created with the upgraded v2 image ====================
-    When Create persistentvolumeclaim vol-b    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
-    And Create deployment vol-b with persistentvolumeclaim vol-b
-    And Wait for volume of deployment vol-b healthy
-    Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi
-
-    # ==================== Step 18: Write data to volume B, save checksum ====================
-    When Write 256 MB data to file data.txt in deployment vol-b
-    Then Check deployment vol-b data in file data.txt is intact
-    And Record file data.txt checksum in deployment vol-b as checksum vol-b-1
-
-    # ==================== Step 19: Create DR volume DR-B ====================
-    When Create backup 0 for deployment vol-b volume
-    And Verify backup list contains backup no error for deployment vol-b volume
-    And Create DR volume dr-b from backup 0 of deployment vol-b volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    Then Wait for volume dr-b restoration from backup 0 of deployment vol-b volume completed
-
-    # ==================== Step 20: Expand volume B to 768 Mi ====================
-    When Expand deployment vol-b volume to 768Mi
-    Then Wait for deployment vol-b volume size expanded
-
-    # ==================== Step 21-22: Write more data to volume B, verify encrypted device size ====================
-    When Write 256 MB data to file data.txt in deployment vol-b
-    Then Check deployment vol-b data in file data.txt is intact
-    And Record file data.txt checksum in deployment vol-b as checksum vol-b-2
-    And Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi
-
-    # ==================== Step 23-24: Scale down/up workload B, verify size and data ====================
-    When Scale down deployment vol-b to detach volume
-    And Scale up deployment vol-b to attach volume
-    Then Wait for volume of deployment vol-b healthy
-    And Wait for workloads pods stable    deployment vol-b
-    And Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi
-    And Check deployment vol-b data in file data.txt is intact
-
-    # ==================== Step 25: Create backup B; DR-B size should expand to volume B's size ====================
-    When Create backup 1 for deployment vol-b volume
-    And Verify backup list contains backup no error for deployment vol-b volume
-    Then Wait for volume dr-b restoration from backup 1 of deployment vol-b volume completed
-    And Wait for volume dr-b size to be 768Mi
-
-    # ==================== Step 26: Delete a replica of volume B; wait for rebuild ====================
-    When Delete replica of deployment vol-b volume on replica node
-    Then Wait until volume of deployment vol-b replica rebuilding completed on replica node
-    And Wait for volume of deployment vol-b healthy
-
-    # ==================== Step 27-28: Activate DR-B, attach to workload DR-B, check data ====================
-    When Activate DR volume dr-b
-    Then Wait for volume dr-b detached
-    And Create deployment dr-b with volume dr-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-    And Wait for volume of deployment dr-b healthy
-    Then Check deployment dr-b file data.txt checksum matches checksum vol-b-2
-
-    # ==================== Step 29: Restore backup B to volume bk-B; check data ====================
-    When Create volume bk-b from backup 1 of deployment vol-b volume    size=768Mi    encrypted=True    dataEngine=${DATA_ENGINE}
-    Then Wait for volume bk-b detached
-    And Create deployment bk-b with volume bk-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
-    And Wait for volume of deployment bk-b healthy
-    Then Check deployment bk-b file data.txt checksum matches checksum vol-b-2
 
 Test Encrypted DR Volume Activation
     [Tags]    rwo    dr-volume    backup    restore
@@ -1140,3 +497,984 @@ Test Encrypted Volume With Encrypted Backing Image Clone
     ...                    secret: longhorn-crypto
     ...                    secret-namespace: longhorn-system
     Skip    Implementation pending: encrypted clone backing image keyword not yet implemented
+
+Test Encrypted Volume Upgrade - Initial State Verification
+    [Tags]    rwo    rwx    block-volume    upgrade
+    [Documentation]    Scenario A + E: Baseline verification covering Manager Upgrade
+    ...                (old engine preserved) and a subsequent Live Engine Upgrade,
+    ...                across 3 volume types (RWO Filesystem, RWX Filesystem, RWO Block).
+    ...                  - init-rwo: RWO Filesystem, 512 Mi
+    ...                  - init-rwx: RWX Filesystem, 512 Mi
+    ...                  - init-block: RWO Block, 512 Mi
+    ...
+    ...                Applies to BOTH v1 and v2 data engines, with different
+    ...                LONGHORN_STABLE_VERSION requirements:
+    ...                  - v1: LONGHORN_STABLE_VERSION must be v1.11.x
+    ...                  - v2: LONGHORN_STABLE_VERSION must be v1.11.x OR exactly v1.12.0
+    ...
+    ...                Part A (Manager Upgrade Only, Old Engine Preserved):
+    ...                  - device = requested_size - 16 Mi
+    ...                  - replica = requested_size (v1 ONLY; not asserted for v2)
+    ...                  - Verified both before AND after the Longhorn manager upgrade.
+    ...
+    ...                v2 data engine has no live engine upgrade. All deployments are
+    ...                scaled down (detached) before "Upgrade Longhorn to custom version"
+    ...                and scaled back up (reattached) afterward, so each v2 volume
+    ...                adopts the upgraded v2 instance manager. This does NOT apply to v1.
+    ...
+    ...                Part E (Live Engine Upgrade, 512 Mi baseline) — v1 ONLY:
+    ...                  - device = 512 Mi (full size), replica = 528 Mi
+    ...                  - v2 has no equivalent step; Part E is skipped entirely for v2.
+    ...
+    ...                - Requires LONGHORN_STABLE_VERSION to be set.
+    ...                - Part E requires CUSTOM_LONGHORN_ENGINE_IMAGE to be set; if not
+    ...                  set, it is skipped but Part A still runs.
+    ...
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    # ==================== Setup ====================
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+
+    # ==================== Create 3 Volumes (RWO Filesystem, RWX Filesystem, RWO Block) ====================
+    When Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    And Create persistentvolumeclaim init-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment init-rwo with persistentvolumeclaim init-rwo
+
+    And Create persistentvolumeclaim init-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment init-rwx with persistentvolumeclaim init-rwx
+
+    And Create persistentvolumeclaim init-block    volumeMode=Block    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment init-block with block persistentvolumeclaim init-block
+
+    Then Wait for volume of deployment init-rwo healthy
+    And Wait for volume of deployment init-rwx healthy
+    And Wait for volume of deployment init-block healthy
+
+    When Write 256 MB data to file data.txt in deployment init-rwo
+    And Write 256 MB data to file data.txt in deployment init-rwx
+    Then Check deployment init-rwo data in file data.txt is intact
+    And Check deployment init-rwx data in file data.txt is intact
+
+    # ==================== Part A: Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment init-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+
+    And Assert encrypted disk size in sharemanager pod for deployment init-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment init-rwx is 512Mi
+    END
+
+    And Assert block device size in deployment pod for deployment init-block is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment init-block is 512Mi
+    END
+
+    # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine) ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+
+    FOR    ${name}    IN    init-rwo    init-rwx    init-block
+        Check volume endpoint on node of deployment ${name}
+    END
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    init-rwo    init-rwx    init-block
+            Scale down deployment ${name} to detach volume
+        END
+    END
+
+    When Upgrade Longhorn to custom version
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    init-rwo    init-rwx    init-block
+            Scale up deployment ${name} to attach volume
+        END
+    END
+
+    And Wait for volume of deployment init-rwo healthy
+    And Wait for volume of deployment init-rwx healthy
+    And Wait for volume of deployment init-block healthy
+
+    FOR    ${name}    IN    init-rwo    init-rwx    init-block
+        Check volume endpoint on node of deployment ${name}
+    END
+
+    # ==================== Part A: Post-Upgrade Verification (Old Engine Preserved) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment init-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+
+    And Assert encrypted disk size in sharemanager pod for deployment init-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment init-rwx is 512Mi
+    END
+
+    And Assert block device size in deployment pod for deployment init-block is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment init-block is 512Mi
+    END
+
+    # ==================== Part E: Live Engine Upgrade (512 Mi Baseline, v1 ONLY) ====================
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment init-rwo healthy
+        And Wait for volume of deployment init-rwx healthy
+        And Wait for volume of deployment init-block healthy
+
+        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=512Mi
+        And Assert replica file size of deployment init-rwo is 528Mi
+        And Check deployment init-rwo data in file data.txt is intact
+
+        Then Assert encrypted disk size in sharemanager pod for deployment init-rwx is 512Mi
+        And Assert replica file size of deployment init-rwx is 528Mi
+        And Check deployment init-rwx data in file data.txt is intact
+
+        Then Assert block device size in deployment pod for deployment init-block is 512Mi
+        And Assert replica file size of deployment init-block is 528Mi
+    END
+
+Test Encrypted Volume Upgrade - Replica Rebuild
+    [Tags]    rwo    rwx    replica-rebuild    engine-upgrade    old-engine    v1
+    [Documentation]    Scenario B + D: Replica Rebuild verification across BOTH the OLD
+    ...                and the NEW engine, using 2 volumes (RWO + RWX) fixed at 512 Mi.
+    ...                Volumes are created directly at 512 Mi (NOT via Expansion), to keep
+    ...                this case focused purely on Replica Rebuild — Expansion itself, and
+    ...                Replica Rebuild immediately following an Expansion, are tested
+    ...                independently in the "Expansion And Engine Upgrade" test case.
+    ...                  - rebuild-rwo: RWO Filesystem, 512 Mi
+    ...                  - rebuild-rwx: RWX Filesystem, 512 Mi
+    ...
+    ...                Round 1 — Replica Rebuild after Manager Upgrade:
+    ...                  - v1: Runs under the OLD engine (device = 496 Mi, rebuilt replica = 512 Mi).
+    ...                  - v2: Volumes MUST be detached before Manager Upgrade and reattached
+    ...                        afterward. Thus, they run on the upgraded v2 instance manager
+    ...                        (encrypted device = 496 Mi, raw size = 512 Mi).
+    ...
+    ...                Round 2 — Replica Rebuild under NEW engine (after Live Engine Upgrade):
+    ...                  - device = 512 Mi (full size), rebuilt replica = 528 Mi
+    ...
+    ...                - Requires LONGHORN_STABLE_VERSION to be set (v1.11.x).
+    ...                - Only applies to the v1 data engine.
+    ...                - Round 2 requires CUSTOM_LONGHORN_ENGINE_IMAGE to be set; if not
+    ...                  set, Round 2 is skipped but Round 1 still runs.
+    ...
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    # ==================== Create 2 Volumes (RWO + RWX, fixed at 512 Mi) ====================
+    When Create persistentvolumeclaim rebuild-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment rebuild-rwo with persistentvolumeclaim rebuild-rwo
+    And Create persistentvolumeclaim rebuild-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment rebuild-rwx with persistentvolumeclaim rebuild-rwx
+
+    Then Wait for volume of deployment rebuild-rwo healthy
+    And Wait for volume of deployment rebuild-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment rebuild-rwo
+    And Write 256 MB data to file data.txt in deployment rebuild-rwx
+    Then Check deployment rebuild-rwo data in file data.txt is intact
+    And Check deployment rebuild-rwx data in file data.txt is intact
+
+    # ==================== Precondition: Upgrade Longhorn Manager (Keep Old Engine) ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    Check volume endpoint on node of deployment rebuild-rwo
+    Check volume endpoint on node of deployment rebuild-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    rebuild-rwo    rebuild-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+
+    When Upgrade Longhorn to custom version
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    rebuild-rwo    rebuild-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+
+
+    And Wait for volume of deployment rebuild-rwo healthy
+    And Wait for volume of deployment rebuild-rwx healthy
+    Check volume endpoint on node of deployment rebuild-rwo
+    Check volume endpoint on node of deployment rebuild-rwx
+
+    # ==================== Round 1: Replica Rebuild after Manager Upgrade (v1: OLD Engine, v2: Upgraded Manager) ====================
+    When Delete replica of deployment rebuild-rwo volume on replica node
+    Then Wait until volume of deployment rebuild-rwo replica rebuilding completed on replica node
+    And Wait for volume of deployment rebuild-rwo healthy
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment rebuild-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Check deployment rebuild-rwo data in file data.txt is intact
+
+    When Delete replica of deployment rebuild-rwx volume on replica node
+    Then Wait until volume of deployment rebuild-rwx replica rebuilding completed on replica node
+    And Wait for volume of deployment rebuild-rwx healthy
+
+    Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert replica file size of deployment rebuild-rwx is 512Mi
+    END
+    And Check deployment rebuild-rwx data in file data.txt is intact
+
+
+    # ==================== Round 2: Replica Rebuild under NEW Engine , v1 only ====================
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment rebuild-rwo healthy
+        And Wait for volume of deployment rebuild-rwx healthy
+
+        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=512Mi
+        And Assert replica file size of deployment rebuild-rwo is 528Mi
+        Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 512Mi
+        And Assert replica file size of deployment rebuild-rwx is 528Mi
+
+        When Delete replica of deployment rebuild-rwo volume on replica node
+        Then Wait until volume of deployment rebuild-rwo replica rebuilding completed on replica node
+        And Wait for volume of deployment rebuild-rwo healthy
+        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=512Mi
+        And Assert replica file size of deployment rebuild-rwo is 528Mi
+        And Check deployment rebuild-rwo data in file data.txt is intact
+
+        When Delete replica of deployment rebuild-rwx volume on replica node
+        Then Wait until volume of deployment rebuild-rwx replica rebuilding completed on replica node
+        And Wait for volume of deployment rebuild-rwx healthy
+        Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 512Mi
+        And Assert replica file size of deployment rebuild-rwx is 528Mi
+        And Check deployment rebuild-rwx data in file data.txt is intact
+    END
+
+Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
+    [Tags]    rwo    rwx    expansion    replica-rebuild    upgrade
+    [Documentation]    Scenario A + C + E + B (post-Expansion variant): Full lifecycle
+    ...                verification — Manager Upgrade (old engine preserved) → Expansion
+    ...                under OLD engine (512 Mi → 768 Mi) → Replica Rebuild verification
+    ...                (post-Expansion, old engine) → Live Engine Upgrade (768 Mi baseline)
+    ...                → Expansion under NEW engine (768 Mi → 896 Mi) → Replica Rebuild
+    ...                verification (post-Expansion, new engine).
+    ...                  - expand-rwo: RWO Filesystem
+    ...                  - expand-rwx: RWX Filesystem
+    ...
+    ...                Expansion is verified TWICE, to confirm disk/replica size
+    ...                calculation is correct under BOTH the old and the new engine:
+    ...                  - Part C1 (v1: Old Engine, v2: Upgraded Manager, 512 Mi → 768 Mi):
+    ...                      device = 752 Mi, replica = 768 Mi (replica size checked on v1 only)
+    ...                  - Part C2 (New Engine, 768 Mi → 896 Mi):
+    ...                      device = 896 Mi, replica = 912 Mi
+    ...
+    ...                Replica Rebuild is ALSO verified immediately after EACH Expansion,
+    ...                to cover the edge case where a rebuild happens right after a size
+    ...                change (distinct from the standalone "Replica Rebuild" case, which
+    ...                covers rebuild on volumes at a STATIC size):
+    ...                  - Part B1 (post-C1, v1: Old Engine, v2: Upgraded Manager, 768 Mi): rebuilt replica,
+    ...                    device = 752 Mi, replica = 768 Mi
+    ...                  - Part B2 (post-C2, New Engine, 896 Mi): rebuilt replica,
+    ...                    device = 896 Mi, replica = 912 Mi
+    ...
+    ...                Part A (Manager Upgrade Only, Old Engine Preserved, 512 Mi):
+    ...                  - device = 496 Mi, replica = 512 Mi
+    ...                  - Verified both before AND after the Longhorn manager upgrade.
+    ...
+    ...                Part E (Live Engine Upgrade, 768 Mi baseline):
+    ...                  - device = 768 Mi (full size), replica = 784 Mi
+    ...
+    ...                - Requires LONGHORN_STABLE_VERSION to be set (v1.11.x).
+    ...                - Applies to BOTH v1 and v2 data engines.
+    ...                - Part E, Part C2, and Part B2 (Live Engine Upgrade and post-actions) are v1 ONLY.
+    ...                - For v1, Part E / C2 / B2 require CUSTOM_LONGHORN_ENGINE_IMAGE to
+    ...                  be set; if not set, they are skipped but Part A / C1 / B1 still run.
+    ...
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    When Create persistentvolumeclaim expand-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment expand-rwo with persistentvolumeclaim expand-rwo
+    And Create persistentvolumeclaim expand-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment expand-rwx with persistentvolumeclaim expand-rwx
+
+    Then Wait for volume of deployment expand-rwo healthy
+    And Wait for volume of deployment expand-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment expand-rwo
+    And Write 256 MB data to file data.txt in deployment expand-rwx
+    Then Check deployment expand-rwo data in file data.txt is intact
+    And Check deployment expand-rwx data in file data.txt is intact
+
+    # ==================== Part A: Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment expand-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment expand-rwx is 512Mi
+    END
+
+
+    # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine) ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment expand-rwo
+    And Check volume endpoint on node of deployment expand-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    expand-rwo    expand-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+
+    When Upgrade Longhorn to custom version
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    expand-rwo    expand-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+
+
+    And Wait for volume of deployment expand-rwo healthy
+    And Wait for volume of deployment expand-rwx healthy
+    Check volume endpoint on node of deployment expand-rwo
+    Check volume endpoint on node of deployment expand-rwx
+
+    # ==================== Part A: Post-Upgrade Verification (Old Engine Preserved) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi
+        And Assert replica file size of deployment expand-rwo is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 496Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert replica file size of deployment expand-rwx is 512Mi
+    END
+
+    # ==================== Part C1: Expansion after Manager Upgrade (v1: OLD Engine, v2: Upgraded Manager) (512 Mi → 768 Mi) ====================
+    When Expand deployment expand-rwo volume to 768Mi
+    And Expand deployment expand-rwx volume to 768Mi
+    Then Wait for deployment expand-rwo volume size expanded
+    And Wait for deployment expand-rwx volume size expanded
+    And Check deployment expand-rwo pods did not restart
+    And Check deployment expand-rwx pods did not restart
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi
+        And Assert replica file size of deployment expand-rwo is 768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 752Mi    
+    IF    '${DATA_ENGINE}' == 'v1'
+        Assert replica file size of deployment expand-rwx is 768Mi
+    END
+    And Check deployment expand-rwo data in file data.txt is intact
+    And Check deployment expand-rwx data in file data.txt is intact
+
+    # ==================== Part B1: Replica Rebuild (Post-Expansion, v1: OLD Engine, v2: Upgraded Manager, 768 Mi) ====================
+    When Delete replica of deployment expand-rwo volume on replica node
+    Then Wait until volume of deployment expand-rwo replica rebuilding completed on replica node
+    And Wait for volume of deployment expand-rwo healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi
+        And Assert replica file size of deployment expand-rwo is 768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Check deployment expand-rwo data in file data.txt is intact
+
+    When Delete replica of deployment expand-rwx volume on replica node
+    Then Wait until volume of deployment expand-rwx replica rebuilding completed on replica node
+    And Wait for volume of deployment expand-rwx healthy
+    Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 752Mi
+    IF    '${DATA_ENGINE}' == 'v1'
+        And Assert replica file size of deployment expand-rwx is 768Mi
+    END
+    And Check deployment expand-rwx data in file data.txt is intact
+
+    # ==================== Part E: Live Engine Upgrade (768 Mi Baseline , v1 only) ====================
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment expand-rwo healthy
+        And Wait for volume of deployment expand-rwx healthy
+
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=768Mi
+        And Assert replica file size of deployment expand-rwo is 784Mi
+        And Check deployment expand-rwo data in file data.txt is intact
+
+        Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 768Mi
+        And Assert replica file size of deployment expand-rwx is 784Mi
+        And Check deployment expand-rwx data in file data.txt is intact
+
+        # ==================== Part C2: Expansion under NEW Engine (768 Mi → 896 Mi) ====================
+        When Expand deployment expand-rwo volume to 896Mi
+        And Expand deployment expand-rwx volume to 896Mi
+        Then Wait for deployment expand-rwo volume size expanded
+        And Wait for deployment expand-rwx volume size expanded
+        And Check deployment expand-rwo pods did not restart
+        And Check deployment expand-rwx pods did not restart
+
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=896Mi
+        And Assert replica file size of deployment expand-rwo is 912Mi
+        And Check deployment expand-rwo data in file data.txt is intact
+
+        Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 896Mi
+        And Assert replica file size of deployment expand-rwx is 912Mi
+        And Check deployment expand-rwx data in file data.txt is intact
+
+        # ==================== Part B2: Replica Rebuild (Post-Expansion, NEW Engine, 896 Mi) ====================
+        When Delete replica of deployment expand-rwo volume on replica node
+        Then Wait until volume of deployment expand-rwo replica rebuilding completed on replica node
+        And Wait for volume of deployment expand-rwo healthy
+        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=896Mi
+        And Assert replica file size of deployment expand-rwo is 912Mi
+        And Check deployment expand-rwo data in file data.txt is intact
+
+        When Delete replica of deployment expand-rwx volume on replica node
+        Then Wait until volume of deployment expand-rwx replica rebuilding completed on replica node
+        And Wait for volume of deployment expand-rwx healthy
+        Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 896Mi
+        And Assert replica file size of deployment expand-rwx is 912Mi
+        And Check deployment expand-rwx data in file data.txt is intact
+    END
+
+Test Encrypted Volume Upgrade - Workload Reattach
+    [Tags]    rwo    rwx    reattach    upgrade
+    [Documentation]    Scenario F: Verifies that after Longhorn upgrade, volumes can be
+    ...                correctly detached and reattached to a workload (e.g. via pod
+    ...                deletion / rescheduling), and that data + encryption remain intact
+    ...                across the reattach cycle.
+    ...                  - reattach-rwo: RWO Filesystem
+    ...                  - reattach-rwx: RWX Filesystem
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    When Create persistentvolumeclaim reattach-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment reattach-rwo with persistentvolumeclaim reattach-rwo
+    And Create persistentvolumeclaim reattach-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment reattach-rwx with persistentvolumeclaim reattach-rwx
+
+    Then Wait for volume of deployment reattach-rwo healthy
+    And Wait for volume of deployment reattach-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment reattach-rwo
+    And Write 256 MB data to file data.txt in deployment reattach-rwx
+    Then Check deployment reattach-rwo data in file data.txt is intact
+    And Check deployment reattach-rwx data in file data.txt is intact
+
+    # ==================== Upgrade Longhorn ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment reattach-rwo
+    And Check volume endpoint on node of deployment reattach-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    reattach-rwo    reattach-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+    And Upgrade Longhorn to custom version
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    reattach-rwo    reattach-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+    And Wait for volume of deployment reattach-rwo healthy
+    And Wait for volume of deployment reattach-rwx healthy
+
+    # ==================== Reattach: Delete Workload Pod and Verify Reattach ====================
+    When Scale down deployment reattach-rwo to detach volume
+    Then Scale up deployment reattach-rwo to attach volume
+    And Wait for volume of deployment reattach-rwo healthy
+    And Check deployment reattach-rwo data in file data.txt is intact
+
+    When Scale down deployment reattach-rwx to detach volume
+    Then Scale up deployment reattach-rwx to attach volume
+    And Wait for volume of deployment reattach-rwx healthy
+    And Check deployment reattach-rwx data in file data.txt is intact
+
+    # ==================== Reattach: Delete Workload Pod and Verify Reattach under NEW Engine , v1 only ====================
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment reattach-rwo healthy
+        And Wait for volume of deployment reattach-rwx healthy
+
+        When Scale down deployment reattach-rwo to detach volume
+        Then Scale up deployment reattach-rwo to attach volume
+        And Wait for volume of deployment reattach-rwo healthy
+        And Check deployment reattach-rwo data in file data.txt is intact
+
+        When Scale down deployment reattach-rwx to detach volume
+        Then Scale up deployment reattach-rwx to attach volume
+        And Wait for volume of deployment reattach-rwx healthy
+        And Check deployment reattach-rwx data in file data.txt is intact
+    END
+
+Test Encrypted Volume Upgrade - Backup And Restore
+    [Tags]    rwo    rwx    backup    restore    upgrade
+    [Documentation]    Scenario G: Verifies that after Longhorn upgrade, encrypted volumes
+    ...                can be restored correctly, with data integrity and
+    ...                encryption preserved across the backup/restore cycle.
+    ...                  - backup-src-rwo: RWO Filesystem (backup source)
+    ...                  - backup-src-rwx: RWX Filesystem (backup source)
+    ...                  - restore-rwo: RWO Filesystem (restored from backup-src-rwo)
+    ...                  - restore-rwx: RWX Filesystem (restored from backup-src-rwx)
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    When Create persistentvolumeclaim backup-src-rwo    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment backup-src-rwo with persistentvolumeclaim backup-src-rwo
+    And Create persistentvolumeclaim backup-src-rwx    volume_type=RWX    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment backup-src-rwx with persistentvolumeclaim backup-src-rwx
+
+    Then Wait for volume of deployment backup-src-rwo healthy
+    And Wait for volume of deployment backup-src-rwx healthy
+
+    When Write 256 MB data to file data.txt in deployment backup-src-rwo
+    And Write 256 MB data to file data.txt in deployment backup-src-rwx
+    Then Check deployment backup-src-rwo data in file data.txt is intact
+    And Record file data.txt checksum in deployment backup-src-rwo as checksum backup-src-rwo
+    And Check deployment backup-src-rwx data in file data.txt is intact
+    And Record file data.txt checksum in deployment backup-src-rwx as checksum backup-src-rwx
+
+    # ==================== Create Backup ====================
+    When Create backup 0 for deployment backup-src-rwo volume
+    And Create backup 0 for deployment backup-src-rwx volume
+    Then Verify backup list contains backup no error for deployment backup-src-rwo volume
+    And Verify backup list contains backup no error for deployment backup-src-rwx volume
+
+    # ==================== Upgrade Longhorn ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment backup-src-rwo
+    And Check volume endpoint on node of deployment backup-src-rwx
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    backup-src-rwo    backup-src-rwx
+            Scale down deployment ${name} to detach volume
+        END
+    END
+    When Upgrade Longhorn to custom version
+    IF    '${DATA_ENGINE}' == 'v2'
+        FOR    ${name}    IN    backup-src-rwo    backup-src-rwx
+            Scale up deployment ${name} to attach volume
+        END
+    END
+    And Wait for volume of deployment backup-src-rwo healthy
+    And Wait for volume of deployment backup-src-rwx healthy
+
+    # ==================== Restore Backup to New Volumes ====================
+    # Deployment restore-rwo: Restore from Backup 0 (RWO Filesystem)
+    When Create volume restore-rwo from backup 0 of deployment backup-src-rwo volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume restore-rwo detached
+    And Create deployment restore-rwo with volume restore-rwo    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
+    And Wait for volume of deployment restore-rwo healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment restore-rwo    expected_disk_size=512Mi
+        And Assert replica file size of deployment restore-rwo is 528Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment restore-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Check deployment restore-rwo file data.txt checksum matches checksum backup-src-rwo
+
+    # Deployment restore-rwx: Restore from Backup 0 (RWX Filesystem)
+    When Create volume restore-rwx from backup 0 of deployment backup-src-rwx volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume restore-rwx detached
+    And Create deployment restore-rwx with volume restore-rwx    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+
+    And Wait for volume of deployment restore-rwx healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=512Mi
+        And Assert replica file size of deployment restore-rwx is 528Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=496Mi    raw_size=512Mi
+    END
+    And Check deployment restore-rwx file data.txt checksum matches checksum backup-src-rwx
+
+Test Encrypted Volume Upgrade - DR Volume
+    [Tags]    rwo    dr-volume    expansion    replica-rebuild    backup    restore    upgrade
+    [Documentation]    Scenario H: DR (Standby) Volume behavior across a Longhorn upgrade.
+    ...                Covers 3 gaps NOT addressed by the other upgrade test cases:
+    ...                  1. Creating a DR volume AFTER upgrade from a backup taken BEFORE
+    ...                     the upgrade (cross-version DR compatibility).
+    ...                  2. DR volume size auto-tracking after the source volume is
+    ...                     expanded and a new backup is taken.
+    ...                  3. Restoring a POST-expansion backup to a plain (non-DR) volume.
+    ...
+    ...                Entities:
+    ...                  - vol-a: source volume created BEFORE the upgrade (512 Mi RWO).
+    ...                    The old Longhorn engine binary is preserved on vol-a until it is
+    ...                    explicitly live-upgraded in Part E. (DATA_ENGINE=v1 only).
+    ...                  - dr-a: DR volume created from vol-a's PRE-upgrade backup, AFTER
+    ...                    the upgrade — tests cross-version backup compatibility
+    ...                  - bk-a: plain (non-DR) volume restored from vol-a's POST-expansion
+    ...                    backup — tests restoring an already-expanded backup
+    ...                  - vol-b: source volume created AFTER the Longhorn manager upgrade
+    ...                    (512 Mi RWO). Since the manager itself is already upgraded,
+    ...                    vol-b is a brand-new volume and therefore ALWAYS gets the
+    ...                    NEW-engine default from the upgraded manager — this does NOT
+    ...                    depend on CUSTOM_LONGHORN_ENGINE_IMAGE, which only controls
+    ...                    the LIVE upgrade of an already-running volume like vol-a.
+    ...                  - dr-b / bk-b: same roles as dr-a / bk-a, but for vol-b
+    ...                  - size assertions differ:
+    ...                  - old-engine: raw = PVC,        disk = PVC − 16Mi
+    ...                  - new-engine: raw = PVC + 16Mi, disk = PVC
+    ...
+    ...                Applies to BOTH v1 and v2 data engines, with different
+    ...                LONGHORN_STABLE_VERSION requirements:
+    ...                  - v1: LONGHORN_STABLE_VERSION must be v1.11.x
+    ...                  - v2: LONGHORN_STABLE_VERSION must be v1.11.x OR exactly v1.12.0
+    ...
+    ...                v2 has no live engine upgrade concept for either existing or new
+    ...                volumes. vol-a is scaled down (detached) before "Upgrade Longhorn
+    ...                to custom version" and scaled back up (reattached) afterward, so
+    ...                it adopts the upgraded v2 instance manager. This does NOT apply to v1.
+    ...
+    ...                For v1 ONLY, a Live Engine Upgrade is additionally performed on
+    ...                vol-a (the pre-existing volume) right after Gap 3 completes, to
+    ...                verify a running volume can transition to the new engine live.
+    ...                Requires CUSTOM_LONGHORN_ENGINE_IMAGE; if not set, this step is
+    ...                skipped, but vol-a stays on the OLD engine for the rest of the test
+    ...                while vol-b (created afterward) still runs on the NEW engine by
+    ...                default — this asymmetry is intentional and documents the real
+    ...                behavioral difference between existing vs newly-created volumes.
+    ...
+    ...                - Issues: https://github.com/longhorn/longhorn/issues/9205
+    ...                          https://github.com/longhorn/longhorn/issues/13163
+    ${LONGHORN_STABLE_VERSION} =    Get Environment Variable    LONGHORN_STABLE_VERSION    default=
+    ${CUSTOM_LONGHORN_ENGINE_IMAGE} =    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default=
+
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
+            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
+            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
+        END
+    END
+
+    # ==================== Setup ====================
+    Given Setting deleting-confirmation-flag is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn stable version
+    And Set default backupstore
+    And Enable v2 data engine and add block disks
+    And Create crypto secret
+    And Create storageclass longhorn-crypto-stable with    encrypted=true    dataEngine=${DATA_ENGINE}
+
+    # ==================== vol-a: Create BEFORE Upgrade, Write Data, Backup ====================
+    When Create persistentvolumeclaim vol-a    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment vol-a with persistentvolumeclaim vol-a
+    And Wait for volume of deployment vol-a healthy
+    And Write 256 MB data to file data.txt in deployment vol-a
+    Then Check deployment vol-a data in file data.txt is intact
+
+    # Pre-upgrade backup 0 — this is the backup used later to test CROSS-VERSION DR compatibility
+    When Create backup 0 for deployment vol-a volume
+    Then Verify backup list contains backup no error for deployment vol-a volume
+
+    # ==================== Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi
+        And Assert replica file size of deployment vol-a is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
+    END
+
+    # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine for v1) ====================
+    When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
+    And Check volume endpoint on node of deployment vol-a
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        When Scale down deployment vol-a to detach volume
+        Then Wait for volume of deployment vol-a detached
+    END
+
+    When Upgrade Longhorn to custom version
+
+    IF    '${DATA_ENGINE}' == 'v2'
+        And Scale up deployment vol-a to attach volume
+    END
+
+    And Wait for volume of deployment vol-a healthy
+    And Check volume endpoint on node of deployment vol-a
+    Then Check deployment vol-a data in file data.txt is intact
+
+    # ==================== Post-Manager-Upgrade Verification (Old Engine Preserved for v1) ====================
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi
+        And Assert replica file size of deployment vol-a is 512Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
+    END
+
+    # ==================== Part E: Live Engine Upgrade of vol-a (v1 ONLY) ====================
+    # Verifies an EXISTING, already-attached volume can transition to the new engine
+    # live, without needing to be recreated.
+    IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
+        Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Wait for volume of deployment vol-a healthy
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=512Mi
+        And Assert replica file size of deployment vol-a is 528Mi
+        And Check deployment vol-a data in file data.txt is intact
+    END
+
+    # ==================== Gap 1: DR-A from a PRE-Upgrade Backup (Cross-Version Compatibility) ====================
+    When Create DR volume dr-a from backup 0 of deployment vol-a volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume dr-a restoration from backup 0 of deployment vol-a volume completed
+
+    # ==================== Replica Rebuild on vol-a (Post-Upgrade, Pre-Expansion) ====================
+    When Delete replica of deployment vol-a volume on replica node
+    Then Wait until volume of deployment vol-a replica rebuilding completed on replica node
+    And Wait for volume of deployment vol-a healthy
+    And Check deployment vol-a data in file data.txt is intact
+
+    # ==================== Gap 2: Expand vol-a, Take New Backup, Verify DR-A Auto-Tracks Size ====================
+    When Write 256 MB data to file data.txt in deployment vol-a
+    Then Check deployment vol-a data in file data.txt is intact
+    And Record file data.txt checksum in deployment vol-a as checksum vol-a-2
+
+    When Expand deployment vol-a volume to 768Mi
+    Then Wait for deployment vol-a volume size expanded
+    And Check deployment vol-a pods did not restart
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=768Mi
+        And Assert replica file size of deployment vol-a is 784Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Check deployment vol-a data in file data.txt is intact
+
+    # Post-expansion backup — this is the backup used later to test restoring an
+    # ALREADY-EXPANDED backup (Gap 3, via bk-a)
+    When Create backup 1 for deployment vol-a volume
+    Then Verify backup list contains backup no error for deployment vol-a volume
+    And Wait for volume dr-a restoration from backup 1 of deployment vol-a volume completed
+    And Wait for volume dr-a size to be 768Mi
+
+    # ==================== Activate DR-A, Attach, Verify Data ====================
+    When Activate DR volume dr-a
+    Then Wait for volume dr-a detached
+    And Create deployment dr-a with volume dr-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment dr-a healthy
+    Then Check deployment dr-a file data.txt checksum matches checksum vol-a-2
+
+    # ==================== Gap 3: Restore the POST-Expansion Backup to a Plain Volume (bk-a) ====================
+    When Create volume bk-a from backup 1 of deployment vol-a volume    size=768Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume bk-a detached
+    And Create deployment bk-a with volume bk-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment bk-a healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment bk-a    expected_disk_size=768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment bk-a    expected_disk_size=752Mi    raw_size=768Mi
+    END
+    And Check deployment bk-a file data.txt checksum matches checksum vol-a-2
+
+    # ==================== vol-b: Fully New Volume, Created AFTER the Manager Upgrade ====================
+    # Runs UNCONDITIONALLY (v1 and v2 alike, regardless of CUSTOM_LONGHORN_ENGINE_IMAGE).
+    # The Longhorn manager is already upgraded at this point, so any brand-new volume
+    # naturally gets the NEW-engine default — this has nothing to do with whether an
+    # EXISTING volume (vol-a) was live-upgraded above.
+    When Create persistentvolumeclaim vol-b    volume_type=RWO    sc_name=longhorn-crypto-stable    storage_size=512Mi
+    And Create deployment vol-b with persistentvolumeclaim vol-b
+    And Wait for volume of deployment vol-b healthy
+    And Write 256 MB data to file data.txt in deployment vol-b
+    Then Check deployment vol-b data in file data.txt is intact
+    And Record file data.txt checksum in deployment vol-b as checksum vol-b-1
+
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi
+        And Assert replica file size of deployment vol-b is 528Mi
+    ELSE
+        # vol-b was created by the NEW upgraded Longhorn manager.
+        # New-engine allocation:            raw = PVC + 16Mi, disk = raw - 16Mi = PVC.
+        # Contrast with vol-a (old engine): raw = PVC       , disk = raw - 16Mi = PVC - 16Mi.
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi    raw_size=528Mi
+    END
+
+    # ---- DR-B from vol-b's first backup (both backup and DR created fully post-upgrade) ----
+    When Create backup 0 for deployment vol-b volume
+    Then Verify backup list contains backup no error for deployment vol-b volume
+    And Create DR volume dr-b from backup 0 of deployment vol-b volume    size=512Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume dr-b restoration from backup 0 of deployment vol-b volume completed
+
+    # ---- Replica rebuild on vol-b before expansion ----
+    When Delete replica of deployment vol-b volume on replica node
+    Then Wait until volume of deployment vol-b replica rebuilding completed on replica node
+    And Wait for volume of deployment vol-b healthy
+    And Check deployment vol-b data in file data.txt is intact
+
+    # ---- Expand vol-b, verify DR-B auto-tracks size ----
+    When Write 256 MB data to file data.txt in deployment vol-b
+    Then Check deployment vol-b data in file data.txt is intact
+    And Record file data.txt checksum in deployment vol-b as checksum vol-b-2
+
+    When Expand deployment vol-b volume to 768Mi
+    Then Wait for deployment vol-b volume size expanded
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi
+        And Assert replica file size of deployment vol-b is 784Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi    raw_size=784Mi
+    END
+    And Check deployment vol-b data in file data.txt is intact
+
+    When Create backup 1 for deployment vol-b volume
+    Then Verify backup list contains backup no error for deployment vol-b volume
+    And Wait for volume dr-b restoration from backup 1 of deployment vol-b volume completed
+    And Wait for volume dr-b size to be 768Mi
+
+    # ---- Activate DR-B, attach, verify data ----
+    When Activate DR volume dr-b
+    Then Wait for volume dr-b detached
+    And Create deployment dr-b with volume dr-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment dr-b healthy
+    Then Check deployment dr-b file data.txt checksum matches checksum vol-b-2
+
+    # ---- Restore vol-b's post-expansion backup to a plain volume (bk-b) ----
+    When Create volume bk-b from backup 1 of deployment vol-b volume    size=768Mi    encrypted=True    dataEngine=${DATA_ENGINE}
+    Then Wait for volume bk-b detached
+    And Create deployment bk-b with volume bk-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
+    And Wait for volume of deployment bk-b healthy
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Assert disk size in instance manager for deployment bk-b    expected_disk_size=768Mi
+    ELSE
+        Then Assert disk size in instance manager for deployment bk-b    expected_disk_size=768Mi    raw_size=784Mi
+    END
+    And Check deployment bk-b file data.txt checksum matches checksum vol-b-2
