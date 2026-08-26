@@ -194,3 +194,6 @@ class node_keywords:
 
     def wait_for_disk_schedulable(self, node_name, disk_name):
         self.node.wait_for_disk_schedulable(node_name, disk_name)
+
+    def delete_longhorn_node(self, node_name):
+        self.node.delete_node(node_name)
