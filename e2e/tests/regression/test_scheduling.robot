@@ -16,6 +16,7 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/engine_image.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -546,3 +547,115 @@ Test Longhorn UI Topology Spread Constraints Passthrough And Enforcement
     And Check all Longhorn CRD removed
     And Install Longhorn
     And Wait for longhorn ready
+
+Test System Managed Components Node Selector
+    [Tags]    uninstall
+    [Documentation]    Test that setting `system-managed-components-node-selector` restricts
+    ...    Longhorn system managed components (CSI components, instance managers, engine images)
+    ...    to run only on the selected node(s).
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12834
+    ...
+    ...    1. Uninstall Longhorn
+    ...    2. Reinstall Longhorn with setting `system-managed-components-node-selector` set to
+    ...       kubernetes.io/hostname:<node-0> via custom defaultSettings at install time
+    ...       (helm: defaultSettings.systemManagedComponentsNodeSelector,
+    ...       manifest: system-managed-components-node-selector in default-setting.yaml)
+    ...    3. Wait for all CSI component pods (csi-attacher, csi-provisioner, csi-resizer,
+    ...       csi-snapshotter) only run on node 0
+    ...    4. Enable v2 data engine and wait for v1 and v2 instance manager pods only run on node 0
+    ...    5. Wait for engine image pod only run on node 0
+    ...    6. Set `system-managed-components-node-selector` to kubernetes.io/hostname:<node-1>
+    ...    7. Wait for all CSI component pods, v1 and v2 instance manager pods, and engine image
+    ...       pods only run on node 1
+    ...    8. Create and attach a v1 and a v2 volume, write and read data to check data integrity
+    ...    9. Uninstall and reinstall Longhorn with default settings to restore the test
+    ...       environment to the default one
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        Install Longhorn
+        ...    custom_cmd=yq -i '.defaultSettings.systemManagedComponentsNodeSelector = "kubernetes.io/hostname:${NODE_0}"' values.yaml
+    ELSE
+        ${manifest_cmd} =    Set Variable
+        ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}system-managed-components-node-selector: kubernetes.io/hostname:${NODE_0}" longhorn.yaml
+        Install Longhorn    custom_cmd=${manifest_cmd}
+    END
+    And Enable v2 data engine and add block disks    wait=${False}
+
+    FOR    ${app}    IN    csi-attacher    csi-provisioner    csi-resizer    csi-snapshotter
+        Run command and wait for output
+        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_0}
+        Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_1}
+        Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_2}
+    END
+
+    When Check v1 instance manager is running on node 0
+    Then Check v1 instance manager is not running on node 1
+    And Check v1 instance manager is not running on node 2
+    And Check v2 instance manager is running on node 0
+    And Check v2 instance manager is not running on node 1
+    And Check v2 instance manager is not running on node 2
+    And Run command and wait for output
+    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+    ...    ${NODE_0}
+    And Run command until output is absent
+    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+    ...    ${NODE_1}
+    And Run command until output is absent
+    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+    ...    ${NODE_2}
+
+    When Setting system-managed-components-node-selector is set to kubernetes.io/hostname:${NODE_1}
+    FOR    ${app}    IN    csi-attacher    csi-provisioner    csi-resizer    csi-snapshotter
+        Run command and wait for output
+        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_1}
+        Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_0}
+        Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_2}
+    END
+    And Check v1 instance manager is running on node 1
+    And Check v1 instance manager is not running on node 0
+    And Check v1 instance manager is not running on node 2
+    And Check v2 instance manager is running on node 1
+    And Check v2 instance manager is not running on node 0
+    And Check v2 instance manager is not running on node 2
+    And Run command and wait for output
+    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+    ...    ${NODE_1}
+    And Run command until output is absent
+    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+    ...    ${NODE_0}
+    And Run command until output is absent
+    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+    ...    ${NODE_2}
+
+    When Create volume 0 with    numberOfReplicas=1    dataEngine=v1
+    And Attach volume 0 to node 1
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    Then Check volume 0 data is intact
+
+    When Create volume 1 with    numberOfReplicas=1    dataEngine=v2
+    And Attach volume 1 to node 1
+    And Wait for volume 1 healthy
+    And Write data to volume 1
+    Then Check volume 1 data is intact
+
+    # Restore the test environment to the default state
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn

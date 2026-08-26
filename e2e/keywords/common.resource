@@ -112,6 +112,7 @@ Set disk path based on host provider and architecture
     END
 
 Enable v2 data engine and add block disks
+    [Arguments]    ${wait}=${True}
     set_disk_path_based_on_host_provider_and_architecture
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
@@ -119,7 +120,7 @@ Enable v2 data engine and add block disks
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
     END
 
 Init worker node variables
