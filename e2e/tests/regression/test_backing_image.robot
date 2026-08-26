@@ -163,6 +163,7 @@ Test backing image download to local
     And Check downloaded backing image bi data matches source backingimage
 
 Test Node ID Change During Backing Image Creation
+    [Tags]    service-restart
     [Documentation]    Validate node ID of backing image data source node changed when new node added
     ...    1. Delete longohorn node 0
     ...    2. Download a large backing image
@@ -171,17 +172,14 @@ Test Node ID Change During Backing Image Creation
     ...    5. No error log "but the pod became not ready" in longhorn manager log
     ...
     ...    Issue: https://github.com/longhorn/longhorn/issues/4887
-    When Get test start time
-    And Disable node 0 scheduling
-    And Evict node 0
-    And Delete Longhorn node 0
+    Given Get test start time
+    And Delete node 0
+    And Wait for Longhorn node 0 down
 
     When Create backing image bi-large    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    minNumberOfCopies=1
     And Download backing image bi-large    is_async=${True}
-    Then Add Longhorn node 0 back
+    Then Restart kubelet on node 0
     And Wait for Longhorn node 0 up
-    And Enable node 0 scheduling
-    And Unevict evicted nodes
 
     When Wait backing image bi-large download complete
     Then Check backing image bi-large download file checksum matches
