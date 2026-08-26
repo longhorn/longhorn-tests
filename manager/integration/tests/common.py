@@ -288,7 +288,7 @@ DEFAULT_TAGS = [
 ]
 
 INSTANCE_MANAGER_HOST_PATH_PREFIX = "/host"
-EXPANSION_SNAP_TMP_META_NAME_PATTERN = "volume-snap-expand-%s.img.meta.tmp"
+EXPANSION_SNAP_TMP_META_NAME_PATTERN = "volume-snap-expand-%s-%s.img.meta.tmp"
 
 DATA_SIZE_IN_MB_1 = 100
 DATA_SIZE_IN_MB_2 = 300
@@ -5066,7 +5066,7 @@ def fail_replica_expansion(client, api, volname, size, replicas=None):
 
     for r in replicas:
         tmp_meta_file_name = \
-            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % (size, volname)
         # os.path.join() cannot deal with the path containing "/"
         cmd = [
             '/bin/sh', '-c',
@@ -5096,7 +5096,7 @@ def fix_replica_expansion_failure(client, api, volname, size, replicas=None):
                 "otherwise the field r.instanceManagerName is empty")
 
         tmp_meta_file_name = \
-            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % (size, volname)
         tmp_meta_file_path = \
             INSTANCE_MANAGER_HOST_PATH_PREFIX + \
             r.dataPath + "/" + tmp_meta_file_name
