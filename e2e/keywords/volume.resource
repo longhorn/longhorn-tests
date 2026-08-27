@@ -247,6 +247,18 @@ Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches v
     ${other_checksum} =    get_volume_checksum_at_offset    ${other_volume_name}    ${offset_mb}    ${size_mb}
     Should Be Equal    ${checksum}    ${other_checksum}
 
+Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches recorded data of volume ${other_volume_id}
+    [Documentation]    Compare a data range against the checksum recorded when
+    ...    that range was written to a different volume.  Unlike the "matches
+    ...    volume" keyword this does not read the other volume, so it still works
+    ...    once that volume has been deleted — e.g. verifying a restored volume
+    ...    against the backed up volume it came from.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
+    ${actual_checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${other_volume_id}-offset-${offset_mb}
+    Should Be Equal    ${actual_checksum}    ${expected_checksum}
+
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
