@@ -407,9 +407,9 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     """
     def set_guarantee_cpu_setting(value):
         if DATA_ENGINE == "v1":
-            setting = '{{"v1":"{}","v2":"12"}}'.format(value)
+            setting = '{{"local":"1","v1":"{}","v2":"12"}}'.format(value)
         elif DATA_ENGINE == "v2":
-            setting = '{{"v1":"12","v2":"{}"}}'.format(value)
+            setting = '{{"local":"1","v1":"12","v2":"{}"}}'.format(value)
         return setting
     instance_managers = client.list_instance_manager()
 
@@ -1251,6 +1251,7 @@ def test_setting_replica_count_update_via_configmap(client, core_api, request): 
                                   [SETTING_DEFAULT_REPLICA_COUNT],
                                   [
                                       json.dumps({
+                                          "local": str(replica_count),
                                           "v1": str(replica_count),
                                           "v2": str(replica_count)
                                       }, separators=(',', ':'))
@@ -1262,6 +1263,7 @@ def test_setting_replica_count_update_via_configmap(client, core_api, request): 
                       [SETTING_DEFAULT_REPLICA_COUNT],
                       [
                           json.dumps({
+                              "local": str(replica_count),
                               "v1": str(replica_count),
                               "v2": str(replica_count)
                           }, separators=(',', ':'))
