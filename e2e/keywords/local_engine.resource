@@ -97,6 +97,25 @@ Clean up local engine test
         ...    ${storage_layout}
     END
 
+Create local engine volume ${volume_id} should be rejected
+    [Documentation]    Attempt to create a local data engine volume whose spec the
+    ...    admission webhook must reject, and confirm the rejection names the
+    ...    offending field.
+    ...
+    ...    The defaults describe a valid local volume, so each caller overrides
+    ...    exactly the one field under test. retry=False surfaces the webhook
+    ...    error instead of retrying a request that can never succeed.
+    [Arguments]    ${reason}    ${numberOfReplicas}=${1}    ${dataLocality}=strict-local
+    ...    ${accessMode}=RWO    ${migratable}=${False}    ${encrypted}=${False}
+    ...    ${backingImage}=${EMPTY}    ${frontend}=blockdev
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${err} =    Run Keyword And Expect Error    *
+    ...    create_volume    ${volume_name}    size=1Gi    dataEngine=local
+    ...    numberOfReplicas=${numberOfReplicas}    dataLocality=${dataLocality}
+    ...    accessMode=${accessMode}    migratable=${migratable}    encrypted=${encrypted}
+    ...    backingImage=${backingImage}    frontend=${frontend}    retry=${False}
+    Should Contain    ${err}    ${reason}
+
 Use local engine provisioning mode
     [Arguments]    ${mode}
     update_setting    local-data-engine-provisioning-mode    ${mode}
