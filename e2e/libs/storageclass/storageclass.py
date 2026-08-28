@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, diskSelector):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -34,6 +34,8 @@ class StorageClass():
                 manifest_dict['parameters']['dataEngine'] = dataEngine
             if nodeSelector:
                 manifest_dict['parameters']['nodeSelector'] = nodeSelector
+            if diskSelector:
+                manifest_dict['parameters']['diskSelector'] = diskSelector
 
             if encrypted == "true":
                 manifest_dict['parameters']['encrypted'] = encrypted
