@@ -30,7 +30,7 @@ class CRD(Base):
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True, dataLayout=None):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -75,6 +75,13 @@ class CRD(Base):
 
         if cloneMode:
             body["spec"]["cloneMode"] = cloneMode
+
+        if dataLayout:
+            layout = dict(dataLayout)
+            for int_field in ("dataChunks", "parityChunks", "stripSizeKB"):
+                if int_field in layout:
+                    layout[int_field] = int(layout[int_field])
+            body["spec"]["dataLayout"] = layout
 
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize

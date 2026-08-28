@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, fsType=None, dataLayout=None):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -70,6 +70,16 @@ class StorageClass():
 
             if backingImageDataSourceParameters:
                 manifest_dict['parameters']['backingImageDataSourceParameters'] = backingImageDataSourceParameters
+
+            if fsType:
+                manifest_dict['parameters']['fsType'] = fsType
+
+            if dataLayout:
+                # dataLayout is a nested config (e.g. {"type": "sharded", "mode": "erasureCoding",
+                # "dataChunks": 2, ...}), but StorageClass parameters must be flat key/value
+                # strings, so flatten it into dot-prefixed keys, e.g. dataLayout.type.
+                for key, value in dataLayout.items():
+                    manifest_dict['parameters'][f'dataLayout.{key}'] = str(value)
 
             self.api.create_storage_class(body=manifest_dict)
 
