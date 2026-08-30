@@ -49,3 +49,9 @@ DISK_UNSCHEDULABLE_KEEP_ROUNDS = 30
 
 DEFAULT_BLOCK_DISK_NAME = "block-disk"
 DEFAULT_FILESYSTEM_DISK_NAME_PREFIX = "default-disk"
+
+SPDK_SETUP_SCRIPT = "/usr/src/spdk/scripts/setup.sh"
+BDF_PATTERN = r"^[a-fA-F0-9]{4}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}\.[a-fA-F0-9]$"
+USERSPACE_PCI_DRIVERS = ["vfio_pci", "uio_pci_generic"]
+# What the SPDK setup script reports for a device that is bound to no driver.
+NO_PCI_DRIVER = "-"

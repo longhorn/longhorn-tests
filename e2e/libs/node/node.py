@@ -1,3 +1,4 @@
+import json
 import time
 import re
 import os
@@ -14,6 +15,8 @@ from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+from utility.utility import pod_exec
+from workload.pod import list_pods
 from node_exec import NodeExec
 
 class Node:
@@ -712,3 +715,80 @@ class Node:
         logging(f"Removing directory {dir_path} on node {node_name}")
         cmd = f"rm -rf {dir_path}"
         NodeExec(node_name).issue_cmd(cmd)
+
+    def is_bdf_disk_path(self, disk_path):
+        return re.match(constant.BDF_PATTERN, str(disk_path)) is not None
+
+    def get_v2_instance_manager_pod_name(self, node_name):
+        label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine=v2,longhorn.io/node={node_name}"
+        pods = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
+        running_pods = [pod for pod in pods if pod.status.phase == "Running" and pod.metadata.deletion_timestamp is None]
+        assert len(running_pods) > 0, f"Failed to find a running v2 instance manager pod on node {node_name}"
+        return running_pods[0].metadata.name
+
+    def get_disk_device_driver(self, node_name, bdf):
+        """Return the PCI driver the device is currently bound to, e.g. nvme or vfio-pci."""
+        pod_name = self.get_v2_instance_manager_pod_name(node_name)
+        output = pod_exec(pod_name, constant.LONGHORN_NAMESPACE, f"{constant.SPDK_SETUP_SCRIPT} disk-status {bdf}")
+        matched = re.search(r"\{.*\}", output, re.S)
+        assert matched, f"Failed to get the disk status of {bdf} on node {node_name}: {output}"
+        return json.loads(matched.group(0)).get("driver", "")
+
+    def is_disk_device_detached_from_kernel_driver(self, node_name, bdf):
+        """An interrupted bind leaves the device on a userspace driver, or on no
+        driver at all when the userspace bind failed after the kernel driver was
+        already released. Both states hide the block device from the kernel."""
+        driver = self.get_disk_device_driver(node_name, bdf)
+        return driver.replace("-", "_") in constant.USERSPACE_PCI_DRIVERS or \
+            driver in ("", constant.NO_PCI_DRIVER)
+
+    def bind_disk_device_to_userspace_driver(self, node_name, bdf):
+        """Simulate a disk creation that was interrupted after binding the device."""
+        pod_name = self.get_v2_instance_manager_pod_name(node_name)
+        logging(f"Binding device {bdf} on node {node_name} to a userspace PCI driver")
+        # The bind mode only rebinds the device, unlike the default config mode which
+        # also reallocates hugepages underneath the running SPDK target.
+        pod_exec(pod_name, constant.LONGHORN_NAMESPACE,
+                 f"PCI_ALLOWED={bdf} DRIVER_OVERRIDE=vfio-pci {constant.SPDK_SETUP_SCRIPT} bind")
+        self.wait_for_disk_device_detached_from_kernel_driver(node_name, bdf)
+
+    def unbind_disk_device_from_userspace_driver(self, node_name, bdf):
+        pod_name = self.get_v2_instance_manager_pod_name(node_name)
+        logging(f"Unbinding device {bdf} on node {node_name} from its userspace PCI driver")
+        pod_exec(pod_name, constant.LONGHORN_NAMESPACE, f"{constant.SPDK_SETUP_SCRIPT} unbind {bdf}")
+
+    def wait_for_disk_device_detached_from_kernel_driver(self, node_name, bdf):
+        for i in range(self.retry_count):
+            logging(f"Waiting for device {bdf} on node {node_name} detached from its kernel driver ... ({i})")
+            if self.is_disk_device_detached_from_kernel_driver(node_name, bdf):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Device {bdf} on node {node_name} is still driven by the kernel: {self.get_disk_device_driver(node_name, bdf)}"
+
+    def wait_for_disk_device_released(self, node_name, bdf):
+        for i in range(self.retry_count):
+            driver = self.get_disk_device_driver(node_name, bdf)
+            logging(f"Waiting for device {bdf} on node {node_name} released back to its kernel driver, current driver = {driver} ... ({i})")
+            if not self.is_disk_device_detached_from_kernel_driver(node_name, bdf):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Device {bdf} on node {node_name} is not driven by the kernel, current driver {self.get_disk_device_driver(node_name, bdf)}"
+
+    def is_disk_schedulable(self, node_name, disk_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        disk = node["disks"].get(disk_name)
+        if disk is None:
+            return False
+        conditions = disk["conditions"]
+        return conditions["Ready"]["status"] == "True" and conditions["Schedulable"]["status"] == "True"
+
+    def wait_for_disk_schedulable(self, node_name, disk_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for disk {disk_name} on node {node_name} ready and schedulable ... ({i})")
+            try:
+                if self.is_disk_schedulable(node_name, disk_name):
+                    return
+            except Exception as e:
+                logging(f"Getting disk {disk_name} on node {node_name} failed: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Disk {disk_name} on node {node_name} is not ready and schedulable: {get_longhorn_client().by_id_node(node_name)['disks']}"
