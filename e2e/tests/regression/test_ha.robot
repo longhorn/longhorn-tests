@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    HA Test Cases
 
-Test Tags    regression
+Test Tags    regression    ha
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
