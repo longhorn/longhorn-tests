@@ -3118,7 +3118,7 @@ The output of the command.</p></div>
 
     for r in replicas:
         tmp_meta_file_name = \
-            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % (size, volname)
         # os.path.join() cannot deal with the path containing &#34;/&#34;
         cmd = [
             &#39;/bin/sh&#39;, &#39;-c&#39;,
@@ -3323,7 +3323,7 @@ been completed successfully</p></div>
                 &#34;otherwise the field r.instanceManagerName is empty&#34;)
 
         tmp_meta_file_name = \
-            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % (size, volname)
         tmp_meta_file_path = \
             INSTANCE_MANAGER_HOST_PATH_PREFIX + \
             r.dataPath + &#34;/&#34; + tmp_meta_file_name
