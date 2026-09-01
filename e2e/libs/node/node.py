@@ -8,7 +8,6 @@ from robot.libraries.BuiltIn import BuiltIn
 from utility.constant import DISK_BEING_SYNCING
 from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.constant import DEFAULT_BLOCK_DISK_NAME
-from utility.constant import DEFAULT_FILESYSTEM_DISK_NAME_PREFIX
 import utility.constant as constant
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
@@ -18,7 +17,7 @@ from node_exec import NodeExec
 
 class Node:
 
-    DEFAULT_DISK_PATH = "/var/lib/longhorn"
+    DEFAULT_DISK_PATH = "/var/lib/longhorn/"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
 
     all_nodes = None
@@ -29,6 +28,18 @@ class Node:
         if not Node.all_nodes:
             self.init_node_list()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    @staticmethod
+    def _normalize_path(path):
+        # Disk paths may or may not have a trailing slash (e.g. "/var/lib/longhorn"
+        # vs "/var/lib/longhorn/"). Normalize by stripping any trailing slash(es)
+        # so path comparisons are reliable regardless of formatting.
+        if not path:
+            return path
+        return path.rstrip('/')
+
+    def _is_default_disk_path(self, path):
+        return self._normalize_path(path) == self._normalize_path(self.DEFAULT_DISK_PATH)
 
     def mount_disk(self, disk_name, node_name):
         mount_path = os.path.join(self.DEFAULT_DISK_PATH, disk_name)
@@ -107,7 +118,7 @@ class Node:
         # copy Longhorn RestObject into a normal Python dict
         # otherwise we got TypeError: 'RestObject' object does not support item assignment
         for disk_name, disk in node.disks.items():
-            allow_sched = DEFAULT_FILESYSTEM_DISK_NAME_PREFIX in disk_name or disk_name == DEFAULT_BLOCK_DISK_NAME
+            allow_sched = self._is_default_disk_path(disk.path) or disk_name == DEFAULT_BLOCK_DISK_NAME
             disks[disk_name] = {
                 "path": disk.path,
                 "diskType": disk.diskType,
@@ -115,7 +126,7 @@ class Node:
             }
 
         # add default back if not exist
-        if not any(self.DEFAULT_DISK_PATH in disk.get("path") for disk in disks.values()):
+        if not any(self._is_default_disk_path(disk.get("path")) for disk in disks.values()):
             logging(f"Default disk with path {self.DEFAULT_DISK_PATH} not found on node {node_name}, re-adding it")
 
             disks["default-disk"] = {
@@ -143,7 +154,7 @@ class Node:
 
         for disk_name, disk in iter(node.disks.items()):
             # do not disable block-disk if v2 data engine enabled
-            if DEFAULT_FILESYSTEM_DISK_NAME_PREFIX not in disk_name and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
+            if not self._is_default_disk_path(disk.path) and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disk.allowScheduling = False
                 logging(f"Disabling scheduling disk {disk_name} on node {node_name}")
             else:
@@ -155,7 +166,7 @@ class Node:
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
             # do not delete block-disk if v2 data engine enabled
-            if DEFAULT_FILESYSTEM_DISK_NAME_PREFIX in disk_name or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
+            if self._is_default_disk_path(disk.path) or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disks[disk_name] = disk
                 disk.allowScheduling = True
                 logging(f"Keeping disk {disk_name} on node {node_name}")
@@ -361,7 +372,7 @@ class Node:
         node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 disk.allowScheduling = allowScheduling
         self.update_disks(node_name, node.disks)
 
@@ -369,7 +380,7 @@ class Node:
         node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 disk.evictionRequested = evictionRequested
         self.update_disks(node_name, node.disks)
 
@@ -560,7 +571,7 @@ class Node:
     def get_default_file_system_disk_name(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 return disk_name
         assert False, f"no disk no {node_name} use disk path {self.DEFAULT_DISK_PATH}"
 
@@ -625,7 +636,7 @@ class Node:
 
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 logging(f"Deleting disk {disk_name} (path={disk.path}) from node {node_name}")
                 continue
             logging(f"Keeping disk {disk_name} (path={disk.path}) on node {node_name}")
@@ -635,7 +646,7 @@ class Node:
     def get_default_disk_uuid_on_node(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 return self.get_disk_uuid(node_name, disk_name)
         assert False, f"No disk is using path {self.DEFAULT_DISK_PATH}"
 
