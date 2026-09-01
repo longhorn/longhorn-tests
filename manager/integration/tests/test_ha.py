@@ -1186,7 +1186,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
         snapshots = dr_volume.snapshotList(volume=dr_volume_name)
         for snap in snapshots:
             if snap["name"] != "volume-head":
-                assert snap["name"] == "expand-" + str(expand_size1)
+                assert snap["name"] == "expand-" + str(expand_size1) + "-" + dr_volume_name # NOQA
                 assert not snap["usercreated"]
                 assert "volume-head" in snap["children"]
     else:
@@ -1224,7 +1224,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
         snapshots = dr_volume.snapshotList(volume=dr_volume_name)
         for snap in snapshots:
             if snap["name"] != "volume-head":
-                assert snap["name"] == "expand-" + str(expand_size2)
+                assert snap["name"] == "expand-" + str(expand_size2) + "-" + dr_volume_name # NOQA
                 assert not snap["usercreated"]
                 assert "volume-head" in snap["children"]
     else:
