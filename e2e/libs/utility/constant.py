@@ -43,7 +43,10 @@ LABEL_SELECTOR_CSI_PROVISIONER = "app=csi-provisioner"
 LABEL_SELECTOR_CSI_RESIZER = "app=csi-resizer"
 LABEL_SELECTOR_CSI_SNAPSHOTTER = "app=csi-snapshotter"
 LABEL_SELECTOR_DRIVER_DEPLOYER = "app=longhorn-driver-deployer"
+LABEL_SELECTOR_GLOBAL_MANAGER = "app=longhorn-global-manager"
 LABEL_SELECTOR_LONGHORN_UI = "app=longhorn-ui"
+
+GLOBAL_MANAGER_LEASE_NAME = "longhorn-global-manager"
 
 DISK_UNSCHEDULABLE_KEEP_ROUNDS = 30
 

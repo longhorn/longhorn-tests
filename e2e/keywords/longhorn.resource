@@ -18,6 +18,7 @@ Library             ../libs/keywords/engine_keywords.py
 ...    csi-snapshotter
 ...    longhorn-driver-deployer
 ...    longhorn-csi-plugin
+...    longhorn-global-manager
 ...    longhorn-manager
 ...    longhorn-ui
 
@@ -138,6 +139,14 @@ Delete ${engine_type} instance manager of deployment ${deployment_id} volume
 Wait for Longhorn components all running
     ${longhorn_namespace} =    get_longhorn_namespace
     wait_for_namespace_pods_running    ${longhorn_namespace}
+
+Get Longhorn global manager lease holder
+    ${holder} =    get_global_manager_lease_holder
+    RETURN    ${holder}
+
+Wait for Longhorn global manager lease holder changed from ${old_holder}
+    ${holder} =    wait_for_global_manager_lease_holder_changed    ${old_holder}
+    RETURN    ${holder}
 
 Install Longhorn stable version
     [Arguments]    &{config}
