@@ -2587,7 +2587,7 @@ if a nonexistent Pod is specified.</p>
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.delete_and_wait_pvc"><code class="name flex">
-<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name, retry_counts=150)</span>
+<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name, retry_counts=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7113,7 +7113,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_and_get_stable_pod"><code class="name flex">
-<span>def <span class="ident">wait_and_get_stable_pod</span></span>(<span>core_api,<br>pod_name,<br>namespace='default',<br>is_phase='Running',<br>timeout_cnt=150,<br>stable_retry=90)</span>
+<span>def <span class="ident">wait_and_get_stable_pod</span></span>(<span>core_api,<br>pod_name,<br>namespace='default',<br>is_phase='Running',<br>timeout_cnt=300,<br>stable_retry=90)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7253,7 +7253,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_delete_pvc"><code class="name flex">
-<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name, retry_counts=150)</span>
+<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name, retry_counts=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7818,7 +7818,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_cron_job_count"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_api, number, label='', retry_counts=150)</span>
+<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_api, number, label='', retry_counts=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7840,7 +7840,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_cron_job_create"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_api, label='', retry_counts=150)</span>
+<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_api, label='', retry_counts=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7863,7 +7863,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_cron_job_delete"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_api, label='', retry_counts=150)</span>
+<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_api, label='', retry_counts=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -8622,7 +8622,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_pods_volume_state"><code class="name flex">
-<span>def <span class="ident">wait_for_pods_volume_state</span></span>(<span>client, pod_list, field, value, retry_counts=150)</span>
+<span>def <span class="ident">wait_for_pods_volume_state</span></span>(<span>client, pod_list, field, value, retry_counts=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -8670,7 +8670,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_rebuild_complete"><code class="name flex">
-<span>def <span class="ident">wait_for_rebuild_complete</span></span>(<span>client, volume_name, retry_count=150)</span>
+<span>def <span class="ident">wait_for_rebuild_complete</span></span>(<span>client, volume_name, retry_count=300)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -8708,7 +8708,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_rebuild_start"><code class="name flex">
-<span>def <span class="ident">wait_for_rebuild_start</span></span>(<span>client, volume_name, retry_count=150, retry_interval=1)</span>
+<span>def <span class="ident">wait_for_rebuild_start</span></span>(<span>client, volume_name, retry_count=300, retry_interval=1)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -8818,7 +8818,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <div class="desc"></div>
 </dd>
 <dt id="tests.common.wait_for_replica_failed"><code class="name flex">
-<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name, retry_cnts=150, retry_ivl=1)</span>
+<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name, retry_cnts=300, retry_ivl=1)</span>
 </code></dt>
 <dd>
 <details class="source">
