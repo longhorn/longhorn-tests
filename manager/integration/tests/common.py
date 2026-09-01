@@ -4360,6 +4360,7 @@ def check_longhorn(core_api):
     ready = False
     has_engine_image = False
     has_driver_deployer = False
+    has_global_manager = False
     has_manager = False
     has_ui = False
     has_instance_manager = False
@@ -4381,6 +4382,9 @@ def check_longhorn(core_api):
                 elif labels.get('app', '') == 'longhorn-driver-deployer' \
                         and item.status.phase == "Running":
                     has_driver_deployer = True
+                elif labels.get('app', '') == 'longhorn-global-manager' \
+                        and item.status.phase == "Running":
+                    has_global_manager = True
                 elif labels.get('app', '') == 'longhorn-manager' \
                         and item.status.phase == "Running":
                     has_manager = True
@@ -4392,7 +4396,8 @@ def check_longhorn(core_api):
                         and item.status.phase == "Running":
                     has_instance_manager = True
 
-            if has_engine_image and has_driver_deployer and has_manager and \
+            if has_engine_image and has_driver_deployer and \
+                    has_global_manager and has_manager and \
                     has_ui and has_instance_manager and pod_running:
                 ready = True
                 break
