@@ -80,6 +80,7 @@ Test Longhorn Components Recovery
     And Delete Longhorn component instance-manager pod on node 1
     And Delete Longhorn Deployment longhorn-ui pod
     And Delete Longhorn Deployment longhorn-driver-deployer pod
+    And Delete Longhorn Deployment longhorn-global-manager pod
 
     Then Wait for Longhorn components all running
     And Wait for volume 0 healthy
@@ -195,3 +196,37 @@ Test Longhorn Dynamic Provisioned RWO Volume Recovery
     When Delete replica of deployment 0 volume on replica node
     And Wait until volume of deployment 0 replica rebuilding started on replica node
     Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
+
+Test Longhorn Global Manager Leader Failover
+    [Tags]    sharemanager
+    [Documentation]    -- Manual test plan --
+    ...                Test data setup:
+    ...                    Deploy Longhorn on a 3 nodes cluster.
+    ...                    Create a RWO volume using the Longhorn storage class(deployment 0)
+    ...
+    ...                    Write some data in the volume created and record the data.
+    ...                    Have the volume in attached state.
+    ...
+    ...                Test steps:
+    ...                    Delete the longhorn-global-manager leader pod and verify one of the standby pods takes over the lease.
+    ...                    Create a RWX volume using the Longhorn storage class(deployment 1) and verify it becomes ready under the new leader.
+    ...                    Delete the IM of the RWO volume and verify the workload remounts and recovers under the new leader.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Write 100 MB data to file data.txt in deployment 0
+
+    ${leader_pod} =    Get Longhorn global manager lease holder
+    ${global_manager_pods} =    get_longhorn_global_manager_pods
+    ${longhorn_namespace} =    get_longhorn_namespace
+    When delete_pod    ${leader_pod}    ${longhorn_namespace}
+    ${new_leader_pod} =    Wait for Longhorn global manager lease holder changed from ${leader_pod}
+    Then List Should Contain Value    ${global_manager_pods}    ${new_leader_pod}
+
+    When Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
+    And Create deployment 1 with persistentvolumeclaim 1
+    And Write 100 MB data to file data.txt in deployment 1
+    Then Check deployment 1 data in file data.txt is intact
+
+    Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
+    And Wait for Longhorn components all running
