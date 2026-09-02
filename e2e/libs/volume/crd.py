@@ -978,13 +978,14 @@ class CRD(Base):
 
     def check_volume_has_recurringjob(self, volume_name, job_name):
         logging(f"Checking volume {volume_name} has recurring job {job_name}")
+        jobs = []
         for i in range(self.retry_count):
             jobs = self.get_volume_recurringjobs(volume_name)
             if job_name in jobs:
                 return
-            logging(f"Failed to find recurring job {job_name} for volume {volume_name} ... ({i})")
+            logging(f"Waiting for volume {volume_name} recurring job {job_name}, current={jobs} ... ({i})")
             time.sleep(self.retry_interval)
-        assert False, f"Failed to find recurring job {job_name} for volume {volume_name}"
+        assert False, f"Timed out waiting for recurring job {job_name} on volume {volume_name}, current={jobs}"
 
     def get_volume_recurringjob_groups(self, volume_name):
         cmd = f"kubectl get volumes -n {constant.LONGHORN_NAMESPACE} {volume_name} -o yaml"
@@ -995,13 +996,14 @@ class CRD(Base):
 
     def check_volume_has_recurringjob_group(self, volume_name, job_group_name):
         logging(f"Checking volume {volume_name} has recurring job group {job_group_name}")
+        job_groups = []
         for i in range(self.retry_count):
             job_groups = self.get_volume_recurringjob_groups(volume_name)
             if job_group_name in job_groups:
                 return
-            logging(f"Failed to find recurring job group {job_group_name} for volume {volume_name} ... ({i})")
+            logging(f"Waiting for volume {volume_name} recurring job group {job_group_name}, current={job_groups} ... ({i})")
             time.sleep(self.retry_interval)
-        assert False, f"Failed to find recurring job group {job_group_name} for volume {volume_name}"
+        assert False, f"Timed out waiting for recurring job group {job_group_name} on volume {volume_name}, current={job_groups}"
 
     def get_state(self, volume_name):
         """

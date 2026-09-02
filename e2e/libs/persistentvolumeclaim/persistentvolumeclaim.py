@@ -32,6 +32,7 @@ class PersistentVolumeClaim():
             # add label
             manifest_dict['metadata']['labels'][LABEL_TEST] = LABEL_TEST_VALUE
             if labels:
+                assert isinstance(labels, dict), f"labels must be a dict, got {type(labels).__name__}: {labels!r}"
                 manifest_dict['metadata']['labels'].update(labels)
 
             # correct storageclass name
