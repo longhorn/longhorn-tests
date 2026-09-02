@@ -130,7 +130,7 @@ resource "null_resource" "registration_controlplane" {
     connection {
       type     = "ssh"
       user     = "ec2-user"
-      host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
+      host     = aws_eip.lh_aws_eip_controlplane[count.index].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
