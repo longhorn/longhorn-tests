@@ -128,3 +128,11 @@ Wait for persistentvolumeclaim ${claim_id} status to be ${phase}
     wait_for_pvc_status_phase    ${claim_name}    ${phase}
 
 
+
+Label persistentvolumeclaim ${claim_id} with ${label_key} ${label_value}
+    ${claim_name} =     generate_name_with_suffix    claim    ${claim_id}
+    set_persistentvolumeclaim_label    ${claim_name}    ${label_key}    ${label_value}
+
+Check persistentvolumeclaim ${claim_id} has label ${label_key} ${label_value}
+    ${claim_name} =     generate_name_with_suffix    claim    ${claim_id}
+    check_persistentvolumeclaim_has_label    ${claim_name}    ${label_key}    ${label_value}
