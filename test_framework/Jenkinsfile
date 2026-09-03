@@ -36,6 +36,8 @@ def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 def NETWORK_STACK = params.NETWORK_STACK ? params.NETWORK_STACK : "ipv4"
 def CNI = params.CNI ? params.CNI : "default"
 
+def BLOCK_DEV_PATH = params.BLOCK_DEV_PATH ? params.BLOCK_DEV_PATH : ""
+
 node {
 
     withCredentials([
@@ -148,6 +150,7 @@ node {
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
                                        --env RUN_V2_TEST=${RUN_V2_TEST} \
+                                       --env BLOCK_DEV_PATH=${BLOCK_DEV_PATH} \
                                        --env DISABLE_V1_DATA_ENGINE=${DISABLE_V1_DATA_ENGINE} \
                                        --env RUN_V2_INTERRUPT_MODE=${RUN_V2_INTERRUPT_MODE} \
                                        --env CUSTOM_TEST_OPTIONS="${CUSTOM_TEST_OPTIONS}" \
