@@ -23,6 +23,15 @@ Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Keywords ***
+Verify data-engine-cpu-mask ${input} normalizes to ${expected}
+    update_setting    data-engine-cpu-mask    ${input}    retry=False
+    ${actual} =    get_setting    data-engine-cpu-mask
+    Should Be Equal    ${actual}    ${expected}
+
+Teardown Data Engine Cpu Mask Setting Test
+    update_setting    data-engine-cpu-mask    {"v2":"0x3"}    retry=False
+    Cleanup test resources
+
 Verify TooManySnapshots Condition After Creating Snapshots
     [Documentation]    Create a volume, create snapshots up to the expected warning threshold,
     ...                verify TooManySnapshots condition becomes True with the expected threshold
@@ -523,6 +532,26 @@ Test Engine Image Liveness Probe Upgrade With Custom Values
     ...    timeout=15
     ...    period=30
     ...    failure_threshold=10
+
+Test Data Engine Cpu Mask Setting
+    [Documentation]    Verify that data-engine-cpu-mask accepts valid CPU specifications and
+    ...                normalizes them to hex bitmask format, and that invalid values are rejected.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13166
+    [Teardown]    Teardown Data Engine Cpu Mask Setting Test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates on v2 data engine
+    END
+
+    Given Verify data-engine-cpu-mask 0xff normalizes to {"v2":"0xff"}
+    And Verify data-engine-cpu-mask 0-3 normalizes to {"v2":"0xf"}
+    And Verify data-engine-cpu-mask 1-3,5,7 normalizes to {"v2":"0xae"}
+    And Verify data-engine-cpu-mask (0-7) normalizes to {"v2":"0xff"}
+    And Verify data-engine-cpu-mask (1-3),(5) normalizes to {"v2":"0x2e"}
+
+    Then Set setting data-engine-cpu-mask to abc will fail
+    And Set setting data-engine-cpu-mask to 1-3-5 will fail
+    And Set setting data-engine-cpu-mask to ${SPACE * 3} will fail
 
 Test Longhorn UI PodDisruptionBudget
     [Tags]    setting    uninstall    helm
