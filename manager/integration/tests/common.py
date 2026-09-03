@@ -91,18 +91,18 @@ ISCSI_PROCESS = "iscsid"
 if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.environ.get("DISTRO") == "talos":
         # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
-        BLOCK_DEV_PATH = "/dev/nvme1n1"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
     elif os.uname().machine == "x86_64":
-        BLOCK_DEV_PATH = "/dev/xvdh"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
-        BLOCK_DEV_PATH = "/dev/nvme1n1"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
-    BLOCK_DEV_PATH = "/dev/vdc"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
-    BLOCK_DEV_PATH = "/dev/vdb"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/vdb"
 else:
-    BLOCK_DEV_PATH = "/dev/nvme1n1"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"

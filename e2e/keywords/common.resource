@@ -91,20 +91,24 @@ Get test start time
     Set Test Variable    ${test_start_time}
 
 Set disk path based on host provider and architecture
-    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
-    ${ARCH}=    Get Environment Variable    ARCH    amd64
-    IF    "${HOST_PROVIDER}" == "aws"
-        IF    "${ARCH}" == "amd64"
-            Set Test Variable    ${DISK_PATH}    /dev/xvdh
-        ELSE IF    "${ARCH}" == "arm64"
-            # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
-            # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
-            Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+    ${DISK_PATH}=    Get Environment Variable    BLOCK_DEV_PATH    ${EMPTY}
+    Set Test Variable    ${DISK_PATH}
+    IF    $DISK_PATH == ""
+        ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
+        ${ARCH}=    Get Environment Variable    ARCH    amd64
+        IF    "${HOST_PROVIDER}" == "aws"
+            IF    "${ARCH}" == "amd64"
+                Set Test Variable    ${DISK_PATH}    /dev/xvdh
+            ELSE IF    "${ARCH}" == "arm64"
+                # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
+                # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
+                Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+            END
+        ELSE IF    '${HOST_PROVIDER}' == "harvester"
+            Set Test Variable    ${DISK_PATH}    /dev/vdc
+        ELSE IF    '${HOST_PROVIDER}' == "vagrant"
+            Set Test Variable    ${DISK_PATH}    /dev/vdb
         END
-    ELSE IF    '${HOST_PROVIDER}' == "harvester"
-        Set Test Variable    ${DISK_PATH}    /dev/vdc
-    ELSE IF    '${HOST_PROVIDER}' == "vagrant"
-        Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
 Enable v2 data engine and add block disks
