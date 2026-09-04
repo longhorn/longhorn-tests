@@ -127,10 +127,6 @@ Test Concurrent CSI Volume Snapshot Creation
     FOR    ${i}    IN RANGE    0    10
         And Create csi volume snapshot vs-0-${i} for persistentvolumeclaim pvc-0
         And Create csi volume snapshot vs-1-${i} for persistentvolumeclaim pvc-1
-        And Sleep    5
-    END
-
-    FOR    ${i}    IN RANGE    0    10
         Then Wait for csi volume snapshot vs-0-${i} to be ready
         And Wait for csi volume snapshot vs-1-${i} to be ready
     END
