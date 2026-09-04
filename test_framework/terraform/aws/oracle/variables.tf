@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "10.0"
+  default     = "10.2"
 }
 
 variable "aws_ami_oraclelinux_account_number" {

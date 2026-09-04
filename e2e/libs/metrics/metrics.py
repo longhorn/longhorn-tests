@@ -192,8 +192,20 @@ def get_longhorn_components_memory_cpu_usage():
     return dict
 
 
-def is_high_resource_consumption(name, res, new_val, old_val):
-    criteria = 1000 if res == "memory" else 2000
+def get_v2_instance_manager_cpu_threshold():
+    cmd = f"kubectl get settings data-engine-cpu-mask -n {get_longhorn_namespace()} -o jsonpath='{{.value}}'"
+    try:
+        output = subprocess_exec_cmd(cmd)
+        mask_str = json.loads(output).get("v2", "0x1")
+        num_cpus = bin(int(mask_str, 16)).count("1")
+        return num_cpus * 1000 + 1000
+    except Exception:
+        return 2000
+
+
+def is_high_resource_consumption(name, res, new_val, old_val, criteria=None):
+    if criteria is None:
+        criteria = 1000 if res == "memory" else 2000
     unit = "mi" if res == "memory" else "m"
     if new_val > criteria:
         logging(f"Unexpected high {res} consumption for {name}: {new_val}{unit}. At the beginning of the test, it's only {old_val}{unit}")
@@ -217,7 +229,7 @@ def check_longhorn_components_memory_cpu_usage():
             old_usage["backing-image-manager"]["cpu"])
         high_usage = high_usage or is_high_resource_consumption("backing-image-manager", "memory",
             usage["backing-image-manager"]["memory"],
-            cold_usage["backing-image-manager"]["memory"])
+            old_usage["backing-image-manager"]["memory"])
 
     if "csi-attacher" in usage and "csi-attacher" in old_usage:
         high_usage = high_usage or is_high_resource_consumption("csi-attacher", "cpu",
@@ -270,7 +282,8 @@ def check_longhorn_components_memory_cpu_usage():
     if "instance-manager-v2" in usage and "instance-manager-v2" in old_usage:
         high_usage = high_usage or is_high_resource_consumption("instance-manager-v2", "cpu",
             usage["instance-manager-v2"]["cpu"],
-            old_usage["instance-manager-v2"]["cpu"])
+            old_usage["instance-manager-v2"]["cpu"],
+            get_v2_instance_manager_cpu_threshold())
         high_usage = high_usage or is_high_resource_consumption("instance-manager-v2", "memory",
             usage["instance-manager-v2"]["memory"],
             old_usage["instance-manager-v2"]["memory"])
