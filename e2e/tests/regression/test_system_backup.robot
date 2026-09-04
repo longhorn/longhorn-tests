@@ -61,7 +61,7 @@ Test Create System Backup With DR Volume
     And Wait for volume 0 healthy
     And Write data to volume 0
     And Create backup 0 for volume 0
-    And Check snapshot for backup 0 of volume 0 exists True
+    And Check snapshot for backup 0 of volume 0 exists
 
     When Create DR volume 1 from backup 0    dataEngine=${DATA_ENGINE}
     And Create system backup 0
