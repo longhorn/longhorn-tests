@@ -97,7 +97,9 @@ Set disk path based on host provider and architecture
         IF    "${ARCH}" == "amd64"
             Set Test Variable    ${DISK_PATH}    /dev/xvdh
         ELSE IF    "${ARCH}" == "arm64"
-            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+            # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
+            # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
+            Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
         END
     ELSE IF    '${HOST_PROVIDER}' == "harvester"
         Set Test Variable    ${DISK_PATH}    /dev/vdc
@@ -134,10 +136,14 @@ Cleanup test resources
     set_backupstore
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
+        Run keyword And Ignore Error    wait_for_node_ready    ${powered_off_node}
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
-    Run keyword And Ignore Error    reboot_node_by_name    ${deleted_node}
-    Run keyword And Ignore Error    wait_for_node_ready    ${deleted_node}
+    FOR    ${deleted_node}    IN    @{deleted_nodes}
+        Run keyword And Ignore Error    reboot_node_by_name    ${deleted_node}
+        Run keyword And Ignore Error    wait_for_node_ready    ${deleted_node}
+        Remove Values From List    ${deleted_nodes}    ${deleted_node}
+    END
     uncordon_all_nodes
     cleanup_node_taints
     cleanup_node_labels

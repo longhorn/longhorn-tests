@@ -172,12 +172,12 @@ Test Cleanup Snapshot With The Global Setting After Backup Completed
 
     When Write data 0 to volume 0
     And Create backup 0 for volume 0
-    And Check snapshot for backup 0 of volume 0 exists True
+    And Check snapshot for backup 0 of volume 0 exists
 
     When Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to true
     And Write data 1 to volume 0
     And Create backup 1 for volume 0
-    And Check snapshot for backup 1 of volume 0 exists False
+    And Check snapshot for backup 1 of volume 0 not exist
     And Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to false
 
 Test Backupstore With Existing Backups
@@ -231,6 +231,7 @@ Test DR Volume Backup Block Size
     And DR volume 1 setting backupBlockSize should be 16Mi
 
 SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
+    [Tags]    node-delete
     [Documentation]
     ...    Verify snapshot backup goes to the correct instance-manager pod.
     ...
@@ -257,9 +258,6 @@ SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
     And Create backup 1 for volume 1
     And Verify v2 instance manager log on node 0 contain backup after test start
     And Verify v1 instance manager log on node 0 not contain backup after test start
-    And Reboot node 1
-    And Reboot node 2
-    And Wait for longhorn ready
 
 Test Deleting Backup While Volume Restoration
     [Documentation]

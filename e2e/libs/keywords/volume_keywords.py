@@ -35,12 +35,16 @@ class volume_keywords:
         volumes = self.volume.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
 
         logging(f'Cleaning up {len(volumes)} volumes')
-        for volume in volumes:
+        # Delete clone volumes (spec.dataSource is set) before source volumes to
+        # avoid the webhook blocking source deletion while linked-clone children exist.
+        clone_volumes = [v for v in volumes if v.get('spec', {}).get('dataSource', '')]
+        source_volumes = [v for v in volumes if not v.get('spec', {}).get('dataSource', '')]
+        for volume in clone_volumes + source_volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", retry=True):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", cloneMode="", retry=True):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry)
 
     def delete_volume(self, volume_name, wait=True):
         logging(f'Deleting volume {volume_name}')
@@ -156,9 +160,17 @@ class volume_keywords:
         logging(f'Writing {size_in_mb} MB random data to volume {volume_name}')
         return self.volume.write_random_data(volume_name, size_in_mb, data_id)
 
-    def keep_writing_data(self, volume_name):
-        logging(f'Keep writing data to volume {volume_name}')
-        self.volume.keep_writing_data(volume_name)
+    def write_volume_data_at_offset(self, volume_name, offset_mb, size_mb):
+        logging(f'Writing {size_mb} MB random data to volume {volume_name} at offset {offset_mb} MB')
+        return self.volume.write_data_at_offset(volume_name, int(size_mb), int(offset_mb))
+
+    def get_volume_checksum_at_offset(self, volume_name, offset_mb, size_mb):
+        logging(f'Getting checksum of {size_mb} MB region of volume {volume_name} at offset {offset_mb} MB')
+        return self.volume.get_checksum_at_offset(volume_name, int(offset_mb), int(size_mb))
+
+    def keep_writing_data(self, volume_name, size="256Mi"):
+        logging(f'Keep writing data to volume {volume_name} with size {size}')
+        self.volume.keep_writing_data(volume_name, size)
 
     def write_volume_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         logging(f'Writing scattered data to volume {volume_name} with fio (size={size}, bs={bs}, ratio={ratio})')
@@ -360,6 +372,34 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
 
+    def wait_for_all_replicas_healthy_at(self, volume_name):
+        """Wait until every active, non-failed, scheduled replica has healthyAt set.
+
+        This is a stronger guarantee than wait_for_volume_healthy: robustness can
+        flip to 'healthy' with a stale snapshot of the engine state (before a
+        deletion propagates), leaving newly-created replacement replicas without
+        healthyAt.  The linked-clone scheduler requires healthyAt != '' on source
+        replicas, so we must confirm this before creating a linked clone.
+        """
+        for i in range(self.retry_count):
+            try:
+                replicas = self.replica.get(volume_name, "")
+                candidates = [
+                    r for r in replicas
+                    if r['spec'].get('nodeID', '') != ''
+                    and r['spec'].get('failedAt', '') == ''
+                    and r['spec'].get('active', True)
+                ]
+                if candidates and all(r['spec'].get('healthyAt', '') != '' for r in candidates):
+                    logging(f"All {len(candidates)} replicas of {volume_name} have healthyAt set")
+                    return
+                logging(f"Waiting for all replicas of {volume_name} to have healthyAt set ({i}): "
+                        f"{[(r['metadata']['name'], r['spec'].get('healthyAt', '')) for r in candidates]}")
+            except Exception as e:
+                logging(f"Error checking replicas of {volume_name}: {e}")
+            time.sleep(self.retry_interval)
+        raise AssertionError(f"Timed out waiting for all replicas of {volume_name} to have healthyAt set")
+
     def wait_for_volume_attaching(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be in attaching')
         self.volume.wait_for_volume_attaching(volume_name)
@@ -374,6 +414,10 @@ class volume_keywords:
 
     def wait_for_volume_condition(self, volume_name, condition_name, condition_status, reason=""):
         self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)
+
+    def wait_for_volume_clone_status(self, volume_name, desired_state):
+        logging(f'Waiting for volume {volume_name} clone status to be {desired_state}')
+        self.volume.wait_for_volume_clone_status(volume_name, desired_state)
 
     def wait_for_volume_clone_status_completed(self, volume_name):
         logging(f'Waiting for volume {volume_name} clone status to be copy-completed-awaiting-healthy')

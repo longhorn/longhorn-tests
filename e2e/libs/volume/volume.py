@@ -6,6 +6,8 @@ from volume.base import Base
 from volume.crd import CRD
 from volume.rest import Rest
 
+from utility.utility import convert_size_to_bytes
+
 
 class Volume(Base):
 
@@ -17,8 +19,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, retry)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry)
 
     def delete(self, volume_name, wait):
         return self.volume.delete(volume_name, wait)
@@ -123,14 +125,21 @@ class Volume(Base):
     def write_random_data(self, volume_name, size, data_id):
         return self.volume.write_random_data(volume_name, size, data_id)
 
+    def write_data_at_offset(self, volume_name, size_mb, offset_mb):
+        return self.volume.write_data_at_offset(volume_name, size_mb, offset_mb)
+
+    def get_checksum_at_offset(self, volume_name, offset_mb, size_mb):
+        return self.volume.get_checksum_at_offset(volume_name, offset_mb, size_mb)
+
     def prefill_with_fio(self, volume_name, size):
         return self.volume.prefill_with_fio(volume_name, size)
 
     def write_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         return self.volume.write_scattered_data_with_fio(volume_name, size, bs, ratio)
 
-    def keep_writing_data(self, volume_name):
-        return self.volume.keep_writing_data(volume_name, 256)
+    def keep_writing_data(self, volume_name, size="256Mi"):
+        size_in_mb = convert_size_to_bytes(size) // (1024 * 1024)
+        return self.volume.keep_writing_data(volume_name, size_in_mb)
 
     def delete_replica(self, volume_name, node_name):
         return self.volume.delete_replica(volume_name, node_name)
