@@ -123,6 +123,10 @@ Wait for volume ${volume_id} snapshot ${snapshot_id} checksum to be calculated
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_snapshot_checksum_to_be_created    ${volume_name}    ${snapshot_id}
 
+Wait for volume ${volume_id} to have ${count} system generated snapshots
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_system_generated_snapshot_count    ${volume_name}    ${count}
+
 Wait for snapshot ${snapshot_id} of ${workload_kind} ${workload_id} volume ready
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
