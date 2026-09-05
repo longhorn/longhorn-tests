@@ -197,3 +197,36 @@ class io_keywords:
         cmd = f"wipefs -a {block_device_path}"
         NodeExec(node_name).issue_cmd(cmd)
         logging(f"Successfully wiped signatures from {block_device_path}")
+
+    def get_block_device_from_bdf(self, bdf, node_name, timeout=60):
+        """
+        After SPDK releases a NVMe device (identified by BDF), wait for the Linux
+        nvme driver to rebind and return the block device path via sysfs.
+        Returns a path like /dev/nvme1n1.
+
+        Uses reverse lookup (/sys/block/nvme* -> device symlink) rather than
+        the forward path (/sys/bus/pci/devices/<BDF>/nvme/*/block/) because the
+        'block/' intermediate directory is absent on newer kernels; the namespace
+        device (nvme2n1) appears directly under the controller directory.
+        """
+        logging(f"Waiting for block device for BDF {bdf} on node {node_name}")
+
+        cmd = (
+            f"for dev in /sys/block/nvme*n*; do "
+            f"  readlink -f \"${{dev}}/device\" 2>/dev/null | grep -q '{bdf}' "
+            f"    && basename \"${{dev}}\" && break; "
+            f"done"
+        )
+
+        start = time.time()
+        while time.time() - start < timeout:
+            result = NodeExec(node_name).issue_cmd(cmd)
+            if result and result.strip():
+                dev_name = result.strip().split()[0]
+                block_dev = f"/dev/{dev_name}"
+                logging(f"Found block device {block_dev} for BDF {bdf}")
+                return block_dev
+            logging(f"Block device for BDF {bdf} not yet available, retrying...")
+            time.sleep(3)
+
+        raise Exception(f"Timeout waiting for block device for BDF {bdf} on node {node_name}")
