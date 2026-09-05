@@ -233,6 +233,94 @@ class linked_clone_keywords:
             f"linked-clone-source-snapshot label not set on {clone_volume_name} " \
             f"after {self.retry_count} retries"
 
+    # -------------------------------------------------------------------------
+    # Backup / restore of a linked-clone volume
+    # -------------------------------------------------------------------------
+
+    def wait_for_backup_volume_linked_clone_source(self, volume_name,
+                                                   expected_src_volume_name,
+                                                   expected_snapshot_name):
+        """Assert the BackupVolume CR of volume_name records the given
+        linked-clone source volume and snapshot.
+
+        Retried because the backup_volume_controller only picks the values up on
+        its next backup volume sync.
+        """
+        for _ in range(self.retry_count):
+            bv = self._get_backup_volume_cr(volume_name)
+            if bv is not None:
+                status = bv.get("status", {}) or {}
+                src_volume = status.get("linkedCloneSourceVolume", "")
+                src_snapshot = status.get("linkedCloneSourceSnapshot", "")
+                if src_volume != "" and src_snapshot != "":
+                    assert src_volume == expected_src_volume_name, (
+                        f"BackupVolume of {volume_name} records linked-clone source "
+                        f"volume {src_volume!r}, expected {expected_src_volume_name!r}"
+                    )
+                    assert src_snapshot == expected_snapshot_name, (
+                        f"BackupVolume of {volume_name} records linked-clone source "
+                        f"snapshot {src_snapshot!r}, expected {expected_snapshot_name!r}"
+                    )
+                    logging(f"BackupVolume of {volume_name} records linked-clone "
+                            f"source {src_volume}/{src_snapshot}")
+                    return
+            time.sleep(self.retry_interval)
+
+        bv = self._get_backup_volume_cr(volume_name)
+        actual = (bv or {}).get("status", {}) if bv else "no BackupVolume CR"
+        assert False, (
+            f"BackupVolume of {volume_name} never recorded a linked-clone source "
+            f"(expected {expected_src_volume_name}/{expected_snapshot_name}), "
+            f"last seen status: {actual}"
+        )
+
+    def _get_backup_volume_cr(self, volume_name):
+        """Return the BackupVolume CR whose spec.volumeName is volume_name.
+
+        The CR name is generated, so the volume has to be matched on the spec
+        field rather than looked up by name.
+        """
+        try:
+            bvs = self.obj_api.list_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace=constant.LONGHORN_NAMESPACE,
+                plural="backupvolumes",
+            )
+        except Exception as e:
+            logging(f"Failed to list backupvolumes: {e}")
+            return None
+
+        for bv in bvs.get("items", []):
+            if bv.get("spec", {}).get("volumeName", "") == volume_name:
+                return bv
+        return None
+
+    def verify_volume_is_linked_clone_of(self, volume_name, expected_src_volume_name,
+                                         expected_snapshot_name):
+        """Assert spec.cloneMode and spec.dataSource identify the volume as a
+        linked clone of the given source volume and snapshot.
+        """
+        volume = self.volume.get(volume_name)
+        spec = volume.get("spec", {})
+
+        clone_mode = spec.get("cloneMode", "")
+        assert clone_mode == "linked-clone", (
+            f"Volume {volume_name} has cloneMode {clone_mode!r}, "
+            f"expected 'linked-clone'"
+        )
+
+        data_source = spec.get("dataSource", "")
+        expected_data_source = \
+            f"snap://{expected_src_volume_name}/{expected_snapshot_name}"
+        assert data_source == expected_data_source, (
+            f"Volume {volume_name} has dataSource {data_source!r}, "
+            f"expected {expected_data_source!r}"
+        )
+
+        logging(f"Volume {volume_name} is a linked clone of "
+                f"{expected_src_volume_name}/{expected_snapshot_name}")
+
     def verify_all_src_replicas_referenced_by_clone(self, src_volume_name,
                                                     clone_volume_name):
         """Assert every remaining src replica is referenced by at least one
