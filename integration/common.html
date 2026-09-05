@@ -1518,8 +1518,11 @@ A new CoreV1API Instance.</p></div>
             exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
+            wait_crashed = wait_for_replica_failed
+            if DATA_ENGINE == &#34;v2&#34;:
+                wait_crashed = wait_for_replica_crashed
             thread = create_assert_error_check_thread(
-                wait_for_replica_failed,
+                wait_crashed,
                 client, volname, r[&#39;name&#39;], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
@@ -8772,6 +8775,47 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_replica_crashed"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_crashed</span></span>(<span>client, volname, replica_name, retry_cnts=300, retry_ivl=1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_replica_crashed(client, volname, replica_name,
+                             retry_cnts=RETRY_COUNTS,
+                             retry_ivl=RETRY_INTERVAL):
+    # A crashed v2 replica keeps its instance registered in the instance
+    # manager and gets restarted instead of entering the failed state, so it
+    # never satisfies wait_for_replica_failed. Wait for the engine to register
+    # the crash instead. The engine only notices through the NVMe-oF
+    # fast_io_fail/ctrlr_loss timeouts, so this can take over ten seconds.
+    crashed = False
+    debug_replica = None
+
+    for i in range(retry_cnts):
+        volume = client.by_id_volume(volname)
+        debug_replica = None
+        for r in volume.replicas:
+            if r[&#39;name&#39;] == replica_name:
+                debug_replica = r
+                break
+
+        if debug_replica is None or \
+                debug_replica[&#39;failedAt&#39;] != &#34;&#34; or \
+                not debug_replica[&#39;running&#39;] or \
+                debug_replica.mode == &#34;ERR&#34;:
+            crashed = True
+            break
+        time.sleep(retry_ivl)
+
+    assert crashed, &#34;Vol({}), Replica({}): {}&#34;.format(
+        volname, replica_name, debug_replica
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_replica_deleted"><code class="name flex">
 <span>def <span class="ident">wait_for_replica_deleted</span></span>(<span>client, volume_name, replica_name)</span>
 </code></dt>
@@ -10769,6 +10813,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_rebuild_start" href="#tests.common.wait_for_rebuild_start">wait_for_rebuild_start</a></code></li>
 <li><code><a title="tests.common.wait_for_recurring_jobs_cleanup" href="#tests.common.wait_for_recurring_jobs_cleanup">wait_for_recurring_jobs_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_count" href="#tests.common.wait_for_replica_count">wait_for_replica_count</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_crashed" href="#tests.common.wait_for_replica_crashed">wait_for_replica_crashed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_deleted" href="#tests.common.wait_for_replica_deleted">wait_for_replica_deleted</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_directory" href="#tests.common.wait_for_replica_directory">wait_for_replica_directory</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
