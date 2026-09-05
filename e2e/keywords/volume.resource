@@ -923,4 +923,3 @@ Volume ${volume_id} migrationNodeID should be set to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_volume_setting    ${volume_name}    migrationNodeID    ${node_name}
-

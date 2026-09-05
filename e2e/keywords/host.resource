@@ -89,9 +89,10 @@ Power on node ${node_id}
     Remove Values From List    ${powered_off_nodes}    ${powered_on_node}
 
 Power off node ${node_id}
+    [Arguments]    &{config}
     ${powered_off_node} =     get_node_by_index    ${node_id}
     Append to list      ${powered_off_nodes}     ${powered_off_node}
-    power_off_node_by_name    ${powered_off_node}
+    power_off_node_by_name    ${powered_off_node}    &{config}
 
 Create vm snapshot on node ${node_id}
     ${node_name} =     get_node_by_index    ${node_id}
