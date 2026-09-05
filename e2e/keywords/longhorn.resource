@@ -253,23 +253,12 @@ Any ${label_selector} Pods Log Should Not Have ${expect_log} After Test Start
     verify_pods_log_after_time_not_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
 Delete Longhorn node ${node_id}
-    # Taint the node and delete nodes.longhorn.io instead of deleting the 
-    # entire Kubernetes node, thereford we can bring the Longhorn node back 
-    # without rebooting the machine by untaint command.
     ${node_name} =    get_node_by_index    ${node_id}
-    execute_command
-    ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute
-    wait_for_longhorn_node_down    ${node_name}
-    execute_command_and_wait_for_output
-    ...    kubectl -n longhorn-system delete nodes.longhorn.io ${node_name}
-    ...    node.longhorn.io "${node_name}" deleted
+    delete_longhorn_node    ${node_name}
 
-Add Longhorn node ${node_id} back
-    # Remove the taint to bring the Longhorn node back. 
-    # "Delete Longhorn node ${node_id}" must be executed first.
+Delete Longhorn node ${node_id} should fail
     ${node_name} =    get_node_by_index    ${node_id}
-    execute_command
-    ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute-
+    Run Keyword And Expect Error    *    delete_longhorn_node    ${node_name}
 
 Verify ${engine_type} instance manager log on node ${node_id} contain ${expect_log} after test start
     ${node_name} =    get_node_by_index    ${node_id}

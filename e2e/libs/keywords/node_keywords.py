@@ -176,3 +176,6 @@ class node_keywords:
 
     def remove_dir(self, dir_path, node_name):
         self.node.remove_dir(dir_path, node_name)
+
+    def delete_longhorn_node(self, node_name):
+        self.node.delete_node(node_name)
