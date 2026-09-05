@@ -907,7 +907,7 @@ class CRD(Base):
             try:
                 volume = self.get(volume_name)
                 spec = volume['spec']
-                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit", "staleReplicaTimeout"]:
+                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit", "staleReplicaTimeout", "nvmeTcpNrIoQueues"]:
                     spec[key] = int(value)
                 else:
                     spec[key] = value
@@ -926,6 +926,33 @@ class CRD(Base):
                 else:
                     raise e
             time.sleep(self.retry_interval)
+
+    def enable_volume_frontend(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Enabling frontend of volume {volume_name} ... ({i})")
+            try:
+                body = get_cr(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace=constant.LONGHORN_NAMESPACE,
+                    plural="volumeattachments",
+                    name=volume_name
+                )
+                for ticket in body['spec']['attachmentTickets'].values():
+                    ticket['parameters']['disableFrontend'] = "false"
+                self.obj_api.patch_namespaced_custom_object(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace=constant.LONGHORN_NAMESPACE,
+                    plural="volumeattachments",
+                    name=volume_name,
+                    body=body
+                )
+                break
+            except Exception as e:
+                logging(f"Failed to enable frontend of volume {volume_name}: {e}")
+            time.sleep(self.retry_interval)
+        self.wait_for_volume_status(volume_name, "frontendDisabled", False)
 
     def activate(self, volume_name):
         return Rest().activate(volume_name)

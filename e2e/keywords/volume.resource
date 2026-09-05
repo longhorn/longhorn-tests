@@ -110,6 +110,35 @@ Update volume ${volume_id} ${key} to ${value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    ${key}    ${value}
 
+Get NVMe queue count of ${workload_kind} ${workload_id} volume
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    ${queue_count} =    get_nvme_queue_count_of_volume    ${volume_name}
+    RETURN    ${queue_count}
+
+Wait for NVMe queue count of ${workload_kind} ${workload_id} volume to be ${expected_count}
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    wait_for_nvme_queue_count    ${volume_name}    ${expected_count}
+
+Enable frontend of ${workload_kind} ${workload_id} volume
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    enable_volume_frontend    ${volume_name}
+
+Attach ${workload_kind} ${workload_id} volume in maintenance mode
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    attach_volume_in_maintenance_mode    ${volume_name}
+
+Detach ${workload_kind} ${workload_id} volume
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    detach_volume    ${volume_name}
+
+Validate volume spec ${key} of ${workload_kind} ${workload_id} is ${value}
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    validate_volume_setting    ${volume_name}    ${key}    ${value}
+
+Update volume spec ${key} of ${workload_kind} ${workload_id} to ${value}
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    update_volume_spec    ${volume_name}    ${key}    ${value}
+
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

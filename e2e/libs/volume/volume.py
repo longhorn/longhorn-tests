@@ -195,6 +195,9 @@ class Volume(Base):
     def update_volume_spec(self, volume_name, key, value):
         return self.volume.update_volume_spec(volume_name, key, value)
 
+    def enable_volume_frontend(self, volume_name):
+        return self.volume.enable_volume_frontend(volume_name)
+
     def activate(self, volume_name):
         return self.volume.activate(volume_name)
 
