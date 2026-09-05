@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Longhorn Component Test Cases
 
-Test Tags    regression
+Test Tags    regression    component
 
 Library    OperatingSystem
 

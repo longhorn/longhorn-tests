@@ -437,7 +437,7 @@ Test Encrypted DR Volume Activation
     And Check deployment 1 file data.txt checksum matches checksum 0
 
 Test Encrypted Volume With Encrypted Backing Image Clone
-    [Tags]    rwo    backing-image    encrypted    skip
+    [Tags]    rwo    backing-image    encrypted    clone    skip
     [Documentation]    Test creating encrypted volume using an encrypted BackingImage clone.
     ...
     ...                **IMPLEMENTATION STATUS: TO BE IMPLEMENTED**

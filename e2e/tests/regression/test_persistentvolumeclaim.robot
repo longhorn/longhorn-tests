@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    PersistentVolumeClaim Test Cases
 
-Test Tags    regression
+Test Tags    regression    pvc
 
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource

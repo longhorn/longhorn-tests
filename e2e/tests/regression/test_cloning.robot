@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Cloning Test Cases
 
-Test Tags    regression
+Test Tags    regression    cloning
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

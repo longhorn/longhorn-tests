@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Support Bundle Test Cases
 
-Test Tags    regression
+Test Tags    regression    support-bundle
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

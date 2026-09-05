@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Migration Test Cases
 
-Test Tags    regression
+Test Tags    regression    migration
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
