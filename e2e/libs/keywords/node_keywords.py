@@ -173,3 +173,21 @@ class node_keywords:
 
     def remove_dir(self, dir_path, node_name):
         self.node.remove_dir(dir_path, node_name)
+
+    def is_bdf_disk_path(self, disk_path):
+        return self.node.is_bdf_disk_path(disk_path)
+
+    def get_disk_device_driver(self, node_name, bdf):
+        return self.node.get_disk_device_driver(node_name, bdf)
+
+    def bind_disk_device_to_userspace_driver(self, node_name, bdf):
+        self.node.bind_disk_device_to_userspace_driver(node_name, bdf)
+
+    def unbind_disk_device_from_userspace_driver(self, node_name, bdf):
+        self.node.unbind_disk_device_from_userspace_driver(node_name, bdf)
+
+    def wait_for_disk_device_released(self, node_name, bdf):
+        self.node.wait_for_disk_device_released(node_name, bdf)
+
+    def wait_for_disk_schedulable(self, node_name, disk_name):
+        self.node.wait_for_disk_schedulable(node_name, disk_name)

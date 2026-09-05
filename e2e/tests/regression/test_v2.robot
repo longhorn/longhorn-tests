@@ -642,3 +642,37 @@ Test CPU Manager Policy And Data Engine Number Of CPU Cores
     And Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for output
     ...    awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status
     ...    ^[0-9]+-[0-9]+$
+
+Test V2 Block Disk Recovery After Interrupted Provisioning
+    [Tags]    node-disk-mgmt
+    [Documentation]    Regression for longhorn/longhorn#13893.
+    ...    A disk creation interrupted after the device was bound leaves the NVMe device
+    ...    on vfio-pci and records neither diskDriver, diskPath nor diskUUID. Removing and
+    ...    re-adding the disk must still recover it instead of keeping it Ready=False and
+    ...    Schedulable=False with "unsupported disk driver vfio-pci for disk path".
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+    Skip test if disk path ${DISK_PATH} is not a PCI BDF
+
+    Given Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling without ready check on node 0
+    And Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node 0
+    And Wait for device ${DISK_PATH} on node 0 released from userspace driver
+
+    # Simulate a provisioning that failed after binding the device.
+    When Bind device ${DISK_PATH} on node 0 to userspace driver
+    And Add block disk ${DEFAULT_BLOCK_DISK_NAME} to node 0 with path ${DISK_PATH}
+    Then Wait for disk ${DEFAULT_BLOCK_DISK_NAME} on node 0 schedulable
+
+    # Unprovisioning must hand the device back so that it can be provisioned again.
+    When Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling without ready check on node 0
+    And Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node 0
+    Then Wait for device ${DISK_PATH} on node 0 released from userspace driver
+
+    When Add block disk ${DEFAULT_BLOCK_DISK_NAME} to node 0 with path ${DISK_PATH}
+    Then Wait for disk ${DEFAULT_BLOCK_DISK_NAME} on node 0 schedulable
+    And Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Check volume 0 data is intact
