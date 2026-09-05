@@ -30,4 +30,4 @@ for ((i=0; i<count; i++)); do
   tests+=("./tests")
 done
 
-robot -x junit.xml -P ./libs -d /tmp/test-report "${args[@]}" "${tests[@]}"
+robot -x junit.xml -P ./libs --listener test_lister.TestLister -d /tmp/test-report "${args[@]}" "${tests[@]}"
