@@ -6,12 +6,51 @@ from instancemanager.base import Base
 
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+from utility.utility import pod_exec
 import utility.constant as constant
 
 class V1_InstanceManager(Base):
 
     def __init__(self):
         super().__init__()
+
+    def create_stale_stopped_engine_process(self, node_name, engine_name):
+        # Reproduces the leaked `stopped` v1 engine process record from
+        # longhorn/longhorn#13687. A binary that exits 0 immediately makes the v1
+        # process manager keep a `stopped` process record (findProcess/ProcessGet
+        # still answer for it), which is exactly the stale record that wedges attach.
+        # port-count 1 is required so the process manager takes the health-check path
+        # and does not force the record into `running` when there is no listening port.
+        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
+        logging(f"Injecting stale stopped engine process {engine_name} into v1 instance manager {im_pod_name} on node {node_name}")
+        create_cmd = ("longhorn-instance-manager process create "
+                      f"--name {engine_name} --binary /usr/bin/true --port-count 1")
+        pod_exec(im_pod_name, constant.LONGHORN_NAMESPACE, create_cmd)
+        self.wait_for_engine_process_stopped(node_name, engine_name)
+
+    def wait_for_engine_process_stopped(self, node_name, engine_name):
+        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
+        get_cmd = f"longhorn-instance-manager process get --name {engine_name}"
+        for i in range(self.retry_count):
+            try:
+                output = pod_exec(im_pod_name, constant.LONGHORN_NAMESPACE, get_cmd)
+                if "stopped" in output.lower():
+                    logging(f"Engine process {engine_name} is in stopped state on node {node_name}")
+                    return
+            except Exception as e:
+                logging(f"Waiting for engine process {engine_name} stopped record on node {node_name}: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Engine process {engine_name} did not reach stopped state on node {node_name}"
+
+    def is_engine_process_present(self, node_name, engine_name):
+        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
+        get_cmd = f"longhorn-instance-manager process get --name {engine_name}"
+        try:
+            output = pod_exec(im_pod_name, constant.LONGHORN_NAMESPACE, get_cmd)
+        except Exception as e:
+            logging(f"Failed to get engine process {engine_name} on node {node_name}: {e}")
+            return False
+        return "cannot find" not in output.lower() and "notfound" not in output.lower()
 
     def get_replicas(self, node_name):
         im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
