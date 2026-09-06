@@ -15,6 +15,7 @@ Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -460,3 +461,88 @@ Test Scheduling Replicas To Different Disks On The Same Node
     And Check volume of statefulset 0 replica on node 0 disk local-disk-${suffix_1}
     And Write 500 MB data to file data.bin in statefulset 0
     And Check statefulset 0 data in file data.bin is intact
+
+Test Longhorn UI Topology Spread Constraints Passthrough And Enforcement
+    [Tags]    setting    uninstall    helm
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13731
+    ...
+    ...                Verify that longhornUI.topologySpreadConstraints is rendered
+    ...                verbatim into the longhorn-ui Deployment pod spec, and that the
+    ...                constraint is actually enforced by the scheduler when
+    ...                whenUnsatisfiable is DoNotSchedule and eligible topology domains
+    ...                are fewer than the replica count.
+    ...
+    ...                This test case is only applicable for helm installation method.
+    ...
+    ...                Manual test steps:
+    ...                1. Upgrade with
+    ...                   --set-json 'longhornUI.topologySpreadConstraints=[{"maxSkew":1,
+    ...                   "topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway",
+    ...                   "labelSelector":{"matchLabels":{"app":"longhorn-ui"}}}]'
+    ...                2. kubectl -n longhorn-system get deploy longhorn-ui
+    ...                   -o jsonpath='{.spec.template.spec.topologySpreadConstraints}'
+    ...                3. Expected: the constraint appears verbatim on the pod spec, and
+    ...                   both longhorn-ui replicas are Running.
+    ...                4. Repeat with whenUnsatisfiable: DoNotSchedule, using a
+    ...                   topologyKey whose label value exists on only one node
+    ...                   (e.g. a unique label applied to a single node), so the
+    ...                   eligible topology domains are fewer than the replica
+    ...                   count and the restriction is attributed to
+    ...                   topologySpreadConstraints, not node accessibility.
+    ...                5. kubectl -n longhorn-system get pods -l app=longhorn-ui
+    ...                   kubectl -n longhorn-system describe pod <pending-ui-pod> | tail -20
+    ...                6. Expected: one replica is Running, the second replica stays
+    ...                   Pending, with a scheduling event citing "didn't satisfy
+    ...                   topology spread constraints".
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    Test case only applicable for helm installation method
+    END
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    When Install Longhorn
+    ...    custom_cmd=yq -i '.longhornUI.topologySpreadConstraints = [{"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway","labelSelector":{"matchLabels":{"app":"longhorn-ui"}}}]' values.yaml
+
+    Then Run command and expect output
+    ...    kubectl get deploy longhorn-ui -n ${LONGHORN_NAMESPACE} -ojsonpath='{.spec.template.spec.topologySpreadConstraints[*].whenUnsatisfiable}'
+    ...    ScheduleAnyway
+    And Run command and wait for output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-ui --field-selector=status.phase=Running --no-headers | wc -l
+    ...    2
+
+    # cordon all but one node so only a single topology domain (kubernetes.io/hostname)
+    # is schedulable, which cannot host 2 replicas under maxSkew=1, forcing the
+    # 2nd replica to stay Pending
+    When Cordon node 1
+    And Cordon node 2
+    And Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    And Install Longhorn
+    ...    custom_cmd=yq -i '.longhornUI.topologySpreadConstraints = [{"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"DoNotSchedule","labelSelector":{"matchLabels":{"app":"longhorn-ui"}}}]' values.yaml
+
+    Then Run command and expect output
+    ...    kubectl get deploy longhorn-ui -n ${LONGHORN_NAMESPACE} -ojsonpath='{.spec.template.spec.topologySpreadConstraints[*].whenUnsatisfiable}'
+    ...    DoNotSchedule
+    And Run command and wait for output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-ui --field-selector=status.phase=Running --no-headers | wc -l
+    ...    1
+    And Run command and wait for output
+    ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-ui --field-selector=status.phase=Pending --no-headers | wc -l
+    ...    1
+    And Run command and expect output
+    ...    kubectl get events -n ${LONGHORN_NAMESPACE} --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp'
+    ...    didn't match pod topology spread constraints
+
+    And Uncordon node 1
+    And Uncordon node 2
+
+    And Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn
+    And Wait for longhorn ready

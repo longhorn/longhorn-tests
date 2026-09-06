@@ -168,9 +168,9 @@ class volume_keywords:
         logging(f'Getting checksum of {size_mb} MB region of volume {volume_name} at offset {offset_mb} MB')
         return self.volume.get_checksum_at_offset(volume_name, int(offset_mb), int(size_mb))
 
-    def keep_writing_data(self, volume_name):
-        logging(f'Keep writing data to volume {volume_name}')
-        self.volume.keep_writing_data(volume_name)
+    def keep_writing_data(self, volume_name, size="256Mi"):
+        logging(f'Keep writing data to volume {volume_name} with size {size}')
+        self.volume.keep_writing_data(volume_name, size)
 
     def write_volume_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         logging(f'Writing scattered data to volume {volume_name} with fio (size={size}, bs={bs}, ratio={ratio})')
@@ -445,6 +445,12 @@ class volume_keywords:
 
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)
+
+    def wait_for_volume_replicas_in_topology_domain(self, volume_name, topology_key, domain_value):
+        self.volume.wait_for_volume_replicas_in_topology_domain(volume_name, topology_key, domain_value)
+
+    def get_volume_topology_requirement(self, volume_name):
+        return self.volume.get_topology_requirement(volume_name)
 
     def wait_for_volume_degraded(self, volume_name):
         self.volume.wait_for_volume_degraded(volume_name)
