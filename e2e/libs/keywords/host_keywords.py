@@ -1,6 +1,7 @@
 from robot.libraries.BuiltIn import BuiltIn
 
 import os
+import threading
 import time
 
 from host import Harvester, Aws, Vagrant
@@ -20,6 +21,9 @@ class host_keywords:
         "harvester": Harvester,
         "vagrant": Vagrant,
     }
+
+    # Class-level monitor thread shared across all instances
+    _monitor_thread = None
 
     def __init__(self):
         self.volume_keywords = BuiltIn().get_library_instance('volume_keywords')
@@ -136,9 +140,113 @@ class host_keywords:
             logging(f"Execute command {cmd} on node {node_name} error: {e}")
             return ""
 
+    def start_node_monitoring(self):
+        """Start a background thread that monitors worker-node reachability.
+
+        Only active when HOST_PROVIDER is 'harvester'.  Every 5 minutes the
+        thread SSHs into each worker node that is *not* in the intentionally-
+        powered-off set.  If SSH fails it calls power_on_node so the cloud VM
+        is brought back up automatically.
+        """
+        if os.getenv('HOST_PROVIDER', 'vagrant') != 'harvester':
+            logging('Node monitor: skipped (HOST_PROVIDER is not harvester)')
+            return
+
+        if (host_keywords._monitor_thread is not None
+                and host_keywords._monitor_thread.is_alive()):
+            logging('Node monitor: already running')
+            return
+
+        host_keywords._monitor_thread = threading.Thread(
+            target=self._monitor_worker_nodes,
+            name='NodeHealthMonitor',
+            daemon=True,
+        )
+        host_keywords._monitor_thread.start()
+        logging('Node monitor: started')
+
+    def _monitor_worker_nodes(self):
+        """Background worker: check every 5 minutes that all non-powered-off
+        worker nodes are reachable via SSH; power on any that are not."""
+        CHECK_INTERVAL_SECONDS = 300  # 5 minutes
+
+        while True:
+            time.sleep(CHECK_INTERVAL_SECONDS)
+
+            try:
+                worker_nodes = self.node.list_node_names_by_role('worker')
+            except Exception as e:
+                logging(f'Node monitor: could not list worker nodes: {e}')
+                continue
+
+            for node_name in worker_nodes:
+                powered_off_nodes = BuiltIn().get_variable_value("${powered_off_nodes}") or []
+                if node_name in powered_off_nodes:
+                    logging(f'Node monitor: skipping {node_name} '
+                            f'(intentionally powered off)')
+                    continue
+
+                try:
+                    ssh_exec(node_name, 'echo alive')
+                    logging(f'Node monitor: {node_name} is reachable via SSH')
+                except Exception as e:
+                    logging(f'Node monitor: SSH into {node_name} failed ({e}); '
+                            f'attempting power on')
+                    try:
+                        self.host.power_on_node(node_name)
+                        logging(f'Node monitor: power-on triggered for {node_name}')
+                    except Exception as pe:
+                        logging(f'Node monitor: failed to power on {node_name}: {pe}')
+
     def get_host_log_files(self, node_name, log_path):
         return self.host.get_host_log_files(node_name, log_path)
 
     def ssh_exec_on_node(self, node_name, cmd):
         logging(f"SSH into node {node_name} and run command: {cmd}")
         return ssh_exec(node_name, cmd)
+
+    def set_cpu_manager_policy_on_all_worker_nodes(self, policy):
+        k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
+        if k8s_distro == "k3s":
+            config_file = "/etc/rancher/k3s/config.yaml"
+            service_name = "k3s-agent"
+        elif k8s_distro == "rke2":
+            config_file = "/etc/rancher/rke2/config.yaml"
+            service_name = "rke2-agent"
+        else:
+            raise Exception(f"Unsupported K8S_DISTRO for cpu-manager-policy change: {k8s_distro}")
+
+        worker_nodes = self.node.list_node_names_by_role("worker")
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for node_name in worker_nodes:
+            set = True
+            logging(f"Setting cpu-manager-policy to {policy} on node {node_name} via {config_file}")
+            sed_cmd = f"sudo sed -i 's/cpu-manager-policy=[a-z]*/cpu-manager-policy={policy}/g' {config_file}"
+            for i in range(retry_count):
+                try:
+                    ssh_exec(node_name, sed_cmd)
+                    break
+                except Exception as e:
+                    logging(f"Failed to set cpu-manager-policy on node {node_name}: {e} ... ({i})")
+                    set = False
+                    time.sleep(retry_interval)
+            # Remove stale cpu-manager state file so kubelet accepts the new policy
+            logging(f"Removing stale cpu_manager_state on node {node_name}")
+            for i in range(retry_count):
+                try:
+                    ssh_exec(node_name, "sudo rm -f /var/lib/kubelet/cpu_manager_state")
+                    break
+                except Exception as e:
+                    logging(f"Failed to remove stale cpu_manager_state on node {node_name}: {e} ... ({i})")
+                    set = False
+                    time.sleep(retry_interval)
+            logging(f"Restarting {service_name} on node {node_name}")
+            for i in range(retry_count):
+                try:
+                    ssh_exec(node_name, f"sudo systemctl restart {service_name}")
+                    break
+                except Exception as e:
+                    logging(f"Failed to restart {service_name} on node {node_name}: {e} ... ({i})")
+                    set = False
+                    time.sleep(retry_interval)
+            assert set, f"Failed to set cpu-manager-policy to {policy} on node {node_name}"

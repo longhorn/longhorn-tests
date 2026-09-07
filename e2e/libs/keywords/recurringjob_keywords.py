@@ -28,19 +28,20 @@ class recurringjob_keywords:
         for recurringjob in recurringjobs:
             self.recurringjob.delete(recurringjob['metadata']['name'])
 
-    def create_recurringjob(self, job_name, task, groups="[]", cron="*/2 * * * *", concurrency=1, labels="{}"):
+    def create_recurringjob(self, job_name, task, groups="[]", cron="*/2 * * * *", retain=1, concurrency=1, labels="{}"):
         groups = ast.literal_eval(groups)
         labels = ast.literal_eval(labels)
 
-        logging(f"Creating recurringjob {job_name}, task={task}, groups={groups}, cron={cron}, concurrency={concurrency}, labels={labels}")
-        self.recurringjob.create(job_name, task=task, groups=groups, cron=cron, concurrency=concurrency, labels=labels)
+        logging(f"Creating recurringjob {job_name}, task={task}, groups={groups}, cron={cron}, retain={retain}, concurrency={concurrency}, labels={labels}")
+        self.recurringjob.create(job_name, task=task, groups=groups, cron=cron, retain=int(retain), concurrency=concurrency, labels=labels)
 
-    def create_recurringjob_for_volume(self, volume_name, task, cron="*/2 * * * *"):
+    def create_recurringjob_for_volume(self, volume_name, task, cron="*/2 * * * *", retain=1):
         job_name = volume_name + '-' + task
 
-        logging(f'Creating recurringjob {job_name} for volume {volume_name}')
-        self.recurringjob.create(job_name, task=task, cron=cron)
+        logging(f'Creating recurringjob {job_name} for volume {volume_name}, retain={retain}')
+        self.recurringjob.create(job_name, task=task, cron=cron, retain=int(retain))
         self.recurringjob.add_to_volume(job_name, volume_name)
+
 
     def check_recurringjobs_work(self, volume_name):
         logging(f'Checking recurringjobs work for volume {volume_name}')

@@ -79,7 +79,7 @@ def delete_node(node_name):
     exec_cmd = ["kubectl", "delete", "node", node_name]
     res = subprocess_exec_cmd(exec_cmd)
 
-def set_k8s_node_zone(node_name, zone_name=""):
+def set_node_zone(node_name, zone_name=""):
     if zone_name:
         logging(f"Setting node {node_name} zone to {zone_name}")
         exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/zone={zone_name}", "--overwrite"]
@@ -89,14 +89,26 @@ def set_k8s_node_zone(node_name, zone_name=""):
         exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/zone-", "--overwrite"]
         res = subprocess_exec_cmd(exec_cmd)
 
+def set_node_region(node_name, region_name=""):
+    if region_name:
+        logging(f"Setting node {node_name} region to {region_name}")
+        exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/region={region_name}", "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+    else:
+        logging(f"Resetting node {node_name} region")
+        exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/region-", "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+
+
 def drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--ignore-daemonsets", "--delete-emptydir-data"]
     res = subprocess_exec_cmd(exec_cmd)
 
-def force_drain_node(node_name):
-    retry_count, _ = get_retry_count_and_interval()
+def force_drain_node(node_name, timeout=None):
+    if timeout is None:
+        timeout, _ = get_retry_count_and_interval()
     exec_cmd = ["kubectl", "drain", node_name, "--force", "--ignore-daemonsets", "--delete-emptydir-data"]
-    res = subprocess_exec_cmd(exec_cmd, timeout=retry_count)
+    res = subprocess_exec_cmd(exec_cmd, timeout=float(timeout))
 
 def cordon_node(node_name):
     exec_cmd = ["kubectl", "cordon", node_name]

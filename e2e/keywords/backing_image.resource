@@ -104,6 +104,7 @@ Download backing image ${backing_image_name}
 
 Check downloaded backing image ${backing_image_name} data matches volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     ${sha512_checksum} =    get_volume_sha512sum    ${volume_name}
     Should Be Equal    ${download_bi_checksum}    ${sha512_checksum}
 

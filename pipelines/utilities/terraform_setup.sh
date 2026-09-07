@@ -28,7 +28,7 @@ if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "aws" ]]; then
 elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kube_config > test_framework/kube_config.yaml
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw cluster_id > /tmp/cluster_id
-  until [ "$(KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true)" -eq 4 ]; do
+  until [ "$(KUBECONFIG=${PWD}/test_framework/kube_config.yaml kubectl get nodes -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true)" -ge 4 ]; do
     echo "waiting for harvester cluster nodes to be running"
     sleep 2
   done

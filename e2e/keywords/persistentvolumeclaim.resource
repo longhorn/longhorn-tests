@@ -54,6 +54,18 @@ Wait for volume of persistentvolumeclaim ${claim_id} detached
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     wait_for_volume_detached    ${volume_name}
 
+Wait for volume of persistentvolumeclaim ${claim_id} attached
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_attached    ${volume_name}
+
+Volume of persistentvolumeclaim ${claim_id} should not be attached to node ${node_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_attached    ${volume_name}
+    wait_for_volume_not_attached_to_node    ${volume_name}    ${node_name}
+
 Wait for volume of persistentvolumeclaim ${claim_id} faulted
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}

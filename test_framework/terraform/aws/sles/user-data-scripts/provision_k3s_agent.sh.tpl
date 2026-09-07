@@ -72,10 +72,18 @@ else
   IP=$(hostname -I | awk '{print $1}')
 fi
 
-# TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
-set +e
+mkdir -p /etc/rancher/k3s
 
-until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-ip=$IP --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
+cat <<EOF >> /etc/rancher/k3s/config.yaml
+node-ip: $IP
+server: ${k3s_server_url}
+token: ${k3s_cluster_secret}
+kubelet-arg:
+  - cpu-manager-policy=none
+  - reserved-cpus=0
+EOF
+
+until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s agent did not install correctly'
   sleep 2
 done

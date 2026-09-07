@@ -42,28 +42,36 @@ Delete volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${deleted_node} =    delete_volume_node    ${volume_name}
-    Set Test Variable    ${deleted_node}
+    Append To List    ${deleted_nodes}    ${deleted_node}
 
 Delete volume of ${workload_kind} ${workload_id} replica node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${deleted_node} =    delete_replica_node    ${volume_name}
-    Set Test Variable    ${deleted_node}
+    Append To List    ${deleted_nodes}    ${deleted_node}
 
 Delete node ${node_id}
     ${deleted_node} =    get_node_by_index    ${node_id}
     delete_node    ${deleted_node}
-    Set Test Variable    ${deleted_node}
+    Append To List    ${deleted_nodes}    ${deleted_node}
 
 Add deleted node back
-    reboot_node_by_name    ${deleted_node}
-    IF     "${DATA_ENGINE}" == "v2"
-        add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+    FOR    ${deleted_node}    IN    @{deleted_nodes}
+        reboot_node_by_name    ${deleted_node}
+        wait_for_node_ready    ${deleted_node}
+        IF     "${DATA_ENGINE}" == "v2"
+            add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+        END
+        Remove Values From List    ${deleted_nodes}    ${deleted_node}
     END
 
 Set k8s node ${node_id} zone ${zone_name}
     ${node_name} =    get_node_by_index    ${node_id}
-    set_k8s_node_zone    ${node_name}    ${zone_name}
+    set_node_zone    ${node_name}    ${zone_name}
+
+Set k8s node ${node_id} region ${region_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_node_region    ${node_name}    ${region_name}
 
 Force drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -88,6 +96,10 @@ Force drain volume of ${workload_kind} ${workload_id} replica node
 Force drain node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     force_drain_node    ${node_name}
+
+Drain node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    drain_node    ${node_name}
 
 Drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -159,9 +171,10 @@ Get healthy node names
     [Return]    ${healthy_node_names}
 
 Force drain node ${node_id} and expect failure
+    [Arguments]    ${expected_error}=*
     ${drained_node} =    get_node_by_index    ${node_id}
     ${instance_manager_name} =     get_instance_manager_on_node    ${drained_node}
-    Run Keyword And Expect Error    *    force_drain_node    ${drained_node}
+    Run Keyword And Expect Error    ${expected_error}    force_drain_node    ${drained_node}    timeout=600
     Set Test Variable    ${instance_manager_name}
     Set Test Variable    ${drained_node}
 
@@ -171,6 +184,7 @@ Force drain node ${node_id} and expect success
     force_drain_node    ${drained_node}
     Set Test Variable    ${instance_manager_name}
     Set Test Variable    ${drained_node}
+
 
 The drain process not completed
     check_drain_process_not_completed    ${drain_process}
@@ -186,6 +200,9 @@ Wait for node ${node_id} ready
 Wait for node ${node_id} down
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_node_down    ${node_name}
+
+Wait for k8s cluster ready
+    wait_for_cluster_ready
 
 Check PDB not exist
     [Arguments]    ${instance_manager}

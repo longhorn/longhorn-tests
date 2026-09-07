@@ -17,7 +17,7 @@ terraform_setup(){
   elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kube_config > ${TF_VAR_tf_workspace}/kube_config.yaml
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw cluster_id > /tmp/cluster_id
-    until [ "$(KUBECONFIG=${TF_VAR_tf_workspace}/kube_config.yaml kubectl get nodes -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true)" -eq 4 ]; do
+    until [ "$(KUBECONFIG=${TF_VAR_tf_workspace}/kube_config.yaml kubectl get nodes -o jsonpath='{.items[*].status.conditions}' | jq '.[] | select(.type  == "Ready").status' | grep -ci true)" -ge 4 ]; do
       echo "waiting for harvester cluster nodes to be running"
       sleep 2
     done

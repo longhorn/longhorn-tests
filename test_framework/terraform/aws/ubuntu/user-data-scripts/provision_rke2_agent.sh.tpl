@@ -40,8 +40,11 @@ mkdir -p /etc/rancher/rke2
 cat << EOF > /etc/rancher/rke2/config.yaml 
 server: ${rke2_server_url}
 token: ${rke2_cluster_secret}
-
+kubelet-arg:
+  - cpu-manager-policy=none
+  - reserved-cpus=0
 EOF
+
 systemctl stop multipathd.socket
 systemctl disable multipathd.socket
 systemctl stop multipathd.service

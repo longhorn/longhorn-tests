@@ -43,6 +43,7 @@ from workload.workload import get_all_workload_node_names
 from workload.workload import check_workload_pods_not_restarted
 from workload.workload import check_workload_pods_not_recreated
 from workload.workload import rollout_restart_workload
+from workload.workload import rollout_status_workload
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -98,6 +99,11 @@ class workload_keywords:
 
     def get_workload_pod_name(self, workload_name, namespace="default"):
         return get_workload_pod_names(workload_name, namespace)[0]
+
+    def get_workload_pod_node_name(self, workload_name, namespace="default"):
+        pods = get_workload_pods(workload_name, namespace=namespace)
+        assert len(pods) > 0, f"No pods found for workload {workload_name} in namespace {namespace}"
+        return pods[0].spec.node_name
 
     def get_workload_persistent_volume_claim_name(self, workload_name):
         return get_workload_persistent_volume_claim_name(workload_name)
@@ -421,6 +427,10 @@ class workload_keywords:
     def rollout_restart_workload(self, workload_name, workload_kind, namespace="default"):
         logging(f"Triggering rollout restart of {workload_kind} {workload_name} in namespace {namespace}")
         rollout_restart_workload(workload_name, workload_kind, namespace)
+
+    def rollout_status_workload(self, workload_name, workload_kind, namespace="default", timeout="300s"):
+        logging(f"Waiting for rollout of {workload_kind} {workload_name} in namespace {namespace} to complete")
+        rollout_status_workload(workload_name, workload_kind, namespace, timeout)
 
     def start_fio_randwrite_with_verify_in_workload(self, workload_name, namespace="default"):
         """

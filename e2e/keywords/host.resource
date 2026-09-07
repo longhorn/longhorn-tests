@@ -4,6 +4,7 @@ Documentation       Physical Node Keywords
 Library             Collections
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/host_keywords.py
+Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/workload_keywords.py
@@ -59,10 +60,19 @@ Power off volume ${volume_id} replica node without waiting
 Power off node ${node_id} for ${power_off_time_in_min} mins
     [Documentation]    Power off a node for specified duration in minutes.
     ...                Example: Power off node 0 for 6 mins
+    ${powered_off_node} =    get_node_by_index    ${node_id}
+    Append to list    ${powered_off_nodes}    ${powered_off_node}
     reboot_node_by_index    ${node_id}    ${power_off_time_in_min}
+    Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
 
 Power off all worker nodes for ${power_off_time_in_min} mins
+    Append to list    ${powered_off_nodes}    ${NODE_0}
+    Append to list    ${powered_off_nodes}    ${NODE_1}
+    Append to list    ${powered_off_nodes}    ${NODE_2}
     reboot_all_worker_nodes    ${power_off_time_in_min}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_0}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_1}
+    Remove Values From List    ${powered_off_nodes}    ${NODE_2}
 
 Restart cluster
     reboot_all_nodes
@@ -111,6 +121,12 @@ Run command on node ${node_id} and wait for output
     ${node_name} =    get_node_by_index    ${node_id}
     execute_command_on_node_and_wait_for_output    ${command}    ${node_name}    ${expected_output}
 
+Get ${workload_kind} ${workload_id} volume node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    RETURN    ${node_name}
+
 Run command on node ${node_id} and get output
     [Arguments]    ${command}    ${expected_output}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -127,6 +143,9 @@ SSH into node ${node_id} and run command
     [Arguments]    ${command}
     ${node_name} =    get_node_by_index    ${node_id}
     ssh_exec_on_node    ${node_name}    ${command}
+
+Set cpu-manager-policy to ${policy} on all worker nodes
+    set_cpu_manager_policy_on_all_worker_nodes    ${policy}
 
 Corrupt CSI block volume staging mount point on node ${node_id} for volume ${volume_name}
     [Documentation]    Corrupt the CSI block volume staging mount point with explicit host operations.

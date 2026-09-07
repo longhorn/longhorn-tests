@@ -105,7 +105,7 @@ Test mTLS Support
     And Check all Longhorn CRD removed
 
     # Step 2: Create the longhorn-grpc-tls secret
-    And And Run command
+    And Run command
     ...    kubectl create ns ${LONGHORN_NAMESPACE}
     And Run command
     ...    kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn-tests/refs/heads/master/test_framework/templates/longhorn-grpc-tls.yml
@@ -119,33 +119,28 @@ Test mTLS Support
     ${instance_manager_pod} =    Get ${DATA_ENGINE} instance manager pod on node 0
 
     # Step 5: Verify TCP port 8500 is reachable
-    Then Run command in pod and expect output
-    ...    ${instance_manager_pod}    ${LONGHORN_NAMESPACE}
+    Then Run command in pod ${LONGHORN_NAMESPACE}/${instance_manager_pod} and expect output
     ...    nc -zv 127.0.0.1 8500
     ...    succeeded
 
     # Step 6: Install grpcurl inside the instance manager pod
-    And Run command in pod
-    ...    ${instance_manager_pod}    ${LONGHORN_NAMESPACE}
+    And Run command in pod ${LONGHORN_NAMESPACE}/${instance_manager_pod}
     ...    curl -fsSL https://github.com/fullstorydev/grpcurl/releases/download/v1.9.3/grpcurl_1.9.3_linux_x86_64.tar.gz | tar -xz -C /tmp && chmod +x /tmp/grpcurl
 
     # Step 7: Plaintext gRPC must be rejected
     ${random_suffix_1} =    Evaluate    __import__('uuid').uuid4().hex[:8]
-    Run command in pod and expect output
-    ...    ${instance_manager_pod}    ${LONGHORN_NAMESPACE}
+    Run command in pod ${LONGHORN_NAMESPACE}/${instance_manager_pod} and expect output
     ...    /tmp/grpcurl -plaintext -connect-timeout 5 -d '{"spec":{"name":"pwn-${random_suffix_1}","binary":"/bin/bash","args":["-c","id"],"portCount":0}}' '[127.0.0.1]:8500' ProcessManagerService/ProcessCreate
     ...    context deadline exceeded
 
     # Step 8: Unauthenticated TLS (no client certificate) must be rejected
     ${random_suffix_2} =    Evaluate    __import__('uuid').uuid4().hex[:8]
-    Run command in pod and expect output
-    ...    ${instance_manager_pod}    ${LONGHORN_NAMESPACE}
+    Run command in pod ${LONGHORN_NAMESPACE}/${instance_manager_pod} and expect output
     ...    /tmp/grpcurl -insecure -connect-timeout 5 -d '{"spec":{"name":"pwn-${random_suffix_2}","binary":"/bin/bash","args":["-c","id"],"portCount":0}}' '[127.0.0.1]:8500' ProcessManagerService/ProcessCreate
     ...    context deadline exceeded
 
     # Step 9: gRPC server presents a valid TLS certificate
-    Run command in pod and expect output
-    ...    ${instance_manager_pod}    ${LONGHORN_NAMESPACE}
+    Run command in pod ${LONGHORN_NAMESPACE}/${instance_manager_pod} and expect output
     ...    timeout 5 openssl s_client -connect 127.0.0.1:8500
     ...    CONNECTED.*subject=.*issuer=
 

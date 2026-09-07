@@ -9,6 +9,10 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/k8s.resource
+Resource    ../keywords/setting.resource
+Resource    ../keywords/snapshot.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -72,4 +76,42 @@ Test Degraded Cloned Volume
     ...    kubectl taint node ${NODE_0} node-role.kubernetes.io/worker=true:NoExecute-
 
     Then Wait for volume of persistentvolumeclaim cloned-pvc healthy
+    And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
+
+Test Clone Volume With Cordoned Node
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13639
+    ...    1. Drain node 0
+    ...    2. Create a storageclass and a pvc source-pvc with size 3 Gi
+    ...    3. Create a pod to use the pvc, write 2 Gi data to the volume, record the checksum
+    ...    4. Delete the pod to detach the volume
+    ...    5. Create a pvc cloned-pvc from the source-pvc
+    ...    6. Wait for the volume of source-pvc to be attached, it should not be attached to node 0
+    ...    7. Wait for the volume of cloned-pvc to be created and attached, it should not be attached to node 0
+    ...    8. Wait for the cloning to complete
+    ...    9. Create a pod to use the cloned-pvc, and check the data integrity
+    Given Drain node 0
+
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim source-pvc    storage_size=3Gi    sc_name=longhorn-test
+    And Wait for volume of persistentvolumeclaim source-pvc to be created
+    And Wait for volume of persistentvolumeclaim source-pvc detached
+    And Create pod source-pod using persistentvolumeclaim source-pvc
+    And Wait for pod source-pod running
+    And Write 2048 MB data to file data.txt in pod source-pod
+    And Record file data.txt checksum in pod source-pod as checksum source-pvc
+
+    When Delete pod source-pod
+    And Wait for volume of persistentvolumeclaim source-pvc detached
+
+    And Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc    sc_name=longhorn-test
+    And Wait for volume of persistentvolumeclaim source-pvc attached
+    And Volume of persistentvolumeclaim source-pvc should not be attached to node 0
+    And Wait for volume of persistentvolumeclaim cloned-pvc to be created
+    And Wait for volume of persistentvolumeclaim cloned-pvc attached
+    And Volume of persistentvolumeclaim cloned-pvc should not be attached to node 0
+    And Wait for volume of persistentvolumeclaim cloned-pvc cloning to complete
+    And Wait for volume of persistentvolumeclaim cloned-pvc detached
+
+    Then Create pod cloned-pod using persistentvolumeclaim cloned-pvc
+    And Wait for pod cloned-pod running
     And Check pod cloned-pod file data.txt checksum matches checksum source-pvc

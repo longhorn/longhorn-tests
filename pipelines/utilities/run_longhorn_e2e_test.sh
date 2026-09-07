@@ -70,6 +70,9 @@ run_longhorn_test(){
   # for appco test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  # for v2 block device path
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "BLOCK_DEV_PATH", "value": "'${BLOCK_DEV_PATH}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   # share instance mapping information between jenkins job agent and test pod for later use, e.g. power on/off nodes.
   if [[ -f /tmp/instance_mapping ]]; then
     kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
@@ -210,7 +213,7 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
 
   # wait longhorn tests to complete
   while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
-    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
+    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test --follow --since=10s
   done
 
   kubectl cp ${LONGHORN_TEST_POD_NAME}:/tmp/test-report/log.html "log.html" -c longhorn-test-report
@@ -272,6 +275,7 @@ run_longhorn_test_out_of_cluster(){
              -e LONGHORN_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"\
              -e K8S_DISTRO="${TF_VAR_k8s_distro_name}"\
              -e OS_DISTRO="${DISTRO}"\
+             -e BLOCK_DEV_PATH="${BLOCK_DEV_PATH}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              --mount source="vol-${IMAGE_NAME}",target=/root/.ssh \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"

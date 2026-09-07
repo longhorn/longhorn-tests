@@ -189,7 +189,7 @@ resource "aws_key_pair" "lh_aws_pair_key" {
 
 resource "aws_eip" "lh_aws_eip_controlplane" {
   count    = var.lh_aws_instance_count_controlplane
-  vpc      = true
+  domain   = "vpc"
 
   tags = {
     Name = "lh_aws_eip_controlplane-${count.index}-${random_string.random_suffix.id}"

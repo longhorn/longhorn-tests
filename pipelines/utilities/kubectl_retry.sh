@@ -9,7 +9,7 @@ kubectl() {
   local count=0
 
   for arg in "$@"; do
-    if [[ "$arg" == "-f" || "$arg" == "-w" || "$arg" == "--follow" || "$arg" == "--watch" ]]; then
+    if [[ "$arg" == "-w" || "$arg" == "--follow" || "$arg" == "--watch" ]]; then
       /usr/local/bin/kubectl "$@"
       return $?
     fi
