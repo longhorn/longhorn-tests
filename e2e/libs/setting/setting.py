@@ -120,6 +120,16 @@ class Setting:
                     logging(f"Failed to set {setting_name} to true: {e}")
                 continue
 
+            if data_engine == "v2" and setting_name == "data-engine-interrupt-mode-enabled":
+                if os.environ.get("RUN_V2_INTERRUPT_MODE", "false") == "true":
+                    try:
+                        s = client.by_id_setting(setting_name)
+                        client.update(s, value='{"v2":"true"}')
+                        logging(f"Set {setting_name} to {{\"v2\":\"true\"}} because RUN_V2_INTERRUPT_MODE is true")
+                    except Exception as e:
+                        logging(f"Failed to set {setting_name}: {e}")
+                    continue
+
             s = client.by_id_setting(setting_name)
             if s.value != setting_default_value and not setting_readonly:
                 for i in range(self.retry_count):

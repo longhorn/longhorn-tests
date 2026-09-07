@@ -113,6 +113,10 @@ Set disk path based on host provider and architecture
 
 Enable v2 data engine and add block disks
     set_disk_path_based_on_host_provider_and_architecture
+    ${RUN_V2_INTERRUPT_MODE}=    Get Environment Variable    RUN_V2_INTERRUPT_MODE    false
+    IF    "${RUN_V2_INTERRUPT_MODE}" == "true"
+        update_setting    data-engine-interrupt-mode-enabled    {"v2":"true"}
+    END
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
