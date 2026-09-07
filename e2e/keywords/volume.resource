@@ -6,6 +6,8 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/backup_keywords.py
 Library    ../libs/keywords/snapshot_keywords.py
+Library    ../libs/keywords/node_keywords.py
+Library    ../libs/keywords/workload_keywords.py
 
 *** Variables ***
 ${SCHEDULING_STATUS_CHECK_TIMEOUT}    30
@@ -20,6 +22,11 @@ Create volume ${volume_id} with
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    &{config}
+
+Create volume ${volume_id} with should fail
+    [Arguments]    &{config}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_volume    ${volume_name}    &{config}
 
 Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
@@ -98,6 +105,47 @@ Validate volume ${volume_id} replicas anti-affinity
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_volume_replicas_anti_affinity    ${volume_name}
 
+Wait for volume ${volume_id} replicas to be in zone ${zone_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/zone    ${zone_name}
+
+Wait for volume of ${workload_kind} ${workload_id} replicas to be in zone ${zone_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/zone    ${zone_name}
+
+Wait for volume ${volume_id} replicas to be in region ${region_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/region    ${region_name}
+
+Wait for volume of ${workload_kind} ${workload_id} replicas to be in region ${region_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/region    ${region_name}
+
+Get volume ${volume_id} topologyRequirement
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${topology_requirement} =    get_volume_topology_requirement    ${volume_name}
+    RETURN    ${topology_requirement}
+
+Get volume of ${workload_kind} ${workload_id} topologyRequirement
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${topology_requirement} =    get_volume_topology_requirement    ${volume_name}
+    RETURN    ${topology_requirement}
+
+Get zone of ${workload_kind} ${workload_id} pod node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${node_name} =    get_workload_pod_node_name    ${workload_name}
+    ${zone} =    get_node_label_value    ${node_name}    topology.kubernetes.io/zone
+    RETURN    ${zone}
+
+Get region of ${workload_kind} ${workload_id} pod node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${node_name} =    get_workload_pod_node_name    ${workload_name}
+    ${region} =    get_node_label_value    ${node_name}    topology.kubernetes.io/region
+    RETURN    ${region}
+
 Update volume ${volume_id} replica count to ${replica_count}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
@@ -109,6 +157,16 @@ Update volume ${volume_id} rebuild concurrent sync limit to ${limit}
 Update volume ${volume_id} ${key} to ${value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    ${key}    ${value}
+
+Update volume of ${workload_kind} ${workload_id} ${key} to ${value}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    update_volume_spec   ${volume_name}    ${key}    ${value}
+
+Update volume of ${workload_kind} ${workload_id} ${key} to ${value} should fail
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    Run Keyword And Expect Error    *    update_volume_spec    ${volume_name}    ${key}    ${value}
 
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
@@ -131,6 +189,12 @@ Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
     ${workload_volume_name} =    get_workload_volume_name    ${workload_name}
     ${node_name} =    get_volume_node    ${workload_volume_name}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    attach_volume    ${volume_name}    ${node_name}
+
+Attach volume ${volume_id} to same node as volume ${src_volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${src_volume_name} =    generate_name_with_suffix    volume    ${src_volume_id}
+    ${node_name} =    get_volume_node    ${src_volume_name}
     attach_volume    ${volume_name}    ${node_name}
 
 Attach volume ${volume_id} to node ${node_id} should fail
@@ -198,8 +262,9 @@ Write data ${data_id} ${size} MB to volume ${volume_id}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
 Keep writing data to volume ${volume_id}
+    [Arguments]    ${size}=256Mi
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    keep_writing_data    ${volume_name}
+    keep_writing_data    ${volume_name}    ${size}
 
 Write scattered data to volume ${volume_id} with fio
     [Arguments]    ${size}=2G    ${bs}=4k    ${ratio}=0.2
@@ -213,8 +278,41 @@ Prefill volume ${volume_id} with fio
     ${checksum} =    prefill_volume_with_fio    ${volume_name}    ${size}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
+Write ${size_mb} MB data to volume ${volume_id} at offset ${offset_mb}
+    [Documentation]    Write a data range, identified by an explicit offset and
+    ...    size in MiB, and record its checksum for later verification.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${checksum} =    write_volume_data_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}-offset-${offset_mb}    ${checksum}
+
+Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} is intact
+    [Documentation]    Re-read the data range and compare it against the checksum
+    ...    recorded when that range was written to the same volume.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
+    ${actual_checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}-offset-${offset_mb}
+    Should Be Equal    ${actual_checksum}    ${expected_checksum}
+
+Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches volume ${other_volume_id}
+    [Documentation]    Compare the same data range of two attached volumes by
+    ...    reading both and comparing their checksums.  The range is defined by
+    ...    an explicit offset and size, both in MiB.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${other_volume_name} =    generate_name_with_suffix    volume    ${other_volume_id}
+    wait_for_volume_attached    ${volume_name}
+    wait_for_volume_attached    ${other_volume_name}
+    ${checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    ${other_checksum} =    get_volume_checksum_at_offset    ${other_volume_name}    ${offset_mb}    ${size_mb}
+    Should Be Equal    ${checksum}    ${other_checksum}
+
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_replica_on_node    ${volume_name}    ${replica_locality}
+
+Delete volume of ${workload_kind} ${workload_id} replica on ${replica_locality}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
 
 Delete volume ${volume_id} replica on all ${replica_locality}
@@ -225,6 +323,12 @@ Delete ${count} replicas of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replicas    ${volume_name}    ${count}
 
+Delete ${count} replicas of volume of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    delete_replicas    ${volume_name}    ${count}
+
+
 Wait for volume ${volume_id} to be created
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_to_be_created    ${volume_name}
@@ -232,6 +336,10 @@ Wait for volume ${volume_id} to be created
 Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
+
+Wait for all volume ${volume_id} replicas to have HealthyAt set
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_all_replicas_healthy_at    ${volume_name}
 
 Wait for volume ${volume_id} attached
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -276,9 +384,20 @@ Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
 
+Wait for volume of ${workload_kind} ${workload_id} degraded
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_degraded    ${volume_name}
+
 Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
+
+Wait for volume of ${workload_kind} ${workload_id} condition ${condition_name} to be ${condition_status}
+    [Arguments]    &{config}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
 
 Wait for volume ${volume_id} cloning to complete
@@ -389,6 +508,11 @@ Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
 
+Wait until volume of ${workload_kind} ${workload_id} replicas rebuilding completed
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_replica_rebuilding_to_complete   ${volume_name}
+
 Get volume ${volume_id} replica rebuilding progress on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -486,6 +610,13 @@ Wait for volume ${volume_id} replica on node ${node_id} to be deleted
 
 Volume ${volume_id} should have ${expected_replica_count} running replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${replica_count}
+
+Volume of ${workload_kind} ${workload_id} should have ${expected_replica_count} running replicas
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
     Set Test Variable    ${volume_name}
     Set Test Variable    ${replica_count}
@@ -600,6 +731,7 @@ Volume ${volume_id} should have ${expected_replica_count} running replicas and n
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     ${actual_checksum} =    get_volume_checksum    ${volume_name}
     ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}
     Should Be Equal    ${actual_checksum}    ${expected_checksum}
@@ -699,6 +831,7 @@ Upgrade v1 volumes engine to ${custom_engine_image}
 
 Check volume ${volume_id} data is backup ${backup_id} created in another cluster
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
     ${current_checksum} =    get_volume_checksum    ${volume_name}
     ${backup_data} =    get_backup_data_from_backup_list    ${backups_before_uninstall}    ${backup_id}
     Should Be Equal    ${current_checksum}    ${backup_data}

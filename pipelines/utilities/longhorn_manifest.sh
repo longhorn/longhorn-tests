@@ -161,7 +161,7 @@ delete_longhorn_crds(){
   get_longhorn_repo "${UNINSTALL_VERSION}"
 
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
-  kubectl delete -f "${LONGHORN_MANIFEST_PATH}"
+  kubectl delete --ignore-not-found=true -f "${LONGHORN_MANIFEST_PATH}"
 }
 
 delete_uninstall_job(){
@@ -171,7 +171,7 @@ delete_uninstall_job(){
   get_longhorn_repo "${UNINSTALL_VERSION}"
 
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
-  kubectl delete -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  kubectl delete --ignore-not-found=true -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

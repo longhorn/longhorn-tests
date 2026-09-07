@@ -91,18 +91,24 @@ Get test start time
     Set Test Variable    ${test_start_time}
 
 Set disk path based on host provider and architecture
-    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
-    ${ARCH}=    Get Environment Variable    ARCH    amd64
-    IF    "${HOST_PROVIDER}" == "aws"
-        IF    "${ARCH}" == "amd64"
-            Set Test Variable    ${DISK_PATH}    /dev/xvdh
-        ELSE IF    "${ARCH}" == "arm64"
-            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+    ${DISK_PATH}=    Get Environment Variable    BLOCK_DEV_PATH    ${EMPTY}
+    Set Test Variable    ${DISK_PATH}
+    IF    $DISK_PATH == ""
+        ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
+        ${ARCH}=    Get Environment Variable    ARCH    amd64
+        IF    "${HOST_PROVIDER}" == "aws"
+            IF    "${ARCH}" == "amd64"
+                Set Test Variable    ${DISK_PATH}    /dev/xvdh
+            ELSE IF    "${ARCH}" == "arm64"
+                # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
+                # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
+                Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+            END
+        ELSE IF    '${HOST_PROVIDER}' == "harvester"
+            Set Test Variable    ${DISK_PATH}    /dev/vdc
+        ELSE IF    '${HOST_PROVIDER}' == "vagrant"
+            Set Test Variable    ${DISK_PATH}    /dev/vdb
         END
-    ELSE IF    '${HOST_PROVIDER}' == "harvester"
-        Set Test Variable    ${DISK_PATH}    /dev/vdc
-    ELSE IF    '${HOST_PROVIDER}' == "vagrant"
-        Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
 Enable v2 data engine and add block disks
@@ -134,10 +140,14 @@ Cleanup test resources
     set_backupstore
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
+        Run keyword And Ignore Error    wait_for_node_ready    ${powered_off_node}
         Remove Values From List    ${powered_off_nodes}    ${powered_off_node}
     END
-    Run keyword And Ignore Error    reboot_node_by_name    ${deleted_node}
-    Run keyword And Ignore Error    wait_for_node_ready    ${deleted_node}
+    FOR    ${deleted_node}    IN    @{deleted_nodes}
+        Run keyword And Ignore Error    reboot_node_by_name    ${deleted_node}
+        Run keyword And Ignore Error    wait_for_node_ready    ${deleted_node}
+        Remove Values From List    ${deleted_nodes}    ${deleted_node}
+    END
     uncordon_all_nodes
     cleanup_node_taints
     cleanup_node_labels
@@ -175,6 +185,7 @@ Cleanup test resources
     reset_settings    data_engine=${DATA_ENGINE}
     reset_node_tags
     reset_node_disks_tags
-    cleanup_k8s_node_zone
+    cleanup_node_zone
+    cleanup_node_region
     reset_longhorn_namespace
     cleanup_events

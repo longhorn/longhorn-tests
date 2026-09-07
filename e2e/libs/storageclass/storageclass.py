@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -70,6 +70,22 @@ class StorageClass():
 
             if backingImageDataSourceParameters:
                 manifest_dict['parameters']['backingImageDataSourceParameters'] = backingImageDataSourceParameters
+
+            if volumeTopology:
+                manifest_dict['parameters']['volumeTopology'] = volumeTopology
+
+            if replicaZoneSoftAntiAffinity:
+                manifest_dict['parameters']['replicaZoneSoftAntiAffinity'] = replicaZoneSoftAntiAffinity
+
+            if replicaSoftAntiAffinity:
+                manifest_dict['parameters']['replicaSoftAntiAffinity'] = replicaSoftAntiAffinity
+
+            if dataLayout:
+                for key, value in dataLayout.items():
+                    manifest_dict['parameters'][f'dataLayout.{key}'] = str(value)
+
+            if fsType:
+                manifest_dict['parameters']['fsType'] = fsType
 
             self.api.create_storage_class(body=manifest_dict)
 
