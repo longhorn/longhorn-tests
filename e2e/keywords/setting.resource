@@ -26,17 +26,3 @@ Update Setting To Valid Value And Verify
 Setting ${setting_key} should be ${setting_value}
     ${current_value} =    get_setting    ${setting_key}
     Should Be Equal    ${current_value}    ${setting_value}
-
-Data engine interrupt mode is enabled for ${data_engine}
-    [Documentation]    data-engine-interrupt-mode-enabled may be stored either as a legacy
-    ...    boolean (true/false) or as a per-data-engine JSON object (e.g. {"v2": "true"}),
-    ...    so the raw string value needs to be parsed as JSON before comparing.
-    ${current_value} =    get_setting    data-engine-interrupt-mode-enabled
-    ${parsed_value} =    Evaluate    json.loads($current_value)    modules=json
-
-    IF    isinstance($parsed_value, dict)
-        ${is_enabled} =    Evaluate    $parsed_value.get("${data_engine}") == "true"
-        RETURN    ${is_enabled}
-    END
-
-    RETURN    ${parsed_value}
