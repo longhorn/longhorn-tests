@@ -130,6 +130,10 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
     volume_size = var.block_device_size_controlplane
   }
 
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
   tags = {
     Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
@@ -178,6 +182,10 @@ resource "aws_instance" "lh_aws_instance_worker" {
   root_block_device {
     delete_on_termination = true
     volume_size = var.block_device_size_worker
+  }
+
+  credit_specification {
+    cpu_credits = "unlimited"
   }
 
   tags = {
