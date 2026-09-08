@@ -22,6 +22,10 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
     volume_size = var.block_device_size_controlplane
   }
 
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
   key_name = aws_key_pair.lh_aws_pair_key.key_name
 
   user_data = var.k8s_distro_name == "k3s" ? data.template_file.provision_k3s_server.rendered : data.template_file.provision_rke2_server.rendered
@@ -59,7 +63,11 @@ resource "aws_instance" "lh_aws_instance_worker" {
     delete_on_termination = true
     volume_size = var.block_device_size_worker
   } 
-    
+
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
   key_name = aws_key_pair.lh_aws_pair_key.key_name
   
   user_data = var.k8s_distro_name == "k3s" ? data.template_file.provision_k3s_agent.rendered : data.template_file.provision_rke2_agent.rendered

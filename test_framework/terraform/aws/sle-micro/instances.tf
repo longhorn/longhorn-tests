@@ -22,6 +22,10 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
     volume_size = var.block_device_size_controlplane
   }
 
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
   key_name = aws_key_pair.lh_aws_pair_key.key_name
 
   tags = {
@@ -57,6 +61,10 @@ resource "aws_instance" "lh_aws_instance_worker" {
     delete_on_termination = true
     volume_size = var.block_device_size_worker
   } 
+
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
 
