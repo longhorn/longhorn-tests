@@ -220,6 +220,12 @@ class Node:
         node = self.get_node_by_name(node_name)
         return node.status.capacity['cpu']
 
+    def get_node_label_value(self, node_name, label_key):
+        core_api = client.CoreV1Api()
+        node = core_api.read_node(node_name)
+        node_labels = node.metadata.labels or {}
+        return node_labels.get(label_key, '')
+
     def get_node_total_memory(self, node_name):
         node = self.get_node_by_name(node_name)
         return node.status.capacity['memory']

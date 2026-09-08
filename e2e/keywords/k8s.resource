@@ -67,7 +67,11 @@ Add deleted node back
 
 Set k8s node ${node_id} zone ${zone_name}
     ${node_name} =    get_node_by_index    ${node_id}
-    set_k8s_node_zone    ${node_name}    ${zone_name}
+    set_node_zone    ${node_name}    ${zone_name}
+
+Set k8s node ${node_id} region ${region_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_node_region    ${node_name}    ${region_name}
 
 Force drain volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
