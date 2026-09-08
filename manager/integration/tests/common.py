@@ -91,18 +91,18 @@ ISCSI_PROCESS = "iscsid"
 if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.environ.get("DISTRO") == "talos":
         # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
-        BLOCK_DEV_PATH = "/dev/nvme1n1"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
     elif os.uname().machine == "x86_64":
-        BLOCK_DEV_PATH = "/dev/xvdh"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
-        BLOCK_DEV_PATH = "/dev/nvme1n1"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
-    BLOCK_DEV_PATH = "/dev/vdc"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
-    BLOCK_DEV_PATH = "/dev/vdb"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/vdb"
 else:
-    BLOCK_DEV_PATH = "/dev/nvme1n1"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
@@ -147,7 +147,7 @@ WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn')
+DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn/')
 DIRECTORY_PATH = os.path.join(DEFAULT_DISK_PATH, 'longhorn-test')
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
@@ -2595,8 +2595,11 @@ def crash_replica_processes(client, api, volname, replicas=None,
             exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
+            wait_crashed = wait_for_replica_failed
+            if DATA_ENGINE == "v2":
+                wait_crashed = wait_for_replica_crashed
             thread = create_assert_error_check_thread(
-                wait_for_replica_failed,
+                wait_crashed,
                 client, volname, r['name'], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
@@ -2658,6 +2661,38 @@ def wait_for_replica_failed(client, volname, replica_name,
         volname, replica_name, debug_replica_not_failed, debug_replica_in_im
     )
     assert failed, err_msg
+
+
+def wait_for_replica_crashed(client, volname, replica_name,
+                             retry_cnts=RETRY_COUNTS,
+                             retry_ivl=RETRY_INTERVAL):
+    # A crashed v2 replica keeps its instance registered in the instance
+    # manager and gets restarted instead of entering the failed state, so it
+    # never satisfies wait_for_replica_failed. Wait for the engine to register
+    # the crash instead. The engine only notices through the NVMe-oF
+    # fast_io_fail/ctrlr_loss timeouts, so this can take over ten seconds.
+    crashed = False
+    debug_replica = None
+
+    for i in range(retry_cnts):
+        volume = client.by_id_volume(volname)
+        debug_replica = None
+        for r in volume.replicas:
+            if r['name'] == replica_name:
+                debug_replica = r
+                break
+
+        if debug_replica is None or \
+                debug_replica['failedAt'] != "" or \
+                not debug_replica['running'] or \
+                debug_replica.mode == "ERR":
+            crashed = True
+            break
+        time.sleep(retry_ivl)
+
+    assert crashed, "Vol({}), Replica({}): {}".format(
+        volname, replica_name, debug_replica
+    )
 
 
 def wait_for_replica_running(client, volname, replica_name):

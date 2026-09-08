@@ -6,6 +6,8 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/backup_keywords.py
 Library    ../libs/keywords/snapshot_keywords.py
+Library    ../libs/keywords/node_keywords.py
+Library    ../libs/keywords/workload_keywords.py
 
 *** Variables ***
 ${SCHEDULING_STATUS_CHECK_TIMEOUT}    30
@@ -20,6 +22,11 @@ Create volume ${volume_id} with
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    &{config}
+
+Create volume ${volume_id} with should fail
+    [Arguments]    &{config}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_volume    ${volume_name}    &{config}
 
 Create DR volume ${volume_id} from backup ${backup_id} of volume ${source_volume_id}
     [Arguments]    &{config}
@@ -98,6 +105,47 @@ Validate volume ${volume_id} replicas anti-affinity
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_volume_replicas_anti_affinity    ${volume_name}
 
+Wait for volume ${volume_id} replicas to be in zone ${zone_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/zone    ${zone_name}
+
+Wait for volume of ${workload_kind} ${workload_id} replicas to be in zone ${zone_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/zone    ${zone_name}
+
+Wait for volume ${volume_id} replicas to be in region ${region_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/region    ${region_name}
+
+Wait for volume of ${workload_kind} ${workload_id} replicas to be in region ${region_name}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_replicas_in_topology_domain    ${volume_name}    topology.kubernetes.io/region    ${region_name}
+
+Get volume ${volume_id} topologyRequirement
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${topology_requirement} =    get_volume_topology_requirement    ${volume_name}
+    RETURN    ${topology_requirement}
+
+Get volume of ${workload_kind} ${workload_id} topologyRequirement
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${topology_requirement} =    get_volume_topology_requirement    ${volume_name}
+    RETURN    ${topology_requirement}
+
+Get zone of ${workload_kind} ${workload_id} pod node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${node_name} =    get_workload_pod_node_name    ${workload_name}
+    ${zone} =    get_node_label_value    ${node_name}    topology.kubernetes.io/zone
+    RETURN    ${zone}
+
+Get region of ${workload_kind} ${workload_id} pod node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${node_name} =    get_workload_pod_node_name    ${workload_name}
+    ${region} =    get_node_label_value    ${node_name}    topology.kubernetes.io/region
+    RETURN    ${region}
+
 Update volume ${volume_id} replica count to ${replica_count}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
@@ -109,6 +157,16 @@ Update volume ${volume_id} rebuild concurrent sync limit to ${limit}
 Update volume ${volume_id} ${key} to ${value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     update_volume_spec   ${volume_name}    ${key}    ${value}
+
+Update volume of ${workload_kind} ${workload_id} ${key} to ${value}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    update_volume_spec   ${volume_name}    ${key}    ${value}
+
+Update volume of ${workload_kind} ${workload_id} ${key} to ${value} should fail
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    Run Keyword And Expect Error    *    update_volume_spec    ${volume_name}    ${key}    ${value}
 
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
@@ -252,6 +310,11 @@ Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
 
+Delete volume of ${workload_kind} ${workload_id} replica on ${replica_locality}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    delete_replica_on_node    ${volume_name}    ${replica_locality}
+
 Delete volume ${volume_id} replica on all ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_nodes    ${volume_name}    ${replica_locality}
@@ -259,6 +322,12 @@ Delete volume ${volume_id} replica on all ${replica_locality}
 Delete ${count} replicas of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replicas    ${volume_name}    ${count}
+
+Delete ${count} replicas of volume of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    delete_replicas    ${volume_name}    ${count}
+
 
 Wait for volume ${volume_id} to be created
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -315,9 +384,20 @@ Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
 
+Wait for volume of ${workload_kind} ${workload_id} degraded
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_degraded    ${volume_name}
+
 Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
+
+Wait for volume of ${workload_kind} ${workload_id} condition ${condition_name} to be ${condition_status}
+    [Arguments]    &{config}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_condition    ${volume_name}    ${condition_name}    ${condition_status}    &{config}
 
 Wait for volume ${volume_id} cloning to complete
@@ -428,6 +508,11 @@ Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
 
+Wait until volume of ${workload_kind} ${workload_id} replicas rebuilding completed
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_replica_rebuilding_to_complete   ${volume_name}
+
 Get volume ${volume_id} replica rebuilding progress on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -525,6 +610,13 @@ Wait for volume ${volume_id} replica on node ${node_id} to be deleted
 
 Volume ${volume_id} should have ${expected_replica_count} running replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
+    Set Test Variable    ${volume_name}
+    Set Test Variable    ${replica_count}
+
+Volume of ${workload_kind} ${workload_id} should have ${expected_replica_count} running replicas
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
     ${replica_count} =    wait_for_replica_count    ${volume_name}    node_name=    replica_count=${expected_replica_count}
     Set Test Variable    ${volume_name}
     Set Test Variable    ${replica_count}

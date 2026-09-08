@@ -642,3 +642,73 @@ Test CPU Manager Policy And Data Engine Number Of CPU Cores
     And Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for output
     ...    awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status
     ...    ^[0-9]+-[0-9]+$
+
+Test Create Default Disk On Labeled Nodes With V2 Data Engine
+    [Tags]    setting    uninstall    block-disk
+    [Documentation]    Verify that labeling and annotating a node with
+    ...    node.longhorn.io/create-default-disk=config and
+    ...    node.longhorn.io/default-disks-config allows Longhorn to create a
+    ...    default v2 block disk on that node automatically when
+    ...    createDefaultDiskLabeledNodes and v2DataEngine are enabled at
+    ...    install time.
+    ...
+    ...    Manual test steps:
+    ...    1. Label each worker node with
+    ...       node.longhorn.io/create-default-disk=config
+    ...    2. Annotate each worker node with
+    ...       node.longhorn.io/default-disks-config='[{"name":"block-disk","path":"<disk-path>","diskType":"block","allowScheduling":true}]'
+    ...    3. Install Longhorn with defaultSettings.createDefaultDiskLabeledNodes=true
+    ...       and defaultSettings.v2DataEngine=true
+    ...    4. Verify a default disk named block-disk with path "<disk-path> and
+    ...       diskType block is created on each node
+    ...    5. Create a v2 volume, write data and verify data integrity
+    ...    6. Uninstall and reinstall Longhorn to recover the default environment
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    FOR    ${node_name}    IN    ${NODE_0}    ${NODE_1}    ${NODE_2}
+        Run command
+        ...    kubectl label node ${node_name} node.longhorn.io/create-default-disk=config --overwrite
+        Run command
+        ...    kubectl annotate node ${node_name} node.longhorn.io/default-disks-config='[{"name":"block-disk","path":"${DISK_PATH}","diskType":"block","allowScheduling":true}]' --overwrite
+    END
+
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        When Install Longhorn
+        ...    custom_cmd=yq -i '.defaultSettings.createDefaultDiskLabeledNodes = true | .defaultSettings.v2DataEngine = true' values.yaml
+    ELSE
+        When Install Longhorn
+        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}create-default-disk-labeled-nodes: true\\n${SPACE * 4}v2-data-engine: true" longhorn.yaml
+    END
+
+    Then Wait for longhorn ready
+
+    FOR    ${node_name}    IN    ${NODE_0}    ${NODE_1}    ${NODE_2}
+        Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${node_name} -n ${LONGHORN_NAMESPACE} -o yaml
+        ...    block-disk:
+        Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${node_name} -n ${LONGHORN_NAMESPACE} -o yaml
+        ...    path: ${DISK_PATH}
+        Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${node_name} -n ${LONGHORN_NAMESPACE} -o yaml
+        ...    diskType: block
+    END
+
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    When Write data to volume 0
+    Then Check volume 0 data is intact
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Delete volume 0
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn
+    And Wait for longhorn ready
