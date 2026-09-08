@@ -5924,6 +5924,17 @@ The data contained within the volume.</p></div>
         if setting_name == &#34;registry-secret&#34;:
             continue
 
+        if setting_name == SETTING_DATA_ENGINE_CPU_MASK:
+            if os.environ.get(&#39;RUN_V2_TEST&#39;) == &#34;true&#34;:
+                setting = client.by_id_setting(setting_name)
+                try:
+                    client.update(setting, value=&#39;{&#34;v2&#34;: &#34;0x1&#34;}&#39;)
+                except Exception as e:
+                    print(f&#34;\nException setting {setting_name} to &#34;
+                          &#34;{\&#34;v2\&#34;: \&#34;0x1\&#34;}&#34;)
+                    print(e)
+                continue
+
         if setting_name == &#34;v2-data-engine&#34;:
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
