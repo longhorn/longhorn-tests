@@ -657,8 +657,9 @@ Test Create Default Disk On Labeled Nodes With V2 Data Engine
     ...       node.longhorn.io/create-default-disk=config
     ...    2. Annotate each worker node with
     ...       node.longhorn.io/default-disks-config='[{"name":"block-disk","path":"<disk-path>","diskType":"block","allowScheduling":true}]'
-    ...    3. Install Longhorn with defaultSettings.createDefaultDiskLabeledNodes=true
-    ...       and defaultSettings.v2DataEngine=true
+    ...    3. Install Longhorn with defaultSettings.createDefaultDiskLabeledNodes=true,
+    ...       defaultSettings.v2DataEngine=true, and
+    ...       defaultSettings.dataEngineCPUMask={"v2":"0x1"}
     ...    4. Verify a default disk named block-disk with path "<disk-path> and
     ...       diskType block is created on each node
     ...    5. Create a v2 volume, write data and verify data integrity
@@ -678,10 +679,10 @@ Test Create Default Disk On Labeled Nodes With V2 Data Engine
     ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         When Install Longhorn
-        ...    custom_cmd=yq -i '.defaultSettings.createDefaultDiskLabeledNodes = true | .defaultSettings.v2DataEngine = true' values.yaml
+        ...    custom_cmd=yq -i '.defaultSettings.createDefaultDiskLabeledNodes = true | .defaultSettings.v2DataEngine = true | .defaultSettings.dataEngineCPUMask = "{\\"v2\\": \\"0x1\\"}"' values.yaml
     ELSE
         When Install Longhorn
-        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}create-default-disk-labeled-nodes: true\\n${SPACE * 4}v2-data-engine: true" longhorn.yaml
+        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}create-default-disk-labeled-nodes: true\\n${SPACE * 4}v2-data-engine: true\\n${SPACE * 4}data-engine-cpu-mask: '{\\"v2\\":\\"0x1\\"}'" longhorn.yaml
     END
 
     Then Wait for longhorn ready
