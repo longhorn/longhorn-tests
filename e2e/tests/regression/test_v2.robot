@@ -322,7 +322,7 @@ Test V2 Volume Engine Live Switchover
     And Wait for workloads pods stable    deployment 0
     And Mark volume monitoring start time for deployment 0
 
-    When Start fio randwrite with crc32c verify in deployment 0
+    When Start fio write with crc32c verify in deployment 0
     Then Volume of deployment 0 engine CR and enginefrontend CR should be on same node
 
     # Test 1: Move engine to node 1
