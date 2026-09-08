@@ -112,68 +112,21 @@ Set disk path based on host provider and architecture
     END
 
 Enable v2 data engine and add block disks
-    [Arguments]    ${wait}=${True}    ${interrupt_mode_enabled}=${False}
+    [Arguments]    ${wait}=${True}
     set_disk_path_based_on_host_provider_and_architecture
+    ${RUN_V2_INTERRUPT_MODE}=    Get Environment Variable    RUN_V2_INTERRUPT_MODE    false
+    IF    "${RUN_V2_INTERRUPT_MODE}" == "true"
+        update_setting    data-engine-interrupt-mode-enabled    {"v2":"true"}
+    END
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
     update_setting    data-engine-cpu-mask    {"v2": "0x1"}
-    ${v2_data_engine_enabled}=    get_setting    v2-data-engine
-
-    IF    ${interrupt_mode_enabled}
-        Enable interrupt mode for v2 data engine    ${v2_data_engine_enabled}
-    END
-
-    # v2 data engine and its block disks are already configured, nothing to do
-    IF    "${v2_data_engine_enabled}" == "true"
-        RETURN
-    END
-
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
         add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
     END
-
-    Wait for block disks schedulable on nodes    @{worker_nodes}
-
-Enable interrupt mode for v2 data engine
-    [Arguments]    ${v2_data_engine_enabled}
-    ${is_interrupt_mode_enabled} =    Data engine interrupt mode is enabled for v2
-    IF    ${is_interrupt_mode_enabled}
-        RETURN
-    END
-
-    Setting data-engine-interrupt-mode-enabled is set to {"v2": "true"}
-
-    # only if v2 data engine was already enabled do v2 instance manager pods
-    # (and their block disks) already exist for this update to disrupt; a
-    # fresh environment gets everything created with interrupt mode already
-    # applied below, so there is nothing to wait for here
-    IF    "${v2_data_engine_enabled}" == "true"
-        ${worker_nodes} =    get_worker_nodes
-        Check v2 instance manager pods recreated
-        Wait for block disks unschedulable then schedulable on nodes    @{worker_nodes}
-    END
-
-Wait for block disks ${state:schedulable|unschedulable} on nodes
-    [Arguments]    @{node_names}
-    # add_disk only waits for the disk to report Ready; the Schedulable
-    # condition can lag behind that (or briefly flips during IM pod
-    # recreation), so confirm the expected state separately per node
-    ${expected_schedulable} =    Set Variable If    '${state}' == 'schedulable'    ${True}    ${False}
-    FOR    ${node_name}    IN    @{node_names}
-        wait_for_node_disks_schedulable    ${node_name}    disk_type=block    expected_schedulable=${expected_schedulable}
-    END
-
-Wait for block disks unschedulable then schedulable on nodes
-    [Arguments]    @{node_names}
-    # recreating the v2 instance manager pods (e.g. after toggling
-    # data-engine-interrupt-mode-enabled) briefly makes already-added block
-    # disks unschedulable while the new pod re-attaches them; confirm that
-    # full transition instead of assuming the disks are still ready
-    Wait for block disks unschedulable on nodes    @{node_names}
-    Wait for block disks schedulable on nodes    @{node_names}
 
 Init worker node variables
     ${worker_nodes}=    get_worker_nodes

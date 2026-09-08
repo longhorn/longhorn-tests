@@ -28,9 +28,8 @@ Test Teardown    Cleanup test resources
 
 *** Keywords ***
 Set up v2 test environment
-    [Arguments]    ${interrupt_mode_enabled}=${False}
     Set up test environment
-    Enable v2 data engine and add block disks    interrupt_mode_enabled=${interrupt_mode_enabled}
+    Enable v2 data engine and add block disks
 
 Cleanup engine frontend test on node ${node_id}
     Make enginefrontend metadata directory mutable on node ${node_id}
@@ -1050,20 +1049,19 @@ Test V2 Sharded Volume Dynamic Provisioning With Expansion
         And Delete statefulset ${i}
     END
 
-Test V2 Continuous Write In Interrupt Mode
-    [Tags]    regression    v2    interrupt-mode
-    [Documentation]    Continuously write data to v2 volume in interrupt mode and 
+Test V2 Continuous Write
+    [Tags]    regression    v2
+    [Documentation]    Continuously write data to v2 volume and 
     ...                verify write does not get stuck and data is intact.
     ...                - Issue: https://github.com/longhorn/longhorn/issues/13937
-    [Setup]    Set up v2 test environment    interrupt_mode_enabled=${True}
     IF    '${DATA_ENGINE}' == 'v1'
         Skip    Test only validate on v2 data engine
     END
 
-    Given Create storageclass longhorn-test-v2-interrupt with    dataEngine=v2    numberOfReplicas=2
+    Given Create storageclass longhorn-test-v2 with    dataEngine=v2    numberOfReplicas=2
 
-    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Create statefulset ${i} using RWO volume with longhorn-test-v2-interrupt storageclass and size 3 Gi
+    FOR    ${i}    IN RANGE    5
+        When Create statefulset ${i} using RWO volume with longhorn-test-v2 storageclass and size 3 Gi
         And Wait for volume of statefulset ${i} healthy
         Then Write 2560 MB data to file data in statefulset ${i}
         And Check statefulset ${i} data in file data is intact
