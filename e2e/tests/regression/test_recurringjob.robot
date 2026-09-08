@@ -15,6 +15,7 @@ Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/host.resource
+Resource    ../keywords/backup.resource
 
 Library    random
 
@@ -152,6 +153,61 @@ Test Recurring Job Concurrency
     When Update snapshot recurringjob 0    concurrency=3
     Then There should be 3 jobs created concurrently for snapshot recurringjob 0
 
+Test Snapshot Cleanup Recurring Job Cleans System Generated Snapshots During Replica Rebuild
+    [Tags]    snapshot-cleanup
+    [Documentation]    https://github.com/longhorn/longhorn/issues/13784
+    ...    Verify snapshot-cleanup recurring job cleans system-generated snapshots on
+    ...    an idle volume while another volume's replica is still rebuilding.
+    ...
+    ...    1. Set auto-cleanup-system-generated-snapshot to false.
+    ...    2. Create volume 0 (2Gi) and volume 1 (15Gi), attach both and wait until healthy.
+    ...       Write 14 GB of data to volume 1 to ensure its rebuild takes enough time
+    ...       for the recurring job to run concurrently.
+    ...    3. Delete one replica on volume 0 and wait for rebuild to complete.
+    ...       Verify 1 system-generated snapshot now exists on volume 0.
+    ...    4. Delete one replica on volume 0 again and wait for rebuild to complete.
+    ...       Verify 2 system-generated snapshots now exist on volume 0.
+    ...    5. Delete one replica on volume 1 (node 1) and wait for the rebuild to
+    ...       start on node 0, so the recurring job runs while a rebuild is in progress.
+    ...    6. Create a snapshot-cleanup recurring job targeting the default group
+    ...       and wait for it to complete.
+    ...    7. Verify volume 0 has 1 system-generated snapshot remaining (v1: the
+    ...       snapshot immediately before volume-head cannot be deleted) or 0 (v2).
+    ...    8. Wait for volume 1 to return to healthy.
+    Given Setting auto-cleanup-system-generated-snapshot is set to false
+    And Create volume 0 with    size=2Gi    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Create volume 1 with    size=15Gi    dataEngine=${DATA_ENGINE}
+    And Attach volume 1
+    And Wait for volume 1 healthy
+    And Write 14 GB data to volume 1
+
+    # Rebuild volume 0 twice to accumulate 2 system-generated snapshots on v1
+    When Delete volume 0 replica on node 0
+    Then Wait until volume 0 replicas rebuilding completed
+    And Wait for volume 0 healthy
+    And Wait for volume 0 to have 1 system generated snapshots
+    When Delete volume 0 replica on node 0
+    Then Wait until volume 0 replicas rebuilding completed
+    And Wait for volume 0 healthy
+    And Wait for volume 0 to have 2 system generated snapshots
+
+    When Delete volume 1 replica on node 1
+    And Wait until volume 1 replica rebuilding started on node 0
+    And Create snapshot-cleanup recurringjob snapshot-cleanup-job
+    ...    groups=["default"]
+    ...    cron=1 minutes from now
+    And Wait for snapshot-cleanup recurringjob snapshot-cleanup-job complete
+
+    # v1: 1 snapshot remains (direct parent of volume-head is undeletable)
+    # v2: all cleaned up
+    IF    '${DATA_ENGINE}' == 'v1'
+        Then Wait for volume 0 to have 1 system generated snapshots
+    ELSE
+        Then Wait for volume 0 to have 0 system generated snapshots
+    END
+
 Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
     [Documentation]
     ...    Issue: https://github.com/longhorn/longhorn/issues/10711
@@ -172,3 +228,63 @@ Verify Large Volume Data Integrity During Replica Rebuilding with Recurring Jobs
     Then Wait until volume 0 replica rebuilding completed on node 0
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
+
+Test Snapshot Not Deleted While Referenced By An In-Progress Backup During Recurring Cleanup
+    [Documentation]
+    ...    Verify that a snapshot referenced by a non-terminal (New/Pending/InProgress) Backup CR
+    ...    is protected from deletion when the same backup recurring job's cleanup step runs again
+    ...    on a later scheduled execution.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/10184
+    ...
+    ...    A recurring backup creates its Snapshot and Backup CR, but the recurring-job process
+    ...    can exit before the asynchronous backup reaches a terminal state (the Backup CR can
+    ...    remain New, Pending, or InProgress). A later scheduled run of the *same* recurring job
+    ...    then generates a new job.snapshotName and calls doSnapshotCleanup(false) before creating
+    ...    its new snapshot. Since filterExpiredSnapshotsOfCurrentRecurringJob() only retained the
+    ...    newly generated snapshot name and the last completed backup snapshot -- without
+    ...    inspecting Backup.Spec.SnapshotName on non-terminal Backup CRs -- the prior active
+    ...    backup's source snapshot became eligible for deletion, and the Backup controller could
+    ...    then no longer find its source Snapshot CR.
+    ...
+    ...    Steps:
+    ...    1. Create a volume, attach it, and start continuously writing data to it so that every
+    ...       backup taken by the recurring job always has fresh data to transfer and therefore
+    ...       takes longer than one cron interval to complete
+    ...    2. Create a single backup recurring job (retain=10, to keep the unrelated retain-count
+    ...       aging mechanism from ever pruning our tracked backup/snapshot) with a short cron
+    ...       interval
+    ...    3. Wait for the first backup to be created and complete, and record its name
+    ...    4. Repeat 5 times:
+    ...       4.1 Wait for the recurring job's next pod to be created (or a new backup to be
+    ...           in progress), confirming a new scheduled run has started while the previously
+    ...           recorded backup may still be settling
+    ...       4.2 Check that the snapshot for the previously recorded backup still exists, i.e.
+    ...           it was not removed by the new run's cleanup
+    ...       4.3 Wait for the new backup to complete and update the recorded backup name
+    Given Setting auto-cleanup-recurring-job-backup-snapshot is set to false
+    Given Create volume vol-0 with    size=5Gi    dataEngine=${DATA_ENGINE}
+    And Attach volume vol-0
+    And Wait for volume vol-0 healthy
+    And Keep writing data to volume vol-0    size=3Gi
+
+    When Create backup recurringjob 0    groups=["default"]    cron=* * * * *    retain=10
+
+    # wait for the first backup to be created and record it
+    Then Wait for backup recurringjob 0 started
+    And Wait for backup recurringjob 0 complete
+    ${backup_name} =    Run command
+    ...    kubectl get backups -n longhorn-system -l backup-volume\=vol-0 --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}'
+
+    FOR    ${i}    IN RANGE    5
+        And Wait for backup recurringjob 0 started
+        And Check snapshot for backup ${backup_name} of volume vol-0 exists
+        And Verify backup list contains no error for volume vol-0
+
+        And Wait for backup recurringjob 0 complete
+        And Check snapshot for backup ${backup_name} of volume vol-0 exists
+        And Verify backup list contains no error for volume vol-0
+
+        ${backup_name} =    Run command
+        ...    kubectl get backups -n longhorn-system -l backup-volume\=vol-0 --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}'
+    END
