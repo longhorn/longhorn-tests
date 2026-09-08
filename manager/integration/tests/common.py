@@ -240,6 +240,7 @@ SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
 SETTING_DATA_ENGINE_INTERRUPT_MODE = "data-engine-interrupt-mode-enabled"
+SETTING_DATA_ENGINE_CPU_MASK = "data-engine-cpu-mask"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -4014,6 +4015,17 @@ def reset_settings(client):
 
         if setting_name == "registry-secret":
             continue
+
+        if setting_name == SETTING_DATA_ENGINE_CPU_MASK:
+            if os.environ.get('RUN_V2_TEST') == "true":
+                setting = client.by_id_setting(setting_name)
+                try:
+                    client.update(setting, value='{"v2": "0x1"}')
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to "
+                          "{\"v2\": \"0x1\"}")
+                    print(e)
+                continue
 
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
