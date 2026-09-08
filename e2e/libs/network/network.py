@@ -107,3 +107,113 @@ def disconnect_pod_network(pod_name, disconnection_time_in_sec=10, port_number=N
     pod_exec(pod_name, constant.LONGHORN_NAMESPACE, cmd)
     if wait:
         time.sleep(disconnection_time_in_sec)
+
+
+def limit_pod_traffic_to_ip(pod_name, target_ip, excluded_source_port,
+                            rate_in_mbit):
+    wait_for_pod_status(
+        pod_name, "Running", namespace=constant.LONGHORN_NAMESPACE)
+
+    interface = pod_exec(
+        pod_name,
+        constant.LONGHORN_NAMESPACE,
+        f"ip route get {target_ip} | awk '{{for (i = 1; i <= NF; i++) "
+        f"if ($i == \"dev\") {{print $(i + 1); exit}}}}'",
+    ).strip()
+    assert interface, f"Failed to find route from {pod_name} to {target_ip}"
+
+    logging(
+        f"Limiting traffic from pod {pod_name} to {target_ip} to "
+        f"{rate_in_mbit} Mbit, excluding source port {excluded_source_port}"
+    )
+    # Classify the sync-agent server traffic first so only rebuild data is
+    # rate-limited. All unrelated traffic uses the unshaped default class.
+    cmd = (
+        "set -eu; "
+        "zypper install -y iptables > /dev/null; "
+        f"tc qdisc add dev {interface} root handle 1: htb default 20; "
+        f"tc class add dev {interface} parent 1: classid 1:1 "
+        "htb rate 10000mbit; "
+        f"tc class add dev {interface} parent 1:1 classid 1:10 "
+        f"htb rate {rate_in_mbit}mbit; "
+        f"tc class add dev {interface} parent 1:1 classid 1:20 "
+        "htb rate 10000mbit; "
+        f"tc filter add dev {interface} protocol ip parent 1: prio 1 u32 "
+        "match ip protocol 6 0xff "
+        f"match ip sport {excluded_source_port} 0xffff flowid 1:20; "
+        f"tc filter add dev {interface} protocol ip parent 1: prio 2 u32 "
+        f"match ip dst {target_ip}/32 flowid 1:10"
+    )
+
+    try:
+        pod_exec(pod_name, constant.LONGHORN_NAMESPACE, cmd)
+    except Exception:
+        remove_pod_traffic_limit(pod_name, interface)
+        raise
+
+    return interface
+
+
+def remove_pod_traffic_limit(pod_name, interface):
+    logging(
+        f"Removing traffic limit from pod {pod_name} interface {interface}")
+    pod_exec(
+        pod_name,
+        constant.LONGHORN_NAMESPACE,
+        f"tc qdisc del dev {interface} root handle 1: 2>/dev/null || true",
+    )
+
+
+def get_pod_tcp_connections(pod_name):
+    output = pod_exec(
+        pod_name,
+        constant.LONGHORN_NAMESPACE,
+        "ss -Htn state established",
+    )
+
+    connections = []
+    for line in output.splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        local_ip, local_port = _split_tcp_endpoint(fields[2])
+        remote_ip, remote_port = _split_tcp_endpoint(fields[3])
+        connections.append({
+            "local_ip": local_ip,
+            "local_port": local_port,
+            "remote_ip": remote_ip,
+            "remote_port": remote_port,
+        })
+    return connections
+
+
+def drop_tcp_connection_replies(pod_name, connection,
+                                drop_time_in_sec):
+    rule = (
+        f"-p tcp -s {connection['remote_ip']} "
+        f"--sport {connection['remote_port']} "
+        f"-d {connection['local_ip']} --dport {connection['local_port']} "
+        "-j DROP"
+    )
+    logging(
+        "Dropping replies to TCP connection "
+        f"{connection['remote_ip']}:{connection['remote_port']} -> "
+        f"{connection['local_ip']}:{connection['local_port']} for "
+        f"{drop_time_in_sec} seconds"
+    )
+    cmd = (
+        f"iptables -w -I INPUT 1 {rule}; "
+        f"{{ sleep {drop_time_in_sec}; "
+        f"iptables -w -D INPUT {rule} || true; }} > /dev/null 2>&1 &"
+    )
+    pod_exec(pod_name, constant.LONGHORN_NAMESPACE, cmd)
+
+
+def _split_tcp_endpoint(endpoint):
+    if endpoint.startswith("["):
+        ip, port = endpoint[1:].rsplit("]:", 1)
+    else:
+        ip, port = endpoint.rsplit(":", 1)
+    if ip.startswith("::ffff:"):
+        ip = ip[len("::ffff:"):]
+    return ip, int(port)

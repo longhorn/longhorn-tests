@@ -145,6 +145,16 @@ Reboot volume node of ${workload_kind} ${workload_id}
     reboot_node_by_name    ${node_name}
     Remove Values From List    ${powered_off_nodes}    ${node_name}
 
+Get volume name of ${workload_kind} ${workload_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    RETURN    ${volume_name}
+
+Wait for volume of ${workload_kind} ${workload_id} degraded
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_degraded    ${volume_name}
+
 Wait for volume of ${workload_kind} ${workload_id} detached
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
@@ -402,6 +412,10 @@ Check ${workload_kind} ${workload_id} pods not recreated
 Rollout restart ${workload_kind} ${workload_id} in namespace ${namespace}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     rollout_restart_workload    ${workload_kind}    ${workload_name}    ${namespace}
+
+Wait for rollout of ${workload_kind} ${workload_id} in namespace ${namespace} to complete
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    rollout_status_workload    ${workload_kind}    ${workload_name}    ${namespace}
 
 Volume of ${workload_kind} ${workload_id} actual size should be less than ${size}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}

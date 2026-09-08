@@ -642,3 +642,191 @@ Test CPU Manager Policy And Data Engine Number Of CPU Cores
     And Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for output
     ...    awk '/^Cpus_allowed_list:/ {print $2}' /proc/self/status
     ...    ^[0-9]+-[0-9]+$
+
+Test Create Default Disk On Labeled Nodes With V2 Data Engine
+    [Tags]    setting    uninstall    block-disk
+    [Documentation]    Verify that labeling and annotating a node with
+    ...    node.longhorn.io/create-default-disk=config and
+    ...    node.longhorn.io/default-disks-config allows Longhorn to create a
+    ...    default v2 block disk on that node automatically when
+    ...    createDefaultDiskLabeledNodes and v2DataEngine are enabled at
+    ...    install time.
+    ...
+    ...    Manual test steps:
+    ...    1. Label each worker node with
+    ...       node.longhorn.io/create-default-disk=config
+    ...    2. Annotate each worker node with
+    ...       node.longhorn.io/default-disks-config='[{"name":"block-disk","path":"<disk-path>","diskType":"block","allowScheduling":true}]'
+    ...    3. Install Longhorn with defaultSettings.createDefaultDiskLabeledNodes=true
+    ...       and defaultSettings.v2DataEngine=true
+    ...    4. Verify a default disk named block-disk with path "<disk-path> and
+    ...       diskType block is created on each node
+    ...    5. Create a v2 volume, write data and verify data integrity
+    ...    6. Uninstall and reinstall Longhorn to recover the default environment
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    FOR    ${node_name}    IN    ${NODE_0}    ${NODE_1}    ${NODE_2}
+        Run command
+        ...    kubectl label node ${node_name} node.longhorn.io/create-default-disk=config --overwrite
+        Run command
+        ...    kubectl annotate node ${node_name} node.longhorn.io/default-disks-config='[{"name":"block-disk","path":"${DISK_PATH}","diskType":"block","allowScheduling":true}]' --overwrite
+    END
+
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+        When Install Longhorn
+        ...    custom_cmd=yq -i '.defaultSettings.createDefaultDiskLabeledNodes = true | .defaultSettings.v2DataEngine = true' values.yaml
+    ELSE
+        When Install Longhorn
+        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}create-default-disk-labeled-nodes: true\\n${SPACE * 4}v2-data-engine: true" longhorn.yaml
+    END
+
+    Then Wait for longhorn ready
+
+    FOR    ${node_name}    IN    ${NODE_0}    ${NODE_1}    ${NODE_2}
+        Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${node_name} -n ${LONGHORN_NAMESPACE} -o yaml
+        ...    block-disk:
+        Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${node_name} -n ${LONGHORN_NAMESPACE} -o yaml
+        ...    path: ${DISK_PATH}
+        Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${node_name} -n ${LONGHORN_NAMESPACE} -o yaml
+        ...    diskType: block
+    END
+
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    When Write data to volume 0
+    Then Check volume 0 data is intact
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Delete volume 0
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn
+    And Wait for longhorn ready
+Test NVMe TCP IO Queue Count
+    [Documentation]    https://github.com/longhorn/longhorn/issues/13706
+    ...
+    ...                Test Setup:
+    ...                    Create a v2 StorageClass, PVC, and Deployment; wait for the volume to be healthy.
+    ...
+    ...                Step 1 - Record kernel-default queue count:
+    ...                    Read /sys/class/nvme/<ctrl>/queue_count from the volume's instance-manager pod.
+    ...
+    ...                Step 2 - Global setting:
+    ...                    Set default-nvme-tcp-nr-io-queues to {"v2":"2"}, detach and reattach the volume,
+    ...                    verify queue_count is 3 (2 I/O + 1 admin), and write data.
+    ...
+    ...                Step 3 - StorageClass per-volume override:
+    ...                    Create a StorageClass with nvmeTcpNrIoQueues=4, provision a new volume,
+    ...                    verify Volume.spec.nvmeTcpNrIoQueues is 4 and queue_count is 5, and write data.
+    ...
+    ...                Step 4 - Volume spec per-volume override:
+    ...                    Set Volume.spec.nvmeTcpNrIoQueues to 3, detach/reattach, verify queue_count is 4.
+    ...                    Reset to 0, detach/reattach, verify queue_count falls back to the global setting of 3.
+    ...
+    ...                Step 5 - Validation:
+    ...                    Verify that nvmeTcpNrIoQueues values 129 and -1 are rejected by the API.
+    ...
+    ...                Step 6 - Persistence across instance-manager restart:
+    ...                    Set nvmeTcpNrIoQueues=3, detach and reattach the volume, verify queue_count is 4,
+    ...                    delete the instance-manager pod, wait for recovery, and verify queue_count is still 4.
+    ...
+    ...                Step 7 - Maintenance attach:
+    ...                    Detach, attach in maintenance mode, enable the frontend,
+    ...                    and verify queue_count matches the configured value of 4.
+    ...
+    ...                Step 8 - Restore kernel default:
+    ...                    Reset default-nvme-tcp-nr-io-queues to {"v2":"0"}, detach and reattach deployment 0
+    ...                    (spec never changed from 0), and verify queue_count matches the default recorded in Step 1.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates on v2 data engine
+    END
+
+    Given Create storageclass longhorn-test with    dataEngine=v2
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    # Step 1: Record the kernel-default NVMe-TCP queue count
+    ${default_queue_count} =    Get NVMe queue count of deployment 0 volume
+    Log    Default NVMe queue count: ${default_queue_count}
+
+    # Step 2: Verify the global NVMe-TCP I/O queue count setting
+    When Setting default-nvme-tcp-nr-io-queues is set to {"v2":"2"}
+    And Scale down deployment 0 to detach volume
+    And Wait for volume of deployment 0 detached
+    And Scale up deployment 0 to attach volume
+    And Wait for volume of deployment 0 healthy
+    # extra one queue for admin queue
+    And Wait for NVMe queue count of deployment 0 volume to be 3
+    And Write 100 MB data to file data.txt in deployment 0
+    And Check deployment 0 data in file data.txt is intact
+
+    # Step 3: Verify per-volume override through StorageClass
+    When Create storageclass longhorn-test-4q with    dataEngine=v2    nvmeTcpNrIoQueues=4
+    And Create persistentvolumeclaim 1    volume_type=RWO    sc_name=longhorn-test-4q
+    And Create deployment 1 with persistentvolumeclaim 1
+    And Wait for volume of deployment 1 healthy
+    And Validate volume spec nvmeTcpNrIoQueues of deployment 1 is 4
+    And Wait for NVMe queue count of deployment 1 volume to be 5
+    And Write 100 MB data to file data.txt in deployment 1
+    And Check deployment 1 data in file data.txt is intact
+
+    # Step 4: Verify per-volume override on an existing volume
+    When Update volume spec nvmeTcpNrIoQueues of deployment 1 to 3
+    And Scale down deployment 1 to detach volume
+    And Wait for volume of deployment 1 detached
+    And Scale up deployment 1 to attach volume
+    And Wait for volume of deployment 1 healthy
+    And Wait for NVMe queue count of deployment 1 volume to be 4
+
+    When Update volume spec nvmeTcpNrIoQueues of deployment 1 to 0
+    And Scale down deployment 1 to detach volume
+    And Wait for volume of deployment 1 detached
+    And Scale up deployment 1 to attach volume
+    And Wait for volume of deployment 1 healthy
+    And Wait for NVMe queue count of deployment 1 volume to be 3
+
+    # Step 5: Verify NVMe-TCP I/O queue count validation
+    Run Keyword And Expect Error    *    Update volume spec nvmeTcpNrIoQueues of deployment 1 to 129
+    Run Keyword And Expect Error    *    Update volume spec nvmeTcpNrIoQueues of deployment 1 to -1
+
+    # Step 6: Verify queue count persists across instance-manager restart
+    When Update volume spec nvmeTcpNrIoQueues of deployment 1 to 3
+    And Scale down deployment 1 to detach volume
+    And Wait for volume of deployment 1 detached
+    And Scale up deployment 1 to attach volume
+    And Wait for volume of deployment 1 healthy
+    And Wait for NVMe queue count of deployment 1 volume to be 4
+    And Delete v2 instance manager of deployment 1 volume
+    And Wait for volume of deployment 1 degraded
+    And Wait for volume of deployment 1 healthy
+    And Wait for NVMe queue count of deployment 1 volume to be 4
+
+    # Step 7: Verify queue count for maintenance attach
+    When Scale down deployment 1 to detach volume
+    And Wait for volume of deployment 1 detached
+    And Attach deployment 1 volume in maintenance mode
+    And Wait for volume of deployment 1 healthy
+    And Enable frontend of deployment 1 volume
+    And Wait for volume of deployment 1 healthy
+    And Wait for NVMe queue count of deployment 1 volume to be 4
+    And Detach deployment 1 volume
+    And Wait for volume of deployment 1 detached
+
+    # Step 8: Verify kernel-default queue count is restored
+    When Setting default-nvme-tcp-nr-io-queues is set to {"v2":"0"}
+    And Scale down deployment 0 to detach volume
+    And Wait for volume of deployment 0 detached
+    And Scale up deployment 0 to attach volume
+    And Wait for volume of deployment 0 healthy
+    And Wait for NVMe queue count of deployment 0 volume to be ${default_queue_count}

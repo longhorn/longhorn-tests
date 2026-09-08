@@ -35,6 +35,8 @@ set_kubeconfig_envvar(){
 main(){
   set_kubeconfig_envvar
 
+  create_longhorn_namespace
+
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround
   fi
@@ -57,7 +59,6 @@ main(){
 
   longhornctl_check
 
-  create_longhorn_namespace
   install_backupstores
   if [[ "${TF_VAR_cis_hardening}" == true ]]; then
     install_backupstores_networkpolicy
