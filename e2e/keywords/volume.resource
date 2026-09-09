@@ -167,6 +167,34 @@ Update volume of ${workload_kind} ${workload_id} ${key} to ${value} should fail
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     Run Keyword And Expect Error    *    update_volume_spec    ${volume_name}    ${key}    ${value}
+Get NVMe queue count of ${workload_kind} ${workload_id} volume
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    ${queue_count} =    get_nvme_queue_count_of_volume    ${volume_name}
+    RETURN    ${queue_count}
+
+Wait for NVMe queue count of ${workload_kind} ${workload_id} volume to be ${expected_count}
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    wait_for_nvme_queue_count    ${volume_name}    ${expected_count}
+
+Enable frontend of ${workload_kind} ${workload_id} volume
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    enable_volume_frontend    ${volume_name}
+
+Attach ${workload_kind} ${workload_id} volume in maintenance mode
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    attach_volume_in_maintenance_mode    ${volume_name}
+
+Detach ${workload_kind} ${workload_id} volume
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    detach_volume    ${volume_name}
+
+Validate volume spec ${key} of ${workload_kind} ${workload_id} is ${value}
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    validate_volume_setting    ${volume_name}    ${key}    ${value}
+
+Update volume spec ${key} of ${workload_kind} ${workload_id} to ${value}
+    ${volume_name} =    Get volume name of ${workload_kind} ${workload_id}
+    update_volume_spec    ${volume_name}    ${key}    ${value}
 
 Attach volume ${volume_id} to node ${node_id}
     [Arguments]    &{config}
@@ -306,6 +334,18 @@ Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches v
     ${other_checksum} =    get_volume_checksum_at_offset    ${other_volume_name}    ${offset_mb}    ${size_mb}
     Should Be Equal    ${checksum}    ${other_checksum}
 
+Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches recorded data of volume ${other_volume_id}
+    [Documentation]    Compare a data range against the checksum recorded when
+    ...    that range was written to a different volume.  Unlike the "matches
+    ...    volume" keyword this does not read the other volume, so it still works
+    ...    once that volume has been deleted — e.g. verifying a restored volume
+    ...    against the backed up volume it came from.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
+    ${actual_checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${other_volume_id}-offset-${offset_mb}
+    Should Be Equal    ${actual_checksum}    ${expected_checksum}
+
 Delete volume ${volume_id} replica on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_replica_on_node    ${volume_name}    ${replica_locality}
@@ -382,11 +422,6 @@ Wait for volume ${volume_id} faulted
 
 Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_volume_degraded    ${volume_name}
-
-Wait for volume of ${workload_kind} ${workload_id} degraded
-    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_degraded    ${volume_name}
 
 Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}

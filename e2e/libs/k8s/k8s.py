@@ -369,6 +369,21 @@ def get_pods_by_label_selector(label_selector, namespace=constant.LONGHORN_NAMES
     pods = list_namespaced_pod(namespace=namespace, label_selector=label_selector)
     return [pod.metadata.name for pod in pods]
 
+def get_lease_holder(lease_name, namespace=constant.LONGHORN_NAMESPACE):
+    api = client.CoordinationV1Api()
+    lease = api.read_namespaced_lease(lease_name, namespace)
+    return lease.spec.holder_identity
+
+def wait_for_lease_holder_changed(lease_name, old_holder, namespace=constant.LONGHORN_NAMESPACE):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        holder = get_lease_holder(lease_name, namespace)
+        logging(f"Waiting for lease {lease_name} holder changed from {old_holder}, current holder is {holder} ... ({i})")
+        if holder and holder != old_holder:
+            return holder
+        time.sleep(retry_interval)
+    assert False, f"Lease {lease_name} holder did not change from {old_holder}"
+
 def verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
     pods = get_pods_by_label_selector(label_selector, namespace)
     if not pods:

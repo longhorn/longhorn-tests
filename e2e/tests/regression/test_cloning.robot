@@ -13,6 +13,8 @@ Resource    ../keywords/k8s.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/longhorn.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/deployment.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -115,3 +117,73 @@ Test Clone Volume With Cordoned Node
     Then Create pod cloned-pod using persistentvolumeclaim cloned-pvc
     And Wait for pod cloned-pod running
     And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
+
+Test CSI Clone Respects Node And Disk Selector
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12792
+    ...    1. Keep all Longhorn nodes schedulable.
+    ...    2. Tag only node 1 and its disk with hosting.
+    ...    3. Create a StorageClass with nodeSelector/diskSelector=hosting and strict-local.
+    ...    4. Create the source PVC on node 1 and write test data.
+    ...    5. Detach the source volume before creating the clone.
+    ...    6. Verify the clone replica is scheduled only on node 1.
+    ...    7. Verify the clone attachment is not placed on untagged nodes.
+    ...    8. Wait for the clone controller to finish and detach the clone.
+    ...    9. Attach the cloned PVC to node 1 and verify data integrity.
+    [Tags]    clone    csi    scheduling
+
+    Given Set node 1 tags    hosting
+    And Set node 1 disks tags    hosting
+
+    And Create storageclass longhorn-hosting-clone with
+    ...    numberOfReplicas=1
+    ...    dataLocality=strict-local
+    ...    nodeSelector=hosting
+    ...    diskSelector=hosting
+    ...    dataEngine=${DATA_ENGINE}
+
+    And Create persistentvolumeclaim source-pvc
+    ...    sc_name=longhorn-hosting-clone
+    ...    storage_size=2GiB
+    And Wait for volume of persistentvolumeclaim source-pvc to be created
+
+    And Create deployment source-deploy with persistentvolumeclaim source-pvc
+    ...    node_selector={"kubernetes.io/hostname":"${NODE_1}"}
+    And Wait for deployment source-deploy pods stable
+    And Wait for volume of persistentvolumeclaim source-pvc healthy
+
+    And Volume of persistentvolumeclaim source-pvc should have running replicas on node 1
+    And Volume of persistentvolumeclaim source-pvc should have no running replica on node 0
+    And Volume of persistentvolumeclaim source-pvc should have no running replica on node 2
+
+    And Write 256 MB data to file data.txt in deployment source-deploy
+    And Record file data.txt checksum in deployment source-deploy as checksum source-pvc
+
+    When Delete deployment source-deploy
+    And Wait for volume of persistentvolumeclaim source-pvc detached
+
+    And Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc
+    ...    sc_name=longhorn-hosting-clone
+    ...    storage_size=2GiB
+    And Wait for volume of persistentvolumeclaim cloned-pvc to be created
+
+    Then Wait for volume of persistentvolumeclaim cloned-pvc condition Scheduled to be true
+    And Volume of persistentvolumeclaim cloned-pvc should have running replicas on node 1
+    And Volume of persistentvolumeclaim cloned-pvc should have no running replica on node 0
+    And Volume of persistentvolumeclaim cloned-pvc should have no running replica on node 2
+
+    When Wait for volume of persistentvolumeclaim source-pvc attached
+    And Wait for volume of persistentvolumeclaim cloned-pvc attached
+
+    And Volume of persistentvolumeclaim cloned-pvc should not be attached to node 0
+    And Volume of persistentvolumeclaim cloned-pvc should not be attached to node 2
+
+    # The clone-controller attachment is removed after cloning finishes.
+    # Waiting attached -> detached is a stable completion signal and avoids
+    # polling the transient copy-completed-awaiting-healthy cloneStatus.
+    And Wait for volume of persistentvolumeclaim cloned-pvc detached
+
+    Then Create deployment cloned-deploy with persistentvolumeclaim cloned-pvc
+    ...    node_selector={"kubernetes.io/hostname":"${NODE_1}"}
+    And Wait for deployment cloned-deploy pods stable
+    And Wait for volume of persistentvolumeclaim cloned-pvc healthy
+    And Check deployment cloned-deploy file data.txt checksum matches checksum source-pvc

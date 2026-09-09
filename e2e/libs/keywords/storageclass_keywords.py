@@ -7,9 +7,9 @@ class storageclass_keywords:
     def __init__(self):
         self.storageclass = StorageClass()
 
-    def create_storageclass(self, name, numberOfReplicas=None, migratable=None, dataLocality=None, fromBackup=None, nfsOptions=None, dataEngine=None, encrypted=None, recurringJobSelector=None, volumeBindingMode=None, allowedTopologies=None, backingImage=None, backingImageDataSourceType=None, backingImageDataSourceParameters=None, nodeSelector=None, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None):
+    def create_storageclass(self, name, numberOfReplicas=None, migratable=None, dataLocality=None, fromBackup=None, nfsOptions=None, dataEngine=None, encrypted=None, recurringJobSelector=None, volumeBindingMode=None, allowedTopologies=None, backingImage=None, backingImageDataSourceType=None, backingImageDataSourceParameters=None, nodeSelector=None, diskSelector=None, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None, nvmeTcpNrIoQueues=None):
         logging(f'Creating storageclass with {locals()}')
-        self.storageclass.create(name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, volumeTopology, replicaZoneSoftAntiAffinity, dataLayout, fsType, replicaSoftAntiAffinity)
+        self.storageclass.create(name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, diskSelector, volumeTopology, replicaZoneSoftAntiAffinity, dataLayout, fsType, replicaSoftAntiAffinity, nvmeTcpNrIoQueues)
 
     def cleanup_storageclasses(self):
         self.storageclass.cleanup()

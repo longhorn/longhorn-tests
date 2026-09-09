@@ -240,6 +240,7 @@ SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
 SETTING_DATA_ENGINE_INTERRUPT_MODE = "data-engine-interrupt-mode-enabled"
+SETTING_DATA_ENGINE_CPU_MASK = "data-engine-cpu-mask"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -4015,6 +4016,17 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
+        if setting_name == SETTING_DATA_ENGINE_CPU_MASK:
+            if os.environ.get('RUN_V2_TEST') == "true":
+                setting = client.by_id_setting(setting_name)
+                try:
+                    client.update(setting, value='{"v2": "0x1"}')
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to "
+                          "{\"v2\": \"0x1\"}")
+                    print(e)
+                continue
+
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
@@ -4345,9 +4357,22 @@ def find_replica_for_backup(client, volume_name, backup_id):
 
 
 def check_longhorn(core_api):
+    # Longhorn before v1.13 has no longhorn-global-manager Deployment, and
+    # the upgrade test runs this check against such a version before
+    # upgrading. Require the component only when its Deployment exists.
+    try:
+        get_apps_api_client().read_namespaced_deployment(
+            'longhorn-global-manager', 'longhorn-system')
+        need_global_manager = True
+    except ApiException as e:
+        if e.status != 404:
+            raise
+        need_global_manager = False
+
     ready = False
     has_engine_image = False
     has_driver_deployer = False
+    has_global_manager = not need_global_manager
     has_manager = False
     has_ui = False
     has_instance_manager = False
@@ -4369,6 +4394,9 @@ def check_longhorn(core_api):
                 elif labels.get('app', '') == 'longhorn-driver-deployer' \
                         and item.status.phase == "Running":
                     has_driver_deployer = True
+                elif labels.get('app', '') == 'longhorn-global-manager' \
+                        and item.status.phase == "Running":
+                    has_global_manager = True
                 elif labels.get('app', '') == 'longhorn-manager' \
                         and item.status.phase == "Running":
                     has_manager = True
@@ -4380,7 +4408,8 @@ def check_longhorn(core_api):
                         and item.status.phase == "Running":
                     has_instance_manager = True
 
-            if has_engine_image and has_driver_deployer and has_manager and \
+            if has_engine_image and has_driver_deployer and \
+                    has_global_manager and has_manager and \
                     has_ui and has_instance_manager and pod_running:
                 ready = True
                 break
