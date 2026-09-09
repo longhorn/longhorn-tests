@@ -4357,10 +4357,22 @@ def find_replica_for_backup(client, volume_name, backup_id):
 
 
 def check_longhorn(core_api):
+    # Longhorn before v1.13 has no longhorn-global-manager Deployment, and
+    # the upgrade test runs this check against such a version before
+    # upgrading. Require the component only when its Deployment exists.
+    try:
+        get_apps_api_client().read_namespaced_deployment(
+            'longhorn-global-manager', 'longhorn-system')
+        need_global_manager = True
+    except ApiException as e:
+        if e.status != 404:
+            raise
+        need_global_manager = False
+
     ready = False
     has_engine_image = False
     has_driver_deployer = False
-    has_global_manager = False
+    has_global_manager = not need_global_manager
     has_manager = False
     has_ui = False
     has_instance_manager = False
