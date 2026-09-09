@@ -424,11 +424,6 @@ Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
 
-Wait for volume of ${workload_kind} ${workload_id} degraded
-    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    ${volume_name} =    get_workload_volume_name    ${workload_name}
-    wait_for_volume_degraded    ${volume_name}
-
 Wait for volume ${volume_id} condition ${condition_name} to be ${condition_status}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
