@@ -15,6 +15,7 @@ import utility.constant as constant
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import convert_size_to_bytes
+from utility.utility import pod_exec
 
 from volume import Volume
 from volume.rest import Rest as VolumeRest
@@ -168,9 +169,9 @@ class volume_keywords:
         logging(f'Getting checksum of {size_mb} MB region of volume {volume_name} at offset {offset_mb} MB')
         return self.volume.get_checksum_at_offset(volume_name, int(offset_mb), int(size_mb))
 
-    def keep_writing_data(self, volume_name):
-        logging(f'Keep writing data to volume {volume_name}')
-        self.volume.keep_writing_data(volume_name)
+    def keep_writing_data(self, volume_name, size="256Mi"):
+        logging(f'Keep writing data to volume {volume_name} with size {size}')
+        self.volume.keep_writing_data(volume_name, size)
 
     def write_volume_scattered_data_with_fio(self, volume_name, size, bs, ratio):
         logging(f'Writing scattered data to volume {volume_name} with fio (size={size}, bs={bs}, ratio={ratio})')
@@ -446,6 +447,12 @@ class volume_keywords:
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
+    def wait_for_volume_replicas_in_topology_domain(self, volume_name, topology_key, domain_value):
+        self.volume.wait_for_volume_replicas_in_topology_domain(volume_name, topology_key, domain_value)
+
+    def get_volume_topology_requirement(self, volume_name):
+        return self.volume.get_topology_requirement(volume_name)
+
     def wait_for_volume_degraded(self, volume_name):
         self.volume.wait_for_volume_degraded(volume_name)
 
@@ -589,3 +596,30 @@ class volume_keywords:
 
     def wait_for_volume_status(self, volume_name, status_name, status_value):
         self.volume.wait_for_volume_status(volume_name, status_name, status_value)
+
+    def get_nvme_queue_count_of_volume(self, volume_name):
+        im_pod = self.get_volume_instance_manager(volume_name)
+        cmd = (f"for ctrl in /sys/class/nvme/nvme*/; do "
+               f"grep -q '{volume_name}' \"$ctrl/subsysnqn\" 2>/dev/null && "
+               f"cat \"$ctrl/queue_count\" && break; done")
+        result = pod_exec(im_pod, constant.LONGHORN_NAMESPACE, cmd)
+        result = result.strip()
+        assert result, f"Failed to find NVMe queue_count for volume {volume_name} in pod {im_pod}"
+        return int(result)
+
+    def wait_for_nvme_queue_count(self, volume_name, expected_count):
+        expected_count = int(expected_count)
+        for i in range(self.retry_count):
+            logging(f"Waiting for NVMe queue count of volume {volume_name} to be {expected_count} ... ({i})")
+            time.sleep(self.retry_interval)
+            try:
+                count = self.get_nvme_queue_count_of_volume(volume_name)
+                if count == expected_count:
+                    return
+                logging(f"Current NVMe queue count: {count}, expected: {expected_count}")
+            except Exception as e:
+                logging(f"Error getting NVMe queue count: {e}")
+        assert False, f"NVMe queue count of volume {volume_name} did not reach {expected_count}"
+
+    def enable_volume_frontend(self, volume_name):
+        self.volume.enable_volume_frontend(volume_name)

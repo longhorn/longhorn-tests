@@ -91,29 +91,37 @@ Get test start time
     Set Test Variable    ${test_start_time}
 
 Set disk path based on host provider and architecture
-    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
-    ${ARCH}=    Get Environment Variable    ARCH    amd64
-    IF    "${HOST_PROVIDER}" == "aws"
-        IF    "${ARCH}" == "amd64"
-            Set Test Variable    ${DISK_PATH}    /dev/xvdh
-        ELSE IF    "${ARCH}" == "arm64"
-            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+    ${DISK_PATH}=    Get Environment Variable    BLOCK_DEV_PATH    ${EMPTY}
+    Set Test Variable    ${DISK_PATH}
+    IF    $DISK_PATH == ""
+        ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
+        ${ARCH}=    Get Environment Variable    ARCH    amd64
+        IF    "${HOST_PROVIDER}" == "aws"
+            IF    "${ARCH}" == "amd64"
+                Set Test Variable    ${DISK_PATH}    /dev/xvdh
+            ELSE IF    "${ARCH}" == "arm64"
+                # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
+                # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
+                Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+            END
+        ELSE IF    '${HOST_PROVIDER}' == "harvester"
+            Set Test Variable    ${DISK_PATH}    /dev/vdc
+        ELSE IF    '${HOST_PROVIDER}' == "vagrant"
+            Set Test Variable    ${DISK_PATH}    /dev/vdb
         END
-    ELSE IF    '${HOST_PROVIDER}' == "harvester"
-        Set Test Variable    ${DISK_PATH}    /dev/vdc
-    ELSE IF    '${HOST_PROVIDER}' == "vagrant"
-        Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
 Enable v2 data engine and add block disks
+    [Arguments]    ${wait}=${True}
     set_disk_path_based_on_host_provider_and_architecture
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
+    update_setting    data-engine-cpu-mask    {"v2": "0x1"}
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
     END
 
 Init worker node variables
@@ -179,6 +187,7 @@ Cleanup test resources
     reset_settings    data_engine=${DATA_ENGINE}
     reset_node_tags
     reset_node_disks_tags
-    cleanup_k8s_node_zone
+    cleanup_node_zone
+    cleanup_node_region
     reset_longhorn_namespace
     cleanup_events

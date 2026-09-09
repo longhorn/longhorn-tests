@@ -66,7 +66,7 @@ BACKING_IMAGE_STATE_FAILED_AND_CLEANUP = "failed-and-cleanup"
 PORT = ":9500"
 
 RETRY_COMMAND_COUNT = 5
-RETRY_COUNTS = 150
+RETRY_COUNTS = 300
 RETRY_COUNTS_SHORT = 30
 RETRY_COUNTS_LONG = 900
 RETRY_INTERVAL = 1
@@ -91,18 +91,18 @@ ISCSI_PROCESS = "iscsid"
 if os.environ.get("CLOUDPROVIDER") == "aws":
     if os.environ.get("DISTRO") == "talos":
         # Talos: nvme2n1 for Longhorn user volume, nvme1n1 for v2 block tests
-        BLOCK_DEV_PATH = "/dev/nvme1n1"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
     elif os.uname().machine == "x86_64":
-        BLOCK_DEV_PATH = "/dev/xvdh"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/xvdh"
     else:
         # can not use BDF path before https://github.com/longhorn/longhorn/issues/13243 # NOQA
-        BLOCK_DEV_PATH = "/dev/nvme1n1"
+        BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
 elif os.environ.get("CLOUDPROVIDER") == "harvester":
-    BLOCK_DEV_PATH = "/dev/vdc"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/vdc"
 elif os.environ.get("CLOUDPROVIDER") == "vagrant":
-    BLOCK_DEV_PATH = "/dev/vdb"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/vdb"
 else:
-    BLOCK_DEV_PATH = "/dev/nvme1n1"
+    BLOCK_DEV_PATH = os.environ.get('BLOCK_DEV_PATH') or "/dev/nvme1n1"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
@@ -147,7 +147,7 @@ WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn')
+DEFAULT_DISK_PATH = os.environ.get('DEFAULT_DATA_PATH', '/var/lib/longhorn/')
 DIRECTORY_PATH = os.path.join(DEFAULT_DISK_PATH, 'longhorn-test')
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
@@ -240,6 +240,7 @@ SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
 SETTING_DATA_ENGINE_INTERRUPT_MODE = "data-engine-interrupt-mode-enabled"
+SETTING_DATA_ENGINE_CPU_MASK = "data-engine-cpu-mask"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -288,7 +289,7 @@ DEFAULT_TAGS = [
 ]
 
 INSTANCE_MANAGER_HOST_PATH_PREFIX = "/host"
-EXPANSION_SNAP_TMP_META_NAME_PATTERN = "volume-snap-expand-%s.img.meta.tmp"
+EXPANSION_SNAP_TMP_META_NAME_PATTERN = "volume-snap-expand-%s-%s.img.meta.tmp"
 
 DATA_SIZE_IN_MB_1 = 100
 DATA_SIZE_IN_MB_2 = 300
@@ -2595,8 +2596,11 @@ def crash_replica_processes(client, api, volname, replicas=None,
             exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
+            wait_crashed = wait_for_replica_failed
+            if DATA_ENGINE == "v2":
+                wait_crashed = wait_for_replica_crashed
             thread = create_assert_error_check_thread(
-                wait_for_replica_failed,
+                wait_crashed,
                 client, volname, r['name'], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
@@ -2658,6 +2662,38 @@ def wait_for_replica_failed(client, volname, replica_name,
         volname, replica_name, debug_replica_not_failed, debug_replica_in_im
     )
     assert failed, err_msg
+
+
+def wait_for_replica_crashed(client, volname, replica_name,
+                             retry_cnts=RETRY_COUNTS,
+                             retry_ivl=RETRY_INTERVAL):
+    # A crashed v2 replica keeps its instance registered in the instance
+    # manager and gets restarted instead of entering the failed state, so it
+    # never satisfies wait_for_replica_failed. Wait for the engine to register
+    # the crash instead. The engine only notices through the NVMe-oF
+    # fast_io_fail/ctrlr_loss timeouts, so this can take over ten seconds.
+    crashed = False
+    debug_replica = None
+
+    for i in range(retry_cnts):
+        volume = client.by_id_volume(volname)
+        debug_replica = None
+        for r in volume.replicas:
+            if r['name'] == replica_name:
+                debug_replica = r
+                break
+
+        if debug_replica is None or \
+                debug_replica['failedAt'] != "" or \
+                not debug_replica['running'] or \
+                debug_replica.mode == "ERR":
+            crashed = True
+            break
+        time.sleep(retry_ivl)
+
+    assert crashed, "Vol({}), Replica({}): {}".format(
+        volname, replica_name, debug_replica
+    )
 
 
 def wait_for_replica_running(client, volname, replica_name):
@@ -3980,6 +4016,17 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
+        if setting_name == SETTING_DATA_ENGINE_CPU_MASK:
+            if os.environ.get('RUN_V2_TEST') == "true":
+                setting = client.by_id_setting(setting_name)
+                try:
+                    client.update(setting, value='{"v2": "0x1"}')
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to "
+                          "{\"v2\": \"0x1\"}")
+                    print(e)
+                continue
+
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
@@ -5066,7 +5113,7 @@ def fail_replica_expansion(client, api, volname, size, replicas=None):
 
     for r in replicas:
         tmp_meta_file_name = \
-            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % (size, volname)
         # os.path.join() cannot deal with the path containing "/"
         cmd = [
             '/bin/sh', '-c',
@@ -5096,7 +5143,7 @@ def fix_replica_expansion_failure(client, api, volname, size, replicas=None):
                 "otherwise the field r.instanceManagerName is empty")
 
         tmp_meta_file_name = \
-            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % (size, volname)
         tmp_meta_file_path = \
             INSTANCE_MANAGER_HOST_PATH_PREFIX + \
             r.dataPath + "/" + tmp_meta_file_name

@@ -11,6 +11,9 @@ class node_keywords:
     def list_node_names_by_role(self, role):
         return self.node.list_node_names_by_role(role)
 
+    def get_node_label_value(self, node_name, label_key):
+        return self.node.get_node_label_value(node_name, label_key)
+
     def mount_disk(self, disk_name, node_name):
         logging(f"Mount device /dev/longhorn/{disk_name} on node {node_name}")
         return self.node.mount_disk(disk_name, node_name)
