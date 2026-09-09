@@ -189,3 +189,34 @@ Verify all replicas of volume ${src_id} are referenced by clone ${clone_id}
     ${clone_volume_name} =    generate_name_with_suffix    volume    ${clone_id}
     verify_all_src_replicas_referenced_by_clone    ${src_volume_name}    ${clone_volume_name}
 
+# ---------------------------------------------------------------------------
+# Backup / restore of a linked-clone volume
+# ---------------------------------------------------------------------------
+
+Verify backup volume of volume ${clone_id} records linked clone source snapshot ${snap_id} of volume ${src_id}
+    [Documentation]    Assert the BackupVolume CR of the volume records the given
+    ...    linked-clone source volume and snapshot.
+    ${clone_volume_name} =    generate_name_with_suffix    volume    ${clone_id}
+    ${src_volume_name} =    generate_name_with_suffix    volume    ${src_id}
+    ${snapshot_name} =    get_snapshot_name    ${src_volume_name}    ${snap_id}
+    wait_for_backup_volume_linked_clone_source    ${clone_volume_name}    ${src_volume_name}    ${snapshot_name}
+
+Verify volume ${volume_id} is a linked clone of snapshot ${snap_id} of volume ${src_id}
+    [Documentation]    Assert spec.dataSource and spec.cloneMode identify the
+    ...    volume as a linked clone of the given source snapshot.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${src_volume_name} =    generate_name_with_suffix    volume    ${src_id}
+    ${snapshot_name} =    get_snapshot_name    ${src_volume_name}    ${snap_id}
+    verify_volume_is_linked_clone_of    ${volume_name}    ${src_volume_name}    ${snapshot_name}
+
+Create linked clone restore volume ${target_id} from backup ${backup_id} of volume ${backup_src_id} linked to snapshot ${snap_id} of volume ${link_src_id}
+    [Documentation]    Restore a backup while naming the linked-clone source
+    ...    explicitly, overriding the source recorded in the backup.
+    [Arguments]    &{config}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_id}
+    ${backup_src_name} =    generate_name_with_suffix    volume    ${backup_src_id}
+    ${link_src_name} =    generate_name_with_suffix    volume    ${link_src_id}
+    ${snapshot_name} =    get_snapshot_name    ${link_src_name}    ${snap_id}
+    ${backup_url} =    get_backup_url    ${backup_id}    ${backup_src_name}
+    create_volume    ${target_volume_name}    fromBackup=${backup_url}    dataEngine=v2
+    ...    cloneMode=linked-clone    dataSource=snap://${link_src_name}/${snapshot_name}    &{config}
