@@ -79,7 +79,7 @@ def delete_node(node_name):
     exec_cmd = ["kubectl", "delete", "node", node_name]
     res = subprocess_exec_cmd(exec_cmd)
 
-def set_k8s_node_zone(node_name, zone_name=""):
+def set_node_zone(node_name, zone_name=""):
     if zone_name:
         logging(f"Setting node {node_name} zone to {zone_name}")
         exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/zone={zone_name}", "--overwrite"]
@@ -88,6 +88,17 @@ def set_k8s_node_zone(node_name, zone_name=""):
         logging(f"Resetting node {node_name} zone")
         exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/zone-", "--overwrite"]
         res = subprocess_exec_cmd(exec_cmd)
+
+def set_node_region(node_name, region_name=""):
+    if region_name:
+        logging(f"Setting node {node_name} region to {region_name}")
+        exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/region={region_name}", "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+    else:
+        logging(f"Resetting node {node_name} region")
+        exec_cmd = ["kubectl", "label", "node", node_name, f"topology.kubernetes.io/region-", "--overwrite"]
+        res = subprocess_exec_cmd(exec_cmd)
+
 
 def drain_node(node_name):
     exec_cmd = ["kubectl", "drain", node_name, "--ignore-daemonsets", "--delete-emptydir-data"]
@@ -357,6 +368,21 @@ def verify_pod_log_after_time_not_contains(pod_name, unexpected_log, test_start_
 def get_pods_by_label_selector(label_selector, namespace=constant.LONGHORN_NAMESPACE):
     pods = list_namespaced_pod(namespace=namespace, label_selector=label_selector)
     return [pod.metadata.name for pod in pods]
+
+def get_lease_holder(lease_name, namespace=constant.LONGHORN_NAMESPACE):
+    api = client.CoordinationV1Api()
+    lease = api.read_namespaced_lease(lease_name, namespace)
+    return lease.spec.holder_identity
+
+def wait_for_lease_holder_changed(lease_name, old_holder, namespace=constant.LONGHORN_NAMESPACE):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        holder = get_lease_holder(lease_name, namespace)
+        logging(f"Waiting for lease {lease_name} holder changed from {old_holder}, current holder is {holder} ... ({i})")
+        if holder and holder != old_holder:
+            return holder
+        time.sleep(retry_interval)
+    assert False, f"Lease {lease_name} holder did not change from {old_holder}"
 
 def verify_pods_log_after_time_contains(label_selector, expect_log, test_start_time, namespace=constant.LONGHORN_NAMESPACE, container=None):
     pods = get_pods_by_label_selector(label_selector, namespace)

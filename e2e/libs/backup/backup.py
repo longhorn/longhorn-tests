@@ -123,12 +123,26 @@ class Backup(Base):
         return self.backup.cleanup_backups()
 
     def check_snapshot_exists_for_backup(self, volume_name, backup_id, exists=True):
-        backup = self.backup.get(backup_id, volume_name)
-        if not backup or not backup.snapshotName:
-            raise ValueError(f"Backup {backup_id} not found or missing snapshot name")
+        logging(f"Checking snapshot {'' if exists else 'not '}exists for backup {backup_id} of volume {volume_name}")
 
-        snap_name = backup.snapshotName
-        snapshot_id = self.backup.snapshot.get_snapshot_id(snap_name, wait=False)
-        snap = self.backup.snapshot.get(volume_name, snapshot_id)
+        snap_name = None
+        for i in range(self.retry_count):
+            backup = self.backup.get(backup_id, volume_name)
+            if backup and backup.snapshotName:
+                snap_name = backup.snapshotName
+                logging(f"Found snapshot name {snap_name} for backup {backup_id} of volume {volume_name}")
+                break
+            logging(f"Waiting for backup {backup_id} of volume {volume_name} to have snapshot name ... ({i})")
+            time.sleep(self.retry_interval)
+        assert snap_name, f"Failed to get snapshot name for backup {backup_id} of volume {volume_name}: {backup}"
+
+        snap = self.backup.snapshot.get_snapshot_by_name(volume_name, snap_name)
         snap_exists = snap is not None and not snap.removed
-        assert snap_exists == exists, f"Snapshot {snap_name} exists: {snap_exists}, expected: {exists}"
+        if snap_exists == exists:
+            logging(f"Got snapshot {snap_name}")
+        else:
+            snap_list = self.backup.snapshot.list(volume_name)
+            snap_names = [s.name for s in snap_list]
+            logging(f"Snapshot {snap_name} does not exist as expected. Current snapshots for volume {volume_name}: {snap_names}")
+            time.sleep(self.retry_count)
+            assert False, f"Snapshot {snap_name} does not exist as expected. Current snapshots for volume {volume_name}: {snap_names}"

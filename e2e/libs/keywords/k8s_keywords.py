@@ -14,7 +14,8 @@ from k8s.k8s import get_instance_manager_on_node
 from k8s.k8s import check_instance_manager_pdb_not_exist
 from k8s.k8s import wait_for_namespace_pods_running
 from k8s.k8s import get_longhorn_node_condition_status
-from k8s.k8s import set_k8s_node_zone
+from k8s.k8s import set_node_zone
+from k8s.k8s import set_node_region
 from k8s.k8s import verify_pod_log_after_time_contains
 from k8s.k8s import deploy_system_upgrade_controller
 from k8s.k8s import upgrade_k8s_to_latest_version
@@ -24,6 +25,8 @@ from k8s.k8s import remove_longhorn_component_resources_limit
 from k8s.k8s import verify_pod_log_after_time_not_contains
 from k8s.k8s import is_namespaced_pods_all_running
 from k8s.k8s import get_pods_by_label_selector
+from k8s.k8s import get_lease_holder
+from k8s.k8s import wait_for_lease_holder_changed
 from k8s.k8s import verify_pods_log_after_time_contains
 from k8s.k8s import verify_pods_log_after_time_not_contains
 from k8s.k8s import wait_for_node_ready
@@ -89,13 +92,21 @@ class k8s_keywords:
     def delete_node(self, node_name):
         delete_node(node_name)
 
-    def set_k8s_node_zone(self, node_name, zone_name):
-        set_k8s_node_zone(node_name, zone_name)
+    def set_node_zone(self, node_name, zone_name):
+        set_node_zone(node_name, zone_name)
 
-    def cleanup_k8s_node_zone(self):
+    def cleanup_node_zone(self):
         nodes = Node().list_node_names_by_role("worker")
         for node in nodes:
-            set_k8s_node_zone(node)
+            set_node_zone(node)
+
+    def set_node_region(self, node_name, region_name):
+        set_node_region(node_name, region_name)
+
+    def cleanup_node_region(self):
+        nodes = Node().list_node_names_by_role("worker")
+        for node in nodes:
+            set_node_region(node)
 
     def drain_node(self, node_name):
         drain_node(node_name)
@@ -195,6 +206,15 @@ class k8s_keywords:
 
     def get_longhorn_ui_pods(self, namespace=constant.LONGHORN_NAMESPACE):
         return get_pods_by_label_selector(constant.LABEL_SELECTOR_LONGHORN_UI, namespace)
+
+    def get_longhorn_global_manager_pods(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_pods_by_label_selector(constant.LABEL_SELECTOR_GLOBAL_MANAGER, namespace)
+
+    def get_global_manager_lease_holder(self, namespace=constant.LONGHORN_NAMESPACE):
+        return get_lease_holder(constant.GLOBAL_MANAGER_LEASE_NAME, namespace)
+
+    def wait_for_global_manager_lease_holder_changed(self, old_holder, namespace=constant.LONGHORN_NAMESPACE):
+        return wait_for_lease_holder_changed(constant.GLOBAL_MANAGER_LEASE_NAME, old_holder, namespace)
 
     def get_pods_by_label_selector(self, label_selector, namespace=constant.LONGHORN_NAMESPACE):
         return get_pods_by_label_selector(label_selector, namespace)
