@@ -208,7 +208,7 @@ Test Longhorn Global Manager Leader Failover
     ...                    Have the volume in attached state.
     ...
     ...                Test steps:
-    ...                    Delete the longhorn-global-manager leader pod and verify one of the standby pods takes over the lease.
+    ...                    Delete the longhorn-global-manager leader pod and verify another replica takes over the lease.
     ...                    Create a RWX volume using the Longhorn storage class(deployment 1) and verify it becomes ready under the new leader.
     ...                    Delete the IM of the RWO volume and verify the workload remounts and recovers under the new leader.
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -217,10 +217,11 @@ Test Longhorn Global Manager Leader Failover
     And Write 100 MB data to file data.txt in deployment 0
 
     ${leader_pod} =    Get Longhorn global manager lease holder
-    ${global_manager_pods} =    get_longhorn_global_manager_pods
     ${longhorn_namespace} =    get_longhorn_namespace
     When delete_pod    ${leader_pod}    ${longhorn_namespace}
     ${new_leader_pod} =    Wait for Longhorn global manager lease holder changed from ${leader_pod}
+    And Wait for Longhorn components all running
+    ${global_manager_pods} =    get_longhorn_global_manager_pods
     Then List Should Contain Value    ${global_manager_pods}    ${new_leader_pod}
 
     When Create persistentvolumeclaim 1    volume_type=RWX    sc_name=longhorn-test
