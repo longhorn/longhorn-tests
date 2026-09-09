@@ -468,9 +468,22 @@ A new BatchV1Api Instance.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def check_longhorn(core_api):
+    # Longhorn before v1.13 has no longhorn-global-manager Deployment, and
+    # the upgrade test runs this check against such a version before
+    # upgrading. Require the component only when its Deployment exists.
+    try:
+        get_apps_api_client().read_namespaced_deployment(
+            &#39;longhorn-global-manager&#39;, &#39;longhorn-system&#39;)
+        need_global_manager = True
+    except ApiException as e:
+        if e.status != 404:
+            raise
+        need_global_manager = False
+
     ready = False
     has_engine_image = False
     has_driver_deployer = False
+    has_global_manager = not need_global_manager
     has_manager = False
     has_ui = False
     has_instance_manager = False
@@ -492,6 +505,9 @@ A new BatchV1Api Instance.</p></div>
                 elif labels.get(&#39;app&#39;, &#39;&#39;) == &#39;longhorn-driver-deployer&#39; \
                         and item.status.phase == &#34;Running&#34;:
                     has_driver_deployer = True
+                elif labels.get(&#39;app&#39;, &#39;&#39;) == &#39;longhorn-global-manager&#39; \
+                        and item.status.phase == &#34;Running&#34;:
+                    has_global_manager = True
                 elif labels.get(&#39;app&#39;, &#39;&#39;) == &#39;longhorn-manager&#39; \
                         and item.status.phase == &#34;Running&#34;:
                     has_manager = True
@@ -503,7 +519,8 @@ A new BatchV1Api Instance.</p></div>
                         and item.status.phase == &#34;Running&#34;:
                     has_instance_manager = True
 
-            if has_engine_image and has_driver_deployer and has_manager and \
+            if has_engine_image and has_driver_deployer and \
+                    has_global_manager and has_manager and \
                     has_ui and has_instance_manager and pod_running:
                 ready = True
                 break
