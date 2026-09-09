@@ -459,9 +459,9 @@ Check volume of ${workload_kind} ${workload_id} kept in faulted
         Sleep    ${RETRY_INTERVAL}
     END
 
-Start fio randwrite with crc32c verify in ${workload_kind} ${workload_id}
+Start fio write with crc32c verify in ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
-    start_fio_randwrite_with_verify_in_workload    ${workload_name}
+    start_fio_write_with_verify_in_workload    ${workload_name}
 
 Stop fio in ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
