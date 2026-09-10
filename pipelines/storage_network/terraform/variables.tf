@@ -115,7 +115,7 @@ variable "network_stack" {
   type      = string
   default   = "ipv4"
   validation {
-    condition     = contains(["ipv4", "ipv6"], var.network_stack)
-    error_message = "network_stack must be one of ipv4 or ipv6"
+    condition     = contains(["ipv4", "ipv6", "dual-stack-ipv4-first", "dual-stack-ipv6-first"], var.network_stack)
+    error_message = "network_stack must be one of ipv4, ipv6, dual-stack-ipv4-first or dual-stack-ipv6-first"
   }
 }

@@ -57,7 +57,9 @@ if [[ "${extra_block_device}" != true ]]; then
   fi
 fi
 
-if [[ "${network_stack}" == "ipv6" ]]; then
+ipv6_addr=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+
+if [[ "${network_stack}" == "ipv6" || "${network_stack}" == dual-stack-* ]]; then
   echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2\nnet.ipv6.conf.all.forwarding = 1" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
@@ -67,10 +69,22 @@ nameserver 8.8.8.8
 nameserver 1.1.1.1
 EOF
   chattr +i /etc/resolv.conf || true
-  IP=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
-else
-  IP=$(hostname -I | awk '{print $1}')
 fi
+
+case "${network_stack}" in
+  ipv6)
+    IP="$ipv6_addr"
+    ;;
+  dual-stack-ipv4-first)
+    IP="$(hostname -I | awk '{print $1}'),$ipv6_addr"
+    ;;
+  dual-stack-ipv6-first)
+    IP="$ipv6_addr,$(hostname -I | awk '{print $1}')"
+    ;;
+  *)
+    IP=$(hostname -I | awk '{print $1}')
+    ;;
+esac
 
 mkdir -p /etc/rancher/k3s
 

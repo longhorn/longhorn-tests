@@ -303,10 +303,10 @@ resource "null_resource" "rsync_kubeconfig_file" {
   provisioner "local-exec" {
     command = <<EOT
     export K3S_SERVER_IP=$(
-        [ "${var.network_stack}" = "ipv6" ] && echo "[${aws_instance.aws_instance[0].ipv6_addresses[0]}]" || echo ${aws_eip.aws_eip[0].public_ip}
+        ( [ "${var.network_stack}" = "ipv6" ] || [ "${var.network_stack}" = "dual-stack-ipv6-first" ] ) && echo "[${aws_instance.aws_instance[0].ipv6_addresses[0]}]" || echo ${aws_eip.aws_eip[0].public_ip}
     )
     export LOCAL_IP=$(
-        [ "${var.network_stack}" = "ipv6" ] && echo "\[::1\]" || echo "127.0.0.1"
+        ( [ "${var.network_stack}" = "ipv6" ] || [ "${var.network_stack}" = "dual-stack-ipv6-first" ] ) && echo "\[::1\]" || echo "127.0.0.1"
     )
     rsync -aPvz --rsync-path="sudo rsync" -e "ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}" "${aws_eip.aws_eip[0].public_ip}:/etc/rancher/k3s/k3s.yaml" . && \
     sed -i "s#https://$LOCAL_IP:6443#https://$K3S_SERVER_IP:6443#" k3s.yaml
