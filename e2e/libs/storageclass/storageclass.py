@@ -92,6 +92,13 @@ class StorageClass():
             if nvmeTcpNrIoQueues:
                 manifest_dict['parameters']['nvmeTcpNrIoQueues'] = nvmeTcpNrIoQueues
 
+            if dataLayout:
+                # dataLayout is a nested config (e.g. {"type": "sharded", "mode": "erasureCoding",
+                # "dataChunks": 2, ...}), but StorageClass parameters must be flat key/value
+                # strings, so flatten it into dot-prefixed keys, e.g. dataLayout.type.
+                for key, value in dataLayout.items():
+                    manifest_dict['parameters'][f'dataLayout.{key}'] = str(value)
+
             self.api.create_storage_class(body=manifest_dict)
 
     def delete(self, name):
