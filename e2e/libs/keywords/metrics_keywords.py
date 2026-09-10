@@ -60,6 +60,15 @@ class metrics_keywords:
                 return
             time.sleep(self.retry_interval)
 
+    def wait_for_longhorn_metric_present(self, metric_name, node_name=None):
+        for i in range(self.retry_count):
+            logging(f"Waiting for longhorn metric {metric_name} present on node {node_name} ... ({i})")
+            if find_longhorn_metric_samples(metric_name, node_name):
+                logging(f"Longhorn metric {metric_name} is present on node {node_name}")
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Longhorn metric {metric_name} is not present on node {node_name}"
+
     def get_longhorn_components_memory_cpu_usage(self):
         get_longhorn_components_memory_cpu_usage()
 
