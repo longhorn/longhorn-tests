@@ -187,3 +187,26 @@ Test CSI Clone Respects Node And Disk Selector
     And Wait for deployment cloned-deploy pods stable
     And Wait for volume of persistentvolumeclaim cloned-pvc healthy
     And Check deployment cloned-deploy file data.txt checksum matches checksum source-pvc
+
+Test Pod Mount Before Cloning Complete
+    [Documentation]
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13335
+    ...    1. Clone a volume into a new PVC.
+    ...    2. Immediately, before the cloning completes, create a pod using
+    ...       the cloned PVC.
+    ...    3. Wait for the pod to be running.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim source-pvc    storage_size=3Gi    sc_name=longhorn-test
+    And Wait for volume of persistentvolumeclaim source-pvc to be created
+    And Wait for volume of persistentvolumeclaim source-pvc detached
+    And Create pod source-pod using persistentvolumeclaim source-pvc
+    And Wait for pod source-pod running
+    And Write 2048 MB data to file data.txt in pod source-pod
+    And Record file data.txt checksum in pod source-pod as checksum source-pvc
+
+    When Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc    sc_name=longhorn-test
+    And Wait for volume of persistentvolumeclaim cloned-pvc to be created
+    And Wait for volume of persistentvolumeclaim cloned-pvc attached
+    Then Create pod cloned-pod using persistentvolumeclaim cloned-pvc
+    And Wait for pod cloned-pod running
+    And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
