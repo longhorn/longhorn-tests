@@ -8,6 +8,7 @@ from node_exec.constant import HOST_ROOTFS
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
+from utility.constant import BLOCK_PVC_VOLUME_DEVICE_PATH
 from utility.utility import logging
 from utility.utility import generate_name_random
 from utility.utility import get_retry_count_and_interval
@@ -106,7 +107,7 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
     return manifest
 
 
-def new_busybox_manifest(pod_name, claim_name):
+def new_busybox_manifest(pod_name, claim_name, block_volume=False, image=None, args=None):
     logging(f"Creating busybox pod {pod_name} using pvc {claim_name}")
     filepath = "./templates/workload/pod.yaml"
     with open(filepath, 'r') as f:
@@ -114,6 +115,18 @@ def new_busybox_manifest(pod_name, claim_name):
         manifest_dict['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = claim_name
         manifest_dict['metadata']['name'] = pod_name
         manifest_dict['metadata']['labels']['app'] = pod_name
+        container = manifest_dict['spec']['containers'][0]
+        if image:
+            container['image'] = image
+        if args is not None:
+            container['command'] = ['/bin/sh', '-c']
+            container['args'] = [args]
+        if block_volume:
+            container.pop('volumeMounts', None)
+            container['volumeDevices'] = [{
+                'name': 'pod-data',
+                'devicePath': BLOCK_PVC_VOLUME_DEVICE_PATH
+            }]
         return manifest_dict
 
 

@@ -912,6 +912,61 @@ Test V2 Sharded Volume Storageclass Webhook Rejects Invalid Data Layout Paramete
     Run Keyword And Expect Error    *Invalid value*    Run command    kubectl apply -f /tmp/longhorn-v2-sharded-invalid.yaml
     Remove File    /tmp/longhorn-v2-sharded-invalid.yaml
 
+Test V2 Sharded Volume Concurrent Writes And Deletion
+    [Tags]    sharding
+    [Documentation]    https://github.com/longhorn/longhorn/issues/13789
+    ...
+    ...    1. Set data-engine-iobuf-large-pool-size to {"v2":"2048"} and restart v2 instance managers.
+    ...    2. Create a 30 GiB v2 EC volume with 2 data chunks, 1 parity chunk and 64 KiB strips.
+    ...    3. Attach it to a pod as a raw block device.
+    ...    4. Run ten 30-second fio sequential-write rounds with 4 concurrent jobs,
+    ...       1 MiB blocks and queue depth 32 per job.
+    ...    5. Verify every fio run succeeds and the pod and volume can be deleted.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    ${dataLayout} =    Create Dictionary
+    ...    type=sharded
+    ...    mode=erasureCoding
+    ...    dataChunks=2
+    ...    parityChunks=1
+    ...    stripSizeKB=64
+    ${pod_name} =    Generate Name With Suffix    pod    0
+
+    Given Setting data-engine-iobuf-large-pool-size is set to {"v2":"2048"}
+    And Delete v2 instance managers on all worker nodes
+    And Check v2 instance manager pods recreated
+    And Wait for Longhorn components all running
+
+    When Create volume 0 with
+    ...    size=30Gi
+    ...    dataEngine=v2
+    ...    numberOfReplicas=1
+    ...    dataLayout=${dataLayout}
+    And Create persistentvolume for volume 0    volumeMode=Block
+    And Create persistentvolumeclaim for volume 0    volumeMode=Block
+    And Create pod 0 using volume 0
+    ...    block_volume=${True}
+    ...    image=alpine:3.22
+    ...    args=apk add --no-cache fio && sleep infinity
+    And Wait for pod 0 running
+    And Wait for volume 0 healthy
+    Then Assert block device size in pod 0 is 30Gi
+
+    When Run command and wait for output
+    ...    kubectl exec -n default ${pod_name} -- fio --version
+    ...    fio-
+    FOR    ${i}    IN RANGE    10
+        And Run command
+        ...    kubectl exec -n default ${pod_name} -- fio --name=ec-write --filename=/dev/longhorn/longhorn-testblk --direct=1 --ioengine=libaio --rw=write --bs=1M --iodepth=32 --numjobs=4 --runtime=30 --time_based --group_reporting
+    END
+
+    When Delete pod 0
+    Then Wait for pod ${pod_name} deleted
+    And Delete volume 0
+    And Wait for volume 0 deleted
+
 Test V2 Sharded Volume CR Lifecycle Attach Snapshot And Revert
     [Documentation]    Verify a v2 sharded (erasure coding) Volume CR can be created
     ...    directly, statically bound to a pod via PV/PVC, attached, and that
