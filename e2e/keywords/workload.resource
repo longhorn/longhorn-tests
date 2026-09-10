@@ -13,14 +13,27 @@ Library    ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
 Create pod ${pod_id} using volume ${volume_id}
+    [Arguments]    &{config}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_pod    ${pod_name}    ${claim_name}
+    create_pod    ${pod_name}    ${claim_name}    &{config}
 
 Create pod ${pod_id} using persistentvolumeclaim ${claim_id}
+    [Arguments]    &{config}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_pod    ${pod_name}    ${claim_name}
+    create_pod    ${pod_name}    ${claim_name}    &{config}
+
+Assert block device size in pod ${pod_id} is ${size}
+    ${expected_bytes} =    convert_size_to_bytes    ${size}    to_str=True
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    wait_for_block_device_size_in_pod    ${pod_name}    ${expected_bytes}
+
+Wait for pod ${pod_id} deleted
+    [Documentation]    Wait for a pod to disappear
+    [Arguments]    ${namespace}=default    ${timeout}=120s
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    execute_command    kubectl wait -n ${namespace} --for=delete pod/${pod_name} --timeout=${timeout}
 
 Wait for pod ${pod_id} running
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
