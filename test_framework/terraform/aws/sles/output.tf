@@ -48,7 +48,7 @@ output "controlplane_public_ip" {
   depends_on = [
     aws_eip.lh_aws_eip_controlplane
   ]
-  value = var.network_stack == "ipv6" ? "[${aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]}]" : aws_eip.lh_aws_eip_controlplane[0].public_ip
+  value = contains(["ipv6", "dual-stack-ipv6-first"], var.network_stack) ? "[${aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]}]" : aws_eip.lh_aws_eip_controlplane[0].public_ip
 }
 
 output "resource_suffix" {
