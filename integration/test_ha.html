@@ -1496,7 +1496,10 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
     create_and_wait_pod(core_api, dr_pod)
 
-    dr_volume = client.by_id_volume(dr_volume_name)
+    # The engine crash earlier in this test can fail a replica. Its rebuild
+    # may still be in progress after the volume is activated and reattached,
+    # so wait until the volume becomes healthy before checking robustness.
+    dr_volume = wait_for_volume_healthy(client, dr_volume_name)
     assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     dr_md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path)
