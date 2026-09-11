@@ -27,6 +27,7 @@ node {
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'REGISTRY_PASSWORD', usernameVariable: 'REGISTRY_USERNAME'),
+        usernamePassword(credentialsId: 'APPCO_CREDS', passwordVariable: 'APPCO_PASSWORD', usernameVariable: 'APPCO_USERNAME'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         string(credentialsId: 'RANCHER_PRIME_CHART_URL', variable: 'RANCHER_PRIME_CHART_URL'),
     ]) {
@@ -84,6 +85,8 @@ node {
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
                                        --env RANCHER_PRIME=${RANCHER_PRIME} \
                                        --env RANCHER_PRIME_CHART_URL=${RANCHER_PRIME_CHART_URL} \
+                                       --env APPCO_USERNAME="${APPCO_USERNAME}" \
+                                       --env APPCO_PASSWORD="${APPCO_PASSWORD}" \
                                        ${imageName}
                 """
             }

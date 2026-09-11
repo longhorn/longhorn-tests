@@ -172,6 +172,8 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
       CUSTOM_LONGHORN_ENGINE_IMAGE="longhornio/longhorn-engine:v${RAW_VERSION[1]}"
     fi
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_ENGINE_IMAGE", "value": "'${CUSTOM_LONGHORN_ENGINE_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_USERNAME", "value": "'${APPCO_USERNAME}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_PASSWORD", "value": "'${APPCO_PASSWORD}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "flux" ]]; then
     # flux installs Longhorn by a "released" helm chart that can be found by command like helm search repo longhorn --versions
     # so the HELM_CHART_URL is not the Longhorn repo https://github.com/longhorn/longhorn.git
