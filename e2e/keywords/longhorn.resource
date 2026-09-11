@@ -116,6 +116,12 @@ Install Longhorn via helm with resource configuration
     ${helm_cmd}=    Set Variable    yq eval \'${patch}\' ${LONGHORN_REPO_DIR}/chart/values.yaml > values.yaml
     install_longhorn_system    custom_cmd=${helm_cmd}    &{config}
 
+Delete ${engine_type} instance managers on all worker nodes
+    ${worker_nodes} =    get_worker_nodes
+    FOR    ${node_name}    IN    @{worker_nodes}
+        Delete ${engine_type} instance manager on node ${node_name}
+    END
+
 Delete ${engine_type} instance manager on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     delete_instance_manager_on_node    ${node_name}    ${engine_type}

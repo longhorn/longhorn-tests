@@ -67,9 +67,9 @@ class workload_keywords:
         self.volume = Volume()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create_pod(self, pod_name, claim_name):
+    def create_pod(self, pod_name, claim_name, block_volume=False, image=None, args=None):
         logging(f'Creating pod {pod_name} using pvc {claim_name}')
-        create_pod(new_busybox_manifest(pod_name, claim_name))
+        create_pod(new_busybox_manifest(pod_name, claim_name, block_volume=block_volume, image=image, args=args))
 
     def delete_pod(self, pod_name, namespace='default', wait=True):
         logging(f'Deleting pod {pod_name} in namespace {namespace}')
