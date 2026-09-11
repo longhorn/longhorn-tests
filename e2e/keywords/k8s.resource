@@ -38,6 +38,11 @@ Stop control plane kubelet for ${duration} seconds
     ${control_plane_node_name} =    get_control_plane_node
     restart_kubelet    ${control_plane_node_name}    ${duration}    wait=${wait}
 
+Restart kubelet on node ${node_id}
+    [Arguments]    ${wait}=True
+    ${node_name} =    get_node_by_index    ${node_id}
+    restart_kubelet    ${node_name}    0   wait=${wait}
+
 Delete volume of ${workload_kind} ${workload_id} volume node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
