@@ -12,6 +12,10 @@ Library    ../libs/keywords/replica_keywords.py
 Library    ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
+Wait for pod deleted
+    [Arguments]    ${pod_name}    ${namespace}=default
+    wait_until_pod_deleted    ${pod_name}    ${namespace}
+
 Create pod ${pod_id} using volume ${volume_id}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -378,6 +382,19 @@ Upgrade volume ${workload_kind} ${workload_id} engine to ${custom_engine_image}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
+Record ${workload_kind} ${workload_id} pod uid
+    [Arguments]    ${namespace}=default
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_uid} =    get_workload_pod_uid    ${workload_name}    ${namespace}
+    Should Not Be Empty    ${pod_uid}
+    RETURN    ${pod_uid}
+
+Request volume remount for ${workload_kind} ${workload_id}
+    [Documentation]    Patch the volume remount request and return the original pod name.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    request_workload_volume_remount    ${workload_name}
+    RETURN    ${pod_name}
 
 Record ${workload_kind} ${workload_id} pod UIDs
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
