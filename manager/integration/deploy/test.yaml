@@ -17,6 +17,26 @@ subjects:
   name: longhorn-test-service-account
   namespace: default
 ---
+# The longhorn-manager policy only admits a few in-namespace components by default,
+# so this test pod - which lives in the default namespace - cannot reach the REST API on 9500.
+#
+# Allowing all ingress is deliberate rather than lazy. This relaxes a hardening measure,
+# which is acceptable only because it is scoped to a test manifest that already grants
+# the test account cluster-admin above.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: longhorn-test-allow-manager-ingress
+  namespace: longhorn-system
+spec:
+  podSelector:
+    matchLabels:
+      app: longhorn-manager
+  policyTypes:
+  - Ingress
+  ingress:
+  - {}
+---
 apiVersion: v1
 kind: Pod
 metadata:
