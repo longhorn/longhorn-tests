@@ -163,3 +163,30 @@ Test Faulted Volume Attachment Error Log
     When Create deployment 0 with persistentvolumeclaim 0    replicaset=1    wait=${FALSE}
     Then Wait Until Keyword Succeeds    60s    5s
     ...    Any app=longhorn-csi-plugin Pods Log Should Have is not ready for workloads: volume is faulted In Container longhorn-csi-plugin After Test Start
+
+Test Volume Remount Request Recreates Workload Pod
+    [Tags]    volume
+    [Documentation]    https://github.com/longhorn/longhorn/issues/13059
+    ...
+    ...    Directly set Volume.status.remountRequestedAt and verify that
+    ...    the controller deletes the consuming Deployment pod and Kubernetes
+    ...    recreates it with a new UID, preserving the volume data.
+    ...    The controller requests deletion with a 30-second grace period.
+    ...
+    ...    Test plan: https://github.com/hookak/longhorn/blob/feat/global-manager-enhancement/enhancements/20260506-global-longhorn-manager.md#test-plan
+    When Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data.txt in deployment 0
+    ${original_uid} =    Record deployment 0 pod uid
+
+    ${original_pod_name} =    Request volume remount for deployment 0
+    Then Wait for pod deleted    ${original_pod_name}
+    And Wait for deployment 0 pods stable
+    ${replacement_uid} =    Record deployment 0 pod uid
+    Should Not Be Equal    ${original_uid}    ${replacement_uid}
+    And Wait for volume of deployment 0 healthy
+    And Check deployment 0 data in file data.txt is intact
+    And Write 100 MB data to file data-after-remount.txt in deployment 0
+    And Check deployment 0 data in file data-after-remount.txt is intact

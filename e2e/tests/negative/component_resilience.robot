@@ -15,11 +15,16 @@ Resource    ../keywords/workload.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/sharemanager.resource
+Resource    ../keywords/network.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Keywords ***
+Cleanup Global Manager API Partition Test
+    Run Keyword And Continue On Failure    Remove global manager API partition
+    Cleanup test resources
+
 Delete ${engine_type} instance manager of volume ${volume_id} and wait for recover
     When Delete ${engine_type} instance manager of volume ${volume_id}
     And Wait for volume ${volume_id} degraded
@@ -231,3 +236,37 @@ Test Longhorn Global Manager Leader Failover
 
     Then Delete ${DATA_ENGINE} instance manager of deployment 0 volume and wait for recover
     And Wait for Longhorn components all running
+
+Test Longhorn Global Manager API Server Partition
+    [Tags]    global-manager
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13059
+    ...    Partition the longhorn-global-manager leader with an egress
+    ...    NetworkPolicy and remove its API connection from the hosting node's
+    ...    conntrack table. Verify an existing standby acquires the Lease and
+    ...    DaemonSet-side replica rebuilding and workload data remain functional.
+    ...    Requires NetworkPolicy enforcement; conntrack runs from the network helper image.
+    ...
+    ...    Test plan: https://github.com/hookak/longhorn/blob/feat/global-manager-enhancement/enhancements/20260506-global-longhorn-manager.md#test-plan
+    [Teardown]    Cleanup Global Manager API Partition Test
+
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+    And Write 100 MB data to file data.txt in deployment 0
+
+    ${old_leader} =    Get Longhorn global manager lease holder
+    Should Not Be Empty    ${old_leader}
+    ${standby_pods} =    get_longhorn_global_manager_pods
+    Remove Values From List    ${standby_pods}    ${old_leader}
+    Should Not Be Empty    ${standby_pods}    An existing standby global manager is required
+
+    When Partition global manager ${old_leader} from API server
+    ${new_leader} =    Wait for Longhorn global manager lease holder changed from ${old_leader}
+    Then Should Not Be Equal    ${new_leader}    ${old_leader}
+    And List Should Contain Value    ${standby_pods}    ${new_leader}
+
+    When Delete replica of deployment 0 volume on replica node
+    And Wait until volume of deployment 0 replica rebuilding started on replica node
+    And Wait for volume of deployment 0 healthy
+    Then Check deployment 0 data in file data.txt is intact
