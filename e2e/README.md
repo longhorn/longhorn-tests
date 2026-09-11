@@ -145,6 +145,145 @@ pip install -r requirements.txt
 
 Once the test completed, the test result can be found at /tmp/test-report folder.
 
+### Test tags
+
+Every test suite declares `Test Tags` in its `*** Settings ***` section, and individual test cases may add
+more specific tags with `[Tags]`. Tags are how the CI pipelines and `./run.sh -i <tag>` / `-e <tag>` select
+which test cases to run.
+
+Conventions:
+
+- Use lower-case and hyphens for new tags (`backing-image`, `node-reboot`), never underscores or spaces.
+  A few existing tags (`engine_image`, `system_backup`, `support bundle`) do not follow this, but they are
+  kept as they are so the CI job configurations referring to them keep working.
+- Every suite must carry at least one *suite* tag (`regression` or `negative`) plus one *feature area* tag.
+- Put `[Tags]` **before** `[Documentation]`, otherwise the `...` continuation lines of the documentation are
+  parsed as tags by Robot Framework.
+- Only add an *issue* tag when the test exists to cover one specific upstream issue.
+
+#### Suite tags
+
+| Tag | Description |
+| --- | --- |
+| `regression` | Regression test cases under `tests/regression/`. |
+| `negative` | Negative / resilience test cases under `tests/negative/`. |
+| `coretest` | Subset of essential functionality test cases, used for quick verification. |
+| `manual` | Converted from manual test cases; usually needs a special environment or takes long. |
+| `pre-release` | Pre-release verification test cases. |
+| `robot:skip` | Robot Framework built-in tag, the test case is skipped. |
+| `skip` | Marks a test case that is not implemented yet and skips itself at runtime. |
+
+#### Execution characteristic tags
+
+| Tag | Description |
+| --- | --- |
+| `long-running` | Takes a long time (tens of minutes or more). |
+| `large-size` | Uses large volumes / large amount of data. |
+| `performance` | Performance oriented test case. |
+| `stress` | CPU / memory / filesystem stress test cases. |
+| `continuous-io` | Continuously writes IO for the whole test duration. |
+| `resource-usage` | Records or compares Longhorn component resource usage. |
+| `custom-setting` | Requires Longhorn to be installed with non-default settings. |
+| `helm` | Requires Longhorn to be installed / upgraded by Helm. |
+| `non-default-namespace` | Longhorn is installed in a namespace other than `longhorn-system`. |
+| `environment` | Verifies the test environment / node prerequisites. |
+| `appco` | SUSE Application Collection (appco) specific test cases. |
+
+#### Data engine and volume tags
+
+| Tag | Description |
+| --- | --- |
+| `v1` | v1 data engine specific. |
+| `v2` | v2 data engine specific. |
+| `block-disk` | Requires a raw block disk (v2 data engine). |
+| `volume` | General volume behavior. |
+| `basic` | Basic volume life cycle test cases. |
+| `rwo` | ReadWriteOnce volume. |
+| `rwx` | ReadWriteMany volume. |
+| `rwx-fast-failover` | RWX volume fast failover feature. |
+| `migratable-rwx` | Migratable RWX volume. |
+| `block-volume` | Block mode volume. |
+| `encrypted` | Encrypted volume. |
+| `single-replica` | Volume with a single replica. |
+| `faulted` | Faulted volume behavior. |
+| `pvc` | PersistentVolumeClaim behavior. |
+| `csi` | CSI driver behavior. |
+| `csi-snapshotter` | CSI snapshotter / VolumeSnapshot behavior. |
+
+#### Feature area tags
+
+| Tag | Description |
+| --- | --- |
+| `backup` | Backup related. |
+| `backup-restore` | Backup restoration. |
+| `restore` | Volume restoration. |
+| `dr-volume` | Disaster recovery volume. |
+| `backing-image` | Backing image. |
+| `system-backup` | System backup and restore. Note the suite itself is tagged `system_backup`. |
+| `system-backup-recurring-job` | System backup created by a recurring job. |
+| `recurring-job` | Recurring job. |
+| `snapshot` | Volume snapshot. |
+| `snapshot-purge` | Snapshot purge. |
+| `snapshot-limit` | Maximum snapshot count. |
+| `vm-snapshot` | VM (node) level snapshot. |
+| `cloning` / `clone` | Volume / backing image cloning. |
+| `linked-clone` | Linked clone (v2 data engine). |
+| `expansion` | Volume expansion. |
+| `migration` | Volume live migration. |
+| `ha-migration` | Live migration under HA / failure scenarios. |
+| `ha` | High availability behavior. |
+| `replica` | Replica behavior. |
+| `replica-rebuild` / `replica-rebuilding` | Replica rebuilding. |
+| `offline-rebuilding` | Offline replica rebuilding. |
+| `scheduling` | Replica scheduling. |
+| `anti-affinity` | Replica / zone anti-affinity settings. |
+| `auto-balance` | Replica auto balance. |
+| `auto-salvage` | Volume auto salvage. |
+| `zone` | Zone awareness. |
+| `tagging` | Node / disk tag scheduling. |
+| `disk` | Disk management. |
+| `io-error` | Disk I/O error handling. |
+| `orphan` | Orphaned replica / instance. |
+| `setting` | Longhorn global settings. |
+| `metric` | Longhorn metrics. |
+| `support-bundle` | Support bundle. The existing test case also carries the legacy `support bundle` tag. |
+| `storage-network` | Storage network. |
+| `proxy` | HTTP proxy environment. |
+| `component` | Longhorn component (deployment / daemonset) configuration. |
+| `instance-manager` | Instance manager. |
+| `sharemanager` | Share manager. |
+| `engine-image` | Engine image related settings. The engine image suite itself is tagged `engine_image`. |
+| `engine-upgrade` / `old-engine` | Engine live upgrade / volume running an old engine image. |
+| `node-eviction` | Node eviction. |
+| `cluster` | Whole cluster level operation. |
+
+#### Upgrade and uninstallation tags
+
+| Tag | Description |
+| --- | --- |
+| `upgrade` | Longhorn upgrade. |
+| `2-stage-upgrade` | Two stage (stable -> transient -> target) Longhorn upgrade. |
+| `kubernetes-upgrade` | Kubernetes cluster upgrade. |
+| `uninstall` | Longhorn uninstallation. |
+
+#### Disruption tags (mostly used by `tests/negative/`)
+
+| Tag | Description |
+| --- | --- |
+| `node-reboot` / `reboot` | Node reboot. |
+| `node-down` | Node power off. |
+| `node-delete` | Node deletion. |
+| `node-drain` | Node drain. |
+| `service-restart` | Longhorn / Kubernetes service restart. |
+| `kubelet-restart` | Kubelet restart or stop. |
+| `network` / `network-disconnect` | Network disruption. |
+| `reattach` | Volume reattachment. |
+
+#### Issue tags
+
+Tags named `longhorn-<issue number>` (`longhorn-8355`, `longhorn-9865`, `longhorn-10210`) mark test cases
+that were added for a specific [longhorn/longhorn](https://github.com/longhorn/longhorn/issues) issue.
+
 ### Architecture
 
 The e2e robot test framework includes 4 layers:

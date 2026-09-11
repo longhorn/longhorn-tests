@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Volume Test Cases
 
-Test Tags    regression
+Test Tags    regression    volume
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

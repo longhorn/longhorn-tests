@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Zone Test Cases
 
-Test Tags    regression
+Test Tags    regression    zone    replica    scheduling
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

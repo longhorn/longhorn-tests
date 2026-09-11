@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Basic Test Cases
 
-Test Tags    regression
+Test Tags    regression    basic
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

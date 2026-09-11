@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Tagging Test Cases
 
-Test Tags    regression
+Test Tags    regression    tagging
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

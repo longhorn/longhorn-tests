@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Manual Test Cases
-Test Tags    negative
+Test Tags    negative    kubernetes-upgrade
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

@@ -3,7 +3,7 @@ Documentation    Orphan Test Cases
 ...
 ...              Reference: /docs/content/manual/release-specific/v1.9.0/test-orphaned-instance.md
 
-Test Tags    regression
+Test Tags    regression    orphan
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

@@ -212,8 +212,8 @@ Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster With
     Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster    RWX_VOLUME_FAST_FAILOVER=false
 
 Test Best Effort Auto Balance In Unstable Cluster
+    [Tags]    kubelet-restart    long-running    scheduling    replica
     [Documentation]    Test replica best effort auto balance with unstable node
-    [Tags]    kubelet-restart    long-running
     ...    Issue: https://github.com/longhorn/longhorn/issues/12926
     ...
     ...    1. In a 3-node cluster, tag node 0 and node 1 with zone-a, node 2 with zone-b.
@@ -276,8 +276,8 @@ Test Best Effort Auto Balance In Unstable Cluster
     And Volume 0 should have 2 replicas and no additional scheduling occurs
 
 Test Least Effort Auto Balance In Unstable Cluster
+    [Tags]    kubelet-restart    long-running    scheduling    replica
     [Documentation]    Test replica least effort auto balance with unstable node
-    [Tags]    kubelet-restart    long-running
     ...    Issue: https://github.com/longhorn/longhorn/issues/11730
     ...
     ...    1. Set Replica Auto Balance to least-effort.

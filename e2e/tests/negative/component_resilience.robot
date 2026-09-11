@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Negative Test Cases
 
-Test Tags    manual    negative
+Test Tags    manual    negative    component
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
