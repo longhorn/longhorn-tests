@@ -21,6 +21,7 @@ Resource    ../keywords/orphan.resource
 Resource    ../keywords/replica.resource
 Resource    ../keywords/engine_frontend.resource
 Resource    ../keywords/io.resource
+Resource    ../keywords/statefulset.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -1038,3 +1039,31 @@ Test V2 Sharded Volume Dynamic Provisioning With Expansion
     # write at least 1.5Gi of data (more than the original 1Gi size) to verify
     # the volume can actually hold data beyond its pre-expansion capacity
     When Write 1536 MB data to file data-after-expansion.txt in deployment 0
+    Given Create storageclass longhorn-test-v2-interrupt with    dataEngine=v2    numberOfReplicas=2
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Create statefulset ${i} using RWO volume with longhorn-test-v2-interrupt storageclass and size 3 Gi
+        And Wait for volume of statefulset ${i} healthy
+        Then Write 2560 MB data to file data in statefulset ${i}
+        And Check statefulset ${i} data in file data is intact
+        And Delete statefulset ${i}
+    END
+
+Test V2 Continuous Write
+    [Tags]    regression    v2
+    [Documentation]    Continuously write data to v2 volume and 
+    ...                verify write does not get stuck and data is intact.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/13937
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    Given Create storageclass longhorn-test-v2 with    dataEngine=v2    numberOfReplicas=2
+
+    FOR    ${i}    IN RANGE    5
+        When Create statefulset ${i} using RWO volume with longhorn-test-v2 storageclass and size 3 Gi
+        And Wait for volume of statefulset ${i} healthy
+        Then Write 2560 MB data to file data in statefulset ${i}
+        And Check statefulset ${i} data in file data is intact
+        And Delete statefulset ${i}
+    END
