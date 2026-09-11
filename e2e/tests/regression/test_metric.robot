@@ -23,6 +23,7 @@ Test Longhorn Metrics
     [Documentation]
     ...    Issue: https://github.com/longhorn/longhorn/issues/11949
     ...           https://github.com/longhorn/longhorn/issues/11387
+    ...           https://github.com/longhorn/longhorn/issues/13980
     ...    Notice that some metrics are only collected and stored by its owner node,
     ...    so we can only iterate all nodes to collect the complete metrics
     Given Create volume vol-1 with    size=2Gi    dataEngine=v1
@@ -49,6 +50,7 @@ Test Longhorn Metrics
     And Metric longhorn_backup_uploaded_data_size_bytes value with label {"volume": "vol-1"} should be 0
     # longhorn_backup_uploaded_data_size_bytes{backup="backup-6d79f07d12e24dd1",recurring_job="",volume="vol-2"} 0
     And Metric longhorn_backup_uploaded_data_size_bytes value with label {"volume": "vol-2"} should be 0
+    And There should be longhorn_backup_target_status metric
 
 Test Disable Node Disk Health Monitoring
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12300
