@@ -168,7 +168,7 @@ def create_test_run(job_name, test_results, build_url):
     return res["result"]["id"]
 
 
-def update_test_run_results(test_run_id, test_results):
+def update_test_run_results(test_run_id, test_results, batch_size=199):
 
     print(f"updating test run {test_run_id} results")
 
@@ -186,7 +186,6 @@ def update_test_run_results(test_run_id, test_results):
             obj["status"] = "passed"
         arr.append(obj)
 
-    payload = { "results": arr }
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
@@ -194,12 +193,18 @@ def update_test_run_results(test_run_id, test_results):
     }
     url = f"https://api.qase.io/v1/result/{qase_project}/{test_run_id}/bulk"
 
-    resp = requests.post(url, json=payload, headers=headers)
-    res = resp.json()
-    if res["status"] == True:
-        print(f"updating test run {test_run_id} succeeded")
-    else:
-        print(f"failed to update test run {test_run_id}: {res}")
+    # qase only allows posting at most 200 results per bulk request, so
+    # split results into batches and post each batch to the same test run
+    for i in range(0, len(arr), batch_size):
+        batch = arr[i:i + batch_size]
+        payload = { "results": batch }
+
+        resp = requests.post(url, json=payload, headers=headers)
+        res = resp.json()
+        if res["status"] == True:
+            print(f"updating test run {test_run_id} batch {i // batch_size + 1} succeeded")
+        else:
+            print(f"failed to update test run {test_run_id} batch {i // batch_size + 1}: {res}")
 
 
 def complete_test_run(test_run_id):
