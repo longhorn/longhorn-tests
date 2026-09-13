@@ -9,6 +9,7 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/backup.resource
 Resource    ../keywords/metrics.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set up v2 test environment
 Test Teardown    Cleanup test resources
@@ -68,3 +69,53 @@ Test Disable Node Disk Health Monitoring
     When Setting node-disk-health-monitoring is set to false
     Then There should be no longhorn_disk_health metric
     And There should be no longhorn_disk_health_attribute_raw metric
+
+Test Metrics Scrape Sources NetworkPolicy
+    [Tags]    uninstall    helm
+    [Documentation]
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13947
+    ...    1. With networkPolicies.restrictInternalTraffic enabled (default) and
+    ...       networkPolicies.metricsScrapeSources left at its default `[]`, a scraper
+    ...       pod running in another namespace cannot reach longhorn-manager on TCP/9500,
+    ...       so no longhorn_* metrics are visible to it.
+    ...    2. After setting networkPolicies.metricsScrapeSources to a peer combining a
+    ...       namespaceSelector and podSelector matching the scraper pod, and upgrading
+    ...       the chart, the scraper pod can reach TCP/9500 and see longhorn_* metrics.
+    ...    3. The chart still renders the same when metricsScrapeSources is left as
+    ...       the default empty list, i.e. the existing internal-only policy is unchanged.
+    ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    This test only applies to helm install method
+    END
+
+    # deploy a Prometheus-like scraper pod in another namespace
+    Given Run command
+    ...    kubectl create namespace monitoring
+    And Run command
+    ...    kubectl run prometheus-scraper -n monitoring --image=curlimages/curl --labels="app=prometheus-scraper" --command -- sleep infinity
+    And Run command and wait for output
+    ...    kubectl get pods -n monitoring -l app=prometheus-scraper --field-selector=status.phase=Running
+    ...    prometheus-scraper
+
+    # by default, networkPolicies.metricsScrapeSources is [], so the scraper pod
+    # in another namespace cannot reach longhorn-manager metrics on TCP/9500
+    Then Run command in pod monitoring/prometheus-scraper and wait for output
+    ...    curl --max-time 5 http://longhorn-backend.longhorn-system:9500/metrics
+    ...    Failed to connect to longhorn-backend.longhorn-system:9500
+
+    # opt-in to allow the scraper pod by combining namespaceSelector and podSelector
+    # in a single NetworkPolicy peer
+    When Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check all Longhorn CRD removed
+    And Install Longhorn
+    ...    custom_cmd=yq -i '.networkPolicies.metricsScrapeSources = [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "monitoring"}}, "podSelector": {"matchLabels": {"app": "prometheus-scraper"}}}]' values.yaml
+
+    # the scraper pod can now reach longhorn-manager metrics on TCP/9500
+    Then Run command in pod monitoring/prometheus-scraper and wait for output
+    ...    curl --max-time 5 http://longhorn-backend.longhorn-system:9500/metrics | grep "longhorn_node_count_total 3"
+    ...    longhorn_node_count_total 3
+
+    [Teardown]    Run Keywords
+    ...    Run command    kubectl delete namespace monitoring --ignore-not-found
+    ...    AND    Cleanup test resources
