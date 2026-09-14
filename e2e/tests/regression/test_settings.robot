@@ -221,7 +221,7 @@ Test Setting Blacklist For Auto Delete Pod
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
     And Wait for deployment 0 pods stable
 
-Test Validate Duplicate Disk Paths Are Rejected Via Kubectl Patch
+Test Validate Duplicate Disk Paths Are Rejected
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12480
     [Tags]    setting
 

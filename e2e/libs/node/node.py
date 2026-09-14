@@ -51,6 +51,8 @@ class Node:
                 return node
             except Exception as e:
                 logging(f"Failed to update node {node_name} disk: {e}")
+                if "duplicate disk" in str(e):
+                     raise
                 last_error = str(e)
             time.sleep(self.retry_interval)
         assert False, f"Failed to update node {node_name} disk {disks}: {last_error}"
