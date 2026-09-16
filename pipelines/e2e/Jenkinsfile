@@ -63,6 +63,10 @@ node {
 
             stage('build') {
 
+                if(JOB_BASE_NAME == "longhorn-e2e-test") {
+                    manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+                }
+
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration code: $REGISTRATION_CODE_ID"
 

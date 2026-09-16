@@ -41,6 +41,94 @@ class Base:
 
         assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
 
+    def wait_for_all_instance_manager_running_with_default_image(self):
+        longhorn_client = get_longhorn_client()
+        worker_nodes = self.node.list_node_names_by_role("worker")
+        default_instance_manager_image = longhorn_client.by_id_setting("default-instance-manager-image").value
+        instance_managers = []
+        instance_manager_map = {}
+
+        for i in range(self.retry_count):
+            try:
+                instance_managers = longhorn_client.list_instance_manager()
+                instance_manager_map = {}
+                for im in instance_managers:
+                    if im.currentState != "running":
+                        continue
+                    if im.image != default_instance_manager_image:
+                        continue
+                    instance_manager_map[im.nodeID] = im
+                if len(instance_manager_map) == len(worker_nodes):
+                    return
+            except Exception as e:
+                logging(f"Getting instance manager state/image error: {e}")
+
+            logging(
+                f"Waiting for all instance manager running with default image "
+                f"{default_instance_manager_image}, retry ({i}) ..."
+            )
+            time.sleep(self.retry_interval)
+
+        assert len(instance_manager_map) == len(worker_nodes), (
+            f"expect all worker nodes to have running instance managers with "
+            f"default image {default_instance_manager_image}, "
+            f"instance_managers = {instance_managers}, "
+            f"instance_manager_map = {instance_manager_map}"
+        )
+
+    def wait_for_all_instance_manager_upgrades_completed(self):
+        worker_nodes = self.node.list_node_names_by_role("worker")
+        expected_nodes = set(worker_nodes)
+        instance_manager_upgrades = []
+        completed_nodes = set()
+
+        cmd = (
+            f"kubectl get instancemanagerupgrades.longhorn.io "
+            f"-n {constant.LONGHORN_NAMESPACE} -ojson"
+        )
+
+        for i in range(self.retry_count):
+            try:
+                instance_manager_upgrades = json.loads(subprocess_exec_cmd(cmd, verbose=False)).get("items", [])
+                completed_nodes = set()
+                active_upgrades = []
+
+                for upgrade in instance_manager_upgrades:
+                    node_id = upgrade.get("spec", {}).get("nodeID", "")
+                    state = upgrade.get("status", {}).get("state", "")
+                    if node_id not in expected_nodes:
+                        continue
+                    if state == "completed":
+                        completed_nodes.add(node_id)
+                    else:
+                        active_upgrades.append({
+                            "name": upgrade.get("metadata", {}).get("name", ""),
+                            "nodeID": node_id,
+                            "state": state,
+                        })
+
+                if completed_nodes == expected_nodes:
+                    return
+
+                if (i + 1) % 10 == 0:
+                    logging(
+                        f"Waiting for all instance manager upgrades completed, "
+                        f"completed_nodes={sorted(completed_nodes)}, "
+                        f"expected_nodes={sorted(expected_nodes)}, "
+                        f"active_upgrades={active_upgrades}, retry ({i + 1}) ..."
+                    )
+            except Exception as e:
+                logging(f"Getting instance manager upgrade state error: {e}")
+
+            time.sleep(self.retry_interval)
+
+        assert completed_nodes == expected_nodes, (
+            f"expect all worker nodes to have completed instance manager upgrades, "
+            f"completed_nodes={sorted(completed_nodes)}, "
+            f"expected_nodes={sorted(expected_nodes)}, "
+            f"instance_manager_upgrades={instance_manager_upgrades}"
+        )
+
     def wait_for_all_instance_manager_removed(self):
         longhorn_client = get_longhorn_client()
 
