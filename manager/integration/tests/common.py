@@ -2664,6 +2664,41 @@ def wait_for_replica_failed(client, volname, replica_name,
     assert failed, err_msg
 
 
+def wait_for_replicas_failed_at_cleared(client, volname, replica_names,
+                                        retry_cnts=RETRY_COUNTS_LONG,
+                                        retry_ivl=RETRY_INTERVAL):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_replicas = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(retry_cnts):
+        volume = client.by_id_volume(volname)
+        debug_replicas = []
+        missing_replica_names = set(replica_name_set)
+        failed_at_cleared = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+            missing_replica_names.discard(replica['name'])
+            debug_replicas.append(replica)
+            if replica['failedAt'] != "":
+                failed_at_cleared = False
+
+        if not missing_replica_names and failed_at_cleared:
+            return volume
+
+        time.sleep(retry_ivl)
+
+    err_msg = "Vol({}), replicas({}) failedAt not cleared. Missing: {}, " \
+              "current replicas: {}".format(
+                  volname, replica_names, missing_replica_names,
+                  debug_replicas if debug_replicas else volume.replicas
+              )
+    assert False, err_msg
+
+
 def wait_for_replica_crashed(client, volname, replica_name,
                              retry_cnts=RETRY_COUNTS,
                              retry_ivl=RETRY_INTERVAL):
