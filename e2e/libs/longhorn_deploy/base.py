@@ -37,6 +37,37 @@ class Base(ABC):
             time.sleep(self.retry_interval)
         assert removed, "Failed to wait for all longhorn crds removed"
 
+    def is_installed(self, longhorn_namespace):
+        """Check whether Longhorn appears to be installed.
+
+        This is used to detect a broken environment left behind by a
+        previous test that failed during ``Uninstall Longhorn`` (e.g. Longhorn
+        was partially removed), so the test setup can reinstall Longhorn
+        before the actual test runs.
+        """
+        try:
+            all_crd = k8s.get_all_custom_resources()
+            has_longhorn_crd = any(
+                "longhorn.io" in crd.metadata.name for crd in all_crd.items
+            )
+            if not has_longhorn_crd:
+                logging("Longhorn CRDs not found, Longhorn is not installed")
+                return False
+
+            pods = k8s.list_namespace_pods(longhorn_namespace)
+            manager_pods = [
+                pod for pod in pods.items
+                if pod.metadata.labels and pod.metadata.labels.get("app") == "longhorn-manager"
+            ]
+            if not manager_pods:
+                logging(f"No longhorn-manager pods found in namespace {longhorn_namespace}")
+                return False
+
+            return True
+        except Exception as e:
+            logging(f"Checking Longhorn installed status error: {e}")
+            return False
+
     def check_longhorn_uninstall_pod_log(self):
         command = "./pipelines/utilities/longhorn_manifest.sh"
         process = subprocess.Popen([command, "check_uninstall_log"],
