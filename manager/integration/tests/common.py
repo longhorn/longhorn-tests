@@ -5835,14 +5835,25 @@ def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
 def wait_for_pods_volume_delete(client, pod_list,  # NOQA
                                 retry_counts=RETRY_BACKUP_COUNTS):
     volume_deleted = False
+    volume_names = {pod['pv_name'] for pod in pod_list}
     for _ in range(retry_counts):
+        try:
+            volumes = client.list_volume()
+        except longhorn.ApiError as err:
+            if err.error.code == 404 and \
+                    "failed to list volume: volume.longhorn.io" \
+                    in err.error.message:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            raise
+
         volume_deleted = True
-        volumes = client.list_volume()
-        for v in volumes:
-            for p in pod_list:
-                if v.name == p['pv_name']:
-                    volume_deleted = False
-                    break
+        for volume in volumes:
+            if volume.name in volume_names:
+                volume_deleted = False
+                break
+        if volume_deleted:
+            return
         time.sleep(RETRY_INTERVAL)
     assert volume_deleted is True
 
