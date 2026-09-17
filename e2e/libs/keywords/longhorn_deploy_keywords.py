@@ -19,6 +19,9 @@ class longhorn_deploy_keywords:
     def check_longhorn_crd_removed(self):
         self.longhorn.check_longhorn_crd_removed()
 
+    def is_longhorn_installed(self):
+        return self.longhorn.is_installed()
+
     def install_longhorn_system(self, custom_cmd="", install_stable_version=False, longhorn_namespace="longhorn-system"):
         self.longhorn.install(custom_cmd, install_stable_version, longhorn_namespace)
 
