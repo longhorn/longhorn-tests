@@ -8639,14 +8639,25 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 <pre><code class="python">def wait_for_pods_volume_delete(client, pod_list,  # NOQA
                                 retry_counts=RETRY_BACKUP_COUNTS):
     volume_deleted = False
+    volume_names = {pod[&#39;pv_name&#39;] for pod in pod_list}
     for _ in range(retry_counts):
+        try:
+            volumes = client.list_volume()
+        except longhorn.ApiError as err:
+            if err.error.code == 404 and \
+                    &#34;failed to list volume: volume.longhorn.io&#34; \
+                    in err.error.message:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            raise
+
         volume_deleted = True
-        volumes = client.list_volume()
-        for v in volumes:
-            for p in pod_list:
-                if v.name == p[&#39;pv_name&#39;]:
-                    volume_deleted = False
-                    break
+        for volume in volumes:
+            if volume.name in volume_names:
+                volume_deleted = False
+                break
+        if volume_deleted:
+            return
         time.sleep(RETRY_INTERVAL)
     assert volume_deleted is True</code></pre>
 </details>
