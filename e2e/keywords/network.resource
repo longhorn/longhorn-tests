@@ -111,3 +111,12 @@ Drop replies to FileSend connection for ${duration} seconds
 FileSend connection should remain established
     [Arguments]    ${connection}
     assert_file_send_connection_established    ${connection}
+
+Inject NFS backup target latency ${latency_ms} ms toward ${nfs_ip}
+    apply_nfs_backup_target_latency    ${nfs_ip}    ${latency_ms}
+
+Cleanup NFS backup target latency toward ${nfs_ip}
+    remove_nfs_backup_target_latency    ${nfs_ip}
+
+Backup inspect processes should not exceed ${max_count}
+    assert_backup_inspect_processes_not_accumulated    ${max_count}

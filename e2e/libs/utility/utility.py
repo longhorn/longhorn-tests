@@ -162,18 +162,21 @@ def wait_for_cluster_ready():
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
 
-def pod_exec(pod_name, namespace, cmd):
+def pod_exec(pod_name, namespace, cmd, container=None):
 
     core_api = client.CoreV1Api()
     exec_cmd = ['/bin/sh', '-c', cmd]
     logging(f"Issued command: {cmd} on {pod_name}")
 
+    kwargs = dict(command=exec_cmd, stderr=True, stdin=False, stdout=True, tty=False)
+    if container:
+        kwargs["container"] = container
+
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message=f'Timeout on executing stream {pod_name} {cmd}'):
         output = stream(core_api.connect_get_namespaced_pod_exec,
                         pod_name,
-                        namespace, command=exec_cmd,
-                        stderr=True, stdin=False, stdout=True, tty=False)
+                        namespace, **kwargs)
         logging(f"Issued command: {cmd} on {pod_name} with result {output}")
         return output
 
