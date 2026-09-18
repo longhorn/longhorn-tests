@@ -291,6 +291,13 @@ class Rest(Base):
                 if r.hostId == node_name:
                     return r.name
 
+    def get_running_replica_name_on_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            volume = get_longhorn_client().by_id_volume(volume_name)
+            for r in volume.replicas:
+                if r.hostId == node_name and r.running and r.mode == "RW":
+                    return r.name
+
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         condition_met = False
         for i in range(self.retry_count):
