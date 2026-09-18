@@ -202,12 +202,37 @@ class Node:
         if block_disk_deleted:
             time.sleep(30)
 
-    def set_node_disks_tags(self, node_name, tags):
+    def set_disk_tags(self, node_name, disk_name=None, tags=None):
+        if tags is None:
+            tags = []
         node = get_longhorn_client().by_id_node(node_name)
-        for disk_name, disk in iter(node.disks.items()):
-            logging(f"Setting tags {tags} to node {node_name} disk {disk_name}")
-            disk.tags = list(tags)
+        disk_found = False
+        for name, disk in iter(node.disks.items()):
+            if disk_name is None or name == disk_name or disk.path == disk_name:
+                logging(f"Setting tags {tags} to node {node_name} disk {name}")
+                disk.tags = list(tags)
+                disk_found = True
+                if disk_name is not None:
+                    break
+        if disk_name is not None and not disk_found:
+            logging(f"Disk {disk_name} not found on node {node_name}")
         self.update_disks(node_name, node.disks)
+
+    def set_node_disks_tags(self, node_name, tags=None):
+        self.set_disk_tags(node_name, disk_name=None, tags=tags)
+
+    def get_default_disk_name(self, node_name, data_engine="v1"):
+        node = get_longhorn_client().by_id_node(node_name)
+        if data_engine == "v2":
+            for disk_name, disk in node.disks.items():
+                if disk.diskType == "block":
+                    return disk_name
+            return DEFAULT_BLOCK_DISK_NAME
+        else:
+            for disk_name, disk in node.disks.items():
+                if self._is_default_disk_path(disk.path):
+                    return disk_name
+            return self.get_default_file_system_disk_name(node_name)
 
     def is_accessing_node_by_index(self, node):
         p = re.compile(r'node (\d)')
