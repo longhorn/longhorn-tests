@@ -49,9 +49,13 @@ Setup dm disk for v1 on node ${node_id}
 
 Setup dm disk for v2 on node ${node_id}
     [Documentation]    Setup dm device as block disk for V2 data engine.
-    ...                Removes default BLOCK disk (which uses /dev/xvdh), creates dm-linear on /dev/xvdh, adds dm device as block disk.
+    ...                Removes default BLOCK disk, creates dm-linear on the underlying block device,
+    ...                adds dm device as block disk. When DISK_PATH is a BDF (NVMe SPDK mode),
+    ...                waits for the Linux nvme driver to reclaim the device after SPDK releases it
+    ...                and resolves DISK_PATH to the actual /dev/ path before creating the dm device.
     When Disable default block disk on node ${node_id}
     And Delete default block disk on node ${node_id}
+    And Resolve BDF disk path on node ${node_id}
     And Create dm linear device from block device ${DISK_PATH} as ${dm_device_name} on node ${node_id}
     Then Disable node ${node_id} default disk
     And Add block disk ${disk_name} to node ${node_id} with path /dev/mapper/${dm_device_name}
