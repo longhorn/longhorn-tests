@@ -39,8 +39,6 @@ class StorageClass():
 
             if encrypted == "true":
                 manifest_dict['parameters']['encrypted'] = encrypted
-                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = "longhorn-crypto"
-                manifest_dict['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = constant.LONGHORN_NAMESPACE
                 manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = "longhorn-crypto"
                 manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = constant.LONGHORN_NAMESPACE
                 manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = "longhorn-crypto"
