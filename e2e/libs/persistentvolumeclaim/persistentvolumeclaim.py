@@ -18,7 +18,7 @@ class PersistentVolumeClaim():
         self.core_v1_api = client.CoreV1Api()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volumeMode="Filesystem", wait_for_bound=True, volume_name=None):
+    def create(self, name, volume_type, sc_name, storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volumeMode="Filesystem", wait_for_bound=True, volume_name=None, labels=None):
         storage_size_bytes = convert_size_to_bytes(storage_size)
 
         filepath = "./templates/workload/pvc.yaml"
@@ -31,6 +31,9 @@ class PersistentVolumeClaim():
 
             # add label
             manifest_dict['metadata']['labels'][LABEL_TEST] = LABEL_TEST_VALUE
+            if labels:
+                assert isinstance(labels, dict), f"labels must be a dict, got {type(labels).__name__}: {labels!r}"
+                manifest_dict['metadata']['labels'].update(labels)
 
             # correct storageclass name
             manifest_dict['spec']['storageClassName'] = sc_name
