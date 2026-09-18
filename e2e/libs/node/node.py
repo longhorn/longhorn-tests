@@ -63,7 +63,18 @@ class Node:
                 node = node.diskUpdate(disks=disks)
                 self.wait_for_disk_update(node_name, len(disks), wait)
                 return node
+            except AssertionError:
+                # wait_for_disk_update already retried internally for the
+                # full retry budget, so retrying it again here would just
+                # multiply the total wait time without any benefit.
+                raise
             except Exception as e:
+                if "duplicate disk paths" in str(e):
+                    # A disk with the same path is already present on the
+                    # node, so the intended disk is effectively already added.
+                    # Treat this as success instead of retrying or failing.
+                    logging(f"Disk path already exists on node {node_name}: {e}")
+                    return get_longhorn_client().by_id_node(node_name)
                 logging(f"Failed to update node {node_name} disk: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to update node {node_name} disk {disks}"
@@ -108,6 +119,11 @@ class Node:
                 self.update_disks(node_name, disks, wait)
                 added = True
                 break
+            except AssertionError:
+                # update_disks/wait_for_disk_update already retried
+                # internally for the full retry budget, so retrying again
+                # here would just multiply the total wait time.
+                raise
             except Exception as e:
                 logging(f"Adding disk {disk} to node {node_name} error: {e}")
             time.sleep(self.retry_interval)
