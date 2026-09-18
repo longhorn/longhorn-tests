@@ -96,28 +96,7 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
     echo "/tmp/instance_mapping not found, skipping instance mapping configmap setup"
   fi
 
-  # share public IP mapping information between jenkins job agent and test pod for later use, e.g. ssh to nodes.
-  if [[ -f /tmp/public_ip_mapping ]]; then
-    kubectl create configmap public-ip-mapping --from-file=/tmp/public_ip_mapping
-    yq -i '
-select(.kind == "Pod").spec.volumes += [{
-  "name": "public-ip-mapping",
-  "configMap": {
-    "name": "public-ip-mapping"
-  }
-}]
-' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-    yq -i '
-select(.kind == "Pod").spec.containers[0].volumeMounts += [{
-  "name": "public-ip-mapping",
-  "mountPath": "/tmp/public_ip_mapping",
-  "subPath": "public_ip_mapping",
-  "readOnly": true
-}]
-' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
-  else
-    echo "/tmp/public_ip_mapping not found, skipping public IP mapping configmap setup"
-  fi
+  # Public IP mapping is generated dynamically in test setup via get_public_ip().
 
   # share ssh key with test pod for later use, e.g. ssh to nodes
   kubectl create secret generic ssh-key --from-file=$HOME/.ssh/id_rsa
