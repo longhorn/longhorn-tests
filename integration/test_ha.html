@@ -206,6 +206,7 @@ el.replaceWith(d);
         volume = create_and_check_volume(client, volume_name,
                                          num_of_replicas=2,
                                          backing_image=backing_image)
+        volume = wait_for_volume_replica_count(client, volume_name, 2)
 
         volume = volume.attach(hostId=host_id)
         volume = wait_for_volume_healthy(client, volume_name)
@@ -227,11 +228,10 @@ el.replaceWith(d);
         volume = common.wait_for_volume_faulted(client, volume_name)
 
         volume.salvage(names=[replica0_name, replica1_name])
-        volume = client.by_id_volume(volume_name)
+        volume = wait_for_replicas_failed_at_cleared(
+            client, volume_name, [replica0_name, replica1_name])
 
         assert len(volume.replicas) == 2
-        assert volume.replicas[0].failedAt == &#34;&#34;
-        assert volume.replicas[1].failedAt == &#34;&#34;
 
         volume = wait_for_volume_healthy(client, volume_name)
 
@@ -249,6 +249,7 @@ el.replaceWith(d);
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=2,
                                      backing_image=backing_image)
+    volume = wait_for_volume_replica_count(client, volume_name, 2)
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -271,13 +272,18 @@ el.replaceWith(d);
     volume = common.wait_for_volume_faulted(client, volume_name)
 
     if DATA_ENGINE == &#34;v2&#34;:
-        wait_for_all_nodes_disks_schedulable(client, disk_type=&#34;block&#34;)
+        # v2 manual salvage needs two different readiness gates. Instance
+        # managers must be running so the controller does not immediately
+        # mark replicas failed again, while the disk check mirrors the
+        # per-replica disk validation in the salvage API.
+        wait_for_all_instance_manager_running(client)
+        volume = wait_for_replicas_disks_schedulable(
+            client, volume_name, [replica0_name, replica1_name])
     volume.salvage(names=[replica0_name, replica1_name])
-    volume = client.by_id_volume(volume_name)
+    volume = wait_for_replicas_failed_at_cleared(
+        client, volume_name, [replica0_name, replica1_name])
 
     assert len(volume.replicas) == 2
-    assert volume.replicas[0].failedAt == &#34;&#34;
-    assert volume.replicas[1].failedAt == &#34;&#34;
 
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -302,6 +308,7 @@ el.replaceWith(d);
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3,
                                      backing_image=backing_image)
+    volume = wait_for_volume_replica_count(client, volume_name, 3)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -350,6 +357,7 @@ el.replaceWith(d);
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3,
                                      backing_image=backing_image)
+    volume = wait_for_volume_replica_count(client, volume_name, 3)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)

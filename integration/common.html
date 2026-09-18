@@ -9043,6 +9043,123 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="tests.common.wait_for_replicas_disks_schedulable"><code class="name flex">
+<span>def <span class="ident">wait_for_replicas_disks_schedulable</span></span>(<span>client, volname, replica_names)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_replicas_disks_schedulable(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_disks = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_disks = []
+        missing_replica_names = set(replica_name_set)
+        disks_schedulable = True
+
+        for replica in volume.replicas:
+            if replica[&#39;name&#39;] not in replica_name_set:
+                continue
+
+            missing_replica_names.discard(replica[&#39;name&#39;])
+            node_name = replica[&#39;hostId&#39;]
+            disk_id = replica[&#39;diskID&#39;]
+            disk_found = False
+            disk_schedulable = False
+
+            if node_name != &#34;&#34; and disk_id != &#34;&#34;:
+                node = client.by_id_node(node_name)
+                for disk_name, disk in node.disks.items():
+                    if disk.get(&#34;diskUUID&#34;, &#34;&#34;) != disk_id:
+                        continue
+
+                    disk_found = True
+                    conditions = disk.get(&#34;conditions&#34;, {})
+                    schedulable_condition = conditions.get(&#34;Schedulable&#34;, {})
+                    schedulable_status = \
+                        schedulable_condition.get(&#34;status&#34;, &#34;&#34;)
+                    disk_schedulable = schedulable_status == &#34;True&#34;
+                    debug_disks.append({
+                        &#34;replica&#34;: replica[&#39;name&#39;],
+                        &#34;node&#34;: node_name,
+                        &#34;disk&#34;: disk_name,
+                        &#34;diskID&#34;: disk_id,
+                        &#34;schedulable&#34;: schedulable_status,
+                    })
+                    break
+
+            if not disk_schedulable:
+                disks_schedulable = False
+                if not disk_found:
+                    debug_disks.append({
+                        &#34;replica&#34;: replica[&#39;name&#39;],
+                        &#34;node&#34;: node_name,
+                        &#34;diskID&#34;: disk_id,
+                        &#34;disk&#34;: &#34;&#34;,
+                        &#34;schedulable&#34;: &#34;&#34;,
+                    })
+
+        if not missing_replica_names and disks_schedulable:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f&#34;Vol({volname}), replicas({replica_names}) disks are not &#34;
+        f&#34;schedulable. Missing: {missing_replica_names}, &#34;
+        f&#34;current disks: {debug_disks}&#34;
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="tests.common.wait_for_replicas_failed_at_cleared"><code class="name flex">
+<span>def <span class="ident">wait_for_replicas_failed_at_cleared</span></span>(<span>client, volname, replica_names)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_replicas_failed_at_cleared(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_replicas = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_replicas = []
+        missing_replica_names = set(replica_name_set)
+        failed_at_cleared = True
+
+        for replica in volume.replicas:
+            if replica[&#39;name&#39;] not in replica_name_set:
+                continue
+            missing_replica_names.discard(replica[&#39;name&#39;])
+            debug_replicas.append(replica)
+            if replica[&#39;failedAt&#39;] != &#34;&#34;:
+                failed_at_cleared = False
+
+        if not missing_replica_names and failed_at_cleared:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f&#34;Vol({volname}), replicas({replica_names}) failedAt not cleared. &#34;
+        f&#34;Missing: {missing_replica_names}, &#34;
+        f&#34;current replicas: &#34;
+        f&#34;{debug_replicas if debug_replicas else volume.replicas}&#34;
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="tests.common.wait_for_restoration_start"><code class="name flex">
 <span>def <span class="ident">wait_for_restoration_start</span></span>(<span>client, name)</span>
 </code></dt>
@@ -10858,6 +10975,8 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
+<li><code><a title="tests.common.wait_for_replicas_disks_schedulable" href="#tests.common.wait_for_replicas_disks_schedulable">wait_for_replicas_disks_schedulable</a></code></li>
+<li><code><a title="tests.common.wait_for_replicas_failed_at_cleared" href="#tests.common.wait_for_replicas_failed_at_cleared">wait_for_replicas_failed_at_cleared</a></code></li>
 <li><code><a title="tests.common.wait_for_restoration_start" href="#tests.common.wait_for_restoration_start">wait_for_restoration_start</a></code></li>
 <li><code><a title="tests.common.wait_for_running_engine_image_count" href="#tests.common.wait_for_running_engine_image_count">wait_for_running_engine_image_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
