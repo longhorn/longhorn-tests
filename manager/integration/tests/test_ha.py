@@ -55,6 +55,7 @@ from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_DEGRADED
 from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import wait_for_volume_expansion, wait_for_dr_volume_expansion
 from common import wait_for_volume_replica_count, wait_for_replica_failed
+from common import wait_for_replicas_failed_at_cleared
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 from common import SETTING_DISABLE_REVISION_COUNTER
@@ -87,7 +88,9 @@ from common import wait_for_tainted_node_engine_image_undeployed
 from common import wait_for_replica_count
 from common import DATA_ENGINE
 from common import DATA_SIZE_IN_MB_5, RETRY_COUNTS_LONG
-from common import delete_all_v2_instance_manager_pods, wait_for_all_nodes_disks_schedulable # NOQA
+from common import delete_all_v2_instance_manager_pods
+from common import wait_for_all_instance_manager_running
+from common import wait_for_replicas_disks_schedulable
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -278,6 +281,7 @@ def ha_salvage_test(client, core_api, # NOQA
         volume = create_and_check_volume(client, volume_name,
                                          num_of_replicas=2,
                                          backing_image=backing_image)
+        volume = wait_for_volume_replica_count(client, volume_name, 2)
 
         volume = volume.attach(hostId=host_id)
         volume = wait_for_volume_healthy(client, volume_name)
@@ -299,11 +303,10 @@ def ha_salvage_test(client, core_api, # NOQA
         volume = common.wait_for_volume_faulted(client, volume_name)
 
         volume.salvage(names=[replica0_name, replica1_name])
-        volume = client.by_id_volume(volume_name)
+        volume = wait_for_replicas_failed_at_cleared(
+            client, volume_name, [replica0_name, replica1_name])
 
         assert len(volume.replicas) == 2
-        assert volume.replicas[0].failedAt == ""
-        assert volume.replicas[1].failedAt == ""
 
         volume = wait_for_volume_healthy(client, volume_name)
 
@@ -321,6 +324,7 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=2,
                                      backing_image=backing_image)
+    volume = wait_for_volume_replica_count(client, volume_name, 2)
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -343,13 +347,18 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = common.wait_for_volume_faulted(client, volume_name)
 
     if DATA_ENGINE == "v2":
-        wait_for_all_nodes_disks_schedulable(client, disk_type="block")
+        # v2 manual salvage needs two different readiness gates. Instance
+        # managers must be running so the controller does not immediately
+        # mark replicas failed again, while the disk check mirrors the
+        # per-replica disk validation in the salvage API.
+        wait_for_all_instance_manager_running(client)
+        volume = wait_for_replicas_disks_schedulable(
+            client, volume_name, [replica0_name, replica1_name])
     volume.salvage(names=[replica0_name, replica1_name])
-    volume = client.by_id_volume(volume_name)
+    volume = wait_for_replicas_failed_at_cleared(
+        client, volume_name, [replica0_name, replica1_name])
 
     assert len(volume.replicas) == 2
-    assert volume.replicas[0].failedAt == ""
-    assert volume.replicas[1].failedAt == ""
 
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -374,6 +383,7 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3,
                                      backing_image=backing_image)
+    volume = wait_for_volume_replica_count(client, volume_name, 3)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -422,6 +432,7 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3,
                                      backing_image=backing_image)
+    volume = wait_for_volume_replica_count(client, volume_name, 3)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
