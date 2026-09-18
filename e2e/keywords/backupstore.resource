@@ -43,3 +43,7 @@ Wait for backupstore ready
 Delete random backup block of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_random_backup_block    ${volume_name}
+
+Get NFS backup target server IP
+    ${ip} =    resolve_nfs_backup_target_server_ip
+    RETURN    ${ip}

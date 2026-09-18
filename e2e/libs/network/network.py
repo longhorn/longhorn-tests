@@ -164,6 +164,53 @@ def remove_pod_traffic_limit(pod_name, interface):
     )
 
 
+def inject_nfs_latency_on_node(node_name, nfs_server_ip, latency_in_ms):
+    ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+    ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
+    cmd = (
+        f"IFACE=$(ip route get {nfs_server_ip} | awk '/dev/{{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1)}}' | head -1); "
+        f"tc qdisc del dev $IFACE root 2>/dev/null || true; "
+        f"tc qdisc add dev $IFACE root handle 1: prio; "
+        f"tc qdisc add dev $IFACE parent 1:3 handle 30: netem delay {latency_in_ms}ms; "
+        f"tc filter add dev $IFACE protocol ip parent 1:0 prio 3 u32 match ip dst {nfs_server_ip}/32 flowid 1:3"
+    )
+    manifest = new_pod_manifest(
+        image=IMAGE_BUSYBOX,
+        command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
+        args=["-c", cmd],
+        node_name=node_name,
+        labels={LABEL_TEST: LABEL_TEST_VALUE}
+    )
+    create_pod(manifest, is_wait_for_pod_succeeded=True)
+
+
+def cleanup_nfs_latency_on_node(node_name, nfs_server_ip):
+    ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+    ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
+    cmd = (
+        f"IFACE=$(ip route get {nfs_server_ip} | awk '/dev/{{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1)}}' | head -1); "
+        f"tc qdisc del dev $IFACE root 2>/dev/null || true"
+    )
+    manifest = new_pod_manifest(
+        image=IMAGE_BUSYBOX,
+        command=["nsenter", f"--mount={ns_mnt}", f"--net={ns_net}", "--", "sh"],
+        args=["-c", cmd],
+        node_name=node_name,
+        labels={LABEL_TEST: LABEL_TEST_VALUE}
+    )
+    create_pod(manifest, is_wait_for_pod_succeeded=True)
+
+
+def verify_nfs_latency_on_node(node_name, nfs_server_ip):
+    """Return True if a tc netem qdisc and u32 filter toward nfs_server_ip exist on the node."""
+    cmd = (
+        f"IFACE=$(ip route get {nfs_server_ip} | awk '/dev/{{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1)}}' | head -1); "
+        f"tc qdisc show dev $IFACE | grep -q 'netem' && tc filter show dev $IFACE | grep -q 'flowid 1:3' && echo yes || echo no"
+    )
+    output = NodeExec(node_name).issue_cmd(cmd).strip()
+    return output == "yes"
+
+
 def get_pod_tcp_connections(pod_name):
     output = pod_exec(
         pod_name,
