@@ -63,21 +63,21 @@ Continuous IO Test
     ${duration}=    Evaluate    int(${TEST_DURATION_IN_HOURS}) * 60 * 60    # seconds
     ${current}=    Get Time    epoch
     WHILE    ${current} - ${start} < ${duration}
-        When Write 100 MB data to file data.txt in deployment rwo-deploy
-        And Write 100 MB data to file data.txt in deployment rwx-deploy
-        And Write 100 MB data to file data.txt in deployment strict-local-deploy
-        And Write 100 MB data to file data.txt in deployment rwx-nfs-4-2rwx-nfs-4-2-deploy
-        And Write 100 MB data to file data.txt in deployment rwx-nfs-hard-mount-deploy
-        And Write 100 MB data to file data.txt in deployment rwx-nfs-soft-mount-deploy
-        And Write 100 MB data to file data.txt in deployment bi-deploy
+        When Write text rwo-deploy-${current} to file data.txt in deployment rwo-deploy
+        And Write text rwx-deploy-${current} to file data.txt in deployment rwx-deploy
+        And Write text strict-local-deploy-${current} to file data.txt in deployment strict-local-deploy
+        And Write text rwx-nfs-4-2rwx-nfs-4-2-deploy-${current} to file data.txt in deployment rwx-nfs-4-2rwx-nfs-4-2-deploy
+        And Write text rwx-nfs-hard-mount-deploy-${current} to file data.txt in deployment rwx-nfs-hard-mount-deploy
+        And Write text rwx-nfs-soft-mount-deploy-${current} to file data.txt in deployment rwx-nfs-soft-mount-deploy
+        And Write text bi-deploy-${current} to file data.txt in deployment bi-deploy
 
-        Then Check deployment rwo-deploy data in file data.txt is intact
-        And Check deployment rwx-deploy data in file data.txt is intact
-        And Check deployment strict-local-deploy data in file data.txt is intact
-        And Check deployment rwx-nfs-4-2rwx-nfs-4-2-deploy data in file data.txt is intact
-        And Check deployment rwx-nfs-hard-mount-deploy data in file data.txt is intact
-        And Check deployment rwx-nfs-soft-mount-deploy data in file data.txt is intact
-        And Check deployment bi-deploy data in file data.txt is intact
+        Then Check deployment rwo-deploy data in file data.txt is text rwo-deploy-${current}
+        And Check deployment rwx-deploy data in file data.txt is text rwx-deploy-${current}
+        And Check deployment strict-local-deploy data in file data.txt is text strict-local-deploy-${current}
+        And Check deployment rwx-nfs-4-2rwx-nfs-4-2-deploy data in file data.txt is text rwx-nfs-4-2rwx-nfs-4-2-deploy-${current}
+        And Check deployment rwx-nfs-hard-mount-deploy data in file data.txt is text rwx-nfs-hard-mount-deploy-${current}
+        And Check deployment rwx-nfs-soft-mount-deploy data in file data.txt is text rwx-nfs-soft-mount-deploy-${current}
+        And Check deployment bi-deploy data in file data.txt is text bi-deploy-${current}
         ${current}=    Get Time    epoch
     END
 

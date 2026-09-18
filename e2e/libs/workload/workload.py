@@ -173,6 +173,39 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
             time.sleep(retry_interval)
 
 
+def write_pod_text_data(pod_name, text, file_name,
+                         data_directory="/data", ):
+
+    wait_for_pod_status(pod_name, "Running")
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for i in range(retry_count):
+        logging(f"Writing text data '{text}' to pod {pod_name} file {file_name} ... ({i})")
+        try:
+            data_path = f"{data_directory}/{file_name}"
+            api = client.CoreV1Api()
+            write_data_cmd = [
+                '/bin/sh',
+                '-c',
+                f"echo '{text}' > {data_path};\
+                sync {data_path} 2>/dev/null"
+            ]
+            resp = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=write_data_cmd, stderr=True, stdin=False, stdout=True,
+                tty=False)
+
+            if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
+                raise RuntimeError(resp)
+
+            return
+        except Exception as e:
+            logging(f"Writing text data to pod {pod_name} failed with error {e}")
+            time.sleep(retry_interval)
+    assert False, f"Writing text data to pod {pod_name} file {file_name} failed"
+
+
 def write_pod_large_data(pod_name, size_in_gb, file_name,
                           data_directory="/data", ):
 
@@ -345,6 +378,43 @@ def check_workload_pod_data_checksum(expected_checksum, workload_name, file_name
             logging(f"Checking pod {pod_name} data checksum failed with error: {e}")
             time.sleep(retry_interval)
     assert False, f"Checking pod {pod_name} data checksum failed"
+
+
+def check_workload_pod_data_is_text(workload_name, file_name, expected_text, data_directory="/data"):
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+
+    for _ in range(retry_count):
+        try:
+            pod_name = get_workload_pod_names(workload_name)[0]
+            wait_for_pod_status(pod_name, "Running")
+
+            file_path = f"{data_directory}/{file_name}"
+            api = client.CoreV1Api()
+            cmd_get_file_content = [
+                '/bin/sh',
+                '-c',
+                f"cat {file_path}"
+            ]
+            actual_text = stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                command=cmd_get_file_content, stderr=True, stdin=False, stdout=True,
+                tty=False).strip()
+
+            logging(f"Checked {pod_name} file {file_name} content: \
+                Got {file_path} content = {actual_text} Expected text = {expected_text}")
+
+            if actual_text != expected_text:
+                message = f"Checked {pod_name} file {file_name} content failed. \
+                    Got {file_path} content = {actual_text} Expected text = {expected_text}"
+                logging(message)
+                time.sleep(retry_interval)
+                continue
+            return
+        except Exception as e:
+            logging(f"Checking pod {pod_name} data content failed with error: {e}")
+            time.sleep(retry_interval)
+    assert False, f"Checking workload {workload_name} file {file_name} content as text {expected_text} failed"
 
 
 def check_pod_data_checksum(pod_name, file_name, expected_checksum, data_directory="/data"):

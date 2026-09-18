@@ -19,6 +19,7 @@ from workload.pod import check_pod_did_not_restart
 from workload.pod import wait_for_pod_status
 from workload.workload import get_workload_pod_data_checksum
 from workload.workload import check_workload_pod_data_checksum
+from workload.workload import check_workload_pod_data_is_text
 from workload.workload import check_pod_data_checksum
 from workload.workload import check_workload_pod_data_exists
 from workload.workload import get_workload_pods
@@ -31,6 +32,7 @@ from workload.workload import keep_writing_pod_data, stop_writing_pod_data
 from workload.workload import make_block_device_filesystem_in_workload_pod
 from workload.workload import mount_block_device_in_workload_pod
 from workload.workload import write_pod_random_data
+from workload.workload import write_pod_text_data
 from workload.workload import write_pod_large_data
 from workload.workload import wait_for_workload_pods_container_creating_or_running
 from workload.workload import wait_for_workload_pods_running
@@ -90,6 +92,9 @@ class workload_keywords:
     def check_workload_pod_data_exists(self, workload_name, file_name):
         return check_workload_pod_data_exists(workload_name, file_name)
 
+    def check_workload_pod_data_is_text(self, workload_name, file_name, expected_text):
+        check_workload_pod_data_is_text(workload_name, file_name, expected_text)
+
     def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default", label_selector="", wait=True):
         pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
         for pod in pods:
@@ -134,6 +139,12 @@ class workload_keywords:
         volume_name = get_volume_name_by_pod(pod_name)
         self.volume.set_data_checksum(volume_name, file_name, checksum)
         self.volume.set_last_data_checksum(volume_name, checksum)
+
+    def write_workload_pod_text_data(self, workload_name, text, file_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+
+        logging(f'Writing text data to pod {pod_name} file {file_name}')
+        write_pod_text_data(pod_name, text, file_name)
 
     def write_and_check_all_workload_pod_random_data(self, workload_name, size_in_mb, file_name):
         """

@@ -72,6 +72,10 @@ Write ${size} MB data to file ${file_name} in deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_workload_pod_random_data    ${deployment_name}    ${size}    ${file_name}
 
+Write text ${text} to file ${file_name} in deployment ${deployment_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    write_workload_pod_text_data    ${deployment_name}    ${text}    ${file_name}
+
 And Write ${size} MB data to block device in deployment ${deployment_id} and check data is intact
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_and_check_workload_pod_random_data_to_block_device    ${deployment_name}    ${size}
@@ -80,7 +84,11 @@ Check deployment ${deployment_id} data in file ${file_name} is intact
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     check_workload_pod_data_checksum    ${deployment_name}    ${file_name}
 
-Check deployment ${deployment_id} works    
+Check deployment ${deployment_id} data in file ${file_name} is text ${text}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    check_workload_pod_data_is_text    ${deployment_name}    ${file_name}    ${text}
+
+Check deployment ${deployment_id} works
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_workload_pod_random_data    ${deployment_name}    1024    random-data
     check_workload_pod_data_checksum    ${deployment_name}    random-data
