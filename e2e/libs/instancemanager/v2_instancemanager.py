@@ -35,6 +35,15 @@ class V2_InstanceManager(Base):
         logging(f"Created orphaned replica {orphaned_replica} on node {node_name}")
         return orphaned_replica
 
+    def permanently_crash_replica(self, node_name, replica_name):
+        # `go-spdk-helper lvol delete` only temporarily crash a replica,
+        # eventually the lvol will be recreated with the same replica name
+        # (alias) but different uuid. From Longhorn's perspective the replica
+        # looks like being reused.
+        raise NotImplementedError(
+            "permanently_crash_replica is not implemented for v2 volumes"
+        )
+
     def wait_for_replica_deleted(self, node_name, replica_name):
         # v2 replica directory name is also not the same as v2 replica name
         # but since `go-spdk-helper lvol get` returns all detailed info including the replica name and replica directory name
