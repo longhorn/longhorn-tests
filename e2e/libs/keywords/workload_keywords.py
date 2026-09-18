@@ -2,17 +2,21 @@ import multiprocessing
 import asyncio
 import time
 
+from kubernetes import client
+
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from utility.utility import get_retry_count_and_interval
 from utility.utility import pod_exec
+from utility.utility import get_longhorn_namespace
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_busybox_manifest
 from workload.pod import create_pod
 from workload.pod import delete_pod
+from workload.pod import wait_delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.pod import check_pod_did_not_restart
@@ -75,6 +79,10 @@ class workload_keywords:
         logging(f'Deleting pod {pod_name} in namespace {namespace}')
         delete_pod(pod_name, namespace, wait)
 
+    def wait_until_pod_deleted(self, pod_name, namespace='default'):
+        logging(f'Waiting for pod {pod_name} in namespace {namespace} to be deleted')
+        wait_delete_pod(pod_name, namespace)
+
     def list_pods(self, namespace, label_selector):
         logging(f'Listing pods with label {label_selector} in namespace {namespace}')
         pods = list_pods(namespace, label_selector)
@@ -99,6 +107,32 @@ class workload_keywords:
 
     def get_workload_pod_name(self, workload_name, namespace="default"):
         return get_workload_pod_names(workload_name, namespace)[0]
+
+    def get_workload_pod_uid(self, workload_name, namespace="default"):
+        pods = get_workload_pods(workload_name, namespace=namespace)
+        assert pods, f"No pods found for workload {workload_name} in namespace {namespace}"
+        return pods[0].metadata.uid
+
+    def request_workload_volume_remount(self, workload_name):
+        volume_name = get_workload_volume_name(workload_name)
+        pod_name = self.get_workload_pod_name(workload_name)
+        # Use the pod's clock and ensure the request is later than its start
+        # time, which has second precision.
+        time.sleep(2)
+        remount_requested_at = pod_exec(
+            pod_name, "default", "date -u +%Y-%m-%dT%H:%M:%SZ").strip()
+        datetime.strptime(remount_requested_at, "%Y-%m-%dT%H:%M:%SZ")
+        logging(f"Requesting remount of volume {volume_name} for pod {pod_name} "
+                f"at {remount_requested_at}")
+        client.CustomObjectsApi().patch_namespaced_custom_object_status(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=get_longhorn_namespace(),
+            plural="volumes",
+            name=volume_name,
+            body={"status": {"remountRequestedAt": remount_requested_at}},
+        )
+        return pod_name
 
     def get_workload_pod_node_name(self, workload_name, namespace="default"):
         pods = get_workload_pods(workload_name, namespace=namespace)
