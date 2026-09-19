@@ -235,7 +235,7 @@ Test Linked Clone Volume Creation Without Snapshot Name
 
 
 Test Linked Clone Volume Lifecycle
-    [Tags]    regression    v2    linked-clone
+    [Tags]    regression    v2    linked-clone    coretest
     [Documentation]
     ...    Comprehensive linked-clone lifecycle covering nesting, expansion, IM crash
     ...    recovery, and cascaded deletion.  All three volumes (source, clone, nested

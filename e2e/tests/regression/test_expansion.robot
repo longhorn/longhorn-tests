@@ -51,6 +51,7 @@ Test Volume Expansion When Node Disk Is Full
     And Delete volume 0
 
 Test Volume Expansion During Volume Cloning
+    [Tags]    coretest
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11484
     ...    1. Create a source volume. Write some data to the volume
     ...    2. Create a target volume from the source volume
@@ -97,6 +98,7 @@ Test Volume Expansion Without Schedulable Nodes
     Then Wait for volume vol size to be 2Gi
 
 Test Volume Expansion
+    [Tags]    coretest
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11484
     ...    1. Create a volume
     ...    2. Make sure all replicas are schedule
@@ -121,6 +123,7 @@ Test Volume Expansion
     And Check pod 0 data in file data.txt is intact
 
 Test Volume Expansion Without Fully Scheduled Replicas
+    [Tags]    coretest
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12606
     ...    1. Disable a node scheduling
     ...    2. Create a PVC
