@@ -6,6 +6,7 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
 // define optional parameters
 def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
+def AWS_CPU_CREDITS = params.AWS_CPU_CREDITS ? params.AWS_CPU_CREDITS : "unlimited"
 
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 def REGISTRATION_CODE_ID = "REGISTRATION_CODE"
@@ -113,6 +114,7 @@ node {
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                        --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_lh_aws_instance_cpu_credits=${AWS_CPU_CREDITS} \
                                        --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \

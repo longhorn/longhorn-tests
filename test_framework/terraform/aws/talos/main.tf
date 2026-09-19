@@ -131,7 +131,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   }
 
   credit_specification {
-    cpu_credits = "unlimited"
+    cpu_credits = var.lh_aws_instance_cpu_credits
   }
 
   tags = {
@@ -185,7 +185,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   }
 
   credit_specification {
-    cpu_credits = "unlimited"
+    cpu_credits = var.lh_aws_instance_cpu_credits
   }
 
   tags = {
