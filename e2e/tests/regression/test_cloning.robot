@@ -21,6 +21,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Test Cloning Basic
+    [Tags]    coretest
     Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim source-pvc    volume_type=${volume_type}    sc_name=longhorn-test
     And Wait for volume of persistentvolumeclaim source-pvc to be created
@@ -41,6 +42,7 @@ Test Cloning Basic
     And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
 
 Test Degraded Cloned Volume
+    [Tags]    coretest
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12206
     ...    1. Disable 1 node. Make sure that 2 other nodes are schedulable and as enough storage
     ...    2. Deploy a PVC. Verify that volume is degraded because it need 3 replica but there is only 2 schedulable nodes
@@ -81,6 +83,7 @@ Test Degraded Cloned Volume
     And Check pod cloned-pod file data.txt checksum matches checksum source-pvc
 
 Test Clone Volume With Cordoned Node
+    [Tags]    coretest
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13639
     ...    1. Drain node 0
     ...    2. Create a storageclass and a pvc source-pvc with size 3 Gi
