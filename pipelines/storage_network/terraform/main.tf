@@ -197,6 +197,10 @@ resource "aws_instance" "aws_instance" {
     volume_size = var.block_device_size_worker
   }
 
+  credit_specification {
+    cpu_credits = var.aws_instance_cpu_credits
+  }
+
   key_name = aws_key_pair.aws_pair_key.key_name
   user_data = count.index == 0 ? data.template_file.provision_k3s_server.rendered : data.template_file.provision_k3s_agent.rendered
 
