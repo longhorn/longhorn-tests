@@ -101,6 +101,7 @@ Test Backing Image Download Timeout
     And Wait for volume 0 healthy
 
 Test Evict Two Replicas Volume With Backing Image
+    [Tags]    coretest
     [Documentation]    Validates that the Longhorn manager does not restart when evicting a replica
     ...                of a volume created from a backing image
     ...
@@ -120,6 +121,7 @@ Test Evict Two Replicas Volume With Backing Image
     And Check longhorn manager pods not restarted after test start
 
 Test backing image handle node disk deleting events
+    [Tags]    coretest
     [Documentation]   Validates that the backing image manager and backing image disk files
     ...               are removed after a broken disk is removed from Longhorn node.
     ...
