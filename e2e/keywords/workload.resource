@@ -471,6 +471,36 @@ Verify fio crc32c data in ${workload_kind} ${workload_id} have no errors
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     verify_fio_data_integrity_in_workload    ${workload_name}
 
+Start continuous fio write with crc32c verify in ${workload_kind} ${workload_id} for ${runtime}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    start_continuous_fio_write_with_verify_in_workload    ${workload_name}    ${runtime}
+
+Start continuous fio write with crc32c verify in all pods of ${workload_kind} ${workload_id} for ${runtime}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    start_continuous_fio_write_with_verify_in_workload    ${workload_name}    ${runtime}    all_pods=${TRUE}
+
+Start continuous fio write with crc32c verify on block device in ${workload_kind} ${workload_id} for ${runtime}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    start_continuous_fio_write_with_verify_in_workload    ${workload_name}    ${runtime}    block_device=${TRUE}
+
+Wait for continuous fio in ${workload_kind} ${workload_id} to complete
+    [Arguments]    ${runtime}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    wait_for_continuous_fio_completed_in_workload    ${workload_name}    ${runtime}
+
+Wait for continuous fio in all pods of ${workload_kind} ${workload_id} to complete
+    [Arguments]    ${runtime}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    wait_for_continuous_fio_completed_in_workload    ${workload_name}    ${runtime}    all_pods=${TRUE}
+
+Verify continuous fio crc32c data in ${workload_kind} ${workload_id} have no errors
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    verify_continuous_fio_data_integrity_in_workload    ${workload_name}
+
+Verify continuous fio crc32c data in all pods of ${workload_kind} ${workload_id} have no errors
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    verify_continuous_fio_data_integrity_in_workload    ${workload_name}    all_pods=${TRUE}
+
 Update volume of ${workload_kind} ${workload_id} engineNodeID to node ${node_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}

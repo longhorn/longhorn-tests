@@ -49,6 +49,15 @@ from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.constant import LABEL_LONGHORN_COMPONENT
 from utility.constant import BLOCK_PVC_VOLUME_DEVICE_PATH
+from utility.constant import CONTINUOUS_FIO_COMPLETION_TIMEOUT
+from utility.constant import CONTINUOUS_FIO_DONE_FILE
+from utility.constant import CONTINUOUS_FIO_FAILED_FILE
+from utility.constant import CONTINUOUS_FIO_FILE_PREFIX
+from utility.constant import CONTINUOUS_FIO_JOBS
+from utility.constant import CONTINUOUS_FIO_LOG_FILE
+from utility.constant import CONTINUOUS_FIO_POLL_INTERVAL
+from utility.constant import CONTINUOUS_FIO_SIZE
+from utility.constant import CONTINUOUS_FIO_VERIFY_BACKLOG
 import utility.constant as constant
 from utility.utility import convert_size_to_bytes
 from utility.utility import logging
@@ -504,6 +513,118 @@ class workload_keywords:
             raise AssertionError(f"FIO verification failed with errors: {resp}")
 
         logging(f"FIO data integrity verification passed")
+
+    def _get_continuous_fio_pod_names(self, workload_name, namespace="default", all_pods=False):
+        pod_names = get_workload_pod_names(workload_name, namespace)
+        return pod_names if all_pods else [pod_names[0]]
+
+    def _get_continuous_fio_runtime_seconds(self, runtime):
+        runtime = str(runtime).strip()
+        units = {"h": 60 * 60, "m": 60, "s": 1}
+        if runtime[-1] in units:
+            return int(runtime[:-1]) * units[runtime[-1]]
+        return int(runtime)
+
+    def _get_continuous_fio_command(self, pod_name, runtime, block_device=False):
+        runtime_in_second = self._get_continuous_fio_runtime_seconds(runtime)
+
+        if block_device:
+            # Give each job its own region of the device so they never overlap.
+            target_options = f"--filename={BLOCK_PVC_VOLUME_DEVICE_PATH} --offset_increment={CONTINUOUS_FIO_SIZE} "
+            cleanup_cmd = ""
+        else:
+            # Pods of the same RWX volume share one filesystem, so the file name
+            # includes the pod name to keep each pod writing its own files.
+            file_prefix = f"{CONTINUOUS_FIO_FILE_PREFIX}_{pod_name.replace('-', '_')}"
+            target_options = f"--directory=/data --filename_format={file_prefix}_\\$jobnum.dat "
+            cleanup_cmd = f"rm -f /data/{file_prefix}_*.dat; "
+
+        return (
+            f"rm -f {CONTINUOUS_FIO_DONE_FILE} {CONTINUOUS_FIO_FAILED_FILE} {CONTINUOUS_FIO_LOG_FILE}; "
+            f"{cleanup_cmd}"
+            "nohup sh -c 'fio --name=continuous-fio "
+            f"{target_options}"
+            f"--size={CONTINUOUS_FIO_SIZE} "
+            f"--numjobs={CONTINUOUS_FIO_JOBS} "
+            "--rw=write --bs=4k --ioengine=libaio --iodepth=32 --direct=1 "
+            "--thread=1 --verify=crc32c --verify_fatal=1 "
+            f"--verify_backlog={CONTINUOUS_FIO_VERIFY_BACKLOG} "
+            f"--time_based --runtime={runtime_in_second} "
+            f"--status-interval={CONTINUOUS_FIO_POLL_INTERVAL} --eta=never --group_reporting; "
+            "rc=$?; "
+            f"if [ $rc -ne 0 ]; then echo $rc > {CONTINUOUS_FIO_FAILED_FILE}; exit $rc; fi; "
+            f"touch {CONTINUOUS_FIO_DONE_FILE}' "
+            f"> {CONTINUOUS_FIO_LOG_FILE} 2>&1 &"
+        )
+
+    def _get_continuous_fio_progress(self, pod_name, namespace="default"):
+        # fio reports the verify reads and the writes on adjacent lines
+        output = pod_exec(pod_name, namespace,
+                          f"if [ -f {CONTINUOUS_FIO_FAILED_FILE} ]; then echo failed; "
+                          f"elif [ -f {CONTINUOUS_FIO_DONE_FILE} ]; then echo done; "
+                          "else echo running; fi; "
+                          f"grep 'IOPS=' {CONTINUOUS_FIO_LOG_FILE} 2>/dev/null | tail -n 2 | tr -s ' ' | tr '\\n' ' '")
+        state, _, fio_status = output.strip().partition("\n")
+        return state.strip(), fio_status.strip()
+
+    def _get_continuous_fio_log(self, pod_name, namespace="default"):
+        return pod_exec(pod_name, namespace, f"tail -n 100 {CONTINUOUS_FIO_LOG_FILE} || true")
+
+    def start_continuous_fio_write_with_verify_in_workload(self, workload_name, runtime, namespace="default", all_pods=False, block_device=False):
+        """
+        Start a background fio that keeps writing the same target with multiple
+        jobs for the whole runtime, reading blocks back as it goes so a crc32c
+        mismatch fails the run instead of waiting for the final check.
+        """
+        logging(f"Starting continuous fio in workload {workload_name} for {runtime}")
+        pod_names = self._get_continuous_fio_pod_names(workload_name, namespace, all_pods)
+
+        for pod_name in pod_names:
+            fio_cmd = self._get_continuous_fio_command(pod_name, runtime, block_device)
+            resp = pod_exec(pod_name, namespace, fio_cmd)
+            logging(f"Started continuous fio in pod {pod_name}: {resp}")
+
+    def wait_for_continuous_fio_completed_in_workload(self, workload_name, runtime, namespace="default", all_pods=False):
+        """
+        Wait until fio of every pod exits, reporting its latest throughput while
+        waiting, and fail as soon as a pod reports a crc32c error.
+        """
+        timeout = self._get_continuous_fio_runtime_seconds(runtime) + CONTINUOUS_FIO_COMPLETION_TIMEOUT
+        logging(f"Waiting for continuous fio in workload {workload_name} to complete in {timeout} seconds")
+        pod_names = self._get_continuous_fio_pod_names(workload_name, namespace, all_pods)
+
+        for pod_name in pod_names:
+            start_time = time.time()
+            while True:
+                state, fio_status = self._get_continuous_fio_progress(pod_name, namespace)
+                elapsed = int(time.time() - start_time)
+                logging(f"Waiting for continuous fio in pod {pod_name} to complete, "
+                        f"state = {state}, fio status = {fio_status} ... ({elapsed}/{timeout})")
+
+                if state == "failed":
+                    log = self._get_continuous_fio_log(pod_name, namespace)
+                    assert False, f"Continuous fio failed in pod {pod_name}: {log}"
+                if state == "done":
+                    break
+                if elapsed >= timeout:
+                    log = self._get_continuous_fio_log(pod_name, namespace)
+                    pod_exec(pod_name, namespace, "pkill -SIGTERM fio || true")
+                    assert False, f"Timed out waiting for continuous fio in pod {pod_name}: {log}"
+
+                time.sleep(CONTINUOUS_FIO_POLL_INTERVAL)
+
+    def verify_continuous_fio_data_integrity_in_workload(self, workload_name, namespace="default", all_pods=False):
+        """
+        Verify fio of every pod finished without crc32c errors.
+        """
+        logging(f"Verifying continuous fio data integrity in workload {workload_name}")
+        pod_names = self._get_continuous_fio_pod_names(workload_name, namespace, all_pods)
+
+        for pod_name in pod_names:
+            state, _ = self._get_continuous_fio_progress(pod_name, namespace)
+            log = self._get_continuous_fio_log(pod_name, namespace)
+            assert state == "done", f"Continuous fio in pod {pod_name} state = {state}: {log}"
+            logging(f"Continuous fio in pod {pod_name} completed without crc32c errors")
 
     def wait_for_block_device_size_in_pod(self, pod_name, expected_size, namespace="default"):
         for i in range(self.retry_count):
