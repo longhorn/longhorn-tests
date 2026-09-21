@@ -83,3 +83,31 @@ Disconnect network port ${port_number} of ${engine_type} instance manager networ
     ${node_name} =    get_node_by_index    ${node_id}
     ${pod_name} =    get_instance_manager_pod_on_node    ${node_name}    ${engine_type}
     disconnect_pod_network    ${pod_name}    ${duration}    ${port_number}
+
+Limit V1 volume ${volume_id} rebuild traffic from node ${source_node_id} to node ${target_node_id} to ${rate_in_mbit} Mbit
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${source_node_name} =    get_node_by_index    ${source_node_id}
+    ${target_node_name} =    get_node_by_index    ${target_node_id}
+    ${context} =    limit_v1_replica_rebuild_traffic
+    ...    ${volume_name}
+    ...    ${source_node_name}
+    ...    ${target_node_name}
+    ...    ${rate_in_mbit}
+    RETURN    ${context}
+
+Remove V1 replica rebuild traffic limit
+    [Arguments]    ${context}
+    cleanup_v1_replica_rebuild_traffic    ${context}
+
+Wait for FileSend connection
+    [Arguments]    ${context}
+    ${connection} =    find_file_send_connection    ${context}
+    RETURN    ${connection}
+
+Drop replies to FileSend connection for ${duration} seconds
+    [Arguments]    ${connection}
+    drop_file_send_connection_replies    ${connection}    ${duration}
+
+FileSend connection should remain established
+    [Arguments]    ${connection}
+    assert_file_send_connection_established    ${connection}

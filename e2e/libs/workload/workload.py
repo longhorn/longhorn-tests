@@ -338,8 +338,8 @@ def check_workload_pod_data_checksum(expected_checksum, workload_name, file_name
                 message = f"Checked {pod_name} file {file_name} checksum failed. \
                     Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}"
                 logging(message)
-                time.sleep(retry_count)
-                assert False, message
+                time.sleep(retry_interval)
+                continue
             return
         except Exception as e:
             logging(f"Checking pod {pod_name} data checksum failed with error: {e}")
@@ -681,4 +681,8 @@ def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="d
 
 def rollout_restart_workload(workload_kind, workload_name, namespace="default"):
     cmd = f"kubectl rollout restart {workload_kind}/{workload_name} -n {namespace}"
+    subprocess_exec_cmd(cmd)
+
+def rollout_status_workload(workload_kind, workload_name, namespace="default", timeout="300s"):
+    cmd = f"kubectl rollout status {workload_kind}/{workload_name} -n {namespace} --timeout={timeout}"
     subprocess_exec_cmd(cmd)

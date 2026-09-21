@@ -15,6 +15,7 @@ def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONG
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def REGISTRY_URL = ""
 
+def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
 def TEST_TYPE = params.TEST_TYPE ? params.TEST_TYPE : "pytest"
 def BLOCK_DEVICE_SIZE = params.TEST_TYPE == "robot" ? 80 : 40
 
@@ -44,6 +45,12 @@ node {
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration code: $REGISTRATION_CODE_ID"
 
+                // If RUN_V2_TEST is enabled but no -m marker is provided,
+                // append "-m v2_volume_test" so v2 tests are included by default.
+                if (RUN_V2_TEST && !CUSTOM_TEST_OPTIONS.contains("-m")) {
+                        CUSTOM_TEST_OPTIONS += " -m v2_volume_test"
+                }
+
                 sh "pipelines/storage_network/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                        --env REGISTRY_URL=${REGISTRY_URL} \
@@ -68,6 +75,7 @@ node {
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
                                        --env TF_VAR_use_hdd=${USE_HDD} \
                                        --env TF_VAR_arch=${ARCH} \
+                                       --env RUN_V2_TEST=${RUN_V2_TEST} \
                                        --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                        --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
                                        --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \

@@ -29,6 +29,7 @@ Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
+Library             ../libs/keywords/longhorn_deploy_keywords.py
 Library             DateTime
 Library             String
 Resource            variables.resource
@@ -91,29 +92,41 @@ Get test start time
     Set Test Variable    ${test_start_time}
 
 Set disk path based on host provider and architecture
-    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
-    ${ARCH}=    Get Environment Variable    ARCH    amd64
-    IF    "${HOST_PROVIDER}" == "aws"
-        IF    "${ARCH}" == "amd64"
-            Set Test Variable    ${DISK_PATH}    /dev/xvdh
-        ELSE IF    "${ARCH}" == "arm64"
-            Set Test Variable    ${DISK_PATH}    0000:00:1f.0
+    ${DISK_PATH}=    Get Environment Variable    BLOCK_DEV_PATH    ${EMPTY}
+    Set Test Variable    ${DISK_PATH}
+    IF    $DISK_PATH == ""
+        ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    vagrant
+        ${ARCH}=    Get Environment Variable    ARCH    amd64
+        IF    "${HOST_PROVIDER}" == "aws"
+            IF    "${ARCH}" == "amd64"
+                Set Test Variable    ${DISK_PATH}    /dev/xvdh
+            ELSE IF    "${ARCH}" == "arm64"
+                # https://longhorn.io/docs/1.12.1/important-notes/#arm64-nvme-backed-block-type-node-disk-limitation
+                # Use the NVMe block device through the AIO driver instead of the SPDK NVMe driver.
+                Set Test Variable    ${DISK_PATH}    /dev/nvme1n1
+            END
+        ELSE IF    '${HOST_PROVIDER}' == "harvester"
+            Set Test Variable    ${DISK_PATH}    /dev/vdc
+        ELSE IF    '${HOST_PROVIDER}' == "vagrant"
+            Set Test Variable    ${DISK_PATH}    /dev/vdb
         END
-    ELSE IF    '${HOST_PROVIDER}' == "harvester"
-        Set Test Variable    ${DISK_PATH}    /dev/vdc
-    ELSE IF    '${HOST_PROVIDER}' == "vagrant"
-        Set Test Variable    ${DISK_PATH}    /dev/vdb
     END
 
 Enable v2 data engine and add block disks
+    [Arguments]    ${wait}=${True}
     set_disk_path_based_on_host_provider_and_architecture
+    ${RUN_V2_INTERRUPT_MODE}=    Get Environment Variable    RUN_V2_INTERRUPT_MODE    false
+    IF    "${RUN_V2_INTERRUPT_MODE}" == "true"
+        update_setting    data-engine-interrupt-mode-enabled    {"v2":"true"}
+    END
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
+    update_setting    data-engine-cpu-mask    {"v2": "0x1"}
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
     END
 
 Init worker node variables
@@ -121,6 +134,20 @@ Init worker node variables
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
+
+Reinstall Longhorn if not installed
+    [Documentation]    Verify Longhorn is actually installed.
+    ...    This guards against a previous test case having failed midway
+    ...    through "Uninstall Longhorn", which would otherwise leave the
+    ...    cluster without Longhorn and cause all subsequent test cases to
+    ...    fail.
+    ${installed} =    is_longhorn_installed
+    IF    not ${installed}
+        Log To Console    Longhorn is not installed, likely due to a previous test failing during uninstallation. Reinstalling Longhorn ...
+        install_longhorn_system
+        ${longhorn_namespace} =    get_longhorn_namespace
+        wait_for_namespace_pods_running    ${longhorn_namespace}
+    END
 
 Set up test environment
     set_backupstore
@@ -131,6 +158,7 @@ Set up test environment
     END
 
 Cleanup test resources
+    Reinstall Longhorn if not installed
     set_backupstore
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
@@ -179,6 +207,7 @@ Cleanup test resources
     reset_settings    data_engine=${DATA_ENGINE}
     reset_node_tags
     reset_node_disks_tags
-    cleanup_k8s_node_zone
+    cleanup_node_zone
+    cleanup_node_region
     reset_longhorn_namespace
     cleanup_events

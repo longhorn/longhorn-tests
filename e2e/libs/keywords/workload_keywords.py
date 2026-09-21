@@ -43,6 +43,7 @@ from workload.workload import get_all_workload_node_names
 from workload.workload import check_workload_pods_not_restarted
 from workload.workload import check_workload_pods_not_recreated
 from workload.workload import rollout_restart_workload
+from workload.workload import rollout_status_workload
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -98,6 +99,11 @@ class workload_keywords:
 
     def get_workload_pod_name(self, workload_name, namespace="default"):
         return get_workload_pod_names(workload_name, namespace)[0]
+
+    def get_workload_pod_node_name(self, workload_name, namespace="default"):
+        pods = get_workload_pods(workload_name, namespace=namespace)
+        assert len(pods) > 0, f"No pods found for workload {workload_name} in namespace {namespace}"
+        return pods[0].spec.node_name
 
     def get_workload_persistent_volume_claim_name(self, workload_name):
         return get_workload_persistent_volume_claim_name(workload_name)
@@ -422,19 +428,23 @@ class workload_keywords:
         logging(f"Triggering rollout restart of {workload_kind} {workload_name} in namespace {namespace}")
         rollout_restart_workload(workload_name, workload_kind, namespace)
 
-    def start_fio_randwrite_with_verify_in_workload(self, workload_name, namespace="default"):
+    def rollout_status_workload(self, workload_name, workload_kind, namespace="default", timeout="300s"):
+        logging(f"Waiting for rollout of {workload_kind} {workload_name} in namespace {namespace} to complete")
+        rollout_status_workload(workload_name, workload_kind, namespace, timeout)
+
+    def start_fio_write_with_verify_in_workload(self, workload_name, namespace="default"):
         """
-        Start fio with randwrite and crc32c verification in workload pod.
+        Start fio with sequential write and crc32c verification in workload pod.
         This runs fio in the background for data integrity testing.
         """
-        logging(f"Starting fio randwrite with crc32c verification in workload {workload_name}")
+        logging(f"Starting fio write with crc32c verification in workload {workload_name}")
         pod_name = get_workload_pod_names(workload_name, namespace)[0]
 
         fio_cmd = (
-            "nohup fio --name=mytest "
+            "rm -f /tmp/fio_write.done; nohup sh -c 'fio --name=mytest "
             "--filename=/data/testfile.dat "
             "--size=1400M "
-            "--rw=randwrite "
+            "--rw=write "
             "--bs=4k "
             "--ioengine=libaio "
             "--iodepth=32 "
@@ -442,7 +452,7 @@ class workload_keywords:
             "--verify=crc32c "
             "--time_based "
             "--runtime=999999 "
-            "--verify_state_save=1 "
+            "--verify_state_save=1 & wait; touch /tmp/fio_write.done' "
             "> /data/fio_write.log 2>&1 &"
         )
 
@@ -451,12 +461,20 @@ class workload_keywords:
 
     def stop_fio_in_workload(self, workload_name, namespace="default"):
         """
-        Stop fio process in workload pod.
+        Stop fio writer in workload pod and wait for it to exit.
+        This waits for pending I/O and verify state saving before verification.
         """
         logging(f"Stopping fio in workload {workload_name}")
         pod_name = get_workload_pod_names(workload_name, namespace)[0]
 
         resp = pod_exec(pod_name, namespace, "pkill -SIGTERM fio || true")
+        for _ in range(self.retry_count):
+            status = pod_exec(pod_name, namespace, "test -f /tmp/fio_write.done && echo done")
+            if status.strip() == "done":
+                break
+            time.sleep(self.retry_interval)
+        else:
+            raise AssertionError("Timed out waiting for fio writer to exit")
         logging(f"Stopped fio in workload {workload_name}: {resp}")
 
     def verify_fio_data_integrity_in_workload(self, workload_name, namespace="default"):

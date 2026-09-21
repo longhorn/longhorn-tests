@@ -131,6 +131,12 @@ uninstall_longhorn(){
 
   get_longhorn_repo "${UNINSTALL_VERSION}"
 
+  # replace longhorn-manager image in uninstall manifest if custom image is specified
+  if [[ ! -z ${CUSTOM_LONGHORN_MANAGER_IMAGE} ]]; then
+    LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+    sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  fi
+
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl create -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl patch job longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --type=json -p='[{"op":"remove","path":"/spec/activeDeadlineSeconds"}]'
@@ -161,7 +167,7 @@ delete_longhorn_crds(){
   get_longhorn_repo "${UNINSTALL_VERSION}"
 
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
-  kubectl delete -f "${LONGHORN_MANIFEST_PATH}"
+  kubectl delete --ignore-not-found=true -f "${LONGHORN_MANIFEST_PATH}"
 }
 
 delete_uninstall_job(){
@@ -171,7 +177,7 @@ delete_uninstall_job(){
   get_longhorn_repo "${UNINSTALL_VERSION}"
 
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
-  kubectl delete -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  kubectl delete --ignore-not-found=true -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

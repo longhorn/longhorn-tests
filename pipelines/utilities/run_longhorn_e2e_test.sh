@@ -70,6 +70,10 @@ run_longhorn_test(){
   # for appco test
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "APPCO_TEST", "value": "'${APPCO_TEST}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  # for v2 block device path
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "BLOCK_DEV_PATH", "value": "'${BLOCK_DEV_PATH}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_INTERRUPT_MODE", "value": "'${RUN_V2_INTERRUPT_MODE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+
   # share instance mapping information between jenkins job agent and test pod for later use, e.g. power on/off nodes.
   if [[ -f /tmp/instance_mapping ]]; then
     kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
@@ -148,6 +152,8 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
       CUSTOM_LONGHORN_ENGINE_IMAGE="longhornio/longhorn-engine:v${RAW_VERSION[1]}"
     fi
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_ENGINE_IMAGE", "value": "'${CUSTOM_LONGHORN_ENGINE_IMAGE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_USERNAME", "value": "'${APPCO_USERNAME}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "APPCO_PASSWORD", "value": "'${APPCO_PASSWORD}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   elif [[ "${LONGHORN_INSTALL_METHOD}" == "flux" ]]; then
     # flux installs Longhorn by a "released" helm chart that can be found by command like helm search repo longhorn --versions
     # so the HELM_CHART_URL is not the Longhorn repo https://github.com/longhorn/longhorn.git
@@ -251,6 +257,8 @@ run_longhorn_test_out_of_cluster(){
              -e LONGHORN_TRANSIENT_VERSION="${LONGHORN_TRANSIENT_VERSION}"\
              -e K8S_DISTRO="${TF_VAR_k8s_distro_name}"\
              -e OS_DISTRO="${DISTRO}"\
+             -e BLOCK_DEV_PATH="${BLOCK_DEV_PATH}"\
+             -e RUN_V2_INTERRUPT_MODE="${RUN_V2_INTERRUPT_MODE}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              --mount source="vol-${IMAGE_NAME}",target=/root/.ssh \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"

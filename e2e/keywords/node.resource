@@ -40,6 +40,16 @@ Set node ${node_id} with
     ${node_name} =    get_node_by_index    ${node_id}
     set_node   ${node_name}    &{config}
 
+Get node ${node_id} zone
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${zone} =    get_node_label_value    ${node_name}    topology.kubernetes.io/zone
+    RETURN    ${zone}
+
+Get node ${node_id} region
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${region} =    get_node_label_value    ${node_name}    topology.kubernetes.io/region
+    RETURN    ${region}
+
 Set node ${node_id} tags
     [Arguments]    @{tags}
     ${node_name} =    get_node_by_index    ${node_id}
@@ -200,3 +210,25 @@ Remove dir ${dir_path} on node ${node_id}
 Wait for Longhorn node ${node_id} down
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_longhorn_node_down    ${node_name}
+
+Skip test if disk path ${disk_path} is not a PCI BDF
+    ${is_bdf} =    is_bdf_disk_path    ${disk_path}
+    IF    not ${is_bdf}
+        Skip    Test requires a block disk provisioned by PCI BDF, got ${disk_path}
+    END
+
+Bind device ${disk_path} on node ${node_id} to userspace driver
+    ${node_name} =    get_node_by_index    ${node_id}
+    bind_disk_device_to_userspace_driver    ${node_name}    ${disk_path}
+
+Unbind device ${disk_path} on node ${node_id} from userspace driver
+    ${node_name} =    get_node_by_index    ${node_id}
+    unbind_disk_device_from_userspace_driver    ${node_name}    ${disk_path}
+
+Wait for device ${disk_path} on node ${node_id} released from userspace driver
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_disk_device_released    ${node_name}    ${disk_path}
+
+Wait for disk ${disk_name} on node ${node_id} schedulable
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_disk_schedulable    ${node_name}    ${disk_name}

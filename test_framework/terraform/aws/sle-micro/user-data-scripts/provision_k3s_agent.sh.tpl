@@ -21,33 +21,34 @@ sudo sh -c "echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf"
 
 if [[ "${extra_block_device}" != true ]]; then
   if [[ -b "/dev/nvme1n1" ]]; then
-    mkfs.ext4 -E nodiscard /dev/nvme1n1
-    mkdir /mnt/sda1
-    mount /dev/nvme1n1 /mnt/sda1
+    sudo mkfs.ext4 -E nodiscard /dev/nvme1n1
+    sudo mkdir -p /mnt/sda1
+    sudo mount /dev/nvme1n1 /mnt/sda1
 
-    mkdir /mnt/sda1/local
-    mkdir /opt/local-path-provisioner
-    mount --bind /mnt/sda1/local /opt/local-path-provisioner
+    sudo mkdir -p /mnt/sda1/local
+    sudo mkdir -p /opt/local-path-provisioner
+    sudo mount --bind /mnt/sda1/local /opt/local-path-provisioner
 
-    mkdir /mnt/sda1/longhorn
-    mkdir /var/lib/longhorn
-    mount --bind /mnt/sda1/longhorn /var/lib/longhorn
+    sudo mkdir -p /mnt/sda1/longhorn
+    sudo mkdir -p /var/lib/longhorn
+    sudo mount --bind /mnt/sda1/longhorn /var/lib/longhorn
   elif [ -b "/dev/xvdh" ]; then
-    mkfs.ext4 -E nodiscard /dev/xvdh
-    mkdir /var/lib/longhorn
-    mount /dev/xvdh /var/lib/longhorn
+    sudo mkfs.ext4 -E nodiscard /dev/xvdh
+    sudo mkdir -p /var/lib/longhorn
+    sudo mount /dev/xvdh /var/lib/longhorn
   fi
 fi
 
-mkdir -p /etc/rancher/k3s
+sudo mkdir -p /etc/rancher/k3s
 
-cat <<EOF >> /etc/rancher/k3s/config.yaml
+sudo sh -c "cat > /etc/rancher/k3s/config.yaml <<EOF
 server: ${k3s_server_url}
 token: ${k3s_cluster_secret}
 kubelet-arg:
   - cpu-manager-policy=none
   - reserved-cpus=0
 EOF
+"
 
 curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC="agent" INSTALL_K3S_VERSION="${k3s_version}" sh -
 sudo systemctl start k3s-agent

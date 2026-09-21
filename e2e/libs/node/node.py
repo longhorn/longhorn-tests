@@ -1,3 +1,4 @@
+import json
 import time
 import re
 import os
@@ -8,17 +9,18 @@ from robot.libraries.BuiltIn import BuiltIn
 from utility.constant import DISK_BEING_SYNCING
 from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 from utility.constant import DEFAULT_BLOCK_DISK_NAME
-from utility.constant import DEFAULT_FILESYSTEM_DISK_NAME_PREFIX
 import utility.constant as constant
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import subprocess_exec_cmd
+from utility.utility import pod_exec
+from workload.pod import list_pods
 from node_exec import NodeExec
 
 class Node:
 
-    DEFAULT_DISK_PATH = "/var/lib/longhorn"
+    DEFAULT_DISK_PATH = "/var/lib/longhorn/"
     DEFAULT_VOLUME_PATH = "/dev/longhorn/"
 
     all_nodes = None
@@ -29,6 +31,18 @@ class Node:
         if not Node.all_nodes:
             self.init_node_list()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    @staticmethod
+    def _normalize_path(path):
+        # Disk paths may or may not have a trailing slash (e.g. "/var/lib/longhorn"
+        # vs "/var/lib/longhorn/"). Normalize by stripping any trailing slash(es)
+        # so path comparisons are reliable regardless of formatting.
+        if not path:
+            return path
+        return path.rstrip('/')
+
+    def _is_default_disk_path(self, path):
+        return self._normalize_path(path) == self._normalize_path(self.DEFAULT_DISK_PATH)
 
     def mount_disk(self, disk_name, node_name):
         mount_path = os.path.join(self.DEFAULT_DISK_PATH, disk_name)
@@ -49,7 +63,18 @@ class Node:
                 node = node.diskUpdate(disks=disks)
                 self.wait_for_disk_update(node_name, len(disks), wait)
                 return node
+            except AssertionError:
+                # wait_for_disk_update already retried internally for the
+                # full retry budget, so retrying it again here would just
+                # multiply the total wait time without any benefit.
+                raise
             except Exception as e:
+                if "duplicate disk paths" in str(e):
+                    # A disk with the same path is already present on the
+                    # node, so the intended disk is effectively already added.
+                    # Treat this as success instead of retrying or failing.
+                    logging(f"Disk path already exists on node {node_name}: {e}")
+                    return get_longhorn_client().by_id_node(node_name)
                 logging(f"Failed to update node {node_name} disk: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to update node {node_name} disk {disks}"
@@ -94,6 +119,11 @@ class Node:
                 self.update_disks(node_name, disks, wait)
                 added = True
                 break
+            except AssertionError:
+                # update_disks/wait_for_disk_update already retried
+                # internally for the full retry budget, so retrying again
+                # here would just multiply the total wait time.
+                raise
             except Exception as e:
                 logging(f"Adding disk {disk} to node {node_name} error: {e}")
             time.sleep(self.retry_interval)
@@ -107,7 +137,7 @@ class Node:
         # copy Longhorn RestObject into a normal Python dict
         # otherwise we got TypeError: 'RestObject' object does not support item assignment
         for disk_name, disk in node.disks.items():
-            allow_sched = DEFAULT_FILESYSTEM_DISK_NAME_PREFIX in disk_name or disk_name == DEFAULT_BLOCK_DISK_NAME
+            allow_sched = self._is_default_disk_path(disk.path) or disk_name == DEFAULT_BLOCK_DISK_NAME
             disks[disk_name] = {
                 "path": disk.path,
                 "diskType": disk.diskType,
@@ -115,7 +145,7 @@ class Node:
             }
 
         # add default back if not exist
-        if not any(self.DEFAULT_DISK_PATH in disk.get("path") for disk in disks.values()):
+        if not any(self._is_default_disk_path(disk.get("path")) for disk in disks.values()):
             logging(f"Default disk with path {self.DEFAULT_DISK_PATH} not found on node {node_name}, re-adding it")
 
             disks["default-disk"] = {
@@ -143,7 +173,7 @@ class Node:
 
         for disk_name, disk in iter(node.disks.items()):
             # do not disable block-disk if v2 data engine enabled
-            if DEFAULT_FILESYSTEM_DISK_NAME_PREFIX not in disk_name and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
+            if not self._is_default_disk_path(disk.path) and not (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disk.allowScheduling = False
                 logging(f"Disabling scheduling disk {disk_name} on node {node_name}")
             else:
@@ -155,7 +185,7 @@ class Node:
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
             # do not delete block-disk if v2 data engine enabled
-            if DEFAULT_FILESYSTEM_DISK_NAME_PREFIX in disk_name or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
+            if self._is_default_disk_path(disk.path) or (data_engine == "v2" and disk_name == DEFAULT_BLOCK_DISK_NAME):
                 disks[disk_name] = disk
                 disk.allowScheduling = True
                 logging(f"Keeping disk {disk_name} on node {node_name}")
@@ -208,6 +238,12 @@ class Node:
     def get_node_cpu_cores(self, node_name):
         node = self.get_node_by_name(node_name)
         return node.status.capacity['cpu']
+
+    def get_node_label_value(self, node_name, label_key):
+        core_api = client.CoreV1Api()
+        node = core_api.read_node(node_name)
+        node_labels = node.metadata.labels or {}
+        return node_labels.get(label_key, '')
 
     def get_node_total_memory(self, node_name):
         node = self.get_node_by_name(node_name)
@@ -361,7 +397,7 @@ class Node:
         node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 disk.allowScheduling = allowScheduling
         self.update_disks(node_name, node.disks)
 
@@ -369,7 +405,7 @@ class Node:
         node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 disk.evictionRequested = evictionRequested
         self.update_disks(node_name, node.disks)
 
@@ -560,7 +596,7 @@ class Node:
     def get_default_file_system_disk_name(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 return disk_name
         assert False, f"no disk no {node_name} use disk path {self.DEFAULT_DISK_PATH}"
 
@@ -625,7 +661,7 @@ class Node:
 
         disks = {}
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 logging(f"Deleting disk {disk_name} (path={disk.path}) from node {node_name}")
                 continue
             logging(f"Keeping disk {disk_name} (path={disk.path}) on node {node_name}")
@@ -635,7 +671,7 @@ class Node:
     def get_default_disk_uuid_on_node(self, node_name):
         node = get_longhorn_client().by_id_node(node_name)
         for disk_name, disk in iter(node.disks.items()):
-            if disk.path == self.DEFAULT_DISK_PATH:
+            if self._is_default_disk_path(disk.path):
                 return self.get_disk_uuid(node_name, disk_name)
         assert False, f"No disk is using path {self.DEFAULT_DISK_PATH}"
 
@@ -712,3 +748,80 @@ class Node:
         logging(f"Removing directory {dir_path} on node {node_name}")
         cmd = f"rm -rf {dir_path}"
         NodeExec(node_name).issue_cmd(cmd)
+
+    def is_bdf_disk_path(self, disk_path):
+        return re.match(constant.BDF_PATTERN, str(disk_path)) is not None
+
+    def get_v2_instance_manager_pod_name(self, node_name):
+        label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine=v2,longhorn.io/node={node_name}"
+        pods = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
+        running_pods = [pod for pod in pods if pod.status.phase == "Running" and pod.metadata.deletion_timestamp is None]
+        assert len(running_pods) > 0, f"Failed to find a running v2 instance manager pod on node {node_name}"
+        return running_pods[0].metadata.name
+
+    def get_disk_device_driver(self, node_name, bdf):
+        """Return the PCI driver the device is currently bound to, e.g. nvme or vfio-pci."""
+        pod_name = self.get_v2_instance_manager_pod_name(node_name)
+        output = pod_exec(pod_name, constant.LONGHORN_NAMESPACE, f"{constant.SPDK_SETUP_SCRIPT} disk-status {bdf}")
+        matched = re.search(r"\{.*\}", output, re.S)
+        assert matched, f"Failed to get the disk status of {bdf} on node {node_name}: {output}"
+        return json.loads(matched.group(0)).get("driver", "")
+
+    def is_disk_device_detached_from_kernel_driver(self, node_name, bdf):
+        """An interrupted bind leaves the device on a userspace driver, or on no
+        driver at all when the userspace bind failed after the kernel driver was
+        already released. Both states hide the block device from the kernel."""
+        driver = self.get_disk_device_driver(node_name, bdf)
+        return driver.replace("-", "_") in constant.USERSPACE_PCI_DRIVERS or \
+            driver in ("", constant.NO_PCI_DRIVER)
+
+    def bind_disk_device_to_userspace_driver(self, node_name, bdf):
+        """Simulate a disk creation that was interrupted after binding the device."""
+        pod_name = self.get_v2_instance_manager_pod_name(node_name)
+        logging(f"Binding device {bdf} on node {node_name} to a userspace PCI driver")
+        # The bind mode only rebinds the device, unlike the default config mode which
+        # also reallocates hugepages underneath the running SPDK target.
+        pod_exec(pod_name, constant.LONGHORN_NAMESPACE,
+                 f"PCI_ALLOWED={bdf} DRIVER_OVERRIDE=vfio-pci {constant.SPDK_SETUP_SCRIPT} bind")
+        self.wait_for_disk_device_detached_from_kernel_driver(node_name, bdf)
+
+    def unbind_disk_device_from_userspace_driver(self, node_name, bdf):
+        pod_name = self.get_v2_instance_manager_pod_name(node_name)
+        logging(f"Unbinding device {bdf} on node {node_name} from its userspace PCI driver")
+        pod_exec(pod_name, constant.LONGHORN_NAMESPACE, f"{constant.SPDK_SETUP_SCRIPT} unbind {bdf}")
+
+    def wait_for_disk_device_detached_from_kernel_driver(self, node_name, bdf):
+        for i in range(self.retry_count):
+            logging(f"Waiting for device {bdf} on node {node_name} detached from its kernel driver ... ({i})")
+            if self.is_disk_device_detached_from_kernel_driver(node_name, bdf):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Device {bdf} on node {node_name} is still driven by the kernel: {self.get_disk_device_driver(node_name, bdf)}"
+
+    def wait_for_disk_device_released(self, node_name, bdf):
+        for i in range(self.retry_count):
+            driver = self.get_disk_device_driver(node_name, bdf)
+            logging(f"Waiting for device {bdf} on node {node_name} released back to its kernel driver, current driver = {driver} ... ({i})")
+            if not self.is_disk_device_detached_from_kernel_driver(node_name, bdf):
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Device {bdf} on node {node_name} is not driven by the kernel, current driver {self.get_disk_device_driver(node_name, bdf)}"
+
+    def is_disk_schedulable(self, node_name, disk_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        disk = node["disks"].get(disk_name)
+        if disk is None:
+            return False
+        conditions = disk["conditions"]
+        return conditions["Ready"]["status"] == "True" and conditions["Schedulable"]["status"] == "True"
+
+    def wait_for_disk_schedulable(self, node_name, disk_name):
+        for i in range(self.retry_count):
+            logging(f"Waiting for disk {disk_name} on node {node_name} ready and schedulable ... ({i})")
+            try:
+                if self.is_disk_schedulable(node_name, disk_name):
+                    return
+            except Exception as e:
+                logging(f"Getting disk {disk_name} on node {node_name} failed: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Disk {disk_name} on node {node_name} is not ready and schedulable: {get_longhorn_client().by_id_node(node_name)['disks']}"

@@ -396,7 +396,7 @@ Test Engine Image Liveness Probe Multiple Engine Images
     When Setting engine-image-pod-liveness-probe-timeout is set to 15
     And Setting engine-image-pod-liveness-probe-period is set to 30
     And Setting engine-image-pod-liveness-probe-failure-threshold is set to 10
-    And Wait for engine image daemonset pods recreated
+    And Wait for engine image daemonset pods recreated and running
     Then All engine image daemonset should have liveness probe settings
     ...    timeout=15
     ...    period=30

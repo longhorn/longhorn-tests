@@ -901,45 +901,45 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
             replicas.append(r)
 
     assert len(replicas) > 0, replicas
-    if DATA_ENGINE == "v2":
-        # Crashing all v2 replicas causes them to restart, but not
-        # enter the failed state.
-        crash_replica_processes(client, core_api, volume1_name, replicas,
-                                wait_to_fail=False)
-    else:
-        crash_replica_processes(client, core_api, volume1_name, replicas)
+    crash_replica_processes(client, core_api, volume1_name, replicas)
     delete_replica_on_test_node(client, volume2_name)
 
     # While one volume is rebuilding, verify another volume is not
     # rebuilding and stuck in degrading state
+    def is_rebuilding(volume):
+        # The rebuild that was just crashed above keeps reporting the "error"
+        # state until its failed replica is replaced, so only an in_progress
+        # entry counts as an active rebuild.
+        return any(s.state == "in_progress" for s in volume.rebuildStatus)
+
     rebuild_started = False
     first_rebuild = None
     for i in range(RETRY_COUNTS):
         volume1 = client.by_id_volume(volume1_name)
         volume2 = client.by_id_volume(volume2_name)
 
-        if volume1.rebuildStatus == [] and \
-                volume2.rebuildStatus == [] and \
-                rebuild_started is False:
-            continue
-        elif volume1.rebuildStatus == [] and \
-                volume2.rebuildStatus == [] and \
-                rebuild_started is True:
+        volume1_rebuilding = is_rebuilding(volume1)
+        volume2_rebuilding = is_rebuilding(volume2)
+
+        # The concurrent limit is 1, so the volumes must never rebuild together
+        assert not (volume1_rebuilding and volume2_rebuilding), (
+            f"volume 1 rebuild status = {volume1.rebuildStatus}, "
+            f"volume 2 rebuild status = {volume2.rebuildStatus}"
+        )
+
+        if volume1_rebuilding or volume2_rebuilding:
+            rebuild_started = True
+            first_rebuild = \
+                volume1_name if volume1_rebuilding else volume2_name
+        elif rebuild_started:
             break
-        elif volume2.rebuildStatus == []:
-            assert volume1.rebuildStatus[0].state == "in_progress", (
-                f"volume 1 rebuild status = {volume1.rebuildStatus}"
-            )
-            rebuild_started = True
-            first_rebuild = volume1_name
-        elif volume1.rebuildStatus == []:
-            assert volume2.rebuildStatus[0].state == "in_progress", (
-                f"volume 2 rebuild status = {volume1.rebuildStatus}"
-            )
-            rebuild_started = True
-            first_rebuild = volume2_name
 
         time.sleep(RETRY_INTERVAL)
+
+    assert rebuild_started is True, (
+        f"volume 1 rebuild status = {volume1.rebuildStatus}, "
+        f"volume 2 rebuild status = {volume2.rebuildStatus}"
+    )
 
     # Wait for the second volume to start rebuilding.
     # At this point, one volume has already started rebuilding in
