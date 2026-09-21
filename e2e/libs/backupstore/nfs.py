@@ -68,6 +68,7 @@ class Nfs(Base):
         return prefix + "/blocks"
 
     def create_file_in_backupstore(self, file_path, data={}):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w') as cfg_file:
             cfg_file.write(str(data))
 

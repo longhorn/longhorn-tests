@@ -99,7 +99,10 @@ class S3(Base):
             data = {"testkey": "test data from create_file_in_backupstore()"}
 
         with tempfile.NamedTemporaryFile('w') as fp:
-            json.dump(data, fp)
+            if isinstance(data, str):
+                fp.write(data)
+            else:
+                json.dump(data, fp)
             fp.flush()
             try:
                 with open(fp.name, mode='rb') as f:
@@ -110,7 +113,8 @@ class S3(Base):
                                          temp_file_stat.st_size)
                     read_back = minio_api.get_object(bucket_name,
                                                      file_path)
-                    assert read_back.data.decode("utf-8") == json.dumps(data), f"{read_back.data.decode('utf-8')}, {json.dumps(data)}"
+                    expected_data = data if isinstance(data, str) else json.dumps(data)
+                    assert read_back.data.decode("utf-8") == expected_data, f"{read_back.data.decode('utf-8')}, {expected_data}"
                     logging(f"Created file {file_path} in backupstore")
             except ResponseError as err:
                 logging(err)

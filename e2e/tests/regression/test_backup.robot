@@ -147,6 +147,40 @@ Test Incremental Restore
     And Delete persistentvolumeclaim for volume 3
     And Delete persistentvolume for volume 3
 
+Test DR Volume Restore Retries When Backupstore Lock Is Held
+    [Tags]    dr-volume
+    [Documentation]
+    ...    Verify that a standby DR volume retries the restore instead of becoming
+    ...    faulted when the backupstore holds a deletion lock that blocks the lock
+    ...    the restore needs to acquire.
+    ...
+    ...    The deletion lock is placed before the DR volume is created, so the
+    ...    restore is guaranteed to hit the lock contention.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13685
+    Given Get test start time
+    And Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data 0 to volume 0
+    And Create backup 0 for volume 0
+
+    When Create deletion lock in backupstore for volume 0
+    TRY
+        And Create DR volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
+        Then Check volume 1 kept in not faulted for 30 seconds
+        And Wait Until Keyword Succeeds    60s    5s
+        ...    Any app=longhorn-manager Pods Log Should Have Ignored failed locked restore error After Test Start
+    FINALLY
+        Delete deletion lock in backupstore for volume 0
+    END
+
+    Then Wait for volume 1 restoration from backup 0 of volume 0 completed
+    When Activate DR volume 1
+    And Attach volume 1
+    And Wait for volume 1 healthy
+    Then Check volume 1 data is backup 0 of volume 0
+
 Test Uninstallation With Backups
     [Tags]    uninstall
     [Documentation]    Test uninstall Longhorn with backups
