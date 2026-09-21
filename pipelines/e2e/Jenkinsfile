@@ -6,6 +6,7 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
 // define optional parameters
 def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
+def AWS_CPU_CREDITS = params.AWS_CPU_CREDITS ? params.AWS_CPU_CREDITS : "unlimited"
 
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 def REGISTRATION_CODE_ID = "REGISTRATION_CODE"
@@ -29,6 +30,7 @@ def REGISTRY_URL = ""
 
 // parameter for v2 test
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : true
+def RUN_V2_INTERRUPT_MODE = params.RUN_V2_INTERRUPT_MODE ? params.RUN_V2_INTERRUPT_MODE : false
 
 // parameter for running test as a pod or a container
 def OUT_OF_CLUSTER = params.OUT_OF_CLUSTER ? params.OUT_OF_CLUSTER : false
@@ -62,6 +64,10 @@ node {
         try {
 
             stage('build') {
+
+                if(JOB_BASE_NAME == "longhorn-e2e-test") {
+                    manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+                }
 
                 echo "Using credentials: $CREDS_ID"
                 echo "Using registration code: $REGISTRATION_CODE_ID"
@@ -108,12 +114,14 @@ node {
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                        --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_lh_aws_instance_cpu_credits=${AWS_CPU_CREDITS} \
                                        --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
                                        --env TF_VAR_custom_ssh_public_key="${CUSTOM_SSH_PUBLIC_KEY}" \
                                        --env TF_VAR_resources_owner="${RESOURCE_OWNER}" \
                                        --env TF_VAR_extra_block_device=${RUN_V2_TEST} \
+                                       --env RUN_V2_INTERRUPT_MODE=${RUN_V2_INTERRUPT_MODE} \
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \
