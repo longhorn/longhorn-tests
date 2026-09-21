@@ -1848,6 +1848,7 @@ def cleanup_client():
     scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
+    wait_for_all_nodes_disks_schedulable(client)
 
     enable_v2 = os.environ.get('RUN_V2_TEST')
     if enable_v2 == "true":
