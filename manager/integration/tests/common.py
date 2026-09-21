@@ -2664,6 +2664,105 @@ def wait_for_replica_failed(client, volname, replica_name,
     assert failed, err_msg
 
 
+def wait_for_replicas_failed_at_cleared(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_replicas = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_replicas = []
+        missing_replica_names = set(replica_name_set)
+        failed_at_cleared = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+            missing_replica_names.discard(replica['name'])
+            debug_replicas.append(replica)
+            if replica['failedAt'] != "":
+                failed_at_cleared = False
+
+        if not missing_replica_names and failed_at_cleared:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f"Vol({volname}), replicas({replica_names}) failedAt not cleared. "
+        f"Missing: {missing_replica_names}, "
+        f"current replicas: "
+        f"{debug_replicas if debug_replicas else volume.replicas}"
+    )
+
+
+def wait_for_replicas_disks_schedulable(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_disks = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_disks = []
+        missing_replica_names = set(replica_name_set)
+        disks_schedulable = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+
+            missing_replica_names.discard(replica['name'])
+            node_name = replica['hostId']
+            disk_id = replica['diskID']
+            disk_found = False
+            disk_schedulable = False
+
+            if node_name != "" and disk_id != "":
+                node = client.by_id_node(node_name)
+                for disk_name, disk in node.disks.items():
+                    if disk.get("diskUUID", "") != disk_id:
+                        continue
+
+                    disk_found = True
+                    conditions = disk.get("conditions", {})
+                    schedulable_condition = conditions.get("Schedulable", {})
+                    schedulable_status = \
+                        schedulable_condition.get("status", "")
+                    disk_schedulable = schedulable_status == "True"
+                    debug_disks.append({
+                        "replica": replica['name'],
+                        "node": node_name,
+                        "disk": disk_name,
+                        "diskID": disk_id,
+                        "schedulable": schedulable_status,
+                    })
+                    break
+
+            if not disk_schedulable:
+                disks_schedulable = False
+                if not disk_found:
+                    debug_disks.append({
+                        "replica": replica['name'],
+                        "node": node_name,
+                        "diskID": disk_id,
+                        "disk": "",
+                        "schedulable": "",
+                    })
+
+        if not missing_replica_names and disks_schedulable:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f"Vol({volname}), replicas({replica_names}) disks are not "
+        f"schedulable. Missing: {missing_replica_names}, "
+        f"current disks: {debug_disks}"
+    )
+
+
 def wait_for_replica_crashed(client, volname, replica_name,
                              retry_cnts=RETRY_COUNTS,
                              retry_ivl=RETRY_INTERVAL):
@@ -5835,14 +5934,25 @@ def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
 def wait_for_pods_volume_delete(client, pod_list,  # NOQA
                                 retry_counts=RETRY_BACKUP_COUNTS):
     volume_deleted = False
+    volume_names = {pod['pv_name'] for pod in pod_list}
     for _ in range(retry_counts):
+        try:
+            volumes = client.list_volume()
+        except longhorn.ApiError as err:
+            if err.error.code == 404 and \
+                    "failed to list volume: volume.longhorn.io" \
+                    in err.error.message:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            raise
+
         volume_deleted = True
-        volumes = client.list_volume()
-        for v in volumes:
-            for p in pod_list:
-                if v.name == p['pv_name']:
-                    volume_deleted = False
-                    break
+        for volume in volumes:
+            if volume.name in volume_names:
+                volume_deleted = False
+                break
+        if volume_deleted:
+            return
         time.sleep(RETRY_INTERVAL)
     assert volume_deleted is True
 
