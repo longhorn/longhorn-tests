@@ -925,6 +925,7 @@ properly.
     scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
+    wait_for_all_nodes_disks_schedulable(client)
 
     enable_v2 = os.environ.get(&#39;RUN_V2_TEST&#39;)
     if enable_v2 == &#34;true&#34;:
