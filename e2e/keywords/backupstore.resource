@@ -14,6 +14,14 @@ Delete file ${file_name} in the backups folder of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_file_in_backups_folder    ${volume_name}    ${file_name}
 
+Create deletion lock in backupstore for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_backupstore_deletion_lock    ${volume_name}
+
+Delete deletion lock in backupstore for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_backupstore_deletion_lock    ${volume_name}
+
 Corrupt backup ${backup_id} cfg file of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_name} =    get_backup_name    ${backup_id}    ${volume_name}

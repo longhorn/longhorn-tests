@@ -414,6 +414,13 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be in faulted')
         self.volume.wait_for_volume_faulted(volume_name)
 
+    def assert_volume_not_faulted(self, volume_name):
+        # status is not populated yet right after the volume is created.
+        volume = self.volume.get(volume_name)
+        robustness = volume.get('status', {}).get('robustness', '')
+        logging(f"Checking volume {volume_name} is not faulted: robustness={robustness}")
+        assert robustness != "faulted", f"Expected volume {volume_name} to stay non-faulted, got {volume}"
+
     def wait_for_volume_condition(self, volume_name, condition_name, condition_status, reason=""):
         self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)
 
