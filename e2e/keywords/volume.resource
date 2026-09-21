@@ -420,6 +420,13 @@ Wait for volume ${volume_id} faulted
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_faulted    ${volume_name}
 
+Check volume ${volume_id} kept in not faulted for ${period} seconds
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${period}
+        assert_volume_not_faulted    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
