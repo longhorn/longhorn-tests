@@ -240,6 +240,7 @@ SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
 SETTING_DATA_ENGINE_INTERRUPT_MODE = "data-engine-interrupt-mode-enabled"
+SETTING_DATA_ENGINE_CPU_MASK = "data-engine-cpu-mask"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -2663,6 +2664,105 @@ def wait_for_replica_failed(client, volname, replica_name,
     assert failed, err_msg
 
 
+def wait_for_replicas_failed_at_cleared(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_replicas = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_replicas = []
+        missing_replica_names = set(replica_name_set)
+        failed_at_cleared = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+            missing_replica_names.discard(replica['name'])
+            debug_replicas.append(replica)
+            if replica['failedAt'] != "":
+                failed_at_cleared = False
+
+        if not missing_replica_names and failed_at_cleared:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f"Vol({volname}), replicas({replica_names}) failedAt not cleared. "
+        f"Missing: {missing_replica_names}, "
+        f"current replicas: "
+        f"{debug_replicas if debug_replicas else volume.replicas}"
+    )
+
+
+def wait_for_replicas_disks_schedulable(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_disks = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_disks = []
+        missing_replica_names = set(replica_name_set)
+        disks_schedulable = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+
+            missing_replica_names.discard(replica['name'])
+            node_name = replica['hostId']
+            disk_id = replica['diskID']
+            disk_found = False
+            disk_schedulable = False
+
+            if node_name != "" and disk_id != "":
+                node = client.by_id_node(node_name)
+                for disk_name, disk in node.disks.items():
+                    if disk.get("diskUUID", "") != disk_id:
+                        continue
+
+                    disk_found = True
+                    conditions = disk.get("conditions", {})
+                    schedulable_condition = conditions.get("Schedulable", {})
+                    schedulable_status = \
+                        schedulable_condition.get("status", "")
+                    disk_schedulable = schedulable_status == "True"
+                    debug_disks.append({
+                        "replica": replica['name'],
+                        "node": node_name,
+                        "disk": disk_name,
+                        "diskID": disk_id,
+                        "schedulable": schedulable_status,
+                    })
+                    break
+
+            if not disk_schedulable:
+                disks_schedulable = False
+                if not disk_found:
+                    debug_disks.append({
+                        "replica": replica['name'],
+                        "node": node_name,
+                        "diskID": disk_id,
+                        "disk": "",
+                        "schedulable": "",
+                    })
+
+        if not missing_replica_names and disks_schedulable:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f"Vol({volname}), replicas({replica_names}) disks are not "
+        f"schedulable. Missing: {missing_replica_names}, "
+        f"current disks: {debug_disks}"
+    )
+
+
 def wait_for_replica_crashed(client, volname, replica_name,
                              retry_cnts=RETRY_COUNTS,
                              retry_ivl=RETRY_INTERVAL):
@@ -4015,6 +4115,17 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
+        if setting_name == SETTING_DATA_ENGINE_CPU_MASK:
+            if os.environ.get('RUN_V2_TEST') == "true":
+                setting = client.by_id_setting(setting_name)
+                try:
+                    client.update(setting, value='{"v2": "0x1"}')
+                except Exception as e:
+                    print(f"\nException setting {setting_name} to "
+                          "{\"v2\": \"0x1\"}")
+                    print(e)
+                continue
+
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
@@ -4345,9 +4456,22 @@ def find_replica_for_backup(client, volume_name, backup_id):
 
 
 def check_longhorn(core_api):
+    # Longhorn before v1.13 has no longhorn-global-manager Deployment, and
+    # the upgrade test runs this check against such a version before
+    # upgrading. Require the component only when its Deployment exists.
+    try:
+        get_apps_api_client().read_namespaced_deployment(
+            'longhorn-global-manager', 'longhorn-system')
+        need_global_manager = True
+    except ApiException as e:
+        if e.status != 404:
+            raise
+        need_global_manager = False
+
     ready = False
     has_engine_image = False
     has_driver_deployer = False
+    has_global_manager = not need_global_manager
     has_manager = False
     has_ui = False
     has_instance_manager = False
@@ -4369,6 +4493,9 @@ def check_longhorn(core_api):
                 elif labels.get('app', '') == 'longhorn-driver-deployer' \
                         and item.status.phase == "Running":
                     has_driver_deployer = True
+                elif labels.get('app', '') == 'longhorn-global-manager' \
+                        and item.status.phase == "Running":
+                    has_global_manager = True
                 elif labels.get('app', '') == 'longhorn-manager' \
                         and item.status.phase == "Running":
                     has_manager = True
@@ -4380,7 +4507,8 @@ def check_longhorn(core_api):
                         and item.status.phase == "Running":
                     has_instance_manager = True
 
-            if has_engine_image and has_driver_deployer and has_manager and \
+            if has_engine_image and has_driver_deployer and \
+                    has_global_manager and has_manager and \
                     has_ui and has_instance_manager and pod_running:
                 ready = True
                 break
@@ -5806,14 +5934,25 @@ def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
 def wait_for_pods_volume_delete(client, pod_list,  # NOQA
                                 retry_counts=RETRY_BACKUP_COUNTS):
     volume_deleted = False
+    volume_names = {pod['pv_name'] for pod in pod_list}
     for _ in range(retry_counts):
+        try:
+            volumes = client.list_volume()
+        except longhorn.ApiError as err:
+            if err.error.code == 404 and \
+                    "failed to list volume: volume.longhorn.io" \
+                    in err.error.message:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            raise
+
         volume_deleted = True
-        volumes = client.list_volume()
-        for v in volumes:
-            for p in pod_list:
-                if v.name == p['pv_name']:
-                    volume_deleted = False
-                    break
+        for volume in volumes:
+            if volume.name in volume_names:
+                volume_deleted = False
+                break
+        if volume_deleted:
+            return
         time.sleep(RETRY_INTERVAL)
     assert volume_deleted is True
 

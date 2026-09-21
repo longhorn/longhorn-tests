@@ -19,8 +19,8 @@ class Volume(Base):
         else:
             self.volume = Rest()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry):
-        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=None):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=dataLayout)
 
     def delete(self, volume_name, wait):
         return self.volume.delete(volume_name, wait)
@@ -200,6 +200,9 @@ class Volume(Base):
 
     def update_volume_spec(self, volume_name, key, value):
         return self.volume.update_volume_spec(volume_name, key, value)
+
+    def enable_volume_frontend(self, volume_name):
+        return self.volume.enable_volume_frontend(volume_name)
 
     def activate(self, volume_name):
         return self.volume.activate(volume_name)

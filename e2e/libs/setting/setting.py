@@ -111,6 +111,15 @@ class Setting:
             if setting_name == "registry-secret":
                 continue
 
+            if data_engine == "v2" and setting_name == "data-engine-cpu-mask":
+                try:
+                    s = client.by_id_setting(setting_name)
+                    client.update(s, value='{"v2": "0x1"}')
+                    logging(f"Set {setting_name} to {{\"v2\": \"0x1\"}} because data_engine is v2")
+                except Exception as e:
+                    logging(f"Failed to set {setting_name} to {{\"v2\": \"0x1\"}}: {e}")
+                continue
+
             if data_engine == "v2" and setting_name == "v2-data-engine":
                 try:
                     s = client.by_id_setting(setting_name)
@@ -119,6 +128,16 @@ class Setting:
                 except Exception as e:
                     logging(f"Failed to set {setting_name} to true: {e}")
                 continue
+
+            if data_engine == "v2" and setting_name == "data-engine-interrupt-mode-enabled":
+                if os.environ.get("RUN_V2_INTERRUPT_MODE", "false") == "true":
+                    try:
+                        s = client.by_id_setting(setting_name)
+                        client.update(s, value='{"v2":"true"}')
+                        logging(f"Set {setting_name} to {{\"v2\":\"true\"}} because RUN_V2_INTERRUPT_MODE is true")
+                    except Exception as e:
+                        logging(f"Failed to set {setting_name}: {e}")
+                    continue
 
             s = client.by_id_setting(setting_name)
             if s.value != setting_default_value and not setting_readonly:

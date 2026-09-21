@@ -172,6 +172,8 @@ def get_longhorn_components_memory_cpu_usage():
             name = "longhorn-csi-plugin"
         elif name.startswith("longhorn-driver-deployer"):
             name = "longhorn-driver-deployer"
+        elif name.startswith("longhorn-global-manager"):
+            name = "longhorn-global-manager"
         elif name.startswith("longhorn-manager"):
             name = "longhorn-manager"
         elif name.startswith("longhorn-ui"):
@@ -303,6 +305,14 @@ def check_longhorn_components_memory_cpu_usage():
         high_usage = high_usage or is_high_resource_consumption("longhorn-driver-deployer", "memory",
             usage["longhorn-driver-deployer"]["memory"],
             old_usage["longhorn-driver-deployer"]["memory"])
+
+    if "longhorn-global-manager" in usage and "longhorn-global-manager" in old_usage:
+        high_usage = high_usage or is_high_resource_consumption("longhorn-global-manager", "cpu",
+            usage["longhorn-global-manager"]["cpu"],
+            old_usage["longhorn-global-manager"]["cpu"])
+        high_usage = high_usage or is_high_resource_consumption("longhorn-global-manager", "memory",
+            usage["longhorn-global-manager"]["memory"],
+            old_usage["longhorn-global-manager"]["memory"])
 
     if "longhorn-manager" in usage and "longhorn-manager" in old_usage:
         high_usage = high_usage or is_high_resource_consumption("longhorn-manager", "cpu",

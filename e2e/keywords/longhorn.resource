@@ -18,6 +18,7 @@ Library             ../libs/keywords/engine_keywords.py
 ...    csi-snapshotter
 ...    longhorn-driver-deployer
 ...    longhorn-csi-plugin
+...    longhorn-global-manager
 ...    longhorn-manager
 ...    longhorn-ui
 
@@ -27,8 +28,23 @@ ${LONGHORN_REPO_DIR}    /tmp/longhorn/longhorn
 Wait for longhorn ready
     wait_for_all_instance_manager_running
 
+Wait for all instance managers running with default image
+    wait_for_all_instance_manager_running_with_default_image
+
+Wait for all v2 instance managers running with default image
+    wait_for_all_instance_manager_running_with_default_image
+
+Wait for all instance manager upgrades completed
+    instancemanager_keywords.wait_for_all_instance_manager_upgrades_completed
+
+Wait for all v2 instance manager upgrades completed
+    instancemanager_keywords.wait_for_all_instance_manager_upgrades_completed
+
 Wait for all instance managers removed
     wait_for_all_instance_manager_removed
+
+Wait for Longhorn node named ${node_name} down
+    wait_for_longhorn_node_down    ${node_name}
 
 Wait for Longhorn workloads pods stable
     [Arguments]    @{args}
@@ -138,6 +154,14 @@ Delete ${engine_type} instance manager of deployment ${deployment_id} volume
 Wait for Longhorn components all running
     ${longhorn_namespace} =    get_longhorn_namespace
     wait_for_namespace_pods_running    ${longhorn_namespace}
+
+Get Longhorn global manager lease holder
+    ${holder} =    get_global_manager_lease_holder
+    RETURN    ${holder}
+
+Wait for Longhorn global manager lease holder changed from ${old_holder}
+    ${holder} =    wait_for_global_manager_lease_holder_changed    ${old_holder}
+    RETURN    ${holder}
 
 Install Longhorn stable version
     [Arguments]    &{config}
@@ -253,23 +277,12 @@ Any ${label_selector} Pods Log Should Not Have ${expect_log} After Test Start
     verify_pods_log_after_time_not_contains    ${label_selector}    ${expect_log}    ${test_start_time}
 
 Delete Longhorn node ${node_id}
-    # Taint the node and delete nodes.longhorn.io instead of deleting the 
-    # entire Kubernetes node, thereford we can bring the Longhorn node back 
-    # without rebooting the machine by untaint command.
     ${node_name} =    get_node_by_index    ${node_id}
-    execute_command
-    ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute
-    wait_for_longhorn_node_down    ${node_name}
-    execute_command_and_wait_for_output
-    ...    kubectl -n longhorn-system delete nodes.longhorn.io ${node_name}
-    ...    node.longhorn.io "${node_name}" deleted
+    delete_longhorn_node    ${node_name}
 
-Add Longhorn node ${node_id} back
-    # Remove the taint to bring the Longhorn node back. 
-    # "Delete Longhorn node ${node_id}" must be executed first.
+Delete Longhorn node ${node_id} should fail
     ${node_name} =    get_node_by_index    ${node_id}
-    execute_command
-    ...    kubectl taint node ${node_name} node-role.kubernetes.io/worker=true:NoExecute-
+    Run Keyword And Expect Error    *    delete_longhorn_node    ${node_name}
 
 Verify ${engine_type} instance manager log on node ${node_id} contain ${expect_log} after test start
     ${node_name} =    get_node_by_index    ${node_id}

@@ -35,11 +35,26 @@ rm -rf "${TMPDIR}/"
 LONGHORN_NAMESPACE="longhorn-system"
 
 
+generate_skipped_test_report(){
+  local report_file="$1"
+  local test_name="$2"
+
+  cat > "${WORKSPACE}/${report_file}" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="AppCo" tests="1" failures="0" errors="0" skipped="1">
+  <testcase classname="appco" name="${test_name}">
+    <skipped message="Chart already contains the latest AppCo revision images. Nothing new to validate."/>
+  </testcase>
+</testsuite>
+EOF
+}
+
 main(){
   set_kubeconfig
 
   if [[ "$LONGHORN_TEST_CLOUDPROVIDER" == "harvester" ]]; then
     apply_kubectl_retry
+    apply_helm_retry
   fi
 
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
@@ -77,12 +92,33 @@ main(){
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade"
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
+
+    if [[ "${USE_REVERSION_IMAGES}" == "true" ]]; then
+      set +x
+      fetch_appco_revision_tags "${LONGHORN_VERSION}"
+      set -x
+
+      if [[ "${APPCO_REVISION_IMAGES_CURRENT}" == "true" ]]; then
+        echo "INFO: Skipping test — chart already contains the latest AppCo revision images. Nothing new to validate."
+        generate_skipped_test_report longhorn-test-upgrade-junit-report.xml revision-images-upgrade || return $?
+        generate_skipped_test_report longhorn-test-junit-report.xml revision-images-regression || return $?
+        return 0
+      fi
+    fi
+
     run_longhorn_upgrade_test
     run_longhorn_test
   else
     install_longhorn_custom
     setup_longhorn_ui_nodeport
     export_longhorn_ui_url
+
+    if [[ "${USE_REVERSION_IMAGES}" == "true" ]] && [[ "${APPCO_REVISION_IMAGES_CURRENT}" == "true" ]]; then
+      echo "INFO: Skipping test — chart already contains the latest AppCo revision images. Nothing new to validate."
+      generate_skipped_test_report longhorn-test-junit-report.xml revision-images-regression || return $?
+      return 0
+    fi
+
     if [[ "${TEST_TYPE}" == "robot" ]]; then
       if [[ "${OUT_OF_CLUSTER}" == true ]]; then
         run_longhorn_test_out_of_cluster

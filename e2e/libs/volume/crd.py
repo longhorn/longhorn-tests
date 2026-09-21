@@ -30,7 +30,7 @@ class CRD(Base):
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True, dataLayout=None):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -75,6 +75,13 @@ class CRD(Base):
 
         if cloneMode:
             body["spec"]["cloneMode"] = cloneMode
+
+        if dataLayout:
+            layout = dict(dataLayout)
+            for int_field in ("dataChunks", "parityChunks", "stripSizeKB"):
+                if int_field in layout:
+                    layout[int_field] = int(layout[int_field])
+            body["spec"]["dataLayout"] = layout
 
         if not Standby and not any(ver in longhorn_version for ver in version_doesnt_support_block_backup_size_setting):
             body["spec"]["backupBlockSize"] = backupBlockSize
@@ -949,7 +956,7 @@ class CRD(Base):
             try:
                 volume = self.get(volume_name)
                 spec = volume['spec']
-                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit", "staleReplicaTimeout"]:
+                if key in ["numberOfReplicas", "rebuildConcurrentSyncLimit", "staleReplicaTimeout", "nvmeTcpNrIoQueues"]:
                     spec[key] = int(value)
                 else:
                     spec[key] = value
@@ -968,6 +975,33 @@ class CRD(Base):
                 else:
                     raise e
             time.sleep(self.retry_interval)
+
+    def enable_volume_frontend(self, volume_name):
+        for i in range(self.retry_count):
+            logging(f"Enabling frontend of volume {volume_name} ... ({i})")
+            try:
+                body = get_cr(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace=constant.LONGHORN_NAMESPACE,
+                    plural="volumeattachments",
+                    name=volume_name
+                )
+                for ticket in body['spec']['attachmentTickets'].values():
+                    ticket['parameters']['disableFrontend'] = "false"
+                self.obj_api.patch_namespaced_custom_object(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace=constant.LONGHORN_NAMESPACE,
+                    plural="volumeattachments",
+                    name=volume_name,
+                    body=body
+                )
+                break
+            except Exception as e:
+                logging(f"Failed to enable frontend of volume {volume_name}: {e}")
+            time.sleep(self.retry_interval)
+        self.wait_for_volume_status(volume_name, "frontendDisabled", False)
 
     def activate(self, volume_name):
         return Rest().activate(volume_name)

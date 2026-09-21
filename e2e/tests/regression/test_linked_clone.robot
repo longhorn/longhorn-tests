@@ -73,6 +73,12 @@ ${NESTED_EXPAND_OFFSET_MB}    ${{ ${CLONE_EXPANDED_SIZE_GI} * 1024 }}
 # Amount of data written by the data-writing keywords, both at offset 0 and
 # into each expanded region.
 ${WRITE_SIZE_MB}              200
+# Offset of a range written only by the source volume and never overwritten by
+# any clone.  It is what makes a restore test falsifiable: a clone's backup does
+# not contain this range, so it can only reappear in a restored volume through
+# the link back to the source snapshot.  Every other written range belongs to
+# some clone's own delta and would restore fine even with the link broken.
+${SRC_ONLY_OFFSET_MB}         512
 
 *** Keywords ***
 Set up v2 test environment
@@ -236,7 +242,10 @@ Test Linked Clone Volume Lifecycle
     ...    clone) are attached to the same node so a single IM pod crash exercises
     ...    all of them simultaneously.
     ...
-    ...    Step 1   Create a V2 source volume, write data, take snapshot 0.
+    ...    Step 1   Create a V2 source volume, write data at offset 0 and at a second
+    ...             offset the clones never overwrite, take snapshot 0.  That second
+    ...             range is what makes steps 18 and 19 falsifiable: no clone backup
+    ...             contains it, so it can only come back through the link.
     ...    Step 2   Create linked-clone volume clone-vol from snapshot 0 of volume src-vol.
     ...    Step 3   Verify engine and replica CRs exist for the clone volume.
     ...    Step 4   Verify scheduler sets linkedCloneSrcReplicaName and the
@@ -251,7 +260,8 @@ Test Linked Clone Volume Lifecycle
     ...             attached to.  Verify clone status, data, and entrypoint snapshot
     ...             CR preserved across engine restart.
     ...    Step 9   Post-clone operations for the clone volume:
-    ...             a) Snapshot and backup
+    ...             a) Snapshot and backup; verify the backup records the
+    ...                linked-clone source, which Step 18 depends on
     ...             b) Scale replica count down to 1, then back up to 3
     ...             c) Delete a replica; verify rebuild completes
     ...    Step 10  Create a nested linked-clone volume with 1 replica from the clone volume.
@@ -263,8 +273,8 @@ Test Linked Clone Volume Lifecycle
     ...    Step 11  Attach the nested clone to the same node as the source volume.
     ...             Verify inherited data from both source and clone volumes.
     ...    Step 12  Post-clone operations for the nested clone volume:
-    ...             a) Snapshot and backup
-    ...             b) Expand to 4Gi and write data to the expanded region.
+    ...             a) Expand to 4Gi and write data to the expanded region.
+    ...             b) Snapshot and backup
     ...    Step 13  Crash the instance manager pod on the node all 3 volumes are
     ...             attached to. src-vol and clone-vol degrade and recover normally.
     ...             nested-clone-vol loses both its engine and its only replica,
@@ -276,18 +286,43 @@ Test Linked Clone Volume Lifecycle
     ...             entrypoint snapshot CR still exist.
     ...    Step 17  Delete clone volume; verify the source volume and its
     ...             entrypoint snapshot CR still exist.
+    ...    Step 18  Restore the clone volume's backup from Step 9a under a different
+    ...             volume name.  No dataSource is passed: the mutator has to infer
+    ...             the linked-clone source from the BackupVolume, since the clone
+    ...             itself is gone by now.  Verify the source-only range (which the
+    ...             backup does not contain, so it proves the link) and the clone's
+    ...             own ranges (which prove the delta restored on top).
+    ...    Step 19  Restore the nested clone volume's backup from Step 12b.  Its
+    ...             recorded source, clone-vol, was deleted in Step 17, so a
+    ...             dataSource naming a snapshot of the Step 18 volume is passed
+    ...             explicitly and must win over the one recorded in the backup.
+    ...             The restored volume is 4Gi over a 3Gi source snapshot, which
+    ...             exercises the size relaxation.  Verify the size and all four
+    ...             ranges, so the whole two-level chain is checked: source-only
+    ...             data arrives through two links, the clone's ranges through one,
+    ...             and the nested clone's own delta from the backup.
+    ...    Step 20  Delete the restored volumes innermost first.  They are ordinary
+    ...             linked clones, so restored-nested-vol pins restored-clone-vol
+    ...             which pins src-vol; the generic teardown deletes in arbitrary
+    ...             order and does not retry, so without this the webhook refuses
+    ...             whichever source it reaches first and leaves volumes behind for
+    ...             the next run to trip over.
 
     IF    '${DATA_ENGINE}' == 'v1'
         Skip    Linked-clone volumes require the V2 data engine
     END
 
     # ------------------------------------------------------------------
-    # Step 1: Create source V2 volume, write data (synced), take snapshot
+    # Step 1: Create source V2 volume, write data (synced), take snapshot.
+    #         The range at SRC_ONLY_OFFSET_MB is deliberately never rewritten
+    #         by any clone, so it is absent from every clone backup and can
+    #         only reappear in a restored volume through the link.
     # ------------------------------------------------------------------
     Given Create volume src-vol with    dataEngine=v2    numberOfReplicas=3    size=${SRC_VOLUME_SIZE_GI}Gi
     And Attach volume src-vol
     And Wait for volume src-vol healthy
     And Write ${WRITE_SIZE_MB} MB data to volume src-vol at offset 0
+    And Write ${WRITE_SIZE_MB} MB data to volume src-vol at offset ${SRC_ONLY_OFFSET_MB}
     And Create snapshot 0 of volume src-vol
 
     # ------------------------------------------------------------------
@@ -347,10 +382,14 @@ Test Linked Clone Volume Lifecycle
     And Verify linked clone volume clone-vol src replica names unchanged
 
     # ------------------------------------------------------------------
-    # Step 9a: Snapshot and backup operations on clone volume
+    # Step 9a: Snapshot and backup operations on clone volume.
+    #          The backup has to carry the linked-clone source with it, since
+    #          that is all Step 18 has left to reconstruct the link from once
+    #          the clone is deleted.
     # ------------------------------------------------------------------
     When Create snapshot 2 of volume clone-vol
     And Create backup 0 for volume clone-vol
+    Then Verify backup volume of volume clone-vol records linked clone source snapshot 0 of volume src-vol
 
     # ------------------------------------------------------------------
     # Step 9b: Adjust replica count on clone volume
@@ -412,18 +451,21 @@ Test Linked Clone Volume Lifecycle
     And Check ${WRITE_SIZE_MB} MB data of volume nested-clone-vol at offset ${CLONE_EXPAND_OFFSET_MB} matches volume clone-vol
 
     # ------------------------------------------------------------------
-    # Step 12a: Snapshot and backup for nested clone
-    # ------------------------------------------------------------------
-    When Create snapshot 0 of volume nested-clone-vol
-    And Create backup 0 for volume nested-clone-vol
-
-    # ------------------------------------------------------------------
-    # Step 12b: Expand nested clone to 4Gi; write to expanded region
+    # Step 12a: Expand nested clone to 4Gi; write to expanded region
     # ------------------------------------------------------------------
     When Expand volume nested-clone-vol to ${NESTED_EXPANDED_SIZE_GI}Gi
     Then Wait for volume nested-clone-vol size to be ${NESTED_EXPANDED_SIZE_GI}Gi
     And Write ${WRITE_SIZE_MB} MB data to volume nested-clone-vol at offset ${NESTED_EXPAND_OFFSET_MB}
     And Check ${WRITE_SIZE_MB} MB data of volume nested-clone-vol at offset ${NESTED_EXPAND_OFFSET_MB} is intact
+
+    # ------------------------------------------------------------------
+    # Step 12b: Snapshot and backup for nested clone.  Taken after the
+    #           expansion so the backup carries the 4Gi size and the data in
+    #           the expanded region, which is what lets Step 19 restore a
+    #           volume larger than the source snapshot it links to.
+    # ------------------------------------------------------------------
+    When Create snapshot 0 of volume nested-clone-vol
+    And Create backup 0 for volume nested-clone-vol
 
     # ------------------------------------------------------------------
     # Step 13: Crash the instance manager pod on the node all 3 volumes
@@ -477,6 +519,73 @@ Test Linked Clone Volume Lifecycle
 
     Then Verify volume src-vol still exists
     And Validate snapshot 0 is in volume src-vol snapshot list
+
+    # ------------------------------------------------------------------
+    # Step 18: Restore the clone volume's backup (Step 9a) under a new name.
+    #          No dataSource is passed, so the mutator has to recover the
+    #          linked-clone source from the BackupVolume.  clone-vol itself is
+    #          gone, so the checks compare against src-vol live for the range
+    #          only it wrote, and against recorded checksums for the ranges
+    #          clone-vol wrote.
+    # ------------------------------------------------------------------
+    When Create volume restored-clone-vol from backup 0 of volume clone-vol    dataEngine=v2
+    Then Verify volume restored-clone-vol is a linked clone of snapshot 0 of volume src-vol
+    And Wait for volume restored-clone-vol restoration from backup 0 of volume clone-vol completed
+    And Wait for volume restored-clone-vol size to be ${CLONE_EXPANDED_SIZE_GI}Gi
+
+    When Attach volume restored-clone-vol to same node as volume src-vol
+    And Wait for volume restored-clone-vol healthy
+    # Absent from the backup, so this range can only have arrived over the link.
+    Then Check ${WRITE_SIZE_MB} MB data of volume restored-clone-vol at offset ${SRC_ONLY_OFFSET_MB} matches volume src-vol
+    # Written by clone-vol, so these prove its delta restored on top of the link.
+    And Check ${WRITE_SIZE_MB} MB data of volume restored-clone-vol at offset 0 matches recorded data of volume clone-vol
+    And Check ${WRITE_SIZE_MB} MB data of volume restored-clone-vol at offset ${CLONE_EXPAND_OFFSET_MB} matches recorded data of volume clone-vol
+
+    # ------------------------------------------------------------------
+    # Step 19: Restore the nested clone's backup (Step 12b).  The source it
+    #          recorded, clone-vol, no longer exists, so a snapshot of the
+    #          Step 18 volume is named explicitly and has to win over the
+    #          recorded one.  The restored volume is 4Gi while that snapshot
+    #          is 3Gi, which exercises the size relaxation.
+    # ------------------------------------------------------------------
+    When Create snapshot 0 of volume restored-clone-vol
+    And Create linked clone restore volume restored-nested-vol from backup 0 of volume nested-clone-vol linked to snapshot 0 of volume restored-clone-vol    numberOfReplicas=1
+    Then Verify volume restored-nested-vol is a linked clone of snapshot 0 of volume restored-clone-vol
+    And Wait for volume restored-nested-vol restoration from backup 0 of volume nested-clone-vol completed
+    And Wait for volume restored-nested-vol size to be ${NESTED_EXPANDED_SIZE_GI}Gi
+
+    When Attach volume restored-nested-vol to same node as volume src-vol
+    And Wait for volume restored-nested-vol healthy
+    # Reaches back through two links: restored-nested -> restored-clone -> src-vol.
+    Then Check ${WRITE_SIZE_MB} MB data of volume restored-nested-vol at offset ${SRC_ONLY_OFFSET_MB} matches volume src-vol
+    # Inherited from clone-vol through the restored clone, absent from this backup.
+    And Check ${WRITE_SIZE_MB} MB data of volume restored-nested-vol at offset 0 matches recorded data of volume clone-vol
+    And Check ${WRITE_SIZE_MB} MB data of volume restored-nested-vol at offset ${CLONE_EXPAND_OFFSET_MB} matches recorded data of volume clone-vol
+    # The nested clone's own delta, which does come from the backup.
+    And Check ${WRITE_SIZE_MB} MB data of volume restored-nested-vol at offset ${NESTED_EXPAND_OFFSET_MB} matches recorded data of volume nested-clone-vol
+
+    # ------------------------------------------------------------------
+    # Step 20: Delete the restored volumes, innermost first.
+    #          They are ordinary linked clones, so they hold the same
+    #          references as any other clone: restored-nested-vol pins
+    #          restored-clone-vol, which in turn pins src-vol.  Without this
+    #          the generic teardown deletes in arbitrary order, the webhook
+    #          refuses whichever source it reaches first, and the volumes are
+    #          left behind for the next run to trip over.
+    # ------------------------------------------------------------------
+    When Detach volume restored-nested-vol
+    And Wait for volume restored-nested-vol detached
+    And Delete volume restored-nested-vol
+    And Wait for volume restored-nested-vol deleted
+
+    Then Verify volume restored-clone-vol still exists
+
+    When Detach volume restored-clone-vol
+    And Wait for volume restored-clone-vol detached
+    And Delete volume restored-clone-vol
+    And Wait for volume restored-clone-vol deleted
+
+    Then Verify volume src-vol still exists
 
 Test Linked Clone Volume Extra Replica Cleanup
     [Documentation]

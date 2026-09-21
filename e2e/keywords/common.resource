@@ -29,6 +29,7 @@ Library             ../libs/keywords/k8s_keywords.py
 Library             ../libs/keywords/secret_keywords.py
 Library             ../libs/keywords/host_keywords.py
 Library             ../libs/keywords/csi_volume_snapshot_keywords.py
+Library             ../libs/keywords/longhorn_deploy_keywords.py
 Library             DateTime
 Library             String
 Resource            variables.resource
@@ -112,14 +113,20 @@ Set disk path based on host provider and architecture
     END
 
 Enable v2 data engine and add block disks
+    [Arguments]    ${wait}=${True}
     set_disk_path_based_on_host_provider_and_architecture
+    ${RUN_V2_INTERRUPT_MODE}=    Get Environment Variable    RUN_V2_INTERRUPT_MODE    false
+    IF    "${RUN_V2_INTERRUPT_MODE}" == "true"
+        update_setting    data-engine-interrupt-mode-enabled    {"v2":"true"}
+    END
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
+    update_setting    data-engine-cpu-mask    {"v2": "0x1"}
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
     END
 
 Init worker node variables
@@ -127,6 +134,20 @@ Init worker node variables
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_0}    ${worker_nodes[0]}
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_1}    ${worker_nodes[1]}
     Run Keyword And Ignore Error    Set Test Variable    ${NODE_2}    ${worker_nodes[2]}
+
+Reinstall Longhorn if not installed
+    [Documentation]    Verify Longhorn is actually installed.
+    ...    This guards against a previous test case having failed midway
+    ...    through "Uninstall Longhorn", which would otherwise leave the
+    ...    cluster without Longhorn and cause all subsequent test cases to
+    ...    fail.
+    ${installed} =    is_longhorn_installed
+    IF    not ${installed}
+        Log To Console    Longhorn is not installed, likely due to a previous test failing during uninstallation. Reinstalling Longhorn ...
+        install_longhorn_system
+        ${longhorn_namespace} =    get_longhorn_namespace
+        wait_for_namespace_pods_running    ${longhorn_namespace}
+    END
 
 Set up test environment
     set_backupstore
@@ -137,6 +158,7 @@ Set up test environment
     END
 
 Cleanup test resources
+    Reinstall Longhorn if not installed
     set_backupstore
     FOR    ${powered_off_node}    IN    @{powered_off_nodes}
         Run keyword And Ignore Error    power_on_node_by_name    ${powered_off_node}
