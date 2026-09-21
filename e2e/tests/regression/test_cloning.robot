@@ -187,3 +187,65 @@ Test CSI Clone Respects Node And Disk Selector
     And Wait for deployment cloned-deploy pods stable
     And Wait for volume of persistentvolumeclaim cloned-pvc healthy
     And Check deployment cloned-deploy file data.txt checksum matches checksum source-pvc
+
+Test Expand Cloning Volume Should Fail
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14065
+    ...    Expanding a volume that is still copying data from its clone source has
+    ...    to be refused by the Longhorn HTTP API, and refused early.
+    ...
+    ...    VolumeManager.Expand does not only update the volume: for a PVC backed volume it first
+    ...    expands the PVC and then returns without ever updating Volume.Spec.Size, so that request
+    ...    never reaches the volume admission webhook. The webhook alone therefore cannot protect
+    ...    this path, and a request that gets through leaves the PVC asking for more space than the
+    ...    volume will ever have.
+    ...
+    ...    1. Create a source PVC, write data to it, so that cloning takes some time.
+    ...    2. Create a cloned PVC from it. CSI returns as soon as the volume leaves the creating
+    ...       state, so the clone is still copying at this point.
+    ...    3. Expand the cloned volume through the HTTP API and expect the request to be rejected
+    ...       for the clone specific reason.
+    ...    4. Verify the PVC is still asking for its original size, which is what proves the
+    ...       request was refused before the PVC was touched.
+    ...    5. Delete the cloned PVC and repeat, so the refusal is shown to hold for a freshly
+    ...       started clone every time rather than only for the first one.
+    ...    6. Finally let a clone finish and expand it, to show the refusal was transient.
+    [Tags]    clone    csi    expansion
+
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim source-pvc    sc_name=longhorn-test    storage_size=3GiB
+    And Wait for volume of persistentvolumeclaim source-pvc to be created
+    And Wait for volume of persistentvolumeclaim source-pvc detached
+    And Create pod source-pod using persistentvolumeclaim source-pvc
+    And Wait for pod source-pod running
+    And Wait for volume of persistentvolumeclaim source-pvc healthy
+    # Enough data that the copy is still running when the expansion is requested below.
+    And Write 256 MB data to file data.txt in pod source-pod
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc
+        ...    sc_name=longhorn-test
+        ...    storage_size=3GiB
+        And Wait for volume of persistentvolumeclaim cloned-pvc to be created
+        # The clone controller attaches the volume to copy into it. Waiting for that keeps the
+        # request below out of the transient attaching state, which would be refused for an
+        # unrelated reason and make the assertion on the error meaningless.
+        And Wait for volume of persistentvolumeclaim cloned-pvc attached
+
+        Then Expand volume of persistentvolumeclaim cloned-pvc to 4GiB should fail
+        ...    error_pattern=*has not finished copying data*
+        And Assert persistentvolumeclaim cloned-pvc requested size remains 3GiB for at least 5 seconds
+
+        # Drop the half copied clone and start over, so the next iteration exercises a clone that
+        # has just begun rather than one left over from the previous attempt.
+        And Delete persistentvolumeclaim cloned-pvc and wait for its volume to be deleted
+    END
+
+    When Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc
+    ...    sc_name=longhorn-test
+    ...    storage_size=3GiB
+    And Wait for volume of persistentvolumeclaim cloned-pvc to be created
+    And Wait for volume of persistentvolumeclaim cloned-pvc attached
+    And Wait for volume of persistentvolumeclaim cloned-pvc detached
+
+    Then Expand volume of persistentvolumeclaim cloned-pvc to 4GiB
+    And Assert persistentvolumeclaim cloned-pvc requested size remains 4GiB for at least 5 seconds

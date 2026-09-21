@@ -46,6 +46,7 @@ Test Volume Expansion When Node Disk Is Full
     When Write 3 GB data to volume 0
     And Sleep    30s    # Wait for node disk status to be updated
     Then Expand volume 0 to 8Gi should fail
+    ...    error_pattern=*does not have sufficient physical space for expansion*
     And Wait for volume 0 size to be 3Gi
     And Delete volume 0
 
