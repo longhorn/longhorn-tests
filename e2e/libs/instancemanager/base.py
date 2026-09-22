@@ -243,5 +243,13 @@ class Base:
 
     def get_instance_manager_pod_on_node(self, node_name, engine_type):
         label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
-        ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
-        return ims[0].metadata.name
+        for i in range(self.retry_count):
+            try:
+                ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
+                for pod in ims:
+                    if pod.status.phase == "Running":
+                        return pod.metadata.name
+            except Exception as e:
+                logging(f"Getting {engine_type} instance manager pod on node {node_name} error: {e} ... ({i})")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get running {engine_type} instance manager pod on node {node_name} after {self.retry_count} attempts"
