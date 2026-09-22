@@ -677,6 +677,66 @@ Test V2 Block Disk Recovery After Interrupted Provisioning
     And Write data to volume 0
     And Check volume 0 data is intact
 
+Test V2 Block Disk Health Data Collection For By-Id Symlink Path
+    [Documentation]    Verify that health data is collected for a v2 block disk (AIO driver)
+    ...    whose path is a /dev/disk/by-id/... symlink, instead of failing to resolve the
+    ...    symlink because the container lacks a /dev/disk directory in its own mount namespace.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12910
+    ...
+    ...    Manual test steps:
+    ...    1. Check /dev/disk/by-id/ device path on the node.
+    ...    2. Add a v2 block disk using the /dev/disk/by-id/... device path.
+    ...    3. Verify node.status.diskStatus[*].healthData is populated for the disk
+    ...       with healthStatus PASSED and other SMART/NVMe attributes.
+    ...    4. Create a volume on the disk, write and verify data integrity.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    ${by_id_path} =    Get by-id device path for ${DISK_PATH} on node 0
+    IF    "${by_id_path}" == "${EMPTY}"
+        Skip    No /dev/disk/by-id symlink found for ${DISK_PATH} on node 0
+    END
+
+    Given Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling on node 0
+    And Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node 0
+
+    TRY
+        When Add block disk block-disk-byid to node 0 with path ${by_id_path}
+        Then Wait for disk block-disk-byid on node 0 schedulable
+        And Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData}
+        ...    healthStatus
+
+        And Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData.block-disk-byid.healthStatus}
+        ...    PASSED
+
+        # randomly check some health data fields are present
+        And Run command and expect output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData.block-disk-byid.attributes[*].name}
+        ...    MediaErrors
+        And Run command and expect output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData.block-disk-byid.attributes[*].name}
+        ...    PercentageUsed
+
+        And Create volume 0 with    dataEngine=v2
+        And Attach volume 0 to node 0
+        And Wait for volume 0 healthy
+        And Write data to volume 0
+        Then Check volume 0 data is intact
+        And Detach volume 0
+        And Wait for volume 0 detached
+        And Delete volume 0
+    FINALLY
+        # restore the default block disk with the original device path for teardown
+        And Disable disk block-disk-byid scheduling on node 0
+        And Delete disk block-disk-byid on node 0
+        And Add block disk ${DEFAULT_BLOCK_DISK_NAME} to node 0 with path ${DISK_PATH}
+        And Wait for disk ${DEFAULT_BLOCK_DISK_NAME} on node 0 schedulable
+    END
+
 Test Create Default Disk On Labeled Nodes With V2 Data Engine
     [Tags]    setting    uninstall    block-disk
     [Documentation]    Verify that labeling and annotating a node with
