@@ -14,7 +14,6 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/storageclass.resource
-Resource    ../keywords/workload.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/engine_image.resource
 Resource    ../keywords/k8s.resource
@@ -35,6 +34,27 @@ Verify spdk_tgt cpu mask is ${mask} on all v2 instance manager pods
         Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for output
         ...    pgrep -af ^spdk_tgt
         ...    -m ${mask}
+    END
+
+Get host network interface command
+    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    aws
+    IF    '${HOST_PROVIDER}' == 'harvester'
+        ${cmd} =    Set Variable    cat /host/sys/class/net/enp1s0/queues/rx-*/rps_cpus 2>/dev/null || cat /host/sys/class/net/eth0/queues/rx-*/rps_cpus
+    ELSE
+        ${cmd} =    Set Variable    cat /host/sys/class/net/eth0/queues/rx-*/rps_cpus
+    END
+    RETURN    ${cmd}
+
+Verify host rps_cpus isolation on all worker nodes
+    [Arguments]    ${isolation_enabled}
+    ${cmd} =    Get host network interface command
+    ${worker_nodes} =    get_worker_nodes
+    FOR    ${node_name}    IN    @{worker_nodes}
+        ${im_pod} =    get_instance_manager_pod_on_node    ${node_name}    v2
+        ${expected_regex} =    get_expected_rps_cpus_regex    ${node_name}    ${isolation_enabled}
+        Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for output
+        ...    ${cmd} | sort -u
+        ...    ${expected_regex}
     END
 
 Verify TooManySnapshots Condition After Creating Snapshots
@@ -567,6 +587,38 @@ Test Data Engine Cpu Mask Setting
     And Wait for v2 instance manager pods restarted
     And Wait for longhorn ready
     And Verify spdk_tgt cpu mask is 0x3 on all v2 instance manager pods
+
+Test Data Engine Cpu Isolation Enabled Setting
+    [Documentation]    Verify that data-engine-cpu-isolation-enabled is enabled by default for v2 data engine,
+    ...                and host RPS mask steers RX processing away from SPDK reactor cores.
+    ...                Also verify toggling the setting updates host RPS bitmask according to CPU core rules.
+    ...
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/13724
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates on v2 data engine
+    END
+
+    # Step 1: Verify data-engine-cpu-isolation-enabled is enabled by default
+    Given Setting data-engine-cpu-isolation-enabled should be {"v2":"true"}
+
+    # Step 2: Verify host RPS on all worker nodes steers away from SPDK cores
+    And Verify host rps_cpus isolation on all worker nodes    isolation_enabled=${True}
+
+    # Step 3: Verify invalid values are rejected
+    Then Set setting data-engine-cpu-isolation-enabled to invalid will fail
+    And Set setting data-engine-cpu-isolation-enabled to {"v2":"invalid"} will fail
+
+    # Step 4: Disable CPU isolation and verify host RPS includes all online CPUs
+    When Setting data-engine-cpu-isolation-enabled is set to {"v2":"false"}
+    And Wait for v2 instance manager pods restarted
+    And Wait for longhorn ready
+    Then Verify host rps_cpus isolation on all worker nodes    isolation_enabled=${False}
+
+    # Step 5: Re-enable CPU isolation and verify host RPS steers away from SPDK cores again
+    When Setting data-engine-cpu-isolation-enabled is set to {"v2":"true"}
+    And Wait for v2 instance manager pods restarted
+    And Wait for longhorn ready
+    Then Verify host rps_cpus isolation on all worker nodes    isolation_enabled=${True}
 
 Test Longhorn UI PodDisruptionBudget
     [Tags]    setting    uninstall    helm
