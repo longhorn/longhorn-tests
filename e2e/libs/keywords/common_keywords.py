@@ -111,8 +111,23 @@ class common_keywords:
             time.sleep(retry_interval)
         assert False, f"'{output}' still found in command result: {res}"
 
-    def execute_command_in_pod(self, pod_name, namespace, cmd):
-        return pod_exec(pod_name, namespace, cmd)
+    def execute_command_in_pod(self, pod_name, namespace, cmd, non_empty=False):
+        if isinstance(non_empty, str):
+            non_empty = non_empty.lower() == 'true'
+
+        if not non_empty:
+            return pod_exec(pod_name, namespace, cmd)
+
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            try:
+                res = pod_exec(pod_name, namespace, cmd)
+                if res and res.strip():
+                    return res
+            except Exception as e:
+                logging(f"Execute command '{cmd}' in pod {pod_name} error: {e}")
+            time.sleep(retry_interval)
+        assert False, f"Failed to get non-empty output for command '{cmd}' in pod {pod_name} after {retry_count} attempts"
 
     def execute_command_in_pod_and_expect_output(self, pod_name, namespace, cmd, expected_output):
         res = pod_exec(pod_name, namespace, cmd)
