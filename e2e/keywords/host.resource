@@ -143,7 +143,8 @@ Run command on node ${node_id} and get output string
 SSH into node ${node_id} and run command
     [Arguments]    ${command}
     ${node_name} =    get_node_by_index    ${node_id}
-    ssh_exec_on_node    ${node_name}    ${command}
+    ${result} =    ssh_exec_on_node    ${node_name}    ${command}
+    RETURN    ${result}
 
 Set cpu-manager-policy to ${policy} on all worker nodes
     set_cpu_manager_policy_on_all_worker_nodes    ${policy}

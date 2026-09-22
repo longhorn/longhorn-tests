@@ -32,6 +32,27 @@ class volume_keywords:
         self.replica = Replica()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
+    def get_volume_mount_path(self, volume_name):
+        return self.volume.get_mount_path(volume_name)
+
+    def initialize_volume_filesystem(self, volume_name, node_name):
+        self.volume.initialize_filesystem(volume_name, node_name)
+
+    def mount_volume(self, volume_name, node_name):
+        self.volume.mount(volume_name, node_name)
+
+    def unmount_volume(self, volume_name, node_name,
+                       require_mounted: bool = True,
+                       remove_directory: bool = False):
+        self.volume.unmount(volume_name, node_name, require_mounted,
+                            remove_directory)
+
+    def write_volume_filesystem_data(self, volume_name, node_name):
+        return self.volume.write_filesystem_data(volume_name, node_name)
+
+    def get_volume_filesystem_checksum(self, volume_name, node_name):
+        return self.volume.get_filesystem_checksum(volume_name, node_name)
+
     def cleanup_volumes(self):
         volumes = self.volume.list(label_selector=f"{LABEL_TEST}={LABEL_TEST_VALUE}")
 

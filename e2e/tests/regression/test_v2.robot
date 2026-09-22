@@ -35,6 +35,29 @@ Cleanup engine frontend test on node ${node_id}
     Clean enginefrontend files on node ${node_id}
     Cleanup test resources
 
+Cleanup mounted volume test
+    ${volume_id} =    Get Variable Value    \${mounted_volume_id}    ${EMPTY}
+    ${node_id} =    Get Variable Value    \${mounted_node_id}    ${EMPTY}
+    TRY
+        IF    $volume_id != ''
+            Should Not Be Empty    ${node_id}
+            Unmount volume ${volume_id} on node ${node_id}
+            ...    require_mounted=${False}    remove_directory=${True}
+        END
+    FINALLY
+        Cleanup test resources
+    END
+
+Mark dm device of volume ${volume_id} on node ${node_id} for deferred removal
+    ${volume_name} =    Generate Name With Suffix    volume    ${volume_id}
+    ${mount_path} =    Get mount path of volume ${volume_id}
+    ${command} =    Catenate    SEPARATOR=${SPACE}
+    ...    "findmnt -rn --mountpoint ${mount_path} &&
+    ...    sudo -n dmsetup remove --deferred ${volume_name} &&
+    ...    sudo -n dmsetup info ${volume_name}"
+    ${dm_output} =    SSH into node ${node_id} and run command    ${command}
+    Should Contain    ${dm_output}    ACTIVE (DEFERRED REMOVE)
+
 *** Test Cases ***
 Test V2 Volume Basic
     [Tags]  coretest
@@ -1092,3 +1115,81 @@ Test V2 Sharded Volume Dynamic Provisioning With Expansion
     # write at least 1.5Gi of data (more than the original 1Gi size) to verify
     # the volume can actually hold data beyond its pre-expansion capacity
     When Write 1536 MB data to file data-after-expansion.txt in deployment 0
+
+Test V2 Volume Reattach With Stale Mount
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify a reattached v2 volume remains attached after a stale filesystem is unmounted.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach the volume, create a filesystem, mount it, and write data.
+    ...    2. Detach without unmounting, then reattach to the same node.
+    ...    3. Unmount the stale filesystem.
+    ...    4. Confirm the volume is attached to the same node, then stays attached for 60 seconds.
+    ...    5. Remount the reattached device and verify filesystem data integrity.
+    [Teardown]    Cleanup mounted volume test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    Set Test Variable    ${mounted_volume_id}    0
+    Set Test Variable    ${mounted_node_id}    0
+    And Initialize filesystem of volume 0 on node 0
+    And Mount volume 0 on node 0
+    And Write filesystem data to volume 0 on node 0
+
+    When Detach volume 0 from node 0
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Unmount volume 0 on node 0
+
+    Then Volume 0 should be attached to node 0
+    And Assert volume 0 remains attached for at least 60 seconds
+    And Mount volume 0 on node 0
+    And Check volume 0 filesystem data on node 0 is intact
+
+Test V2 Volume Reattach With Deferred Remove DM Device
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify the volume returns to healthy after reusing a dm device marked for deferred removal.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach a v2 volume, create a filesystem, mount it, and write data.
+    ...    2. Detach without unmounting the stale filesystem.
+    ...    3. Mark the dm device for deferred removal and confirm it is ACTIVE (DEFERRED REMOVE).
+    ...    4. Reattach to the same node and verify the instance manager reuse warning.
+    ...    5. Unmount the stale filesystem and wait for volume robustness to become unknown.
+    ...    6. Confirm the volume returns to attached and healthy on the same node.
+    ...    7. Remount the recovered device and verify filesystem data integrity.
+    [Teardown]    Cleanup mounted volume test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume deferred-remove with    dataEngine=v2
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    Set Test Variable    ${mounted_volume_id}    deferred-remove
+    Set Test Variable    ${mounted_node_id}    0
+    And Initialize filesystem of volume deferred-remove on node 0
+    And Mount volume deferred-remove on node 0
+    And Write filesystem data to volume deferred-remove on node 0
+
+    When Detach volume deferred-remove from node 0
+    And Wait for volume deferred-remove detached
+    And Mark dm device of volume deferred-remove on node 0 for deferred removal
+
+    And Get test start time
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    And Verify v2 instance manager log on node 0 contain Trying to reuse the linear dm device that has deferred-remove flag set after test start
+    And Unmount volume deferred-remove on node 0
+    Then Wait for volume deferred-remove unknown
+    And Wait for volume deferred-remove healthy
+    And Volume deferred-remove should be attached to node 0
+    And Mount volume deferred-remove on node 0
+    And Check volume deferred-remove filesystem data on node 0 is intact
