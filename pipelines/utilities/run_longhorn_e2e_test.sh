@@ -194,7 +194,20 @@ select(.kind == "Pod").spec.containers[0].volumeMounts += [{
   fi
 
   # wait longhorn tests to complete
-  while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
+  while true; do
+    KUBECTL_ERR_LOG=$(mktemp)
+    POD_STATE=$(kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>"${KUBECTL_ERR_LOG}")
+    if [[ -s "${KUBECTL_ERR_LOG}" ]]; then
+      # only show the last (summary) line instead of the full repeated retry spam
+      tail -n1 "${KUBECTL_ERR_LOG}"
+      sleep 10
+    fi
+    rm -f "${KUBECTL_ERR_LOG}"
+
+    if [[ "${POD_STATE}" == *"terminated"* ]]; then
+      break
+    fi
+
     kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test --follow --since=10s
   done
 
