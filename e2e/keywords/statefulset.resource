@@ -40,6 +40,10 @@ Scale up statefulset ${statefulset_id} to attach volume
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     scale_statefulset_up    ${statefulset_name}
 
+Delete statefulset ${statefulset_id}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    delete_statefulset    ${statefulset_name}
+
 Write ${size} MB data to file ${file_name} in statefulset ${statefulset_id}
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     write_workload_pod_random_data    ${statefulset_name}    ${size}    ${file_name}
