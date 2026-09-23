@@ -70,8 +70,6 @@ def test_encrypted_rwx_volume(client, core_api, statefulset, storage_class, cryp
 
     # Create storage class
     storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
-    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
-    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = namespace  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = namespace  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA

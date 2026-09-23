@@ -711,8 +711,6 @@ def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secr
     create_crypto_secret(secret)
 
     storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
-    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
-    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
@@ -764,8 +762,6 @@ def test_csi_encrypted_migratable_block_volume(client, core_api, storage_class, 
     create_crypto_secret(secret)
 
     storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
-    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
-    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
     storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
