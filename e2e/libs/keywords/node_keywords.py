@@ -57,6 +57,12 @@ class node_keywords:
     def set_node_disks_tags(self, node_name, *tags):
         self.node.set_node_disks_tags(node_name, tags)
 
+    def set_disk_tags(self, node_name, disk_name, *tags):
+        self.node.set_disk_tags(node_name, disk_name, tags)
+
+    def get_default_disk_name(self, node_name, data_engine="v1"):
+        return self.node.get_default_disk_name(node_name, data_engine)
+
     def label_node(self, node_name, label):
         self.node.label_node(node_name, label)
 
