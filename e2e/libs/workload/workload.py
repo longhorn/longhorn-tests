@@ -338,8 +338,8 @@ def check_workload_pod_data_checksum(expected_checksum, workload_name, file_name
                 message = f"Checked {pod_name} file {file_name} checksum failed. \
                     Got {file_path} checksum = {actual_checksum} Expected checksum = {expected_checksum}"
                 logging(message)
-                time.sleep(retry_count)
-                assert False, message
+                time.sleep(retry_interval)
+                continue
             return
         except Exception as e:
             logging(f"Checking pod {pod_name} data checksum failed with error: {e}")

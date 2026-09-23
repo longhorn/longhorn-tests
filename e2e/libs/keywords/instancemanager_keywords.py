@@ -19,6 +19,14 @@ class instancemanager_keywords:
         logging(f'Waiting for all instance manager running')
         self.instancemanager.wait_for_all_instance_manager_running()
 
+    def wait_for_all_instance_manager_running_with_default_image(self):
+        logging("Waiting for all instance manager running with default image")
+        self.instancemanager.wait_for_all_instance_manager_running_with_default_image()
+
+    def wait_for_all_instance_manager_upgrades_completed(self):
+        logging("Waiting for all instance manager upgrades completed")
+        self.instancemanager.wait_for_all_instance_manager_upgrades_completed()
+
     def wait_for_all_instance_manager_removed(self):
         logging(f'Waiting for all instance manager removed')
         self.instancemanager.wait_for_all_instance_manager_removed()
