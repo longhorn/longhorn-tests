@@ -1852,6 +1852,7 @@ def cleanup_client():
     scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
+    wait_for_all_nodes_disks_schedulable(client)
 
     enable_v2 = os.environ.get('RUN_V2_TEST')
     if enable_v2 == "true":
@@ -2662,6 +2663,105 @@ def wait_for_replica_failed(client, volname, replica_name,
         volname, replica_name, debug_replica_not_failed, debug_replica_in_im
     )
     assert failed, err_msg
+
+
+def wait_for_replicas_failed_at_cleared(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_replicas = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_replicas = []
+        missing_replica_names = set(replica_name_set)
+        failed_at_cleared = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+            missing_replica_names.discard(replica['name'])
+            debug_replicas.append(replica)
+            if replica['failedAt'] != "":
+                failed_at_cleared = False
+
+        if not missing_replica_names and failed_at_cleared:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f"Vol({volname}), replicas({replica_names}) failedAt not cleared. "
+        f"Missing: {missing_replica_names}, "
+        f"current replicas: "
+        f"{debug_replicas if debug_replicas else volume.replicas}"
+    )
+
+
+def wait_for_replicas_disks_schedulable(client, volname, replica_names):
+    replica_name_set = set(replica_names)
+    volume = None
+    debug_disks = []
+    missing_replica_names = replica_name_set
+
+    for _ in range(RETRY_COUNTS_LONG):
+        volume = client.by_id_volume(volname)
+        debug_disks = []
+        missing_replica_names = set(replica_name_set)
+        disks_schedulable = True
+
+        for replica in volume.replicas:
+            if replica['name'] not in replica_name_set:
+                continue
+
+            missing_replica_names.discard(replica['name'])
+            node_name = replica['hostId']
+            disk_id = replica['diskID']
+            disk_found = False
+            disk_schedulable = False
+
+            if node_name != "" and disk_id != "":
+                node = client.by_id_node(node_name)
+                for disk_name, disk in node.disks.items():
+                    if disk.get("diskUUID", "") != disk_id:
+                        continue
+
+                    disk_found = True
+                    conditions = disk.get("conditions", {})
+                    schedulable_condition = conditions.get("Schedulable", {})
+                    schedulable_status = \
+                        schedulable_condition.get("status", "")
+                    disk_schedulable = schedulable_status == "True"
+                    debug_disks.append({
+                        "replica": replica['name'],
+                        "node": node_name,
+                        "disk": disk_name,
+                        "diskID": disk_id,
+                        "schedulable": schedulable_status,
+                    })
+                    break
+
+            if not disk_schedulable:
+                disks_schedulable = False
+                if not disk_found:
+                    debug_disks.append({
+                        "replica": replica['name'],
+                        "node": node_name,
+                        "diskID": disk_id,
+                        "disk": "",
+                        "schedulable": "",
+                    })
+
+        if not missing_replica_names and disks_schedulable:
+            return volume
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert False, (
+        f"Vol({volname}), replicas({replica_names}) disks are not "
+        f"schedulable. Missing: {missing_replica_names}, "
+        f"current disks: {debug_disks}"
+    )
 
 
 def wait_for_replica_crashed(client, volname, replica_name,

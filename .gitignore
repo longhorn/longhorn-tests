@@ -10,6 +10,7 @@ validationTestsJunit.xml
 
 # build files
 validate.done
+bin/
 
 # ignores all goland project folders and files
 .idea/
