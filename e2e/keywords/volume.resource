@@ -940,8 +940,13 @@ Expand volume ${volume_id} to ${size}
     expand_volume    ${volume_name}    ${size}
 
 Expand volume ${volume_id} to ${size} should fail
+    [Documentation]    ${error_pattern} defaults to a bare wildcard for backward compatibility,
+    ...    but callers should pass the message they actually expect. Any expansion failure
+    ...    satisfies a wildcard, including one caused by something other than the condition
+    ...    under test, which lets the test keep passing after it has stopped being meaningful.
+    [Arguments]    ${error_pattern}=*
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    Run Keyword And Expect Error    *    expand_volume    ${volume_name}    ${size}
+    Run Keyword And Expect Error    ${error_pattern}    expand_volume    ${volume_name}    ${size}
 
 Trim volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
