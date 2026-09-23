@@ -1,11 +1,14 @@
 from backupstore import Nfs, S3, Cifs
 
+import json
 import os
 
 from utility.utility import get_backupstore
 
 
 class backupstore_keywords:
+
+    DELETION_LOCK_NAME = "lock-e2e-deletion"
 
     def __init__(self):
         backupstore = get_backupstore()
@@ -45,6 +48,18 @@ class backupstore_keywords:
         prefix = self.backupstore.get_backup_volume_prefix(volume_name)
         file_path = os.path.join(prefix, "backups" ,file_name)
         self.backupstore.create_file_in_backupstore(file_path)
+
+    def _deletion_lock_path(self, volume_name):
+        prefix = self.backupstore.get_backup_volume_prefix(volume_name)
+        return os.path.join(prefix, "locks", self.DELETION_LOCK_NAME + ".lck")
+
+    def create_backupstore_deletion_lock(self, volume_name):
+        # Type 2 is the backupstore deletion lock, which blocks the type 1 lock a restore acquires.
+        lock_data = json.dumps({"Name": self.DELETION_LOCK_NAME, "Type": 2, "Acquired": True})
+        self.backupstore.create_file_in_backupstore(self._deletion_lock_path(volume_name), lock_data)
+
+    def delete_backupstore_deletion_lock(self, volume_name):
+        self.backupstore.delete_file_in_backupstore(self._deletion_lock_path(volume_name))
 
     def delete_file_in_backups_folder(self, volume_name, file_name):
         prefix = self.backupstore.get_backup_volume_prefix(volume_name)
