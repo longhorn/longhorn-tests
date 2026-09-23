@@ -4,10 +4,10 @@ set -x
 
 source pipelines/utilities/longhorn_status.sh
 
-if [[ "${TF_VAR_network_stack}" == "ipv6" ]]; then
-  NAD_NAME="demo-fd00-168-0-0"
-else
+if [[ "${TF_VAR_network_stack}" == "ipv4" ]]; then
   NAD_NAME="demo-192-168-0-0"
+else
+  NAD_NAME="demo-fd00-168-0-0"
 fi
 
 echo "Using NAD: $NAD_NAME"

@@ -24,5 +24,5 @@ output "controlplane_public_ip" {
     aws_eip.aws_eip,
     aws_instance.aws_instance
   ]
-  value = var.network_stack == "ipv6" ? "[${aws_instance.aws_instance[0].ipv6_addresses[0]}]" : aws_eip.aws_eip[0].public_ip
+  value = contains(["ipv6", "dual-stack-ipv6-first"], var.network_stack) ? "[${aws_instance.aws_instance[0].ipv6_addresses[0]}]" : aws_eip.aws_eip[0].public_ip
 }
