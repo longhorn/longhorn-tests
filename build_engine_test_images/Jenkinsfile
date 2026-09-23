@@ -15,26 +15,30 @@ node {
     usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME'),
     usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')
   ]) {
-        stage('build') {      
-            
-            sh "build_engine_test_images/scripts/build.sh"
+        stage('build') {
+            try {
+              sh "build_engine_test_images/scripts/build.sh"
 
-            sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                   --env TF_VAR_build_engine_aws_access_key=${AWS_ACCESS_KEY} \
-                                   --env TF_VAR_build_engine_aws_secret_key=${AWS_SECRET_KEY} \
-                                   --env TF_VAR_docker_id="${DOCKER_USERNAME}" \
-                                   --env TF_VAR_docker_password="${DOCKER_PASSWORD}" \
-                                   --env TF_VAR_docker_repo=${DOCKER_REPO} \
-                                   --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
-                                   --env TF_VAR_commit_id=${COMMIT_ID} \
-                                   ${imageName}
-            """
+              sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                     --env TF_VAR_build_engine_aws_access_key=${AWS_ACCESS_KEY} \
+                                     --env TF_VAR_build_engine_aws_secret_key=${AWS_SECRET_KEY} \
+                                     --env TF_VAR_docker_id="${DOCKER_USERNAME}" \
+                                     --env TF_VAR_docker_password="${DOCKER_PASSWORD}" \
+                                     --env TF_VAR_docker_repo=${DOCKER_REPO} \
+                                     --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                                     --env TF_VAR_commit_id=${COMMIT_ID} \
+                                     ${imageName}
+              """
 
-            sh "docker exec -w ${TF_VAR_tf_workspace} ${JOB_BASE_NAME}-${BUILD_NUMBER} ./run.sh"
+              sh "docker exec -w ${TF_VAR_tf_workspace} ${JOB_BASE_NAME}-${BUILD_NUMBER} ./run.sh"
+            } finally {
+              sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER} || true"
+              sh "docker rm -f ${JOB_BASE_NAME}-${BUILD_NUMBER} || true"
             }
         }
     }
 
+}
 
 def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
   // build status of null means successful
