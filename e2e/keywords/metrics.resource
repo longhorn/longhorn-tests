@@ -20,6 +20,9 @@ Metric ${metric_name} value with label ${metric_label} should be ${expected_valu
 There should be no ${metric_name} metric
     wait_for_longhorn_metric_absent    metric_name=${metric_name}
 
+There should be ${metric_name} metric
+    wait_for_longhorn_metric_present    metric_name=${metric_name}
+
 Get Longhorn components resource usage
     get_longhorn_components_memory_cpu_usage
 

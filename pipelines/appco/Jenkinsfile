@@ -11,6 +11,17 @@ def WORKSPACE = "/src/longhorn-tests"
 def LONGHORN_INSTALL_METHOD = 'helm'
 def summary_msg = ""
 
+def APPCO_LONGHORN_COMPONENT_IMAGE_PATH = params.APPCO_LONGHORN_COMPONENT_IMAGE_PATH ? params.APPCO_LONGHORN_COMPONENT_IMAGE_PATH : ""
+def LONGHORN_COMPONENT_TAG = params.LONGHORN_COMPONENT_TAG ? params.LONGHORN_COMPONENT_TAG : ""
+def CSI_ATTACHER_TAG = params.CSI_ATTACHER_TAG ? params.CSI_ATTACHER_TAG : ""
+def CSI_PROVISIONER_TAG = params.CSI_PROVISIONER_TAG ? params.CSI_PROVISIONER_TAG : ""
+def CSI_RESIZER_TAG = params.CSI_RESIZER_TAG ? params.CSI_RESIZER_TAG : ""
+def CSI_SNAPSHOTTER_TAG = params.CSI_SNAPSHOTTER_TAG ? params.CSI_SNAPSHOTTER_TAG : ""
+def CSI_LIVENESSPROBE_TAG = params.CSI_LIVENESSPROBE_TAG ? params.CSI_LIVENESSPROBE_TAG : ""
+def CSI_REGISTRAR_TAG = params.CSI_REGISTRAR_TAG ? params.CSI_REGISTRAR_TAG : ""
+def SUPPORT_BUNDLE_TAG = params.SUPPORT_BUNDLE_TAG ? params.SUPPORT_BUNDLE_TAG : ""
+def USE_REVERSION_IMAGES = params.USE_REVERSION_IMAGES ? params.USE_REVERSION_IMAGES : false
+
 // define optional parameters
 def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
 
@@ -93,6 +104,7 @@ node {
                                        --env CSI_LIVENESSPROBE_TAG=${CSI_LIVENESSPROBE_TAG} \
                                        --env CSI_REGISTRAR_TAG=${CSI_REGISTRAR_TAG} \
                                        --env SUPPORT_BUNDLE_TAG=${SUPPORT_BUNDLE_TAG} \
+                                       --env USE_REVERSION_IMAGES=${USE_REVERSION_IMAGES} \
                                        --env APPCO_USERNAME=${APPCO_USERNAME} \
                                        --env APPCO_PASSWORD=${APPCO_PASSWORD} \
                                        --env JOB_NAME=${JOB_BASE_NAME}-${BUILD_NUMBER} \

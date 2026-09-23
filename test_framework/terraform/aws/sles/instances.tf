@@ -25,7 +25,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   }
 
   credit_specification {
-    cpu_credits = "unlimited"
+    cpu_credits = var.lh_aws_instance_cpu_credits
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
@@ -68,7 +68,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   } 
 
   credit_specification {
-    cpu_credits = "unlimited"
+    cpu_credits = var.lh_aws_instance_cpu_credits
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
