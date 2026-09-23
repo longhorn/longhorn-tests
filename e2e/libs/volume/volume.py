@@ -171,6 +171,9 @@ class Volume(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
+    def get_running_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_running_replica_name_on_node(volume_name, node_name)
+
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         return self.volume.wait_for_replica_count(volume_name, node_name, replica_count, running)
 
