@@ -97,8 +97,18 @@ class sharemanager_keywords:
         for i in range(self.retry_count):
             try:
                 sharemanager_pod = self.sharemanager.get(sharemanager_pod_name)
-                logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
-                if sharemanager_pod.status.phase == "Running":
+                node_name = sharemanager_pod.spec.node_name
+                deletion_timestamp = sharemanager_pod.metadata.deletion_timestamp
+                logging(f"Waiting for sharemanager for volume {name} running, currently "
+                        f"{sharemanager_pod.status.phase} on node {node_name} "
+                        f"(deletion_timestamp={deletion_timestamp}) ... ({i})")
+                # A pod stuck on a powered-off/unreachable node keeps reporting a stale
+                # status.phase of "Running" (kubelet can no longer update it), even after
+                # it has been marked for deletion (metadata.deletion_timestamp set, shown
+                # as "Terminating" by kubectl). Only treat the pod as truly running if it
+                # is not being terminated, otherwise callers may proceed before failover
+                # has actually completed.
+                if sharemanager_pod.status.phase == "Running" and deletion_timestamp is None:
                     return sharemanager_pod.metadata.creation_timestamp
             except Exception as e:
                 logging(f"Waiting for sharemanager for volume {name} running error: {e}")
