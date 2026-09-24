@@ -6,11 +6,13 @@ Test Tags    regression    rwx
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
+Resource    ../keywords/daemonset.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/host.resource
+Resource    ../keywords/io.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/longhorn.resource
@@ -22,8 +24,194 @@ Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}    30
+${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS}    300
+
+*** Keywords ***
+RWX Fast Failover IO Outage Duration
+    [Arguments]    ${nfs_options}
+    [Documentation]    Verify that when the node running the share-manager pod for a RWX
+    ...    volume goes down, IO only hangs until the share-manager pod is recreated on
+    ...    another node, and the total outage (including the NFS grace period) stays
+    ...    under ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS} seconds.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6205
+    ...
+    ...    Steps:
+    ...    1. Enable rwx-volume-fast-failover feature.
+    ...    2. Create a daemonset with a RWX volume, so there is always a pod running on
+    ...       a node other than the share-manager (volume) node. Start a background
+    ...       fsync writer on that surviving pod that tracks the max per-write latency.
+    ...    3. Power off the node running the share-manager. Wait for the share-manager
+    ...       pod to be recreated on another node.
+    ...    4. IO to the RWX volume hangs until the share-manager pod replacement is
+    ...       successfully created on another node.
+    ...    5. Outage, including grace period, should be less than a reasonable duration, i.e. the
+    ...       fsync writer must not observe a single write taking more than a reasonable duration.
+    Given Setting rwx-volume-fast-failover is set to true
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    nfsOptions=${nfs_options}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create daemonset 0 with persistentvolumeclaim 0
+    And Wait for volume of daemonset 0 healthy
+    And Wait for sharemanager pod of daemonset 0 running
+
+    ${volume_node} =    Get daemonset 0 volume node
+    ${pod_name} =    Start fsync writer on daemonset 0 pod not on node ${volume_node}
+
+    TRY
+        When Power off volume node of daemonset 0
+        Then Wait for sharemanager pod of daemonset 0 running
+        And Assert no IO stall on pod ${pod_name} greater than ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS} seconds
+    FINALLY
+        When Power on off nodes
+        Then Wait for volume of daemonset 0 healthy
+    END
+
+RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled
+    [Arguments]    ${nfs_options}
+    [Documentation]    Verify that when auto-delete-pod-when-volume-detached-unexpectedly
+    ...    is disabled, a RWX volume's share-manager pod still fails over correctly, and
+    ...    the other active daemonset pods (on nodes that were not powered off) do not
+    ...    run into errors.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6205
+    ...
+    ...    Steps:
+    ...    1. Enable rwx-volume-fast-failover feature.
+    ...    2. Create a daemonset with a RWX volume, and disable Automatically Delete
+    ...       Workload Pod when The Volume Is Detached Unexpectedly. Start a background
+    ...       fsync writer on a pod that will survive the upcoming node outage.
+    ...    3. Power off the node where share-manager is running. Once the share-manager
+    ...       pod is recreated on a different node, check:
+    ...       - The other active pods should not run into errors
+    ...       - Outage, including grace period, should be less than a reasonable duration
+    Given Setting rwx-volume-fast-failover is set to true
+    And Setting auto-delete-pod-when-volume-detached-unexpectedly is set to false
+    And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    nfsOptions=${nfs_options}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test
+    And Create daemonset 0 with persistentvolumeclaim 0
+    And Wait for volume of daemonset 0 healthy
+    And Wait for sharemanager pod of daemonset 0 running
+
+    ${volume_node} =    Get daemonset 0 volume node
+    ${pod_name} =    Start fsync writer on daemonset 0 pod not on node ${volume_node}
+
+    TRY
+        When Power off volume node of daemonset 0
+        Then Wait for sharemanager pod of daemonset 0 running
+        And Assert no IO stall on pod ${pod_name} greater than ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS} seconds
+    FINALLY
+        When Power on off nodes
+        Then Wait for volume of daemonset 0 healthy
+    END
+
+RWX Fast Failover With Multiple Simultaneous Deployments
+    [Arguments]    ${nfs_options}
+    [Documentation]    Verify RWX fast failover behavior when many RWX volumes are in use
+    ...    simultaneously and only one worker node goes down.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/6205
+    ...
+    ...    Steps:
+    ...    1. Enable rwx-volume-fast-failover feature.
+    ...    2. Create 33 deployments with 3 replicas using a RWX volume each.
+    ...    3. Power off one of the nodes. That should cause about 1/3 of the pods
+    ...       (share-manager pods) to relocate.
+    ...    4. All affected share-manager pods should be recreated and become running again.
+    ...    5. Outage, including grace period, for all affected volumes should be less
+    ...       than ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS} seconds. This is verified by
+    ...       running background fsync writers on the affected deployments' pods before
+    ...       the outage, and asserting none of them observed a stalled write afterwards.
+    Given Setting rwx-volume-fast-failover is set to true
+    And Setting auto-delete-pod-when-volume-detached-unexpectedly is set to false
+    And Create storageclass longhorn-test with
+    ...    dataEngine=${DATA_ENGINE}
+    ...    nfsOptions=${nfs_options}
+    ...    numberOfReplicas=3
+
+    FOR    ${i}    IN RANGE    33
+        Create persistentvolumeclaim ${i}    volume_type=RWX    sc_name=longhorn-test    storage_size=512Mi
+        Create deployment ${i} with persistentvolumeclaim ${i}    replicaset=3
+    END
+
+    FOR    ${i}    IN RANGE    33
+        Wait for volume of deployment ${i} healthy
+    END
+
+    # Record which deployments are actually affected by the upcoming node outage,
+    # i.e. whose share manager is currently running on the node that will be powered off.
+    @{affected_deployment_ids} =    Create List
+    FOR    ${i}    IN RANGE    33
+        ${volume_node} =    Get deployment ${i} volume node
+        IF    '${volume_node}' == '${NODE_0}'
+            Append To List    ${affected_deployment_ids}    ${i}
+        END
+    END
+
+    # Start a background fsync writer, on a surviving pod, for every affected
+    # deployment before the outage begins.
+    &{fsync_writer_pods} =    Create Dictionary
+    FOR    ${i}    IN    @{affected_deployment_ids}
+        ${pod_name} =    Start fsync writer on deployment ${i} pod not on node ${NODE_0}
+        Set To Dictionary    ${fsync_writer_pods}    ${i}    ${pod_name}
+    END
+
+    TRY
+        When Power off node 0
+        # Every affected deployment's share manager pod should be recreated on a
+        # remaining node and become running again.
+        FOR    ${i}    IN    @{affected_deployment_ids}
+            Then Wait for sharemanager pod of deployment ${i} running
+        END
+
+        # None of the affected deployments' fsync writers should have observed a
+        # write stalled for longer than the outage threshold.
+        FOR    ${i}    IN    @{affected_deployment_ids}
+            ${pod_name} =    Get From Dictionary    ${fsync_writer_pods}    ${i}
+            And Assert no IO stall on pod ${pod_name} greater than ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS} seconds
+        END
+    FINALLY
+        When Power on off nodes
+        FOR    ${i}    IN RANGE    33
+            And Wait for volume of deployment ${i} healthy
+        END
+    END
 
 *** Test Cases ***
+RWX Fast Failover IO Outage Duration With Soft NFS Mount Options
+    [Tags]    rwx-fast-failover
+    RWX Fast Failover IO Outage Duration    nfs_options=soft,timeo=250,retrans=5
+
+RWX Fast Failover IO Outage Duration With NFSv4 Mount Options
+    [Tags]    rwx-fast-failover
+    RWX Fast Failover IO Outage Duration    nfs_options=vers=4.0,noresvport,softerr,timeo=600,retrans=5
+
+RWX Fast Failover IO Outage Duration With Hard NFS Mount Options
+    [Tags]    rwx-fast-failover
+    RWX Fast Failover IO Outage Duration    nfs_options=hard,timeo=50,retrans=1
+
+RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled With Soft NFS Mount Options
+    [Tags]    rwx-fast-failover    daemonset
+    RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled    nfs_options=soft,timeo=250,retrans=5
+
+RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled With NFSv4 Mount Options
+    [Tags]    rwx-fast-failover    daemonset
+    RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled    nfs_options=vers=4.0,noresvport,softerr,timeo=600,retrans=5
+
+RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled With Hard NFS Mount Options
+    [Tags]    rwx-fast-failover    daemonset
+    RWX Fast Failover With DaemonSet And Auto Delete Pod Disabled    nfs_options=hard,timeo=50,retrans=1
+
+RWX Fast Failover With Multiple Simultaneous Deployments With Soft NFS Mount Options
+    [Tags]    rwx-fast-failover
+    RWX Fast Failover With Multiple Simultaneous Deployments    nfs_options=soft,timeo=250,retrans=5
+
+RWX Fast Failover With Multiple Simultaneous Deployments With NFSv4 Mount Options
+    [Tags]    rwx-fast-failover
+    RWX Fast Failover With Multiple Simultaneous Deployments    nfs_options=vers=4.0,noresvport,softerr,timeo=600,retrans=5
+
+RWX Fast Failover With Multiple Simultaneous Deployments With Hard NFS Mount Options
+    [Tags]    rwx-fast-failover
+    RWX Fast Failover With Multiple Simultaneous Deployments    nfs_options=hard,timeo=50,retrans=1
 
 Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     [Tags]    volume

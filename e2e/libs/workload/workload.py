@@ -26,6 +26,22 @@ def get_workload_pod_names(workload_name, namespace="default"):
     return pod_names
 
 
+def get_workload_pod_name_not_on_node(workload_name, node_name, namespace="default"):
+    """
+    Return the name of a workload pod that is NOT scheduled on node_name.
+    Useful for picking a pod that will survive powering off a specific node,
+    e.g. to keep an fsync writer running through a share-manager failover.
+    """
+    pods = get_workload_pods(workload_name, namespace=namespace)
+    assert len(pods) > 0, f"No pods found for workload {workload_name}"
+
+    for pod in pods:
+        if pod.spec.node_name != node_name:
+            return pod.metadata.name
+
+    assert False, f"All pods of workload {workload_name} are on node {node_name}"
+
+
 def get_workload_pods(workload_name, namespace="default", label_selector=""):
     if label_selector == "":
         label_selector = f"app={workload_name}"
