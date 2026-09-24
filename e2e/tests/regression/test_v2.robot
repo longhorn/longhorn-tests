@@ -497,7 +497,7 @@ V2 Replica Migration Should Not Cause IO Stall
     Then Delete replica of deployment 0 volume on volume node
     And Wait for volume of deployment 0 attached and degraded
     And Wait for volume of deployment 0 healthy
-    And Assert no IO stall greater than 3 seconds
+    And Assert no IO stall on deployment 0 greater than 3 seconds
 
 Test CPU Manager Policy And Data Engine Number Of CPU Cores
     [Documentation]    Verify that Longhorn v2 data engine respects the Kubernetes CPU manager policy.
