@@ -26,7 +26,7 @@ Test Setup    Set up test environment
 Test Teardown    Cleanup test resources without corrupting remote backupstore
 
 *** Keywords ***
-# Reset backup target from remote AWS S3 to local minio backup store before cleaning up resources
+# Reset backup target from remote AWS S3 to local RustFS backup store before cleaning up resources
 # to avoid deleting the existing backup on AWS S3
 Cleanup test resources without corrupting remote backupstore
     Set default backupstore

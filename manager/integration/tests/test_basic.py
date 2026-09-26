@@ -785,7 +785,7 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
 
     Setup:
 
-    1. Setup minio as S3 backupstore
+    1. Setup RustFS as S3 backupstore
 
     Steps:
 
@@ -1242,7 +1242,7 @@ def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
     does not stop us from listing all the other backup volumes. Otherwise a
     single faulty backup can block the retrieval of all known backup volumes.
     Setup:
-    1. Setup minio as S3 backupstore
+    1. Setup RustFS as S3 backupstore
     Steps:
     1.  Create a volume(1,2) and attach to the current node
     2.  write some data to volume(1,2)
@@ -1332,7 +1332,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
 
     Setup:
 
-    1. Setup minio as S3 backupstore
+    1. Setup RustFS as S3 backupstore
     2. Cleanup backupstore
 
     Steps:
