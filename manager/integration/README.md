@@ -15,11 +15,11 @@ Requirement:
 6. Make sure `nfs-common` or equivalent has been installed on the node to allow the NFS client to work.
 
 Run the test:
-1. Deploy all backupstore servers(including `NFS` server and `Minio` as s3 server `CIFS` and `Azurite` server) for test purposes.
+1. Deploy all backupstore servers(including `NFS` server and `RustFS` as s3 server `CIFS` and `Azurite` server) for test purposes.
    
    For Azurite, there are some manual steps need to be done after manifest deployed(https://github.com/longhorn/longhorn-tests/wiki/Setup-Azurite-Backupstore-For-Testing).
 ```
-kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml \
+kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/rustfs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml

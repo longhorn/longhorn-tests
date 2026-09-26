@@ -63,7 +63,7 @@ Disaster Recovery test cases
 
 *   One Kubernetes cluster.
     
-*   Backup Target set to internal Minio or NFS
+*   Backup Target set to internal RustFS or NFS
 
 | **Test Case** | **Test Instructions** | **Expected Results** |
 | --- | --- | --- |
