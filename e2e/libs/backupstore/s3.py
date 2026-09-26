@@ -8,8 +8,6 @@ import time
 from minio import Minio
 from minio.error import ResponseError
 
-from workload.workload import get_workload_pod_names
-
 from backupstore.base import Base
 
 from urllib.parse import urlparse
@@ -19,12 +17,12 @@ import utility.constant as constant
 
 class S3(Base):
 
-    MINIO_SERVER_PORT = 9000
+    S3_SERVER_PORT = 9000
     PORT_FORWARD = 39000
 
     def port_forward(self):
         return subprocess.Popen(
-            ["/usr/local/bin/kubectl", "port-forward", "service/minio-service", f"{self.PORT_FORWARD}:{self.MINIO_SERVER_PORT}"])
+            ["/usr/local/bin/kubectl", "port-forward", "service/rustfs-service", f"{self.PORT_FORWARD}:{self.S3_SERVER_PORT}"])
 
     def get_api_client(self, minio_secret_name):
         secret = self.core_api.read_namespaced_secret(name=minio_secret_name,
@@ -33,7 +31,6 @@ class S3(Base):
         base64_minio_access_key = secret.data['AWS_ACCESS_KEY_ID']
         base64_minio_secret_key = secret.data['AWS_SECRET_ACCESS_KEY']
         base64_minio_endpoint_url = secret.data['AWS_ENDPOINTS']
-        base64_minio_cert = secret.data['AWS_CERT']
 
         minio_access_key = \
             base64.b64decode(base64_minio_access_key).decode("utf-8")
@@ -42,20 +39,22 @@ class S3(Base):
 
         minio_endpoint_url = \
             base64.b64decode(base64_minio_endpoint_url).decode("utf-8")
+        secure = minio_endpoint_url.startswith("https://")
         minio_endpoint_url = f"localhost:{self.PORT_FORWARD}"
 
-        minio_cert_file_path = os.path.join(os.getcwd(), "minio_cert.crt")
-        with open(minio_cert_file_path, 'w') as minio_cert_file:
-            base64_minio_cert = \
-                base64.b64decode(base64_minio_cert).decode("utf-8")
-            minio_cert_file.write(base64_minio_cert)
-
-        os.environ["SSL_CERT_FILE"] = minio_cert_file_path
+        # The secret only carries AWS_CERT when the backupstore serves HTTPS.
+        base64_minio_cert = secret.data.get('AWS_CERT')
+        if secure and base64_minio_cert:
+            minio_cert_file_path = os.path.join(os.getcwd(), "minio_cert.crt")
+            with open(minio_cert_file_path, 'w') as minio_cert_file:
+                minio_cert_file.write(
+                    base64.b64decode(base64_minio_cert).decode("utf-8"))
+            os.environ["SSL_CERT_FILE"] = minio_cert_file_path
 
         return Minio(minio_endpoint_url,
                      access_key=minio_access_key,
                      secret_key=minio_secret_key,
-                     secure=True)
+                     secure=secure)
 
     def get_backupstore_bucket_name(self):
         backupstore = self.backup_target
@@ -234,11 +233,20 @@ class S3(Base):
     def create_dummy_backup(self, filename):
         logging(f"Creating dummy backup from file {filename}")
         self.extract_dummy_backup(filename)
-        backupstore_pod_name = get_workload_pod_names("longhorn-test-minio")[0]
-        cmd = ["kubectl", "exec", backupstore_pod_name, "--", "mkdir", "-p", "/storage/backupbucket/backupstore"]
-        subprocess_exec_cmd(cmd)
-        cmd = ["kubectl", "-c", "minio-helper", "cp", "./backupstore", f"{backupstore_pod_name}:/storage/backupbucket/backupstore"]
-        subprocess_exec_cmd(cmd)
+
+        # RustFS stores objects in its own on-disk format, so files must go through the S3 API.
+        process = self.port_forward()
+        try:
+            minio_api = self.get_api_client(self.secret)
+            bucket_name = self.get_backupstore_bucket_name()
+            for root, _, files in os.walk("./backupstore"):
+                for name in files:
+                    local_path = os.path.join(root, name)
+                    object_name = os.path.relpath(local_path, ".")
+                    minio_api.fput_object(bucket_name, object_name, local_path)
+        finally:
+            process.kill()
+
         cmd = ["rm", "-rf", "./backupstore"]
         subprocess_exec_cmd(cmd)
         # wait for backup sync by sleeping for the poll interval

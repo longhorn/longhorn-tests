@@ -321,7 +321,7 @@ Test Instance Manager AWS Role Annotation
 
     # AWS_IAM_ROLE_ARN: test-aws-iam-role-arn
     When Run command
-    ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} -p '{"data": {"AWS_IAM_ROLE_ARN": "dGVzdC1hd3MtaWFtLXJvbGUtYXJu"}}'
+    ...    kubectl patch secret rustfs-secret -n ${LONGHORN_NAMESPACE} -p '{"data": {"AWS_IAM_ROLE_ARN": "dGVzdC1hd3MtaWFtLXJvbGUtYXJu"}}'
     Then Run command and wait for output
     ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
     ...    "iam.amazonaws.com/role": "test-aws-iam-role-arn"
@@ -337,7 +337,7 @@ Test Instance Manager AWS Role Annotation
     And Create backup 2 for volume 0
 
     When Run command
-    ...    kubectl patch secret minio-secret -n ${LONGHORN_NAMESPACE} --type=json -p='[{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]'
+    ...    kubectl patch secret rustfs-secret -n ${LONGHORN_NAMESPACE} --type=json -p='[{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]'
     Then Run command until output is absent
     ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${DATA_ENGINE} -ojson | jq '.items[0].metadata.annotations'
     ...    iam.amazonaws.com/role
