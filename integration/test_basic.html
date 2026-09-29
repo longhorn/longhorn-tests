@@ -2030,7 +2030,7 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
 
     Setup:
 
-    1. Setup minio as S3 backupstore
+    1. Setup RustFS as S3 backupstore
 
     Steps:
 
@@ -2125,7 +2125,7 @@ The reason for this is that we don't yet know which blocks are required by
 the in progress backup, so blocks deletion could lead to a faulty backup.</p>
 <p>Setup:</p>
 <ol>
-<li>Setup minio as S3 backupstore</li>
+<li>Setup RustFS as S3 backupstore</li>
 </ol>
 <p>Steps:</p>
 <ol>
@@ -2685,7 +2685,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
 
     Setup:
 
-    1. Setup minio as S3 backupstore
+    1. Setup RustFS as S3 backupstore
     2. Cleanup backupstore
 
     Steps:
@@ -2868,7 +2868,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
 even if they are corrupt or in a bad state (missing volume.cfg).</p>
 <p>Setup:</p>
 <ol>
-<li>Setup minio as S3 backupstore</li>
+<li>Setup RustFS as S3 backupstore</li>
 <li>Cleanup backupstore</li>
 </ol>
 <p>Steps:</p>
@@ -2969,7 +2969,7 @@ def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
     does not stop us from listing all the other backup volumes. Otherwise a
     single faulty backup can block the retrieval of all known backup volumes.
     Setup:
-    1. Setup minio as S3 backupstore
+    1. Setup RustFS as S3 backupstore
     Steps:
     1.  Create a volume(1,2) and attach to the current node
     2.  write some data to volume(1,2)
@@ -3052,7 +3052,7 @@ We want to make sure that an error when listing a single backup volume
 does not stop us from listing all the other backup volumes. Otherwise a
 single faulty backup can block the retrieval of all known backup volumes.
 Setup:
-1. Setup minio as S3 backupstore
+1. Setup RustFS as S3 backupstore
 Steps:
 1.
 Create a volume(1,2) and attach to the current node

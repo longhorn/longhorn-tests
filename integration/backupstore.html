@@ -757,7 +757,6 @@ we can switch to removing the locks directly</p></div>
     base64_minio_access_key = secret.data[&#39;AWS_ACCESS_KEY_ID&#39;]
     base64_minio_secret_key = secret.data[&#39;AWS_SECRET_ACCESS_KEY&#39;]
     base64_minio_endpoint_url = secret.data[&#39;AWS_ENDPOINTS&#39;]
-    base64_minio_cert = secret.data[&#39;AWS_CERT&#39;]
 
     minio_access_key = \
         base64.b64decode(base64_minio_access_key).decode(&#34;utf-8&#34;)
@@ -766,20 +765,23 @@ we can switch to removing the locks directly</p></div>
 
     minio_endpoint_url = \
         base64.b64decode(base64_minio_endpoint_url).decode(&#34;utf-8&#34;)
-    minio_endpoint_url = minio_endpoint_url.replace(&#39;https://&#39;, &#39;&#39;)
+    secure = minio_endpoint_url.startswith(&#39;https://&#39;)
+    minio_endpoint_url = minio_endpoint_url.replace(&#39;https://&#39;, &#39;&#39;) \
+        .replace(&#39;http://&#39;, &#39;&#39;)
 
-    minio_cert_file_path = &#34;/tmp/minio_cert.crt&#34;
-    with open(minio_cert_file_path, &#39;w&#39;) as minio_cert_file:
-        base64_minio_cert = \
-            base64.b64decode(base64_minio_cert).decode(&#34;utf-8&#34;)
-        minio_cert_file.write(base64_minio_cert)
-
-    os.environ[&#34;SSL_CERT_FILE&#34;] = minio_cert_file_path
+    # The secret only carries AWS_CERT when the backupstore serves HTTPS.
+    base64_minio_cert = secret.data.get(&#39;AWS_CERT&#39;)
+    if secure and base64_minio_cert:
+        minio_cert_file_path = &#34;/tmp/minio_cert.crt&#34;
+        with open(minio_cert_file_path, &#39;w&#39;) as minio_cert_file:
+            minio_cert_file.write(
+                base64.b64decode(base64_minio_cert).decode(&#34;utf-8&#34;))
+        os.environ[&#34;SSL_CERT_FILE&#34;] = minio_cert_file_path
 
     return Minio(minio_endpoint_url,
                  access_key=minio_access_key,
                  secret_key=minio_secret_key,
-                 secure=True)</code></pre>
+                 secure=secure)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
