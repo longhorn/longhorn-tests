@@ -30,3 +30,12 @@ class SystemBackup(Base):
 
     def cleanup_system_restores(self):
         return self.system_backup.cleanup_system_restores()
+
+    def set_system_backup_status(self, backup_name, status):
+        return self.system_backup.set_system_backup_status(backup_name, status)
+
+    def check_system_backup_created_at_empty(self, backup_name):
+        self.system_backup.check_system_backup_created_at_empty(backup_name)
+
+    def wait_for_system_backup_deleted(self, backup_name):
+        self.system_backup.wait_for_system_backup_deleted(backup_name)
