@@ -102,3 +102,12 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert deleted, f"Cleaning up system restores failed: {system_restores}"
+
+    def set_system_backup_status(self, backup_name, status):
+        return CRD().set_system_backup_status(backup_name, status)
+
+    def check_system_backup_created_at_empty(self, backup_name):
+        CRD().check_system_backup_created_at_empty(backup_name)
+
+    def wait_for_system_backup_deleted(self, backup_name):
+        CRD().wait_for_system_backup_deleted(backup_name)
