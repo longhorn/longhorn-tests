@@ -50,9 +50,11 @@ class recurringjob_keywords:
     def check_recurringjob_work_for_volume(self, job_name, job_task, volume_name):
         self.recurringjob.check_recurringjob_work_for_volume(job_name, job_task, volume_name)
 
-    def create_system_backup_recurringjob(self, job_name, parameters={'volume-backup-policy': 'if-not-present'}):
+    def create_system_backup_recurringjob(self, job_name, parameters={'volume-backup-policy': 'if-not-present'},
+                                          cron="*/2 * * * *", retain=1):
         logging(f'Creating system-backup recurringjob {job_name} with parameters {parameters}')
-        self.recurringjob.create(job_name, task="system-backup", parameters=parameters)
+        self.recurringjob.create(job_name, task="system-backup", parameters=parameters,
+                                 cron=cron, retain=int(retain))
 
     def wait_for_recurringjob_created_systembackup_state(self, job_name, expected_state):
         logging(f'Waiting for recurringjob {job_name} created systembackup to reach state {expected_state}')
@@ -90,3 +92,46 @@ class recurringjob_keywords:
             time.sleep(retry_interval)
 
         assert False, f"No new pod of {job_name} is created after {start_time}"
+
+    def _wait_for_systembackups(self, job_name, condition, description):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        backups = []
+        for i in range(retry_count):
+            try:
+                backups = self.recurringjob.get_systembackups(job_name)
+                if condition(backups):
+                    return backups
+                logging(f"Waiting for recurringjob {job_name} {description}: {backups} ({i})")
+            except Exception as e:
+                logging(f"Waiting for recurringjob {job_name} {description} failed: {e}")
+            time.sleep(retry_interval)
+        assert False, f"Recurringjob {job_name} did not {description}: {backups}"
+
+    def wait_for_recurringjob_systembackups(self, job_name, count, state):
+        count = int(count)
+        backups = self._wait_for_systembackups(
+            job_name,
+            lambda items: len(items) == count and all(
+                backup.get('status', {}).get('state') == state for backup in items),
+            f"have {count} systembackups in {state} state")
+        return [backup['metadata']['name'] for backup in backups]
+
+    def wait_for_next_recurringjob_systembackup(self, job_name, *excluded_names):
+        backups = self._wait_for_systembackups(
+            job_name,
+            lambda items: bool(items) and items[-1]['metadata']['name'] not in excluded_names,
+            f"create a systembackup other than {excluded_names}")
+        return backups[-1]['metadata']['name']
+
+    def wait_for_recurringjob_retained_systembackups(self, job_name, *backup_names):
+        self._wait_for_systembackups(
+            job_name,
+            lambda items: sorted(backup['metadata']['name'] for backup in items) == sorted(backup_names),
+            f"retain exactly systembackups {backup_names}")
+
+    def wait_for_recurringjob_systembackup_state(self, job_name, backup_name, state):
+        self._wait_for_systembackups(
+            job_name,
+            lambda items: any(backup['metadata']['name'] == backup_name and
+                              backup.get('status', {}).get('state') == state for backup in items),
+            f"have systembackup {backup_name} in {state} state")
