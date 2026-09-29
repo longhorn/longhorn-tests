@@ -6,6 +6,7 @@ from longhorn_deploy.longhorn_flux import LonghornFlux
 from longhorn_deploy.longhorn_fleet import LonghornFleet
 from longhorn_deploy.longhorn_argocd import LonghornArgocd
 from utility.utility import logging
+from utility.utility import get_longhorn_namespace
 import utility.utility
 import os
 import subprocess
@@ -42,6 +43,10 @@ class LonghornDeploy(Base):
 
     def check_longhorn_crd_removed(self):
         return self.longhorn.check_longhorn_crd_removed()
+
+    def is_installed(self):
+        longhorn_namespace = get_longhorn_namespace()
+        return self.longhorn.is_installed(longhorn_namespace)
 
     def setup_longhorn_manager_networkpolicy(self):
         logging(f"Reconciling Longhorn manager test NetworkPolicy")

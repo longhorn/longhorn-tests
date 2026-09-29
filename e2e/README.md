@@ -13,11 +13,11 @@ curl -sSfL https://raw.githubusercontent.com/longhorn/longhorn/master/scripts/en
 
 ### Run the test
 
-1. Deploy all backupstore servers (including `NFS` server and `Minio` as s3 server, `CIFS` and `Azurite` server) for test purposes.
+1. Deploy all backupstore servers (including `NFS` server and `RustFS` as s3 server, `CIFS` and `Azurite` server) for test purposes.
 
    For Azurite, there are some manual steps need to be done after manifest deployed(https://github.com/longhorn/longhorn-tests/wiki/Setup-Azurite-Backupstore-For-Testing).
 ```
-kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml \
+kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/rustfs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/cifs-backupstore.yaml \
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/azurite-backupstore.yaml
@@ -53,7 +53,7 @@ export LONGHORN_CLIENT_URL=http://localhost:8080
 1. To run backup related test cases, export `LONGHORN_BACKUPSTORE` and `LONGHORN_BACKUPSTORE_POLL_INTERVAL` environment variables:
 
 ```
-export LONGHORN_BACKUPSTORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
+export LONGHORN_BACKUPSTORE='s3://backupbucket@us-east-1/backupstore$rustfs-secret'
 export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30s
 ```
 

@@ -1,5 +1,5 @@
 *** Settings ***
-Documentation    Appco Component Version Verification
+Documentation    Appco Test Cases
 
 Test Tags    appco
 
@@ -244,6 +244,140 @@ Check Component Version Result
     ...    ELSE
     ...      Log    ${report_string}
 
+Find Longhorn CRD Chart Branch
+    [Arguments]    ${chart_version}
+    [Documentation]    Search release-* branches in reverse lexical order and return
+    ...                the first branch containing the requested longhorn-crd chart version.
+    ${refs}=    Run Command    git ls-remote --heads https://github.com/rancher/charts.git 'refs/heads/release-*'
+    @{branches}=    Evaluate    sorted([line.split()[1].replace('refs/heads/', '', 1) for line in $refs.splitlines()], reverse=True)
+    ${tmpdir}=    Run Command    mktemp -d
+    ${tmpdir}=    Strip String    ${tmpdir}
+    TRY
+        FOR    ${branch}    IN    @{branches}
+            Log    Checking branch: ${branch}
+            Run Command    git clone --depth 1 --filter=blob:none --sparse --branch '${branch}' https://github.com/rancher/charts.git '${tmpdir}/charts'
+            ${path}=    Run Command    git -C '${tmpdir}/charts' ls-tree -d --name-only HEAD -- 'charts/longhorn-crd/${chart_version}'
+            ${path}=    Strip String    ${path}
+            IF    $path == 'charts/longhorn-crd/' + $chart_version
+                RETURN    ${branch}
+            END
+            Run Command    rm -rf '${tmpdir}/charts'
+        END
+        Fail    Chart ${chart_version} not found in any release-* branch.
+    FINALLY
+        Run Command    rm -rf '${tmpdir}'
+    END
+
+Download Longhorn CRD Chart
+    [Arguments]    ${branch}    ${chart_version}    ${workdir}
+    [Documentation]    Download the requested longhorn-crd chart from the given branch
+    ...                into ${workdir}/${chart_version} using Git sparse checkout.
+    ${tmpdir}=    Run Command    mktemp -d
+    ${tmpdir}=    Strip String    ${tmpdir}
+    TRY
+        Run Command    git clone --depth 1 --filter=blob:none --sparse --branch '${branch}' https://github.com/rancher/charts.git '${tmpdir}/charts'
+        Run Command    git -C '${tmpdir}/charts' sparse-checkout set 'charts/longhorn-crd/${chart_version}'
+        Run Command    mkdir -p '${workdir}/${chart_version}'
+        Run Command    cp -a '${tmpdir}/charts/charts/longhorn-crd/${chart_version}/.' '${workdir}/${chart_version}/'
+    FINALLY
+        Run Command    rm -rf '${tmpdir}'
+    END
+
+Patch Longhorn CRDs Resource Policy
+    [Arguments]    ${chart_dir}
+    [Documentation]    Annotate every CRD in ${chart_dir}/templates/crds.yaml with
+    ...                helm.sh/resource-policy=keep and upgrade longhorn-crd so Helm
+    ...                retains the CRDs on uninstall.
+    ...                Pass $$ (shell PID) as the backup-suffix to skip the interactive prompt.
+    Run Command    curl -fsSL 'https://documentation.suse.com/cloudnative/storage/1.11/en/_attachments/patch-resource-policy-annotation.sh' -o '${chart_dir}/patch.sh'
+    Run Command    bash '${chart_dir}/patch.sh' '${chart_dir}/templates/crds.yaml' $$
+    Run Command    rm -f '${chart_dir}/patch.sh'
+    Run Command    helm upgrade longhorn-crd -n ${LONGHORN_NAMESPACE} '${chart_dir}'
+
+Remove Longhorn CRD Helm Release
+    [Documentation]    Uninstall longhorn-crd after the patched chart has been applied.
+    Run Command    helm uninstall longhorn-crd -n ${LONGHORN_NAMESPACE}
+
+Verify Longhorn CRDs Retained
+    [Documentation]    Assert that longhorn.io CRDs still exist after the release was removed.
+    Run Command    kubectl get crd volumes.longhorn.io
+    ${crd_count}=    Run Command    kubectl get crd -o name | grep -c 'longhorn\.io'
+    ${crd_count}=    Strip String    ${crd_count}
+    Should Be True    int($crd_count) > 0
+    ...    msg=No longhorn.io CRDs found after helm uninstall — CRDs were not retained
+    Log    Verified: ${crd_count} longhorn.io CRDs retained after longhorn-crd release removal
+
+Helm Login AppCo
+    [Documentation]    Log into the SUSE Application Collection OCI registry by sourcing
+    ...                longhorn_helm_chart.sh and calling helm_login_appco.
+    ...                xtrace is suppressed around the call so credentials are never logged.
+    Run Command
+    ...    bash -c "{ set +x; } 2>/dev/null; source '${CURDIR}/../../pipelines/appco/scripts/longhorn_helm_chart.sh'; { set +x; } 2>/dev/null; helm_login_appco"
+
+Migrate Longhorn CRD Ownership
+    [Documentation]    Transfer CRD ownership from the removed longhorn-crd release to the
+    ...                longhorn release. Downloads and runs the SUSE migrate-crd-ownership.sh
+    ...                script which patches each CRD's labels and annotations via kubectl.
+    ${script}=    Run Command    mktemp --suffix=.sh
+    ${script}=    Strip String    ${script}
+    TRY
+        Run Command    curl -fsSL 'https://documentation.suse.com/cloudnative/storage/1.11/en/_attachments/migrate-crd-ownership.sh' -o '${script}'
+        Run Command    bash '${script}'
+    FINALLY
+        Run Command    rm -f '${script}'
+    END
+
+Verify Longhorn CRD Ownership Transferred
+    [Documentation]    Assert that longhorn.io CRDs are now owned by the longhorn Helm
+    ...                release, not longhorn-crd.
+    ${release_name}=    Run Command
+    ...    kubectl get crd volumes.longhorn.io -o jsonpath='{.metadata.annotations.meta\\.helm\\.sh/release-name}'
+
+    Should Be Equal    ${release_name}    longhorn
+    ...    msg=CRD ownership not transferred: release-name is '${release_name}', expected 'longhorn'
+
+Create AppCo Pull Secret
+    [Documentation]    Create the application-collection docker-registry secret in
+    ...                ${LONGHORN_NAMESPACE} so SUSE Storage can pull images from
+    ...                dp.apps.rancher.io. Sources create_appco_secret.sh which suppresses
+    ...                xtrace internally to avoid leaking credentials.
+    Run Command
+    ...    bash -c "source '${CURDIR}/../../pipelines/utilities/create_appco_secret.sh'; create_appco_secret"
+
+Upgrade To SUSE Storage
+    [Arguments]    ${longhorn_install_version}
+    [Documentation]    Upgrade the longhorn Helm release to SUSE Storage.
+    ...                Derives the target version from the +up suffix of ${longhorn_install_version}
+    ...                (e.g. 109.3.2+up1.11.3 → 1.11.3).
+    ${suse_storage_version}=    Fetch From Right    ${longhorn_install_version}    +up
+    Log    Upgrading to SUSE Storage ${suse_storage_version}
+    Run Command    helm upgrade longhorn oci://dp.apps.rancher.io/charts/suse-storage --namespace ${LONGHORN_NAMESPACE} --version ${suse_storage_version} --set global.imagePullSecrets="{application-collection}" --timeout 10m
+
+Verify SUSE Storage Upgrade
+    [Arguments]    ${longhorn_install_version}
+    [Documentation]    Verify the longhorn Helm release was successfully upgraded to SUSE Storage.
+    ...                Checks release status, chart name, and waits for manager rollout.
+    ${suse_storage_version}=    Fetch From Right    ${longhorn_install_version}    +up
+
+    # Helm release must be in deployed state
+    ${status}=    Run Command
+    ...    helm list -n ${LONGHORN_NAMESPACE} --filter '^longhorn$' -o json | jq -r '.[0].status'
+    ${status}=    Strip String    ${status}
+    Should Be Equal    ${status}    deployed
+    ...    msg=longhorn Helm release status is '${status}', expected 'deployed'
+
+    # Chart name must have flipped from longhorn-* to suse-storage-{version}
+    ${chart}=    Run Command
+    ...    helm list -n ${LONGHORN_NAMESPACE} --filter '^longhorn$' -o json | jq -r '.[0].chart'
+    ${chart}=    Strip String    ${chart}
+    Should Be Equal    ${chart}    suse-storage-${suse_storage_version}
+    ...    msg=Helm chart is '${chart}', expected 'suse-storage-${suse_storage_version}'
+
+    # Wait for all Longhorn manager pods to finish rolling out
+    Run Command
+    ...    kubectl -n ${LONGHORN_NAMESPACE} rollout status daemonset/longhorn-manager --timeout=300s
+    Log    Verified: SUSE Storage ${suse_storage_version} upgrade successful
+
 *** Test Cases ***
 Verify Appco Component Versions
     [Documentation]    Verify all Appco component versions match dep-versions specification
@@ -274,3 +408,54 @@ Verify Appco Component Versions
     And Check NFS Component Versions    ${versions}
 
     Then Check Component Version Result
+
+Test Rancher App Longhorn Migration to SUSE-Storage
+    [Documentation]    Verify that Longhorn installed via Rancher Apps Marketplace can be migrated
+    ...    to SUSE-Storage
+    ...
+    ...    Note: This test can only run on the longhorn-rancher-chart-test pipeline.
+    ...
+    ...    Pre-conditions (set by pipeline):
+    ...    - Longhorn is installed via Rancher Apps Marketplace
+    ...    - LONGHORN_INSTALL_VERSION is the Rancher chart version (e.g. 109.3.1+up1.11.2)
+    ...
+    ...    Phase 1 - Detach CRD Helm release while retaining CRDs:
+    ...    - Use LONGHORN_INSTALL_VERSION as the longhorn-crd chart version
+    ...    - Download matching chart from rancher/charts
+    ...    - Patch CRDs with helm.sh/resource-policy=keep
+    ...    - Remove longhorn-crd Helm release (CRDs are retained)
+    ...    - Verify CRDs survived the uninstall
+    ...
+    ...    Phase 2 - Transfer CRD ownership from longhorn-crd to longhorn:
+    ...    - Migrate Longhorn CRD ownership
+    ...    - Verify CRD ownership transferred
+    ...
+    ...    Phase 3 - Install SUSE-Storage and verify:
+    ...    - Login to AppCo Helm registry
+    ...    - Create AppCo pull secret
+    ...    - Upgrade to SUSE-Storage chart
+    ...    - Verify SUSE-Storage version and rollout
+    ...
+    ...    Ref:
+    ...    https://documentation.suse.com/cloudnative/storage/1.11/en/migration/migration.html#_migrating_longhorn_deployed_via_rancher_apps_marketplace_to_suse_storage
+    ${LONGHORN_INSTALL_VERSION}=    Get Environment Variable    LONGHORN_INSTALL_VERSION
+    ${workdir}=    Run Command    mktemp -d
+    ${workdir}=    Strip String    ${workdir}
+
+    # Phase 1: Remove longhorn-crd Helm release while keeping CRDs
+    ${chart_branch}=    Find Longhorn CRD Chart Branch    ${LONGHORN_INSTALL_VERSION}
+    When Download Longhorn CRD Chart            branch=${chart_branch}    chart_version=${LONGHORN_INSTALL_VERSION}    workdir=${workdir}
+    And Patch Longhorn CRDs Resource Policy     chart_dir=${workdir}/${LONGHORN_INSTALL_VERSION}
+    And Remove Longhorn CRD Helm Release
+    And Verify Longhorn CRDs Retained
+    And Run Command    rm -rf '${workdir}'
+
+    # Phase 2: Replace longhorn-crd with longhorn in Longhorn CRDs
+    And Migrate Longhorn CRD Ownership
+    And Verify Longhorn CRD Ownership Transferred
+
+    # Phase 3: Install SUSE-Storage Longhorn Helm chart and verify component versions
+    When Helm Login AppCo
+    And Create AppCo Pull Secret
+    And Upgrade To SUSE Storage    ${LONGHORN_INSTALL_VERSION}
+    And Verify SUSE Storage Upgrade    ${LONGHORN_INSTALL_VERSION}

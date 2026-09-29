@@ -59,6 +59,7 @@ class common_keywords:
 
     def execute_command_and_expect_output(self, cmd, expected_output):
         retry_count, retry_interval = get_retry_count_and_interval()
+        res = None
         for i in range(retry_count):
             try:
                 res = subprocess_exec_cmd(cmd)
@@ -66,6 +67,8 @@ class common_keywords:
             except Exception as e:
                 logging(f"Execute command {cmd} and expect output {expected_output} error: {e}")
             time.sleep(retry_interval)
+
+        assert res is not None, f"Failed to execute command {cmd} after {retry_count} retries"
 
         try:
             expected_pattern = re.compile(expected_output, re.DOTALL)

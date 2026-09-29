@@ -312,6 +312,7 @@ Test Volume Level Replica Rebuild Concurrent Sync Limit
     ...    msg=The 1st replica rebuilding time (${rebuild_time}s) should be faster than 2nd (${2nd_rebuild_time}s)
 
 Test Reusing Failed Replica After Node Back
+    [Tags]    coretest
     [Documentation]
     ...    Verify that when a Kubernetes node is removed and then added back
     ...    to the cluster, Longhorn reuses the existing failed replica on that
