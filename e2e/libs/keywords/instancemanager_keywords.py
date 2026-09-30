@@ -56,6 +56,12 @@ class instancemanager_keywords:
     def is_engine_process_present(self, node_name, engine_name):
         return self.instancemanager.is_engine_process_present(node_name, engine_name)
 
+    def create_orphaned_engine_instance(self, node_name, name=None):
+        return self.instancemanager.create_orphaned_engine_instance(node_name, name)
+
+    def create_orphaned_replica_instance(self, node_name, name=None):
+        return self.instancemanager.create_orphaned_replica_instance(node_name, name)
+
     def create_orphaned_replica(self, node_name, volume_name, engine_type):
         if engine_type == "v1":
             return self.instancemanager.create_orphaned_replica(node_name, volume_name)

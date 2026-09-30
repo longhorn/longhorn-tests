@@ -12,6 +12,16 @@ Create ${engine_type} orphaned replica for volume ${volume_id} on node ${node_id
     ${orphaned_replica_name} =    create_orphaned_replica    ${node_name}    ${volume_name}    ${engine_type}
     [Return]    ${orphaned_replica_name}
 
+Create orphaned engine instance on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${orphaned_engine_name} =    create_orphaned_engine_instance    ${node_name}
+    RETURN    ${orphaned_engine_name}
+
+Create orphaned replica instance on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${orphaned_replica_name} =    create_orphaned_replica_instance    ${node_name}
+    RETURN    ${orphaned_replica_name}
+
 Wait for orphan count to be ${orphan_count}
     wait_for_orphan_count    ${orphan_count}
 
