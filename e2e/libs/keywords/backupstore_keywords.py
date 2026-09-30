@@ -1,7 +1,10 @@
-from backupstore import Nfs, S3, Cifs
-
 import os
+import re
+from urllib.parse import urlparse
 
+from kubernetes import client as k8s_client
+
+from backupstore import Nfs, S3, Cifs
 from utility.utility import get_backupstore
 
 
@@ -71,3 +74,21 @@ class backupstore_keywords:
 
     def wait_for_backupstore_available(self):
         self.backupstore.wait_for_backupstore_available()
+
+    def resolve_nfs_backup_target_server_ip(self):
+        url = self.backupstore.get_backupstore_url()
+        assert url.startswith("nfs://"), f"Backup target is not NFS: {url}"
+        host = urlparse(url).hostname
+        assert host, f"Failed to parse NFS host from backup target URL: {url}"
+        if re.match(r'^\d+\.\d+\.\d+\.\d+$', host):
+            return host
+        parts = host.split('.')
+        assert len(parts) >= 2, f"Cannot parse K8s service name from NFS host '{host}'"
+        svc_name, namespace = parts[0], parts[1]
+        core_api = k8s_client.CoreV1Api()
+        ep = core_api.read_namespaced_endpoints(svc_name, namespace)
+        assert ep.subsets and ep.subsets[0].addresses, \
+            f"No ready endpoints for service {svc_name}.{namespace}"
+        ip = ep.subsets[0].addresses[0].ip
+        assert ip, f"Empty endpoint IP for service {svc_name}.{namespace}"
+        return ip

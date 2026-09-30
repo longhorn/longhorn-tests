@@ -8,11 +8,19 @@ from network.network import drop_tcp_connection_replies
 from network.network import get_pod_tcp_connections
 from network.network import limit_pod_traffic_to_ip
 from network.network import remove_pod_traffic_limit
+from network.network import inject_nfs_latency_on_node
+from network.network import cleanup_nfs_latency_on_node
+from network.network import verify_nfs_latency_on_node
 
+from kubernetes import client
+
+from node import Node
 from replica import Replica
 
+from utility import constant
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.utility import pod_exec
 
 from workload.pod import wait_for_pod_status
 
@@ -137,6 +145,69 @@ class network_keywords:
             context["source_sync_agent_port"] and
             connection["remote_ip"] == context["target_ip"]
         )
+
+    def apply_nfs_backup_target_latency(self, nfs_server_ip, latency_in_ms):
+        all_nodes = Node().list_node_names_by_role("all")
+        for node_name in all_nodes:
+            logging(f"Injecting {latency_in_ms}ms NFS latency toward {nfs_server_ip} on node {node_name}")
+            inject_nfs_latency_on_node(node_name, nfs_server_ip, int(latency_in_ms))
+        self._assert_nfs_latency_active(nfs_server_ip, all_nodes)
+
+    def remove_nfs_backup_target_latency(self, nfs_server_ip):
+        all_nodes = Node().list_node_names_by_role("all")
+        for node_name in all_nodes:
+            logging(f"Cleaning up NFS latency toward {nfs_server_ip} on node {node_name}")
+            cleanup_nfs_latency_on_node(node_name, nfs_server_ip)
+
+    def _assert_nfs_latency_active(self, nfs_server_ip, node_names):
+        for node_name in node_names:
+            active = verify_nfs_latency_on_node(node_name, nfs_server_ip)
+            assert active, (
+                f"tc filter for NFS latency toward {nfs_server_ip} not found on node {node_name}; "
+                f"latency may not be hitting NFS traffic"
+            )
+
+    def count_backup_inspect_processes(self):
+        core_api = client.CoreV1Api()
+        pods = core_api.list_namespaced_pod(
+            namespace=constant.LONGHORN_NAMESPACE,
+            label_selector=constant.LABEL_SELECTOR_LONGHORN_MANAGER
+        )
+        assert pods.items, "No longhorn-manager pods found; cannot count backup inspect processes"
+        total = 0
+        cmd = (
+            "count=0; "
+            "for f in /proc/[0-9]*/cmdline; do "
+            "  tr '\\0' ' ' < \"$f\" 2>/dev/null | grep -q 'longhorn backup inspect' "
+            "  && count=$((count+1)); "
+            "done; "
+            "echo $count"
+        )
+        for pod in pods.items:
+            result = pod_exec(
+                pod.metadata.name,
+                constant.LONGHORN_NAMESPACE,
+                cmd,
+                container="longhorn-manager"
+            )
+            # take the last token that is a digit (stderr may be mixed in)
+            digit = next(
+                (t for t in reversed(result.split()) if t.isdigit()),
+                None
+            )
+            assert digit is not None, \
+                f"Unexpected output counting backup inspect processes on {pod.metadata.name}: {result!r}"
+            count = int(digit)
+            logging(f"Backup inspect processes on pod {pod.metadata.name}: {count}")
+            total += count
+        logging(f"Total backup inspect processes across all longhorn-manager pods: {total}")
+        return total
+
+    def assert_backup_inspect_processes_not_accumulated(self, max_count=3):
+        count = self.count_backup_inspect_processes()
+        assert count <= int(max_count), \
+            f"Backup inspect processes accumulated ({count} > {max_count}): " \
+            f"soft NFS mount enforcement may not be working"
 
     @staticmethod
     def _connection_in_list(expected, connections):

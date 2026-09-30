@@ -14,7 +14,7 @@ class Nfs(Base):
 
     def __init__(self):
         super().__init__()
-        self.mount_nfs_backupstore()
+        self._mounted = False
 
     def mount_nfs_backupstore(self, mount_path="/mnt/nfs"):
         for i in range(self.retry_count):
@@ -40,6 +40,10 @@ class Nfs(Base):
         subprocess.check_output(cmd)
 
     def get_nfs_mount_point(self):
+        if not self._mounted:
+            self.mount_nfs_backupstore()
+            self._mounted = True
+
         nfs_backuptarget = self.backup_target
         nfs_url = urlparse(nfs_backuptarget).netloc + \
             urlparse(nfs_backuptarget).path
@@ -129,7 +133,9 @@ class Nfs(Base):
 
     def cleanup_backup_volumes(self):
         super().cleanup_backup_volumes()
-        self.umount_nfs_backupstore()
+        if self._mounted:
+            self.umount_nfs_backupstore()
+            self._mounted = False
 
     def create_dummy_backup(self, filename):
         logging(f"Creating dummy backup from file {filename}")
