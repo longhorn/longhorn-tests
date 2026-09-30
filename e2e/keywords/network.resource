@@ -10,6 +10,12 @@ Library             ../libs/keywords/engine_keywords.py
 
 
 *** Keywords ***
+Partition global manager ${pod_name} from API server
+    partition_global_manager_from_api_server    ${pod_name}
+
+Remove global manager API partition
+    cleanup_global_manager_api_partition
+
 Disconnect volume node network of ${workload_kind} ${workload_id} for ${duration} seconds
     [Documentation]    Disconnect network on the node where workload volume is attached.
     ...                Example: Disconnect volume node network of deployment 0 for 100 seconds

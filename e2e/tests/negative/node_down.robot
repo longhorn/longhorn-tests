@@ -63,6 +63,7 @@ Power Off Node And Longhorn Force Delete Terminating Statefulset Pod
 Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
     [Documentation]    Automation of the manual test case: Physical Node Down
     ...                https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/
+    ...                Verify the old Kubernetes VolumeAttachment is removed after manual pod force-deletion, before the node returns.
     [Arguments]    ${node_down_pod_deletion_policy}
     Given Setting default-replica-count is set to {"v1":"2","v2":"2"}
     And Setting node-down-pod-deletion-policy is set to ${node_down_pod_deletion_policy}
@@ -70,15 +71,18 @@ Power Off Node And Longhorn Not Force Delete Terminating Deployment Pod
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0
     And Write 100 MB data to file data in deployment 0
-    
+    And Record deployment 0 Kubernetes VolumeAttachment
+
     When Power off volume node of deployment 0
     And Sleep    300
     Then Check Longhorn node Ready state on power off node is False
     And Wait for deployment 0 pod stuck in Terminating on the original node
     And Wait for deployment 0 pod stuck In ContainerCreating on another node
 
+    Then Kubernetes volume attachment should exist
     When Force delete deployment 0 pod on the original node
-    Then Wait for deployment 0 pod is Running on another node
+    Then Wait for Kubernetes volume attachment deleted
+    And Wait for deployment 0 pod is Running on another node
     And Wait for deployment 0 pods stable
     And Check deployment 0 data in file data is intact
 
