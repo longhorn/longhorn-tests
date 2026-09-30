@@ -3,6 +3,7 @@ Documentation    Local data engine keywords
 
 Library    OperatingSystem
 Library    Collections
+Library    ../libs/keywords/instancemanager_keywords.py
 Library    ../libs/keywords/local_engine_keywords.py
 Resource    common.resource
 Resource    deployment.resource
@@ -350,3 +351,12 @@ Remove second local engine test disk
         delete_disk    ${LOCAL_ENGINE_SECOND_DISK_NAME}    ${LOCAL_ENGINE_NODE}
     END
     wait_for_local_engine_disk_removed    ${LOCAL_ENGINE_NODE}    ${LOCAL_ENGINE_SECOND_DISK_NAME}
+
+Check local instance manager is running on local engine test node
+    check_instance_manager_existence_on_node    ${LOCAL_ENGINE_NODE}    local    ${True}
+
+Check local instance manager is absent on local engine test node
+    check_instance_manager_existence_on_node    ${LOCAL_ENGINE_NODE}    local    ${False}
+
+Check local instance managers follow LVM disks on all worker nodes
+    wait_for_local_instance_managers_to_follow_lvm_disks

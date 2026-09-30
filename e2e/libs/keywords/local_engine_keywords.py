@@ -80,6 +80,9 @@ class local_engine_keywords:
         self.local_engine.wait_for_logical_volume_size(
             node_name, disk_name, replica_name, expected_size)
 
+    def wait_for_local_instance_managers_to_follow_lvm_disks(self):
+        self.local_engine.wait_for_instance_managers_to_follow_lvm_disks()
+
     def wait_for_local_engine_disk_removed(self, node_name, disk_name):
         self.local_engine.wait_for_lvm_disk_removed(node_name, disk_name)
 

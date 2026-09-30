@@ -183,7 +183,7 @@ Test Local Engine Node Reboot With Attached Thick Volume
 
     When Write 64 MB data to file reboot-data in deployment 0
     And Reboot volume node of deployment 0
-    And Wait for longhorn ready
+    And Check local instance managers follow LVM disks on all worker nodes
     Then Wait for volume of persistentvolumeclaim 0 healthy
     And Verify local engine CSI workload backend
     And Wait for deployment 0 pods stable
@@ -210,7 +210,7 @@ Test Local Engine Node Reboot With Attached Thin Volume
 
     When Write 64 MB data to file reboot-data in deployment 0
     And Reboot volume node of deployment 0
-    And Wait for longhorn ready
+    And Check local instance managers follow LVM disks on all worker nodes
     Then Wait for volume of persistentvolumeclaim 0 healthy
     And Verify local engine CSI workload backend
     And Wait for deployment 0 pods stable
@@ -222,3 +222,31 @@ Test Local Engine Node Reboot With Attached Thin Volume
 
     When Delete local engine CSI workload and verify backend cleanup
     And Delete and verify local engine test disk
+
+Test Local Engine Instance Manager Follows LVM Disk
+    [Tags]    instance-manager
+    [Documentation]    Verify a node runs a local instance manager only while it has an LVM disk.
+    ...    1. With the local engine enabled and no LVM disk, the test node has no local
+    ...       instance manager, and no worker node without an LVM disk has one.
+    ...    2. Adding the LVM disk creates the local instance manager and the disk
+    ...       initializes through it.
+    ...    3. A CSI volume works on that disk.
+    ...    4. Deleting the last LVM disk removes the local instance manager again.
+    Given Use local engine provisioning mode    thick
+    And Use local engine storage layout    per-disk
+    Then Check local instance manager is absent on local engine test node
+    And Check local instance managers follow LVM disks on all worker nodes
+
+    When Add and verify local engine test disk
+    Then Check local instance manager is running on local engine test node
+    And Check local instance managers follow LVM disks on all worker nodes
+
+    When Create local engine CSI workload
+    And Write 64 MB data to file instance-manager-data in deployment 0
+    Then Verify local engine CSI workload backend
+    And Check deployment 0 data in file instance-manager-data is intact
+
+    When Delete local engine CSI workload and verify backend cleanup
+    And Delete and verify local engine test disk
+    Then Check local instance manager is absent on local engine test node
+    And Check local instance managers follow LVM disks on all worker nodes

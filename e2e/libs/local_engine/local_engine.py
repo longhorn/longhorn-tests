@@ -6,11 +6,13 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.utils.quantity import parse_quantity
 
+from node import Node
 from utility.constant import LONGHORN_NAMESPACE
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import pod_exec
 from metrics.metrics import get_longhorn_metrics
+from workload.pod import list_pods
 
 
 class LocalEngine:
@@ -1101,6 +1103,46 @@ class LocalEngine:
         raise AssertionError(
             f"Thin pool for {disk_name}/{self.THIN_POOL_NAME} still exists: "
             f"{last_output}"
+        )
+
+    def wait_for_instance_managers_to_follow_lvm_disks(self):
+        """Wait until every worker node runs a local instance manager pod
+        exactly when its spec has an lvm disk."""
+        worker_nodes = Node().list_node_names_by_role("worker")
+        mismatches = []
+        for i in range(self.retry_count):
+            mismatches = []
+            for node_name in worker_nodes:
+                disks = self._get_node(node_name).get(
+                    "spec", {}).get("disks", {})
+                has_lvm_disk = any(
+                    disk.get("diskType") == "lvm" for disk in disks.values()
+                )
+                label_selector = (
+                    "longhorn.io/component=instance-manager,"
+                    "longhorn.io/data-engine=local,"
+                    f"longhorn.io/node={node_name}"
+                )
+                pods = list_pods(LONGHORN_NAMESPACE, label_selector)
+                if has_lvm_disk != (len(pods) > 0):
+                    mismatches.append(
+                        f"{node_name}: lvm disk={has_lvm_disk}, "
+                        f"local instance manager pods={len(pods)}"
+                    )
+            if not mismatches:
+                logging(
+                    "Local instance managers follow the LVM disks "
+                    "on all worker nodes"
+                )
+                return
+            logging(
+                "Waiting for local instance managers to follow the LVM "
+                f"disks ... ({i}): {mismatches}"
+            )
+            time.sleep(self.retry_interval)
+        raise AssertionError(
+            "Local instance managers do not follow the LVM disks: "
+            + "; ".join(mismatches)
         )
 
     def wait_for_lvm_disk_removed(self, node_name, disk_name):
