@@ -92,3 +92,8 @@ Assert sharemanager pod container image of ${workload_kind} ${workload_id} match
     ${spec_image} =    get_sharemanager_spec_image    ${volume_name}
     ${pod_image} =    get_sharemanager_pod_container_image    ${volume_name}
     Should Be Equal    ${pod_image}    ${spec_image}
+
+Wait for sharemanager pod of ${workload_kind} ${workload_id} to be running on node ${node_name}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_sharemanager_pod_running_on_node    ${volume_name}    ${node_name}
