@@ -8,6 +8,8 @@ Test Timeout    15 minutes
 
 Resource    ../../keywords/variables.resource
 Resource    ../../keywords/local_engine.resource
+Resource    ../../keywords/longhorn.resource
+Resource    ../../keywords/workload.resource
 
 Suite Setup       Set up local engine test
 Suite Teardown    Clean up local engine suite
@@ -163,3 +165,60 @@ Test Local Engine Volume Spec Validation
     And Create local engine volume 0 should be rejected    do not support encryption    encrypted=${True}
     And Create local engine volume 0 should be rejected    do not support backing images    backingImage=local-engine-no-such-image
     And Create local engine volume 0 should be rejected    blockdev    frontend=iscsi
+
+Test Local Engine Node Reboot With Attached Thick Volume
+    [Tags]    reboot    provisioning-mode    thick
+    # A node reboot adds the VM restart, k3s, and Longhorn coming back.
+    [Timeout]    30 minutes
+    [Documentation]    Verify an attached thick local volume survives a reboot of its node.
+    ...    1. Thick LVs are created with host autoactivation off, so the host leaves
+    ...       the LV inactive at boot and the instance manager must bring it back.
+    ...    2. After the reboot the volume returns to healthy on the same LV without a
+    ...       manual detach, and the workload's data is intact.
+    Given Use local engine provisioning mode    thick
+    And Use local engine storage layout    per-disk
+    And Add and verify local engine test disk
+    And Create local engine CSI workload
+    Then Verify local engine CSI workload backend
+
+    When Write 64 MB data to file reboot-data in deployment 0
+    And Reboot volume node of deployment 0
+    And Wait for longhorn ready
+    Then Wait for volume of persistentvolumeclaim 0 healthy
+    And Verify local engine CSI workload backend
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 data in file reboot-data is intact
+
+    When Write 64 MB data to file post-reboot-data in deployment 0
+    Then Check deployment 0 data in file post-reboot-data is intact
+    And Check deployment 0 data in file reboot-data is intact
+
+    When Delete local engine CSI workload and verify backend cleanup
+    And Delete and verify local engine test disk
+
+Test Local Engine Node Reboot With Attached Thin Volume
+    [Tags]    reboot    provisioning-mode    thin
+    [Timeout]    30 minutes
+    [Documentation]    Verify an attached thin local volume survives a reboot of its node.
+    ...    Whether the host activates thin LVs at boot depends on its LVM
+    ...    configuration; the instance manager must not rely on it.
+    Given Use local engine provisioning mode    thin
+    And Use local engine storage layout    per-disk
+    And Add and verify local engine test disk
+    And Create local engine CSI workload with provisioning mode    thin
+    Then Verify local engine CSI workload backend
+
+    When Write 64 MB data to file reboot-data in deployment 0
+    And Reboot volume node of deployment 0
+    And Wait for longhorn ready
+    Then Wait for volume of persistentvolumeclaim 0 healthy
+    And Verify local engine CSI workload backend
+    And Wait for deployment 0 pods stable
+    And Check deployment 0 data in file reboot-data is intact
+
+    When Write 64 MB data to file post-reboot-data in deployment 0
+    Then Check deployment 0 data in file post-reboot-data is intact
+    And Check deployment 0 data in file reboot-data is intact
+
+    When Delete local engine CSI workload and verify backend cleanup
+    And Delete and verify local engine test disk
