@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rustfs-secret
+  namespace: default
+type: Opaque
+data:
+  AWS_ACCESS_KEY_ID: bG9uZ2hvcm4tdGVzdC1hY2Nlc3Mta2V5 # longhorn-test-access-key
+  AWS_SECRET_ACCESS_KEY: bG9uZ2hvcm4tdGVzdC1zZWNyZXQta2V5 # longhorn-test-secret-key
+  AWS_ENDPOINTS: aHR0cHM6Ly9ydXN0ZnMtc2VydmljZS5kZWZhdWx0OjkwMDA= # https://rustfs-service.default:9000
+# Self-signed test certificate; SANs: localhost, rustfs-service.default(.svc), 127.0.0.1.
+# Use |- because the Longhorn webhook rejects a trailing newline in AWS_CERT.
+stringData:
+  AWS_CERT: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDjjCCAnagAwIBAgIUNL2ns1lOermMTl3r6seeb2v+Ua0wDQYJKoZIhvcNAQEL
+    BQAwGjEYMBYGA1UECgwPTG9uZ2hvcm4gLSBUZXN0MCAXDTI2MDkyNjEwNDc0MFoY
+    DzIxMjYwOTAyMTA0NzQwWjAaMRgwFgYDVQQKDA9Mb25naG9ybiAtIFRlc3QwggEi
+    MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC0QOH2FqJT80G3IxcxG673sSje
+    SmDT3rj7y6e+0fm5y/xW48m8+rSoZ5q3zr8ADCbx4+E/OcWQlFXokzwfHtp95AoD
+    fOewrYFZo7VcY0l+gQONIbWZOuwn1oNy4fbDQFucGa1KaEXAd0lwxx8iJheM5Udu
+    dWjc8862170lwWAuio106i3gq9dFeArKDz7D5ziBhC2bsIt0DsHPb7YbxU/bEfO/
+    M5LGgoziwnTkxEhW7REYL5mSrZ/e/GcOvTiLwRdeVA8Xir2HnT9ErKi8r59vdJdE
+    wwrTdOrAaZovRqxTJ/CRvGjdY54G5zaZe6j1jv+8LbFRr94TDalsV5Z4hCkJAgMB
+    AAGjgckwgcYwHQYDVR0OBBYEFIHtmxgO/foKyj/I/NaD69TjPBZOMB8GA1UdIwQY
+    MBaAFIHtmxgO/foKyj/I/NaD69TjPBZOME4GA1UdEQRHMEWCCWxvY2FsaG9zdIIW
+    cnVzdGZzLXNlcnZpY2UuZGVmYXVsdIIacnVzdGZzLXNlcnZpY2UuZGVmYXVsdC5z
+    dmOHBH8AAAEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAqQwEwYDVR0l
+    BAwwCgYIKwYBBQUHAwEwDQYJKoZIhvcNAQELBQADggEBAC/gQFk4uMoOT/695wX/
+    bajdIK6UzCVjuJJ1ei2taRnttccjbCeus2KY3kI3MmB0xoldWUe7LpE/KWw3QSHp
+    N4OuuNzL9zFzf6bS5Eiu8P/TqGH5xTKz+yPZKLYMOgqHmXVTdMMsQulHY90bQNCK
+    xG2X6lIo0d6a/v2HEjNRWmr4exbNtcI/TFQyUgUHDJLmeZSQnNd8c4pOkic4Gnfh
+    MKjs3M8AIRe4AvG4txQjPRdGTSyX4bS151PtMTtC6GKj/BwqdjNBD9GapMyOLqBc
+    8TaqH1mrbPNMNw8zO/qoOHc2GWoUhwxc4CPne/FPkhWlHhsKFN+41HKxSxAJV6wC
+    4T8=
+    -----END CERTIFICATE-----
+  AWS_CERT_KEY: |-
+    -----BEGIN PRIVATE KEY-----
+    MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC0QOH2FqJT80G3
+    IxcxG673sSjeSmDT3rj7y6e+0fm5y/xW48m8+rSoZ5q3zr8ADCbx4+E/OcWQlFXo
+    kzwfHtp95AoDfOewrYFZo7VcY0l+gQONIbWZOuwn1oNy4fbDQFucGa1KaEXAd0lw
+    xx8iJheM5UdudWjc8862170lwWAuio106i3gq9dFeArKDz7D5ziBhC2bsIt0DsHP
+    b7YbxU/bEfO/M5LGgoziwnTkxEhW7REYL5mSrZ/e/GcOvTiLwRdeVA8Xir2HnT9E
+    rKi8r59vdJdEwwrTdOrAaZovRqxTJ/CRvGjdY54G5zaZe6j1jv+8LbFRr94TDals
+    V5Z4hCkJAgMBAAECggEAAib2K7iIdqUkZznhiIISnD1+xeywbEcwAT2kwpgCOdAw
+    Mp9kpL9/kbUu+TvcNvVuL5wvb9BSRhAnWHANmzeEl1U2M2V15LulnDriqvg6g+qp
+    brF02CAGetFKX4BIMHufvGToF0fYcVxbQZ/3BLLcvB9us2hueJjmonM//GfrLJMQ
+    xGjBjF1vo9n+NbF/Wk+4AwviRKGMO+rQGK1alV9V3FBoSX03RVontpa8ctQ9HFf6
+    lB0TC5bWgniBcLHByQvuhO3w2IvBosBm5+4NKkCihz/O2aqVCkbXuW1EASACKrHk
+    yLgT7MZ5f2EacwkFpUvphcPw/AV9ehsxddRVDHeSAQKBgQDw/bzEZgPVm5TOd71i
+    /2gzFJ6bQNs0ev58gTJz1ctQtSeM0QY/vrKGzwc1Dr0/LXrOVOguQhm9tOP/uZwB
+    jsEwocUe86r9tY4oW3Q54tqTJbl5jv17Pthl6PaGOijL2+jHsaBqdi9DKMe1qcfq
+    aYKoHtK9pwsgFGlkqsjZEGXGgQKBgQC/esS8X6vEZCjmYcq6S+pi58c08l34w2T/
+    86IZ9YXHpWtExsDzUKEOLRpGr1ybX7mbOno9dZWmhV30G6Y16FFXfMagzxtlW/Fu
+    JzsE6pUpHZ5LMXWA55V8FXLv16sc7FlWzdVxxhzfvbOZGcBH2Tz78+ZnAF3pzVlT
+    9iJTzQHuiQKBgB6CcSiIJcogRUmSXTawURfOb3oGTvoo7BkFHkcN9QyFsrkgKWNe
+    mCl7AlWURR8/ecGvfCmHEs0ynn7cl8SWtxyaDmOpw6cVGic/1MoTT0q7xux9zteQ
+    kELuqG8747hTYfgOI9n2lmsxOX9lPDsQGouAQ3vhLwZjryggewcIDWqBAoGAVY/h
+    e59wnMh48kF+mnKz4NBbVtB6p1+AsVLH+7uXtRe48Dm0HMXJwhDrbeyMgC1tPe0K
+    lI4HeiqcSilUwz/1oRdzloYVYtyL7MIBAHhmgMHoawdFz30scg8PlhcUMk92uHAv
+    0bBKVLxrFZ3JKxHqy1c4fIxQatpE8VzKCBJSq6kCgYAyNg7CzGBig7htJ5I6HFCw
+    7LEEtlS8dyxO1/HmSmTUGy7Wz265UK0DhjswQgLSRFfuiCwLvaIsTxE3ZWpotWD9
+    rtaGxxsp6n1nwwTlcy5pbD6wsosTDAsXko1ckEsaGYjq6FSnRRKC/tukR8bSy7yD
+    0YhDEh2z07pJoomzpPb+XQ==
+    -----END PRIVATE KEY-----
+---
+# same secret for longhorn-system namespace
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rustfs-secret
+  namespace: longhorn-system
+type: Opaque
+data:
+  AWS_ACCESS_KEY_ID: bG9uZ2hvcm4tdGVzdC1hY2Nlc3Mta2V5 # longhorn-test-access-key
+  AWS_SECRET_ACCESS_KEY: bG9uZ2hvcm4tdGVzdC1zZWNyZXQta2V5 # longhorn-test-secret-key
+  AWS_ENDPOINTS: aHR0cHM6Ly9ydXN0ZnMtc2VydmljZS5kZWZhdWx0OjkwMDA= # https://rustfs-service.default:9000
+stringData:
+  AWS_CERT: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDjjCCAnagAwIBAgIUNL2ns1lOermMTl3r6seeb2v+Ua0wDQYJKoZIhvcNAQEL
+    BQAwGjEYMBYGA1UECgwPTG9uZ2hvcm4gLSBUZXN0MCAXDTI2MDkyNjEwNDc0MFoY
+    DzIxMjYwOTAyMTA0NzQwWjAaMRgwFgYDVQQKDA9Mb25naG9ybiAtIFRlc3QwggEi
+    MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC0QOH2FqJT80G3IxcxG673sSje
+    SmDT3rj7y6e+0fm5y/xW48m8+rSoZ5q3zr8ADCbx4+E/OcWQlFXokzwfHtp95AoD
+    fOewrYFZo7VcY0l+gQONIbWZOuwn1oNy4fbDQFucGa1KaEXAd0lwxx8iJheM5Udu
+    dWjc8862170lwWAuio106i3gq9dFeArKDz7D5ziBhC2bsIt0DsHPb7YbxU/bEfO/
+    M5LGgoziwnTkxEhW7REYL5mSrZ/e/GcOvTiLwRdeVA8Xir2HnT9ErKi8r59vdJdE
+    wwrTdOrAaZovRqxTJ/CRvGjdY54G5zaZe6j1jv+8LbFRr94TDalsV5Z4hCkJAgMB
+    AAGjgckwgcYwHQYDVR0OBBYEFIHtmxgO/foKyj/I/NaD69TjPBZOMB8GA1UdIwQY
+    MBaAFIHtmxgO/foKyj/I/NaD69TjPBZOME4GA1UdEQRHMEWCCWxvY2FsaG9zdIIW
+    cnVzdGZzLXNlcnZpY2UuZGVmYXVsdIIacnVzdGZzLXNlcnZpY2UuZGVmYXVsdC5z
+    dmOHBH8AAAEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAqQwEwYDVR0l
+    BAwwCgYIKwYBBQUHAwEwDQYJKoZIhvcNAQELBQADggEBAC/gQFk4uMoOT/695wX/
+    bajdIK6UzCVjuJJ1ei2taRnttccjbCeus2KY3kI3MmB0xoldWUe7LpE/KWw3QSHp
+    N4OuuNzL9zFzf6bS5Eiu8P/TqGH5xTKz+yPZKLYMOgqHmXVTdMMsQulHY90bQNCK
+    xG2X6lIo0d6a/v2HEjNRWmr4exbNtcI/TFQyUgUHDJLmeZSQnNd8c4pOkic4Gnfh
+    MKjs3M8AIRe4AvG4txQjPRdGTSyX4bS151PtMTtC6GKj/BwqdjNBD9GapMyOLqBc
+    8TaqH1mrbPNMNw8zO/qoOHc2GWoUhwxc4CPne/FPkhWlHhsKFN+41HKxSxAJV6wC
+    4T8=
+    -----END CERTIFICATE-----
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: longhorn-test-rustfs
+  namespace: default
+  labels:
+    app: longhorn-test-rustfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: longhorn-test-rustfs
+  template:
+    metadata:
+      labels:
+        app: longhorn-test-rustfs
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoExecute"
+      - key: "node-role.kubernetes.io/etcd"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/etcd"
+        operator: "Exists"
+        effect: "NoExecute"
+      volumes:
+      - name: rustfs-volume
+        emptyDir: {}
+      - name: rustfs-certificates
+        secret:
+          secretName: rustfs-secret
+          items:
+          - key: AWS_CERT
+            path: rustfs_cert.pem
+          - key: AWS_CERT_KEY
+            path: rustfs_key.pem
+      # RustFS has no bucket auto-provisioning; a directory at the volume root is a bucket.
+      initContainers:
+      - name: create-backupbucket
+        image: rustfs/rustfs:1.0.0
+        command: ["sh", "-c", "mkdir -p /data/backupbucket"]
+        volumeMounts:
+        - name: rustfs-volume
+          mountPath: "/data"
+      containers:
+      - name: rustfs
+        image: rustfs/rustfs:1.0.0
+        env:
+        - name: RUSTFS_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-secret
+              key: AWS_ACCESS_KEY_ID
+        - name: RUSTFS_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-secret
+              key: AWS_SECRET_ACCESS_KEY
+        - name: RUSTFS_VOLUMES
+          value: "/data"
+        - name: RUSTFS_ADDRESS
+          value: "0.0.0.0:9000"
+        - name: RUSTFS_CONSOLE_ENABLE
+          value: "false"
+        - name: RUSTFS_TLS_PATH
+          value: "/opt/tls"
+        ports:
+        - containerPort: 9000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9000
+            scheme: HTTPS
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        volumeMounts:
+        - name: rustfs-volume
+          mountPath: "/data"
+        - name: rustfs-certificates
+          mountPath: "/opt/tls"
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustfs-service
+  namespace: default
+spec:
+  selector:
+    app: longhorn-test-rustfs
+  ports:
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+  sessionAffinity: ClientIP

@@ -2,7 +2,7 @@
 Documentation    Negative Test Cases for v2 block disk device recovery
 ...    Ref: https://github.com/longhorn/longhorn/issues/13893
 
-Test Tags    negative    v2    node-disk-mgmt
+Test Tags    negative    v2    node-disk-mgmt    manual
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

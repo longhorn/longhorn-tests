@@ -3,7 +3,7 @@ Documentation    Negative Test Cases
 ...
 ...              Reference: https://github.com/longhorn/longhorn/issues/13687
 
-Test Tags    negative    volume    v1
+Test Tags    negative    volume    v1    manual
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

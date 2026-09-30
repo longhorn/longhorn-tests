@@ -102,8 +102,8 @@ install_longhorn(){
   get_longhorn_namespace
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_MANIFEST_PATH}"
   kubectl apply -f "${LONGHORN_MANIFEST_PATH}"
-  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
+  setup_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){
@@ -130,6 +130,12 @@ uninstall_longhorn(){
   UNINSTALL_VERSION="${1:-$LONGHORN_REPO_BRANCH}"
 
   get_longhorn_repo "${UNINSTALL_VERSION}"
+
+  # replace longhorn-manager image in uninstall manifest if custom image is specified
+  if [[ ! -z ${CUSTOM_LONGHORN_MANAGER_IMAGE} ]]; then
+    LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+    sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
+  fi
 
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl create -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"

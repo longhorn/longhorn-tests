@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Environment Test Cases
 
-Test Tags    regression    environment
+Test Tags    regression    environment    uninstall
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

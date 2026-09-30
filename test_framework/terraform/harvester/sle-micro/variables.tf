@@ -17,8 +17,8 @@ variable "lab_secret_key" {
 }
 
 variable "ssh_public_key_file_path" {
-  type        = string
-  default     = "~/.ssh/id_rsa.pub"
+  type    = string
+  default = "~/.ssh/id_rsa.pub"
 }
 
 variable "arch" {
@@ -28,8 +28,8 @@ variable "arch" {
 }
 
 variable "os_distro_version" {
-  type        = string
-  default     = "6.0"
+  type    = string
+  default = "6.0"
 }
 
 variable "k8s_distro_name" {
@@ -49,8 +49,8 @@ variable "k8s_distro_version" {
 }
 
 variable "registration_code" {
-  type    = string
-  sensitive   = true
+  type      = string
+  sensitive = true
 }
 
 variable "custom_ssh_public_key" {
@@ -60,11 +60,17 @@ variable "custom_ssh_public_key" {
 }
 
 variable "block_device_size_controlplane" {
-  type        = number
-  default     = 64
+  type    = number
+  default = 64
 }
 
 variable "block_device_size_worker" {
-  type        = number
-  default     = 40
+  type    = number
+  default = 40
+}
+
+variable "harvester_affinity_nodes" {
+  type        = list(string)
+  default     = []
+  description = "Harvester nodes where VMs can be scheduled (leave empty [] for default unconstrained scheduling)"
 }

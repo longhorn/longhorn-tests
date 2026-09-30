@@ -50,6 +50,17 @@ variable "aws_instance_type" {
   default     = "t2.xlarge"
 }
 
+variable "aws_instance_cpu_credits" {
+  type        = string
+  description = "CPU credit option for the instance, available values (unlimited, standard)"
+  default     = "unlimited"
+
+  validation {
+    condition     = contains(["unlimited", "standard"], var.aws_instance_cpu_credits)
+    error_message = "aws_instance_cpu_credits must be either \"unlimited\" or \"standard\"."
+  }
+}
+
 variable "aws_ssh_public_key_file_path" {
   type        = string
   default     = "~/.ssh/id_rsa.pub"

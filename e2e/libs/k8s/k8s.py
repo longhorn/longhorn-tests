@@ -1,5 +1,4 @@
 import time
-import asyncio
 import os
 import json
 import yaml
@@ -47,7 +46,7 @@ def start_kubelet(node_name):
 
     ssh_exec(node_name, f"sudo systemctl start {service_name}")
 
-async def restart_kubelet(node_name, downtime_in_sec=10):
+def restart_kubelet(node_name):
     k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
     node_type = "control-plane" if node_name in Node().list_node_names_by_role("control-plane") else "worker"
     if k8s_distro == "k3s":
@@ -55,18 +54,7 @@ async def restart_kubelet(node_name, downtime_in_sec=10):
     elif k8s_distro == "rke2":
         service_name = "rke2-agent" if node_type == "worker" else "rke2-server"
 
-    manifest = new_pod_manifest(
-        image=IMAGE_UBUNTU,
-        command=["/bin/bash"],
-        args=["-c", f"sleep 10 && systemctl stop {service_name} && sleep {downtime_in_sec} && systemctl start {service_name}"],
-        node_name=node_name
-    )
-    pod_name = manifest['metadata']['name']
-    create_pod(manifest, is_wait_for_pod_running=True)
-
-    await asyncio.sleep(downtime_in_sec)
-
-    delete_pod(pod_name)
+    ssh_exec(node_name, f"sudo systemctl restart {service_name}")
 
 def get_longhorn_node_condition_status(node_name, type):
     jsonpath = f"jsonpath={{.status.conditions[?(@.type=='{type}')].status}}"

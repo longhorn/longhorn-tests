@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation    Manual Test Cases
-Test Tags    negative    recurring-job
+
+Test Tags    negative    recurring-job    manual
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource

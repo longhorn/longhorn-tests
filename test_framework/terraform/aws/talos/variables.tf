@@ -71,6 +71,17 @@ variable "lh_aws_instance_type_worker" {
   default     = "t3.xlarge"
 }
 
+variable "lh_aws_instance_cpu_credits" {
+  type        = string
+  description = "CPU credit option for the instance, available values (unlimited, standard)"
+  default     = "unlimited"
+
+  validation {
+    condition     = contains(["unlimited", "standard"], var.lh_aws_instance_cpu_credits)
+    error_message = "lh_aws_instance_cpu_credits must be either \"unlimited\" or \"standard\"."
+  }
+}
+
 variable "block_device_size_controlplane" {
   type        = number
   default     = 64
