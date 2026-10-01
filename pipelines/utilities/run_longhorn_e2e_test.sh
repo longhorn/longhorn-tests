@@ -1,6 +1,6 @@
 source pipelines/utilities/appco_env.sh
 
-S3_BACKUP_STORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
+S3_BACKUP_STORE='s3://backupbucket@us-east-1/backupstore$rustfs-secret'
 NFS_BACKUP_STORE='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
 CIFS_BACKUP_STORE='cifs://longhorn-test-cifs-svc.default/backupstore$cifs-secret'
 AZURITE_BACKUP_STORE='azblob://longhorn-test-azurite@core.windows.net/$azblob-secret'

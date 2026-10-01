@@ -97,6 +97,16 @@ Delete persistentvolumeclaim ${claim_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     delete_persistentvolumeclaim    ${claim_name}
 
+Delete persistentvolumeclaim ${claim_id} and wait for its volume to be deleted
+    [Documentation]    Reads the volume name before deleting the claim, since the volume is only
+    ...    reachable through it. Waiting for the volume matters when this runs in a loop: the
+    ...    claim is gone long before its volume is, so without the wait each iteration stacks up
+    ...    another volume that is still being torn down.
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    delete_persistentvolumeclaim    ${claim_name}
+    wait_for_volume_deleted    ${volume_name}
+
 Delete persistentvolumeclaim for volume ${volume_id}
     ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_persistentvolumeclaim    ${claim_name}
@@ -118,6 +128,21 @@ Assert persistentvolumeclaim ${claim_id} is using storageclass ${storageclass_na
 Expand persistentvolumeclaim ${claim_id} size to ${size}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     expand_persistentvolumeclaim_size_to    ${claim_name}    ${size}
+
+Expand volume of persistentvolumeclaim ${claim_id} to ${size}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    expand_volume    ${volume_name}    ${size}
+
+Expand volume of persistentvolumeclaim ${claim_id} to ${size} should fail
+    [Documentation]    Expands through the Longhorn HTTP API rather than the PVC, so the
+    ...    request is served by VolumeManager.Expand. Asserting on the error keeps the test
+    ...    honest: any expansion failure would satisfy a bare wildcard, including one that has
+    ...    nothing to do with the state being exercised.
+    [Arguments]    ${error_pattern}=*
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    Run Keyword And Expect Error    ${error_pattern}    expand_volume    ${volume_name}    ${size}
 
 Wait for volume of persistentvolumeclaim ${claim_id} size to be ${size}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}

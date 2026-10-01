@@ -157,7 +157,6 @@ install_longhorn_custom(){
       --set image.csi.snapshotter.tag="${KUBERNETES_CSI_EXTERNAL_SNAPSHOTTER_TAG}" \
       --set image.csi.livenessProbe.tag="${KUBERNETES_CSI_LIVENESSPROBE_TAG}" \
       "${SECRET_ARGS[@]}"
-      setup_longhorn_manager_networkpolicy
   else
     if [[ -n "${APPCO_LONGHORN_COMPONENT_IMAGE_PATH}" ]]; then
       set_longhorn_registry_args
@@ -173,9 +172,9 @@ install_longhorn_custom(){
       "${REPOSITORY_ARGS[@]}" \
       "${TAG_ARGS[@]}" \
       "${SECRET_ARGS[@]}"
-      setup_longhorn_manager_networkpolicy
   fi
   wait_longhorn_status_running
+  setup_longhorn_manager_networkpolicy
 }
 
 install_longhorn_version() {
@@ -191,8 +190,8 @@ install_longhorn_version() {
     --namespace "${LONGHORN_NAMESPACE}" \
     "${SECRET_ARGS[@]}"
 
-  setup_longhorn_manager_networkpolicy
   wait_longhorn_status_running
+  setup_longhorn_manager_networkpolicy
 }
 
 install_longhorn_stable(){

@@ -26,11 +26,13 @@ class NodeExec:
             logging(f"Cleaning up pod {self.node_name}")
             delete_pod(self.node_name)
 
-    def issue_cmd(self, cmd):
+    def issue_cmd(self, cmd, image_name=None):
 
         self.cleanup()
 
-        if self._needs_fio(cmd):
+        if image_name is not None:
+            self.pod = self.launch_pod(image_name)
+        elif self._needs_fio(cmd):
             self.pod = self.launch_pod(FIO_IMAGE)
         else:
             self.pod = self.launch_pod()
