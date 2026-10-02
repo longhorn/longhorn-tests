@@ -648,3 +648,50 @@ Test Backup On Cluster With Drained Nodes
         And Write data ${i} 10 MB to volume 0
         Then Create backup ${i} for volume 0
     END
+
+Test Volume Detach During Backup Creation
+    [Documentation]    Verify that detaching a volume while a backup creation
+    ...    is still in progress does not affect another attached and healthy
+    ...    volume, and that data remains intact on both volumes after the
+    ...    detached volume is reattached.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14017
+    ...
+    ...    Test steps:
+    ...    1. Create and attach 2 volumes.
+    ...    2. Write data to both volumes.
+    ...    3. Create a backup for volume 0, and while the backup creation is
+    ...       still in progress, detach volume 0.
+    ...    4. Volume 1 should remain attached and healthy, and its data intact.
+    ...    5. Reattach volume 0, and verify its data is intact.
+    ...    6. Create another backup for volume 0.
+    ...    7. Restore a volume from the backup.
+    ...    8. Check the data integrity of the restored volume.
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Create volume 1 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Attach volume 1 to node 0
+    And Wait for volume 0 healthy
+    And Wait for volume 1 healthy
+    And Write data to volume 0
+    And Write data to volume 1
+
+    When Create backup 0 for volume 0    wait=${False}
+    And Wait for volume 0 backup to be in progress
+    And Detach volume 0
+    Then Wait for volume 0 detached
+
+    And Wait for volume 1 healthy
+    And Check volume 1 data is intact
+
+    When Attach volume 0
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is intact
+
+    When Create backup 1 for volume 0
+    And Create volume 2 from backup 1 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 2 restoration from backup 1 of volume 0 completed
+    And Wait for volume 2 detached
+    And Attach volume 2
+    And Wait for volume 2 healthy
+    Then Check volume 2 data is backup 1 of volume 0
