@@ -37,20 +37,33 @@ def get_node_metrics(node_name, metrics_name):
 def get_longhorn_metrics(node_name):
     core_api = client.CoreV1Api()
     pods = core_api.list_namespaced_pod(namespace=constant.LONGHORN_NAMESPACE, label_selector="app=longhorn-manager")
+    manager_pod = None
     for pod in pods.items:
         if pod.spec.node_name == node_name:
-            manager_ip = pod.status.pod_ip
+            manager_pod = pod
             break
 
-    assert manager_ip, f"No Longhorn manager pod found on node {node_name}"
+    assert manager_pod, f"No Longhorn manager pod found on node {node_name}"
+    manager_ip = manager_pod.status.pod_ip
 
     # Handle IPv6 addresses
     ip_obj = ipaddress.ip_address(manager_ip)
     if ip_obj.version == 6:
         manager_ip = f"[{manager_ip}]"
 
-    metrics = requests.get(f"http://{manager_ip}:9500/metrics").content
-    string_data = metrics.decode('utf-8')
+    try:
+        response = requests.get(
+            f"http://{manager_ip}:9500/metrics", timeout=5)
+        response.raise_for_status()
+        string_data = response.text
+    except requests.RequestException:
+        # Out-of-cluster runners may not route to pod IPs. Proxy through the
+        # Kubernetes API so the same metrics checks work locally and in CI.
+        string_data = core_api.connect_get_namespaced_pod_proxy_with_path(
+            f"{manager_pod.metadata.name}:9500",
+            constant.LONGHORN_NAMESPACE,
+            "metrics",
+        )
     result = list(text_string_to_metric_families(string_data))
     return result
 
