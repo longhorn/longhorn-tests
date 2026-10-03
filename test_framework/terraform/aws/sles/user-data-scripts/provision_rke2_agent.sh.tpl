@@ -57,7 +57,9 @@ if [[ "${extra_block_device}" != true ]]; then
   fi
 fi
 
-if [[ "${network_stack}" == "ipv6" ]]; then
+ipv6_addr=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+
+if [[ "${network_stack}" == "ipv6" || "${network_stack}" == dual-stack-* ]]; then
   echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
@@ -67,8 +69,19 @@ nameserver 8.8.8.8
 nameserver 1.1.1.1
 EOF
   chattr +i /etc/resolv.conf || true
-  rke2_agent_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
 fi
+
+case "${network_stack}" in
+  ipv6)
+    rke2_agent_public_ip="$ipv6_addr"
+    ;;
+  dual-stack-ipv4-first)
+    dual_stack_ip="$(hostname -I | awk '{print $1}'),$ipv6_addr"
+    ;;
+  dual-stack-ipv6-first)
+    dual_stack_ip="$ipv6_addr,$(hostname -I | awk '{print $1}')"
+    ;;
+esac
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 
@@ -85,6 +98,11 @@ EOF
 if [[ "${network_stack}" == "ipv6" ]]; then
   cat << EOF >> /etc/rancher/rke2/config.yaml
 node-ip: "$rke2_agent_public_ip"
+EOF
+elif [[ "${network_stack}" == dual-stack-* ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+node-ip: "$dual_stack_ip"
+node-external-ip: "$dual_stack_ip"
 EOF
 fi
 
