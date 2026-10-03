@@ -86,3 +86,23 @@ Wait for ${job_task} recurringjob ${job_id} started
 Wait until new pod for ${job_task} recurringjob ${job_id} is created
     ${job_name} =   generate_name_with_suffix    ${job_task}    ${job_id}
     wait_for_recurringjob_pod_create    ${job_name}
+
+Wait for recurringjob ${job_id} to have ${count} systembackups in ${state} state
+    ${job_name} =    generate_name_with_suffix    system-backup    ${job_id}
+    ${backup_names} =    wait_for_recurringjob_systembackups    ${job_name}    ${count}    ${state}
+    RETURN    ${backup_names}
+
+Wait for next systembackup created by recurringjob ${job_id}
+    [Arguments]    @{excluded_names}
+    ${job_name} =    generate_name_with_suffix    system-backup    ${job_id}
+    ${backup_name} =    wait_for_next_recurringjob_systembackup    ${job_name}    @{excluded_names}
+    RETURN    ${backup_name}
+
+Verify recurringjob ${job_id} retains systembackups
+    [Arguments]    @{backup_names}
+    ${job_name} =    generate_name_with_suffix    system-backup    ${job_id}
+    wait_for_recurringjob_retained_systembackups    ${job_name}    @{backup_names}
+
+Wait for recurringjob ${job_id} systembackup ${backup_name} to reach ${state} state
+    ${job_name} =    generate_name_with_suffix    system-backup    ${job_id}
+    wait_for_recurringjob_systembackup_state    ${job_name}    ${backup_name}    ${state}
