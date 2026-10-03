@@ -1,3 +1,6 @@
+import ast
+import time
+
 from persistentvolumeclaim import PersistentVolumeClaim
 from volume import Volume
 
@@ -26,9 +29,33 @@ class persistentvolumeclaim_keywords:
             if volume_name is not None:
                 self.volume.wait_for_volume_deleted(volume_name)
 
-    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volumeMode="Filesystem", wait_for_bound=True):
+    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn", storage_size="3GiB", dataSourceName=None, dataSourceKind=None, volumeMode="Filesystem", wait_for_bound=True, labels=None):
+        if labels is not None:
+            if isinstance(labels, str):
+                try:
+                    labels = ast.literal_eval(labels)
+                except (SyntaxError, ValueError) as e:
+                    raise AssertionError(f"labels must be a dict literal, got {labels!r}: {e}") from e
+            assert isinstance(labels, dict), f"labels must be a dict, got {type(labels).__name__}: {labels!r}"
         logging(f'Creating {volume_type} persistentvolumeclaim {name} with {sc_name} storageclass')
-        return self.claim.create(name, volume_type, sc_name, storage_size, dataSourceName, dataSourceKind, volumeMode, wait_for_bound)
+        return self.claim.create(name, volume_type, sc_name, storage_size, dataSourceName, dataSourceKind, volumeMode, wait_for_bound, labels=labels)
+
+    def set_persistentvolumeclaim_label(self, claim_name, label_key, label_value):
+        logging(f'Setting persistentvolumeclaim {claim_name} label {label_key}={label_value}')
+        self.claim.set_label(claim_name, label_key, label_value)
+
+    def check_persistentvolumeclaim_has_label(self, claim_name, label_key, label_value):
+        logging(f'Checking persistentvolumeclaim {claim_name} has label {label_key}={label_value}')
+        for i in range(self.claim.retry_count):
+            claim = self.claim.get(claim_name)
+            labels = claim.metadata.labels or {}
+            if labels.get(label_key) == label_value:
+                return
+            logging(f'Waiting for pvc {claim_name} label {label_key}={label_value}, current={labels} ... ({i})')
+            time.sleep(self.claim.retry_interval)
+        claim = self.claim.get(claim_name)
+        labels = claim.metadata.labels or {}
+        assert False, f"Failed to find label {label_key}={label_value} on PVC {claim_name}, current={labels}"
 
     def delete_persistentvolumeclaim(self, name):
         logging(f'Deleting persistentvolumeclaim {name}')

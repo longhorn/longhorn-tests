@@ -38,6 +38,42 @@ Test Recurring Job Assignment Using StorageClass
     And Check snapshot recurringjob snapshot-job work for volume of deployment 0
     And Check backup recurringjob backup-job work for volume of deployment 0
 
+Test Recurring Job Group Labels Sync From PVC Without Source Label
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13928
+    ...    1. Create a StorageClass and a PVC labeled with RecurringJob groups
+    ...       (default and rebuildable) but without recurring-job.longhorn.io/source=enabled.
+    ...    2. Create a deployment that consumes the PVC.
+    ...    3. Verify the Volume CR has both group labels.
+    ...    4. Verify Longhorn infers recurring-job.longhorn.io/source=enabled on the PVC.
+    ...    5. Add another group label on the bound PVC and verify it syncs to the Volume CR.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test    labels={"recurring-job-group.longhorn.io/default":"enabled","recurring-job-group.longhorn.io/rebuildable":"enabled"}
+    And Create deployment 0 with persistentvolumeclaim 0
+
+    Then Check volume of deployment 0 has recurringjob group default
+    And Check volume of deployment 0 has recurringjob group rebuildable
+    And Check persistentvolumeclaim 0 has label recurring-job.longhorn.io/source enabled
+
+    When Label persistentvolumeclaim 0 with recurring-job-group.longhorn.io/extra enabled
+    Then Check volume of deployment 0 has recurringjob group extra
+    And Check volume of deployment 0 has recurringjob group default
+    And Check volume of deployment 0 has recurringjob group rebuildable
+
+Test Recurring Job Group Labels Sync After PVC Is Bound
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13928
+    ...    1. Create a StorageClass and a PVC with no RecurringJob labels.
+    ...    2. Create a deployment that consumes the PVC.
+    ...    3. Label the already-bound PVC with recurring-job-group.longhorn.io/default=enabled
+    ...       without setting recurring-job.longhorn.io/source=enabled.
+    ...    4. Verify the Volume CR joins the default group and the source label is inferred.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    sc_name=longhorn-test
+    And Create deployment 0 with persistentvolumeclaim 0
+
+    When Label persistentvolumeclaim 0 with recurring-job-group.longhorn.io/default enabled
+    Then Check volume of deployment 0 has recurringjob group default
+    And Check persistentvolumeclaim 0 has label recurring-job.longhorn.io/source enabled
+
 Test Volume Deletion During Recurring Job Execution
     [Tags]    snapshot-purge
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/11925
