@@ -60,6 +60,16 @@ Set node ${node_id} disks tags
     ${node_name} =    get_node_by_index    ${node_id}
     set_node_disks_tags   ${node_name}    @{tags}
 
+Set disk ${disk_name} tags on node ${node_id}
+    [Arguments]    @{tags}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_disk_tags   ${node_name}    ${disk_name}    @{tags}
+
+Get default disk name on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_name} =    get_default_disk_name    ${node_name}    ${DATA_ENGINE}
+    RETURN    ${disk_name}
+
 Label node ${node_id} with ${label}
     ${node_name} =    get_node_by_index    ${node_id}
     label_node   ${node_name}    ${label}

@@ -5,6 +5,8 @@ Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/persistentvolumeclaim_keywords.py
 Library    ../libs/keywords/volume_keywords.py
+Library    ../libs/keywords/node_keywords.py
+Library    ../libs/keywords/replica_keywords.py
 
 *** Keywords ***
 Create persistentvolumeclaim ${claim_id}
@@ -22,6 +24,12 @@ Create persistentvolumeclaim ${cloned_claim_id} from persistentvolumeclaim ${sou
     ${cloned_claim_name} =    generate_name_with_suffix    claim    ${cloned_claim_id}
     ${source_claim_name} =    generate_name_with_suffix    claim    ${source_claim_id}
     create_persistentvolumeclaim    ${cloned_claim_name}    dataSourceName=${source_claim_name}    dataSourceKind=PersistentVolumeClaim    &{config}
+
+Create persistentvolumeclaim ${cloned_claim_id} from persistentvolumeclaim ${source_claim_id} without waiting for bound
+    [Arguments]    &{config}
+    ${cloned_claim_name} =    generate_name_with_suffix    claim    ${cloned_claim_id}
+    ${source_claim_name} =    generate_name_with_suffix    claim    ${source_claim_id}
+    create_persistentvolumeclaim    ${cloned_claim_name}    dataSourceName=${source_claim_name}    dataSourceKind=PersistentVolumeClaim    wait_for_bound=${FALSE}    &{config}
 
 Create persistentvolumeclaim ${claim_id} from csi volume snapshot ${csi_volume_snapshot_id}
     [Arguments]    &{config}
@@ -72,11 +80,25 @@ Volume of persistentvolumeclaim ${claim_id} should have running replicas on node
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_count    ${volume_name}    node_name=${node_name}
 
+Volume of persistentvolumeclaim ${claim_id} should have running replicas on node ${node_id} disk ${disk_name}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
+
 Volume of persistentvolumeclaim ${claim_id} should have no running replica on node ${node_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=0
+
+Volume of persistentvolumeclaim ${claim_id} should have no running replica on node ${node_id} disk ${disk_name}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0
 
 Wait for volume of persistentvolumeclaim ${claim_id} faulted
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
