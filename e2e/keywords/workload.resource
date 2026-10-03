@@ -167,6 +167,29 @@ Get volume name of ${workload_kind} ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     RETURN    ${volume_name}
 
+Get ${workload_kind} ${workload_id} pod node names
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${node_names} =    get_all_workload_node_names    ${workload_name}
+    RETURN    ${node_names}
+
+Get pod name of ${workload_kind} ${workload_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    get_workload_pod_name    ${workload_name}
+    RETURN    ${pod_name}
+
+Get pod names of ${workload_kind} ${workload_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_names} =    get_workload_pod_names    ${workload_name}
+    RETURN    ${pod_names}
+
+Get pod name of ${workload_kind} ${workload_id} not on node ${node_name}
+    [Documentation]    Return a pod of the workload that is not scheduled on ${node_name}.
+    ...    Useful for picking a pod that will survive powering off that node, e.g. to
+    ...    keep an fsync writer running through a share-manager failover.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    get_workload_pod_name_not_on_node    ${workload_name}    ${node_name}
+    RETURN    ${pod_name}
+
 Wait for volume of ${workload_kind} ${workload_id} degraded
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
