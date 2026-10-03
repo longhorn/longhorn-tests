@@ -35,6 +35,50 @@ Cleanup engine frontend test on node ${node_id}
     Clean enginefrontend files on node ${node_id}
     Cleanup test resources
 
+Mount volume ${volume_id} on node ${node_id} for stale mount test
+    ${volume_name} =    Generate Name With Suffix    volume    ${volume_id}
+    ${mount_path} =    Set Variable    /tmp/${volume_name}-stale-mount
+    Set Test Variable    ${stale_mount_path}    ${mount_path}
+    Set Test Variable    ${stale_mount_node_id}    ${node_id}
+    ${command} =    Catenate    SEPARATOR=${SPACE}
+    ...    "sudo -n mkfs.ext4 -F /dev/longhorn/${volume_name} &&
+    ...    sudo -n mkdir -p ${mount_path} &&
+    ...    sudo -n mount /dev/longhorn/${volume_name} ${mount_path} &&
+    ...    findmnt -rn --mountpoint ${mount_path}"
+    SSH into node ${node_id} and run command    ${command}
+
+Cleanup stale mount test
+    ${mount_path} =    Get Variable Value    \${stale_mount_path}    ${EMPTY}
+    ${node_id} =    Get Variable Value    \${stale_mount_node_id}    0
+    TRY
+        IF    $mount_path != ''
+            ${command} =    Catenate    SEPARATOR=${SPACE}
+            ...    "if findmnt -rn --mountpoint ${mount_path} >/dev/null; then
+            ...    sudo -n umount ${mount_path} || exit 1; fi;
+            ...    if [ -d ${mount_path} ]; then
+            ...    sudo -n rmdir ${mount_path} || exit 1; fi"
+            SSH into node ${node_id} and run command    ${command}
+        END
+    FINALLY
+        Cleanup test resources
+    END
+
+Unmount stale mount of volume ${volume_id} on node ${node_id}
+    ${command} =    Catenate    SEPARATOR=${SPACE}
+    ...    "findmnt -rn --mountpoint ${stale_mount_path} &&
+    ...    sudo -n umount ${stale_mount_path} &&
+    ...    ! findmnt -rn --mountpoint ${stale_mount_path}"
+    SSH into node ${node_id} and run command    ${command}
+
+Mark dm device of volume ${volume_id} on node ${node_id} for deferred removal
+    ${volume_name} =    Generate Name With Suffix    volume    ${volume_id}
+    ${command} =    Catenate    SEPARATOR=${SPACE}
+    ...    "findmnt -rn --mountpoint ${stale_mount_path} &&
+    ...    sudo -n dmsetup remove --deferred ${volume_name} &&
+    ...    sudo -n dmsetup info ${volume_name}"
+    ${dm_output} =    SSH into node ${node_id} and run command    ${command}
+    Should Contain    ${dm_output}    ACTIVE (DEFERRED REMOVE)
+
 *** Test Cases ***
 Test V2 Volume Basic
     [Tags]  coretest
@@ -1092,3 +1136,67 @@ Test V2 Sharded Volume Dynamic Provisioning With Expansion
     # write at least 1.5Gi of data (more than the original 1Gi size) to verify
     # the volume can actually hold data beyond its pre-expansion capacity
     When Write 1536 MB data to file data-after-expansion.txt in deployment 0
+
+Test V2 Volume Reattach With Stale Mount
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify a reattached v2 volume remains attached after a stale filesystem is unmounted.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach the volume, create a filesystem, and mount it on the node.
+    ...    2. Detach without unmounting, then reattach to the same node.
+    ...    3. Unmount the stale filesystem.
+    ...    4. Confirm the volume is attached to the same node, then stays attached for 60 seconds.
+    [Teardown]    Cleanup stale mount test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Mount volume 0 on node 0 for stale mount test
+
+    When Detach volume 0 from node 0
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Unmount stale mount of volume 0 on node 0
+
+    Then Volume 0 should be attached to node 0
+    And Assert volume 0 remains attached for at least 60 seconds
+
+Test V2 Volume Reattach With Deferred Remove DM Device
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify the volume returns to healthy after reusing a dm device marked for deferred removal.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach a v2 volume, create a filesystem, and mount it on the node.
+    ...    2. Detach without unmounting the stale filesystem.
+    ...    3. Mark the dm device for deferred removal and confirm it is ACTIVE (DEFERRED REMOVE).
+    ...    4. Reattach to the same node and verify the instance manager reuse warning.
+    ...    5. Unmount the stale filesystem and wait for volume robustness to become unknown.
+    ...    6. Confirm the volume returns to attached and healthy on the same node.
+    [Teardown]    Cleanup stale mount test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume deferred-remove with    dataEngine=v2
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    And Mount volume deferred-remove on node 0 for stale mount test
+
+    When Detach volume deferred-remove from node 0
+    And Wait for volume deferred-remove detached
+    And Mark dm device of volume deferred-remove on node 0 for deferred removal
+
+    And Get test start time
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    And Verify v2 instance manager log on node 0 contain Trying to reuse the linear dm device that has deferred-remove flag set after test start
+    And Unmount stale mount of volume deferred-remove on node 0
+    Then Wait for volume deferred-remove unknown
+    And Wait for volume deferred-remove healthy
+    And Volume deferred-remove should be attached to node 0
