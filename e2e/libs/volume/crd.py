@@ -420,6 +420,9 @@ class CRD(Base):
     def get_replica_name_on_node(self, volume_name, node_name):
         return Rest().get_replica_name_on_node(volume_name, node_name)
 
+    def get_running_replica_name_on_node(self, volume_name, node_name):
+        return Rest().get_running_replica_name_on_node(volume_name, node_name)
+
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         return Rest().wait_for_replica_count(volume_name, node_name, replica_count, running)
 
