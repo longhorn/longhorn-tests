@@ -16,6 +16,7 @@ Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/metrics.resource
+Resource    ../keywords/node.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -200,3 +201,109 @@ Test RWX Failover And Auto Salvage When Volume Is Faulted
     And Check statefulset 0 data in file data.bin is intact
     And Wait for sharemanager pod of statefulset 0 running
     And Check Longhorn components resource usage
+
+Test ShareManager NodeSelector Helm Chart Parameter
+    [Tags]    sharemanager    uninstall
+    [Documentation]    Verify that the persistence.shareManagerNodeSelector helm chart value
+    ...                is propagated to the default "longhorn" storage class, and that it
+    ...                causes the share manager pod to be scheduled only onto the labelled node.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/9324
+    ...
+    ...                Manual test steps:
+    ...                1. Install Longhorn via Helm with the following values:
+    ...                   persistence.shareManagerNodeSelector.enable=true
+    ...                   persistence.shareManagerNodeSelector.selector="storage:true"
+    ...                2. Check the setting is applied to the default storage class "longhorn":
+    ...                   parameters.shareManagerNodeSelector should be "storage:true"
+    ...                3. Label a node with storage=true
+    ...                4. Create a workload using RWX PVC
+    ...                5. Check share manager pod is running on the labelled node
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    This test only runs when LONGHORN_INSTALL_METHOD is helm
+    END
+
+    Given setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+
+    When Install Longhorn
+    ...    custom_cmd=yq -i '.persistence.shareManagerNodeSelector.enable = true | .persistence.shareManagerNodeSelector.selector = "storage:true"' values.yaml
+
+    Then Run command and expect output
+    ...    kubectl get storageclass longhorn -o jsonpath='{.parameters.shareManagerNodeSelector}'
+    ...    storage:true
+
+    Given Label node 2 with storage=true
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn
+    And Create deployment 0 with persistentvolumeclaim 0
+    And Wait for volume of deployment 0 healthy
+
+    Then Wait for sharemanager pod of deployment 0 to be running on node ${NODE_2}
+
+    Given Setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+    And Install Longhorn
+
+Test ShareManager Tolerations Helm Chart Parameter
+    [Tags]    sharemanager    uninstall
+    [Documentation]    Verify that the persistence.shareManagerTolerations helm chart value
+    ...                is propagated to the default "longhorn" storage class, and that it
+    ...                causes the share manager pod to only tolerate the taint on the node
+    ...                that has a matching toleration, and not be scheduled onto other
+    ...                tainted nodes.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/9324
+    ...
+    ...                Manual test steps:
+    ...                1. Install Longhorn via Helm with the following values:
+    ...                   persistence.shareManagerTolerations.enable=true
+    ...                   persistence.shareManagerTolerations.tolerations="lh-share-manager=allowed:NoSchedule"
+    ...                2. Check the setting is applied to the default storage class "longhorn":
+    ...                   parameters.shareManagerTolerations should be "lh-share-manager=allowed:NoSchedule"
+    ...                3. Taint NODE_0 and NODE_1 with lh-share-manager=blocked:NoSchedule
+    ...                4. Taint NODE_2 with lh-share-manager=allowed:NoSchedule
+    ...                5. Create a workload using RWX PVC
+    ...                6. Check share manager pod is running on NODE_2, and not on NODE_0 or NODE_1
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    This test only runs when LONGHORN_INSTALL_METHOD is helm
+    END
+
+    Given setting deleting-confirmation-flag is set to true
+    And Uninstall Longhorn
+    And Check Longhorn CRD removed
+
+    When Install Longhorn
+    ...    custom_cmd=yq -i '.persistence.shareManagerTolerations.enable = true | .persistence.shareManagerTolerations.tolerations = "lh-share-manager=allowed:NoSchedule"' values.yaml
+
+    Then Run command and expect output
+    ...    kubectl get storageclass longhorn -o jsonpath='{.parameters.shareManagerTolerations}'
+    ...    lh-share-manager=allowed:NoSchedule
+
+    TRY
+        Given Taint node 0 with lh-share-manager=blocked:NoSchedule
+        And Taint node 1 with lh-share-manager=blocked:NoSchedule
+        And Taint node 2 with lh-share-manager=allowed:NoSchedule
+
+        And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn
+        And Create deployment 0 with persistentvolumeclaim 0
+        ...    tolerations=[{"key": "lh-share-manager", "operator": "Equal", "value": "allowed", "effect": "NoSchedule"}]
+        And Wait for volume of deployment 0 healthy
+
+        Then Wait for sharemanager pod of deployment 0 to be running on node ${NODE_2}
+    FINALLY
+        # Clean up the lh-share-manager taints added by this test, otherwise the
+        # longhorn-uninstall helm pre-delete hook job pod (which has no
+        # toleration for the lh-share-manager taint) would be stuck Pending
+        # forever since all worker nodes are tainted.
+        And Taint node 0 with lh-share-manager=blocked:NoSchedule-
+        And Taint node 1 with lh-share-manager=blocked:NoSchedule-
+        And Taint node 2 with lh-share-manager=allowed:NoSchedule-
+        And Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check Longhorn CRD removed
+        And Install Longhorn
+    END

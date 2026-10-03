@@ -60,11 +60,15 @@ class node_keywords:
     def label_node(self, node_name, label):
         self.node.label_node(node_name, label)
 
+    def taint_node(self, node_name, taint):
+        self.node.taint_node(node_name, taint)
+
     def cleanup_node_labels(self):
         self.node.cleanup_node_labels()
 
     def cleanup_node_taints(self):
         self.node.cleanup_node_taints()
+
 
     def disable_disk(self, node_name, disk_name, wait=True):
         self.node.set_disk_scheduling(node_name, disk_name, allowScheduling=False, wait=wait)
