@@ -1,11 +1,12 @@
 *** Settings ***
 Documentation    Environment Test Cases
 
-Test Tags    regression    environment    uninstall
+Test Tags    regression    environment
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
 Resource    ../keywords/setting.resource
+Resource    ../keywords/volume.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/storageclass.resource
@@ -18,6 +19,7 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Test IPv4 Only Environment
+    [Tags]    uninstall
     Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
@@ -48,7 +50,7 @@ Test IPv4 Only Environment
     And Wait for longhorn ready
 
 Test RWX Fast Failover In Non-default Longhorn Namespace
-    [Tags]    non-default-namespace
+    [Tags]    non-default-namespace    uninstall
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12244
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' != 'manifest' and '${LONGHORN_INSTALL_METHOD}' != 'helm'
@@ -81,6 +83,7 @@ Test RWX Fast Failover In Non-default Longhorn Namespace
     And Wait for Longhorn components all running
 
 Test mTLS Support
+    [Tags]    uninstall
     [Documentation]    Verify that Longhorn instance manager enforces mTLS when the
     ...                longhorn-grpc-tls secret is present.
     ...
@@ -163,3 +166,115 @@ Test mTLS Support
     And Check all Longhorn CRD removed
     And Install Longhorn
     And Wait for Longhorn components all running
+
+Test Upgrade Responder Collects V2 Data Engine Info
+    [Documentation]
+    ...    Verify that the upgrade-responder checkupgrade payload collected by
+    ...    Longhorn includes the v2 data engine metrics fields
+    ...
+    ...    Issues: https://github.com/longhorn/longhorn/issues/14027
+    ...            https://github.com/longhorn/longhorn/issues/6033
+    ...            https://github.com/longhorn/longhorn/issues/12941
+    ...
+    ...    Origin manual test:
+    ...    docs/content/manual/release-specific/v1.6.0/test-upgrade-responder-collect-spdk-related-info.md
+    ...
+    ...    InfluxDB field keys verified under measurement "upgrade_request",
+    ...    database "longhorn_upgrade_responder":
+    ...      - longhorn_v2_data_engine_cpu_cores               (longhornV2DataEngineCpuCores)
+    ...      - longhorn_v2_data_engine_hugepage_size            (longhornV2DataEngineHugepageSize)
+    ...      - longhorn_v2_data_engine_hugepage_enabled         (longhornV2DataEngineHugepageEnabled)
+    ...      - longhorn_v2_data_engine_interrupt_mode_enabled   (longhornV2DataEngineInterruptModeEnabled)
+    ...      - longhorn_v2_data_engine_cpu_isolation_enabled    (longhornV2DataEngineCPUIsolationEnabled)
+    ...      - longhorn_v2_data_engine_iobuf_small_pool_size    (longhornV2DataEngineIobufSmallPoolSize)
+    ...      - longhorn_v2_data_engine_iobuf_large_pool_size    (longhornV2DataEngineIobufLargePoolSize)
+    ...      - longhorn_v2_data_engine_number_of_cpu_cores      (longhornV2DataEngineNumberOfCPUCores)
+    ...
+    ...    Test steps:
+    ...    1. Deploy the upgrade-responder stack locally by cloning the longhorn/longhorn
+    ...       repository and running dev/upgrade-responder/install.sh, which stands up
+    ...       upgrade-responder, influxdb, and grafana in the "default" namespace.
+    ...    2. Set setting upgrade-responder-url to
+    ...       http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+    ...       so Longhorn's upgrade checker targets the local upgrade-responder instance.
+    ...    3. Create a v2 volume.
+    ...    4. Restart longhorn-manager pods to trigger an immediate check-upgrade request
+    ...       instead of waiting for the hourly upgradeCheckInterval.
+    ...    5. Poll the influxdb database until the check-upgrade payload is recorded.
+    ...    6. Verify all longhorn_v2_data_engine_* fields listed above exist in the
+    ...       influxdb database.
+    ...    7. Verify longhorn_disk_block_count and longhorn_volume_backend_store_driver_v2_count
+    ...       equals the number of v2 volumes created.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    When Run command
+    ...    rm -rf /tmp/longhorn-upgrade-responder-src && git clone --depth 1 https://github.com/longhorn/longhorn.git /tmp/longhorn-upgrade-responder-src
+    ${install_output} =    Run command
+    ...    cd /tmp/longhorn-upgrade-responder-src/dev/upgrade-responder && ./install.sh
+    Should Contain    ${install_output}    Deployment longhorn-upgrade-responder is running.
+    Should Contain    ${install_output}    Deployment influxdb is running.
+
+    And Setting upgrade-responder-url is set to http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+
+    ${worker_nodes} =    get_worker_nodes
+    ${expected_block_disk_count} =    Get Length    ${worker_nodes}
+
+    And Create volume 0 with    dataEngine=v2
+
+    And Rollout restart daemonset longhorn-manager in namespace longhorn-system
+
+    ${influxdb_pod} =    Run command
+    ...    kubectl get pod -n default -l app=influxdb -o jsonpath="{.items[0].metadata.name}"
+
+    ${field_keys} =    Set Variable    ${EMPTY}
+    FOR    ${i}    IN RANGE    ${RETRY_COUNT}
+        ${field_keys} =    Run command
+        ...    kubectl exec -n default ${influxdb_pod} -- influx -execute 'SHOW FIELD KEYS FROM upgrade_request' -database="longhorn_upgrade_responder"
+        ${found} =    Run Keyword And Return Status
+        ...    Should Contain    ${field_keys}    longhorn_v2_data_engine_number_of_cpu_cores
+        IF    ${found}
+            BREAK
+        END
+        Sleep    ${RETRY_INTERVAL}min
+    END
+
+    Then Should Contain    ${field_keys}    longhorn_disk_block_count
+    # the value in longhorn_disk_block_count should equal to the number of volume using the V2 engine.
+    And Run command and wait for output
+    ...    kubectl exec -n default ${influxdb_pod} -- influx -execute 'SELECT "longhorn_disk_block_count" FROM "upgrade_request" ORDER BY time DESC LIMIT 1' -database="longhorn_upgrade_responder" | tail -n 1 | awk '{print $NF}'
+    ...    1
+
+    And Should Contain    ${field_keys}    longhorn_volume_data_engine_v2_count
+    # the value in longhorn_volume_data_engine_v2_count should equal to the number of volume using the V2 engine.
+    Run command and wait for output
+    ...    kubectl exec -n default ${influxdb_pod} -- influx -execute 'SELECT "longhorn_volume_data_engine_v2_count" FROM "upgrade_request" ORDER BY time DESC LIMIT 1' -database="longhorn_upgrade_responder" | tail -n 1 | awk '{print $NF}'
+    ...    1
+
+    And Should Contain    ${field_keys}    longhorn_v2_data_engine_cpu_cores
+    #And Should Contain    ${field_keys}    longhorn_v2_data_engine_interrupt_mode_enabled
+    #And Should Contain    ${field_keys}    longhorn_v2_data_engine_cpu_isolation_enabled
+    And Should Contain    ${field_keys}    longhorn_v2_data_engine_iobuf_small_pool_size
+    And Should Contain    ${field_keys}    longhorn_v2_data_engine_iobuf_large_pool_size
+    And Should Contain    ${field_keys}    longhorn_v2_data_engine_number_of_cpu_cores
+    And Should Contain    ${field_keys}    longhorn_v2_data_engine_hugepage_size
+    # longhorn_block_type_disk_driver could be one of the following values:
+    # longhorn_block_type_disk_driver_aio_count,
+    # longhorn_block_type_disk_driver_nvme_count,
+    # longhorn_block_type_disk_driver_virtio_scsi_count,
+    # longhorn_block_type_disk_driver_virtio_blk_count,
+    # longhorn_block_type_disk_driver_virtio_pci_count
+    And Should Contain    ${field_keys}    longhorn_block_type_disk_driver
+
+    # longhorn_v2_data_engine_hugepage_enabled, longhorn_v2_data_engine_interrupt_mode_enabled and longhorn_v2_data_engine_cpu_isolation_enabled
+    # are tags rather than fields
+    And Run command and wait for output
+    ...    kubectl exec -n default ${influxdb_pod} -- influx -execute 'SHOW TAG KEYS FROM upgrade_request' -database="longhorn_upgrade_responder" | grep longhorn_v2_data_engine_hugepage_enabled
+    ...    longhorn_v2_data_engine_hugepage_enabled
+    And Run command and wait for output
+    ...    kubectl exec -n default ${influxdb_pod} -- influx -execute 'SHOW TAG KEYS FROM upgrade_request' -database="longhorn_upgrade_responder" | grep longhorn_v2_data_engine_interrupt_mode_enabled
+    ...    longhorn_v2_data_engine_interrupt_mode_enabled
+    And Run command and wait for output
+    ...    kubectl exec -n default ${influxdb_pod} -- influx -execute 'SHOW TAG KEYS FROM upgrade_request' -database="longhorn_upgrade_responder" | grep longhorn_v2_data_engine_cpu_isolation_enabled
+    ...    longhorn_v2_data_engine_cpu_isolation_enabled
