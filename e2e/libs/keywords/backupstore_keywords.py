@@ -41,6 +41,10 @@ class backupstore_keywords:
                                                backup_name,
                                                corrupt_backup_cfg_data)
 
+    def corrupt_backup_volume_cfg_file(self, volume_name):
+        volume_cfg_path = self.backupstore.get_volume_cfg_file_path(volume_name)
+        self.backupstore.create_file_in_backupstore(volume_cfg_path, "not-json")
+
     def delete_random_backup_block(self, volume_name):
         self.backupstore.delete_random_backup_block(volume_name)
 
