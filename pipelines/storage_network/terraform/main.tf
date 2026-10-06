@@ -345,6 +345,9 @@ resource "null_resource" "cluster_setup_flannel" {
 resource "null_resource" "cluster_setup_routes" {
   count = var.aws_instance_count
 
+  triggers = {
+    setup = sha256(data.template_file.routes.rendered)
+  }
   depends_on = [
     aws_instance.aws_instance,
     null_resource.cluster_setup_flannel
