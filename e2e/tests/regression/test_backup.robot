@@ -626,6 +626,39 @@ Test Restoring Volume From Backup With Missing Blocks
     And Wait for volume 2 healthy
     Then Check volume 2 data is backup 1 of volume 0
 
+Test Creating Backup With Corrupted Backup Volume Config
+    [Documentation]
+    ...    Verify that creating a backup after the backup volume's volume.cfg is
+    ...    corrupted does not crash instance-manager, and the volume stays healthy
+    ...    with its data intact.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13790
+    ...
+    ...    Steps:
+    ...    1. Create and attach 3 volumes. Write some data to each volume
+    ...    2. Create a backup for each volume
+    ...    3. Corrupt volume 0's volume.cfg by replacing its content with `not-json`
+    ...    4. Create another backup for each volume
+    ...    5. Check instance-manager doesn't restart
+    ...    6. Check all volumes are still healthy and the data integrity
+    FOR    ${i}    IN RANGE    3
+        Given Create volume ${i} with    dataEngine=${DATA_ENGINE}
+        And Attach volume ${i}
+        And Wait for volume ${i} healthy
+        And Write data to volume ${i}
+    END
+
+    And Create backup 0 for volume 0
+    When Corrupt volume.cfg of volume 0 with invalid JSON
+    And Create backup 1 for volume 0    wait=False
+    And Verify backup list contains errors for volume 0
+
+    Then Check instance manager pods of data engine ${DATA_ENGINE} did not restart
+    FOR    ${i}    IN RANGE    3
+        And Wait for volume ${i} healthy
+        And Check volume ${i} data is intact
+    END
+
 Test Backup On Cluster With Drained Nodes
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12562
     ...    Verify that backups can be created successfully on a cluster where nodes
