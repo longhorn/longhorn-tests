@@ -43,6 +43,10 @@ Wait for pod ${pod_id} running
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
     wait_for_workload_pods_running    ${pod_name}
 
+Wait for ${workload_kind} ${workload_id} pods running
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    wait_for_workload_pods_running    ${workload_name}
+
 Delete pod of ${workload_kind} ${workload_id}
     [Arguments]    &{config}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -185,6 +189,12 @@ Wait for volume of ${workload_kind} ${workload_id} attached
 Wait for volume of ${workload_kind} ${workload_id} healthy
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     wait_for_workload_volume_healthy    ${workload_name}
+
+Wait for volume engine of ${workload_kind} ${workload_id} size to be ${size}
+    [Documentation]    Wait for engine.spec.volumeSize and engine.status.currentSize to equal the size
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_expand_to_size    ${volume_name}    ${size}
 
 Wait until volume of ${workload_kind} ${workload_id} replica rebuilding started on ${replica_locality}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
