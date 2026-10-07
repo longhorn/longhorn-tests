@@ -41,6 +41,18 @@ Cleanup dm disk ${dm_device_name} on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     cleanup_dm_device    ${dm_device_name}    ${node_name}
 
+Resolve BDF disk path on node ${node_id}
+    [Documentation]    If DISK_PATH is a PCI BDF (e.g. 0000:03:00.0) rather than a /dev/ path,
+    ...                wait for the Linux nvme driver to reclaim the device after SPDK releases it,
+    ...                then update the ${DISK_PATH} test variable to the resolved block device path.
+    ...                No-op when DISK_PATH is already a /dev/ path.
+    ${is_bdf} =    Evaluate    not '${DISK_PATH}'.startswith('/') and ':' in '${DISK_PATH}'
+    IF    ${is_bdf}
+        ${node_name} =    get_node_by_index    ${node_id}
+        ${block_dev} =    get_block_device_from_bdf    ${DISK_PATH}    ${node_name}
+        Set Test Variable    ${DISK_PATH}    ${block_dev}
+    END
+
 Wipe block device ${block_device_path} on node ${node_id}
     [Documentation]    Wipe filesystem and partition signatures from a block device.
     ${node_name} =    get_node_by_index    ${node_id}
