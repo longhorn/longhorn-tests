@@ -338,14 +338,27 @@ class volume_keywords:
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
+    def get_running_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_running_replica_name_on_node(volume_name, node_name)
+
     def check_volume_replica_reused_on_node(self, volume_name, node_name, original_replica_name):
         for i in range(self.retry_count):
             logging(f"Checking volume {volume_name} replica on node {node_name} is reused ... ({i})")
-            replica_name = self.get_replica_name_on_node(volume_name, node_name)
+            replica_name = self.get_running_replica_name_on_node(volume_name, node_name)
             if replica_name == original_replica_name:
                 return
             time.sleep(self.retry_interval)
         assert False, f"Failed to reuse volume {volume_name} replica on node {node_name}. Original replica name: {original_replica_name}, current replica name: {replica_name}"
+
+    def check_volume_replica_not_reused_on_node(self, volume_name, node_name, original_replica_name):
+        for i in range(self.retry_count):
+            replica_name = self.get_running_replica_name_on_node(volume_name, node_name)
+            logging(f"Checking volume {volume_name} replica on node {node_name} is not reused ... ({i}). "
+                    f"Original replica name: {original_replica_name}, current replica name: {replica_name}")
+            if replica_name != original_replica_name:
+                return
+            time.sleep(self.retry_interval)
+        assert replica_name != original_replica_name, f"Volume {volume_name} replica {original_replica_name} on node {node_name} was unexpectedly reused"
 
     def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None, running=True):
         return self.volume.wait_for_replica_count(volume_name, node_name, replica_count, running)

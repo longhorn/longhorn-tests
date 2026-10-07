@@ -74,6 +74,13 @@ class instancemanager_keywords:
         elif engine_type == "v2":
             self.v2_instancemanager.wait_for_replica_present(node_name, replica_name)
 
+    def permanently_crash_replica(self, node_name, replica_name, engine_type):
+        logging(f"Permanently crashing replica {replica_name} on node {node_name} for engine type {engine_type}")
+        if engine_type == "v1":
+            self.instancemanager.permanently_crash_replica(node_name, replica_name)
+        elif engine_type == "v2":
+            self.v2_instancemanager.permanently_crash_replica(node_name, replica_name)
+
     def verify_replica_lvol_exists_in_spdk_lvol(self, node_name, replica_name):
         logging(f"Verifying replica {replica_name} exists in SPDK on node {node_name}")
         self.instancemanager.verify_replica_lvol_exists_in_spdk_lvol(node_name, replica_name)
