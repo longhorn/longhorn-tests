@@ -53,5 +53,6 @@ data "template_file" "routes" {
     N1_v6 = aws_network_interface.instance_eth1[0].ipv6_address_list[0]
     N2_v6 = aws_network_interface.instance_eth1[1].ipv6_address_list[0]
     N3_v6 = aws_network_interface.instance_eth1[2].ipv6_address_list[0]
+    mtu = var.mtu
   }
 }
