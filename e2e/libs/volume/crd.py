@@ -580,26 +580,37 @@ class CRD(Base):
         return Rest().expand(volume_name, size)
 
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
+        """
+        Wait until engine.spec.volumeSize and engine.status.currentSize
+        both equal the expected size.
+        """
         engine = None
+        engine_spec_size = 0
         engine_current_size = 0
         engine_expected_size = convert_size_to_bytes(expected_size)
         for i in range(self.retry_count):
             engine = self.engine.get_engine(volume_name)
+            engine_spec_size = int(engine['spec']['volumeSize'])
             # there is no current size for a stopped engine
             if engine['status']['currentState'] == 'stopped':
-                engine_current_size = int(engine['spec']['volumeSize'])
+                engine_current_size = engine_spec_size
             else:
                 engine_current_size = int(engine['status']['currentSize'])
 
-            if engine_current_size == engine_expected_size:
+            if engine_spec_size == engine_expected_size and \
+                    engine_current_size == engine_expected_size:
                 break
 
-            logging(f"Waiting for volume engine expand from {engine_current_size} to {expected_size} ({i}) ...")
+            logging(f"Waiting for volume {volume_name} engine size to be {engine_expected_size}: "
+                    f"spec.volumeSize={engine_spec_size}, status.currentSize={engine_current_size} ({i}) ...")
 
             time.sleep(self.retry_interval)
 
         assert engine is not None
-        assert engine_current_size == engine_expected_size
+        assert engine_spec_size == engine_expected_size, \
+            f"Expected volume {volume_name} engine spec.volumeSize {engine_expected_size}, but it's {engine_spec_size}"
+        assert engine_current_size == engine_expected_size, \
+            f"Expected volume {volume_name} engine status.currentSize {engine_expected_size}, but it's {engine_current_size}"
 
     def get_endpoint(self, volume_name):
         return Rest().get_endpoint(volume_name)

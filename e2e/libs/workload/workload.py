@@ -419,8 +419,8 @@ def wait_for_workload_pods_running(workload_name, namespace="default"):
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
         pods = get_workload_pods(workload_name, namespace=namespace)
+        running_pods = []
         if len(pods) > 0:
-            running_pods = []
             for pod in pods:
                 if pod.status.phase == "Running":
                     running_pods.append(pod.metadata.name)
