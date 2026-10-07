@@ -67,8 +67,13 @@ Run command until output is absent
     execute_command_until_output_is_absent    ${command}    ${unexpected_output}
 
 Run command in pod ${namespace}/${pod_name}
+    [Arguments]    ${command}    ${non_empty}=${False}
+    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}    ${non_empty}
+    RETURN    ${result}
+
+Run command in pod ${namespace}/${pod_name} and wait for non-empty output
     [Arguments]    ${command}
-    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}
+    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}    non_empty=${True}
     RETURN    ${result}
 
 Run command in pod ${namespace}/${pod_name} and expect output
