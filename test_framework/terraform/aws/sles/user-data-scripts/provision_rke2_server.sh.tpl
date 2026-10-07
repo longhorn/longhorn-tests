@@ -20,7 +20,10 @@ sudo ln -s /var/lib/ca-certificates/pem /etc/ssl/certs
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
-if [[ "${network_stack}" == "ipv6" ]]; then
+ipv6_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+private_ipv4=$(hostname -I | awk '{print $1}')
+
+if [[ "${network_stack}" == "ipv6" || "${network_stack}" == dual-stack-* ]]; then
   echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
@@ -30,10 +33,30 @@ nameserver 8.8.8.8
 nameserver 1.1.1.1
 EOF
   chattr +i /etc/resolv.conf || true
-  rke2_server_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
-else
-  rke2_server_public_ip="${control_plane_ipv4}"
 fi
+
+case "${network_stack}" in
+  ipv6)
+    rke2_server_public_ip="$ipv6_public_ip"
+    ;;
+  dual-stack-ipv6-first)
+    rke2_server_public_ip="$ipv6_public_ip"
+    dual_stack_node_ip="$ipv6_public_ip,$private_ipv4"
+    dual_stack_external_ip="$ipv6_public_ip,${control_plane_ipv4}"
+    dual_stack_cluster_cidr="fd00:10::/56,10.42.0.0/16"
+    dual_stack_service_cidr="fd00:20::/112,10.43.0.0/16"
+    ;;
+  dual-stack-ipv4-first)
+    rke2_server_public_ip="${control_plane_ipv4}"
+    dual_stack_node_ip="$private_ipv4,$ipv6_public_ip"
+    dual_stack_external_ip="${control_plane_ipv4},$ipv6_public_ip"
+    dual_stack_cluster_cidr="10.42.0.0/16,fd00:10::/56"
+    dual_stack_service_cidr="10.43.0.0/16,fd00:20::/112"
+    ;;
+  *)
+    rke2_server_public_ip="${control_plane_ipv4}"
+    ;;
+esac
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="server" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 
@@ -54,6 +77,16 @@ advertise-address: $rke2_server_public_ip
 node-ip: "$rke2_server_public_ip"
 cluster-cidr: fd00:10::/56
 service-cidr: fd00:20::/112
+EOF
+elif [[ "${network_stack}" == dual-stack-* ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+tls-san:
+  - ${control_plane_ipv4}
+  - $ipv6_public_ip
+node-ip: "$dual_stack_node_ip"
+node-external-ip: "$dual_stack_external_ip"
+cluster-cidr: "$dual_stack_cluster_cidr"
+service-cidr: "$dual_stack_service_cidr"
 EOF
 fi
 
