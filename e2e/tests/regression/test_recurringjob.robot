@@ -16,6 +16,7 @@ Resource    ../keywords/snapshot.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/system_backup.resource
 
 Library    random
 
@@ -84,6 +85,33 @@ Test System Backup Recurring Job When volume-backup-policy is disabled
     And Wait for recurringjob 0 created systembackup to reach Ready state
     And Wait for volume 0 attached
     And Wait for volume 1 detached
+
+Test System Backup Recurring Job Retention With Failed Backup
+    [Tags]    system-backup-recurring-job
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/13203
+    ...    Test tracker: https://github.com/longhorn/longhorn/issues/13206
+    ...    Verify an Error SystemBackup with empty status.createdAt is pruned
+    ...    before successful Ready SystemBackups during recurring-job retention cleanup.
+    Given Create system-backup recurringjob 0
+    ...    parameters={"volume-backup-policy":"disabled"}
+    ...    cron=*/2 * * * *
+    ...    retain=2
+    ${backup1}    ${backup2} =    And Wait for recurringjob 0 to have 2 systembackups in Ready state
+
+    ${backup3} =    When Wait for next systembackup created by recurringjob 0    ${backup1}    ${backup2}
+    And Wait for recurringjob 0 systembackup ${backup3} to reach Ready state
+    And Verify recurringjob 0 retains systembackups    ${backup2}    ${backup3}
+
+    And Set system backup ${backup3} status    state=Error    createdAt=${None}
+    Then Wait for recurringjob 0 systembackup ${backup3} to reach Error state
+    And Check system backup ${backup3} createdAt is empty
+
+    ${backup4} =    When Wait for next systembackup created by recurringjob 0    ${backup1}    ${backup2}    ${backup3}
+    And Wait for recurringjob 0 systembackup ${backup4} to reach Ready state
+    Then Wait for system backup ${backup3} deleted
+    And Verify recurringjob 0 retains systembackups    ${backup2}    ${backup4}
+    And Wait for recurringjob 0 systembackup ${backup2} to reach Ready state
+    And Wait for recurringjob 0 systembackup ${backup4} to reach Ready state
 
 Test System Backup Recurring Job When volume-backup-policy is if-not-present
     [Tags]    system-backup-recurring-job
