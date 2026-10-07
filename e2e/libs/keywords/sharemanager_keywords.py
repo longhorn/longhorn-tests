@@ -147,3 +147,21 @@ class sharemanager_keywords:
 
     def get_sharemanager_pod_container_image(self, volume_name):
         return self.sharemanager.get_pod_container_image(volume_name)
+
+    def get_sharemanager_pod_node_name(self, volume_name):
+        return self.sharemanager.get_pod_node_name(volume_name)
+
+    def wait_for_sharemanager_pod_running_on_node(self, volume_name, expected_node_name):
+        sharemanager_pod_name = "share-manager-" + volume_name
+        actual_node_name = None
+        for i in range(self.retry_count):
+            try:
+                actual_node_name = self.sharemanager.get_pod_node_name(volume_name)
+                logging(f"Waiting for sharemanager pod {sharemanager_pod_name} to be running on node {expected_node_name}, currently on {actual_node_name} ... ({i})")
+                if actual_node_name == expected_node_name:
+                    return
+            except Exception as e:
+                logging(f"Waiting for sharemanager pod {sharemanager_pod_name} to be running on node {expected_node_name} error: {e}")
+            time.sleep(self.retry_interval)
+
+        assert False, f"sharemanager pod {sharemanager_pod_name} is not running on node {expected_node_name}, currently on {actual_node_name}"
