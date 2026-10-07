@@ -1092,3 +1092,31 @@ Test V2 Sharded Volume Dynamic Provisioning With Expansion
     # write at least 1.5Gi of data (more than the original 1Gi size) to verify
     # the volume can actually hold data beyond its pre-expansion capacity
     When Write 1536 MB data to file data-after-expansion.txt in deployment 0
+
+Test V2 Data Engine Disable Uninstall And Reinstall Longhorn
+    [Tags]    uninstall    block-disk
+    [Documentation]    Verify Longhorn with block disks can be uninstalled after disabling v2 data engine,
+    ...    reinstalled, and v2 volumes work again after re-enabling v2 data engine.
+    ...
+    ...    Test steps:
+    ...    1. Disable v2 data engine.
+    ...    2. Uninstall Longhorn.
+    ...    3. Reinstall Longhorn, wait for Longhorn ready, enable v2 data engine and add block disks.
+    ...    4. Create and attach a v2 volume, write data and check data integrity.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    Given Setting v2-data-engine is set to false
+    When Setting deleting-confirmation-flag is set to true
+    Then Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    When Install Longhorn
+    And Wait for longhorn ready
+    Then Enable v2 data engine and add block disks
+    And Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Check volume 0 data is intact
