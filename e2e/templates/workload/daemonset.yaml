@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: test-daemonset
+  namespace: default
+  labels:
+    app: test-daemonset
+    test.longhorn.io: e2e
+spec:
+  selector:
+    matchLabels:
+      app: test-daemonset
+  template:
+    metadata:
+      labels:
+        app: test-daemonset
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - image: alpine/git
+          imagePullPolicy: IfNotPresent
+          name: sleep
+          command: ['/bin/sh', '-c']
+          args: ['while true;do date;sleep 5; done']
+          volumeMounts:
+            - name: pod-data
+              mountPath: /data
+      volumes:
+        - name: pod-data
+          persistentVolumeClaim:
+            claimName: test-pvc
+
