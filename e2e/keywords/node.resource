@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation    Node Keywords
 
+Library    String
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/node_keywords.py
 Library    ../libs/keywords/volume_keywords.py
@@ -232,3 +233,8 @@ Wait for device ${disk_path} on node ${node_id} released from userspace driver
 Wait for disk ${disk_name} on node ${node_id} schedulable
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_disk_schedulable    ${node_name}    ${disk_name}
+
+Get by-id device path for ${disk_path} on node ${node_id}
+    ${by_id_path} =    Run command on node    ${node_id}
+    ...    printf '%s' "$(for f in /dev/disk/by-id/*; do [ "$(readlink -f "$f")" = "$(readlink -f ${disk_path})" ] && echo "$f" && break; done)"
+    RETURN    ${by_id_path}

@@ -58,8 +58,10 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
         
         # Check node 2 (the only schedulable node) for processes in D state
         # We check for processes related to writing to /data/index.html
-        ${has_d_state} =    Run command on node 2 and get output    pgrep -f 'echo.*/data/index.html' | xargs -r ps --no-headers -o pid,stat,command -p    D
-        
+        ${d_state_output} =    Run command on node    2
+        ...    pgrep -f 'echo.*/data/index.html' | xargs -r ps --no-headers -o pid,stat,command -p
+        ${has_d_state} =    Run Keyword And Return Status    Should Contain    ${d_state_output}    D
+
         IF    ${has_d_state}
             Log To Console    D-state process detected, rechecking to see if stuck...
             ${UNEXPECTED_D_STATE} =    Set Variable    ${True}
@@ -75,7 +77,8 @@ Test RWX Volume Does Not Cause Process Uninterruptible Sleep
     
     # If we found D-state in the last check, it's considered stuck
     IF    ${UNEXPECTED_D_STATE}
-        ${error_output} =    Run command on node 2 and get output string    pgrep -f 'echo.*/data/index.html' | xargs -r ps --no-headers -o pid,stat,command -p
+        ${error_output} =    Run command on node    2
+        ...    pgrep -f 'echo.*/data/index.html' | xargs -r ps --no-headers -o pid,stat,command -p
         Log To Console    Process stuck in D-state detected: ${error_output}
         Sleep    ${RETRY_COUNT}
         Fail    Process stuck in uninterruptible sleep (D state) detected on node 2: ${error_output}
