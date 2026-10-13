@@ -435,7 +435,6 @@ def minio_get_api_client(client, core_api, minio_secret_name):
     base64_minio_access_key = secret.data['AWS_ACCESS_KEY_ID']
     base64_minio_secret_key = secret.data['AWS_SECRET_ACCESS_KEY']
     base64_minio_endpoint_url = secret.data['AWS_ENDPOINTS']
-    base64_minio_cert = secret.data['AWS_CERT']
 
     minio_access_key = \
         base64.b64decode(base64_minio_access_key).decode("utf-8")
@@ -444,20 +443,23 @@ def minio_get_api_client(client, core_api, minio_secret_name):
 
     minio_endpoint_url = \
         base64.b64decode(base64_minio_endpoint_url).decode("utf-8")
-    minio_endpoint_url = minio_endpoint_url.replace('https://', '')
+    secure = minio_endpoint_url.startswith('https://')
+    minio_endpoint_url = minio_endpoint_url.replace('https://', '') \
+        .replace('http://', '')
 
-    minio_cert_file_path = "/tmp/minio_cert.crt"
-    with open(minio_cert_file_path, 'w') as minio_cert_file:
-        base64_minio_cert = \
-            base64.b64decode(base64_minio_cert).decode("utf-8")
-        minio_cert_file.write(base64_minio_cert)
-
-    os.environ["SSL_CERT_FILE"] = minio_cert_file_path
+    # The secret only carries AWS_CERT when the backupstore serves HTTPS.
+    base64_minio_cert = secret.data.get('AWS_CERT')
+    if secure and base64_minio_cert:
+        minio_cert_file_path = "/tmp/minio_cert.crt"
+        with open(minio_cert_file_path, 'w') as minio_cert_file:
+            minio_cert_file.write(
+                base64.b64decode(base64_minio_cert).decode("utf-8"))
+        os.environ["SSL_CERT_FILE"] = minio_cert_file_path
 
     return Minio(minio_endpoint_url,
                  access_key=minio_access_key,
                  secret_key=minio_secret_key,
-                 secure=True)
+                 secure=secure)
 
 
 def minio_get_backupstore_bucket_name(client):

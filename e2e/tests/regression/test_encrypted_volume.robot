@@ -27,6 +27,7 @@ Test Teardown    Cleanup test resources
 
 *** Keywords ***
 Test Encrypted Volume Basic
+    [Tags]    rwo    coretest
     [Arguments]    ${volume_type}
     [Documentation]    Test basic encrypted volume operations for both RWO and RWX volumes.
     ...                Deployment 0 = RWO, Deployment 1 = RWX.
@@ -144,6 +145,7 @@ Test Encrypted Volume Expansion
     And Check deployment 0 data in file data.txt is intact
 
 Test Encrypted Volume Replica Rebuild
+    [Tags]    coretest
     [Arguments]    ${volume_type}
     [Documentation]    Test Plan: Replica Rebuild – new engine path
     ...
@@ -222,22 +224,22 @@ Test Encrypted Volume Backup Restore To Encrypted Volume
 
 *** Test Cases ***
 Test Encrypted RWO Volume Basic
-    [Tags]    rwo
+    [Tags]    rwo    coretest
     [Template]    Test Encrypted Volume Basic
         RWO
 
 Test Encrypted RWX Volume Basic
-    [Tags]    rwx
+    [Tags]    rwx    coretest
     [Template]    Test Encrypted Volume Basic
         RWX
 
 Test Encrypted RWO Volume Cloning
-    [Tags]    rwo
+    [Tags]    rwo    coretest
     [Template]    Test Encrypted Volume Cloning
         RWO
 
 Test Encrypted RWX Volume Cloning
-    [Tags]    rwx
+    [Tags]    rwx    coretest
     [Template]    Test Encrypted Volume Cloning
         RWX
 
@@ -339,12 +341,12 @@ Test Encrypted RWO Block Volume Online Expansion
     Then Check deployment 0 data in file data2.txt is intact
 
 Test Encrypted RWO Volume Replica Rebuild
-    [Tags]    rwo    replica-rebuild
+    [Tags]    rwo    replica-rebuild    coretest
     [Template]    Test Encrypted Volume Replica Rebuild
         RWO
 
 Test Encrypted RWX Volume Replica Rebuild
-    [Tags]    rwx    replica-rebuild
+    [Tags]    rwx    replica-rebuild    coretest
     [Template]    Test Encrypted Volume Replica Rebuild
         RWX
 

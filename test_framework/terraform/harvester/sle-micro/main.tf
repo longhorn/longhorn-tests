@@ -8,17 +8,17 @@ terraform {
 }
 
 provider "rancher2" {
-  api_url   = var.lab_url
-  insecure  = true
+  api_url    = var.lab_url
+  insecure   = true
   access_key = var.lab_access_key
   secret_key = var.lab_secret_key
 }
 
 resource "random_string" "random_suffix" {
-  length           = 8
-  special          = false
-  lower            = true
-  upper            = false
+  length  = 8
+  special = false
+  lower   = true
+  upper   = false
 }
 
 data "rancher2_cluster_v2" "hal-cluster" {
@@ -28,8 +28,8 @@ data "rancher2_cluster_v2" "hal-cluster" {
 resource "rancher2_cloud_credential" "e2e-credential" {
   name = "e2e-credential-${random_string.random_suffix.id}"
   harvester_credential_config {
-    cluster_id = data.rancher2_cluster_v2.hal-cluster.cluster_v1_id
-    cluster_type = "imported"
+    cluster_id         = data.rancher2_cluster_v2.hal-cluster.cluster_v1_id
+    cluster_type       = "imported"
     kubeconfig_content = data.rancher2_cluster_v2.hal-cluster.kube_config
   }
 }
@@ -44,13 +44,31 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
 
     vm_namespace = "longhorn-qa"
 
-    cpu_count = "4"
-    memory_size = "8"
+    cpu_count   = "4"
+    memory_size = "16"
+
+    vm_affinity = length(var.harvester_affinity_nodes) > 0 ? base64encode(jsonencode({
+      nodeAffinity = {
+        requiredDuringSchedulingIgnoredDuringExecution = {
+          nodeSelectorTerms = [
+            {
+              matchExpressions = [
+                {
+                  key      = "kubernetes.io/hostname"
+                  operator = "In"
+                  values   = var.harvester_affinity_nodes
+                }
+              ]
+            }
+          ]
+        }
+      }
+    })) : null
 
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-6b86f",
+            "imageName": "longhorn-qa/image-77r6c",
             "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
@@ -92,13 +110,31 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
 
     vm_namespace = "longhorn-qa"
 
-    cpu_count = "4"
-    memory_size = "8"
+    cpu_count   = "4"
+    memory_size = "16"
+
+    vm_affinity = length(var.harvester_affinity_nodes) > 0 ? base64encode(jsonencode({
+      nodeAffinity = {
+        requiredDuringSchedulingIgnoredDuringExecution = {
+          nodeSelectorTerms = [
+            {
+              matchExpressions = [
+                {
+                  key      = "kubernetes.io/hostname"
+                  operator = "In"
+                  values   = var.harvester_affinity_nodes
+                }
+              ]
+            }
+          ]
+        }
+      }
+    })) : null
 
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-6b86f",
+            "imageName": "longhorn-qa/image-77r6c",
             "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
@@ -153,7 +189,7 @@ EOF
 
 resource "rancher2_cluster_v2" "e2e-cluster" {
 
-  name = "e2e-cluster-${random_string.random_suffix.id}"
+  name = "e2e-sle-micro-cluster-${random_string.random_suffix.id}"
 
   depends_on = [
     rancher2_cloud_credential.e2e-credential,
@@ -169,24 +205,24 @@ resource "rancher2_cluster_v2" "e2e-cluster" {
 
   rke_config {
     machine_pools {
-      name = "control-plane-pool"
+      name                         = "control-plane-pool"
       cloud_credential_secret_name = rancher2_cloud_credential.e2e-credential.id
-      control_plane_role = true
-      etcd_role = true
-      worker_role = false
-      quantity = 1
+      control_plane_role           = true
+      etcd_role                    = true
+      worker_role                  = false
+      quantity                     = 1
       machine_config {
         kind = rancher2_machine_config_v2.e2e-machine-config-controlplane.kind
         name = rancher2_machine_config_v2.e2e-machine-config-controlplane.name
       }
     }
     machine_pools {
-      name = "worker-pool"
+      name                         = "worker-pool"
       cloud_credential_secret_name = rancher2_cloud_credential.e2e-credential.id
-      control_plane_role = false
-      etcd_role = false
-      worker_role = true
-      quantity = 3
+      control_plane_role           = false
+      etcd_role                    = false
+      worker_role                  = true
+      quantity                     = 3
       machine_config {
         kind = rancher2_machine_config_v2.e2e-machine-config-worker.kind
         name = rancher2_machine_config_v2.e2e-machine-config-worker.name
@@ -204,7 +240,7 @@ etcd-expose-metrics: false
 EOF
     upgrade_strategy {
       control_plane_concurrency = "10%"
-      worker_concurrency = "10%"
+      worker_concurrency        = "10%"
     }
     etcd {
       disable_snapshots = true
@@ -213,8 +249,22 @@ EOF
   }
 }
 
+resource "rancher2_cluster_role_template_binding" "dev-longhorn" {
+  name               = "dev-longhorn-binding"
+  cluster_id         = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
+  role_template_id   = "cluster-owner"
+  group_principal_id = "github_team://3300040"
+}
+
+resource "rancher2_cluster_role_template_binding" "qa-longhorn" {
+  name               = "qa-longhorn-binding"
+  cluster_id         = rancher2_cluster_v2.e2e-cluster.cluster_v1_id
+  role_template_id   = "cluster-owner"
+  group_principal_id = "github_team://10714512"
+}
+
 output "kube_config" {
-  value = rancher2_cluster_v2.e2e-cluster.kube_config
+  value     = rancher2_cluster_v2.e2e-cluster.kube_config
   sensitive = true
 }
 
