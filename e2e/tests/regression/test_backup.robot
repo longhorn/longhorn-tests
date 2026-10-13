@@ -26,7 +26,7 @@ Test Setup    Set up test environment
 Test Teardown    Cleanup test resources without corrupting remote backupstore
 
 *** Keywords ***
-# Reset backup target from remote AWS S3 to local minio backup store before cleaning up resources
+# Reset backup target from remote AWS S3 to local RustFS backup store before cleaning up resources
 # to avoid deleting the existing backup on AWS S3
 Cleanup test resources without corrupting remote backupstore
     Set default backupstore
@@ -146,6 +146,40 @@ Test Incremental Restore
     And Delete pod 0
     And Delete persistentvolumeclaim for volume 3
     And Delete persistentvolume for volume 3
+
+Test DR Volume Restore Retries When Backupstore Lock Is Held
+    [Tags]    dr-volume
+    [Documentation]
+    ...    Verify that a standby DR volume retries the restore instead of becoming
+    ...    faulted when the backupstore holds a deletion lock that blocks the lock
+    ...    the restore needs to acquire.
+    ...
+    ...    The deletion lock is placed before the DR volume is created, so the
+    ...    restore is guaranteed to hit the lock contention.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13685
+    Given Get test start time
+    And Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data 0 to volume 0
+    And Create backup 0 for volume 0
+
+    When Create deletion lock in backupstore for volume 0
+    TRY
+        And Create DR volume 1 from backup 0 of volume 0    dataEngine=${DATA_ENGINE}
+        Then Check volume 1 kept in not faulted for 30 seconds
+        And Wait Until Keyword Succeeds    60s    5s
+        ...    Any app=longhorn-manager Pods Log Should Have Ignored failed locked restore error After Test Start
+    FINALLY
+        Delete deletion lock in backupstore for volume 0
+    END
+
+    Then Wait for volume 1 restoration from backup 0 of volume 0 completed
+    When Activate DR volume 1
+    And Attach volume 1
+    And Wait for volume 1 healthy
+    Then Check volume 1 data is backup 0 of volume 0
 
 Test Uninstallation With Backups
     [Tags]    uninstall
@@ -591,6 +625,39 @@ Test Restoring Volume From Backup With Missing Blocks
     And Attach volume 2
     And Wait for volume 2 healthy
     Then Check volume 2 data is backup 1 of volume 0
+
+Test Creating Backup With Corrupted Backup Volume Config
+    [Documentation]
+    ...    Verify that creating a backup after the backup volume's volume.cfg is
+    ...    corrupted does not crash instance-manager, and the volume stays healthy
+    ...    with its data intact.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13790
+    ...
+    ...    Steps:
+    ...    1. Create and attach 3 volumes. Write some data to each volume
+    ...    2. Create a backup for each volume
+    ...    3. Corrupt volume 0's volume.cfg by replacing its content with `not-json`
+    ...    4. Create another backup for each volume
+    ...    5. Check instance-manager doesn't restart
+    ...    6. Check all volumes are still healthy and the data integrity
+    FOR    ${i}    IN RANGE    3
+        Given Create volume ${i} with    dataEngine=${DATA_ENGINE}
+        And Attach volume ${i}
+        And Wait for volume ${i} healthy
+        And Write data to volume ${i}
+    END
+
+    And Create backup 0 for volume 0
+    When Corrupt volume.cfg of volume 0 with invalid JSON
+    And Create backup 1 for volume 0    wait=False
+    And Verify backup list contains errors for volume 0
+
+    Then Check instance manager pods of data engine ${DATA_ENGINE} did not restart
+    FOR    ${i}    IN RANGE    3
+        And Wait for volume ${i} healthy
+        And Check volume ${i} data is intact
+    END
 
 Test Backup On Cluster With Drained Nodes
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12562

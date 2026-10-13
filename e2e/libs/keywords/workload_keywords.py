@@ -2,17 +2,22 @@ import multiprocessing
 import asyncio
 import time
 
+from kubernetes import client
+from kubernetes.client.rest import ApiException
+
 from node import Node
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from utility.utility import get_retry_count_and_interval
 from utility.utility import pod_exec
+from utility.utility import get_longhorn_namespace
 
 from workload.pod import get_volume_name_by_pod
 from workload.pod import new_pvc_pod_manifest
 from workload.pod import create_pod
 from workload.pod import delete_pod
+from workload.pod import wait_delete_pod
 from workload.pod import list_pods
 from workload.pod import cleanup_pods
 from workload.pod import check_pod_did_not_restart
@@ -75,6 +80,10 @@ class workload_keywords:
         logging(f'Deleting pod {pod_name} in namespace {namespace}')
         delete_pod(pod_name, namespace, wait)
 
+    def wait_until_pod_deleted(self, pod_name, namespace='default'):
+        logging(f'Waiting for pod {pod_name} in namespace {namespace} to be deleted')
+        wait_delete_pod(pod_name, namespace)
+
     def list_pods(self, namespace, label_selector):
         logging(f'Listing pods with label {label_selector} in namespace {namespace}')
         pods = list_pods(namespace, label_selector)
@@ -99,6 +108,73 @@ class workload_keywords:
 
     def get_workload_pod_name(self, workload_name, namespace="default"):
         return get_workload_pod_names(workload_name, namespace)[0]
+
+    def get_workload_kubernetes_volume_attachment(self, workload_name):
+        pv_name = get_workload_volume_name(workload_name)
+        node_name = self.get_workload_pod_node_name(workload_name)
+        attachments = [
+            attachment
+            for attachment in client.StorageV1Api().list_volume_attachment().items
+            if attachment.spec.source.persistent_volume_name == pv_name
+            and attachment.spec.node_name == node_name
+            and attachment.spec.attacher == "driver.longhorn.io"
+        ]
+        assert len(attachments) == 1, (
+            f'Expected one Kubernetes VolumeAttachment for PV {pv_name} '
+            f'on node {node_name}, found {len(attachments)}')
+        attachment = attachments[0]
+        assert attachment.status.attached, (
+            f'Kubernetes VolumeAttachment {attachment.metadata.name} is not attached')
+        assert attachment.metadata.deletion_timestamp is None, (
+            f'Kubernetes VolumeAttachment {attachment.metadata.name} is being deleted')
+        logging(f'Recorded Kubernetes VolumeAttachment {attachment.metadata.name} '
+                f'for PV {pv_name} on node {node_name}')
+        return attachment.metadata.name
+
+    def kubernetes_volume_attachment_should_exist(self, attachment_name):
+        logging(f'Checking Kubernetes VolumeAttachment {attachment_name} exists')
+        client.StorageV1Api().read_volume_attachment(attachment_name)
+
+    def wait_for_kubernetes_volume_attachment_deleted(self, attachment_name):
+        api = client.StorageV1Api()
+        for i in range(self.retry_count):
+            logging(f'Waiting for Kubernetes VolumeAttachment {attachment_name} '
+                    f'to be deleted ... ({i})')
+            try:
+                api.read_volume_attachment(attachment_name)
+            except ApiException as exc:
+                if exc.status == 404:
+                    return
+                raise
+            time.sleep(self.retry_interval)
+        raise AssertionError(
+            f'Kubernetes VolumeAttachment {attachment_name} was not deleted')
+
+    def get_workload_pod_uid(self, workload_name, namespace="default"):
+        pods = get_workload_pods(workload_name, namespace=namespace)
+        assert pods, f"No pods found for workload {workload_name} in namespace {namespace}"
+        return pods[0].metadata.uid
+
+    def request_workload_volume_remount(self, workload_name):
+        volume_name = get_workload_volume_name(workload_name)
+        pod_name = self.get_workload_pod_name(workload_name)
+        # Use the pod's clock and ensure the request is later than its start
+        # time, which has second precision.
+        time.sleep(2)
+        remount_requested_at = pod_exec(
+            pod_name, "default", "date -u +%Y-%m-%dT%H:%M:%SZ").strip()
+        datetime.strptime(remount_requested_at, "%Y-%m-%dT%H:%M:%SZ")
+        logging(f"Requesting remount of volume {volume_name} for pod {pod_name} "
+                f"at {remount_requested_at}")
+        client.CustomObjectsApi().patch_namespaced_custom_object_status(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=get_longhorn_namespace(),
+            plural="volumes",
+            name=volume_name,
+            body={"status": {"remountRequestedAt": remount_requested_at}},
+        )
+        return pod_name
 
     def get_workload_pod_node_name(self, workload_name, namespace="default"):
         pods = get_workload_pods(workload_name, namespace=namespace)

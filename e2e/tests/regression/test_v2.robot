@@ -595,7 +595,7 @@ Test CPU Manager Policy And Data Engine Number Of CPU Cores
     # v2 instance manager pods should not have unexpected restarts after the policy revert
     Then Wait for k8s cluster ready
     And Wait for longhorn ready
-    And Check v2 instance manager pods did not restart
+    And Check instance manager pods of data engine v2 did not restart
 
     # Step 16: Check the v2 deployment still works after policy revert
     And Check deployment 0 works

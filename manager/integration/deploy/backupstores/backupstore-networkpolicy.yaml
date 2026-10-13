@@ -36,14 +36,14 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  # Purpose: Allow ingress traffic to the MinIO BackupStore
-  name: allow-backupstore-minio-ingress
+  # Purpose: Allow ingress traffic to the RustFS BackupStore
+  name: allow-backupstore-rustfs-ingress
   namespace: default
 spec:
-  # Target: Apply to pods with label app: longhorn-test-minio
+  # Target: Apply to pods with label app: longhorn-test-rustfs
   podSelector:
     matchLabels:
-      app: longhorn-test-minio
+      app: longhorn-test-rustfs
   policyTypes:
   - Ingress
   ingress:
@@ -62,4 +62,4 @@ spec:
         cidr: "::/0"
     ports:
     - protocol: TCP
-      port: 9000 # MinIO API port
+      port: 9000 # RustFS S3 API port
