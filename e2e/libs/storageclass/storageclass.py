@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, diskSelector, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None, nvmeTcpNrIoQueues=None):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, diskSelector, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None, nvmeTcpNrIoQueues=None, cryptoSecretName=None, encryptionSecret=None):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -39,11 +39,17 @@ class StorageClass():
 
             if encrypted == "true":
                 manifest_dict['parameters']['encrypted'] = encrypted
-                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = "longhorn-crypto"
+
+            # A vault StorageClass names its encryption Secret instead of csi.storage.k8s.io references.
+            if encrypted == "true" and encryptionSecret:
+                manifest_dict['parameters']['encryptionSecret'] = encryptionSecret
+            elif encrypted == "true":
+                secret_name = cryptoSecretName or "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = secret_name
                 manifest_dict['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = constant.LONGHORN_NAMESPACE
-                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = secret_name
                 manifest_dict['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = constant.LONGHORN_NAMESPACE
-                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-name'] = "longhorn-crypto"
+                manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-name'] = secret_name
                 manifest_dict['parameters']['csi.storage.k8s.io/node-expand-secret-namespace'] = constant.LONGHORN_NAMESPACE
 
             if recurringJobSelector:

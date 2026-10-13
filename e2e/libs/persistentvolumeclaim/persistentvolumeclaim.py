@@ -168,6 +168,19 @@ class PersistentVolumeClaim():
         claim = self.get(claim_name, claim_namespace)
         return claim.spec.volume_name
 
+    def wait_for_event_message(self, claim_name, message, claim_namespace="default"):
+        for i in range(self.retry_count):
+            events = self.core_v1_api.list_namespaced_event(
+                claim_namespace,
+                field_selector=f"involvedObject.kind=PersistentVolumeClaim,involvedObject.name={claim_name}").items
+            for event in events:
+                if event.message and message in event.message:
+                    logging(f"PVC {claim_name} event: {event.reason}: {event.message}")
+                    return event.message
+            logging(f"Waiting for PVC {claim_name} event containing {message!r} ... ({i})")
+            time.sleep(self.retry_interval)
+        assert False, f"PVC {claim_name} got no event containing {message!r}"
+
     def expand(self, claim_name, size_in_byte, namespace="default", skip_retry=False):
         retry_count = 1 if skip_retry else self.retry_count
         for i in range(retry_count):

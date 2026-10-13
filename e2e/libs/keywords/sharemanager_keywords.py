@@ -149,6 +149,14 @@ class sharemanager_keywords:
 
         assert False, f"Encrypted disk size in sharemanager pod {share_manager_pod} does not contain {expected_size}"
 
+    def assert_sharemanager_pod_has_no_env(self, volume_name, env_name):
+        pod = get_pod(f"share-manager-{volume_name}", constant.LONGHORN_NAMESPACE)
+        assert pod is not None, f"share manager pod of volume {volume_name} not found"
+        for container in pod.spec.containers:
+            names = [env.name for env in (container.env or [])]
+            assert env_name not in names, \
+                f"share manager pod of volume {volume_name} carries {env_name} in container {container.name}"
+
     def get_sharemanager_spec_image(self, volume_name):
         return self.sharemanager.get_spec_image(volume_name)
 
