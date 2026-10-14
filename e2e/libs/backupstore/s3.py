@@ -239,10 +239,20 @@ class S3(Base):
         try:
             minio_api = self.get_api_client(self.secret)
             bucket_name = self.get_backupstore_bucket_name()
+            backupstore_path = self.get_backupstore_path()
             for root, _, files in os.walk("./backupstore"):
                 for name in files:
                     local_path = os.path.join(root, name)
                     object_name = os.path.relpath(local_path, ".")
+                    # The extracted tarball root is "backupstore/", so object_name starts as
+                    # "backupstore/volumes/...". Longhorn expects the data under the backup
+                    # target path (e.g. "backupstore" in s3://backupbucket@us-east-1/backupstore),
+                    # i.e. "<target path>/backupstore/volumes/...". For this target that is
+                    # "backupstore/backupstore/volumes/...": the first "backupstore" is the
+                    # target path, the second is the directory Longhorn adds itself.
+                    # Without the prefix the objects land one level too shallow and are not found.
+                    if backupstore_path:
+                        object_name = f"{backupstore_path}/{object_name}"
                     minio_api.fput_object(bucket_name, object_name, local_path)
         finally:
             process.kill()
