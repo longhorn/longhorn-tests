@@ -7,6 +7,7 @@ from event.event import get_events
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 from utility.utility import get_pod, delete_pod, pod_exec, wait_delete_pod
+from utility.utility import get_cr
 import utility.constant as constant
 
 class sharemanager_keywords:
@@ -48,6 +49,67 @@ class sharemanager_keywords:
         sharemanager_pod_name = "share-manager-" + volume_name
         logging(f"Waiting for sharemanager pod {sharemanager_pod_name} to be deleted ...")
         wait_delete_pod(sharemanager_pod_name, constant.LONGHORN_NAMESPACE)
+
+    def _get_csi_attachment_tickets(self, volume_name):
+        attachment = get_cr(
+            group="longhorn.io", version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="volumeattachments", name=volume_name, wait=False)
+        assert attachment is not None, f"Cannot read VolumeAttachment for {volume_name}"
+        return {key: ticket for key, ticket in
+                attachment['spec'].get('attachmentTickets', {}).items()
+                if ticket['type'] == 'csi-attacher'}
+
+    def prepare_sharemanager_startup_measurement(self, volume_name):
+        # VolumeAttachment creation is asynchronous. Exclude this initial wait
+        # from the startup measurement by completing it before the baseline.
+        get_cr(
+            group="longhorn.io", version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="volumeattachments", name=volume_name, wait=True)
+        assert self.sharemanager.get(f"share-manager-{volume_name}") is None, \
+            f"Share manager pod already exists for {volume_name}"
+        # Request start precedes the snapshot with no ticket. It is therefore a
+        # lower bound on ticket creation, even if the API response is delayed.
+        absent_since = time.monotonic()
+        assert not self._get_csi_attachment_tickets(volume_name), \
+            f"CSI attacher ticket already exists for {volume_name}"
+        return absent_since
+
+    def wait_for_sharemanager_startup_after_csi_ticket(self, volume_name, absent_since,
+                                                     max_delay=5):
+        """Assert an upper bound on ticket-to-pod-creation latency, not readiness.
+
+        Never start timing at the first positive poll: the ticket might already
+        be old. Freeze the last negative request start when a ticket appears,
+        and use pod observation time as the upper bound on startup. API/polling
+        delays can cause conservative failures, but cannot hide a late startup.
+        """
+        ticket_deadline = time.monotonic() + self.retry_count * self.retry_interval
+        tickets = {}
+        while time.monotonic() < ticket_deadline:
+            request_started = time.monotonic()
+            tickets = self._get_csi_attachment_tickets(volume_name)
+            if tickets:
+                break
+            absent_since = request_started
+            time.sleep(0.1)
+        assert tickets, f"No CSI attacher ticket created for {volume_name}"
+        logging(f"First CSI attacher tickets observed for {volume_name}: {tickets}")
+
+        while True:
+            pod = self.sharemanager.get(f"share-manager-{volume_name}")
+            delay_bound = time.monotonic() - float(absent_since)
+            assert delay_bound <= float(max_delay), \
+                (f"Share manager startup for {volume_name} not proven within "
+                 f"{max_delay}s of first CSI ticket: latency upper bound "
+                 f"{delay_bound:.3f}s, pod observed={pod is not None}")
+            if pod is not None:
+                logging(f"Share manager {pod.metadata.name} created at "
+                        f"{pod.metadata.creation_timestamp}; CSI ticket-to-startup "
+                        f"latency upper bound: {delay_bound:.3f}s")
+                return
+            time.sleep(0.1)
 
     def wait_for_sharemanager_pod_recreation(self, name):
         sharemanager_pod_name = "share-manager-" + name
