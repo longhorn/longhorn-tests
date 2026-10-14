@@ -8,6 +8,19 @@ Library             ../libs/keywords/sharemanager_keywords.py
 
 
 *** Keywords ***
+Check no CSI attacher ticket or sharemanager pod exists for persistentvolumeclaim ${claim_id}
+    [Documentation]    Verify the initial state and return the ticket-absent timing baseline.
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${ticket_absent_since} =    prepare_sharemanager_startup_measurement    ${volume_name}
+    RETURN    ${ticket_absent_since}
+
+Verify sharemanager of persistentvolumeclaim ${claim_id} starts within ${max_delay} seconds after first CSI attacher ticket
+    [Arguments]    ${ticket_absent_since}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    wait_for_sharemanager_startup_after_csi_ticket    ${volume_name}    ${ticket_absent_since}    ${max_delay}
+
 Check sharemanager ${condition} using headless service
     ${is_using_headless_service} =    is_sharemanagers_using_headless_service
 
