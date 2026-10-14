@@ -12,6 +12,10 @@ Library    ../libs/keywords/replica_keywords.py
 Library    ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
+Wait for pod deleted
+    [Arguments]    ${pod_name}    ${namespace}=default
+    wait_until_pod_deleted    ${pod_name}    ${namespace}
+
 Create pod ${pod_id} using volume ${volume_id}
     [Arguments]    &{config}
     ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
@@ -162,6 +166,29 @@ Get volume name of ${workload_kind} ${workload_id}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     RETURN    ${volume_name}
+
+Get ${workload_kind} ${workload_id} pod node names
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${node_names} =    get_all_workload_node_names    ${workload_name}
+    RETURN    ${node_names}
+
+Get pod name of ${workload_kind} ${workload_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    get_workload_pod_name    ${workload_name}
+    RETURN    ${pod_name}
+
+Get pod names of ${workload_kind} ${workload_id}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_names} =    get_workload_pod_names    ${workload_name}
+    RETURN    ${pod_names}
+
+Get pod name of ${workload_kind} ${workload_id} not on node ${node_name}
+    [Documentation]    Return a pod of the workload that is not scheduled on ${node_name}.
+    ...    Useful for picking a pod that will survive powering off that node, e.g. to
+    ...    keep an fsync writer running through a share-manager failover.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    get_workload_pod_name_not_on_node    ${workload_name}    ${node_name}
+    RETURN    ${pod_name}
 
 Wait for volume of ${workload_kind} ${workload_id} degraded
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -344,6 +371,18 @@ Delete Longhorn ${workload_kind} ${workload_name} pod
     Log    ${pod_name}
     delete_pod    ${pod_name}     ${longhorn_namespace}
 
+Record ${workload_kind} ${workload_id} Kubernetes VolumeAttachment
+    [Documentation]    Record the attached Kubernetes CSI VolumeAttachment before node failure.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_attachment_name} =    get_workload_kubernetes_volume_attachment    ${workload_name}
+    Set Test Variable    ${volume_attachment_name}
+
+Kubernetes volume attachment should exist
+    workload_keywords.kubernetes_volume_attachment_should_exist    ${volume_attachment_name}
+
+Wait for Kubernetes volume attachment deleted
+    workload_keywords.wait_for_kubernetes_volume_attachment_deleted    ${volume_attachment_name}
+
 Force delete ${workload_kind} ${workload_id} pod on the original node
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     delete_workload_pod_on_node    ${workload_name}    ${last_volume_node}    default
@@ -391,6 +430,19 @@ Upgrade volume ${workload_kind} ${workload_id} engine to ${custom_engine_image}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     upgrade_engine_image    ${volume_name}    ${custom_engine_image}
     wait_for_engine_image_upgrade_completed    ${volume_name}    ${custom_engine_image}
+
+Record ${workload_kind} ${workload_id} pod uid
+    [Arguments]    ${namespace}=default
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_uid} =    get_workload_pod_uid    ${workload_name}    ${namespace}
+    Should Not Be Empty    ${pod_uid}
+    RETURN    ${pod_uid}
+
+Request volume remount for ${workload_kind} ${workload_id}
+    [Documentation]    Patch the volume remount request and return the original pod name.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod_name} =    request_workload_volume_remount    ${workload_name}
+    RETURN    ${pod_name}
 
 Record ${workload_kind} ${workload_id} pod UIDs
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

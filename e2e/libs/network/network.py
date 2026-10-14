@@ -1,6 +1,10 @@
 import asyncio
 import os
 import time
+import shlex
+
+from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from node import Node
 from node_exec import NodeExec
@@ -11,12 +15,92 @@ from utility.constant import LABEL_TEST_VALUE
 import utility.constant as constant
 from utility.utility import pod_exec
 from utility.utility import logging
+from utility.utility import get_longhorn_namespace
 
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 from workload.pod import wait_for_pod_status
 from workload.constant import IMAGE_BUSYBOX, IMAGE_NETWORK_TEST
+
+
+GLOBAL_MANAGER_API_PARTITION_POLICY = "global-manager-api-partition"
+GLOBAL_MANAGER_API_PARTITION_LABEL = "test.longhorn.io/api-partition"
+
+
+def partition_global_manager_api(pod_name):
+    """Block the leader's egress and remove its existing API connection."""
+    namespace = get_longhorn_namespace()
+    api = client.CoreV1Api()
+    pod = api.read_namespaced_pod(pod_name, namespace)
+    node_name = pod.spec.node_name
+    pod_ip = pod.status.pod_ip
+    assert pod_ip and node_name, f"Leader pod {pod_name} must be scheduled with an IP"
+    service = api.read_namespaced_service("kubernetes", "default")
+    api_ip = service.spec.cluster_ip
+    assert api_ip and api_ip != "None", "Kubernetes API Service must have a ClusterIP"
+
+    logging(f"Partitioning global manager {pod_name} on {node_name} "
+            f"from API Service {api_ip}")
+    labels = {GLOBAL_MANAGER_API_PARTITION_LABEL: "true"}
+    api.patch_namespaced_pod(pod_name, namespace, {"metadata": {"labels": labels}})
+    client.NetworkingV1Api().create_namespaced_network_policy(namespace, {
+        "apiVersion": "networking.k8s.io/v1",
+        "kind": "NetworkPolicy",
+        "metadata": {
+            "name": GLOBAL_MANAGER_API_PARTITION_POLICY,
+            "namespace": namespace,
+        },
+        "spec": {
+            "podSelector": {"matchLabels": labels},
+            "policyTypes": ["Egress"],
+            "egress": [],
+        },
+    })
+    # NetworkPolicy may leave the existing client-go connection established.
+    _delete_api_conntrack(node_name, pod_ip, api_ip)
+
+
+def _delete_api_conntrack(node_name, pod_ip, api_ip):
+    """Delete the pod's API Service connection using the host conntrack table."""
+    # Enter only the host network namespace so conntrack and its libraries
+    # come from the network helper image, not the node filesystem.
+    # conntrack returns 1 when no entries match; other failures must surface.
+    command = (
+        f"conntrack -D -p tcp -s {shlex.quote(pod_ip)} "
+        f"-d {shlex.quote(api_ip)} --dport 443 2>&1; "
+        "partition_conntrack_status=$?; echo conntrack-status=$partition_conntrack_status")
+    ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
+    output = NodeExec(node_name).issue_cmd(
+        ["nsenter", f"--net={ns_net}", "--", "sh", "-c", command],
+        image_name=IMAGE_NETWORK_TEST)
+    status_lines = output.splitlines()
+    deleted = "conntrack-status=0" in status_lines
+    no_entries = ("conntrack-status=1" in status_lines and
+                  "0 flow entries have been deleted" in output)
+    assert deleted or no_entries, f"Failed to delete API conntrack on node {node_name}: {output}"
+
+
+def cleanup_global_manager_api_partition():
+    namespace = get_longhorn_namespace()
+    try:
+        try:
+            client.NetworkingV1Api().delete_namespaced_network_policy(
+                GLOBAL_MANAGER_API_PARTITION_POLICY, namespace)
+        except ApiException as exc:
+            if exc.status != 404:
+                raise
+    finally:
+        api = client.CoreV1Api()
+        pods = api.list_namespaced_pod(
+            namespace, label_selector=f"{GLOBAL_MANAGER_API_PARTITION_LABEL}=true").items
+        for pod in pods:
+            try:
+                api.patch_namespaced_pod(pod.metadata.name, namespace, {
+                    "metadata": {"labels": {GLOBAL_MANAGER_API_PARTITION_LABEL: None}}})
+            except ApiException as exc:
+                if exc.status != 404:
+                    raise
 
 
 def setup_control_plane_network_latency(latency_in_ms=0):
