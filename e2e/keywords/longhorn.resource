@@ -100,14 +100,11 @@ Check ${engine_type} instance manager is not running on node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     check_instance_manager_existence_on_node    ${node_name}    ${engine_type}    ${False}
 
-Check v1 instance manager pods did not restart
-    check_all_instance_managers_not_restart
+Check instance manager pods of data engine ${data_engine} did not restart
+    check_all_instance_managers_not_restart    data_engine=${data_engine}
 
 Check ${data_engine} instance manager pods recreated
     wait_all_instance_managers_recreated    ${data_engine}
-
-Check v2 instance manager pods did not restart
-    check_all_instance_managers_not_restart    data_engine=v2
 
 Wait for engine instances in ${engine_type} instance manager CR on node ${node_id} to be cleaned up
     ${node_name} =    get_node_by_index    ${node_id}

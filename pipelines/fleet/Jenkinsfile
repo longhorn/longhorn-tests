@@ -122,7 +122,7 @@ node {
             stage ('releasing resources') {
 
                 if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
-                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/cleanup.sh"
+                    sh (script: "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/cleanup.sh", returnStatus: true)
                     sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                     sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                     sh "docker rmi ${imageName}"

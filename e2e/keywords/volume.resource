@@ -420,6 +420,13 @@ Wait for volume ${volume_id} faulted
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_faulted    ${volume_name}
 
+Check volume ${volume_id} kept in not faulted for ${period} seconds
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${period}
+        assert_volume_not_faulted    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
@@ -614,6 +621,11 @@ Check volume ${volume_id} replica reused on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     check_volume_replica_reused_on_node    ${volume_name}    ${node_name}    ${original_replica_name}
+
+Check volume ${volume_id} replica not reused on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    check_volume_replica_not_reused_on_node    ${volume_name}    ${node_name}    ${original_replica_name}
 
 Get volume ${volume_id} replica name on node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
