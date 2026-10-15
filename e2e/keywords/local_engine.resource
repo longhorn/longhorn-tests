@@ -69,6 +69,7 @@ Clean up local engine test
         Run Keyword And Ignore Error    Remove second local engine test disk
         Run Keyword And Ignore Error    Remove local engine test disk
     END
+    Run Keyword And Ignore Error    cleanup_node_exec
     ${auto_delete_setting}=    Get Variable Value    \${ORIGINAL_AUTO_DELETE_POD_SETTING}    ${NONE}
     IF    $auto_delete_setting is not None
         Run Keyword And Ignore Error
@@ -138,6 +139,22 @@ Add and verify local engine test disk
     wait_for_local_engine_disk_backend_initialized
     ...    ${LOCAL_ENGINE_NODE}
     ...    ${LOCAL_ENGINE_DISK_NAME}
+    ...    ${LOCAL_ENGINE_DISK_PATH}
+
+Use stable device alias for local engine test disk
+    [Documentation]    Register the test disk by a udev alias of its device
+    ...    (/dev/disk/by-id, else /dev/disk/by-path) instead of the kernel
+    ...    name, for the rest of the test only. Skips when the device has none.
+    ${alias}=    get_local_engine_disk_stable_alias
+    ...    ${LOCAL_ENGINE_NODE}
+    ...    ${LOCAL_ENGINE_DISK_PATH}
+    Skip If    not $alias
+    ...    Device ${LOCAL_ENGINE_DISK_PATH} on ${LOCAL_ENGINE_NODE} has no /dev/disk/by-id or by-path alias
+    Set Test Variable    ${LOCAL_ENGINE_DISK_PATH}    ${alias}
+
+Verify local engine test disk device is clean
+    verify_local_engine_disk_device_clean
+    ...    ${LOCAL_ENGINE_NODE}
     ...    ${LOCAL_ENGINE_DISK_PATH}
 
 Require second local engine test disk

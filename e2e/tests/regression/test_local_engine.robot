@@ -45,6 +45,27 @@ Test Local Engine CSI Volume Lifecycle
     When Delete local engine CSI workload and verify backend cleanup
     And Delete and verify local engine test disk
 
+Test Local Engine Disk Registration By Device Alias
+    [Tags]    disk
+    [Documentation]    Verify an LVM disk works when registered by a stable udev alias of its device.
+    ...    1. The disk is added by its /dev/disk/by-id (or by-path) link instead of the kernel name.
+    ...    2. The PV and VG initialize on the underlying device and the disk becomes schedulable.
+    ...    3. A CSI volume is provisioned on the aliased disk and holds data.
+    ...    4. Deleting the disk by the alias removes its VG and PV and leaves the device without LVM signatures.
+    Given Use local engine provisioning mode    thick
+    And Use local engine storage layout    per-disk
+    And Use stable device alias for local engine test disk
+    And Add and verify local engine test disk
+    And Create local engine CSI workload
+    Then Verify local engine CSI workload backend
+
+    When Write 64 MB data to file alias-data in deployment 0
+    Then Check deployment 0 data in file alias-data is intact
+
+    When Delete local engine CSI workload and verify backend cleanup
+    And Delete and verify local engine test disk
+    Then Verify local engine test disk device is clean
+
 Test Local Engine Resize And Independent Disks
     [Tags]    resize    storage-layout    per-disk
     [Documentation]    Verify resize and independent per-disk VG behavior.

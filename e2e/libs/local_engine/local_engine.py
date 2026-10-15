@@ -7,6 +7,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.utils.quantity import parse_quantity
 
 from node import Node
+from node_exec import NodeExec
 from utility.constant import LONGHORN_NAMESPACE
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
@@ -539,14 +540,20 @@ class LocalEngine:
 
     def wait_for_lvm_backend_initialized(
             self, node_name, disk_name, disk_path):
+        # LVM reports the PV under the kernel name, so a disk registered by a
+        # /dev/disk/by-id or by-path alias is matched against the device the
+        # alias resolves to inside the instance manager, whose /dev is the
+        # host's.
         last_output = ""
         for i in range(self.retry_count):
             pod_name = self._get_local_instance_manager_pod(node_name)
             if pod_name:
                 command = (
+                    f"device=$(readlink -f {disk_path}); "
                     "pvs --devicesfile longhorn.devices --noheadings "
                     "--separator ';' "
-                    f"-o pv_name,pv_uuid,vg_name {disk_path} 2>/dev/null"
+                    f"-o pv_name,pv_uuid,vg_name {disk_path} 2>/dev/null; "
+                    'echo "device=$device"'
                 )
                 last_output = pod_exec(pod_name, LONGHORN_NAMESPACE, command)
                 lines = [
@@ -554,13 +561,20 @@ class LocalEngine:
                     for line in last_output.splitlines()
                     if line.strip()
                 ]
-                if len(lines) == 1:
+                device_path = disk_path
+                pv_lines = []
+                for line in lines:
+                    if line.startswith("device="):
+                        device_path = line[len("device="):] or disk_path
+                    else:
+                        pv_lines.append(line)
+                if len(pv_lines) == 1:
                     pv_fields = [
-                        field.strip() for field in lines[0].split(";")
+                        field.strip() for field in pv_lines[0].split(";")
                     ]
                     if (
                         len(pv_fields) == 3
-                        and pv_fields[0] == disk_path
+                        and pv_fields[0] in (disk_path, device_path)
                         and pv_fields[1]
                         and pv_fields[2].startswith("longhorn-")
                     ):
@@ -1143,6 +1157,88 @@ class LocalEngine:
         raise AssertionError(
             "Local instance managers do not follow the LVM disks: "
             + "; ".join(mismatches)
+        )
+
+    def get_stable_device_alias(self, node_name, device_path):
+        """Return a udev-managed alias of device_path on the node: a
+        /dev/disk/by-id link when the device has one, else a
+        /dev/disk/by-path link, else "". Partition links and the links
+        LVM's own udev rules add for a PV are not aliases of the disk."""
+        command = (
+            f'target=$(readlink -f {device_path}); '
+            'for dir in /dev/disk/by-id /dev/disk/by-path; do '
+            'for link in "$dir"/*; do '
+            '[ -L "$link" ] || continue; '
+            'case "${link##*/}" in '
+            'lvm-pv-uuid-*|dm-*|*-part[0-9]*) continue;; esac; '
+            '[ "$(readlink -f "$link")" = "$target" ] && echo "$link"; '
+            'done; done; true'
+        )
+        output = NodeExec(node_name).issue_cmd(command)
+        for line in output.splitlines():
+            line = line.strip()
+            if line.startswith("/dev/disk/"):
+                logging(
+                    f"Device {device_path} on {node_name} has the stable "
+                    f"alias {line}"
+                )
+                return line
+        logging(
+            f"Device {device_path} on {node_name} has no stable udev alias: "
+            f"{output}"
+        )
+        return ""
+
+    def verify_lvm_device_clean(self, node_name, disk_path):
+        """Fail when a removed disk's device still carries an LVM signature
+        or is still a physical volume the local instance manager sees. A
+        disk removed through an alias used to keep its VG and PV."""
+        last_signatures = ""
+        last_pvs = ""
+        for i in range(self.retry_count):
+            last_signatures = NodeExec(node_name).issue_cmd(
+                f"wipefs --noheadings --parsable {disk_path} 2>&1; "
+                'echo "device=$(readlink -f ' + disk_path + ')"'
+            )
+            device_path = disk_path
+            signatures = []
+            for line in last_signatures.splitlines():
+                line = line.strip()
+                if line.startswith("device="):
+                    device_path = line[len("device="):] or disk_path
+                elif line:
+                    signatures.append(line)
+
+            pod_name = self._get_local_instance_manager_pod(node_name)
+            last_pvs = ""
+            if pod_name:
+                last_pvs = pod_exec(
+                    pod_name, LONGHORN_NAMESPACE,
+                    "pvs --devicesfile longhorn.devices --noheadings "
+                    "-o pv_name 2>/dev/null; true"
+                )
+            pv_names = [
+                line.strip() for line in last_pvs.splitlines()
+                if line.strip()
+            ]
+            if (
+                not signatures
+                and disk_path not in pv_names
+                and device_path not in pv_names
+            ):
+                logging(
+                    f"Device {disk_path} ({device_path}) on {node_name} "
+                    "carries no LVM signature and is no physical volume"
+                )
+                return
+            logging(
+                f"Waiting for device {disk_path} on {node_name} to be clean: "
+                f"signatures={signatures} pvs={pv_names} ... ({i})"
+            )
+            time.sleep(self.retry_interval)
+        raise AssertionError(
+            f"Device {disk_path} on {node_name} was not left clean after the "
+            f"disk was removed: wipefs={last_signatures!r} pvs={last_pvs!r}"
         )
 
     def wait_for_lvm_disk_removed(self, node_name, disk_name):

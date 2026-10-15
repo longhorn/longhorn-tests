@@ -83,6 +83,12 @@ class local_engine_keywords:
     def wait_for_local_instance_managers_to_follow_lvm_disks(self):
         self.local_engine.wait_for_instance_managers_to_follow_lvm_disks()
 
+    def get_local_engine_disk_stable_alias(self, node_name, disk_path):
+        return self.local_engine.get_stable_device_alias(node_name, disk_path)
+
+    def verify_local_engine_disk_device_clean(self, node_name, disk_path):
+        self.local_engine.verify_lvm_device_clean(node_name, disk_path)
+
     def wait_for_local_engine_disk_removed(self, node_name, disk_name):
         self.local_engine.wait_for_lvm_disk_removed(node_name, disk_name)
 
