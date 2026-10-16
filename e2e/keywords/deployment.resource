@@ -16,9 +16,10 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
     create_deployment    ${deployment_name}    ${claim_name}    &{config}
 
 Create deployment ${deployment_id} with block persistentvolumeclaim ${claim_id}
+    [Arguments]    &{config}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_deployment    ${deployment_name}    ${claim_name}    block_volume=True
+    create_deployment    ${deployment_name}    ${claim_name}    block_volume=True    &{config}
 
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} and liveness probe
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
