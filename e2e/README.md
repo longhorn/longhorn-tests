@@ -141,6 +141,16 @@ pip install -r requirements.txt
 
 # to modify debug level, use "-L" option:
 ./run.sh -L DEBUG
+
+# to run only local data engine tests on a dedicated disposable disk:
+LOCAL_ENGINE_NODE=worker-1 LOCAL_ENGINE_DISK_PATH=/dev/vdc \
+  ./run.sh -i "local-engine" -v DATA_ENGINE:local
+
+# to run the independent-disk and resize test:
+LOCAL_ENGINE_NODE=worker-1 LOCAL_ENGINE_DISK_PATH=/dev/vdc \
+  LOCAL_ENGINE_SECOND_DISK_PATH=/dev/vdd \
+  ./run.sh -t "Test Local Engine Resize And Independent Disks" -v DATA_ENGINE:local
+
 ```
 
 Once the test completed, the test result can be found at /tmp/test-report folder.
