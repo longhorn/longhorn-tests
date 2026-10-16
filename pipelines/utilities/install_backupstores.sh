@@ -11,11 +11,11 @@ install_backupstores(){
   wget "${RUSTFS_BACKUPSTORE_URL}" -O rustfs-backupstore.yaml
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" rustfs-backupstore.yaml
 
-  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
+  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/yangchiu/longhorn-tests/9c00ee0cc6b998edda132b0f71e98c9456f64b1a/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
   wget "${NFS_BACKUPSTORE_URL}" -O nfs-backupstore.yaml
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" nfs-backupstore.yaml
 
-  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/cifs-backupstore.yaml"
+  CIFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/yangchiu/longhorn-tests/94e084d74b5a384dc9295b887c32038bb01eab0f/manager/integration/deploy/backupstores/cifs-backupstore.yaml"
   wget "${CIFS_BACKUPSTORE_URL}" -O cifs-backupstore.yaml
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" cifs-backupstore.yaml
 

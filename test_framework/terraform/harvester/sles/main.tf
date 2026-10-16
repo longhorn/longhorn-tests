@@ -101,7 +101,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-etcd" {
     {
         "disks": [{
             "imageName": "longhorn-qa/image-69wt4",
-            "size": 8,
+            "size": 16,
             "bootOrder": 1
         }]
     }
