@@ -14,7 +14,6 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/sharemanager.resource
 Resource    ../keywords/storageclass.resource
-Resource    ../keywords/workload.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/engine_image.resource
 Resource    ../keywords/k8s.resource
@@ -36,6 +35,51 @@ Verify spdk_tgt cpu mask is ${mask} on all v2 instance manager pods
         ...    pgrep -af ^spdk_tgt
         ...    -m ${mask}
     END
+
+Get host rps_cpus on all v2 instance manager pods
+    ${HOST_PROVIDER}=    Get Environment Variable    HOST_PROVIDER    aws
+    IF    '${HOST_PROVIDER}' == 'harvester'
+        ${cmd} =    Set Variable    cat /host/sys/class/net/enp1s0/queues/rx-*/rps_cpus 2>/dev/null || cat /host/sys/class/net/eth0/queues/rx-*/rps_cpus
+    ELSE
+        ${cmd} =    Set Variable    cat /host/sys/class/net/eth0/queues/rx-*/rps_cpus
+    END
+    ${worker_nodes} =    get_worker_nodes
+    ${rps_dict} =    Create Dictionary
+    FOR    ${node_name}    IN    @{worker_nodes}
+        ${im_pod} =    get_instance_manager_pod_on_node    ${node_name}    v2
+        ${output} =    Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for non-empty output
+        ...    ${cmd} | sort -u
+        ${output} =    Strip String    ${output}
+        Set To Dictionary    ${rps_dict}    ${node_name}=${output}
+    END
+    RETURN    ${rps_dict}
+
+Verify host rps_cpus changed on all worker nodes
+    [Arguments]    ${old_rps_dict}    ${new_rps_dict}
+    ${worker_nodes} =    get_worker_nodes
+    FOR    ${node_name}    IN    @{worker_nodes}
+        ${old_val} =    Get From Dictionary    ${old_rps_dict}    ${node_name}
+        ${new_val} =    Get From Dictionary    ${new_rps_dict}    ${node_name}
+        Log    Node ${node_name} rps_cpus changed from ${old_val} to ${new_val}
+        Should Not Be Equal    ${old_val}    ${new_val}
+        ...    Host rps_cpus on node ${node_name} did not change: still ${old_val}
+    END
+
+Verify host rps_cpus equal on all worker nodes
+    [Arguments]    ${expected_rps_dict}    ${actual_rps_dict}
+    ${worker_nodes} =    get_worker_nodes
+    FOR    ${node_name}    IN    @{worker_nodes}
+        ${expected_val} =    Get From Dictionary    ${expected_rps_dict}    ${node_name}
+        ${actual_val} =    Get From Dictionary    ${actual_rps_dict}    ${node_name}
+        Log    Node ${node_name} rps_cpus restored to ${actual_val}
+        Should Be Equal    ${expected_val}    ${actual_val}
+        ...    Host rps_cpus on node ${node_name} expected ${expected_val} but got ${actual_val}
+    END
+
+Verify host rps_cpus restored
+    [Arguments]    ${expected_rps_dict}
+    ${current_rps_dict} =    Get host rps_cpus on all v2 instance manager pods
+    Verify host rps_cpus equal on all worker nodes    ${expected_rps_dict}    ${current_rps_dict}
 
 Verify TooManySnapshots Condition After Creating Snapshots
     [Documentation]    Create a volume, create snapshots up to the expected warning threshold,
@@ -567,6 +611,42 @@ Test Data Engine Cpu Mask Setting
     And Wait for v2 instance manager pods restarted
     And Wait for longhorn ready
     And Verify spdk_tgt cpu mask is 0x3 on all v2 instance manager pods
+
+Test Data Engine Cpu Isolation Enabled Setting
+    [Documentation]    Verify that data-engine-cpu-isolation-enabled is enabled by default for v2 data engine,
+    ...                and that host RPS (Receive Packet Steering) on worker nodes dynamically changes when
+    ...                CPU isolation is toggled, confirming host RPS steering without relying on hardcoded
+    ...                environment-specific CPU bitmasks.
+    ...                Also verify that invalid values are rejected.
+    ...
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/13724
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates on v2 data engine
+    END
+
+    # Step 1: Verify data-engine-cpu-isolation-enabled is enabled by default
+    Given Setting data-engine-cpu-isolation-enabled should be {"v2":"true"}
+
+    # Step 2: Record baseline host RPS values on all worker nodes while CPU isolation is enabled
+    ${initial_enabled_rps} =    Get host rps_cpus on all v2 instance manager pods
+    Log    Initial enabled rps_cpus: ${initial_enabled_rps}
+
+    # Step 3: Verify invalid values are rejected
+    Then Set setting data-engine-cpu-isolation-enabled to invalid will fail
+    And Set setting data-engine-cpu-isolation-enabled to {"v2":"invalid"} will fail
+
+    # Step 4: Disable CPU isolation and verify host RPS values change on all worker nodes
+    When Setting data-engine-cpu-isolation-enabled is set to {"v2":"false"}
+    And Wait for v2 instance manager pods restarted
+    And Wait for longhorn ready
+    ${disabled_rps} =    Get host rps_cpus on all v2 instance manager pods
+    Log    Disabled rps_cpus: ${disabled_rps}
+    Then Verify host rps_cpus changed on all worker nodes    ${initial_enabled_rps}    ${disabled_rps}
+
+    # Step 5: Re-enable CPU isolation and verify host RPS restores to initial enabled values
+    When Setting data-engine-cpu-isolation-enabled is set to {"v2":"true"}
+    Then Wait Until Keyword Succeeds    60s    2s    Verify host rps_cpus restored    ${initial_enabled_rps}
+    And Wait for longhorn ready
 
 Test Longhorn UI PodDisruptionBudget
     [Tags]    setting    uninstall    helm
