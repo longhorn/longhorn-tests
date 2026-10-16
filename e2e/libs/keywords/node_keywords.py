@@ -196,6 +196,15 @@ class node_keywords:
     def wait_for_disk_device_released(self, node_name, bdf):
         self.node.wait_for_disk_device_released(node_name, bdf)
 
+    def wait_for_disk_condition(self, node_name, disk_name, condition_type, status, reason=None):
+        self.node.wait_for_disk_condition(node_name, disk_name, condition_type, status, reason or None)
+
+    def check_disk_uuid_unchanged(self, node_name, disk_name, expected_uuid):
+        self.node.check_disk_uuid_unchanged(node_name, disk_name, expected_uuid)
+
+    def wait_for_disk_path_kept_empty(self, node_name, disk_path):
+        self.node.wait_for_disk_path_kept_empty(node_name, disk_path)
+
     def wait_for_disk_schedulable(self, node_name, disk_name):
         self.node.wait_for_disk_schedulable(node_name, disk_name)
 
