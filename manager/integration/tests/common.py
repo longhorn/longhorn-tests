@@ -3602,8 +3602,12 @@ def wait_for_backup_volume_backing_image_synced(
 
 def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
+    # retry_count bounds the time without progress, not the total time, so
+    # the wait does not depend on the backupstore throughput.
     completed = False
-    for _ in range(retry_count):
+    last_progress = -1
+    idle_count = 0
+    while idle_count < retry_count:
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
@@ -3611,8 +3615,12 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
             if b.state == "Completed" and b.progress == 100 and b.error == "":
                 completed = True
                 break
+            if b.progress > last_progress:
+                last_progress = b.progress
+                idle_count = 0
         if completed:
             break
+        idle_count += 1
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup status = {b.state}," \
                               f" Backup Progress = {b.progress}, Volume = {v}"
