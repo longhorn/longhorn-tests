@@ -338,14 +338,27 @@ class volume_keywords:
     def get_replica_name_on_node(self, volume_name, node_name):
         return self.volume.get_replica_name_on_node(volume_name, node_name)
 
+    def get_running_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_running_replica_name_on_node(volume_name, node_name)
+
     def check_volume_replica_reused_on_node(self, volume_name, node_name, original_replica_name):
         for i in range(self.retry_count):
             logging(f"Checking volume {volume_name} replica on node {node_name} is reused ... ({i})")
-            replica_name = self.get_replica_name_on_node(volume_name, node_name)
+            replica_name = self.get_running_replica_name_on_node(volume_name, node_name)
             if replica_name == original_replica_name:
                 return
             time.sleep(self.retry_interval)
         assert False, f"Failed to reuse volume {volume_name} replica on node {node_name}. Original replica name: {original_replica_name}, current replica name: {replica_name}"
+
+    def check_volume_replica_not_reused_on_node(self, volume_name, node_name, original_replica_name):
+        for i in range(self.retry_count):
+            replica_name = self.get_running_replica_name_on_node(volume_name, node_name)
+            logging(f"Checking volume {volume_name} replica on node {node_name} is not reused ... ({i}). "
+                    f"Original replica name: {original_replica_name}, current replica name: {replica_name}")
+            if replica_name != original_replica_name:
+                return
+            time.sleep(self.retry_interval)
+        assert replica_name != original_replica_name, f"Volume {volume_name} replica {original_replica_name} on node {node_name} was unexpectedly reused"
 
     def wait_for_replica_count(self, volume_name, node_name=None, replica_count=None, running=True):
         return self.volume.wait_for_replica_count(volume_name, node_name, replica_count, running)
@@ -413,6 +426,13 @@ class volume_keywords:
     def wait_for_volume_faulted(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be in faulted')
         self.volume.wait_for_volume_faulted(volume_name)
+
+    def assert_volume_not_faulted(self, volume_name):
+        # status is not populated yet right after the volume is created.
+        volume = self.volume.get(volume_name)
+        robustness = volume.get('status', {}).get('robustness', '')
+        logging(f"Checking volume {volume_name} is not faulted: robustness={robustness}")
+        assert robustness != "faulted", f"Expected volume {volume_name} to stay non-faulted, got {volume}"
 
     def wait_for_volume_condition(self, volume_name, condition_name, condition_status, reason=""):
         self.volume.wait_for_volume_condition(volume_name, condition_name, condition_status, reason)

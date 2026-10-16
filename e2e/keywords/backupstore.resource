@@ -14,10 +14,22 @@ Delete file ${file_name} in the backups folder of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_file_in_backups_folder    ${volume_name}    ${file_name}
 
+Create deletion lock in backupstore for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_backupstore_deletion_lock    ${volume_name}
+
+Delete deletion lock in backupstore for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_backupstore_deletion_lock    ${volume_name}
+
 Corrupt backup ${backup_id} cfg file of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${backup_name} =    get_backup_name    ${backup_id}    ${volume_name}
     corrupt_backup_cfg_file    ${volume_name}    ${backup_name}
+
+Corrupt volume.cfg of volume ${volume_id} with invalid JSON
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    corrupt_backup_volume_cfg_file    ${volume_name}
 
 Create dummy backup from ${filename}
     create_dummy_backup_from_file    ${filename}

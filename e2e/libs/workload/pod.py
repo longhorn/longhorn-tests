@@ -261,5 +261,6 @@ def check_pod_did_not_restart(pod_name):
     pod = core_api.read_namespaced_pod(name=pod_name, namespace="default")
     if pod.status.container_statuses[0].restart_count != 0:
         logging(f"Unexpected pod restart: {pod}")
-        time.sleep(self.retry_count)
+        retry_count, retry_interval = get_retry_count_and_interval()
+        time.sleep(retry_count)
         assert False, f"Unexpected pod restart: {pod}"

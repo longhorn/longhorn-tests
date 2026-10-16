@@ -223,7 +223,7 @@ Pre-release Checks
     # do post system upgrade checks
 
     # (0) check v1 instance manager pods didn't restart
-    Then Check v1 instance manager pods did not restart
+    Then Check instance manager pods of data engine v1 did not restart
 
     IF    '${test_v2_only}' == 'false'
 
