@@ -37,8 +37,10 @@ Cleanup engine frontend test on node ${node_id}
 
 *** Test Cases ***
 Test V2 Volume Basic
-    [Tags]  coretest
+    [Tags]    coretest
     [Documentation]    Test basic v2 volume operations
+    ...                Continuously write data to v2 volume to verify write does not get stuck and data is intact.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/13937
     IF    '${DATA_ENGINE}' == 'v1'
         Skip    Test only validate on v2 data engine
     END
@@ -46,8 +48,10 @@ Test V2 Volume Basic
     When Create volume 0 with    dataEngine=v2
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
-    And Write data to volume 0
-    Then Check volume 0 data is intact
+    FOR    ${i}    IN RANGE    3
+        And Write data to volume 0
+        Then Check volume 0 data is intact
+    END
     And Detach volume 0
     And Wait for volume 0 detached
     And Delete volume 0
