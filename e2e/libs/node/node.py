@@ -27,6 +27,10 @@ class Node:
     control_plane_nodes = None
     worker_nodes = None
 
+    # node name -> resolved block disk path, shared across Node instances so
+    # the path is resolved only once per node for the whole test run
+    block_disk_paths = {}
+
     def __init__(self):
         if not Node.all_nodes:
             self.init_node_list()
@@ -774,6 +778,30 @@ class Node:
         logging(f"Removing directory {dir_path} on node {node_name}")
         cmd = f"rm -rf {dir_path}"
         NodeExec(node_name).issue_cmd(cmd)
+
+    def get_default_block_disk_path(self, node_name, disk_path):
+        # Prefer the /dev/disk/by-id symlink of the block device since it is stable.
+        # A BDF path is used as is. Fall back to disk_path if no valid symlink can be found.
+        if self.is_bdf_disk_path(disk_path):
+            return disk_path
+
+        cached_path = Node.block_disk_paths.get(node_name)
+        if cached_path:
+            logging(f"Using cached block disk path {cached_path} for node {node_name}")
+            return cached_path
+
+        cmd = (f'[ -d /dev/disk/by-id ] && for f in /dev/disk/by-id/*; do '
+               f'[ "$(readlink -f "$f")" = "$(readlink -f {disk_path})" ] && echo "$f" && break; done; true')
+        try:
+            by_id_path = str(NodeExec(node_name).issue_cmd(cmd)).strip()
+        except Exception as e:
+            logging(f"Failed to get by-id path of {disk_path} on node {node_name}: {e}")
+            by_id_path = ""
+
+        if not re.fullmatch(r"/dev/disk/by-id/\S+", by_id_path):
+            return disk_path
+        Node.block_disk_paths[node_name] = by_id_path
+        return by_id_path
 
     def is_bdf_disk_path(self, disk_path):
         return re.match(constant.BDF_PATTERN, str(disk_path)) is not None
