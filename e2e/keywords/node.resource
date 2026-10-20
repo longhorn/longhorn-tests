@@ -7,6 +7,9 @@ Library    ../libs/keywords/node_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
+Wait for all nodes to have updated periodic snapshot check timestamps
+    wait_all_nodes_have_periodic_snapshot_check_timestamp
+
 Add ${disk_type} type disk ${disk_path} for all worker nodes
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
