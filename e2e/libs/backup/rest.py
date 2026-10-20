@@ -234,11 +234,23 @@ class Rest(Base):
             backup_name = backup["metadata"]["name"]
             assert backup_name in target_backup_names, f"Error: Backup {backup_name} not found in {target_backup_names}"
 
+            backup_volume_found = False
             for i in range(self.retry_count):
-                time.sleep(self.retry_interval)
-                volume_name = backup["status"]["volumeName"]
-                if self.get_backup_volume(volume_name) != None:
+                # re-fetch the backup CR since status.volumeName may not be
+                # populated yet right after the backup CR is synced from the
+                # backupstore on a freshly (re)installed Longhorn cluster
+                current_backup = self.get_by_name(backup_name)
+                volume_name = current_backup.get("status", {}).get("volumeName", "") if current_backup else ""
+                if not volume_name:
+                    logging(f"Waiting for backup {backup_name} status.volumeName to be populated ... ({i})")
+                    time.sleep(self.retry_interval)
+                    continue
+                if self.get_backup_volume(volume_name) is not None:
+                    backup_volume_found = True
                     break
+                time.sleep(self.retry_interval)
+            assert backup_volume_found, \
+                f"Failed to find backup volume for backup {backup_name} after {self.retry_count} retries"
 
     def delete(self, volume_name, backup_id):
         return CRD().delete(volume_name, backup_id)

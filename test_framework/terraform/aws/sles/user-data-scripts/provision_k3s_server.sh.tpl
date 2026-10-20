@@ -20,11 +20,31 @@ sudo ln -s /var/lib/ca-certificates/pem /etc/ssl/certs
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
-if [[ "${network_stack}" == "ipv6" ]]; then
-  k3s_server_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
-else
-  k3s_server_public_ip="${control_plane_ipv4}"
-fi
+ipv6_public_ip=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+private_ipv4=$(hostname -I | awk '{print $1}')
+
+case "${network_stack}" in
+  ipv6)
+    k3s_server_public_ip="$ipv6_public_ip"
+    ;;
+  dual-stack-ipv6-first)
+    k3s_server_public_ip="$ipv6_public_ip"
+    dual_stack_node_ip="$ipv6_public_ip,$private_ipv4"
+    dual_stack_external_ip="$ipv6_public_ip,${control_plane_ipv4}"
+    dual_stack_cluster_cidr="fd00:10::/56,10.42.0.0/16"
+    dual_stack_service_cidr="fd00:20::/112,10.43.0.0/16"
+    ;;
+  dual-stack-ipv4-first)
+    k3s_server_public_ip="${control_plane_ipv4}"
+    dual_stack_node_ip="$private_ipv4,$ipv6_public_ip"
+    dual_stack_external_ip="${control_plane_ipv4},$ipv6_public_ip"
+    dual_stack_cluster_cidr="10.42.0.0/16,fd00:10::/56"
+    dual_stack_service_cidr="10.43.0.0/16,fd00:20::/112"
+    ;;
+  *)
+    k3s_server_public_ip="${control_plane_ipv4}"
+    ;;
+esac
 
 K3S_EXEC="server \
   --node-taint node-role.kubernetes.io/control-plane:NoSchedule \
@@ -38,6 +58,18 @@ if [[ "${network_stack}" == "ipv6" ]]; then
     --flannel-ipv6-masq \
     --cluster-cidr=fd00:10::/56 \
     --service-cidr=fd00:20::/112"
+elif [[ "${network_stack}" == dual-stack-* ]]; then
+  K3S_EXEC="$K3S_EXEC \
+    --tls-san ${control_plane_ipv4} \
+    --tls-san $ipv6_public_ip \
+    --node-ip $dual_stack_node_ip \
+    --node-external-ip $dual_stack_external_ip \
+    --flannel-ipv6-masq \
+    --cluster-cidr=$dual_stack_cluster_cidr \
+    --service-cidr=$dual_stack_service_cidr"
+fi
+
+if [[ "${network_stack}" == "ipv6" || "${network_stack}" == dual-stack-* ]]; then
   echo -e "net.ipv6.conf.eth0.accept_ra = 2\nnet.ipv6.conf.default.accept_ra = 2\nnet.ipv6.conf.all.forwarding = 1" | tee /etc/sysctl.d/99-ipv6.conf
   sysctl --system
   cat <<EOF > /etc/resolv.conf
