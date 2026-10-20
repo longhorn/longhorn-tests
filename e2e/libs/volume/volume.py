@@ -1,4 +1,7 @@
 from asyncio import constants
+import shlex
+
+from ssh.ssh import ssh_exec
 
 from strategy import LonghornOperationStrategy
 
@@ -18,6 +21,85 @@ class Volume(Base):
             self.volume = CRD()
         else:
             self.volume = Rest()
+
+    @staticmethod
+    def get_mount_path(volume_name):
+        return f"/tmp/{volume_name}-mount"
+
+    @staticmethod
+    def _run_filesystem_command(node_name, command):
+        # ssh_exec uses a local shell; quote once to pass the command to SSH.
+        return ssh_exec(node_name, shlex.quote(command))
+
+    def initialize_filesystem(self, volume_name, node_name):
+        device = shlex.quote(f"/dev/longhorn/{volume_name}")
+        command = (
+            f"test -b {device} || exit 1; "
+            f"if sudo -n blkid -p {device}; then "
+            "echo 'Refusing to format a device with a signature' >&2; "
+            "exit 1; else status=$?; "
+            'test "$status" -eq 2 || exit "$status"; fi; '
+            f"sudo -n mkfs.ext4 {device}"
+        )
+        self._run_filesystem_command(node_name, command)
+
+    def mount(self, volume_name, node_name):
+        path = shlex.quote(self.get_mount_path(volume_name))
+        device = shlex.quote(f"/dev/longhorn/{volume_name}")
+        # Refuse an existing (possibly stale) mount before mounting the current
+        # device. Remounting after recovery must never format the filesystem.
+        command = (
+            f"if findmnt -rn --mountpoint {path}; then exit 1; "
+            'else status=$?; test "$status" -eq 1 || exit "$status"; fi; '
+            f"sudo -n mkdir -p {path} && sudo -n mount {device} {path} && "
+            f"findmnt -rn --mountpoint {path}"
+        )
+        self._run_filesystem_command(node_name, command)
+
+    def unmount(self, volume_name, node_name, require_mounted=True,
+                remove_directory=False):
+        path = shlex.quote(self.get_mount_path(volume_name))
+        missing = "exit 1" if require_mounted else ":"
+        command = (
+            f"if findmnt -rn --mountpoint {path}; then "
+            f"sudo -n umount {path} || exit 1; else status=$?; "
+            'test "$status" -eq 1 || exit "$status"; '
+            f"{missing}; fi; "
+            f"if findmnt -rn --mountpoint {path}; then exit 1; "
+            'else status=$?; test "$status" -eq 1 || exit "$status"; fi'
+        )
+        if remove_directory:
+            command += (
+                f"; if [ -d {path} ]; then "
+                f"sudo -n rmdir {path} || exit 1; fi"
+            )
+        self._run_filesystem_command(node_name, command)
+
+    def write_filesystem_data(self, volume_name, node_name):
+        path = shlex.quote(self.get_mount_path(volume_name))
+        data = shlex.quote(f"{self.get_mount_path(volume_name)}/data.bin")
+        command = (
+            f"findmnt -rn --mountpoint {path} && "
+            f"sudo -n dd if=/dev/urandom of={data} bs=1M count=16 "
+            "conv=fsync && sync"
+        )
+        self._run_filesystem_command(node_name, command)
+        return self.get_filesystem_checksum(volume_name, node_name)
+
+    def get_filesystem_checksum(self, volume_name, node_name):
+        path = shlex.quote(self.get_mount_path(volume_name))
+        data = shlex.quote(f"{self.get_mount_path(volume_name)}/data.bin")
+        output = self._run_filesystem_command(node_name, (
+            f"findmnt -rn --mountpoint {path} >/dev/null && "
+            f"sudo -n sha256sum {data}"
+        ))
+        # The SSH helper merges host-key warnings with stdout.
+        lines = output.strip().splitlines()
+        checksum = lines[-1].split()[0] if lines else ""
+        assert len(checksum) == 64 and all(
+            char in "0123456789abcdef" for char in checksum
+        ), f"Invalid filesystem checksum: {output}"
+        return checksum
 
     def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=None):
         return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=dataLayout)
