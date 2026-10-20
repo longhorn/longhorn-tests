@@ -17,26 +17,24 @@ Stop volume node kubelet of ${workload_kind} ${workload_id} for ${duration} seco
     restart_kubelet    ${node_name}    ${duration}    wait=${wait}
 
 Stop volume nodes kubelet for ${duration} seconds
-    [Arguments]    @{args}    ${wait}=True
-    @{node_list} =    Create List
+    [Arguments]    @{args}
     FOR    ${arg}    IN    @{args}
         @{workload} =    Split String    ${arg}
         ${workload_name} =    generate_name_with_suffix    ${workload}[0]    ${workload}[1]
         ${volume_name} =    get_workload_volume_name    ${workload_name}
         ${node_name} =    get_volume_node    ${volume_name}
-        Append To List    ${node_list}    ${node_name}
+        restart_kubelet    ${node_name}    ${duration}    wait=False
     END
-    restart_kubelet_on_nodes    ${duration}    ${node_list}   wait=${wait}
 
 Stop kubelet on node ${node_id} for ${duration} seconds
     [Arguments]    ${wait}=True
     ${node_name} =    get_node_by_index    ${node_id}
     restart_kubelet    ${node_name}    ${duration}   wait=${wait}
 
-Stop control plane kubelet for ${duration} seconds
+Restart control plane kubelet
     [Arguments]    ${wait}=True
     ${control_plane_node_name} =    get_control_plane_node
-    restart_kubelet    ${control_plane_node_name}    ${duration}    wait=${wait}
+    restart_kubelet    ${control_plane_node_name}    0    wait=${wait}
 
 Restart kubelet on node ${node_id}
     [Arguments]    ${wait}=True
