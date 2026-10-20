@@ -27,6 +27,10 @@ Corrupt backup ${backup_id} cfg file of volume ${volume_id}
     ${backup_name} =    get_backup_name    ${backup_id}    ${volume_name}
     corrupt_backup_cfg_file    ${volume_name}    ${backup_name}
 
+Corrupt volume.cfg of volume ${volume_id} with invalid JSON
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    corrupt_backup_volume_cfg_file    ${volume_name}
+
 Create dummy backup from ${filename}
     create_dummy_backup_from_file    ${filename}
 
