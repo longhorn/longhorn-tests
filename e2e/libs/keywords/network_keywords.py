@@ -7,6 +7,7 @@ from network.network import drop_pod_egress_traffic
 from network.network import drop_tcp_connection_replies
 from network.network import get_pod_tcp_connections
 from network.network import limit_pod_traffic_to_ip
+from network.network import manipulate_pod_egress
 from network.network import remove_pod_traffic_limit
 from network.network import partition_global_manager_api
 from network.network import cleanup_global_manager_api_partition
@@ -125,6 +126,9 @@ class network_keywords:
             "FileSend TCP connection is no longer established: "
             f"{connection}"
         )
+
+    def manipulate_pod_egress(self, pod_name, command):
+        manipulate_pod_egress(pod_name, command)
 
     def _get_running_replica(self, volume_name, node_name):
         replicas = [
