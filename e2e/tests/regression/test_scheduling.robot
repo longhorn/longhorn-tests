@@ -548,6 +548,95 @@ Test Longhorn UI Topology Spread Constraints Passthrough And Enforcement
     And Install Longhorn
     And Wait for longhorn ready
 
+Test Longhorn Global Manager Topology Spread Constraints Passthrough And Enforcement
+    [Tags]    setting    uninstall    helm
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14224
+    ...
+    ...                This test case is only applicable for helm installation method.
+    ...
+    ...                Manual test steps:
+    ...                1. Install Longhorn with
+    ...                   'longhornGlobalManager.topologySpreadConstraints=[{"maxSkew":1,
+    ...                   "topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway",
+    ...                   "labelSelector":{"matchLabels":{"app":"longhorn-global-manager"}}}]'
+    ...                2. kubectl -n longhorn-system get deploy longhorn-global-manager
+    ...                   -o jsonpath='{.spec.template.spec.topologySpreadConstraints}'
+    ...                3. Expected: the constraint appears verbatim on the pod spec, and
+    ...                   all 3 replicas are Running.
+    ...                4. Label node 0 and 1 with topology-test=zone-a, node 2 with
+    ...                   topology-test=zone-b, cordon node 2, and repeat with
+    ...                   topologyKey: topology-test, whenUnsatisfiable: DoNotSchedule.
+    ...                5. Expected: 1 replica Running, 2 Pending with a scheduling event
+    ...                   citing topology spread constraints.
+    ...                6. Uncordon node 2. Expected: all 3 replicas Running, with
+    ...                   1 on node 2 (zone-b) and 2 in zone-a.
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    Test case only applicable for helm installation method
+    END
+
+    TRY
+        Given Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+        When Install Longhorn
+        ...    custom_cmd=yq -i '.longhornGlobalManager.topologySpreadConstraints = [{"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway","labelSelector":{"matchLabels":{"app":"longhorn-global-manager"}}}]' values.yaml
+
+        Then Run command and expect output
+        ...    kubectl get deploy longhorn-global-manager -n ${LONGHORN_NAMESPACE} -ojsonpath='{.spec.template.spec.topologySpreadConstraints[*].whenUnsatisfiable}'
+        ...    ScheduleAnyway
+        And Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    3
+
+        # Label node 0 and node 1 as topology-test=zone-a and node 2 as zone-b, then
+        # cordon node 2. zone-b stays an empty domain, so with maxSkew=1 only 1 replica
+        # can be placed in zone-a and the other 2 must stay Pending. Without the
+        # constraint, all 3 replicas would run on nodes 0 and 1.
+        When Run command
+        ...    kubectl label node ${NODE_0} ${NODE_1} topology-test=zone-a --overwrite
+        And Run command
+        ...    kubectl label node ${NODE_2} topology-test=zone-b --overwrite
+        And Cordon node 2
+        And Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+
+        And Install Longhorn
+        ...    custom_cmd=yq -i '.longhornGlobalManager.topologySpreadConstraints = [{"maxSkew":1,"topologyKey":"topology-test","whenUnsatisfiable":"DoNotSchedule","labelSelector":{"matchLabels":{"app":"longhorn-global-manager"}}}]' values.yaml
+
+        Then Run command and expect output
+        ...    kubectl get deploy longhorn-global-manager -n ${LONGHORN_NAMESPACE} -ojsonpath='{.spec.template.spec.topologySpreadConstraints[*].topologyKey}'
+        ...    topology-test
+        And Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    1
+        And Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Pending --no-headers | wc -l
+        ...    2
+        And Run command and expect output
+        ...    kubectl get events -n ${LONGHORN_NAMESPACE} --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp'
+        ...    didn't match pod topology spread constraints
+
+        # uncordon node 2 so zone-b becomes schedulable, expect a 2/1 split
+        When Uncordon node 2
+        Then Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    3
+        And Run command and expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=spec.nodeName=${NODE_2} --no-headers | wc -l
+        ...    1
+    FINALLY
+        And Uncordon node 2
+        And Run command
+        ...    kubectl label node ${NODE_0} ${NODE_1} ${NODE_2} topology-test-
+        And Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+        And Install Longhorn
+        And Wait for longhorn ready
+    END
+
 Test System Managed Components Node Selector
     [Tags]    uninstall
     [Documentation]    Test that setting `system-managed-components-node-selector` restricts
