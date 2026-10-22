@@ -242,9 +242,9 @@ def test_settings(client):  # NOQA
             assert name+" with invalid value " in \
                    str(e.value)
             setting = client.update(setting, value="2")
-            assert setting.value == '{"v1":"2","v2":"2"}'
+            assert setting.value == '{"local":"2","v1":"2","v2":"2"}'
             setting = client.by_id_setting(name)
-            assert setting.value == '{"v1":"2","v2":"2"}'
+            assert setting.value == '{"local":"2","v1":"2","v2":"2"}'
 
         setting = client.update(setting, value=old_value)
         assert setting.value == old_value
