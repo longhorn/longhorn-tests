@@ -202,6 +202,12 @@ Check longhorn manager pods not restarted after test start
     ${longhorn_namespace} =    get_longhorn_namespace
     check_pod_not_restart_after_specific_time    ${longhorn_namespace}    app=longhorn-manager    ${test_start_time}
 
+Check CSI pods not restarted after test start
+    ${longhorn_namespace} =    get_longhorn_namespace
+    FOR    ${component}    IN    csi-provisioner    longhorn-csi-plugin    csi-attacher    csi-resizer    csi-snapshotter
+        check_pod_not_restart_after_specific_time    ${longhorn_namespace}    app=${component}    ${test_start_time}
+    END
+
 Check longhorn backing image manager image is ${expected_image}
     check_backing_image_manager_images    ${expected_image}
 
