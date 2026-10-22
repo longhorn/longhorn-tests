@@ -65,6 +65,16 @@ node {
 
             stage('build') {
 
+                def testOptions = (params.CUSTOM_TEST_OPTIONS ?: "").tokenize().collect {
+                    it.replaceAll(/^[\\'"]+|[\\'"]+$/, '')
+                }
+                def includeIndex = testOptions.indexOf("-i")
+
+                if (includeIndex >= 0) {
+                    def testTag = testOptions[includeIndex + 1]
+                    currentBuild.description = [currentBuild.description, testTag].findAll { it }.join(" ")
+                }
+
                 if(JOB_BASE_NAME == "longhorn-e2e-test") {
                     manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
                 }
