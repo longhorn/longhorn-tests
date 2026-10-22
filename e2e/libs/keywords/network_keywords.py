@@ -10,7 +10,11 @@ from network.network import limit_pod_traffic_to_ip
 from network.network import remove_pod_traffic_limit
 from network.network import partition_global_manager_api
 from network.network import cleanup_global_manager_api_partition
+from network.network import inject_nfs_latency_on_node
+from network.network import cleanup_nfs_latency_on_node
+from network.network import verify_nfs_latency_on_node
 
+from node import Node
 from replica import Replica
 
 from utility.utility import get_retry_count_and_interval
@@ -145,6 +149,27 @@ class network_keywords:
             context["source_sync_agent_port"] and
             connection["remote_ip"] == context["target_ip"]
         )
+
+    def apply_nfs_backup_target_latency(self, nfs_server_ip, latency_in_ms):
+        all_nodes = Node().list_node_names_by_role("all")
+        for node_name in all_nodes:
+            logging(f"Injecting {latency_in_ms}ms NFS latency toward {nfs_server_ip} on node {node_name}")
+            inject_nfs_latency_on_node(node_name, nfs_server_ip, int(latency_in_ms))
+        self._assert_nfs_latency_active(nfs_server_ip, all_nodes)
+
+    def remove_nfs_backup_target_latency(self, nfs_server_ip):
+        all_nodes = Node().list_node_names_by_role("all")
+        for node_name in all_nodes:
+            logging(f"Cleaning up NFS latency toward {nfs_server_ip} on node {node_name}")
+            cleanup_nfs_latency_on_node(node_name, nfs_server_ip)
+
+    def _assert_nfs_latency_active(self, nfs_server_ip, node_names):
+        for node_name in node_names:
+            active = verify_nfs_latency_on_node(node_name, nfs_server_ip)
+            assert active, (
+                f"tc filter for NFS latency toward {nfs_server_ip} not found on node {node_name}; "
+                f"latency may not be hitting NFS traffic"
+            )
 
     @staticmethod
     def _connection_in_list(expected, connections):
