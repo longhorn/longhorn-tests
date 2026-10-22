@@ -57,6 +57,7 @@ class Node:
 
     def update_disks(self, node_name, disks, wait=True):
         logging(f"Updating node {node_name} disks {disks}")
+        last_error = None
         for _ in range(self.retry_count):
             try:
                 node = get_longhorn_client().by_id_node(node_name)
@@ -76,8 +77,11 @@ class Node:
                     logging(f"Disk path already exists on node {node_name}: {e}")
                     return get_longhorn_client().by_id_node(node_name)
                 logging(f"Failed to update node {node_name} disk: {e}")
+                if "duplicate disk" in str(e):
+                     raise
+                last_error = str(e)
             time.sleep(self.retry_interval)
-        assert False, f"Failed to update node {node_name} disk {disks}"
+        assert False, f"Failed to update node {node_name} disk {disks}: {last_error}"
 
     def wait_for_disk_update(self, node_name, disk_num, wait=True):
         for i in range(self.retry_count):
@@ -110,6 +114,7 @@ class Node:
 
     def add_disk(self, node_name, disk, wait=True):
         added = False
+        last_error = None
         for i in range(self.retry_count):
             logging(f"Adding disk {disk} to node {node_name} ... ({i})")
             try:
@@ -125,9 +130,13 @@ class Node:
                 # here would just multiply the total wait time.
                 raise
             except Exception as e:
+                error_msg = str(e)
                 logging(f"Adding disk {disk} to node {node_name} error: {e}")
+                if "duplicate disk" in error_msg:
+                    raise AssertionError(f"Adding disk {disk} to node {node_name} failed: {error_msg}")
+                last_error = error_msg
             time.sleep(self.retry_interval)
-        assert added, f"Adding disk {disk} to node {node_name} failed"
+        assert added, f"Adding disk {disk} to node {node_name} failed: {last_error}"
 
     def reset_disks(self, node_name, data_engine="v1", default_block_disk_path=None):
         client = get_longhorn_client()
