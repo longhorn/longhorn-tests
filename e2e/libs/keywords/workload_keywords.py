@@ -427,13 +427,28 @@ class workload_keywords:
     def check_pod_not_restart_after_specific_time(self, namespace, label, time):        
         pods = list_namespaced_pod(namespace, label)
 
-        if time.tzinfo is None:
-            time = time.replace(tzinfo=timezone.utc)
+        # Ensure time is in UTC (converts naive local time or aware datetime to UTC)
+        time = time.astimezone(timezone.utc)
 
         for pod in pods:
             creation_time = pod.metadata.creation_timestamp
             logging(f"Comparing pod creation: {creation_time} < {time}")
             assert creation_time < time, f"{pod.metadata.name} restarted after test started"
+            for cs in pod.status.container_statuses or []:
+                if cs.last_state and cs.last_state.terminated:
+                    finished_at = cs.last_state.terminated.finished_at
+                    if finished_at and finished_at >= time:
+                        assert False, (
+                            f"{pod.metadata.name} container {cs.name} "
+                            f"terminated at {finished_at} after {time}"
+                        )
+                if cs.state and cs.state.running:
+                    started_at = cs.state.running.started_at
+                    if started_at and started_at >= time and cs.restart_count > 0:
+                        assert False, (
+                            f"{pod.metadata.name} container {cs.name} "
+                            f"restarted at {started_at} after {time}"
+                        )
 
     def wait_for_filesystem_size_in_workload(self, workload_name, expected_size_in_bytes):
         """
