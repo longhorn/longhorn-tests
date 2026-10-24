@@ -375,3 +375,41 @@ Test Volume With WaitForFirstConsumer Binding Mode And Node Selector Without CSI
     And Check deployment 0 volume replica is not on node ${NODE_0}
     And Write 100 MB data to file data.bin in deployment 0
     And Check deployment 0 data in file data.bin is intact
+
+Test StorageClass With Invalid Replica Count
+    [Documentation]    Verify that creating a StorageClass with numberOfReplicas="-1"
+    ...                fails cleanly with a clear error event, does not cause CSI pods to crash or restart,
+    ...                and subsequent valid provisioning succeeds normally.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/14134
+    [Tags]    csi    storageclass    negative
+    Given Get test start time
+    Given Create storageclass longhorn-invalid-replicas with
+    ...    numberOfReplicas=-1
+    ...    dataEngine=${DATA_ENGINE}
+    When Create persistentvolumeclaim 0 without waiting for bound
+    ...    sc_name=longhorn-invalid-replicas
+    Then Wait for persistentvolumeclaim 0 status to be Pending
+    And Assert persistentvolumeclaim 0 status remains Pending for at least 5 seconds
+    # Verify the external-provisioner recorded ProvisioningFailed with InvalidArgument
+    And Run Keyword And Continue On Failure
+    ...    Run command and wait for output
+    ...    kubectl get events -n default --field-selector involvedObject.name=e2e-test-claim-0
+    ...    must not be negative
+    # Verify neither csi-plugin nor csi-provisioner crashed or panicked
+    And Run Keyword And Continue On Failure
+    ...    Run command and not expect output
+    ...    kubectl logs -n longhorn-system -l app=longhorn-csi-plugin -c longhorn-csi-plugin --tail=100
+    ...    panic:
+    # Verify all CSI components did not restart after test started
+    AND Run Keyword And Continue On Failure    Check CSI pods not restarted after test start
+    And Run Keyword And Continue On Failure    Wait for Longhorn components all running
+    # Cleanup invalid PVC and StorageClass
+    And Delete persistentvolumeclaim 0
+    And Delete storageclass longhorn-invalid-replicas
+    # Verify CSI plugin can still provision volumes normally with valid replica count
+    When Create storageclass longhorn-valid-replicas with
+    ...    numberOfReplicas=2
+    ...    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 1    volume_type=RWO    sc_name=longhorn-valid-replicas
+    Then Wait for persistentvolumeclaim 1 status to be Bound
