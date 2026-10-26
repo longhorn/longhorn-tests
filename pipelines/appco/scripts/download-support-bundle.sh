@@ -17,7 +17,7 @@ export_longhorn_ui_url
 
 JSON_PAYLOAD="{\"issueURL\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\", \"description\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\"}"
 
-CURL_CMD="curl -s -XPOST ${LONGHORN_CLIENT_URL}/v1/supportbundles -H 'Accept: application/json' -H 'Accept-Encoding: gzip, deflate' -d '${JSON_PAYLOAD}'"
+CURL_CMD="curl -s -XPOST http://localhost:8000/v1/supportbundles -H 'Accept: application/json' -H 'Accept-Encoding: gzip, deflate' -d '${JSON_PAYLOAD}'"
 
 run_curl_in_pod() {
   local IMAGE="alpine:3.21"
