@@ -42,14 +42,12 @@ case "${network_stack}" in
   dual-stack-ipv6-first)
     rke2_server_public_ip="$ipv6_public_ip"
     dual_stack_node_ip="$ipv6_public_ip,$private_ipv4"
-    dual_stack_external_ip="$ipv6_public_ip,${control_plane_ipv4}"
     dual_stack_cluster_cidr="fd00:10::/56,10.42.0.0/16"
     dual_stack_service_cidr="fd00:20::/112,10.43.0.0/16"
     ;;
   dual-stack-ipv4-first)
     rke2_server_public_ip="${control_plane_ipv4}"
     dual_stack_node_ip="$private_ipv4,$ipv6_public_ip"
-    dual_stack_external_ip="${control_plane_ipv4},$ipv6_public_ip"
     dual_stack_cluster_cidr="10.42.0.0/16,fd00:10::/56"
     dual_stack_service_cidr="10.43.0.0/16,fd00:20::/112"
     ;;
@@ -84,7 +82,6 @@ tls-san:
   - ${control_plane_ipv4}
   - $ipv6_public_ip
 node-ip: "$dual_stack_node_ip"
-node-external-ip: "$dual_stack_external_ip"
 cluster-cidr: "$dual_stack_cluster_cidr"
 service-cidr: "$dual_stack_service_cidr"
 EOF
@@ -127,6 +124,19 @@ EOF
 profile: "cis"
 kube-apiserver-arg:
   - 'service-account-extend-token-expiration=false'
+EOF
+fi
+
+if [[ -n "${registry_ip}" ]]; then
+  mkdir -p /etc/rancher/rke2
+  cat << EOF > /etc/rancher/rke2/registry-ca.crt
+${registry_ca}
+EOF
+  cat << EOF > /etc/rancher/rke2/registries.yaml
+configs:
+  "${registry_ip}":
+    tls:
+      ca_file: /etc/rancher/rke2/registry-ca.crt
 EOF
 fi
 

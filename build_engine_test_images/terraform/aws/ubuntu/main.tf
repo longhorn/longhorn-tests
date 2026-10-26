@@ -41,6 +41,17 @@ resource "aws_internet_gateway" "build_engine_aws_igw" {
   }
 }
 
+# Source ranges allowed to reach the build node from outside the VPC:
+# Jenkins egress (public on OCI, private on HAL), the build node's own subnet, and an optional user-specified debug range
+locals {
+  allowed_cidrs = concat(
+    ["129.80.0.0/16", "10.115.0.0/16"],
+    [aws_subnet.build_engine_aws_public_subnet.cidr_block],
+    compact([var.debug_cidr])
+  )
+  allowed_ipv4_cidrs = [for c in local.allowed_cidrs : c if !can(regex(":", c))]
+}
+
 # Create build_node security group
 resource "aws_security_group" "build_engine_aws_secgrp" {
   name        = "build_engine_aws_secgrp"
@@ -52,7 +63,7 @@ resource "aws_security_group" "build_engine_aws_secgrp" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.allowed_ipv4_cidrs
   }
 
   egress {
