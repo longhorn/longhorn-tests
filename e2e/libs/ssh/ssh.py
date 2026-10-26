@@ -5,6 +5,40 @@ from utility.utility import subprocess_exec_cmd
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 
+<<<<<<< HEAD
+=======
+def get_public_ip(node_name):
+    host_provider = os.environ.get("HOST_PROVIDER", "aws")
+    if host_provider == "aws":
+        with open('/tmp/instance_mapping', 'r') as f:
+            instance_mapping = json.load(f)
+        instance_id = instance_mapping[node_name]
+        ec2 = boto3.client('ec2')
+        resp = ec2.describe_instances(InstanceIds=[instance_id])
+        instance = resp['Reservations'][0]['Instances'][0]
+        # A test pod inside the cluster reaches another node through its public IP with its own node's public IP
+        # as the source address, which the security group does not allow, so use the private address instead.
+        # Out of cluster (LONGHORN_CLIENT_URL is set, e.g. running next to Jenkins) the private address is not
+        # reachable, keep using the public one.
+        if not os.environ.get("LONGHORN_CLIENT_URL") and instance.get('PrivateIpAddress'):
+            return instance['PrivateIpAddress']
+        if instance.get('PublicIpAddress'):
+            return instance['PublicIpAddress']
+        for iface in instance.get('NetworkInterfaces', []):
+            for ipv6 in iface.get('Ipv6Addresses', []):
+                return f"[{ipv6['Ipv6Address']}]"
+    elif host_provider == "harvester":
+        result = json.loads(subprocess_exec_cmd(["kubectl", "get", "nodes", "-o", "json"]))
+        for node in result['items']:
+            provider_id = node['spec'].get('providerID', '')
+            key = provider_id.split('/')[-1] if provider_id else node['metadata']['name']
+            if key == node_name:
+                for addr in node['status']['addresses']:
+                    if addr['type'] == 'InternalIP':
+                        return addr['address']
+    raise Exception(f"Cannot determine public IP for node {node_name} with HOST_PROVIDER={host_provider!r}")
+
+>>>>>>> 5deb853 (ci: remove public 0.0.0.0/0 and ::/0 ingress cidr blocks from aws terraform scripts)
 
 def ssh_exec(node_name, cmd):
 

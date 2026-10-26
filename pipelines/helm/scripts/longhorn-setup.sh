@@ -19,6 +19,14 @@ fi
 
 LONGHORN_INSTALL_METHOD="helm"
 
+# the airgap registry created by terraform in the cluster's VPC overrides the registry passed in by Jenkins
+if [[ -f test_framework/registry_url ]]; then
+  REGISTRY_URL="$(cat test_framework/registry_url)"
+  REGISTRY_USERNAME="$(cat test_framework/registry_username)"
+  REGISTRY_PASSWORD="$(cat test_framework/registry_password)"
+  export REGISTRY_URL REGISTRY_USERNAME REGISTRY_PASSWORD
+fi
+
 
 apply_selinux_workaround(){
   kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"

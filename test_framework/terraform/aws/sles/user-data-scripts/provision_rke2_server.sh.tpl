@@ -35,6 +35,30 @@ else
   rke2_server_public_ip="${control_plane_ipv4}"
 fi
 
+<<<<<<< HEAD
+=======
+case "${network_stack}" in
+  ipv6)
+    rke2_server_public_ip="$ipv6_public_ip"
+    ;;
+  dual-stack-ipv6-first)
+    rke2_server_public_ip="$ipv6_public_ip"
+    dual_stack_node_ip="$ipv6_public_ip,$private_ipv4"
+    dual_stack_cluster_cidr="fd00:10::/56,10.42.0.0/16"
+    dual_stack_service_cidr="fd00:20::/112,10.43.0.0/16"
+    ;;
+  dual-stack-ipv4-first)
+    rke2_server_public_ip="${control_plane_ipv4}"
+    dual_stack_node_ip="$private_ipv4,$ipv6_public_ip"
+    dual_stack_cluster_cidr="10.42.0.0/16,fd00:10::/56"
+    dual_stack_service_cidr="10.43.0.0/16,fd00:20::/112"
+    ;;
+  *)
+    rke2_server_public_ip="${control_plane_ipv4}"
+    ;;
+esac
+
+>>>>>>> 5deb853 (ci: remove public 0.0.0.0/0 and ::/0 ingress cidr blocks from aws terraform scripts)
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="server" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 
 mkdir -p /etc/rancher/rke2
@@ -54,6 +78,18 @@ advertise-address: $rke2_server_public_ip
 cluster-cidr: fd00:10::/56
 service-cidr: fd00:20::/112
 EOF
+<<<<<<< HEAD
+=======
+elif [[ "${network_stack}" == dual-stack-* ]]; then
+  cat << EOF >> /etc/rancher/rke2/config.yaml
+tls-san:
+  - ${control_plane_ipv4}
+  - $ipv6_public_ip
+node-ip: "$dual_stack_node_ip"
+cluster-cidr: "$dual_stack_cluster_cidr"
+service-cidr: "$dual_stack_service_cidr"
+EOF
+>>>>>>> 5deb853 (ci: remove public 0.0.0.0/0 and ::/0 ingress cidr blocks from aws terraform scripts)
 fi
 
 if [[ "${cni}" != "default" ]]; then
@@ -75,6 +111,19 @@ EOF
 profile: "cis"
 kube-apiserver-arg:
   - 'service-account-extend-token-expiration=false'
+EOF
+fi
+
+if [[ -n "${registry_ip}" ]]; then
+  mkdir -p /etc/rancher/rke2
+  cat << EOF > /etc/rancher/rke2/registry-ca.crt
+${registry_ca}
+EOF
+  cat << EOF > /etc/rancher/rke2/registries.yaml
+configs:
+  "${registry_ip}":
+    tls:
+      ca_file: /etc/rancher/rke2/registry-ca.crt
 EOF
 fi
 
