@@ -124,6 +124,19 @@ kube-apiserver-arg:
 EOF
 fi
 
+if [[ -n "${registry_ip}" ]]; then
+  mkdir -p /etc/rancher/rke2
+  cat << EOF > /etc/rancher/rke2/registry-ca.crt
+${registry_ca}
+EOF
+  cat << EOF > /etc/rancher/rke2/registries.yaml
+configs:
+  "${registry_ip}":
+    tls:
+      ca_file: /etc/rancher/rke2/registry-ca.crt
+EOF
+fi
+
 systemctl start rke2-agent.service
 
 if [[ -n "${custom_ssh_public_key}" ]]; then
