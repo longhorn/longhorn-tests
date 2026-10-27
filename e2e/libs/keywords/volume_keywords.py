@@ -16,6 +16,7 @@ from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import convert_size_to_bytes
 from utility.utility import pod_exec
+from utility.utility import get_cr
 
 from volume import Volume
 from volume.rest import Rest as VolumeRest
@@ -43,9 +44,9 @@ class volume_keywords:
         for volume in clone_volumes + source_volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", cloneMode="", retry=True, dataLayout=None):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", cloneMode="", retry=True, dataLayout=None, encryptionProvider=None, encryptionSecretName=None):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=dataLayout)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=dataLayout, encryptionProvider=encryptionProvider, encryptionSecretName=encryptionSecretName)
 
 
     def delete_volume(self, volume_name, wait=True):
@@ -370,6 +371,68 @@ class volume_keywords:
             if not self.volume.is_replica_rebuilding_in_progress(volume_name, node_id):
                 break
             time.sleep(retry_interval)
+
+    def get_volume_encryption(self, volume_name):
+        volume = self.volume.get(volume_name)
+        spec = (volume.get("spec") or {}).get("encryption") or {}
+        status = (volume.get("status") or {}).get("encryption") or {}
+        return {
+            "provider": spec.get("provider", ""),
+            "secretName": spec.get("secretName", ""),
+            "initialized": bool(status.get("initialized", False)),
+            "keyVersion": int(status.get("keyVersion", 0) or 0),
+        }
+
+    def assert_volume_encryption(self, volume_name, provider=None, secretName=None, initialized=None, keyVersion=None):
+        encryption = self.get_volume_encryption(volume_name)
+        logging(f"Volume {volume_name} encryption: {encryption}")
+        if provider is not None:
+            assert encryption["provider"] == provider, f"volume {volume_name} encryption provider is {encryption['provider']!r}, expected {provider!r}"
+        if secretName is not None:
+            assert encryption["secretName"] == secretName, f"volume {volume_name} encryption secret is {encryption['secretName']!r}, expected {secretName!r}"
+        if initialized is not None:
+            expected = str(initialized).lower() == "true"
+            assert encryption["initialized"] == expected, f"volume {volume_name} encryption initialized is {encryption['initialized']}, expected {expected}"
+        if keyVersion is not None:
+            assert encryption["keyVersion"] == int(keyVersion), f"volume {volume_name} encryption key version is {encryption['keyVersion']}, expected {keyVersion}"
+
+    def wait_for_volume_encryption_key_stored(self, volume_name):
+        for i in range(self.retry_count):
+            encryption = self.get_volume_encryption(volume_name)
+            logging(f"Waiting for the encryption key of volume {volume_name} to be stored: {encryption} ... ({i})")
+            if encryption["keyVersion"] > 0:
+                return encryption["keyVersion"]
+            time.sleep(self.retry_interval)
+        assert False, f"volume {volume_name} still has no stored encryption key"
+
+    def get_volume_snapshot_encryption_key_version(self, snapshot_name):
+        snapshot = get_cr("longhorn.io", "v1beta2", constant.LONGHORN_NAMESPACE, "snapshots",
+                          snapshot_name, wait=False)
+        return int((snapshot.get("status") or {}).get("encryptionKeyVersion") or 0)
+
+    def wait_for_volume_snapshot_encryption_key_version(self, snapshot_name, expected):
+        # Stamped by the snapshot controller after the API already lists the snapshot.
+        expected = int(expected)
+        version = 0
+        for i in range(self.retry_count):
+            version = self.get_volume_snapshot_encryption_key_version(snapshot_name)
+            if version == expected:
+                return version
+            logging(f"Waiting for snapshot {snapshot_name} encryption key version to be {expected}, currently {version} ... ({i})")
+            time.sleep(self.retry_interval)
+        assert False, f"snapshot {snapshot_name} encryption key version is {version}, expected {expected}"
+
+    def assert_volume_encryption_condition(self, volume_name, status, reason=None):
+        volume = self.volume.get(volume_name)
+        conditions = (volume.get("status") or {}).get("conditions") or []
+        condition = next((c for c in conditions if c.get("type") == "EncryptionKey"), None)
+        assert condition is not None, f"volume {volume_name} has no EncryptionKey condition"
+        logging(f"Volume {volume_name} EncryptionKey condition: {condition}")
+        assert condition.get("status") == status, \
+            f"volume {volume_name} EncryptionKey condition is {condition.get('status')}, expected {status}"
+        if reason is not None:
+            assert condition.get("reason") == reason, \
+                f"volume {volume_name} EncryptionKey reason is {condition.get('reason')!r}, expected {reason!r}"
 
     def wait_for_volume_to_be_created(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be created')

@@ -30,7 +30,7 @@ class CRD(Base):
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True, dataLayout=None):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True, dataLayout=None, encryptionProvider=None, encryptionSecretName=None):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -72,6 +72,12 @@ class CRD(Base):
 
         if dataSource:
             body["spec"]["dataSource"] = dataSource
+
+        if encryptionProvider:
+            encryption = {"provider": encryptionProvider}
+            if encryptionSecretName:
+                encryption["secretName"] = encryptionSecretName
+            body["spec"]["encryption"] = encryption
 
         if cloneMode:
             body["spec"]["cloneMode"] = cloneMode
@@ -940,8 +946,10 @@ class CRD(Base):
                     if not node_name:
                         continue
 
+                    # A backslash in an f-string expression needs Python 3.12.
+                    escaped_topology_key = topology_key.replace('.', '\\.')
                     node_cmd = f"kubectl get node {node_name} " \
-                               f"-o jsonpath='{{.metadata.labels.{topology_key.replace('.', '\\.')}}}'"
+                               f"-o jsonpath='{{.metadata.labels.{escaped_topology_key}}}'"
                     actual_value = subprocess_exec_cmd(node_cmd).strip()
 
                     if actual_value != domain_value:

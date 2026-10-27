@@ -62,6 +62,11 @@ Assert encrypted disk size in sharemanager pod for ${workload_kind} ${workload_i
     ${share_manager_pod}=    Set Variable    share-manager-${volume_name}
     wait_for_encrypted_disk_size_in_sharemanager_pod    ${share_manager_pod}    ${volume_name}    ${expected_size_byte}
 
+Assert sharemanager pod of ${workload_kind} ${workload_id} has no ${env_name} env
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    assert_sharemanager_pod_has_no_env    ${volume_name}    ${env_name}
+
 Get sharemanager spec image of ${workload_kind} ${workload_id}
     ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}

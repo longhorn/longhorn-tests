@@ -12,15 +12,21 @@ class Secret():
     def __init__(self):
         self.api = client.CoreV1Api()
 
-    def create(self):
+    def create(self, name=None):
 
         filepath = "./templates/secret.yaml"
 
         with open(filepath, 'r') as f:
             manifest_dict = yaml.safe_load(f)
             manifest_dict['metadata']['namespace'] = constant.LONGHORN_NAMESPACE
+            if name:
+                manifest_dict['metadata']['name'] = name
             logging(f"Creating secret {manifest_dict['metadata']['name']}")
             self.api.create_namespaced_secret(constant.LONGHORN_NAMESPACE, body=manifest_dict)
+
+    def get_data(self, name="longhorn-crypto"):
+        secret = self.api.read_namespaced_secret(name, constant.LONGHORN_NAMESPACE)
+        return secret.data or {}
 
     def delete(self, name, namespace):
         try:
