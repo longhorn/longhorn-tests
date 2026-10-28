@@ -6,8 +6,9 @@ Library    ../libs/keywords/system_backup_keywords.py
 
 *** Keywords ***
 Create system backup ${system_backup_id}
+    [Arguments]    &{config}
     ${backup_name} =    generate_name_with_suffix    system-backup    ${system_backup_id}
-    create_system_backup    ${backup_name}
+    create_system_backup    ${backup_name}    &{config}
 
 Restore system backup ${system_backup_id}
     ${backup_name} =    generate_name_with_suffix    system-backup    ${system_backup_id}
@@ -17,8 +18,9 @@ Delete system backup ${system_backup_id}
     ${backup_name} =    generate_name_with_suffix    system-backup    ${system_backup_id}
     delete_system_backup    ${backup_name}
 
-Wait for system backup ${system_backup_name} ready
-    wait_for_system_backup_ready    ${system_backup_name}
+Wait for system backup ${system_backup_id} ready
+    ${backup_name} =    generate_name_with_suffix    system-backup    ${system_backup_id}
+    wait_for_system_backup_ready    ${backup_name}
 
 Set system backup ${backup_name} status
     [Arguments]    &{status}
