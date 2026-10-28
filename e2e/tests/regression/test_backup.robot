@@ -215,6 +215,7 @@ Test Cleanup Snapshot With The Global Setting After Backup Completed
     And Setting auto-cleanup-snapshot-after-on-demand-backup-completed is set to false
 
 Test Backupstore With Existing Backups
+    [Tags]    system-backup
     [Documentation]    https://github.com/longhorn/longhorn/issues/11337
     Given Reset default backupstore
     When Set backupstore url to s3://longhorn-test-backupstore@us-east-1/

@@ -39,6 +39,9 @@ class CRD(Base):
     def get_backup_volume(self, volume_name):
         return NotImplemented
 
+    def wait_for_volume_backup_created(self, volume_name):
+        return NotImplemented
+
     def wait_for_backup_completed(self, volume_name, snapshot_name):
         return NotImplemented
 
