@@ -33,6 +33,9 @@ class backup_keywords:
     def wait_for_backup_ready(self, backup_name):
         return self.backup.wait_for_backup_ready(backup_name)
 
+    def wait_for_volume_backup_created(self, volume_name):
+        self.backup.wait_for_volume_backup_created(volume_name)
+
     def wait_for_backup_in_progress(self, volume_name):
         return self.backup.wait_for_backup_in_progress(volume_name)
 

@@ -50,6 +50,9 @@ class Backup(Base):
     def list_all(self):
         return self.backup.list_all()
 
+    def wait_for_volume_backup_created(self, volume_name):
+        return self.backup.wait_for_volume_backup_created(volume_name)
+
     def wait_for_backup_count(self, expected_backup_count):
         for i in range(self.retry_count):
             backups = self.list_all()

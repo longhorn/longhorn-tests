@@ -20,6 +20,15 @@ Delete snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot    ${volume_name}    ${snapshot_id}
 
+Remove snapshot ${snapshot_name} by name from volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_snapshot_by_name    ${volume_name}    ${snapshot_name}
+
+Get snapshot of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${snapshot_name} =    get_snapshot_name    ${volume_name}
+    RETURN    ${snapshot_name}
+
 Delete snapshot ${snapshot_id} CR of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot_cr    ${volume_name}    ${snapshot_id}
