@@ -65,7 +65,8 @@ Add deleted node back
         reboot_node_by_name    ${deleted_node}
         wait_for_node_ready    ${deleted_node}
         IF     "${DATA_ENGINE}" == "v2"
-            add_disk    block-disk    ${deleted_node}    block    ${DISK_PATH}
+            ${block_disk_path}=    get_default_block_disk_path_on_node    ${deleted_node}    ${DISK_PATH}
+            add_disk    block-disk    ${deleted_node}    block    ${block_disk_path}
         END
         Remove Values From List    ${deleted_nodes}    ${deleted_node}
     END
