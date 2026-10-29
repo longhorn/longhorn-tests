@@ -13,6 +13,44 @@ Library    ../libs/keywords/workload_keywords.py
 ${SCHEDULING_STATUS_CHECK_TIMEOUT}    30
 
 *** Keywords ***
+Get mount path of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${mount_path} =    get_volume_mount_path    ${volume_name}
+    RETURN    ${mount_path}
+
+Format filesystem of volume ${volume_id} on node ${node_id}
+    [Documentation]    Create ext4 on a blank device; refuse an existing filesystem.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    format_volume_filesystem    ${volume_name}    ${node_name}
+
+Mount volume ${volume_id} on node ${node_id}
+    [Documentation]    Mount the existing filesystem without formatting it.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    mount_volume    ${volume_name}    ${node_name}
+
+Unmount volume ${volume_id} on node ${node_id}
+    [Arguments]    ${require_mounted}=${True}    ${remove_directory}=${False}
+    [Documentation]    Require a mount by default; cleanup may tolerate its absence.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    unmount_volume    ${volume_name}    ${node_name}
+    ...    require_mounted=${require_mounted}    remove_directory=${remove_directory}
+
+Write filesystem data to volume ${volume_id} on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${checksum} =    write_volume_filesystem_data    ${volume_name}    ${node_name}
+    Set To Dictionary    ${volume_checksums}    ${volume_id}-filesystem    ${checksum}
+
+Check volume ${volume_id} filesystem data on node ${node_id} is intact
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${actual_checksum} =    get_volume_filesystem_checksum    ${volume_name}    ${node_name}
+    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}-filesystem
+    Should Be Equal    ${actual_checksum}    ${expected_checksum}
+
 Create volume ${volume_id}
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
