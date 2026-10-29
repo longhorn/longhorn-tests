@@ -21,7 +21,7 @@ def get_public_ip(node_name):
             for ipv6 in iface.get('Ipv6Addresses', []):
                 return f"[{ipv6['Ipv6Address']}]"
     elif host_provider == "harvester":
-        result = json.loads(subprocess_exec_cmd(["kubectl", "get", "nodes", "-o", "json"]))
+        result = json.loads(subprocess_exec_cmd(["kubectl", "get", "nodes", "-o", "json"], verbose=False))
         for node in result['items']:
             provider_id = node['spec'].get('providerID', '')
             key = provider_id.split('/')[-1] if provider_id else node['metadata']['name']
