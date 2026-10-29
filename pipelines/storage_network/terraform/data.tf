@@ -25,7 +25,9 @@ data "template_file" "provision_k3s_agent" {
   template = var.k8s_distro_name == "k3s" ? file("${path.module}/user-data-scripts/provision_k3s_agent.sh.tpl") : null
   vars = {
     network_stack = var.network_stack
-    k3s_server_url = "https://${aws_eip.aws_eip[0].public_ip}:6443"
+    # join through the control plane's private address (eth0 interface, which the instances already depend on), not its Elastic IP: traffic from a node to an
+    # Elastic IP arrives with the node's own public IP as the source instead of a VPC address
+    k3s_server_url = contains(["ipv6", "dual-stack-ipv6-first"], var.network_stack) ? "https://[${aws_network_interface.instance_eth0[0].ipv6_address_list[0]}]:6443" : "https://${aws_network_interface.instance_eth0[0].private_ip}:6443"
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
     thick_plugin = var.thick_plugin

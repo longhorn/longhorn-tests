@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 3.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -50,6 +54,19 @@ resource "aws_internet_gateway" "lh_aws_igw" {
   }
 }
 
+# Source ranges (IPv4 and IPv6) allowed to reach the cluster from outside the VPC:
+# Jenkins egress (public on OCI incl. its IPv6 VCN range, private on HAL), the cluster's own subnet, and an optional user-specified debug range
+locals {
+  allowed_cidrs = concat(
+    ["129.80.0.0/16", "10.115.0.0/16", "2603:c020:401b:1e00::/56"],
+    [aws_subnet.lh_aws_public_subnet.cidr_block],
+    [aws_subnet.lh_aws_public_subnet.ipv6_cidr_block],
+    compact([var.debug_cidr])
+  )
+  allowed_ipv4_cidrs = [for c in local.allowed_cidrs : c if !can(regex(":", c))]
+  allowed_ipv6_cidrs = [for c in local.allowed_cidrs : c if can(regex(":", c))]
+}
+
 # Create security group
 resource "aws_security_group" "lh_aws_secgrp" {
   name        = "lh_aws_secgrp"
@@ -57,162 +74,74 @@ resource "aws_security_group" "lh_aws_secgrp" {
   vpc_id      = aws_vpc.lh_aws_vpc.id
 
   ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow SSH over IPv6"
+    description      = "Allow SSH"
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow k8s API server"
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow K8s API server over IPv6"
+    description      = "Allow k8s API server"
     from_port        = 6443
     to_port          = 6443
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow k8s etcd"
-    from_port   = 2379
-    to_port     = 2379
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow k8s etcd over IPv6"
-    from_port        = 2379
-    to_port          = 2379
-    protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  ingress {
-    description = "Allow k8s API server for rke2"
-    from_port   = 9345
-    to_port     = 9345
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow k8s API server for rke2 over IPv6"
+    description      = "Allow k8s API server for rke2"
     from_port        = 9345
     to_port          = 9345
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow HTTP over IPv6"
+    description      = "Allow HTTP"
     from_port        = 80
     to_port          = 80
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow HTTPS over IPv6"
+    description      = "Allow HTTPS"
     from_port        = 443
     to_port          = 443
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow longhorn-ui nodeport"
-    from_port   = 30000
-    to_port     = 30000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow longhorn-ui nodeport over IPv6"
+    description      = "Allow longhorn-ui nodeport"
     from_port        = 30000
     to_port          = 30000
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow azurite nodeport"
-    from_port   = 31000
-    to_port     = 31000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "Allow azurite nodeport over IPv6"
+    description      = "Allow azurite nodeport"
     from_port        = 31000
     to_port          = 31000
     protocol         = "tcp"
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   ingress {
-    description = "Allow TCP connection for longhorn-webhooks"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/8"]
-  }
-
-  ingress {
-    description      = "Allow TCP connection for longhorn-webhooks over IPv6"
+    description      = "Allow all connection for longhorn-webhooks"
     from_port        = 0
-    to_port          = 65535
-    protocol         = "tcp"
-    ipv6_cidr_blocks = [aws_vpc.lh_aws_vpc.ipv6_cidr_block]
-  }
-
-  ingress {
-    description = "Allow UDP connection for longhorn-webhooks"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "udp"
-    cidr_blocks = ["10.0.0.0/8"]
-  }
-
-  ingress {
-    description      = "Allow UDP connection for longhorn-webhooks over IPv6"
-    from_port        = 0
-    to_port          = 65535
-    protocol         = "udp"
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = [aws_vpc.lh_aws_vpc.cidr_block]
     ipv6_cidr_blocks = [aws_vpc.lh_aws_vpc.ipv6_cidr_block]
   }
 

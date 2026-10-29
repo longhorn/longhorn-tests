@@ -20,6 +20,14 @@ source pipelines/utilities/longhornctl.sh
 
 LONGHORN_INSTALL_METHOD="manifest"
 
+# the airgap registry created by terraform in the cluster's VPC overrides the registry passed in by Jenkins
+if [[ -f "${TF_VAR_tf_workspace}/registry_url" ]]; then
+  REGISTRY_URL="$(cat "${TF_VAR_tf_workspace}/registry_url")"
+  REGISTRY_USERNAME="$(cat "${TF_VAR_tf_workspace}/registry_username")"
+  REGISTRY_PASSWORD="$(cat "${TF_VAR_tf_workspace}/registry_password")"
+  export REGISTRY_URL REGISTRY_USERNAME REGISTRY_PASSWORD
+fi
+
 
 create_admin_service_account(){
   kubectl apply -f "${TF_VAR_tf_workspace}/templates/kubeconfig_service_account.yaml"

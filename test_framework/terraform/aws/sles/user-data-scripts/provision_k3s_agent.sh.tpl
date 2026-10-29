@@ -97,6 +97,19 @@ kubelet-arg:
   - reserved-cpus=0
 EOF
 
+if [[ -n "${registry_ip}" ]]; then
+  mkdir -p /etc/rancher/k3s
+  cat << EOF > /etc/rancher/k3s/registry-ca.crt
+${registry_ca}
+EOF
+  cat << EOF > /etc/rancher/k3s/registries.yaml
+configs:
+  "${registry_ip}":
+    tls:
+      ca_file: /etc/rancher/k3s/registry-ca.crt
+EOF
+fi
+
 until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s agent did not install correctly'
   sleep 2

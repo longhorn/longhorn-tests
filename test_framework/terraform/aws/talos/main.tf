@@ -35,6 +35,17 @@ resource "aws_vpc" "lh_aws_vpc" {
   }
 }
 
+# Source ranges (IPv4 and IPv6) allowed to reach the cluster from outside the VPC:
+# Jenkins egress (public on OCI, private on HAL), the cluster's own subnet, and an optional user-specified debug range
+locals {
+  allowed_cidrs = concat(
+    ["129.80.0.0/16", "10.115.0.0/16"],
+    [aws_subnet.lh_aws_subnet.cidr_block],
+    compact([var.debug_cidr])
+  )
+  allowed_ipv4_cidrs = [for c in local.allowed_cidrs : c if !can(regex(":", c))]
+}
+
 # Create security group
 resource "aws_security_group" "lh_aws_secgrp" {
   name        = "lh_aws_secgrp"
@@ -54,7 +65,7 @@ resource "aws_security_group" "lh_aws_secgrp" {
     to_port     = 0
     protocol    = "-1"
     description = "Ingress everywhere"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.allowed_ipv4_cidrs
   }
 
   tags = {

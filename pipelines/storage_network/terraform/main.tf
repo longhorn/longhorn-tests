@@ -116,25 +116,41 @@ resource "aws_route_table_association" "aws_subnet_2_rt_association" {
   route_table_id = aws_route_table.aws_public_rt.id
 }
 
+# Source ranges (IPv4 and IPv6) allowed to reach the cluster from outside:
+# Jenkins egress (public on OCI incl. its IPv6 VCN range, private on HAL), the whole VPC (both subnets), and an optional user-specified debug range
+locals {
+  allowed_cidrs = concat(
+    ["129.80.0.0/16", "10.115.0.0/16", "2603:c020:401b:1e00::/56"],
+    [aws_vpc.aws_vpc.cidr_block],
+    [aws_vpc.aws_vpc.ipv6_cidr_block],
+    # storage network (multus) pod addresses, see STORAGE_NETWORK_PREFIX in user-data-scripts/{flannel,routes}.sh.tpl:
+    # node-to-node traffic over eth1 can carry these as the source address
+    ["192.168.0.0/16", "fd00:168::/48"],
+    # k3s cluster (pod) CIDRs, see --cluster-cidr in user-data-scripts/provision_k3s_server.sh.tpl:
+    # pods reach storage network addresses through the host's eth1 routes without encapsulation,
+    # so the pod address is the source seen by the security group
+    ["10.42.0.0/16", "fd00:10::/56"],
+    # IPv6 unique local (fd00::/8) and link-local (fe80::/10) sources used inside the cluster, e.g. the
+    # service CIDR and neighbor discovery. Neither is routable on the internet.
+    ["fd00::/8", "fe80::/10"],
+    compact([var.debug_cidr])
+  )
+  allowed_ipv4_cidrs = [for c in local.allowed_cidrs : c if !can(regex(":", c))]
+  allowed_ipv6_cidrs = [for c in local.allowed_cidrs : c if can(regex(":", c))]
+}
+
 resource "aws_security_group" "aws_secgrp" {
   name        = "lh_aws_secgrp"
   description = "Allow all inbound traffic"
   vpc_id      = aws_vpc.aws_vpc.id
 
   ingress {
-    description = "Allow all ports"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow all ports over IPv6"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    ipv6_cidr_blocks = ["::/0"]
+    description      = "Allow all ports"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = local.allowed_ipv4_cidrs
+    ipv6_cidr_blocks = local.allowed_ipv6_cidrs
   }
 
   egress {
