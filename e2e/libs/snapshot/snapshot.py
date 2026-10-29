@@ -39,6 +39,9 @@ class Snapshot(Base):
     def delete(self, volume_name, snapshot_id):
         return self.snapshot.delete(volume_name, snapshot_id)
 
+    def delete_by_name(self, volume_name, snapshot_name):
+        return self.snapshot.delete_by_name(volume_name, snapshot_name)
+
     def delete_cr(self, volume_name, snapshot_id):
         return self.snapshot.delete_cr(volume_name, snapshot_id)
 

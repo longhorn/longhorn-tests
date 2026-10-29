@@ -166,6 +166,21 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert completed, f"Expected backup from volume {volume_name} snapshot {snapshot_name} completed, but it's {volume}"
 
+    def wait_for_volume_backup_created(self, volume_name):
+        created = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for backup of volume {volume_name} to be created ... ({i})")
+            volume = self.volume.get(volume_name)
+            for backup in volume.backupStatus:
+                if backup.state == "Completed":
+                    logging(f"Backup {backup.id} of volume {volume_name} is created")
+                    created = True
+                    break
+            if created:
+                break
+            time.sleep(self.retry_interval)
+        assert created, f"Expected backup of volume {volume_name} to be created, but it's {volume}"
+
     def wait_for_backup_in_progress(self, volume_name):
         in_progress = False
         for i in range(self.retry_count):

@@ -93,6 +93,10 @@ Wait for backup associated with csi volume snapshot ${csi_volume_snapshot_id} of
 Wait for backup ${backup_name} ready
     wait_for_backup_ready    ${backup_name}
 
+Wait for volume ${volume_id} backup to be created
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_backup_created    ${volume_name}
+
 Wait for volume ${volume_id} backup to be in progress
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_backup_in_progress    ${volume_name}
