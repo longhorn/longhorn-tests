@@ -243,6 +243,33 @@ Test Encrypted RWX Volume Cloning
     [Template]    Test Encrypted Volume Cloning
         RWX
 
+Test Encrypted Volume Clone From Unencrypted Volume Should Fail
+    [Tags]    rwo    clone
+    [Documentation]    Test cloning an encrypted PVC from an unencrypted PVC is rejected.
+    ...
+    ...                Steps:
+    ...                  1. Create a workload with a plain Longhorn volume (PVC A).
+    ...                  2. Create an encrypted volume (PVC B) that clones from PVC A.
+    ...                  3. Check PVC B via `kubectl describe pvc` and it should show the
+    ...                     "encryption settings must match (source: false, destination: true)" error.
+    ...
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/14222
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create crypto secret
+    And Create storageclass longhorn-crypto with    encrypted=true    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim source-pvc    volume_type=RWO    sc_name=longhorn-test    storage_size=512Mi
+    And Create deployment source-deployment with persistentvolumeclaim source-pvc
+    And Wait for volume of deployment source-deployment healthy
+
+    When Create persistentvolumeclaim cloned-pvc from persistentvolumeclaim source-pvc    volume_type=RWO    sc_name=longhorn-crypto    storage_size=512Mi    wait_for_bound=${FALSE}
+    Then Run command and wait for output
+    ...    kubectl describe pvc cloned-pvc
+    ...    encryption settings must match (source: false, destination: true)
+    And Run command and wait for output
+    ...    kubectl describe pvc cloned-pvc
+    ...    admission webhook "validator.longhorn.io" denied the request
+    And Assert persistentvolumeclaim cloned-pvc status remains Pending for at least 10 seconds
+
 Test Encrypted Volume Snapshot Clone
     [Tags]    rwo    snapshot    clone
     [Documentation]    Test creating an encrypted volume from another encrypted volume's snapshot.
