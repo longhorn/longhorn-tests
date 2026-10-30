@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import boto3
 
 from utility.utility import subprocess_exec_cmd
@@ -45,10 +46,15 @@ def ssh_exec(node_name, cmd):
 
     cmd = f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {username}@{ip} {cmd}"
 
-    try:
-        res = subprocess_exec_cmd(cmd)
-        return res
-    except Exception as e:
-        output = getattr(e, 'output', None)
-        logging(f"SSH command {cmd} on node {node_name} failed: {e}, output: {output}")
-        raise Exception(f"SSH command {cmd} on node {node_name} failed: {e}, output: {output}")
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        try:
+            return subprocess_exec_cmd(cmd)
+        except Exception as e:
+            logging(f"SSH command {cmd} on node {node_name} failed: {e} ... ({i})")
+            # ssh exits with 255 when the connection itself fails (e.g. timeout,
+            # refused, auth failure). Retrying won't help, so fail immediately.
+            if "exit status 255" in str(e):
+                raise Exception(f"SSH command {cmd} on node {node_name} failed: {e}")
+            time.sleep(retry_interval)
+    assert False, f"SSH command {cmd} on node {node_name} failed"
