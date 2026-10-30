@@ -17,6 +17,8 @@ Resource    ../keywords/setting.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/host.resource
+Resource    ../keywords/engine.resource
+Resource    ../keywords/replica.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -324,6 +326,47 @@ Test Replica Rebuild Survives Lost TCP Keepalive Response
     FINALLY
         Remove V1 replica rebuild traffic limit    ${rebuild_network}
     END
+
+Test Transient Replica Status RPC Failure Does Not Fail Healthy Replica
+    [Tags]    v1    replica
+    [Documentation]    Test that a transient failure of the replica status (sync agent) RPC does not mark a
+    ...                healthy replica as failed or fault the volume.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13943
+    ...
+    ...                Test Steps:
+    ...                1. Disable auto-salvage setting so a failed replica is not hidden by auto-salvage.
+    ...                2. Create a V1 strict-local volume with 1 replica and attach it to node 0.
+    ...                   The engine and the replica are both in the same instance manager pod.
+    ...                3. Write some data to the volume.
+    ...                4. In the engine instance manager pod, reject (TCP RST) only the traffic to the
+    ...                   replica sync agent port (replica port + 2) for 1.5 seconds, repeated 12 times
+    ...                   with 2.6 seconds interval (the replica status is polled every 5 seconds,
+    ...                   so the polls are hit). The replica control and data ports remain reachable.
+    ...                5. The volume should be kept in healthy (the replica is not marked failed).
+    ...                6. The data should be intact.
+    IF    '${DATA_ENGINE}' != 'v1'
+        Skip    This test only applies to the V1 data engine
+    END
+
+    Given Setting auto-salvage is set to false
+    And Create volume 0    size=2Gi    numberOfReplicas=1    dataLocality=strict-local    dataEngine=v1
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    ${pod_name} =    Get volume 0 engine instance manager name
+    ${target_ip} =    Get volume 0 replica IP on node 0
+    ${replica_port} =    Get volume 0 replica port on node 0
+    # The replica's control (replica port) and data (replica port + 1) ports stay reachable throughout.
+    # Only the sync agent (replica port + 2) port is rejected.
+    ${target_port} =    Evaluate    ${replica_port} + 2
+    ${rule} =    Set Variable    -p tcp -d ${target_ip} --dport ${target_port} -j REJECT --reject-with tcp-reset
+    ${command} =    Set Variable
+    ...    for i in $(seq 12); do iptables -w -I OUTPUT 1 ${rule}; sleep 1.5; iptables -w -D OUTPUT ${rule}; sleep 2.6; done
+    When Manipulate pod egress traffic    ${pod_name}    ${command}
+    Then Check volume 0 kept in healthy
+    And Check volume 0 data is intact
 
 Disrupt Data Plane Traffic While Workload Heavy Writing
     [Documentation]    Disrupt the data plane traffic of a workload while it is heavily writing data.
