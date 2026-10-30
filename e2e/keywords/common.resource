@@ -84,6 +84,19 @@ Run command in pod ${namespace}/${pod_name} and not expect output
     [Arguments]    ${command}    ${unexpected_output}
     execute_command_in_pod_and_not_expect_output    ${pod_name}    ${namespace}    ${command}    ${unexpected_output}
 
+Run check and record failure
+    [Documentation]    Run a check keyword. If it fails, append the error to the
+    ...                given failures list instead of stopping the test, so that the
+    ...                remaining checks still run. The caller must assert on the
+    ...                list afterwards (e.g. Should Be Empty), otherwise failures
+    ...                would be swallowed.
+    [Arguments]    ${failures}    ${keyword}    @{args}
+    TRY
+        Run Keyword    ${keyword}    @{args}
+    EXCEPT    AS    ${error}
+        Append To List    ${failures}    ${keyword}: ${error}
+    END
+
 Test should pass
     No Operation
 
