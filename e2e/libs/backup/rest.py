@@ -98,7 +98,11 @@ class Rest(Base):
         return None
 
     def get_by_snapshot(self, volume_name, snapshot_name):
-        backup_volume = self.get_backup_volume(volume_name)
+        # the callers already retry, so don't wait for the backup volume here
+        # to avoid nested retry loops
+        backup_volume = self.get_backup_volume(volume_name, wait=False)
+        if backup_volume is None:
+            return None
         backups = backup_volume.backupList().data
         for backup in backups:
             if backup.snapshotName == snapshot_name:
@@ -138,8 +142,9 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for snapshot {snapshot_name} backup from volume {volume_name} to be deleted"
 
-    def get_backup_volume(self, volume_name):
-        for i in range(self.retry_count):
+    def get_backup_volume(self, volume_name, wait=True):
+        retry_count = self.retry_count if wait else 1
+        for i in range(retry_count):
             backup_volumes = get_longhorn_client().list_backupVolume().data
             for backup_volume in backup_volumes:
                 volumeName = getattr(backup_volume, 'volumeName', backup_volume.name)
