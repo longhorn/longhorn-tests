@@ -291,6 +291,13 @@ class Rest(Base):
                 if r.hostId == node_name:
                     return r.name
 
+    def get_running_replica_name_on_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            volume = get_longhorn_client().by_id_volume(volume_name)
+            for r in volume.replicas:
+                if r.hostId == node_name and r.running and r.mode == "RW":
+                    return r.name
+
     def wait_for_replica_count(self, volume_name, node_name, replica_count, running):
         condition_met = False
         for i in range(self.retry_count):
@@ -310,15 +317,15 @@ class Rest(Base):
                         running_replica_count += 1
                     elif running is None:
                         running_replica_count += 1
-            logging(f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running={running} on {node_name if node_name else 'nodes'}, currently it's {running_replica_count} ... ({i})")
-            if replica_count and running_replica_count == int(replica_count):
+            logging(f"Waiting for {replica_count if replica_count is not None else ''} replicas for volume {volume_name} running={running} on {node_name if node_name else 'nodes'}, currently it's {running_replica_count} ... ({i})")
+            if replica_count is not None and running_replica_count == int(replica_count):
                 condition_met = True
                 break
-            elif not replica_count and running_replica_count:
+            elif replica_count is None and running_replica_count > 0:
                 condition_met = True
                 break
             time.sleep(self.retry_interval)
-        assert condition_met, f"Waiting for {replica_count if replica_count else ''} replicas for volume {volume_name} running={running} on {node_name if node_name else 'nodes'} failed. There are only {running_replica_count} replicas"
+        assert condition_met, f"Waiting for {replica_count if replica_count is not None else ''} replicas for volume {volume_name} running={running} on {node_name if node_name else 'nodes'} failed. There are only {running_replica_count} replicas"
         return running_replica_count
 
     def wait_for_replica_to_be_deleted(self, volume_name, node_name):

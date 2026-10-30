@@ -35,10 +35,35 @@ Cleanup engine frontend test on node ${node_id}
     Clean enginefrontend files on node ${node_id}
     Cleanup test resources
 
+Cleanup mounted volume test
+    ${volume_id} =    Get Variable Value    \${mounted_volume_id}    ${EMPTY}
+    ${node_id} =    Get Variable Value    \${mounted_node_id}    ${EMPTY}
+    TRY
+        IF    $volume_id != ''
+            Should Not Be Empty    ${node_id}
+            Unmount volume ${volume_id} on node ${node_id}
+            ...    require_mounted=${False}    remove_directory=${True}
+        END
+    FINALLY
+        Cleanup test resources
+    END
+
+Mark dm device of volume ${volume_id} on node ${node_id} for deferred removal
+    ${volume_name} =    Generate Name With Suffix    volume    ${volume_id}
+    ${mount_path} =    Get mount path of volume ${volume_id}
+    ${command} =    Catenate    SEPARATOR=${SPACE}
+    ...    "findmnt -rn --mountpoint ${mount_path} &&
+    ...    sudo -n dmsetup remove --deferred ${volume_name} &&
+    ...    sudo -n dmsetup info ${volume_name}"
+    ${dm_output} =    SSH into node ${node_id} and run command    ${command}
+    Should Contain    ${dm_output}    ACTIVE (DEFERRED REMOVE)
+
 *** Test Cases ***
 Test V2 Volume Basic
-    [Tags]  coretest
+    [Tags]    coretest
     [Documentation]    Test basic v2 volume operations
+    ...                Continuously write data to v2 volume to verify write does not get stuck and data is intact.
+    ...                - Issue: https://github.com/longhorn/longhorn/issues/13937
     IF    '${DATA_ENGINE}' == 'v1'
         Skip    Test only validate on v2 data engine
     END
@@ -46,8 +71,10 @@ Test V2 Volume Basic
     When Create volume 0 with    dataEngine=v2
     And Attach volume 0 to node 0
     And Wait for volume 0 healthy
-    And Write data to volume 0
-    Then Check volume 0 data is intact
+    FOR    ${i}    IN RANGE    3
+        And Write data to volume 0
+        Then Check volume 0 data is intact
+    END
     And Detach volume 0
     And Wait for volume 0 detached
     And Delete volume 0
@@ -497,7 +524,7 @@ V2 Replica Migration Should Not Cause IO Stall
     Then Delete replica of deployment 0 volume on volume node
     And Wait for volume of deployment 0 attached and degraded
     And Wait for volume of deployment 0 healthy
-    And Assert no IO stall greater than 3 seconds
+    And Assert no IO stall on deployment 0 greater than 3 seconds
 
 Test CPU Manager Policy And Data Engine Number Of CPU Cores
     [Documentation]    Verify that Longhorn v2 data engine respects the Kubernetes CPU manager policy.
@@ -595,7 +622,7 @@ Test CPU Manager Policy And Data Engine Number Of CPU Cores
     # v2 instance manager pods should not have unexpected restarts after the policy revert
     Then Wait for k8s cluster ready
     And Wait for longhorn ready
-    And Check v2 instance manager pods did not restart
+    And Check instance manager pods of data engine v2 did not restart
 
     # Step 16: Check the v2 deployment still works after policy revert
     And Check deployment 0 works
@@ -676,6 +703,66 @@ Test V2 Block Disk Recovery After Interrupted Provisioning
     And Wait for volume 0 healthy
     And Write data to volume 0
     And Check volume 0 data is intact
+
+Test V2 Block Disk Health Data Collection For By-Id Symlink Path
+    [Documentation]    Verify that health data is collected for a v2 block disk (AIO driver)
+    ...    whose path is a /dev/disk/by-id/... symlink, instead of failing to resolve the
+    ...    symlink because the container lacks a /dev/disk directory in its own mount namespace.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12910
+    ...
+    ...    Manual test steps:
+    ...    1. Check /dev/disk/by-id/ device path on the node.
+    ...    2. Add a v2 block disk using the /dev/disk/by-id/... device path.
+    ...    3. Verify node.status.diskStatus[*].healthData is populated for the disk
+    ...       with healthStatus PASSED and other SMART/NVMe attributes.
+    ...    4. Create a volume on the disk, write and verify data integrity.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    ${by_id_path} =    Get by-id device path for ${DISK_PATH} on node 0
+    IF    "${by_id_path}" == "${EMPTY}"
+        Skip    No /dev/disk/by-id symlink found for ${DISK_PATH} on node 0
+    END
+
+    Given Disable disk ${DEFAULT_BLOCK_DISK_NAME} scheduling on node 0
+    And Delete disk ${DEFAULT_BLOCK_DISK_NAME} on node 0
+
+    TRY
+        When Add block disk block-disk-byid to node 0 with path ${by_id_path}
+        Then Wait for disk block-disk-byid on node 0 schedulable
+        And Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData}
+        ...    healthStatus
+
+        And Run command and wait for output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData.block-disk-byid.healthStatus}
+        ...    PASSED
+
+        # randomly check some health data fields are present
+        And Run command and expect output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData.block-disk-byid.attributes[*].name}
+        ...    MediaErrors
+        And Run command and expect output
+        ...    kubectl get nodes.longhorn.io ${NODE_0} -n ${LONGHORN_NAMESPACE} -o jsonpath={.status.diskStatus.block-disk-byid.healthData.block-disk-byid.attributes[*].name}
+        ...    PercentageUsed
+
+        And Create volume 0 with    dataEngine=v2
+        And Attach volume 0 to node 0
+        And Wait for volume 0 healthy
+        And Write data to volume 0
+        Then Check volume 0 data is intact
+        And Detach volume 0
+        And Wait for volume 0 detached
+        And Delete volume 0
+    FINALLY
+        # restore the default block disk with the original device path for teardown
+        And Disable disk block-disk-byid scheduling on node 0
+        And Delete disk block-disk-byid on node 0
+        And Add block disk ${DEFAULT_BLOCK_DISK_NAME} to node 0 with path ${DISK_PATH}
+        And Wait for disk ${DEFAULT_BLOCK_DISK_NAME} on node 0 schedulable
+    END
 
 Test Create Default Disk On Labeled Nodes With V2 Data Engine
     [Tags]    setting    uninstall    block-disk
@@ -1092,3 +1179,109 @@ Test V2 Sharded Volume Dynamic Provisioning With Expansion
     # write at least 1.5Gi of data (more than the original 1Gi size) to verify
     # the volume can actually hold data beyond its pre-expansion capacity
     When Write 1536 MB data to file data-after-expansion.txt in deployment 0
+
+Test V2 Data Engine Disable Uninstall And Reinstall Longhorn
+    [Tags]    uninstall    block-disk
+    [Documentation]    Verify Longhorn with block disks can be uninstalled after disabling v2 data engine,
+    ...    reinstalled, and v2 volumes work again after re-enabling v2 data engine.
+    ...
+    ...    Test steps:
+    ...    1. Disable v2 data engine.
+    ...    2. Uninstall Longhorn.
+    ...    3. Reinstall Longhorn, wait for Longhorn ready, enable v2 data engine and add block disks.
+    ...    4. Create and attach a v2 volume, write data and check data integrity.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    Given Setting v2-data-engine is set to false
+    When Setting deleting-confirmation-flag is set to true
+    Then Uninstall Longhorn
+    And Check all Longhorn CRD removed
+
+    When Install Longhorn
+    And Wait for longhorn ready
+    Then Enable v2 data engine and add block disks
+    And Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Check volume 0 data is intact
+
+Test V2 Volume Reattach With Stale Mount
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify a reattached v2 volume remains attached after a stale filesystem is unmounted.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach the volume, create a filesystem, mount it, and write data.
+    ...    2. Detach without unmounting, then reattach to the same node.
+    ...    3. Unmount the stale filesystem.
+    ...    4. Confirm the volume is attached to the same node, then stays attached for 60 seconds.
+    ...    5. Remount the reattached device and verify filesystem data integrity.
+    [Teardown]    Cleanup mounted volume test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    Set Test Variable    ${mounted_volume_id}    0
+    Set Test Variable    ${mounted_node_id}    0
+    And Format filesystem of volume 0 on node 0
+    And Mount volume 0 on node 0
+    And Write filesystem data to volume 0 on node 0
+
+    When Detach volume 0 from node 0
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Unmount volume 0 on node 0
+
+    Then Volume 0 should be attached to node 0
+    And Assert volume 0 remains attached for at least 60 seconds
+    And Mount volume 0 on node 0
+    And Check volume 0 filesystem data on node 0 is intact
+
+Test V2 Volume Reattach With Deferred Remove DM Device
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify the volume returns to healthy after reusing a dm device marked for deferred removal.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach a v2 volume, create a filesystem, mount it, and write data.
+    ...    2. Detach without unmounting the stale filesystem.
+    ...    3. Mark the dm device for deferred removal and confirm it is ACTIVE (DEFERRED REMOVE).
+    ...    4. Reattach to the same node and verify the instance manager reuse warning.
+    ...    5. Unmount the stale filesystem and wait for volume robustness to become unknown.
+    ...    6. Confirm the volume returns to attached and healthy on the same node.
+    ...    7. Remount the recovered device and verify filesystem data integrity.
+    [Teardown]    Cleanup mounted volume test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume deferred-remove with    dataEngine=v2
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    Set Test Variable    ${mounted_volume_id}    deferred-remove
+    Set Test Variable    ${mounted_node_id}    0
+    And Format filesystem of volume deferred-remove on node 0
+    And Mount volume deferred-remove on node 0
+    And Write filesystem data to volume deferred-remove on node 0
+
+    When Detach volume deferred-remove from node 0
+    And Wait for volume deferred-remove detached
+    And Mark dm device of volume deferred-remove on node 0 for deferred removal
+
+    And Get test start time
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    And Verify v2 instance manager log on node 0 contain Trying to reuse the linear dm device that has deferred-remove flag set after test start
+    And Unmount volume deferred-remove on node 0
+    Then Wait for volume deferred-remove unknown
+    And Wait for volume deferred-remove healthy
+    And Volume deferred-remove should be attached to node 0
+    And Mount volume deferred-remove on node 0
+    And Check volume deferred-remove filesystem data on node 0 is intact
