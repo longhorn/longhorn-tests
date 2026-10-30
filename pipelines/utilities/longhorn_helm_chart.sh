@@ -105,6 +105,7 @@ install_longhorn_custom(){
 
 uninstall_longhorn(){
   get_longhorn_namespace
+  kubectl -n "${LONGHORN_NAMESPACE}" patch -p '{"value": "true"}' --type=merge setting.longhorn.io/deleting-confirmation-flag
   helm uninstall longhorn --namespace "${LONGHORN_NAMESPACE}"
   kubectl delete ns "${LONGHORN_NAMESPACE}"
 }

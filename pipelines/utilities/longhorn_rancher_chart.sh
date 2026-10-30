@@ -105,6 +105,8 @@ upgrade_longhorn_custom() {
 }
 
 uninstall_longhorn() {
+  kubectl -n longhorn-system patch -p '{"value": "true"}' --type=merge setting.longhorn.io/deleting-confirmation-flag
+
   TERRAFORM_INSTALL_FOLDER="pipelines/utilities/rancher/terraform_install"
   TERRAFORM_UPGRADE_FOLDER="pipelines/utilities/rancher/terraform_upgrade"
   if [[ -e "${TERRAFORM_UPGRADE_FOLDER}/terraform.tfstate" ]]; then
