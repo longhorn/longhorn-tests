@@ -127,8 +127,10 @@ Test mTLS Support
     ...    succeeded
 
     # Step 6: Install grpcurl inside the instance manager pod
+    ${ARCH} =    Get Environment Variable    ARCH    amd64
+    ${grpcurl_arch} =    Set Variable If    "${ARCH}" == "arm64"    arm64    x86_64
     And Run command in pod ${LONGHORN_NAMESPACE}/${instance_manager_pod}
-    ...    curl -fsSL https://github.com/fullstorydev/grpcurl/releases/download/v1.9.3/grpcurl_1.9.3_linux_x86_64.tar.gz | tar -xz -C /tmp && chmod +x /tmp/grpcurl
+    ...    curl -fsSL https://github.com/fullstorydev/grpcurl/releases/download/v1.9.3/grpcurl_1.9.3_linux_${grpcurl_arch}.tar.gz | tar -xz -C /tmp && chmod +x /tmp/grpcurl
 
     # Step 7: Plaintext gRPC must be rejected
     ${random_suffix_1} =    Evaluate    __import__('uuid').uuid4().hex[:8]
