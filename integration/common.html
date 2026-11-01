@@ -9342,7 +9342,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
 </summary>
 <pre><code class="python">def wait_for_support_bundle_state(state, node_id, name, client):  # NOQA
     ok = False
-    for _ in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS_LONG):
         support_bundle = get_support_bundle(node_id, name, client)
         try:
             assert support_bundle[&#39;state&#39;] == state
@@ -9351,7 +9351,7 @@ deleted immediately, so add a wait mechanism to get a stable running pod.</p></d
         except Exception:
             time.sleep(RETRY_INTERVAL)
 
-    assert ok</code></pre>
+    assert ok, f&#34;support_bundle={support_bundle}&#34;</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
