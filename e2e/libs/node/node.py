@@ -56,7 +56,7 @@ class Node:
         return mount_path
 
     def update_disks(self, node_name, disks, wait=True):
-        logging(f"Updating node {node_name} disks {disks}")
+        logging(f"Updating node {node_name} disks")
         for _ in range(self.retry_count):
             try:
                 node = get_longhorn_client().by_id_node(node_name)
@@ -75,7 +75,7 @@ class Node:
                     # Treat this as success instead of retrying or failing.
                     logging(f"Disk path already exists on node {node_name}: {e}")
                     return get_longhorn_client().by_id_node(node_name)
-                logging(f"Failed to update node {node_name} disk: {e}")
+                logging(f"Failed to update node {node_name} disk {disks}: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to update node {node_name} disk {disks}"
 
