@@ -39,7 +39,7 @@ echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
 # TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
 set +e
 
-if [[ "${network_stack}" == "ipv6" ]]; then
+if [[ "${network_stack}" == "ipv6" || "${network_stack}" == dual-stack-* ]]; then
   tee /etc/sysctl.d/99-ipv6.conf > /dev/null <<EOF
 net.ipv6.conf.eth0.accept_ra = 2
 net.ipv6.conf.eth1.accept_ra = 2
@@ -59,13 +59,25 @@ nameserver 8.8.8.8
 nameserver 1.1.1.1
 EOF
   chattr +i /etc/resolv.conf || true
-  IP=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
-else
-  IP=$(hostname -I | awk '{print $1}')
 fi
 
-# TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
-set +e
+ipv6_addr=$(ip -6 addr show scope global | awk '/inet6/ && !/fe80/ {print $2}' | cut -d/ -f1 | head -n1)
+private_ipv4=$(hostname -I | awk '{print $1}')
+
+case "${network_stack}" in
+  ipv6)
+    IP="$ipv6_addr"
+    ;;
+  dual-stack-ipv4-first)
+    IP="$private_ipv4,$ipv6_addr"
+    ;;
+  dual-stack-ipv6-first)
+    IP="$ipv6_addr,$private_ipv4"
+    ;;
+  *)
+    IP="$private_ipv4"
+    ;;
+esac
 
 until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-ip=$IP --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s agent did not install correctly'

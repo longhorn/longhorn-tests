@@ -626,6 +626,39 @@ Test Restoring Volume From Backup With Missing Blocks
     And Wait for volume 2 healthy
     Then Check volume 2 data is backup 1 of volume 0
 
+Test Creating Backup With Corrupted Backup Volume Config
+    [Documentation]
+    ...    Verify that creating a backup after the backup volume's volume.cfg is
+    ...    corrupted does not crash instance-manager, and the volume stays healthy
+    ...    with its data intact.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13790
+    ...
+    ...    Steps:
+    ...    1. Create and attach 3 volumes. Write some data to each volume
+    ...    2. Create a backup for each volume
+    ...    3. Corrupt volume 0's volume.cfg by replacing its content with `not-json`
+    ...    4. Create another backup for each volume
+    ...    5. Check instance-manager doesn't restart
+    ...    6. Check all volumes are still healthy and the data integrity
+    FOR    ${i}    IN RANGE    3
+        Given Create volume ${i} with    dataEngine=${DATA_ENGINE}
+        And Attach volume ${i}
+        And Wait for volume ${i} healthy
+        And Write data to volume ${i}
+    END
+
+    And Create backup 0 for volume 0
+    When Corrupt volume.cfg of volume 0 with invalid JSON
+    And Create backup 1 for volume 0    wait=False
+    And Verify backup list contains errors for volume 0
+
+    Then Check instance manager pods of data engine ${DATA_ENGINE} did not restart
+    FOR    ${i}    IN RANGE    3
+        And Wait for volume ${i} healthy
+        And Check volume ${i} data is intact
+    END
+
 Test Backup On Cluster With Drained Nodes
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12562
     ...    Verify that backups can be created successfully on a cluster where nodes
@@ -648,3 +681,50 @@ Test Backup On Cluster With Drained Nodes
         And Write data ${i} 10 MB to volume 0
         Then Create backup ${i} for volume 0
     END
+
+Test Volume Detach During Backup Creation
+    [Documentation]    Verify that detaching a volume while a backup creation
+    ...    is still in progress does not affect another attached and healthy
+    ...    volume, and that data remains intact on both volumes after the
+    ...    detached volume is reattached.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14017
+    ...
+    ...    Test steps:
+    ...    1. Create and attach 2 volumes.
+    ...    2. Write data to both volumes.
+    ...    3. Create a backup for volume 0, and while the backup creation is
+    ...       still in progress, detach volume 0.
+    ...    4. Volume 1 should remain attached and healthy, and its data intact.
+    ...    5. Reattach volume 0, and verify its data is intact.
+    ...    6. Create another backup for volume 0.
+    ...    7. Restore a volume from the backup.
+    ...    8. Check the data integrity of the restored volume.
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Create volume 1 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Attach volume 1 to node 0
+    And Wait for volume 0 healthy
+    And Wait for volume 1 healthy
+    And Write data to volume 0
+    And Write data to volume 1
+
+    When Create backup 0 for volume 0    wait=${False}
+    And Wait for volume 0 backup to be in progress
+    And Detach volume 0
+    Then Wait for volume 0 detached
+
+    And Wait for volume 1 healthy
+    And Check volume 1 data is intact
+
+    When Attach volume 0
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is intact
+
+    When Create backup 1 for volume 0
+    And Create volume 2 from backup 1 of volume 0    dataEngine=${DATA_ENGINE}
+    And Wait for volume 2 restoration from backup 1 of volume 0 completed
+    And Wait for volume 2 detached
+    And Attach volume 2
+    And Wait for volume 2 healthy
+    Then Check volume 2 data is backup 1 of volume 0

@@ -154,11 +154,17 @@ resource "null_resource" "rsync_kubeconfig_file_k3s" {
   provisioner "local-exec" {
     command = <<EOT
     export K3S_SERVER_IP=$(
-        [ "${var.network_stack}" = "ipv6" ] && echo "[${aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]}]" || echo ${aws_eip.lh_aws_eip_controlplane[0].public_ip}
+        case "${var.network_stack}" in
+          ipv6|dual-stack-ipv6-first) echo "[${aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]}]" ;;
+          *) echo ${aws_eip.lh_aws_eip_controlplane[0].public_ip} ;;
+        esac
     )
 
     export LOCAL_IP=$(
-        [ "${var.network_stack}" = "ipv6" ] && echo "\[::1\]" || echo "127.0.0.1"
+        case "${var.network_stack}" in
+          ipv6|dual-stack-ipv6-first) echo "\[::1\]" ;;
+          *) echo "127.0.0.1" ;;
+        esac
     )
 
     rsync -aPvz --rsync-path="sudo rsync" -e "ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}" "${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml" . && \
@@ -193,10 +199,16 @@ resource "null_resource" "rsync_kubeconfig_file_rke2" {
   provisioner "local-exec" {
     command = <<EOT
     export RKE2_SERVER_IP=$(
-        [ "${var.network_stack}" = "ipv6" ] && echo "[${aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]}]" || echo ${aws_eip.lh_aws_eip_controlplane[0].public_ip}
+        case "${var.network_stack}" in
+          ipv6|dual-stack-ipv6-first) echo "[${aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]}]" ;;
+          *) echo ${aws_eip.lh_aws_eip_controlplane[0].public_ip} ;;
+        esac
     )
     export LOCAL_IP=$(
-        [ "${var.network_stack}" = "ipv6" ] && echo "\[::1\]" || echo "127.0.0.1"
+        case "${var.network_stack}" in
+          ipv6|dual-stack-ipv6-first) echo "\[::1\]" ;;
+          *) echo "127.0.0.1" ;;
+        esac
     )
     rsync -aPvz --rsync-path="sudo rsync" -e "ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}" "${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/rke2/rke2.yaml" . && \
     sed -i "s#https://$LOCAL_IP:6443#https://$RKE2_SERVER_IP:6443#" rke2.yaml

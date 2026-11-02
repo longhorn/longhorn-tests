@@ -58,3 +58,14 @@ Wait for volume ${volume_id} replica on node ${node_id} failed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_failed    ${volume_name}    ${node_name}
+
+Permanently crash volume ${volume_id} replica on node ${node_id}
+    [Documentation]    Permanently crash the replica previously recorded by
+    ...    "Record volume ${volume_id} replica name on node ${node_id}" so it
+    ...    can never be reused. For v1, the replica's data directory on the
+    ...    host is made immutable with `chattr -R +i`. For v2, this is not
+    ...    currently implemented since there is no known way to permanently
+    ...    crash a v2 replica (see `permanently_crash_replica` in
+    ...    `v2_instancemanager.py`).
+    ${node_name} =    get_node_by_index    ${node_id}
+    permanently_crash_replica    ${node_name}    ${original_replica_name}    ${DATA_ENGINE}

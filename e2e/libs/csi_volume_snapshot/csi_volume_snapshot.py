@@ -107,7 +107,7 @@ class CSIVolumeSnapshot:
             name=snapshot_name
         )
 
-        logging(f"Got csi volume snapshot {snapshot}")
+        logging(f"Got csi volume snapshot {{'name': {snapshot['metadata']['name']!r}, 'status': {snapshot.get('status')}}}")
 
         return snapshot
 

@@ -157,7 +157,7 @@ node {
                       passThreshold: 100.0,
                       unstableThreshold: 0.0
 
-                if(JOB_BASE_NAME != "longhorn-e2e-test") {
+                if(JOB_BASE_NAME != "longhorn-e2e-test" && JOB_BASE_NAME != "longhorn-e2e-test-pull-request-check") {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/junit_to_qase.py junit.xml ${BUILD_URL}"
                 }
             }

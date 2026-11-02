@@ -9,10 +9,32 @@ from utility.utility import subprocess_exec_cmd
 from utility.utility import pod_exec
 import utility.constant as constant
 
+from ssh.ssh import ssh_exec
+
 class V1_InstanceManager(Base):
 
     def __init__(self):
         super().__init__()
+
+    def permanently_crash_replica(self, node_name, replica_name):
+        # Make the replica's data directory immutable on the host so that
+        # Longhorn can never write to it again (e.g. cannot reuse it after
+        # the node comes back). This simulates a permanent replica crash.
+        replica_dir = self.get_replica_directory_name(replica_name)
+        cmd = f"sudo chattr -R +i /var/lib/longhorn/replicas/{replica_dir}"
+        logging(f"Crashing replica {replica_name} (directory {replica_dir}) on node {node_name} by making it immutable")
+
+        last_error = None
+        for i in range(self.retry_count):
+            try:
+                ssh_exec(node_name, cmd)
+                logging(f"Crashed replica {replica_name} (directory {replica_dir}) on node {node_name}")
+                return
+            except Exception as e:
+                last_error = e
+                logging(f"Failed to crash replica {replica_name} on node {node_name} ... ({i}): {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to crash replica {replica_name} (directory {replica_dir}) on node {node_name}: {last_error}"
 
     def create_stale_stopped_engine_process(self, node_name, engine_name):
         # Reproduces the leaked `stopped` v1 engine process record from
@@ -81,6 +103,68 @@ class V1_InstanceManager(Base):
 
         logging(f"Created orphaned replica {orphaned_replica} on node {node_name}")
         return orphaned_replica
+
+    def get_engine_binary_path(self, node_name):
+        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
+        cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- ls /engine-binaries"
+        output = subprocess_exec_cmd(cmd)
+        binaries = [line.strip() for line in output.splitlines() if line.strip()]
+        assert binaries, f"No engine binaries found in instance manager pod {im_pod_name}"
+        return f"/engine-binaries/{binaries[0]}/longhorn"
+
+    def create_orphaned_engine_instance(self, node_name, name=None):
+        # Creates an orphaned engine instance process directly on the instance manager
+        # without creating a corresponding Engine CR, so that it can be detected as an
+        # orphaned engine instance.
+        if name is None:
+            name = f"orphan-engine-{uuid.uuid4().hex[:8]}"
+        engine_name = f"{name}-e-0"
+        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
+        binary_path = self.get_engine_binary_path(node_name)
+
+        logging(f"Creating orphaned engine instance {engine_name} on instance manager {im_pod_name} on node {node_name}")
+        create_cmd = ("longhorn-instance-manager process create "
+                      f"--name {engine_name} "
+                      f"--binary {binary_path} "
+                      "-- "
+                      f"--engine-instance-name {engine_name} "
+                      f"controller {engine_name} "
+                      "--frontend tgt-blockdev "
+                      "--disableRevCounter "
+                      "--size 10485760 "
+                      "--current-size 10485760")
+        cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- {create_cmd}"
+        subprocess_exec_cmd(cmd)
+
+        logging(f"Created orphaned engine instance {engine_name} on node {node_name}")
+        return engine_name
+
+    def create_orphaned_replica_instance(self, node_name, name=None):
+        # Creates an orphaned replica instance process directly on the instance manager
+        # without creating a corresponding Replica CR, so that it can be detected as an
+        # orphaned replica instance.
+        if name is None:
+            name = f"orphan-replica-{uuid.uuid4().hex[:8]}"
+        replica_name = f"{name}-r-0"
+        im_pod_name = self.get_instance_manager_pod_on_node(node_name, "v1")
+        binary_path = self.get_engine_binary_path(node_name)
+        replica_dir = f"/host/var/lib/longhorn/replicas/{replica_name}"
+
+        logging(f"Creating orphaned replica instance {replica_name} on instance manager {im_pod_name} on node {node_name}")
+        mkdir_cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- mkdir -p {replica_dir}"
+        subprocess_exec_cmd(mkdir_cmd)
+
+        create_cmd = ("longhorn-instance-manager process create "
+                      f"--name {replica_name} "
+                      f"--binary {binary_path} "
+                      "-- "
+                      f"--volume-name {name} "
+                      f"replica {replica_dir}")
+        cmd = f"kubectl exec -n {constant.LONGHORN_NAMESPACE} {im_pod_name} -- {create_cmd}"
+        subprocess_exec_cmd(cmd)
+
+        logging(f"Created orphaned replica instance {replica_name} on node {node_name}")
+        return replica_name
 
     def get_replica_directory_name(self, replica_name):
         cmd = (f"kubectl get replicas -n {constant.LONGHORN_NAMESPACE} {replica_name} "
