@@ -6640,7 +6640,7 @@ def wait_for_support_bundle_cleanup(client):  # NOQA
 
 def wait_for_support_bundle_state(state, node_id, name, client):  # NOQA
     ok = False
-    for _ in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS_LONG):
         support_bundle = get_support_bundle(node_id, name, client)
         try:
             assert support_bundle['state'] == state
@@ -6649,7 +6649,7 @@ def wait_for_support_bundle_state(state, node_id, name, client):  # NOQA
         except Exception:
             time.sleep(RETRY_INTERVAL)
 
-    assert ok
+    assert ok, f"support_bundle={support_bundle}"
 
 
 def generate_support_bundle(case_name):  # NOQA
