@@ -47,6 +47,17 @@ resource "aws_internet_gateway" "lh_aws_igw" {
   }
 }
 
+# Source ranges allowed to reach the cluster from outside the VPC:
+# Jenkins egress (public on OCI, private on HAL), the cluster's own subnet, and an optional user-specified debug range
+locals {
+  allowed_cidrs = concat(
+    ["129.80.0.0/16", "10.115.0.0/16"],
+    [aws_subnet.lh_aws_public_subnet.cidr_block],
+    compact([var.debug_cidr])
+  )
+  allowed_ipv4_cidrs = [for c in local.allowed_cidrs : c if !can(regex(":", c))]
+}
+
 # Create public security group
 resource "aws_security_group" "lh_aws_secgrp_public" {
   name        = "lh_aws_secgrp_public"
@@ -58,7 +69,7 @@ resource "aws_security_group" "lh_aws_secgrp_public" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.allowed_ipv4_cidrs
   }
 
   ingress {
@@ -66,15 +77,7 @@ resource "aws_security_group" "lh_aws_secgrp_public" {
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow k8s API server port"
-    from_port   = 2379
-    to_port     = 2379
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.allowed_ipv4_cidrs
   }
 
  ingress {
@@ -82,7 +85,7 @@ resource "aws_security_group" "lh_aws_secgrp_public" {
     from_port   = 9345
     to_port     = 9345
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.allowed_ipv4_cidrs
   }
 
   ingress {
@@ -90,23 +93,15 @@ resource "aws_security_group" "lh_aws_secgrp_public" {
     from_port   = 30000
     to_port     = 30000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = local.allowed_ipv4_cidrs
   }
 
   ingress {
-    description = "Allow UDP connection for longhorn-webhooks"
+    description = "Allow all connection for longhorn-webhooks"
     from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/8"]
-  }
-
-  ingress {
-    description = "Allow UDP connection for longhorn-webhooks"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "udp"
-    cidr_blocks = ["10.0.0.0/8"]
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [aws_vpc.lh_aws_vpc.cidr_block]
   }
 
   dynamic "ingress" {

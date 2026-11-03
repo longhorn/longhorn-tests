@@ -39,6 +39,9 @@ def CNI = params.CNI ? params.CNI : "default"
 
 def BLOCK_DEV_PATH = params.BLOCK_DEV_PATH ? params.BLOCK_DEV_PATH : ""
 
+// extra CIDR range (a single IPv4 or IPv6 CIDR) allowed to access the test resources for debugging
+def DEBUG_CIDR = params.DEBUG_CIDR ? params.DEBUG_CIDR : ""
+
 node {
 
     withCredentials([
@@ -70,40 +73,6 @@ node {
         checkout scm
 
         try {
-
-            if (params.AIR_GAP_INSTALLATION) {
-
-                stage('airgap build') {
-                    sh "cp ${CA_CERT_PATH} ./SUSE_Trust_Root.crt"
-                    sh "airgap/scripts/build.sh"
-                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                           --env TF_VAR_longhorn_version=${LONGHORN_REPO_BRANCH} \
-                                           --env TF_VAR_docker_hub_username="${REGISTRY_USERNAME}" \
-                                           --env TF_VAR_docker_hub_password="${REGISTRY_PASSWORD}" \
-                                           --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
-                                           --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
-                                           airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
-                    """
-                }
-
-                stage ('airgap setup') {
-                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
-                    REGISTRY_URL = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
-                        returnStdout: true
-                    )
-                    println REGISTRY_URL
-                    REGISTRY_USERNAME = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
-                        returnStdout: true
-                    )
-                    REGISTRY_PASSWORD = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
-                        returnStdout: true
-                    )
-                }
-
-            }
 
             stage('build') {
 
@@ -165,6 +134,7 @@ node {
                                        --env TF_VAR_aws_region=${AWS_REGION} \
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
                                        --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_debug_cidr="${DEBUG_CIDR}" \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
@@ -185,6 +155,10 @@ node {
                                        --env QASE_PROJECT=LH \
                                        --env TF_VAR_network_stack="${NETWORK_STACK}" \
                                        --env TF_VAR_cni="${CNI}" \
+                                       --env TF_VAR_airgap=${AIR_GAP_INSTALLATION} \
+                                       --env TF_VAR_docker_hub_username="${REGISTRY_USERNAME}" \
+                                       --env TF_VAR_docker_hub_password="${REGISTRY_PASSWORD}" \
+                                       --env TF_VAR_longhorn_version=${LONGHORN_REPO_BRANCH} \
                                        --env AZBLOB_ACCOUNT_NAME="${AZBLOB_ACCOUNT_NAME}" \
                                        --env AZBLOB_ACCOUNT_KEY="${AZBLOB_ACCOUNT_KEY}" \
                                        --env AZBLOB_ENDPOINT="${AZBLOB_ENDPOINT}" \
@@ -238,13 +212,6 @@ node {
             throw e
         } finally {
             stage ('releasing resources') {
-                if (sh (script: "docker container inspect airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
-                    sh (script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/cleanup.sh", returnStatus: true)
-                    sh "docker stop airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                    sh "docker rm -v airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                    sh "docker rmi airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                }
-
                 if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
                     sh (script: "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh", returnStatus: true)
                     sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
