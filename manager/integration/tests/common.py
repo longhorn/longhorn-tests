@@ -4932,12 +4932,23 @@ def activate_standby_volume(client, volume_name,
     assert volume.standby is False
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
+    wait_for_volume_status(client, volume_name, "restoreRequired", False)
     wait_for_volume_detached(client, volume_name)
 
+    # Engine spec/status are reconciled separately from the volume state.
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastRestoredBackup == "" and \
+                engine.requestedBackupRestore == "":
+            break
+        time.sleep(RETRY_INTERVAL)
+
     volume = client.by_id_volume(volume_name)
+    assert volume.state == VOLUME_STATE_DETACHED
     engine = get_volume_engine(volume)
-    assert engine.lastRestoredBackup == ""
-    assert engine.requestedBackupRestore == ""
+    assert engine.lastRestoredBackup == "", f"engine = {engine}"
+    assert engine.requestedBackupRestore == "", f"engine = {engine}"
 
 
 def check_volume_last_backup(client, volume_name, last_backup):
