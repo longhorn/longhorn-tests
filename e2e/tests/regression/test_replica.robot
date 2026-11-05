@@ -20,6 +20,19 @@ Resource    ../keywords/replica.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
+*** Keywords ***
+Recover crashed replica and cleanup test resources
+    [Documentation]    Undo "Permanently crash volume replica on node" so
+    ...    that Longhorn can delete the replica data, then clean up. A node
+    ...    still deleted is added back first so that it is reachable over SSH.
+    Add deleted node back
+    ${replica_dir} =    Get Variable Value    \${crashed_replica_dir}
+    IF    $replica_dir is not None
+        Run Keyword And Ignore Error    ssh_exec_on_node    ${crashed_replica_node}
+        ...    sudo chattr -R -i /var/lib/longhorn/replicas/${replica_dir}
+    END
+    Cleanup test resources
+
 *** Test Cases ***
 Test Replica Rebuilding Per Volume Limit
     [Tags]    coretest
@@ -370,7 +383,7 @@ Test Crashed Replica Not Reused After Node Back
     ...       directory for v1),
     ...    3. Directly remove that Kubernetes node.
     ...    4. Wait for the related replica failure (volume becomes degraded).
-    ...    5. Reboot the removed node to add it back to the cluster.
+    ...    5. Add the removed node back to the cluster.
     ...    6. Longhorn tries to reuse the failed replica, but fails since it
     ...       was crashed.
     ...    7. After the replica-replenishment-wait-interval, a new replica is
@@ -378,6 +391,7 @@ Test Crashed Replica Not Reused After Node Back
     ...    8. Verify the replica on the returned node was NOT reused (a new
     ...       replica was created instead of the original one).
     ...    9. Verify the data of the volume is intact.
+    [Teardown]    Recover crashed replica and cleanup test resources
     IF    '${DATA_ENGINE}' == 'v2'
         Skip    permanently crashing a v2 replica is not currently supported
     END
@@ -393,7 +407,7 @@ Test Crashed Replica Not Reused After Node Back
     When Delete node 1
     Then Wait for volume 0 degraded
 
-    When Reboot node 1
+    When Add deleted node back
     Then Wait for volume 0 healthy
     And Check volume 0 replica not reused on node 1
     And Check volume 0 data is intact
