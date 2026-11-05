@@ -527,9 +527,13 @@ class volume_keywords:
         replica_names_str = ",".join(replica_names)
         self.volume.set_annotation(volume_name, ANNOT_REPLICA_NAMES, replica_names_str)
 
-    def check_volume_replica_names_recorded(self, volume_name):
-        replica_names_str = self.volume.get_annotation_value(volume_name, ANNOT_REPLICA_NAMES)
-        expected_replica_names = sorted(replica_names_str.split(","))
+    def check_volume_replica_names_recorded(self, volume_name, *replica_names):
+        # Use provided replica names if specified; otherwise, read from the volume annotation.
+        if replica_names:
+            expected_replica_names = sorted(replica_names)
+        else:
+            replica_names_str = self.volume.get_annotation_value(volume_name, ANNOT_REPLICA_NAMES)
+            expected_replica_names = sorted(replica_names_str.split(","))
 
         actual_replica_names = []
         for i in range(self.retry_count):
