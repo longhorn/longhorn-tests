@@ -1560,7 +1560,7 @@ def set_random_backupstore(request, client):
             _version in version_doesnt_support):
         return
 
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         print(f&#34;waiting for default backup target available ... ({i})&#34;)
         bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
         if bt.available:
