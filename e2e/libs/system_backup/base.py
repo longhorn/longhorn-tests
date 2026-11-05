@@ -7,5 +7,5 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def restore(self, backup_name):
+    def restore(self, backup_name, wait=True):
         return NotImplemented

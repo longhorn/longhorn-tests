@@ -4,6 +4,14 @@ Documentation    Setting Keywords
 Library    ../libs/keywords/setting_keywords.py
 
 *** Keywords ***
+Save original registry secret setting
+    ${original_registry_secret} =    Get setting registry-secret
+    Set Test Variable    ${original_registry_secret}
+
+Get setting ${setting_key}
+    ${value} =    get_setting    ${setting_key}
+    RETURN    ${value}
+
 Set setting ${setting_key} to ${setting_value} will fail
     Run Keyword And Expect Error    *    update_setting    ${setting_key}    ${setting_value}    retry=False
 

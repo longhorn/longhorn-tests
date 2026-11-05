@@ -27,10 +27,16 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert ready, f"Waiting for system backup {backup_name} to be ready failed: {system_backup}"
 
-    def restore(self, backup_name):
+    def restore(self, backup_name, wait=True):
         restore_name = generate_name_random("system-restore-")
         logging(f"Creating system restore {restore_name} from system backup {backup_name}")
         get_longhorn_client().create_system_restore(Name=restore_name, SystemBackup=backup_name)
+        if not wait:
+            return restore_name
+        self.wait_for_system_restore_completed(restore_name)
+
+    def wait_for_system_restore_completed(self, restore_name):
+        system_restore = None
         completed = False
         for i in range(self.retry_count):
             logging(f"Waiting for system restore {restore_name} to be completed ... ({i})")

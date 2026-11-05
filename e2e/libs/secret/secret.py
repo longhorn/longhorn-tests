@@ -1,3 +1,4 @@
+import json
 import yaml
 
 from kubernetes import client
@@ -21,6 +22,16 @@ class Secret():
             manifest_dict['metadata']['namespace'] = constant.LONGHORN_NAMESPACE
             logging(f"Creating secret {manifest_dict['metadata']['name']}")
             self.api.create_namespaced_secret(constant.LONGHORN_NAMESPACE, body=manifest_dict)
+
+    def create_registry_secret(self, name):
+        docker_config = {"auths": {"registry.example.invalid": {
+            "username": "dummy", "password": "dummy", "auth": "ZHVtbXk6ZHVtbXk="}}}
+        self.api.create_namespaced_secret(constant.LONGHORN_NAMESPACE, body={
+            "apiVersion": "v1", "kind": "Secret",
+            "metadata": {"name": name, "labels": {"test.longhorn.io": "e2e"}},
+            "type": "kubernetes.io/dockerconfigjson",
+            "stringData": {".dockerconfigjson": json.dumps(docker_config)},
+        })
 
     def delete(self, name, namespace):
         try:
