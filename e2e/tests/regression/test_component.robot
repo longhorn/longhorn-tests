@@ -11,6 +11,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/volume.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -23,6 +24,19 @@ Revert Longhorn Manager Resources
     ...    longhorn-manager
     Cleanup test resources
 
+Reinstall Longhorn With Default Resources
+    [Documentation]    Reinstall Longhorn with the default helm values to drop the
+    ...                custom resource requests and limits.
+    ${reinstall_required} =    Get Variable Value    \${longhorn_reinstall_required}    ${False}
+    IF    ${reinstall_required}
+        Setting deleting-confirmation-flag is set to true
+        Uninstall Longhorn
+        Check all Longhorn CRD removed
+        Install Longhorn
+        Wait for Longhorn components all running
+    END
+    Cleanup test resources
+
 *** Test Cases ***
 Test Longhorn Manager Resource Configuration Via Patch
     [Documentation]    Test CPU/Memory requests and limits for longhorn-manager via patch command
@@ -32,24 +46,84 @@ Test Longhorn Manager Resource Configuration Via Patch
     When Patch Longhorn Manager Resources With    cpu_request=600m    memory_request=1Gi    cpu_limit=2    memory_limit=3Gi
     And Wait for Longhorn workloads pods stable
         ...    longhorn-manager
-    Then Check Longhorn Manager Resources Are    cpu_request=600m    memory_request=1Gi    cpu_limit=2    memory_limit=3Gi
+    Then Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-manager -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-manager")].resources.requests}' -n longhorn-system
+    ...    {"cpu":"600m","memory":"1Gi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-manager -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-manager")].resources.limits}' -n longhorn-system
+    ...    {"cpu":"2","memory":"3Gi"}
 
-Test Longhorn Manager Resource Configuration Via Helm Install
-    [Documentation]    Test CPU/Memory requests and limits for longhorn-manager via helm install
+Test Longhorn Components Resource Limits Configuration
+    [Tags]    uninstall    helm    upgrade
+    [Documentation]    Test CPU/Memory requests and limits for longhorn-manager,
+    ...                longhorn-global-manager and longhorn-ui are applied when
+    ...                they are configured via helm values.
     ...
-    ...                https://github.com/longhorn/longhorn/issues/12225
-    [Teardown]    Revert Longhorn Manager Resources
+    ...                Issues: https://github.com/longhorn/longhorn/issues/14306
+    ...                        https://github.com/longhorn/longhorn/issues/12225
+    ...
+    ...                1. Skip if the install method is not helm.
+    ...                2. If LONGHORN_STABLE_VERSION is set, uninstall Longhorn and
+    ...                   install the stable version first.
+    ...                3. Install (or upgrade to) Longhorn with the resource requests and
+    ...                   limits of longhorn-manager, longhorn-global-manager and
+    ...                   longhorn-ui set by helm values.
+    ...                4. Verify the pods of each component have the configured resources.
+    ...                5. Create and attach a volume, and verify data can be written and read.
+    [Teardown]    Reinstall Longhorn With Default Resources
     ${LONGHORN_INSTALL_METHOD}=    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
         Skip    Unsupported install method: ${LONGHORN_INSTALL_METHOD}
     END
+    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
+    Set Test Variable    ${longhorn_reinstall_required}    ${True}
 
-    When Setting deleting-confirmation-flag is set to true
+    Given Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
-    And Check Longhorn CRD removed
+    And Check all Longhorn CRD removed
 
-    When Install Longhorn via helm with resource configuration   cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
-    And Check Longhorn Manager Resources Are       cpu_request=650m    memory_request=2Gi    cpu_limit=3    memory_limit=4Gi
+    ${custom_cmd} =    Catenate    SEPARATOR=${SPACE}
+    ...    yq -i '
+    ...    .longhornManager.resources = {"requests":{"cpu":"250m","memory":"512Mi"},"limits":{"cpu":"500m","memory":"1Gi"}} |
+    ...    .longhornGlobalManager.resources = {"requests":{"cpu":"100m","memory":"128Mi"},"limits":{"cpu":"200m","memory":"256Mi"}} |
+    ...    .longhornUI.resources = {"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"100m","memory":"128Mi"}}
+    ...    ' values.yaml
+    IF    '${LONGHORN_STABLE_VERSION}' != ''
+        When Install Longhorn stable version    longhorn_namespace=${LONGHORN_NAMESPACE}
+        And Upgrade Longhorn to custom version    custom_cmd=${custom_cmd}
+    ELSE
+        When Install Longhorn    custom_cmd=${custom_cmd}
+    END
+    And Wait for Longhorn components all running
+
+    Then Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-manager -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-manager")].resources.requests}' -n longhorn-system
+    ...    {"cpu":"250m","memory":"512Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-manager -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-manager")].resources.limits}' -n longhorn-system
+    ...    {"cpu":"500m","memory":"1Gi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-global-manager -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-global-manager")].resources.requests}' -n longhorn-system
+    ...    {"cpu":"100m","memory":"128Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-global-manager -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-global-manager")].resources.limits}' -n longhorn-system
+    ...    {"cpu":"200m","memory":"256Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-ui -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-ui")].resources.requests}' -n longhorn-system
+    ...    {"cpu":"50m","memory":"64Mi"}
+    And Run command and wait for output
+    ...    kubectl get pod -l app=longhorn-ui -o jsonpath='{.items[0].spec.containers[?(@.name=="longhorn-ui")].resources.limits}' -n longhorn-system
+    ...    {"cpu":"100m","memory":"128Mi"}
+
+    # Longhorn still works with the resource requests and limits
+    IF    "${DATA_ENGINE}" == "v2"
+        And Enable v2 data engine and add block disks
+    END
+    When Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    Then Check volume 0 data is intact
 
 Test Longhorn Manager Rolling Update Configuration During Upgrade
     [Tags]    upgrade    helm
