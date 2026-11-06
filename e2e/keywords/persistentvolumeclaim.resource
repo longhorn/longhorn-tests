@@ -9,6 +9,11 @@ Library    ../libs/keywords/node_keywords.py
 Library    ../libs/keywords/replica_keywords.py
 
 *** Keywords ***
+Get volume name of persistentvolumeclaim ${claim_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    RETURN    ${volume_name}
+
 Create persistentvolumeclaim ${claim_id}
     [Arguments]    &{config}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
