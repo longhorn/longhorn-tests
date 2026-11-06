@@ -20,7 +20,7 @@ class CRD(Base):
     def create(self, backup_name, backup_policy):
         return NotImplemented
 
-    def restore(self, backup_name):
+    def restore(self, backup_name, wait=True):
         return NotImplemented
 
     def get_by_name(self, backup_name):

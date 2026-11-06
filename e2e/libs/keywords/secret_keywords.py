@@ -11,3 +11,6 @@ class secret_keywords:
 
     def cleanup_secrets(self):
         self.secret.cleanup()
+
+    def create_registry_secret(self, name):
+        self.secret.create_registry_secret(name)
