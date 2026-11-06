@@ -215,7 +215,6 @@ node {
                     sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                     sh "docker rmi ${imageName}"
                 }
-                }
 
                 if (summary) {
                     summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
