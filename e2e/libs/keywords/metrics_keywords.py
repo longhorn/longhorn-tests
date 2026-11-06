@@ -1,11 +1,14 @@
 import time
 
+from prometheus_client.parser import text_string_to_metric_families
+
 from node import Node
 from metrics.metrics import get_node_metrics, check_longhorn_metric, find_longhorn_metric_samples
 from metrics.metrics import get_longhorn_components_memory_cpu_usage
 from metrics.metrics import check_longhorn_components_memory_cpu_usage
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
+from utility.utility import subprocess_exec_cmd
 
 
 class metrics_keywords:
@@ -13,6 +16,21 @@ class metrics_keywords:
     def __init__(self):
         self.node = Node()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    def get_longhorn_node_put_request_count(self):
+        metrics = subprocess_exec_cmd("kubectl get --raw /metrics", timeout=30, verbose=False)
+        labels = {"group": "longhorn.io", "resource": "nodes", "verb": "PUT"}
+        samples = [
+            sample
+            for family in text_string_to_metric_families(metrics)
+            for sample in family.samples
+            if sample.name == "apiserver_request_total"
+            and all(sample.labels.get(key) == value for key, value in labels.items())
+        ]
+        assert samples, "API server metrics contain no Longhorn Node PUT request counter"
+        count = sum(sample.value for sample in samples)
+        logging(f"Longhorn Node PUT request count: {count}")
+        return count
 
     def get_node_total_memory_in_mi(self, node_name):
         total_memory = self.node.get_node_total_memory(node_name)
