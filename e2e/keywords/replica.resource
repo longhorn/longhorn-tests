@@ -69,3 +69,15 @@ Permanently crash volume ${volume_id} replica on node ${node_id}
     ...    `v2_instancemanager.py`).
     ${node_name} =    get_node_by_index    ${node_id}
     permanently_crash_replica    ${node_name}    ${original_replica_name}    ${DATA_ENGINE}
+
+Get volume ${volume_id} replica IP on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_ip} =    get_volume_replica_ip    ${volume_name}    ${node_name}
+    RETURN    ${replica_ip}
+
+Get volume ${volume_id} replica port on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_port} =    get_volume_replica_port    ${volume_name}    ${node_name}
+    RETURN    ${replica_port}

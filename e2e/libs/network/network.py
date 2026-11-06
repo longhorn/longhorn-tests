@@ -340,6 +340,29 @@ def drop_tcp_connection_replies(pod_name, connection,
     pod_exec(pod_name, constant.LONGHORN_NAMESPACE, cmd)
 
 
+def manipulate_pod_egress(pod_name, command):
+    """Run an iptables command (sequence) in the pod's network namespace.
+
+    The command is run in the foreground so its output is returned and the
+    function blocks until it finishes.
+    """
+    logging(f"Manipulating pod {pod_name} egress traffic with: {command}")
+    wait_for_pod_status(
+        pod_name, "Running", namespace=constant.LONGHORN_NAMESPACE)
+    # pod_exec doesn't raise on a non-zero exit code, so report it.
+    cmd = (
+        "( set -e; "
+        "zypper install -y iptables > /dev/null; "
+        f"{command} ) 2>&1; "
+        "echo exit-status=$?"
+    )
+    output = pod_exec(pod_name, constant.LONGHORN_NAMESPACE, cmd)
+    assert "exit-status=0" in output.splitlines(), (
+        f"Failed to manipulate egress traffic in pod {pod_name} "
+        f"with command {command}: {output}"
+    )
+
+
 def _split_tcp_endpoint(endpoint):
     if endpoint.startswith("["):
         ip, port = endpoint[1:].rsplit("]:", 1)
