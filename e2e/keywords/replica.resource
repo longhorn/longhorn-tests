@@ -67,5 +67,10 @@ Permanently crash volume ${volume_id} replica on node ${node_id}
     ...    currently implemented since there is no known way to permanently
     ...    crash a v2 replica (see `permanently_crash_replica` in
     ...    `v2_instancemanager.py`).
+    ...    The node and data directory are saved as test variables first, so
+    ...    that the test teardown can make the directory mutable again.
     ${node_name} =    get_node_by_index    ${node_id}
+    ${replica_dir} =    get_replica_directory_name    ${original_replica_name}
+    Set Test Variable    ${crashed_replica_node}    ${node_name}
+    Set Test Variable    ${crashed_replica_dir}    ${replica_dir}
     permanently_crash_replica    ${node_name}    ${original_replica_name}    ${DATA_ENGINE}

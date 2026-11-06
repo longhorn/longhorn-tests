@@ -87,6 +87,9 @@ class instancemanager_keywords:
         elif engine_type == "v2":
             self.v2_instancemanager.permanently_crash_replica(node_name, replica_name)
 
+    def get_replica_directory_name(self, replica_name):
+        return self.instancemanager.get_replica_directory_name(replica_name)
+
     def verify_replica_lvol_exists_in_spdk_lvol(self, node_name, replica_name):
         logging(f"Verifying replica {replica_name} exists in SPDK on node {node_name}")
         self.instancemanager.verify_replica_lvol_exists_in_spdk_lvol(node_name, replica_name)
