@@ -11,12 +11,14 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/backing_image.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
+Resource    ../keywords/continuous_io.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${TEST_DURATION_IN_HOURS}    72
+${TEST_VOLUME_SIZE}    4Gi
 
 *** Test Cases ***
 Continuous IO Test
@@ -90,3 +92,33 @@ Continuous IO Test
     And Stop writing data to pod of deployment bi-deploy
 
     And Check Longhorn components resource usage
+
+Continuous Multi-File FIO Data Integrity On RWO Filesystem Volume
+    [Documentation]    Run fio continuous I/O on a 3-replica RWO filesystem volume.
+    [Tags]    rwo
+    [Template]    Run continuous fio test
+    RWO    ${TEST_DURATION_IN_HOURS}    ${TEST_VOLUME_SIZE}
+
+Continuous Multi-File FIO Data Integrity On RWX Filesystem Volume
+    [Documentation]    Run fio continuous I/O on a 3-replica RWX filesystem volume.
+    [Tags]    rwx
+    [Template]    Run continuous fio test
+    RWX    ${TEST_DURATION_IN_HOURS}    ${TEST_VOLUME_SIZE}
+
+Continuous Multi-Pod FIO Data Integrity On RWO Filesystem Volume
+    [Documentation]    Run fio continuous I/O in multiple pods on a 3-replica RWO filesystem volume.
+    [Tags]    rwo    multi-pod
+    [Template]    Run continuous multi-pod fio test
+    RWO    ${TEST_DURATION_IN_HOURS}    ${TEST_VOLUME_SIZE}
+
+Continuous Multi-Pod FIO Data Integrity On RWX Filesystem Volume
+    [Documentation]    Run fio continuous I/O in multiple pods on a 3-replica RWX filesystem volume.
+    [Tags]    rwx    multi-pod
+    [Template]    Run continuous multi-pod fio test
+    RWX    ${TEST_DURATION_IN_HOURS}    ${TEST_VOLUME_SIZE}
+
+Continuous FIO Data Integrity On RWO Block Volume
+    [Documentation]    Run fio continuous I/O on a 3-replica RWO block volume.
+    [Tags]    rwo    block
+    [Template]    Run continuous fio test on block volume
+    RWO    ${TEST_DURATION_IN_HOURS}    ${TEST_VOLUME_SIZE}
