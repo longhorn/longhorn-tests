@@ -224,6 +224,58 @@ Test Replica Auto Balance Node Least Effort
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
 
+Test Replica Auto Balance With Stopped Replica And Extra Healthy Replicas
+    [Tags]    auto-balance    regression    scheduling
+    [Documentation]    Verify that volume reconcile does not fail with 'instancemanager not found'
+    ...                when a v1 volume has extra healthy replicas and a stopped replica on a recovered node.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/14388
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    This issue specifically targets v1 volumes with stopped replicas
+    END
+
+    # 1. Setup: enable auto-balance and soft anti-affinity
+    Given Setting replica-replenishment-wait-interval is set to 30
+    And Setting replica-soft-anti-affinity is set to true
+    And Setting replica-auto-balance is set to best-effort
+
+    # 2. Create 3-replica v1 volume and write data
+    When Create volume 0 with    size=1Gi    numberOfReplicas=3    dataEngine=v1
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write 512 Mi data to volume 0
+
+    # 3. Leave a stopped, failed replica on node 2 that has no instance manager.
+    #    Scheduling on node 2 is disabled so that replacement replica is rebuilt on the other nodes.
+    And Record volume 0 replica name on node 2
+    And Disable node 2 scheduling
+    And Run command
+    ...    kubectl -n ${LONGHORN_NAMESPACE} patch replicas.longhorn.io ${original_replica_name} --type=merge -p "$(printf '{"spec":{"failedAt":"%s","lastFailedAt":"%s","desireState":"stopped"}}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")"
+    And Wait for volume 0 replica on node 2 failed
+
+    # 4. A replacement replica is rebuilt on the other nodes: 3 running replicas + 1 stopped replica on node 2
+    Then Volume 0 should have 3 running replicas
+    And Wait for volume 0 healthy
+
+    # 5. Scale down to 2 replicas so healthy replicas (3) exceed numberOfReplicas (2).
+    #    Node 2 scheduling remains disabled to prevent Longhorn from reusing/rebuilding the stopped
+    #    replica, ensuring it stays stopped without an instance manager (status.instanceManagerName is empty).
+    #    This runs cleanupExtraHealthyReplicas -> cleanupAutoBalancedReplicas -> cleanupReplicaInNotReadyEnv,
+    #    which must skip the stopped replica instead of failing with 'instancemanager.longhorn.io "" not found'.
+    When Update volume 0 replica count to 2
+    # 6. Verify reconcile succeeded: running replicas reduced to 2 and healthy
+    Then Volume 0 should have 2 running replicas
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
+    # 7. Verify no manager sync failure in logs
+    And Run command and not expect output
+    ...    kubectl logs -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager -c longhorn-manager --since=60s
+    ...    Dropping Longhorn volume out of the queue
+    And Run command and not expect output
+    ...    kubectl logs -n ${LONGHORN_NAMESPACE} -l app=longhorn-manager -c longhorn-manager --since=60s
+    ...    instancemanager.longhorn.io "" not found
+
 Test Data Locality
     [Tags]    single-replica
     [Documentation]    Test that Longhorn builds a local replica on the engine node
