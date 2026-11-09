@@ -224,6 +224,59 @@ Test Replica Auto Balance Node Least Effort
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
 
+Test Replica Auto Balance Zone Best Effort Rebalances Uneven Zones
+    [Tags]    auto-balance    zone
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14448
+    ...
+    ...    Requires 5 worker nodes: 3 in zone-a, 2 in zone-b.
+    ...
+    ...    A healthy 4-replica volume spread 3+1 across two zones should be
+    ...    rebalanced to 2+2 by best-effort auto-balance once the smaller zone
+    ...    gets a free schedulable node.
+    ...
+    ...    The issue reproduces this by power-cycling all nodes of one zone in a
+    ...    2x4 cluster. This test reaches the same 3+1 state directly: one
+    ...    zone-b node is kept unschedulable while the volume is created, then
+    ...    released.
+    ${worker_nodes} =    get_worker_nodes
+    ${worker_count} =    Get Length    ${worker_nodes}
+    IF    ${worker_count} < 5
+        Skip    Test case requires at least 5 worker nodes, found ${worker_count}
+    END
+
+    Given Setting replica-soft-anti-affinity is set to false
+    And Setting replica-zone-soft-anti-affinity is set to true
+    And Setting replica-auto-balance is set to best-effort
+    And Set k8s node 0 zone lh-zone-a
+    And Set k8s node 1 zone lh-zone-a
+    And Set k8s node 2 zone lh-zone-a
+    And Set k8s node 3 zone lh-zone-b
+    And Set k8s node 4 zone lh-zone-b
+    # hard node anti-affinity on 4 schedulable nodes forces one replica per node: 3+1
+    And Disable node 4 scheduling
+    And Create volume 0 with    numberOfReplicas=4    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have 1 running replicas on node 2
+    And Volume 0 should have 1 running replicas on node 3
+    And Volume 0 should have 0 running replicas on node 4
+
+    # releasing node 4 gives zone-b a candidate node without a replica
+    # best-effort zone balancing should add a replica there and remove one from zone-a
+    When Enable node 4 scheduling
+
+    Then Volume 0 should have running replicas on node 4
+    And Volume 0 should have 4 running replicas
+    And Volume 0 should have 1 running replicas on node 3
+    And Volume 0 should have 1 running replicas on node 4
+    # re-check the count for ~150 s to make sure the layout settles instead of looping add/remove
+    And Volume 0 should have 4 running replicas and no additional scheduling occurs
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
 Test Data Locality
     [Tags]    single-replica
     [Documentation]    Test that Longhorn builds a local replica on the engine node
