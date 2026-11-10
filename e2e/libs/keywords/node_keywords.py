@@ -29,11 +29,17 @@ class node_keywords:
         }
         self.node.add_disk(node_name, disk, wait)
 
+    def get_default_block_disk_path_on_node(self, node_name, disk_path):
+        return self.node.get_default_block_disk_path(node_name, disk_path)
+
     def cleanup_disks(self, data_engine, default_block_disk_path=None):
         nodes = self.node.list_node_names_by_role("worker")
         for node_name in nodes:
             logging(f"Resetting node {node_name} disks to default")
-            self.node.reset_disks(node_name, data_engine, default_block_disk_path)
+            block_disk_path = default_block_disk_path
+            if data_engine == "v2":
+                block_disk_path = self.node.get_default_block_disk_path(node_name, default_block_disk_path)
+            self.node.reset_disks(node_name, data_engine, block_disk_path)
 
     def reset_node_disks_tags(self):
         nodes = self.node.list_node_names_by_role("worker")
@@ -56,6 +62,12 @@ class node_keywords:
 
     def set_node_disks_tags(self, node_name, *tags):
         self.node.set_node_disks_tags(node_name, tags)
+
+    def set_disk_tags(self, node_name, disk_name, *tags):
+        self.node.set_disk_tags(node_name, disk_name, tags)
+
+    def get_default_disk_name(self, node_name, data_engine="v1"):
+        return self.node.get_default_disk_name(node_name, data_engine)
 
     def label_node(self, node_name, label):
         self.node.label_node(node_name, label)

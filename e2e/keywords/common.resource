@@ -68,8 +68,8 @@ Run command until output is absent
     execute_command_until_output_is_absent    ${command}    ${unexpected_output}
 
 Run command in pod ${namespace}/${pod_name}
-    [Arguments]    ${command}
-    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}
+    [Arguments]    ${command}    ${container}=${None}
+    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}    container=${container}
     RETURN    ${result}
 
 Run command in pod ${namespace}/${pod_name} and expect output
@@ -127,7 +127,8 @@ Enable v2 data engine and add block disks
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
+        ${block_disk_path}=    get_default_block_disk_path_on_node    ${worker_node}    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${block_disk_path}    wait=${wait}
     END
 
 Init worker node variables

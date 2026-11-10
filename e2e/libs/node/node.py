@@ -27,6 +27,10 @@ class Node:
     control_plane_nodes = None
     worker_nodes = None
 
+    # node name -> resolved block disk path, shared across Node instances so
+    # the path is resolved only once per node for the whole test run
+    block_disk_paths = {}
+
     def __init__(self):
         if not Node.all_nodes:
             self.init_node_list()
@@ -56,7 +60,7 @@ class Node:
         return mount_path
 
     def update_disks(self, node_name, disks, wait=True):
-        logging(f"Updating node {node_name} disks {disks}")
+        logging(f"Updating node {node_name} disks")
         for _ in range(self.retry_count):
             try:
                 node = get_longhorn_client().by_id_node(node_name)
@@ -75,7 +79,7 @@ class Node:
                     # Treat this as success instead of retrying or failing.
                     logging(f"Disk path already exists on node {node_name}: {e}")
                     return get_longhorn_client().by_id_node(node_name)
-                logging(f"Failed to update node {node_name} disk: {e}")
+                logging(f"Failed to update node {node_name} disk {disks}: {e}")
             time.sleep(self.retry_interval)
         assert False, f"Failed to update node {node_name} disk {disks}"
 
@@ -202,12 +206,38 @@ class Node:
         if block_disk_deleted:
             time.sleep(30)
 
-    def set_node_disks_tags(self, node_name, tags):
+    def set_disk_tags(self, node_name, disk_name=None, tags=None):
+        if tags is None:
+            tags = []
         node = get_longhorn_client().by_id_node(node_name)
-        for disk_name, disk in iter(node.disks.items()):
-            logging(f"Setting tags {tags} to node {node_name} disk {disk_name}")
-            disk.tags = list(tags)
+        disk_found = False
+        for name, disk in iter(node.disks.items()):
+            if disk_name is None or name == disk_name or disk.path == disk_name:
+                logging(f"Setting tags {tags} to node {node_name} disk {name}")
+                disk.tags = list(tags)
+                disk_found = True
+                if disk_name is not None:
+                    break
+        if disk_name is not None:
+            assert disk_found, f"Disk {disk_name} not found on node {node_name}: {list(node.disks.keys())}"
         self.update_disks(node_name, node.disks)
+
+    def set_node_disks_tags(self, node_name, tags=None):
+        self.set_disk_tags(node_name, disk_name=None, tags=tags)
+
+    def get_default_block_disk_name(self, node_name):
+        node = get_longhorn_client().by_id_node(node_name)
+        if DEFAULT_BLOCK_DISK_NAME in node.disks and node.disks[DEFAULT_BLOCK_DISK_NAME].diskType == "block":
+            return DEFAULT_BLOCK_DISK_NAME
+        for disk_name, disk in node.disks.items():
+            if disk.diskType == "block" and not disk.path.startswith("/dev/longhorn"):
+                return disk_name
+        assert False, f"No default block disk found on node {node_name}"
+
+    def get_default_disk_name(self, node_name, data_engine="v1"):
+        if data_engine == "v2":
+            return self.get_default_block_disk_name(node_name)
+        return self.get_default_file_system_disk_name(node_name)
 
     def is_accessing_node_by_index(self, node):
         p = re.compile(r'node (\d)')
@@ -748,6 +778,30 @@ class Node:
         logging(f"Removing directory {dir_path} on node {node_name}")
         cmd = f"rm -rf {dir_path}"
         NodeExec(node_name).issue_cmd(cmd)
+
+    def get_default_block_disk_path(self, node_name, disk_path):
+        # Prefer the /dev/disk/by-id symlink of the block device since it is stable.
+        # A BDF path is used as is. Fall back to disk_path if no valid symlink can be found.
+        if self.is_bdf_disk_path(disk_path):
+            return disk_path
+
+        cached_path = Node.block_disk_paths.get(node_name)
+        if cached_path:
+            logging(f"Using cached block disk path {cached_path} for node {node_name}")
+            return cached_path
+
+        cmd = (f'[ -d /dev/disk/by-id ] && for f in /dev/disk/by-id/*; do '
+               f'[ "$(readlink -f "$f")" = "$(readlink -f {disk_path})" ] && echo "$f" && break; done; true')
+        try:
+            by_id_path = str(NodeExec(node_name).issue_cmd(cmd)).strip()
+        except Exception as e:
+            logging(f"Failed to get by-id path of {disk_path} on node {node_name}: {e}")
+            by_id_path = ""
+
+        if not re.fullmatch(r"/dev/disk/by-id/\S+", by_id_path):
+            return disk_path
+        Node.block_disk_paths[node_name] = by_id_path
+        return by_id_path
 
     def is_bdf_disk_path(self, disk_path):
         return re.match(constant.BDF_PATTERN, str(disk_path)) is not None
