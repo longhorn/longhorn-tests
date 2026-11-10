@@ -20,6 +20,19 @@ Resource    ../keywords/replica.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
+*** Keywords ***
+Recover crashed replica and cleanup test resources
+    [Documentation]    Undo "Permanently crash volume replica on node" so
+    ...    that Longhorn can delete the replica data, then clean up. A node
+    ...    still deleted is added back first so that it is reachable over SSH.
+    Add deleted node back
+    ${replica_dir} =    Get Variable Value    \${crashed_replica_dir}
+    IF    $replica_dir is not None
+        Run Keyword And Ignore Error    ssh_exec_on_node    ${crashed_replica_node}
+        ...    sudo chattr -R -i /var/lib/longhorn/replicas/${replica_dir}
+    END
+    Cleanup test resources
+
 *** Test Cases ***
 Test Replica Rebuilding Per Volume Limit
     [Tags]    coretest
@@ -342,6 +355,61 @@ Test Reusing Failed Replica After Node Back
     When Reboot node 1
     Then Wait for volume 0 healthy
     And Check volume 0 replica reused on node 1
+    And Check volume 0 data is intact
+
+Test Crashed Replica Not Reused After Node Back
+    [Documentation]
+    ...    Issue: https://github.com/longhorn/longhorn/issues/11657
+    ...
+    ...    Verify that Longhorn fails to reuse the permanently crashed
+    ...    replica. Instead, after the replica-replenishment-wait-interval
+    ...    elapses, Longhorn creates a new replica and rebuilds it, and
+    ...    the volume recovers to healthy.
+    ...
+    ...    For v1 volumes, the replica is crashed by SSH-ing directly to the
+    ...    node and making the replica's data directory immutable:
+    ...        $ chattr -R +i /var/lib/longhorn/replicas/test-1-7099acd8
+    ...    For v2 volumes, replicas are backed by SPDK lvols.
+    ...    `go-spdk-helper lvol delete block-disk/e2e-test-volume-0-r-ccc27cb`
+    ...    only temporarily crashes it: the lvol
+    ...    is eventually recreated with the same replica name/alias but a
+    ...    different uuid, so from Longhorn's perspective the replica looks like
+    ...    it's being reused). This test case is therefore skipped for v2.
+    ...
+    ...    Steps:
+    ...    1. Create and attach a volume, then write data to the volume.
+    ...    2. Record the replica name on a replica node, then crash that
+    ...       replica on the node so it can never be reused (chattr immutable
+    ...       directory for v1),
+    ...    3. Directly remove that Kubernetes node.
+    ...    4. Wait for the related replica failure (volume becomes degraded).
+    ...    5. Add the removed node back to the cluster.
+    ...    6. Longhorn tries to reuse the failed replica, but fails since it
+    ...       was crashed.
+    ...    7. After the replica-replenishment-wait-interval, a new replica is
+    ...       created and rebuilt. The volume recovers to healthy.
+    ...    8. Verify the replica on the returned node was NOT reused (a new
+    ...       replica was created instead of the original one).
+    ...    9. Verify the data of the volume is intact.
+    [Teardown]    Recover crashed replica and cleanup test resources
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    permanently crashing a v2 replica is not currently supported
+    END
+
+    Given Setting replica-replenishment-wait-interval is set to 300
+    And Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Record volume 0 replica name on node 1
+    And Permanently crash volume 0 replica on node 1
+
+    When Delete node 1
+    Then Wait for volume 0 degraded
+
+    When Add deleted node back
+    Then Wait for volume 0 healthy
+    And Check volume 0 replica not reused on node 1
     And Check volume 0 data is intact
 
 Test Large Volume Fast Replica Rebuilding Performance

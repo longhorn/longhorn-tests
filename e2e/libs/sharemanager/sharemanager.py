@@ -51,3 +51,10 @@ class ShareManager:
         if pod is None:
             return None
         return pod.spec.containers[0].image
+
+    def get_pod_node_name(self, volume_name):
+        pod_name = f"share-manager-{volume_name}"
+        pod = self.get(pod_name)
+        if pod is None:
+            return None
+        return pod.spec.node_name

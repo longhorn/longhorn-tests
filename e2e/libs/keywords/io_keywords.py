@@ -1,69 +1,117 @@
 from utility.utility import logging, get_retry_count_and_interval
 from node_exec import NodeExec
+from workload.pod import wait_for_pod_status
 
-import subprocess
-import threading
+from kubernetes import client
+from kubernetes.stream import stream
+
+import re
 import time
+
+# Matches the timing portion of dd's stderr report. Handles both:
+# - GNU coreutils dd: "65536 bytes (66 kB, 64 KiB) copied, 0.000123456 s, 531 MB/s"
+# - BusyBox dd (common in minimal container images): "65536 bytes (64.0KB) copied, 0.000038 seconds, 1.6GB/s"
+DD_COPIED_TIME_PATTERN = re.compile(r"copied,\s*([\d.]+)\s*s(?:econds)?,")
+
 
 class io_keywords:
 
-    def __init__(self):
-        self._fsync_writer_process = None
-        self._fsync_writer_thread = None
-        self._max_elapsed = 0.0
-        self._max_elapsed_lock = threading.Lock()
-
     def start_fsync_writer(self, pod_name, namespace="default"):
-        logging(f"Starting fsync writer on pod {pod_name}")
+        """
+        Start a background loop *inside the pod* that repeatedly fsync-writes a
+        small block and appends dd's timing report to a log file, so we only
+        need quick pod exec calls to start/stop it - no local subprocess pipe
+        needs to be kept open or drained by a background thread.
+        """
+        wait_for_pod_status(pod_name, "Running", namespace=namespace)
 
-        cmd = [
-            "kubectl", "exec", pod_name, "-n", namespace, "--",
-            "sh", "-c",
-            "mkdir -p /data && while true; do"
-            " dd if=/dev/zero of=/data/io_scratch bs=64k count=1 conv=fsync 2>&1"
-            r" | awk -F'copied, ' '/copied/ {print $2+0}';"
-            " done",
+        retry_count, retry_interval = get_retry_count_and_interval()
+
+        write_cmd = [
+            '/bin/sh',
+            '-c',
+            "mkdir -p /data; rm -f /data/fsync_log; "
+            "while true; do "
+            "dd if=/dev/zero of=/data/io_scratch bs=64k count=1 conv=fsync 2>>/data/fsync_log; "
+            "done > /dev/null 2> /dev/null &"
         ]
 
-        self._max_elapsed = 0.0
-        self._fsync_writer_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
-
-        def _reader():
-            for line in self._fsync_writer_process.stdout:
-                try:
-                    elapsed = float(line.strip().split()[0])
-                    logging(f"fsync latency: {elapsed}s")
-                    with self._max_elapsed_lock:
-                        if elapsed > self._max_elapsed:
-                            self._max_elapsed = elapsed
-                except (ValueError, IndexError):
-                    pass
-
-        self._fsync_writer_thread = threading.Thread(target=_reader, daemon=True)
-        self._fsync_writer_thread.start()
-        time.sleep(1)
-
-    def get_max_fsync_latency(self):
-        if self._fsync_writer_process is not None:
-            self._fsync_writer_process.terminate()
+        for _ in range(retry_count):
             try:
-                self._fsync_writer_process.wait(timeout=10.0)
-            except subprocess.TimeoutExpired:
-                self._fsync_writer_process.kill()
-                self._fsync_writer_process.wait()
-            self._fsync_writer_thread.join(timeout=5.0)
-            self._fsync_writer_process = None
-        with self._max_elapsed_lock:
-            return self._max_elapsed
+                api = client.CoreV1Api()
+                logging(f"Creating process to keep fsync-writing data in pod {pod_name}")
+                res = stream(
+                    api.connect_get_namespaced_pod_exec, pod_name, namespace,
+                    command=write_cmd, stderr=True, stdin=False, stdout=True,
+                    tty=False)
+                assert res == "", f"Failed to create fsync writer process in pod {pod_name}"
+                return
+            except Exception as e:
+                logging(f"Starting fsync writer in pod {pod_name} failed with error: {e}")
+                time.sleep(retry_interval)
 
-    def assert_no_io_stall(self, threshold_sec=3.0):
-        max_latency = self.get_max_fsync_latency()
+        assert False, f"Failed to start fsync writer on pod {pod_name}"
+
+    def get_max_fsync_latency(self, pod_name, namespace="default"):
+        """
+        Stop the fsync writer on pod_name and return its maximum observed latency.
+        """
+        wait_for_pod_status(pod_name, "Running", namespace=namespace)
+
+        retry_count, retry_interval = get_retry_count_and_interval()
+
+        # A single pkill matches both the outer while-loop shell and its dd
+        # child, since both process command lines contain "of=/data/io_scratch".
+        stop_cmd = [
+            '/bin/sh',
+            '-c',
+            "pkill -f 'of=/data/io_scratch' || true"
+        ]
+
+        for _ in range(retry_count):
+            try:
+                api = client.CoreV1Api()
+                logging(f"Stopping fsync writer process in pod {pod_name}")
+                stream(
+                    api.connect_get_namespaced_pod_exec, pod_name, namespace,
+                    command=stop_cmd, stderr=True, stdin=False, stdout=True,
+                    tty=False)
+                break
+            except Exception as e:
+                logging(f"Stopping fsync writer in pod {pod_name} failed with error: {e}")
+                time.sleep(retry_interval)
+
+        fetch_cmd = [
+            '/bin/sh',
+            '-c',
+            "cat /data/fsync_log 2>/dev/null"
+        ]
+
+        log_content = ""
+        for _ in range(retry_count):
+            try:
+                api = client.CoreV1Api()
+                log_content = stream(
+                    api.connect_get_namespaced_pod_exec, pod_name, namespace,
+                    command=fetch_cmd, stderr=True, stdin=False, stdout=True,
+                    tty=False)
+                break
+            except Exception as e:
+                logging(f"Fetching fsync log from pod {pod_name} failed with error: {e}")
+                time.sleep(retry_interval)
+
+        elapsed_times = [float(m) for m in DD_COPIED_TIME_PATTERN.findall(log_content)]
+        max_elapsed = max(elapsed_times) if elapsed_times else 0.0
+        logging(f"Pod {pod_name} max fsync latency: {max_elapsed}s ({len(elapsed_times)} samples)")
+        return max_elapsed
+
+    def assert_no_io_stall(self, pod_name, threshold_sec=3.0, namespace="default"):
+        max_latency = self.get_max_fsync_latency(pod_name, namespace)
         logging(f"Maximum fsync latency: {max_latency}s (threshold: {threshold_sec}s)")
         if max_latency >= float(threshold_sec):
             retry_count, retry_interval = get_retry_count_and_interval()
-            for i in range(retry_count):
-                logging(f"IO stall detected, keeping env for debugging ({i+1}/{retry_count}) ...")
-                time.sleep(int(retry_interval))
+            logging(f"IO stall detected, keeping env for debugging ({retry_count}s) ...")
+            time.sleep(int(retry_count))
             assert False, f"IO stall detected: max latency {max_latency}s >= {threshold_sec}s threshold"
 
     def setup_dm_linear_device_from_block_disk(self, block_disk_path, dm_device_name, node_name):

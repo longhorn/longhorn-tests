@@ -5,6 +5,8 @@ Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/persistentvolumeclaim_keywords.py
 Library    ../libs/keywords/volume_keywords.py
+Library    ../libs/keywords/node_keywords.py
+Library    ../libs/keywords/replica_keywords.py
 
 *** Keywords ***
 Create persistentvolumeclaim ${claim_id}
@@ -72,11 +74,25 @@ Volume of persistentvolumeclaim ${claim_id} should have running replicas on node
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_count    ${volume_name}    node_name=${node_name}
 
+Volume of persistentvolumeclaim ${claim_id} should have running replicas on node ${node_id} disk ${disk_name}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}
+
 Volume of persistentvolumeclaim ${claim_id} should have no running replica on node ${node_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_replica_count    ${volume_name}    node_name=${node_name}    replica_count=0
+
+Volume of persistentvolumeclaim ${claim_id} should have no running replica on node ${node_id} disk ${disk_name}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    wait_for_disk_replica_count    volume_name=${volume_name}    node_name=${node_name}    disk_uuid=${disk_uuid}    count=0
 
 Wait for volume of persistentvolumeclaim ${claim_id} faulted
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
@@ -117,6 +133,17 @@ Assert persistentvolumeclaim ${claim_id} requested size remains ${size} for at l
         ${expected_size_byte} =    convert_size_to_bytes    ${size}    to_str=True
         ${current_size_byte} =    get_claim_requested_size    ${claim_name}
         Should Be Equal    ${current_size_byte}    ${expected_size_byte}
+        Sleep    1
+    END
+
+Assert persistentvolumeclaim ${claim_id} status remains ${phase} for at least ${period} seconds
+    [Documentation]    Polls every second and fails as soon as the phase differs, so a
+    ...    transient change (e.g. Pending -> Bound -> Pending) cannot slip through the way it
+    ...    would with a single check after a fixed sleep.
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    FOR    ${i}    IN RANGE    ${period}
+        ${current_phase} =    get_pvc_status_phase    ${claim_name}
+        Should Be Equal    ${current_phase}    ${phase}
         Sleep    1
     END
 
