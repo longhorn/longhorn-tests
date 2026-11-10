@@ -37,6 +37,10 @@ spec:
       volumes:
       - name: nfs-volume
         emptyDir: {}
+      - name: ganesha-recovery
+        emptyDir: {}
+      - name: nfs-data
+        emptyDir: {}
       containers:
       - name: longhorn-test-nfs-container
         image: longhornio/nfs-backupstore:latest
@@ -58,6 +62,10 @@ spec:
         volumeMounts:
         - name: nfs-volume
           mountPath: "/opt/backupstore"
+        - name: ganesha-recovery
+          mountPath: /usr/local/var/lib/nfs/ganesha
+        - name: nfs-data
+          mountPath: "/var/nfs-data"
         livenessProbe:
           exec:
             command: ["bash", "-c", "grep \"No export entries found\" /var/log/ganesha.log > /dev/null 2>&1 ; [ $? -ne 0 ]"]
