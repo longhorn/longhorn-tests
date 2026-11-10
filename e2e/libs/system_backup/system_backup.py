@@ -16,8 +16,11 @@ class SystemBackup(Base):
     def create(self, backup_name, backup_policy):
         return self.system_backup.create(backup_name, backup_policy)
 
-    def restore(self, backup_name):
-        return self.system_backup.restore(backup_name)
+    def restore(self, backup_name, wait=True):
+        return self.system_backup.restore(backup_name, wait=wait)
+
+    def wait_for_system_restore_completed(self, restore_name):
+        self.system_backup.wait_for_system_restore_completed(restore_name)
 
     def delete_system_backup(self, backup_name):
         return self.system_backup.delete_system_backup(backup_name)

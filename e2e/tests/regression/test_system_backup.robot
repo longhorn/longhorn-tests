@@ -10,6 +10,7 @@ Resource    ../keywords/volume.resource
 Resource    ../keywords/system_backup.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/backup.resource
+Resource    ../keywords/secret.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -111,3 +112,36 @@ Test System Backup With Snapshot Of Empty Creation Time
 
     ${system_backup_name} =    generate_name_with_suffix    system-backup    0
     Then Wait for system backup ${system_backup_name} ready
+
+Test System Restore Job Uses Registry Secret
+    [Documentation]    Test SystemRestore propagates the registry-secret setting to the rollout Job's imagePullSecrets.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13968
+    ...
+    ...                Use the existing Longhorn installation and dummy registry credentials.
+    ...                A private registry and actual registry authentication are not required.
+    ...
+    ...                1. Save the original registry-secret setting.
+    ...                2. Create a temporary Docker registry Secret in longhorn-system with dummy credentials.
+    ...                3. Set registry-secret to the temporary Secret name and create a SystemBackup.
+    ...                4. Start a SystemRestore without waiting for completion.
+    ...                5. Verify the corresponding longhorn-system-rollout Job's imagePullSecrets contains the Secret name.
+    ...                6. Wait for the same SystemRestore to complete.
+    ...                7. Restore the original registry-secret setting and clean up test resources, including the Secret.
+    [Teardown]    Cleanup registry secret test resources
+    Given Save original registry secret setting
+    ${secret_name} =    Create dummy registry secret 0
+
+    When Setting registry-secret is set to ${secret_name}
+    And Create system backup 0
+    ${restore_name} =    Restore system backup 0    wait=${FALSE}
+    Then System restore ${restore_name} rollout job should use registry secret ${secret_name}
+    And Wait for system restore ${restore_name} completed
+
+*** Keywords ***
+Cleanup registry secret test resources
+    ${original} =    Get Variable Value    \${original_registry_secret}    ${NONE}
+    IF    $original is not None
+        Setting registry-secret is set to ${original}
+    END
+    Cleanup test resources
