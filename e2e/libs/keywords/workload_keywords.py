@@ -420,9 +420,33 @@ class workload_keywords:
         logging(f"Checking workload {workload_name} pod {pod_name} did not restart")
         check_pod_did_not_restart(pod_name)
 
-    def get_workload_pod_uids(self, workload_name):
-        pod_list = get_workload_pods(workload_name)
+    def get_workload_pod_uids(self, workload_name, namespace="default", label_selector=""):
+        pod_list = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
         return {pod.metadata.name: pod.metadata.uid for pod in pod_list}
+
+    def wait_for_workload_pods_recreated_by_uid(self, workload_name, namespace="default", label_selector=""):
+        """
+        Wait until all pods matching the workload name or label selector have been
+        recreated, i.e. none of the pod UIDs recorded when this function is called is
+        still present.
+
+        Unlike wait_for_workload_pods_recreated, which relies on the rollout history
+        of a Deployment/DaemonSet/StatefulSet, this works for pods that are not owned
+        by such a workload (e.g. pods created directly by a Longhorn controller).
+        """
+        original_uids = self.get_workload_pod_uids(workload_name, namespace, label_selector)
+        assert original_uids, f"No pods found for workload {workload_name} in namespace {namespace}"
+        logging(f"Recorded workload {workload_name} pod UIDs: {original_uids}")
+
+        current_uids = {}
+        for i in range(self.retry_count):
+            current_uids = self.get_workload_pod_uids(workload_name, namespace, label_selector)
+            logging(f"Waiting for workload {workload_name} pods recreated ({i}): current={current_uids}")
+            if current_uids and set(current_uids.values()).isdisjoint(original_uids.values()):
+                return
+            time.sleep(self.retry_interval)
+
+        assert False, f"Workload {workload_name} pods not recreated in namespace {namespace}: original={original_uids}, current={current_uids}"
 
     def check_pod_not_restart_after_specific_time(self, namespace, label, time):        
         pods = list_namespaced_pod(namespace, label)
