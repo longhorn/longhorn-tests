@@ -98,7 +98,11 @@ class Rest(Base):
         return None
 
     def get_by_snapshot(self, volume_name, snapshot_name):
-        backup_volume = self.get_backup_volume(volume_name)
+        # the callers already retry, so don't wait for the backup volume here
+        # to avoid nested retry loops
+        backup_volume = self.get_backup_volume(volume_name, wait=False)
+        if backup_volume is None:
+            return None
         backups = backup_volume.backupList().data
         for backup in backups:
             if backup.snapshotName == snapshot_name:
@@ -138,8 +142,9 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for snapshot {snapshot_name} backup from volume {volume_name} to be deleted"
 
-    def get_backup_volume(self, volume_name):
-        for i in range(self.retry_count):
+    def get_backup_volume(self, volume_name, wait=True):
+        retry_count = self.retry_count if wait else 1
+        for i in range(retry_count):
             backup_volumes = get_longhorn_client().list_backupVolume().data
             for backup_volume in backup_volumes:
                 volumeName = getattr(backup_volume, 'volumeName', backup_volume.name)
@@ -234,11 +239,23 @@ class Rest(Base):
             backup_name = backup["metadata"]["name"]
             assert backup_name in target_backup_names, f"Error: Backup {backup_name} not found in {target_backup_names}"
 
+            backup_volume_found = False
             for i in range(self.retry_count):
-                time.sleep(self.retry_interval)
-                volume_name = backup["status"]["volumeName"]
-                if self.get_backup_volume(volume_name) != None:
+                # re-fetch the backup CR since status.volumeName may not be
+                # populated yet right after the backup CR is synced from the
+                # backupstore on a freshly (re)installed Longhorn cluster
+                current_backup = self.get_by_name(backup_name)
+                volume_name = current_backup.get("status", {}).get("volumeName", "") if current_backup else ""
+                if not volume_name:
+                    logging(f"Waiting for backup {backup_name} status.volumeName to be populated ... ({i})")
+                    time.sleep(self.retry_interval)
+                    continue
+                if self.get_backup_volume(volume_name) is not None:
+                    backup_volume_found = True
                     break
+                time.sleep(self.retry_interval)
+            assert backup_volume_found, \
+                f"Failed to find backup volume for backup {backup_name} after {self.retry_count} retries"
 
     def delete(self, volume_name, backup_id):
         return CRD().delete(volume_name, backup_id)

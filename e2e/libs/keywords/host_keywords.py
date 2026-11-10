@@ -103,42 +103,6 @@ class host_keywords:
         
         assert False, f"Timeout waiting for output {expected_output} in {cmd} result on node {node_name}"
 
-    def execute_command_on_node_and_get_output(self, cmd, node_name, expected_output):
-        """
-        Execute a command on a node and return True if the output contains the expected string, False otherwise.
-        
-        Args:
-            cmd: Command to execute
-            node_name: Name of the node
-            expected_output: String to look for in the output
-            
-        Returns:
-            True if expected_output is found in the command output, False otherwise
-        """
-        try:
-            res = NodeExec(node_name).issue_cmd(cmd)
-            return expected_output in res
-        except Exception as e:
-            logging(f"Execute command {cmd} on node {node_name} error: {e}")
-            return False
-
-    def execute_command_on_node_and_get_output_string(self, cmd, node_name):
-        """
-        Execute a command on a node and return the output as a string.
-        
-        Args:
-            cmd: Command to execute
-            node_name: Name of the node
-            
-        Returns:
-            The command output as a string
-        """
-        try:
-            res = NodeExec(node_name).issue_cmd(cmd)
-            return res
-        except Exception as e:
-            logging(f"Execute command {cmd} on node {node_name} error: {e}")
-            return ""
 
     def start_node_monitoring(self):
         """Start a background thread that monitors worker-node reachability.

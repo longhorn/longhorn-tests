@@ -110,7 +110,8 @@ Delete vm snapshots
 Run command on node
     [Arguments]    ${node_id}    ${command}
     ${node_name} =    get_node_by_index    ${node_id}
-    execute_command_on_node    ${command}    ${node_name}
+    ${result} =    execute_command_on_node    ${command}    ${node_name}
+    RETURN    ${result}
 
 Run command on node ${node_id} and not expect output
     [Arguments]    ${command}    ${unexpected_output}
@@ -128,22 +129,12 @@ Get ${workload_kind} ${workload_id} volume node
     ${node_name} =    get_volume_node    ${volume_name}
     RETURN    ${node_name}
 
-Run command on node ${node_id} and get output
-    [Arguments]    ${command}    ${expected_output}
-    ${node_name} =    get_node_by_index    ${node_id}
-    ${result} =    execute_command_on_node_and_get_output    ${command}    ${node_name}    ${expected_output}
-    RETURN    ${result}
-
-Run command on node ${node_id} and get output string
-    [Arguments]    ${command}
-    ${node_name} =    get_node_by_index    ${node_id}
-    ${result} =    execute_command_on_node_and_get_output_string    ${command}    ${node_name}
-    RETURN    ${result}
 
 SSH into node ${node_id} and run command
     [Arguments]    ${command}
     ${node_name} =    get_node_by_index    ${node_id}
-    ssh_exec_on_node    ${node_name}    ${command}
+    ${result} =    ssh_exec_on_node    ${node_name}    ${command}
+    RETURN    ${result}
 
 Set cpu-manager-policy to ${policy} on all worker nodes
     set_cpu_manager_policy_on_all_worker_nodes    ${policy}
@@ -206,5 +197,5 @@ Check volume endpoint on node of ${resource_kind} ${resource_id}
 
 Check volume endpoint on node ${node_id}
     [Documentation]    Run "ls -l /dev/longhorn/" on node ${node_id} and log the output as a WARNING.
-    ${result} =    Run command on node ${node_id} and get output string    ls -l /dev/longhorn/
+    ${result} =    Run command on node    ${node_id}    ls -l /dev/longhorn/
     Log    /dev/longhorn/ on node ${node_id}:\n${result}    level=WARN    console=True

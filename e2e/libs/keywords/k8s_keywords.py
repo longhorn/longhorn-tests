@@ -46,36 +46,24 @@ class k8s_keywords:
 
     def restart_kubelet(self, node_name, downtime_in_sec, wait=True):
         logging(f'Restarting kubelet on node {node_name} with downtime {downtime_in_sec} seconds')
-        stop_kubelet(node_name)
 
-        def background():
-            time.sleep(int(downtime_in_sec))
-            start_kubelet(node_name)
+        if int(downtime_in_sec) == 0:
+            restart_kubelet(node_name)
             logging(f'Kubelet on node {node_name} is restarted')
-
-        if wait:
-            background()
+            return
         else:
-            thread = threading.Thread(target=background)
-            thread.start()
-
-    def restart_kubelet_on_nodes(self, downtime_in_sec, node_list, wait=True):
-        logging(f'Restarting kubelet on nodes {node_list} with downtime {downtime_in_sec} seconds')
-        for node_name in node_list:
-            logging(f"Stopping kubelet on node {node_name}")
             stop_kubelet(node_name)
 
-        def background():
-            time.sleep(int(downtime_in_sec))
-            for node_name in node_list:
-                logging(f"Starting kubelet on node {node_name}")
+            def background():
+                time.sleep(int(downtime_in_sec))
                 start_kubelet(node_name)
+                logging(f'Kubelet on node {node_name} is restarted')
 
-        if wait:
-            background()
-        else:
-            thread = threading.Thread(target=background)
-            thread.start()
+            if wait:
+                background()
+            else:
+                thread = threading.Thread(target=background)
+                thread.start()
 
     def delete_volume_node(self, volume_name):
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')
