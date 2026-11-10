@@ -58,6 +58,8 @@ spec:
       volumes:
       - name: cifs-volume
         emptyDir: {}
+      - name: cifs-data
+        emptyDir: {}
       containers:
       - name: longhorn-test-cifs-container
         image: public.ecr.aws/a9m3h7d1/longhornio/samba:latest
@@ -87,7 +89,9 @@ spec:
         volumeMounts:
         - name: cifs-volume
           mountPath: "/opt/backupstore"
-        args: ["-u", "$(CIFS_USERNAME);$(CIFS_PASSWORD)", "-s", "backupstore;$(EXPORT_PATH);yes;no;no;all;none"]
+        - name: cifs-data
+          mountPath: "/var/cifs-data"
+        args: ["-u", "$(CIFS_USERNAME);$(CIFS_PASSWORD)", "-s", "backupstore;$(EXPORT_PATH);yes;no;no;$(CIFS_USERNAME);$(CIFS_USERNAME);$(CIFS_USERNAME)"]
 ---
 kind: Service
 apiVersion: v1
