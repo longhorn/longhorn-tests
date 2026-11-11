@@ -13,5 +13,6 @@ machine:
   kernel:
     modules:
       - name: nvme_tcp
+      - name: ublk_drv
       - name: vfio_pci
       - name: uio_pci_generic

@@ -8,6 +8,7 @@ from volume.base import Base
 from volume.constant import DEV_PATH
 from volume.constant import VOLUME_FRONTEND_BLOCKDEV
 from volume.constant import VOLUME_FRONTEND_ISCSI
+from volume.constant import VOLUME_FRONTEND_UBLK
 
 import utility.constant as constant
 from utility.utility import convert_size_to_bytes
@@ -112,8 +113,10 @@ class Rest(Base):
             assert endpoint == ""
             return endpoint
         else:
-            assert v.frontend == VOLUME_FRONTEND_BLOCKDEV or\
-                   v.frontend == VOLUME_FRONTEND_ISCSI
+            assert v.frontend in (VOLUME_FRONTEND_BLOCKDEV,
+                                  VOLUME_FRONTEND_ISCSI,
+                                  VOLUME_FRONTEND_UBLK), \
+                f"Unexpected frontend {v.frontend} of volume {volume_name}"
             for i in range(self.retry_count):
                 try:
                     v = get_longhorn_client().by_id_volume(volume_name)
@@ -132,6 +135,8 @@ class Rest(Base):
             assert endpoint == os.path.join(DEV_PATH, v.name)
         elif v.frontend == VOLUME_FRONTEND_ISCSI:
             assert endpoint.startswith("iscsi://")
+        elif v.frontend == VOLUME_FRONTEND_UBLK:
+            assert endpoint != "", f"Volume {volume_name} has no ublk endpoint"
         return endpoint
 
     def write_random_data(self, volume_name, size, data_id):
