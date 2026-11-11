@@ -33,6 +33,9 @@ Pull Backup Created By Another Longhorn System
     ...    9. Uninstall Longhorn.
     ...    10. Install test version of Longhorn.
     ...    11. Restore the backup create in step 8 and verify the data.
+    ...    12. After each restore, verify the system snapshot has a valid creation time in the format 2026-10-14T00:44:57Z.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/5153
     ...
     ...    Important
     ...    - This test case need have set environment variable manually first if not run on Jenkins
@@ -44,6 +47,11 @@ Pull Backup Created By Another Longhorn System
     ...       - CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE (if not using master-head)
     ...       - CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE (if not using master-head)
     ...       - LONGHORN_STABLE_VERSION (ex:v1.6.3)
+    ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
+    IF    '${LONGHORN_STABLE_VERSION}' == ''
+        Skip    Environment variable LONGHORN_STABLE_VERSION is not set
+    END
+
     Given Create volume 0 with    dataEngine=${DATA_ENGINE}
     And Attach volume 0
     And Wait for volume 0 healthy
@@ -66,6 +74,12 @@ Pull Backup Created By Another Longhorn System
     And Attach volume 1
     And Wait for volume 1 healthy
     Then Check volume 1 data is backup 0 created in another cluster
+    And Run command and expect output
+    ...    kubectl get snapshot -n longhorn-system -oyaml | grep "userCreated: false"
+    ...    userCreated: false
+    And Run command and expect output
+    ...    kubectl get snapshots.longhorn.io -n longhorn-system -o jsonpath='{range .items[*]}{.status.creationTime}{"\\n"}{end}' | grep -vcE '^[0-9]+-[0-9]+-[0-9]+T[0-9]+:[0-9]+:[0-9]+Z$' || true
+    ...    0
     And Setting deleting-confirmation-flag is set to true
     And Uninstall Longhorn
     And Check Longhorn CRD removed
@@ -95,3 +109,9 @@ Pull Backup Created By Another Longhorn System
     And Attach volume 3
     And Wait for volume 3 healthy
     Then Check volume 3 data is backup 1 created in another cluster
+    And Run command and expect output
+    ...    kubectl get snapshot -n longhorn-system -oyaml | grep "userCreated: false"
+    ...    userCreated: false
+    And Run command and expect output
+    ...    kubectl get snapshots.longhorn.io -n longhorn-system -o jsonpath='{range .items[*]}{.status.creationTime}{"\\n"}{end}' | grep -vcE '^[0-9]+-[0-9]+-[0-9]+T[0-9]+:[0-9]+:[0-9]+Z$' || true
+    ...    0

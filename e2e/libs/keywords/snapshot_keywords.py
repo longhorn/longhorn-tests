@@ -18,6 +18,9 @@ class snapshot_keywords:
     def delete_snapshot(self, volume_name, snapshot_id):
         self.snapshot.delete(volume_name, snapshot_id)
 
+    def delete_snapshot_by_name(self, volume_name, snapshot_name):
+        self.snapshot.delete_by_name(volume_name, snapshot_name)
+
     def delete_snapshot_cr(self, volume_name, snapshot_id):
         self.snapshot.delete_cr(volume_name, snapshot_id)
 
@@ -133,7 +136,13 @@ class snapshot_keywords:
             time.sleep(self.retry_interval)
         assert False, f"Timed out waiting for volume {volume_name} snapshot {snapshot_id} to be ready"
 
-    def get_snapshot_name(self, volume_name, snapshot_id):
+    def get_snapshot_name(self, volume_name, snapshot_id=None):
+        if snapshot_id is None:
+            # return the first non-volume-head snapshot
+            for snapshot in self.snapshot.list(volume_name):
+                if snapshot.name != "volume-head":
+                    return snapshot.name
+            assert False, f"No non-volume-head snapshot found in volume {volume_name}"
         snapshot = self.snapshot.get(volume_name, snapshot_id)
         assert snapshot is not None, f"Snapshot {snapshot_id} not found in volume {volume_name}"
         logging(f"Got snapshot name {snapshot.name} for snapshot {snapshot_id} of volume {volume_name}")

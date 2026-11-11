@@ -17,7 +17,7 @@ class CRD(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, backup_name, backup_policy):
+    def create(self, backup_name, backup_policy, wait=True):
         return NotImplemented
 
     def restore(self, backup_name):

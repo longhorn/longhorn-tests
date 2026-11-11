@@ -16,13 +16,19 @@ def get_public_ip(node_name):
         ec2 = boto3.client('ec2')
         resp = ec2.describe_instances(InstanceIds=[instance_id])
         instance = resp['Reservations'][0]['Instances'][0]
+        # A test pod inside the cluster reaches another node through its public IP with its own node's public IP
+        # as the source address, which the security group does not allow, so use the private address instead.
+        # Out of cluster (LONGHORN_CLIENT_URL is set, e.g. running next to Jenkins) the private address is not
+        # reachable, keep using the public one.
+        if not os.environ.get("LONGHORN_CLIENT_URL") and instance.get('PrivateIpAddress'):
+            return instance['PrivateIpAddress']
         if instance.get('PublicIpAddress'):
             return instance['PublicIpAddress']
         for iface in instance.get('NetworkInterfaces', []):
             for ipv6 in iface.get('Ipv6Addresses', []):
                 return f"[{ipv6['Ipv6Address']}]"
     elif host_provider == "harvester":
-        result = json.loads(subprocess_exec_cmd(["kubectl", "get", "nodes", "-o", "json"]))
+        result = json.loads(subprocess_exec_cmd(["kubectl", "get", "nodes", "-o", "json"], verbose=False))
         for node in result['items']:
             provider_id = node['spec'].get('providerID', '')
             key = provider_id.split('/')[-1] if provider_id else node['metadata']['name']
