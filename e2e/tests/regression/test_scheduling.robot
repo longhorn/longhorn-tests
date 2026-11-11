@@ -748,3 +748,36 @@ Test System Managed Components Node Selector
     And Uninstall Longhorn
     And Check all Longhorn CRD removed
     And Install Longhorn
+
+Test Auto Balance Does Not Rebuild Replicas When Longhorn Manager Restarts
+    [Tags]    auto-balance
+    [Documentation]    Verify that a transient longhorn-manager pod restart does not
+    ...                make replica auto-balance rebuild healthy replicas.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/13941
+    ...
+    ...                1. Set replica-soft-anti-affinity to false and replica-auto-balance to best-effort.
+    ...                2. Create and attach a 2-replica volume with replicas on node 0 and node 1.
+    ...                   Node 2 has no replica, so it is a valid target for a rebuild.
+    ...                3. Delete the longhorn-manager pod on node 0 (a replica node) and wait for the new pod ready.
+    ...                4. The volume should stay healthy with the same 2 replicas and no new replica is created.
+    Given Setting replica-soft-anti-affinity is set to false
+    And Setting replica-auto-balance is set to best-effort
+    And Disable node 2 scheduling
+    And Create volume 0 with    numberOfReplicas=2    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 attached
+    And Wait for volume 0 healthy
+    And Enable node 2 scheduling
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Record volume 0 replica names
+
+    When Delete Longhorn DaemonSet longhorn-manager pod on node 0
+
+    Then Volume 0 should have 2 running replicas and no additional scheduling occurs
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have 0 running replicas on node 2
+    And Check volume 0 replica names are as recorded
+    And Wait for volume 0 healthy
