@@ -120,7 +120,7 @@ resource "aws_route_table_association" "aws_subnet_2_rt_association" {
 # Jenkins egress (public on OCI incl. its IPv6 VCN range, private on HAL), the whole VPC (both subnets), and an optional user-specified debug range
 locals {
   allowed_cidrs = concat(
-    ["129.80.0.0/16", "10.115.0.0/16", "2603:c020:401b:1e00::/56"],
+    ["129.80.0.0/16", "10.115.0.0/16", "195.135.0.0/16", "2603:c020:401b:1e00::/56"],
     [aws_vpc.aws_vpc.cidr_block],
     [aws_vpc.aws_vpc.ipv6_cidr_block],
     # storage network (multus) pod addresses, see STORAGE_NETWORK_PREFIX in user-data-scripts/{flannel,routes}.sh.tpl:
