@@ -676,6 +676,31 @@ def check_workload_pods_not_restarted(workload_name, namespace="default"):
     logging(f"All pods of workload {workload_name} have not been restarted")
 
 
+def wait_for_workload_pods_restarted(workload_name, namespace="default", timeout=None):
+    """
+    Wait until all pods of the workload have restartCount > 0 in any container.
+    timeout is the number of retries, the default retry count is used if it is not set.
+    Return True if all pods restarted within the retries, False otherwise.
+    """
+    retry_count, retry_interval = get_retry_count_and_interval()
+    if timeout:
+        retry_count = int(timeout)
+
+    for i in range(retry_count):
+        pods = get_workload_pods(workload_name, namespace)
+        not_restarted = []
+        for pod in pods:
+            restart_counts = [cs.restart_count for cs in (pod.status.container_statuses or [])]
+            if not any(count > 0 for count in restart_counts):
+                not_restarted.append(pod.metadata.name)
+        if pods and not not_restarted:
+            logging(f"All {len(pods)} pods of workload {workload_name} restarted")
+            return True
+        logging(f"Waiting for workload {workload_name} pods to restart, not restarted: {not_restarted} ... ({i})")
+        time.sleep(retry_interval)
+    return False
+
+
 def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="default"):
     """
     Check that workload pods have not been recreated.
