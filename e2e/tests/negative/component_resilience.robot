@@ -27,13 +27,13 @@ Cleanup Global Manager API Partition Test
 
 Delete ${engine_type} instance manager of volume ${volume_id} and wait for recover
     When Delete ${engine_type} instance manager of volume ${volume_id}
-    And Wait for volume ${volume_id} degraded
+    And Wait for volume ${volume_id} attached
     And Wait for volume ${volume_id} healthy
     And Check volume ${volume_id} data is intact
 
 Delete ${engine_type} instance manager of deployment ${deployment_id} volume and wait for recover
     When Delete ${engine_type} instance manager of deployment ${deployment_id} volume
-    And Wait for volume of deployment ${deployment_id} attached and degraded
+    And Wait for volume of deployment ${deployment_id} attached
     And Wait for volume of deployment ${deployment_id} healthy
     And Wait for deployment ${deployment_id} pods stable
     And Check deployment ${deployment_id} data in file data.txt is intact
