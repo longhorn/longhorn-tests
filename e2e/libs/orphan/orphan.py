@@ -13,14 +13,22 @@ class Orphan:
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def wait_for_orphan_count(self, count):
+    def wait_for_orphan_count(self, count, stable_retry_count=30, stable_interval=1):
         longhorn_client = get_longhorn_client()
+        stable_count = 0
         for i in range(self.retry_count):
             orphans = longhorn_client.list_orphan()
             logging(f"Waiting for orphan count to be {count}, currently it's {len(orphans)} ... ({i})")
             if len(orphans) == int(count):
-                return
-            time.sleep(self.retry_interval)
+                # make sure the count is stable before returning
+                stable_count += 1
+                logging(f"Orphan count is {count}, verifying stability ... ({stable_count}/{stable_retry_count})")
+                if stable_count >= stable_retry_count:
+                    return
+                time.sleep(stable_interval)
+            else:
+                stable_count = 0
+                time.sleep(self.retry_interval)
         assert False, f"Failed to wait orphan count to be {count}"
 
     def delete_orphan(self, orphan):
