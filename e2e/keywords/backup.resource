@@ -97,6 +97,13 @@ Wait for volume ${volume_id} backup to be created
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_backup_created    ${volume_name}
 
+Check ${workload_kind} ${workload_id} volume has created backup
+    [Documentation]    Return True if a created (completed) backup of the workload volume already exists, False otherwise.
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${created} =    is_volume_backup_created    ${volume_name}
+    RETURN    ${created}
+
 Wait for volume ${volume_id} backup to be in progress
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_backup_in_progress    ${volume_name}

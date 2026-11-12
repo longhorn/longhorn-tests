@@ -50,6 +50,9 @@ class Backup(Base):
     def list_all(self):
         return self.backup.list_all()
 
+    def is_volume_backup_created(self, volume_name):
+        return self.backup.is_volume_backup_created(volume_name)
+
     def wait_for_volume_backup_created(self, volume_name):
         return self.backup.wait_for_volume_backup_created(volume_name)
 
