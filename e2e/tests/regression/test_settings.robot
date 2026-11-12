@@ -249,7 +249,13 @@ Test Setting Blacklist For Auto Delete Pod
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test
     And Create deployment 0 with persistentvolumeclaim 0 and liveness probe
 
-    When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
+    # Retry the instance manager deletion until the deployment pods are restarted by the disruption,
+    # since a single deletion might not make the pods restart reliably.
+    FOR    ${i}    IN RANGE    5
+        When Delete ${DATA_ENGINE} instance manager of deployment 0 volume
+        ${restarted} =    Wait for deployment 0 pods restarted    timeout=60
+        IF    ${restarted}    BREAK
+    END
     And Wait for deployment 0 pod stuck in CrashLoopBackOff
 
     When Setting blacklist-for-auto-delete-pod-when-volume-detached-unexpectedly is set to apps/DaemonSet
