@@ -316,6 +316,14 @@ Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on the ori
     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
     wait_for_workload_pod_on_node    ${workload_name}    ${last_volume_node}
 
+Wait for ${workload_kind} ${workload_id} pods restarted
+    [Arguments]    ${timeout}=${None}
+    [Documentation]    Return True if all pods restarted within the retries, False otherwise.
+    ...    ${timeout} is the number of retries, the default retry count is used if it is not set.
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${restarted} =    wait_for_workload_pods_restarted    ${workload_name}    ${timeout}
+    RETURN    ${restarted}
+
 Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
