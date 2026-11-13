@@ -359,6 +359,11 @@ Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
     ${longhorn_namespace} =    get_longhorn_namespace
     delete_workload_pod_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}    ${label_selector}
 
+Wait for Longhorn ${workload_kind} ${workload_name} pod on node ${node_id} deleted
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${longhorn_namespace} =    get_longhorn_namespace
+    wait_for_workload_pod_deleted_on_node    ${workload_name}    ${node_name}    ${longhorn_namespace}
+
 Delete Longhorn ${workload_kind} ${workload_name} pod on all nodes
     ${node_names} =    list_node_names_by_role    worker
 

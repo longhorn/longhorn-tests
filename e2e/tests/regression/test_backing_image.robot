@@ -16,6 +16,7 @@ Resource    ../keywords/host.resource
 Resource    ../keywords/k8s.resource
 Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/workload.resource
 
 Suite Setup    Skip If    '${DATA_ENGINE}' == 'v2'    reason=v2 data engine doesn't support backing image
 
@@ -177,6 +178,7 @@ Test Node ID Change During Backing Image Creation
     Given Get test start time
     And Delete node 0
     And Wait for Longhorn node 0 down
+    And Wait for Longhorn DaemonSet longhorn-manager pod on node 0 deleted
 
     When Create backing image bi-large    url=https://cchien-backing-image.s3.us-west-1.amazonaws.com/400MB.qcow2    minNumberOfCopies=1
     And Download backing image bi-large    is_async=${True}
