@@ -1244,6 +1244,87 @@ Test V2 Volume Reattach With Stale Mount
     And Mount volume 0 on node 0
     And Check volume 0 filesystem data on node 0 is intact
 
+Test V2 Instance Manager Does Not Use Hugepages Of Other Pods
+    [Documentation]    Verify the v2 instance manager spdk_tgt only allocates hugepages from its own
+    ...    hugetlbfs mount and not from the hugepages emptyDir of another pod, which is also visible
+    ...    through the /host mount, and that such a pod can still be deleted.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14340
+    ...
+    ...    Test steps:
+    ...    1. Create a single-node environment: delete the block disks, disable v2 data engine
+    ...       and disable v2 on node 1 and node 2.
+    ...    2. Allocate enough 2Mi hugepages (1100) on node 0 for the v2 instance manager and the
+    ...       dummy pod, then restart kubelet to pick up the new allocatable.
+    ...    3. Create the dummy pod hugepage-holder with a HugePages-2Mi emptyDir on node 0,
+    ...       before any v2 instance manager starts.
+    ...    4. Enable v2 data engine and wait until the v2 instance manager pod is running.
+    ...    5. Check spdk_tgt maps its hugepage files from the instance manager's own /hugepages.
+    ...    6. Add a block disk to node 0, create and attach a single-replica v2 volume and test read/write.
+    ...    7. Delete hugepage-holder.
+    ...    8. Recover the environment.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    TRY
+        # Step 1: single-node environment without block disks and v2 data engine
+        Given Disable default block disks on all worker nodes
+        And Delete default block disks on all worker nodes
+        And Setting v2-data-engine is set to false
+        And Label node 1 with node.longhorn.io/disable-v2-data-engine=true
+        And Label node 2 with node.longhorn.io/disable-v2-data-engine=true
+
+        # Step 2: allocate enough 2Mi hugepages
+        ${command} =    Catenate    SEPARATOR=${SPACE}
+        ...    "sudo sed -i 's/^vm.nr_hugepages.*/vm.nr_hugepages=1100/' /etc/sysctl.conf &&
+        ...    sudo sysctl -p && grep HugePages_Total /proc/meminfo"
+        SSH into node 0 and run command and wait for output
+        ...    ${command}
+        ...    HugePages_Total:\\s+1100
+        When Restart kubelet on node 0
+        And Wait for k8s cluster ready
+
+        # Step 3: create the dummy pod holding a HugePages-2Mi emptyDir before any v2 instance manager starts
+        When Run command
+        ...    sed 's/NODE_NAME/${NODE_0}/' ./templates/workload/hugepage_holder.yaml | kubectl apply -f -
+        Then Wait for pod hugepage-holder running
+
+        # Step 4: enable v2 data engine and wait for the v2 instance manager pod running
+        When Setting v2-data-engine is set to true
+        Then Check v2 instance manager is running on node 0
+
+        # Step 5: spdk_tgt must map its hugepage files from its own /hugepages mount,
+        # not from the emptyDir of hugepage-holder visible through /host
+        ${im_pod} =    Get v2 instance manager pod name on node 0
+        Then Run command in pod ${LONGHORN_NAMESPACE}/${im_pod} and wait for output
+        ...    grep hugepages /proc/$(pgrep -f ^spdk_tgt | head -1)/maps | awk '{print $6}' | sed 's/map_[0-9]*//' | sort | uniq -c
+        ...    ${SPACE}/hugepages/
+
+        # Step 6: add a block disk to node 0, create a single-replica v2 volume and test read/write
+        When Add block disk ${DEFAULT_BLOCK_DISK_NAME} to node 0 with path ${DISK_PATH}
+        And Create volume 0 with    size=2Gi    numberOfReplicas=1    dataEngine=v2
+        And Attach volume 0 to node 0
+        And Wait for volume 0 healthy
+        And Write data to volume 0
+        Then Check volume 0 data is intact
+
+        # Step 7: delete hugepage-holder, it wouldn;'t be stuck in Terminating
+        And Run command    kubectl delete pod hugepage-holder -n default --timeout=180s
+    FINALLY
+        # Step 8: recover the environment
+        And Delete volume 0
+        And Disable default block disk on node 0
+        And Delete default block disk on node 0
+        And Setting v2-data-engine is set to false
+        ${command} =    Catenate    SEPARATOR=${SPACE}
+        ...    "sudo sed -i 's/^vm.nr_hugepages.*/vm.nr_hugepages=1024/' /etc/sysctl.conf &&
+        ...    sudo sysctl -p && grep HugePages_Total /proc/meminfo"
+        And SSH into node 0 and run command    ${command}
+        And Restart kubelet on node 0
+        And Wait for k8s cluster ready
+    END
+
 Test V2 Volume Reattach With Deferred Remove DM Device
     [Tags]    volume    attach-detach
     [Documentation]    Verify the volume returns to healthy after reusing a dm device marked for deferred removal.
