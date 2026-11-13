@@ -107,7 +107,7 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
     return manifest
 
 
-def new_pvc_pod_manifest(pod_name, claim_name, block_volume=False, image=None, args=None):
+def new_pvc_pod_manifest(pod_name, claim_name, block_volume=False, image=None, args=None, node_name=None):
     logging(f"Creating pod {pod_name} using pvc {claim_name}")
     filepath = "./templates/workload/pod.yaml"
     with open(filepath, 'r') as f:
@@ -115,6 +115,8 @@ def new_pvc_pod_manifest(pod_name, claim_name, block_volume=False, image=None, a
         manifest_dict['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = claim_name
         manifest_dict['metadata']['name'] = pod_name
         manifest_dict['metadata']['labels']['app'] = pod_name
+        if node_name:
+            manifest_dict['spec']['nodeName'] = node_name
         container = manifest_dict['spec']['containers'][0]
         if image:
             container['image'] = image
