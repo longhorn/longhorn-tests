@@ -8,6 +8,14 @@ Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 
 *** Keywords ***
+Mark replica ${replica_name} failed
+    mark_replica_failed    ${replica_name}
+
+Volume ${volume_id} should have exactly RW replicas
+    [Arguments]    @{replica_names}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Wait Until Keyword Succeeds    120s    1s    check_volume_rw_replicas    ${volume_name}    @{replica_names}
+
 Volume ${volume_id} replica ${setting_name} should be ${setting_value}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     validate_replica_setting    ${volume_name}    ${setting_name}    ${setting_value}

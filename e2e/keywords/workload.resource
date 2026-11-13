@@ -12,6 +12,14 @@ Library    ../libs/keywords/replica_keywords.py
 Library    ../libs/keywords/instancemanager_keywords.py
 
 *** Keywords ***
+Write ${size_mb} MiB data at offset ${offset_mb} MiB in ${workload_kind} ${workload_id} and record MD5
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    write_block_range_with_md5    ${workload_name}    ${offset_mb}    ${size_mb}
+
+Verify ${size_mb} MiB data at offset ${offset_mb} MiB in ${workload_kind} ${workload_id} should match recorded MD5
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    check_block_range_md5    ${workload_name}    ${offset_mb}    ${size_mb}
+
 Wait for pod deleted
     [Arguments]    ${pod_name}    ${namespace}=default
     wait_until_pod_deleted    ${pod_name}    ${namespace}
