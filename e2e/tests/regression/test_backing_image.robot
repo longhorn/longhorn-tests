@@ -261,3 +261,43 @@ Test Volume Size Smaller Than Backing Image Virtual Size Should Show BackingImag
     # The controller then detects the incompatibility and sets the condition.
     And Wait for all disk file status of backing image bi-ubuntu-focal are ready
     Then Wait for volume of persistentvolumeclaim 0 condition BackingImageIncompatible to be True    reason=BackingImageVirtualSizeTooLarge
+
+Test Backing Image Manager Reloaded After Disk Configuration Drift
+    [Documentation]    Validates that the backing image manager pod is restarted after the
+    ...                disk configuration drift is resolved, so kubelet re-attaches the
+    ...                updated filesystem to the pod.
+    ...
+    ...                Disk configuration drift is simulated by bind mounting an empty
+    ...                directory over the default disk path. The backing image manager
+    ...                pod keeps the original mount, so removing the bind mount brings
+    ...                the disk back with the same UUID.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/14111
+    [Teardown]    Run Keywords
+    ...    Run command on node    0    mountpoint -q /var/lib/longhorn && umount /var/lib/longhorn || true
+    ...    AND    Run command on node    0    rmdir /var/tmp/disk-drift || true
+    ...    AND    Cleanup test resources
+    Given Create backing image bi    url=https://longhorn-backing-image.s3.dualstack.us-west-1.amazonaws.com/parrot.qcow2    minNumberOfCopies=3
+    And Record node 0 default disk uuid
+    And Run command and wait for output
+    ...    kubectl get backingimages.longhorn.io bi -n longhorn-system -o jsonpath='{.status.diskFileStatusMap.${recorded_disk_uuid}.state}'
+    ...    ready
+
+    When Run command on node    0    mkdir /var/tmp/disk-drift && mount --bind /var/tmp/disk-drift /var/lib/longhorn
+    Then Wait for node 0 filesystem disk unschedulable
+    And Run command and wait for output
+    ...    kubectl get backingimages.longhorn.io bi -n longhorn-system -o jsonpath='{.status.diskFileStatusMap.${recorded_disk_uuid}.state}'
+    ...    unknown
+
+    When Run command on node    0    umount /var/lib/longhorn && rmdir /var/tmp/disk-drift
+    Then Wait for node 0 filesystem disk schedulable
+    And Wait for backing image manager pod on node 0 recreated
+    And Run command and wait for output
+    ...    kubectl get backingimages.longhorn.io bi -n longhorn-system -o jsonpath='{.status.diskFileStatusMap.${recorded_disk_uuid}.state}'
+    ...    ready
+
+    When Create volume 0 with    backingImage=bi
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    Then Check volume 0 data is intact

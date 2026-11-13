@@ -3,6 +3,7 @@ Documentation    Backing Image Keywords
 
 Library    ../libs/keywords/backing_image_keywords.py
 Library    ../libs/keywords/node_keywords.py
+Library    ../libs/keywords/workload_keywords.py
 Library    Collections
 Library    OperatingSystem
 
@@ -123,3 +124,8 @@ Check backing image ${backing_image_name} download file checksum matches
 Get diskFileSpecMap of backing image ${backing_image_name}
     ${original_diskFileSpecMap} =    get_disk_file_spec_map    ${backing_image_name}
     [Return]    ${original_diskFileSpecMap}
+
+Wait for backing image manager pod on node ${node_id} recreated
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_workload_pods_recreated_by_uid    backing-image-manager    longhorn-system
+    ...    longhorn.io/component=backing-image-manager,longhorn.io/node=${node_name}
