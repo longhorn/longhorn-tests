@@ -1,6 +1,7 @@
 import time
 import asyncio
 import json
+import re
 
 from kubernetes import client
 from kubernetes.stream import stream
@@ -163,6 +164,7 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
+    last_error = None
     for i in range(retry_count):
         logging(f"Writing random data to pod {pod_name} ... ({i})")
         try:
@@ -183,10 +185,20 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
             if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
                 raise RuntimeError(resp)
 
-            return resp
+            # A successful write ends with the md5 checksum (32 hex characters) and nothing else.
+            # An empty or malformed response means the write did not complete.
+            checksum = resp.strip()
+            if not re.fullmatch(r"[0-9a-f]{32}", checksum):
+                raise RuntimeError(f"Unexpected response, expect a 32-character hex checksum: {resp!r}")
+
+            return checksum
         except Exception as e:
+            last_error = e
             logging(f"Writing random data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
+
+    raise AssertionError(f"Failed to write {size_in_mb} MB random data to {data_directory}/{file_name} "
+                         f"in pod {pod_name} after {retry_count} attempts, last error: {last_error}")
 
 
 def write_pod_large_data(pod_name, size_in_gb, file_name,
@@ -196,6 +208,7 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
+    last_error = None
     for i in range(retry_count):
         logging(f"Writing large data to pod {pod_name} ... ({i})")
         try:
@@ -216,10 +229,20 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
             if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
                 raise RuntimeError(resp)
 
-            return resp
+            # A successful write ends with the md5 checksum (32 hex characters) and nothing else.
+            # An empty or malformed response means the write did not complete.
+            checksum = resp.strip()
+            if not re.fullmatch(r"[0-9a-f]{32}", checksum):
+                raise RuntimeError(f"Unexpected response, expect a 32-character hex checksum: {resp!r}")
+
+            return checksum
         except Exception as e:
+            last_error = e
             logging(f"Writing large data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
+
+    raise AssertionError(f"Failed to write {size_in_gb} GB large data to {data_directory}/{file_name} "
+                         f"in pod {pod_name} after {retry_count} attempts, last error: {last_error}")
 
 
 def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data"):
