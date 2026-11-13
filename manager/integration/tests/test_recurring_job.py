@@ -1914,9 +1914,13 @@ def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1
     wait_for_rebuild_complete(client, volume_name)
     volume = wait_for_volume_healthy(client, volume_name)
 
-    # - 1 system-created snapshot
-    # - 1 volume-head
-    wait_for_system_snapshot_count(volume, 1)
+    if DATA_ENGINE == "v2":
+        # - 1 volume-head
+        wait_for_system_snapshot_count(volume, 0)
+    else:
+        # - 1 system-created snapshot
+        # - 1 volume-head
+        wait_for_system_snapshot_count(volume, 1)
 
     create_snapshot(client, volume_name)
     volume = client.by_id_volume(volume_name)
