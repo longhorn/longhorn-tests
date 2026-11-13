@@ -382,6 +382,19 @@ class workload_keywords:
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for workload {workload_name} pod on node {node_name}"
 
+    def wait_for_workload_pod_deleted_on_node(self, workload_name, node_name, namespace="default", label_selector=""):
+        """
+        Wait until no pod of the workload is left on the node, regardless of the pods on other nodes.
+        """
+        for i in range(self.retry_count):
+            pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
+            pods_on_node = [pod.metadata.name for pod in pods if pod.spec.node_name == node_name]
+            logging(f"Waiting for workload {workload_name} pods on node {node_name} deleted, remaining: {pods_on_node} ... ({i})")
+            if not pods_on_node:
+                return
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for workload {workload_name} pods on node {node_name} deleted, remaining: {pods_on_node}"
+
     def wait_for_workload_pod_not_on_node(self, workload_name, node_name, namespace="default"):
         logging(f"Waiting for workload {workload_name} pod not on node {node_name} in namespace {namespace}")
         for i in range(self.retry_count):
