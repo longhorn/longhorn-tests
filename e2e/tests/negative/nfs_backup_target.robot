@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    NFS Backup Target Negative Test Cases
 
-Test Tags    nfs    negative    backup
+Test Tags    nfs    negative    backup    manual
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
