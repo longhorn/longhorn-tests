@@ -79,6 +79,32 @@ Test V2 Volume Basic
     And Wait for volume 0 detached
     And Delete volume 0
 
+Test V2 Volume With UBLK Frontend
+    [Documentation]    Test basic read/write on a v2 volume using the ublk frontend.
+    ...                The ublk_drv kernel module must be loaded on the nodes, otherwise the test is skipped.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+    ${ublk_status} =    Run command on node    0    test -d /sys/module/ublk_drv && echo enabled || echo disabled
+    Skip If    $ublk_status.strip() != 'enabled'    ublk_drv is not enabled
+
+    Given Create volume 0 with    dataEngine=v2    frontend=ublk
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    When Write data to volume 0
+    Then Check volume 0 data is intact
+
+    When Detach volume 0
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is intact
+
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Delete volume 0
+
 Test V2 Snapshot
     [Tags]    coretest
     [Documentation]    Test snapshot operations

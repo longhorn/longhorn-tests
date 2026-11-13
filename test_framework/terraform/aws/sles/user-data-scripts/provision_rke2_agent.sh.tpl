@@ -24,6 +24,7 @@ modprobe uio
 modprobe uio_pci_generic
 modprobe vfio_pci
 modprobe nvme-tcp
+modprobe ublk_drv || echo "ublk_drv is not available on $(uname -r), skipping"
 modprobe dm_crypt
 touch /etc/modules-load.d/modules.conf
 cat > /etc/modules-load.d/modules.conf <<EOF
@@ -32,6 +33,7 @@ uio_pci_generic
 vfio_pci
 nvme-tcp
 dm_crypt
+ublk_drv
 EOF
 
 echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
