@@ -30,44 +30,49 @@ class NodeExec:
 
         self.cleanup()
 
-        if image_name is not None:
-            self.pod = self.launch_pod(image_name)
-        elif self._needs_fio(cmd):
-            self.pod = self.launch_pod(FIO_IMAGE)
-        else:
-            self.pod = self.launch_pod()
+        try:
+            if image_name is not None:
+                self.pod = self.launch_pod(image_name)
+            elif self._needs_fio(cmd):
+                self.pod = self.launch_pod(FIO_IMAGE)
+            else:
+                self.pod = self.launch_pod()
 
-        logging(f"Issuing command on {self.node_name}: {cmd}")
+            logging(f"Issuing command on {self.node_name}: {cmd}")
 
-        if isinstance(cmd, list):
-            exec_command = cmd
-        else:
-            ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
-            ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
-            exec_command = [
-                'nsenter',
-                f'--mount={ns_mnt}',
-                f'--net={ns_net}',
-                '--', 'sh', '-c', cmd
-            ]
-        for i in range(self.retry_count):
-            try:
-                res = stream(
-                    self.core_api.connect_get_namespaced_pod_exec,
-                    self.pod.metadata.name,
-                    'default',
-                    command=exec_command,
-                    stderr=True,
-                    stdin=False,
-                    stdout=True,
-                    tty=False
-                )
-                logging(f"Issued command: {cmd} on {self.node_name} with result:\n{res}")
-                return res
-            except Exception as e:
-                logging(f"Failed to issue command: {cmd} on {self.node_name} with error: {e}")
-                time.sleep(self.retry_interval)
-        assert False, f"Failed to issue command: {cmd} on {self.node_name}"
+            if isinstance(cmd, list):
+                exec_command = cmd
+            else:
+                ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
+                ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
+                exec_command = [
+                    'nsenter',
+                    f'--mount={ns_mnt}',
+                    f'--net={ns_net}',
+                    '--', 'sh', '-c', cmd
+                ]
+            for i in range(self.retry_count):
+                try:
+                    res = stream(
+                        self.core_api.connect_get_namespaced_pod_exec,
+                        self.pod.metadata.name,
+                        'default',
+                        command=exec_command,
+                        stderr=True,
+                        stdin=False,
+                        stdout=True,
+                        tty=False
+                    )
+                    logging(f"Issued command: {cmd} on {self.node_name} with result:\n{res}")
+                    return res
+                except Exception as e:
+                    logging(f"Failed to issue command: {cmd} on {self.node_name} with error: {e}")
+                    time.sleep(self.retry_interval)
+            assert False, f"Failed to issue command: {cmd} on {self.node_name}"
+        finally:
+            # Don't leave the helper pod behind: it has no controller and
+            # would block a non-forced `kubectl drain` of this node.
+            self.cleanup()
 
     def _needs_fio(self, cmd):
         if isinstance(cmd, list):
