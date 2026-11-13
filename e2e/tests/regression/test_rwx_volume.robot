@@ -26,6 +26,7 @@ Test Teardown    Cleanup test resources
 *** Variables ***
 ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}    30
 ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS}    300
+${SHAREMANAGER_STARTUP_TIMEOUT}    10
 
 *** Keywords ***
 RWX Fast Failover IO Outage Duration
@@ -497,4 +498,27 @@ Test ShareManager Tolerations Helm Chart Parameter
         And Uninstall Longhorn
         And Check Longhorn CRD removed
         And Install Longhorn
+    END
+
+Test Share Manager Starts Promptly After CSI Attacher Ticket Is Created
+    [Tags]    sharemanager
+    [Documentation]    Regression for https://github.com/longhorn/longhorn/issues/14157
+    ...    On five fresh RWX volumes, require Share Manager pod creation within
+    ...    10 seconds of the first Longhorn CSI attacher ticket, before waiting
+    ...    for workload readiness. Timing uses a conservative latency upper bound
+    ...    from the last ticket-absent request to the first pod observation.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    FOR    ${i}    IN RANGE    5
+        Given Create persistentvolumeclaim ${i}    volume_type=RWX    sc_name=longhorn-test
+        And Wait for volume of persistentvolumeclaim ${i} detached
+        ${ticket_absent_since} =    Check no CSI attacher ticket or sharemanager pod exists for persistentvolumeclaim ${i}
+        When Create deployment ${i} with persistentvolumeclaim ${i}    wait=${False}
+        Then Verify sharemanager of persistentvolumeclaim ${i} starts within ${SHAREMANAGER_STARTUP_TIMEOUT} seconds after first CSI attacher ticket
+        ...    ${ticket_absent_since}
+        And Wait for sharemanager pod of deployment ${i} running
+        And Wait for deployment ${i} pods running
+        And Write 1 MB data to file data.bin in deployment ${i}
+        And Check deployment ${i} data in file data.bin is intact
+        And Delete deployment ${i}
+        And Delete persistentvolumeclaim ${i} and wait for its volume to be deleted
     END
