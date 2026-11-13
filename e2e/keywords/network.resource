@@ -101,6 +101,12 @@ Limit V1 volume ${volume_id} rebuild traffic from node ${source_node_id} to node
     ...    ${rate_in_mbit}
     RETURN    ${context}
 
+Manipulate pod egress traffic
+    [Documentation]    Run the given shell command (e.g. iptables rules) in the network namespace of the pod.
+    ...                The keyword blocks until the command finishes and fails if the command fails.
+    [Arguments]    ${pod_name}    ${command}
+    manipulate_pod_egress    ${pod_name}    ${command}
+
 Remove V1 replica rebuild traffic limit
     [Arguments]    ${context}
     cleanup_v1_replica_rebuild_traffic    ${context}

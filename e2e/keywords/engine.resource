@@ -33,3 +33,8 @@ Volume ${volume_id} engine process should exist on node ${node_id}
     ${engine_name} =    get_engine_name    ${volume_name}
     ${present} =    is_engine_process_present    ${node_name}    ${engine_name}
     Should Be True    ${present}    Engine process ${engine_name} should exist on node ${node_name}
+
+Get volume ${volume_id} engine instance manager name
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
+    RETURN    ${instance_manager_name}
