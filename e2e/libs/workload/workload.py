@@ -1,6 +1,7 @@
 import time
 import asyncio
 import json
+import re
 
 from kubernetes import client
 from kubernetes.stream import stream
@@ -163,6 +164,7 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
+    last_error = None
     for i in range(retry_count):
         logging(f"Writing random data to pod {pod_name} ... ({i})")
         try:
@@ -183,10 +185,20 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
             if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
                 raise RuntimeError(resp)
 
-            return resp
+            # A successful write ends with the md5 checksum (32 hex characters) and nothing else.
+            # An empty or malformed response means the write did not complete.
+            checksum = resp.strip()
+            if not re.fullmatch(r"[0-9a-f]{32}", checksum):
+                raise RuntimeError(f"Unexpected response, expect a 32-character hex checksum: {resp!r}")
+
+            return checksum
         except Exception as e:
+            last_error = e
             logging(f"Writing random data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
+
+    raise AssertionError(f"Failed to write {size_in_mb} MB random data to {data_directory}/{file_name} "
+                         f"in pod {pod_name} after {retry_count} attempts, last error: {last_error}")
 
 
 def write_pod_large_data(pod_name, size_in_gb, file_name,
@@ -196,6 +208,7 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
 
     retry_count, retry_interval = get_retry_count_and_interval()
 
+    last_error = None
     for i in range(retry_count):
         logging(f"Writing large data to pod {pod_name} ... ({i})")
         try:
@@ -216,10 +229,20 @@ def write_pod_large_data(pod_name, size_in_gb, file_name,
             if "Input/output error" in resp or "I/O error" in resp or "Read-only file system" in resp:
                 raise RuntimeError(resp)
 
-            return resp
+            # A successful write ends with the md5 checksum (32 hex characters) and nothing else.
+            # An empty or malformed response means the write did not complete.
+            checksum = resp.strip()
+            if not re.fullmatch(r"[0-9a-f]{32}", checksum):
+                raise RuntimeError(f"Unexpected response, expect a 32-character hex checksum: {resp!r}")
+
+            return checksum
         except Exception as e:
+            last_error = e
             logging(f"Writing large data to pod {pod_name} failed with error {e}")
             time.sleep(retry_interval)
+
+    raise AssertionError(f"Failed to write {size_in_gb} GB large data to {data_directory}/{file_name} "
+                         f"in pod {pod_name} after {retry_count} attempts, last error: {last_error}")
 
 
 def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data"):
@@ -674,6 +697,31 @@ def check_workload_pods_not_restarted(workload_name, namespace="default"):
             assert False, f"Pod {pod_name} has been restarted {restart_count} times (expected 0)"
     
     logging(f"All pods of workload {workload_name} have not been restarted")
+
+
+def wait_for_workload_pods_restarted(workload_name, namespace="default", timeout=None):
+    """
+    Wait until all pods of the workload have restartCount > 0 in any container.
+    timeout is the number of retries, the default retry count is used if it is not set.
+    Return True if all pods restarted within the retries, False otherwise.
+    """
+    retry_count, retry_interval = get_retry_count_and_interval()
+    if timeout:
+        retry_count = int(timeout)
+
+    for i in range(retry_count):
+        pods = get_workload_pods(workload_name, namespace)
+        not_restarted = []
+        for pod in pods:
+            restart_counts = [cs.restart_count for cs in (pod.status.container_statuses or [])]
+            if not any(count > 0 for count in restart_counts):
+                not_restarted.append(pod.metadata.name)
+        if pods and not not_restarted:
+            logging(f"All {len(pods)} pods of workload {workload_name} restarted")
+            return True
+        logging(f"Waiting for workload {workload_name} pods to restart, not restarted: {not_restarted} ... ({i})")
+        time.sleep(retry_interval)
+    return False
 
 
 def check_workload_pods_not_recreated(workload_kind, workload_name, namespace="default"):
