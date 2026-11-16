@@ -13,7 +13,7 @@ if [[ "${CLEANUP_MODE}" == "non-default-regions-immediately" && "${CLEANUP_REGIO
   for REGION in ${REGIONS}; do
     if [[ "${REGION}" == "${DEFAULT_REGION}" ]]; then continue; fi
     echo "===== Region ${REGION} ====="
-    if ! CLEANUP_REGION_CHILD=true AWS_DEFAULT_REGION="${REGION}" "$0"; then
+    if ! CLEANUP_REGION_CHILD=true CLEANUP_PROTECTED_REGION="${DEFAULT_REGION}" AWS_DEFAULT_REGION="${REGION}" "$0"; then
       FAILED_REGIONS+=("${REGION}")
     fi
   done
@@ -22,6 +22,11 @@ if [[ "${CLEANUP_MODE}" == "non-default-regions-immediately" && "${CLEANUP_REGIO
     exit 1
   fi
   exit 0
+fi
+# Safety guard: a per-region child run must never operate on the protected (default) region
+if [[ "${CLEANUP_REGION_CHILD}" == true && "${AWS_DEFAULT_REGION}" == "${CLEANUP_PROTECTED_REGION}" ]]; then
+  echo "Refusing to delete resources in protected region ${AWS_DEFAULT_REGION}"
+  exit 1
 fi
 # In a per-region child run, every resource is deleted regardless of how long it has been running
 DELETE_IMMEDIATELY=false
@@ -78,7 +83,15 @@ for SUFFIX in ${SUFFIX_ARR[@]}; do
     echo "   volume ${VOLUME_ID} deleted"
   done
   echo "       delete idle volumes:"
-  VOLUME_IDS=$(aws ec2 describe-volumes | jq '.Volumes[] | select(.State != "in-use") | .VolumeId' | tr -d '"')
+  if [[ "${DELETE_IMMEDIATELY}" == true ]]; then
+    # non-default region: every idle volume can be deleted
+    VOLUME_IDS=$(aws ec2 describe-volumes | jq '.Volumes[] | select(.State != "in-use") | .VolumeId' | tr -d '"')
+  else
+    # default region: only delete idle volumes older than the threshold, so volumes
+    # that were just created and not yet attached by an active build are kept
+    VOLUME_IDS=$(aws ec2 describe-volumes | jq --argjson now "${CURRENT_TIMESTAMP}" --argjson threshold "${THRESHOLD_IN_SEC}" \
+      '.Volumes[] | select(.State == "available") | select(($now - (.CreateTime | sub("\\.[0-9]+"; "") | fromdateiso8601)) > $threshold) | .VolumeId' | tr -d '"')
+  fi
   for VOLUME_ID in ${VOLUME_IDS}
   do
     aws ec2 delete-volume --volume-id "${VOLUME_ID}"
