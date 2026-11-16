@@ -33,7 +33,6 @@ from common import wait_for_node_update
 
 from common import check_volume_data
 from common import cleanup_volume
-from common import cleanup_volume_by_name
 from common import create_and_check_volume
 from common import delete_replica_on_test_node
 from common import wait_for_volume_degraded
@@ -757,7 +756,7 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     check_volume_data(volume, data)
 
 
-def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volume_name, statefulset, storage_class):  # NOQA
+def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volume_name, statefulset, storage_class, request):  # NOQA
     """
     Scenario: Test replica auto balance disk in pressure
 
@@ -916,21 +915,16 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
             f"Expected below {expected_avaiable_percentage}%." \
             f"Actually used {actual_avaiable_percentage}%."
 
-    def _cleanup(client, volume_names, statefulset_names):
-        for _volume_name in volume_names:
-            cleanup_volume_by_name(client, _volume_name)
-
+    def _cleanup(client, statefulset_names):
+        # The statefulset fixture only cleans up the last statefulset created
+        # (its manifest is reused for all of them), so clean up every
+        # statefulset here. This is also registered as a finalizer so that
+        # a failure in the middle of the test doesn't leak statefulsets that
+        # break the next run with "AlreadyExists".
         for _statefulset_name in statefulset_names:
-            _statefulset = {
-                'metadata': {
-                    'name': _statefulset_name,
-                    'namespace': 'default'
-                }
-            }
-            delete_statefulset(apps_api, _statefulset)
-
-        for _volume_name in volume_names:
-            wait_for_volume_delete(client, _volume_name)
+            _statefulset = copy.deepcopy(statefulset)
+            _statefulset['metadata']['name'] = _statefulset_name
+            common.delete_and_wait_statefulset(core_api, client, _statefulset)
 
         cleanup_disks_on_node(client, self_host_id, disk1_name, disk2_name)
 
@@ -956,6 +950,7 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
 
     # Create 3 statefulsets with 1 replica each.
     statefulset_names = [f'sts-{i}' for i in range(expected_replica_count)]
+    request.addfinalizer(lambda: _cleanup(client, statefulset_names))
     for _statefulset_name in statefulset_names:
         _create_statefulset(statefulset, _statefulset_name,
                             storage_class, volume_size,
@@ -1059,8 +1054,6 @@ def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volum
         current_md5sum = get_pod_data_md5sum(core_api, pod_name, "/data/test")
         assert md5sum == current_md5sum, \
             f"Data in pod {pod_name} doesn't match."
-
-    _cleanup(client, volume_names, statefulset_names)
 
 
 @pytest.mark.skip(reason="corner case") # NOQA

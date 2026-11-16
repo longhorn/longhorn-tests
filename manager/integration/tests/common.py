@@ -717,7 +717,7 @@ def delete_and_wait_statefulset(api, client, statefulset):
 
     # We need to generate the names for the PVCs on our own so we can
     # delete them.
-    pod_data = get_statefulset_pod_info(api, statefulset)
+    pod_data = get_statefulset_pod_info(api, statefulset, ignore_missing=True)
 
     try:
         apps_api.delete_namespaced_stateful_set(
@@ -775,11 +775,18 @@ def get_volume_name(api, pvc_name):
     return claim.spec.volume_name
 
 
-def get_statefulset_pod_info(api, s_set):
+def get_statefulset_pod_info(api, s_set, ignore_missing=False):
     pod_info = []
     for i in range(s_set['spec']['replicas']):
         pod_name = s_set['metadata']['name'] + '-' + str(i)
-        pod = api.read_namespaced_pod(name=pod_name, namespace='default')
+        try:
+            pod = api.read_namespaced_pod(name=pod_name, namespace='default')
+        except ApiException as e:
+            # During cleanup the pod may never have been created (e.g. an
+            # earlier pod never became ready) or is already gone.
+            if ignore_missing and e.status == 404:
+                continue
+            raise
         pvc_name = pod.spec.volumes[0].persistent_volume_claim.claim_name
         pv_name = get_volume_name(api, pvc_name)
         pod_info.append({
