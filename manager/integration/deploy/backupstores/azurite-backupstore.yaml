@@ -50,6 +50,21 @@ spec:
       containers:
       - name: azurite
         image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+        # listen on "::" instead of "0.0.0.0" so it accepts both IPv6 and IPv4 connections,
+        # "0.0.0.0" is IPv4 only and unreachable in an IPv6 only cluster
+        # newer az cli and Azure SDK clients send storage API versions that this azurite does not know,
+        # and it rejects them with InvalidHeaderValue unless the version check is skipped
+        command:
+        - azurite
+        - -l
+        - /data
+        - --blobHost
+        - "::"
+        - --queueHost
+        - "::"
+        - --tableHost
+        - "::"
+        - --skipApiVersionCheck
         ports:
         - containerPort: 10000
 ---
