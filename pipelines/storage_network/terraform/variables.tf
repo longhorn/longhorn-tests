@@ -78,7 +78,7 @@ variable "aws_instance_name" {
 
 variable "block_device_size_worker" {
   type        = number
-  default     = 40
+  default     = 80
 }
 
 variable "k8s_distro_name" {
