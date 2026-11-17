@@ -93,6 +93,10 @@ Wait for deployment ${deployment_id} pods stable
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     wait_for_workload_pods_stable   ${deployment_name}
 
+Wait for deployment ${deployment_id} pods running
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    wait_for_workload_pods_running    ${deployment_name}
+
 Get deployment ${deployment_id} pod name
     ${deployment_name} =   generate_name_with_suffix    deployment    ${deployment_id}
     ${pod_name} =    get_workload_pod_name    ${deployment_name}
