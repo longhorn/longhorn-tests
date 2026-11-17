@@ -1,12 +1,47 @@
+import time
+from datetime import datetime
+
+from kubernetes import client
+
 from node import Node
 
 from utility.utility import logging
+from utility.utility import get_longhorn_namespace
+from utility.utility import get_retry_count_and_interval
 from utility.constant import DISK_UNSCHEDULABLE_KEEP_ROUNDS
 
 class node_keywords:
 
     def __init__(self):
         self.node = Node()
+
+    def get_nodes_periodic_snapshot_check_timestamps(self):
+        nodes = client.CustomObjectsApi().list_namespaced_custom_object(
+            "longhorn.io", "v1beta2", get_longhorn_namespace(), "nodes"
+        )["items"]
+        timestamps = {}
+        for node in nodes:
+            timestamp = node.get("status", {}).get("snapshotCheckStatus", {}).get("lastPeriodicCheckedAt")
+            timestamps[node["metadata"]["name"]] = (
+                datetime.fromisoformat(timestamp.replace("Z", "+00:00")) if timestamp else None
+            )
+        assert timestamps, "No Longhorn nodes found"
+        return timestamps
+
+    def wait_all_nodes_have_periodic_snapshot_check_timestamp(self, previous_timestamps):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            timestamps = self.get_nodes_periodic_snapshot_check_timestamps()
+            if all(
+                timestamps.get(name) and (
+                    previous is None or timestamps[name] > previous
+                )
+                for name, previous in previous_timestamps.items()
+            ):
+                return
+            logging(f"Waiting for all Longhorn nodes to have a newer periodic snapshot check timestamp ... ({i})")
+            time.sleep(retry_interval)
+        assert False, "Not all Longhorn nodes have a newer periodic snapshot check timestamp"
 
     def list_node_names_by_role(self, role):
         return self.node.list_node_names_by_role(role)
