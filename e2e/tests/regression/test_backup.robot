@@ -266,24 +266,25 @@ Test DR Volume Backup Block Size
     And DR volume 1 setting backupBlockSize should be 16Mi
 
 SnapshotBack Proxy Request Should Be Sent To Correct Instance-Manager Pod
-    [Tags]    node-delete
     [Documentation]
     ...    Verify snapshot backup goes to the correct instance-manager pod.
     ...
-    ...    https://github.com/longhorn/longhorn/issues/12475
+    ...    Issue: https://github.com/longhorn/longhorn/issues/12475
+    ...
+    ...    - 1. Enable v1 and v2 data engines
+    ...    - 2. Create v1 and v2 volumes
+    ...    - 3. Back up v1 and v2 volumes. The v1/v2 volume backup should be handled by v1/v2 IM pod
     # Limit the test scope to a single node
     [Setup]    Set up v2 test environment
-    Given Set node 1 with    allowScheduling=false    evictionRequested=true
-    And Set node 2 with    allowScheduling=false    evictionRequested=true
-    And Delete node 1
-    And Delete node 2
+    Given Set node 1 with    allowScheduling=false
+    And Set node 2 with    allowScheduling=false
 
     And Create volume 0 with    dataEngine=v1   numberOfReplicas=1
     And Attach volume 0 to node 0
-    And Write data 0 to volume 0
+    And Write data 0 128 MB to volume 0
     And Create volume 1 with    dataEngine=v2   numberOfReplicas=1
     And Attach volume 1 to node 0
-    And Write data 1 to volume 0
+    And Write data 1 128 MB to volume 1
 
     When Get test start time
     And Create backup 0 for volume 0
