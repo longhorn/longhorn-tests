@@ -33,6 +33,21 @@ BLOCK_PVC_VOLUME_DEVICE_DIR = "/dev/longhorn"
 # This path is used in the deployment template for block volume
 BLOCK_PVC_VOLUME_DEVICE_PATH = BLOCK_PVC_VOLUME_DEVICE_DIR + "/" + BLOCK_PVC_VOLUME_DEVICE_NAME
 
+CONTINUOUS_FIO_JOBS = 4
+# Pods sharing a volume each write their own files, so the volume has to hold
+# pod count * CONTINUOUS_FIO_JOBS * CONTINUOUS_FIO_SIZE plus filesystem overhead
+CONTINUOUS_FIO_SIZE = "256M"
+CONTINUOUS_FIO_FILE_PREFIX = "continuous_fio"
+# A block volume pod has no /data mount, so these stay on the container filesystem
+CONTINUOUS_FIO_LOG_FILE = "/tmp/continuous_fio.log"
+CONTINUOUS_FIO_DONE_FILE = "/tmp/continuous_fio.done"
+CONTINUOUS_FIO_FAILED_FILE = "/tmp/continuous_fio.failed"
+CONTINUOUS_FIO_POLL_INTERVAL = 180
+# Verify every 1024 written blocks so corruption surfaces while fio keeps writing
+CONTINUOUS_FIO_VERIFY_BACKLOG = 1024
+# fio only exits after the in-flight I/O of the last runtime second drains
+CONTINUOUS_FIO_COMPLETION_TIMEOUT = 30 * 60
+
 # Pod label selectors for longhorn-system namespace
 LABEL_SELECTOR_LONGHORN_MANAGER = "app=longhorn-manager"
 LABEL_SELECTOR_INSTANCE_MANAGER = "longhorn.io/component=instance-manager"
