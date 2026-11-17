@@ -125,6 +125,18 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def get_migration_engine_address(self, volume_name):
+        return NotImplemented
+
+    @abstractmethod
+    def wait_for_volume_migration_engine_restarted(self, volume_name, replica_count, previous_address):
+        return NotImplemented
+
+    @abstractmethod
+    def wait_for_volume_migration_engine_frontend_connected(self, volume_name):
+        return NotImplemented
+
+    @abstractmethod
     def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         return NotImplemented
 
