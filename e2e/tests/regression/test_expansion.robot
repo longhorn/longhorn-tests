@@ -219,3 +219,44 @@ Test Dynamic Provisioned Volume Offline Expansion With Unscheduled Replica
     And Wait for volume of persistentvolumeclaim 0 degraded
     And Write 1536 MB data to file data.txt in pod 0
     Then Check pod 0 data in file data.txt is intact
+
+Test V2 Volume Expansion Race With Attach
+    [Tags]    v2
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14521
+    ...
+    ...    Test V2 volume expansion when expand request races with attach.
+    ...
+    ...    - 1. Create a StorageClass with dataEngine=v2.
+    ...    - 2. Create a 1Gi PVC and wait for volume to be created and detached.
+    ...    - 3. Concurrently trigger Attach (create workload pod) and Expand (expand PVC to 2Gi).
+    ...    - 4. Wait for pod to be running and volume size to reach 2Gi.
+    ...    - 5. Verify the filesystem inside pod expands to 2Gi.
+    ...    - 6. Write 1.5 GiB data (exceeding original 1GiB capacity) to verify backend expansion.
+    ...    - 7. Verify data integrity.
+    ...    - 8. Repeat across multiple iterations to stress test the race window.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    Given Create storageclass longhorn-test with
+    ...    dataEngine=v2
+    ...    numberOfReplicas=1
+
+    FOR    ${INDEX}    IN RANGE    10
+        And Create persistentvolumeclaim 0    sc_name=longhorn-test    storage_size=1GiB
+        And Wait for volume of persistentvolumeclaim 0 to be created
+        And Wait for volume of persistentvolumeclaim 0 detached
+
+        When Create pod 0 using persistentvolumeclaim 0
+        And Expand persistentvolumeclaim 0 size to 2Gi
+
+        Then Wait for pod 0 running
+        And Wait for volume of persistentvolumeclaim 0 size to be 2Gi
+        And Assert filesystem size in pod 0 is 2Gi
+        And Write 1536 MB data to file data.txt in pod 0
+        Then Check pod 0 data in file data.txt is intact
+
+        And Delete pod 0
+        And Wait for pod 0 deleted
+        And Delete persistentvolumeclaim 0 and wait for its volume to be deleted
+    END
