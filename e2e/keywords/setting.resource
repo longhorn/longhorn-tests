@@ -1,9 +1,20 @@
 *** Settings ***
 Documentation    Setting Keywords
 
+Library    Collections
 Library    ../libs/keywords/setting_keywords.py
 
 *** Keywords ***
+Set ${data_engine} data engine settings
+    [Arguments]    &{settings}
+    FOR    ${key}    ${value}    IN    &{settings}
+        ${current} =    get_setting    ${key}
+        ${config} =    Evaluate    json.loads($current) if $current.startswith('{') else {}    modules=json
+        Set To Dictionary    ${config}    ${data_engine}    ${value}
+        ${config} =    Evaluate    json.dumps($config)    modules=json
+        Given Setting ${key} is set to ${config}
+    END
+
 Set setting ${setting_key} to ${setting_value} will fail
     Run Keyword And Expect Error    *    update_setting    ${setting_key}    ${setting_value}    retry=False
 

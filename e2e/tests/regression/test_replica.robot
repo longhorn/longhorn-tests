@@ -34,6 +34,89 @@ Recover crashed replica and cleanup test resources
     Cleanup test resources
 
 *** Test Cases ***
+Test V1 Fast Replica Rebuild After Snapshot Purge
+    [Tags]    snapshot-purge    v1
+    [Documentation]    Test V1 fast replica rebuilding preserves data after snapshot purge.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14096
+    ...
+    ...    1. Enable V1 fast replica rebuilding and immediate snapshot checksum calculation with fast-check.
+    ...    2. Set the replica replenishment wait interval to 600 seconds.
+    ...    3. Create a 1 GiB block volume with replicas A/B/C on nodes 0/1/2 and a deployment on node 2.
+    ...    4. Write 8 MiB at offset 16 MiB and record its MD5, then create snapshot S1.
+    ...    5. Write 8 MiB at offset 32 MiB and record its MD5, then create snapshot S2 and wait for its checksum.
+    ...    6. Disable scheduling on nodes 0/1 and mark replicas A/B failed, leaving only C in RW mode.
+    ...    7. Delete and purge S1, then verify S1 is removed and S2 remains.
+    ...    8. Enable scheduling on node 1 to rebuild B from C and verify the original replica names are reused.
+    ...    9. Disable scheduling on node 2 and fail C, then enable node 0 to rebuild A from B and verify replica names.
+    ...    10. Disable scheduling on node 1 and fail B, then verify both recorded MD5 checksums using A alone.
+    ...    11. Enable scheduling on all nodes and wait for the volume to become healthy.
+    ...    12. Verify the volume never detached from node 2 during the test.
+    IF    '${DATA_ENGINE}' != 'v1'
+        Skip    This regression requires the V1 data engine
+    END
+
+    When Set v1 data engine settings
+    ...    fast-replica-rebuild-enabled=true
+    ...    snapshot-data-integrity=fast-check
+    ...    snapshot-data-integrity-immediate-check-after-snapshot-creation=true
+    And Setting replica-replenishment-wait-interval is set to 600
+
+    When Create volume 0 with    size=1Gi    numberOfReplicas=3    dataEngine=v1
+    And Update volume 0 replicaSoftAntiAffinity to disabled
+    And Create persistentvolume for volume 0    volumeMode=Block
+    And Create persistentvolumeclaim for volume 0    volumeMode=Block
+    And Create deployment 0 using volume 0    num_replicaset=1
+    ...    block_volume=${True}
+    ...    node_selector={"kubernetes.io/hostname":"${NODE_2}"}
+    Then Wait for volume 0 healthy
+    And Volume 0 should be attached to node 2
+    And Record volume 0 replica names
+    ${replica_a} =    Get volume 0 replica name on node 0
+    ${replica_b} =    Get volume 0 replica name on node 1
+    ${replica_c} =    Get volume 0 replica name on node 2
+    And Mark volume monitoring start time for deployment 0
+    And Write 8 MiB data at offset 16 MiB in deployment 0 and record MD5
+    And Create snapshot S1 of volume 0
+    And Write 8 MiB data at offset 32 MiB in deployment 0 and record MD5
+    And Create snapshot S2 of volume 0
+    And Wait for volume 0 snapshot S2 checksum to be calculated
+
+    When Disable node 0 scheduling
+    And Disable node 1 scheduling
+    And Mark replica ${replica_a} failed
+    And Mark replica ${replica_b} failed
+    Then Volume 0 should have exactly RW replicas    ${replica_c}
+
+    When Delete snapshot S1 of volume 0
+    And Purge volume 0 snapshot
+    Then Wait for snapshot purge for volume 0 completed
+    And Wait for snapshot S1 to not be in volume 0 snapshot list
+    And Validate snapshot S2 is in volume 0 snapshot list
+
+    When Enable node 1 scheduling
+    Then Wait until volume 0 replica rebuilding completed on node 1
+    And Check volume 0 replica names are as recorded
+
+    When Disable node 2 scheduling
+    And Mark replica ${replica_c} failed
+    Then Volume 0 should have exactly RW replicas    ${replica_b}
+    When Enable node 0 scheduling
+    Then Wait until volume 0 replica rebuilding completed on node 0
+    And Check volume 0 replica names are as recorded
+
+    When Disable node 1 scheduling
+    And Mark replica ${replica_b} failed
+    Then Volume 0 should have exactly RW replicas    ${replica_a}
+    And Verify 8 MiB data at offset 16 MiB in deployment 0 should match recorded MD5
+    And Verify 8 MiB data at offset 32 MiB in deployment 0 should match recorded MD5
+
+    When Enable node 0 scheduling
+    And Enable node 1 scheduling
+    And Enable node 2 scheduling
+    Then Wait for volume 0 healthy
+    And Volume of deployment 0 should never have detached during test
+
 Test Replica Rebuilding Per Volume Limit
     [Tags]    coretest
     [Documentation]    Test the volume always only have one replica scheduled for rebuild
