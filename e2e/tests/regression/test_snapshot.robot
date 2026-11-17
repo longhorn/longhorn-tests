@@ -138,6 +138,24 @@ Test Allow Snapshots Removal During Trim
     And Check pod 0 file file1 checksum matches checksum 1
 
 *** Test Cases ***
+Test Delete Snapshot CR With Long Name
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14562
+    ...    Verify a Snapshot CR with a 66-character name can be completely deleted.
+    Given Create volume 0 with    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    ${snapshot_name}=    And Generate Random String    66    [LOWER][NUMBERS]
+
+    When Create snapshot CR with name ${snapshot_name} for volume 0
+    Then Wait for snapshot CR ${snapshot_name} ready
+    IF    '${DATA_ENGINE}' == 'v1'
+        # V1 volume can not delete snapshot after volume-head
+        And Create snapshot 1 of volume 0
+    END
+
+    When Delete snapshot CR with name ${snapshot_name}
+    Then Wait for snapshot CR ${snapshot_name} deleted
+
 Test Snapshot During Active IO
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/12140
     ...    Concurrent snapshot/revert during active I/O
