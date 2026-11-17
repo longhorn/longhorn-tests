@@ -103,11 +103,18 @@ def cleanup_global_manager_api_partition():
                     raise
 
 
+# control plane nodes on which network latency has been applied by this process,
+# so cleanup can be skipped entirely when nothing was applied
+_control_plane_nodes_with_latency = set()
+
+
 def setup_control_plane_network_latency(latency_in_ms=0):
     if latency_in_ms != 0:
         logging(f"Setting up control plane network latency with {latency_in_ms} ms")
         control_plane_nodes = Node().list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
+            # record before applying so a partial failure is still cleaned up
+            _control_plane_nodes_with_latency.add(control_plane_node)
             ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
             ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
             manifest = new_pod_manifest(
@@ -122,9 +129,10 @@ def setup_control_plane_network_latency(latency_in_ms=0):
 
 
 def cleanup_control_plane_network_latency():
+    if not _control_plane_nodes_with_latency:
+        return
     logging("Cleaning up control plane network latency")
-    control_plane_nodes = Node().list_node_names_by_role("control-plane")
-    for control_plane_node in control_plane_nodes:
+    for control_plane_node in sorted(_control_plane_nodes_with_latency):
         ns_mnt = os.path.join(HOST_ROOTFS, "proc/1/ns/mnt")
         ns_net = os.path.join(HOST_ROOTFS, "proc/1/ns/net")
         manifest = new_pod_manifest(
@@ -136,6 +144,7 @@ def cleanup_control_plane_network_latency():
         )
         pod_name = manifest['metadata']['name']
         create_pod(manifest, is_wait_for_pod_succeeded=True)
+        _control_plane_nodes_with_latency.discard(control_plane_node)
 
 
 def disconnect_node_network(node_name, disconnection_time_in_sec=10, port_number=None, wait=True):
