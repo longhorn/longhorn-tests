@@ -329,6 +329,41 @@ Original Engine Crash Before Migration
     And Volume 0 should have 3 running replicas
     And Check volume 0 data is intact
 
+Replica Deleted During Migration
+    [Tags]    v2
+    [Documentation]    Verify that a volume can finish migrating to another node
+    ...    after one of its replicas is deleted during the migration.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14578
+    ...
+    ...    When a replica is deleted during a migration, Longhorn restarts the
+    ...    migration engine, and the restarted engine can use a different port.
+    ...    The engine frontend on the migration node must connect to the
+    ...    restarted engine.
+    ...
+    ...    Note: If the engine restarts on the same address, the test passes
+    ...    without exercising the issue. The test log shows the engine address
+    ...    before and after the restart.
+    Skip If    "${DATA_ENGINE}" == "v1"    v1 volume has no engine frontend
+    Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Attach volume 0 to node 1
+    And Wait for volume 0 migration to be ready
+    And Wait for volume 0 migration engine frontend to be connected
+    And Record volume 0 migration engine address
+
+    When Delete volume 0 replica on node 1
+
+    Then Wait for volume 0 migration engine to be restarted with 2 replicas
+    And Wait for volume 0 migration engine frontend to be connected
+    # migration confirmation by detaching from the original node
+    And Detach volume 0 from node 0
+    And Wait for volume 0 to migrate to node 1
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
 Migration Engine Crash During Migration
     [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/6361
     Given Create volume 0 with    migratable=True    accessMode=RWX    dataEngine=${DATA_ENGINE}

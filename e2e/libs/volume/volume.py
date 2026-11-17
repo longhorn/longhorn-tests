@@ -169,6 +169,15 @@ class Volume(Base):
     def wait_for_volume_migration_to_rollback(self, volume_name, node_name):
         self.volume.wait_for_volume_migration_to_rollback(volume_name, node_name)
 
+    def get_migration_engine_address(self, volume_name):
+        return self.volume.get_migration_engine_address(volume_name)
+
+    def wait_for_volume_migration_engine_restarted(self, volume_name, replica_count, previous_address):
+        self.volume.wait_for_volume_migration_engine_restarted(volume_name, replica_count, previous_address)
+
+    def wait_for_volume_migration_engine_frontend_connected(self, volume_name):
+        self.volume.wait_for_volume_migration_engine_frontend_connected(volume_name)
+
     def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         if backup_name:
             self.volume.wait_for_volume_restoration_to_complete(volume_name, backup_name)
