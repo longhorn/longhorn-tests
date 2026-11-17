@@ -28,6 +28,13 @@ ${RWX_UNINTERRUPTIBLE_SLEEP_CHECK_DURATION}    30
 ${RWX_FAST_FAILOVER_MAX_OUTAGE_SECONDS}    300
 
 *** Keywords ***
+Verify ControllerPublishVolume completes within ${seconds} seconds
+    [Arguments]    ${volume_name}    ${node_name}    ${since}
+    ${namespace} =    get_longhorn_namespace
+    ${logs} =    Run command
+    ...    kubectl -n ${namespace} logs -l app=longhorn-csi-plugin -c longhorn-csi-plugin --prefix --tail=-1 --max-log-requests=20 --since-time=${since}
+    check_controller_publish_latency    ${logs}    ${volume_name}    ${node_name}    ${seconds}
+
 RWX Fast Failover IO Outage Duration
     [Arguments]    ${nfs_options}
     [Documentation]    Verify that when the node running the share-manager pod for a RWX
@@ -498,3 +505,35 @@ Test ShareManager Tolerations Helm Chart Parameter
         And Check Longhorn CRD removed
         And Install Longhorn
     END
+
+Test RWX Warm Mount ControllerPublishVolume Latency
+    [Documentation]     Verify that ControllerPublishVolume completes in less than two seconds
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/14181
+    ...
+    ...                Steps:
+    ...                1. Create a 2Gi RWX PVC and Pod A on Node A using the PVC
+    ...                2. Wait for Pod A to be running, the volume to be healthy, and the share manager to be running
+    ...                3. Write a test file from Pod A and record its checksum
+    ...                4. Record the log start time immediately before creating Pod B on Node B using the same PVC
+    ...                5. Wait for Pod B to be running and verify the test file checksum matches
+    ...                6. Verify the share manager is still running
+    ...                7. Retrieve CSI plugin logs since the recorded time and verify every matching successful
+    ...                   ControllerPublishVolume call for the volume and Node B completes in less than two second
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    And Create persistentvolumeclaim 0    volume_type=RWX    sc_name=longhorn-test    storage_size=2Gi
+    And Create pod 0 using persistentvolumeclaim 0    node_name=${NODE_0}
+    And Wait for pod 0 running
+    And Wait for volume of persistentvolumeclaim 0 healthy
+    ${claim_name} =    generate_name_with_suffix    claim    0
+    ${volume_name} =    get_volume_name_from_persistentvolumeclaim    ${claim_name}
+    And wait_for_share_manager_pod_running    ${volume_name}
+    And Write 1 MB data to file warm-mount.bin in pod 0
+    And Record file warm-mount.bin checksum in pod 0 as checksum 0
+    ${since} =    Get Current Date    time_zone=UTC    result_format=%Y-%m-%dT%H:%M:%S.%fZ
+
+    When Create pod 1 using persistentvolumeclaim 0    node_name=${NODE_1}
+    Then Wait for pod 1 running
+    And Check pod 1 file warm-mount.bin checksum matches checksum 0
+    And wait_for_share_manager_pod_running    ${volume_name}
+    And Verify ControllerPublishVolume completes within 2 seconds    ${volume_name}    ${NODE_1}    ${since}

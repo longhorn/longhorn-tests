@@ -1,4 +1,7 @@
 import time
+import json
+import re
+from datetime import datetime
 import threading
 from robot.libraries.BuiltIn import BuiltIn
 
@@ -226,3 +229,42 @@ class k8s_keywords:
         logging("Waiting for all Kubernetes nodes to be ready")
         wait_for_cluster_ready()
 
+
+    def check_controller_publish_latency(self, logs, volume_name, node_name, seconds):
+        matched = 0
+        for pod in set(re.findall(r'^\[[^]]+\]', logs, re.MULTILINE)):
+            pending, start = 0, None
+            for line in logs.splitlines():
+                if not line.startswith(pod) or 'ControllerPublishVolume:' not in line:
+                    continue
+                entry = re.search(r'time="([^"]+)".*?msg=("(?:\\.|[^"\\])*")', line)
+                assert entry, f"Cannot parse CSI log entry: {line}"
+                timestamp = datetime.fromisoformat(entry[1].replace('Z', '+00:00'))
+                message = json.loads(entry[2])
+                if message.startswith('ControllerPublishVolume: req: '):
+                    request = json.loads(message.split('req: ', 1)[1])
+                    target = (request.get('volume_id') == volume_name and
+                              request.get('node_id') == node_name)
+                    if start is not None or (target and pending):
+                        raise AssertionError(
+                            f"Ambiguous ControllerPublishVolume correlation for {volume_name} "
+                            f"on {node_name} in {pod}: another request overlaps the target request")
+                    pending += 1
+                    if target:
+                        start = timestamp
+                elif message.startswith(('ControllerPublishVolume: rsp:', 'ControllerPublishVolume: error:')):
+                    assert start is None or pending == 1, (
+                        f"Ambiguous ControllerPublishVolume response in {pod}: target is not the sole pending request")
+                    pending = max(0, pending - 1)
+                    if start is None:
+                        continue
+                    assert message.startswith('ControllerPublishVolume: rsp:'), message
+                    duration = (timestamp - start).total_seconds()
+                    logging(f"ControllerPublishVolume {volume_name} on {node_name} in {pod}: "
+                            f"{duration * 1000:.3f} ms")
+                    assert 0 <= duration < float(seconds), (
+                        f"ControllerPublishVolume took {duration:.6f}s; expected < {seconds}s")
+                    matched += 1
+                    start = None
+            assert start is None, f"Missing ControllerPublishVolume response in {pod}"
+        assert matched, f"No successful ControllerPublishVolume call for {volume_name} on {node_name}"
