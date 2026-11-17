@@ -21,11 +21,26 @@ class instancemanager_keywords:
 
     def wait_for_all_instance_manager_running_with_default_image(self):
         logging("Waiting for all instance manager running with default image")
-        self.instancemanager.wait_for_all_instance_manager_running_with_default_image()
+        self.v2_instancemanager.wait_for_all_instance_manager_running_with_default_image()
 
     def wait_for_all_instance_manager_upgrades_completed(self):
         logging("Waiting for all instance manager upgrades completed")
-        self.instancemanager.wait_for_all_instance_manager_upgrades_completed()
+        self.v2_instancemanager.wait_for_all_instance_manager_upgrades_completed()
+
+    def wait_for_instance_manager_upgrade_state_on_node(self, node_name, expected_state):
+        logging(f"Waiting for instance manager upgrade on node {node_name} to be {expected_state}")
+        self.v2_instancemanager.wait_for_instance_manager_upgrade_state_on_node(node_name, expected_state)
+
+    def wait_for_instance_manager_upgrade_to_start(self, node_name=None, timeout=None):
+        logging(f"Waiting for instance manager upgrade to start on node {node_name}")
+        return self.v2_instancemanager.wait_for_instance_manager_upgrade_to_start(node_name, timeout)
+
+    def wait_for_v2_instance_manager_image_on_node(self, node_name, expected_image):
+        logging(f"Waiting for v2 instance manager on node {node_name} to use image {expected_image}")
+        self.v2_instancemanager.wait_for_instance_manager_image_on_node(node_name, expected_image)
+
+    def get_v2_instance_manager_image_on_node(self, node_name):
+        return self.v2_instancemanager.get_instance_manager_image_on_node(node_name)
 
     def wait_for_all_instance_manager_removed(self):
         logging(f'Waiting for all instance manager removed')

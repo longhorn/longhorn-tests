@@ -80,18 +80,22 @@ class common_keywords:
             time.sleep(retry_count)
             assert False, f"Failed to find {expected_output} in {cmd} result: {res}"
 
-    def execute_command_and_wait_for_output(self, cmd, output):
+    def execute_command_and_wait_for_output(self, cmd, expected_output):
         retry_count, retry_interval = get_retry_count_and_interval()
+        try:
+            pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            pattern = re.compile(re.escape(expected_output), re.DOTALL)
         for i in range(retry_count):
-            logging(f"Waiting for command {cmd} returning output {output} ... ({i})")
+            logging(f"Waiting for command {cmd} returning output matching '{expected_output}' ... ({i})")
             try:
                 res = subprocess_exec_cmd(cmd)
-                if output in res:
-                    return
+                if pattern.search(res):
+                    return res
             except Exception as e:
-                logging(f"Execute command {cmd} and wait for output {output} error: {e}")
+                logging(f"Execute command {cmd} and wait for output '{expected_output}' error: {e}")
             time.sleep(retry_interval)
-        assert False, f"Failed to wait for command {cmd} returning output {output}"
+        assert False, f"Failed to wait for command {cmd} returning output matching '{expected_output}'"
 
     def execute_command_and_not_expect_output(self, cmd, output):
         res = subprocess_exec_cmd(cmd)

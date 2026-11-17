@@ -40,6 +40,31 @@ Wait for all instance manager upgrades completed
 Wait for all v2 instance manager upgrades completed
     instancemanager_keywords.wait_for_all_instance_manager_upgrades_completed
 
+Wait for v2 instance manager upgrade to start
+    ${upgrades} =    instancemanager_keywords.wait_for_instance_manager_upgrade_to_start
+    RETURN    ${upgrades}
+
+Wait for v2 instance manager upgrade to start on node ${node_id}
+    [Arguments]    ${timeout}=${None}
+    [Documentation]    ${timeout} is in seconds, the default retry timeout is used if it is not set.
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${upgrades} =    instancemanager_keywords.wait_for_instance_manager_upgrade_to_start    ${node_name}    ${timeout}
+    RETURN    ${upgrades}
+
+Wait for v2 instance manager upgrade on node ${node_id} ${state}
+    [Documentation]    ${state} is the instance manager upgrade state, or "aborted" to check status.abortRequested.
+    ${node_name} =    get_node_by_index    ${node_id}
+    instancemanager_keywords.wait_for_instance_manager_upgrade_state_on_node    ${node_name}    ${state}
+
+Wait for v2 instance manager image to be ${image} on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    instancemanager_keywords.wait_for_v2_instance_manager_image_on_node    ${node_name}    ${image}
+
+Get v2 instance manager image on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${image} =    instancemanager_keywords.get_v2_instance_manager_image_on_node    ${node_name}
+    RETURN    ${image}
+
 Wait for all instance managers removed
     wait_for_all_instance_manager_removed
 
