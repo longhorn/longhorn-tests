@@ -6,6 +6,27 @@ Library    ../libs/keywords/snapshot_keywords.py
 Library    ../libs/keywords/csi_volume_snapshot_keywords.py
 
 *** Keywords ***
+Create snapshot CR with name ${snapshot_name} for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${namespace} =    get_longhorn_namespace
+    execute_command
+    ...    echo '{"apiVersion":"longhorn.io/v1beta2","kind":"Snapshot","metadata":{"name":"${snapshot_name}","namespace":"${namespace}"},"spec":{"volume":"${volume_name}","createSnapshot":true}}' | kubectl create -f -
+
+Wait for snapshot CR ${snapshot_name} ready
+    ${namespace} =    get_longhorn_namespace
+    execute_command
+    ...    kubectl wait -n ${namespace} --for=jsonpath='{.status.readyToUse}'=true snapshots.longhorn.io/${snapshot_name} --timeout=180s
+
+Delete snapshot CR with name ${snapshot_name}
+    ${namespace} =    get_longhorn_namespace
+    execute_command
+    ...    kubectl delete -n ${namespace} snapshots.longhorn.io/${snapshot_name} --wait=false
+
+Wait for snapshot CR ${snapshot_name} deleted
+    ${namespace} =    get_longhorn_namespace
+    execute_command
+    ...    kubectl wait -n ${namespace} --for=delete snapshots.longhorn.io/${snapshot_name} --timeout=180s
+
 Create snapshot ${snapshot_id} of volume ${volume_id}
     ${snapshot_id}=  Convert To String  ${snapshot_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
