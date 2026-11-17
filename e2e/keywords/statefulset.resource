@@ -68,3 +68,31 @@ Wait for statefulset ${statefulset_id} volume attached
 Wait for statefulset ${statefulset_id} pods stable
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     wait_for_workload_pods_stable   ${statefulset_name}
+
+Wait for statefulset ${statefulset_id} to have ${count} ready replicas
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_statefulset_replicas_ready    ${statefulset_name}    ${count}
+
+Get volume of statefulset ${statefulset_id} pod ${ordinal}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    ${volume_name} =    get_statefulset_pod_volume_name    ${statefulset_name}    ${ordinal}
+    RETURN    ${volume_name}
+
+Wait for volumes of statefulset ${statefulset_id} to have replicas on ${node_count} different nodes
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_statefulset_volume_replicas_on_nodes    ${statefulset_name}    ${node_count}
+
+Wait for volumes of statefulset ${statefulset_id} to have no replica on node ${node_id}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_statefulset_volume_replicas_off_node    ${statefulset_name}    ${node_name}
+
+Get volume of statefulset ${statefulset_id} on node ${node_id}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${volume_name} =    get_statefulset_volume_on_node    ${statefulset_name}    ${node_name}
+    RETURN    ${volume_name}
+
+Wait for volumes of statefulset ${statefulset_id} detached
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_statefulset_volumes_detached    ${statefulset_name}
