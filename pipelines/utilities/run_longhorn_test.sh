@@ -161,6 +161,7 @@ run_longhorn_upgrade_test(){
   # upgrade test parameters
   if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest" ]] || [[ "${LONGHORN_INSTALL_METHOD}" == "helm" ]]; then
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_URI", "value": "'${LONGHORN_REPO_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_STABLE_REPO_URI", "value": "'${LONGHORN_STABLE_REPO_URI}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "LONGHORN_REPO_BRANCH", "value": "'${LONGHORN_REPO_BRANCH}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_MANAGER_IMAGE", "value": "'${CUSTOM_LONGHORN_MANAGER_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env += {"name": "CUSTOM_LONGHORN_ENGINE_IMAGE", "value": "'${CUSTOM_LONGHORN_ENGINE_IMAGE}'"}' "${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}"

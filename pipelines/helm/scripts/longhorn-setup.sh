@@ -61,7 +61,7 @@ main(){
   set -x
 
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
-    get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
+    LONGHORN_REPO_URI="${LONGHORN_STABLE_REPO_URI:-$LONGHORN_REPO_URI}" get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
     customize_longhorn_chart_registry
     install_longhorn
     setup_longhorn_ui_nodeport

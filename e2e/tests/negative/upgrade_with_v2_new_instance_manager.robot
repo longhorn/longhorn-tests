@@ -9,6 +9,7 @@ Resource    ../keywords/longhorn.resource
 Resource    ../keywords/host.resource
 Resource    ../keywords/node.resource
 Resource    ../keywords/volume.resource
+Resource    ../keywords/snapshot.resource
 Resource    ../keywords/backup.resource
 Resource    ../keywords/backupstore.resource
 Resource    ../keywords/deployment.resource
@@ -21,6 +22,13 @@ Resource    ../keywords/k8s.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
+
+*** Variables ***
+${WAIT_SNAPSHOT_CHECKSUM}    true
+${IN_FLIGHT_IO}    true
+${RWO_VOLUME_COUNT}    2
+${RWX_VOLUME_COUNT}    2
+${SNAPSHOT_COUNT}    1
 
 *** Keywords ***
 Check v2 upgrade test prerequisites
@@ -343,3 +351,96 @@ Test System V2 Upgrade With Instance Manager Upgrade DR Volume
     And Attach volume 1 to healthy node
     And Wait for volume 1 healthy
     And Check volume 1 data is backup 1 of volume 0
+
+Test System V2 Live Upgrade With Multiple RWO And RWX Volumes
+    [Documentation]    Verify configurable v2 RWO/RWX workloads and snapshots survive live upgrade,
+    ...    optionally keeping CRC32C fio I/O running throughout the upgrade and for 3 minutes afterward.
+    ...
+    ...    Configurable variables and example (override using -v):
+    ...    -v WAIT_SNAPSHOT_CHECKSUM:true (default)
+    ...    -v IN_FLIGHT_IO:true (default)
+    ...    -v RWO_VOLUME_COUNT:2 (default)
+    ...    -v RWX_VOLUME_COUNT:2 (default)
+    ...    -v SNAPSHOT_COUNT:1 (default, per volume)
+    IF    '${DATA_ENGINE}' != 'v2'
+        Skip    This test requires DATA_ENGINE=v2
+    END
+
+    ${stable_version}=    Get Environment Variable    LONGHORN_STABLE_VERSION    ${EMPTY}
+    IF    '${stable_version}' == ''
+        Skip    This test requires a nonempty LONGHORN_STABLE_VERSION
+    END
+
+    When Prepare v2 upgrade environment
+    ${wait_checksum}=    Convert To Boolean    ${WAIT_SNAPSHOT_CHECKSUM}
+    ${in_flight_io}=    Convert To Boolean    ${IN_FLIGHT_IO}
+    ${snapshot_count}=    Convert To Integer    ${SNAPSHOT_COUNT}
+    Should Be True    $snapshot_count >= 0
+    @{workload_ids}=    Create List
+
+    And Create storageclass longhorn-v2-live-upgrade with    dataEngine=v2    numberOfReplicas=3
+    IF    $wait_checksum
+        And Setting snapshot-data-integrity-immediate-check-after-snapshot-creation is set to {"v1":"true","v2":"true"}
+    END
+    FOR    ${mode}    IN    RWO    RWX
+        ${volume_count}=    Convert To Integer    ${${mode}_VOLUME_COUNT}
+        Should Be True    $volume_count >= 0
+        ${prefix}=    Convert To Lower Case    ${mode}
+        FOR    ${i}    IN RANGE    ${volume_count}
+            ${id}=    Set Variable    ${prefix}-${i}
+            And Create persistentvolumeclaim ${id}
+            ...    volume_type=${mode}    sc_name=longhorn-v2-live-upgrade    storage_size=4Gi
+            And Create deployment ${id} with persistentvolumeclaim ${id}
+            ...    args=apk add --no-cache fio && sleep infinity
+            And Wait for volume of persistentvolumeclaim ${id} healthy
+            And Write 100 MB data to file data.txt in deployment ${id}
+            Append To List    ${workload_ids}    ${id}
+        END
+    END
+    Should Not Be Empty    ${workload_ids}    Configure at least one RWO or RWX volume
+
+    IF    $in_flight_io
+        And Mark volume monitoring start time for deployment ${workload_ids}[0]
+        FOR    ${id}    IN    @{workload_ids}
+            When Start fio write with crc32c verify in deployment ${id}
+        END
+    END
+
+    FOR    ${id}    IN    @{workload_ids}
+        FOR    ${snapshot}    IN RANGE    ${snapshot_count}
+            ${snapshot_id}=    Convert To String    ${snapshot}
+            When Create snapshot ${snapshot_id} for deployment ${id} volume
+            Then Wait for snapshot ${snapshot_id} of deployment ${id} volume ready
+            IF    $wait_checksum
+                And Wait for snapshot ${snapshot_id} of deployment ${id} volume checksum to be calculated
+            END
+        END
+    END
+
+    When Upgrade Longhorn to custom version
+    And Wait for longhorn ready
+    And Setting allow-instance-manager-automatic-upgrade is set to true
+    Then Wait for all v2 instance managers running with default image
+    And Wait for all v2 instance manager upgrades completed
+    FOR    ${id}    IN    @{workload_ids}
+        And Wait for volume of deployment ${id} healthy
+        FOR    ${snapshot}    IN RANGE    ${snapshot_count}
+            ${snapshot_id}=    Convert To String    ${snapshot}
+            And Wait for snapshot ${snapshot_id} of deployment ${id} volume ready
+        END
+    END
+    IF    $in_flight_io
+        And Sleep    3 minutes
+        FOR    ${id}    IN    @{workload_ids}
+            Then Check deployment ${id} pods did not restart
+            And Check fio running in deployment ${id}
+            When Stop fio in deployment ${id}
+        END
+        FOR    ${id}    IN    @{workload_ids}
+            Then Verify fio crc32c data in deployment ${id} have no errors
+            And Volume of deployment ${id} should never have detached during test
+        END
+    END
+    FOR    ${id}    IN    @{workload_ids}
+        And Check deployment ${id} data in file data.txt is intact
+    END
