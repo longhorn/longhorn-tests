@@ -22,7 +22,7 @@ def TEST_TYPE = params.TEST_TYPE ? params.TEST_TYPE : "pytest"
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
-def BLOCK_DEVICE_SIZE = params.TEST_TYPE == "robot" ? 80 : 40
+def BLOCK_DEVICE_SIZE = params.BLOCK_DEVICE_SIZE ?: (params.TEST_TYPE == "robot" ? 80 : 40)
 
 // extra CIDR range (a single IPv4 or IPv6 CIDR) allowed to access the test resources for debugging
 def DEBUG_CIDR = params.DEBUG_CIDR ? params.DEBUG_CIDR : ""
