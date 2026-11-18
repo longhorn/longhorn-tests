@@ -29,7 +29,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "22.04"
+  default     = "24.04"
 }
 
 variable "k8s_distro_name" {

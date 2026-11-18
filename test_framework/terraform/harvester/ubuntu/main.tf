@@ -7,6 +7,14 @@ terraform {
   }
 }
 
+locals {
+  ubuntu_images = {
+    "24.04" = "longhorn-qa/image-dxzp7"
+    "26.04" = "longhorn-qa/image-7kbt7"
+  }
+  image_name = lookup(local.ubuntu_images, var.os_distro_version, var.os_distro_version)
+}
+
 provider "rancher2" {
   api_url   = var.lab_url
   insecure  = true
@@ -50,7 +58,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-zrzpd",
+            "imageName": "${local.image_name}",
             "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
@@ -102,7 +110,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-zrzpd",
+            "imageName": "${local.image_name}",
             "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
