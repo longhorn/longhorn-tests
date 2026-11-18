@@ -107,6 +107,7 @@ def test_rwx_with_statefulset_multi_pods(client, core_api, statefulset, storage_
         assert pod_data == md5sum_pod[i]
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.v2_volume_test  # NOQA
 def test_rwx_multi_statefulset_with_same_pvc(client, core_api, pvc, statefulset, pod, storage_class):  # NOQA
     """
@@ -172,6 +173,7 @@ def test_rwx_multi_statefulset_with_same_pvc(client, core_api, pvc, statefulset,
         core_api, command2, share_manager_name, LONGHORN_NAMESPACE)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.v2_volume_test  # NOQA
 def test_rwx_parallel_writing(client, core_api, statefulset, pod, storage_class):  # NOQA
     """
@@ -348,6 +350,7 @@ def test_rwx_statefulset_scale_down_up(client, core_api, statefulset, storage_cl
         assert pod_data == md5sum_pod[i]
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.v2_volume_test  # NOQA
 def test_rwx_delete_share_manager_pod(client, core_api, statefulset, storage_class):  # NOQA
     """
@@ -414,6 +417,7 @@ def test_rwx_delete_share_manager_pod(client, core_api, statefulset, storage_cla
     assert test_data_2 == share_manager_data_2
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.v2_volume_test  # NOQA
 def test_rwx_deployment_with_multi_pods(client, core_api, pvc, make_deployment_with_pvc, storage_class):  # NOQA
     """
