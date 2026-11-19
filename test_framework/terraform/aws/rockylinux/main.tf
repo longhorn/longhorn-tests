@@ -229,6 +229,7 @@ resource "aws_lb_target_group" "lh_aws_lb_tg_443" {
   port     = 443
   protocol = "TCP"
   vpc_id   = aws_vpc.lh_aws_vpc.id
+  preserve_client_ip = false
   health_check {
     protocol = "TCP"
     port = "80"
