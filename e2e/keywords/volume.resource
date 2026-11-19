@@ -135,6 +135,17 @@ Create volume ${target_volume_id} from snapshot ${snapshot_id} of ${workload_kin
     ${snapshot_data_source} =    Set Variable    snap://${source_volume_name}/${snapshot_name}
     create_volume    ${target_volume_name}    numberOfReplicas=3    dataSource=${snapshot_data_source}    &{config}
 
+Create volume ${target_volume_id} from volume ${source_volume_id}
+    [Documentation]    Create a full-copy clone of a volume, with the size of the source volume.
+    ...    Longhorn attaches the clone right away to copy the data, so this does not wait
+    ...    for the clone to be detached.
+    [Arguments]    &{config}
+    ${target_volume_name} =    generate_name_with_suffix    volume    ${target_volume_id}
+    ${source_volume_name} =    generate_name_with_suffix    volume    ${source_volume_id}
+    ${source_size} =    get_volume_size    ${source_volume_name}
+    create_volume    ${target_volume_name}    size=${source_size}    dataSource=vol://${source_volume_name}
+    ...    cloneMode=full-copy    wait=${False}    &{config}
+
 No volume created
     ${volumes} =    list_volumes
     Should Be True    len(${volumes}) == 0
@@ -483,6 +494,22 @@ Wait for volume of ${workload_kind} ${workload_id} condition ${condition_name} t
 Wait for volume ${volume_id} cloning to complete
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_clone_status_completed    ${volume_name}
+
+Wait for volume ${volume_id} clone status to be ${state}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_clone_status    ${volume_name}    ${state}
+
+Wait for volume ${volume_id} clone attempt ${attempt} copying data
+    [Documentation]    Wait until the given clone attempt really copies data.
+    ...    Fail right away if the attempt ends without copying.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_clone_attempt_copying    ${volume_name}    ${attempt}
+
+Wait for volume ${volume_id} clone attempt ${attempt} failed
+    [Documentation]    Wait until the given clone attempt has failed. The attempt also counts
+    ...    as failed once a later attempt has started.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_clone_attempt_failed    ${volume_name}    ${attempt}
 
 Check volume ${volume_id} replica on node ${node_id} kept in stopped
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
