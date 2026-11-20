@@ -30,7 +30,7 @@ class CRD(Base):
         self.core_api = client.CoreV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True, dataLayout=None):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource="", cloneMode="", retry=True, dataLayout=None, wait=True):
         longhorn_version = get_longhorn_client().by_id_setting('current-longhorn-version').value
         version_doesnt_support_block_backup_size_setting = ['v1.7', 'v1.8', 'v1.9']
         size = str(convert_size_to_bytes(size))
@@ -109,12 +109,15 @@ class CRD(Base):
                     logging(f"Failed to create volume {volume_name} with parameters {body}: {e}")
                     time.sleep(self.retry_interval)
 
-        if fromBackup or Standby:
-            self.wait_for_volume_state(volume_name, "attached")
-            self.wait_for_restore_required_status(volume_name, True)
-        else:
-            self.wait_for_volume_state(volume_name, "detached")
-            self.wait_for_restore_required_status(volume_name, False)
+        # wait=False leaves the waiting to the caller. Longhorn attaches a full-copy
+        # clone right away to copy its data, so it may never be seen detached.
+        if wait:
+            if fromBackup or Standby:
+                self.wait_for_volume_state(volume_name, "attached")
+                self.wait_for_restore_required_status(volume_name, True)
+            else:
+                self.wait_for_volume_state(volume_name, "detached")
+                self.wait_for_restore_required_status(volume_name, False)
 
         volume = self.get(volume_name)
         assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"

@@ -64,9 +64,9 @@ class volume_keywords:
         for volume in clone_volumes + source_volumes:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", cloneMode="", retry=True, dataLayout=None):
+    def create_volume(self, volume_name, size="2Gi", numberOfReplicas=3, frontend="blockdev", migratable=False, dataLocality="disabled", accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup="", encrypted=False, nodeSelector=[], diskSelector=[], backupBlockSize="2Mi", rebuildConcurrentSyncLimit=0, snapshotMaxCount=0, replicaAutoBalance="ignored", dataSource="", cloneMode="", retry=True, dataLayout=None, wait=True):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=dataLayout)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, dataLocality, accessMode, dataEngine, backingImage, Standby, fromBackup, encrypted, nodeSelector, diskSelector, backupBlockSize, rebuildConcurrentSyncLimit, snapshotMaxCount, replicaAutoBalance, dataSource, cloneMode, retry, dataLayout=dataLayout, wait=wait)
 
 
     def delete_volume(self, volume_name, wait=True):
@@ -465,6 +465,72 @@ class volume_keywords:
     def wait_for_volume_clone_status_completed(self, volume_name):
         logging(f'Waiting for volume {volume_name} clone status to be copy-completed-awaiting-healthy')
         self.volume.wait_for_volume_clone_status(volume_name, "copy-completed-awaiting-healthy")
+
+    def _get_volume_clone_status(self, volume_name):
+        return self.volume.get(volume_name).get('status', {}).get('cloneStatus') or {}
+
+    def _is_volume_clone_copying(self, volume_name):
+        # The engine reports a clone in_progress only while the copy really runs.
+        for engine in self.engine.get_engines(volume_name):
+            engine_clone_status = engine.get('status', {}).get('cloneStatus') or {}
+            if any(status.get('state') == 'in_progress' for status in engine_clone_status.values()):
+                return True
+        return False
+
+    def wait_for_volume_clone_attempt_copying(self, volume_name, attempt):
+        """Wait until clone attempt `attempt` copies data.
+
+        Fail right away once the attempt is over without having copied data,
+        for example a retry that only reports the error of an earlier attempt.
+        """
+        attempt = int(attempt)
+        clone_status = {}
+        for i in range(self.retry_count):
+            try:
+                clone_status = self._get_volume_clone_status(volume_name)
+                attempt_count = int(clone_status.get('attemptCount', 0))
+                state = clone_status.get('state', '')
+                ended = attempt_count > attempt or \
+                    (attempt_count == attempt and state == 'failed') or \
+                    state in ('copy-completed-awaiting-healthy', 'completed')
+                copying = not ended and attempt_count == attempt and state == 'initiated' and \
+                    self._is_volume_clone_copying(volume_name)
+            except Exception as e:
+                logging(f"Getting volume {volume_name} clone status error: {e}")
+                ended = copying = False
+            assert not ended, \
+                f"Clone attempt {attempt} of volume {volume_name} ended without being seen copying data: {clone_status}"
+            if copying:
+                logging(f"Clone attempt {attempt} of volume {volume_name} is copying data")
+                return
+            logging(f"Waiting for clone attempt {attempt} of volume {volume_name} to copy data ({i}): {clone_status}")
+            time.sleep(self.retry_interval)
+        assert False, f"Clone attempt {attempt} of volume {volume_name} did not copy data: {clone_status}"
+
+    def wait_for_volume_clone_attempt_failed(self, volume_name, attempt):
+        """Wait until clone attempt `attempt` has failed.
+
+        A failed attempt sets the clone state to failed. When its retry is
+        already due, the next attempt can start within a second, so a higher
+        attempt count also means this attempt failed.
+        """
+        attempt = int(attempt)
+        clone_status = {}
+        for i in range(self.retry_count):
+            try:
+                clone_status = self._get_volume_clone_status(volume_name)
+            except Exception as e:
+                logging(f"Getting volume {volume_name} clone status error: {e}")
+            attempt_count = int(clone_status.get('attemptCount', 0))
+            state = clone_status.get('state', '')
+            if attempt_count > attempt or (attempt_count == attempt and state == 'failed'):
+                logging(f"Clone attempt {attempt} of volume {volume_name} failed: {clone_status}")
+                return
+            assert state not in ('copy-completed-awaiting-healthy', 'completed'), \
+                f"Clone attempt {attempt} of volume {volume_name} did not fail: {clone_status}"
+            logging(f"Waiting for clone attempt {attempt} of volume {volume_name} to fail ({i}): {clone_status}")
+            time.sleep(self.retry_interval)
+        assert False, f"Clone attempt {attempt} of volume {volume_name} did not fail: {clone_status}"
 
     def wait_for_volume_migration_to_be_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
