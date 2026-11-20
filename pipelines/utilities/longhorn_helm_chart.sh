@@ -85,7 +85,7 @@ install_longhorn(){
 }
 
 install_longhorn_stable(){
-  get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
+  LONGHORN_REPO_URI="${LONGHORN_STABLE_REPO_URI:-$LONGHORN_REPO_URI}" get_longhorn_chart "${LONGHORN_STABLE_VERSION}"
   customize_longhorn_chart_registry
   install_longhorn
 }
