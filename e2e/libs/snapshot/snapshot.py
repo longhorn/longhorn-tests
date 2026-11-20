@@ -18,6 +18,12 @@ class Snapshot(Base):
     def create(self, volume_name, snapshot_id, waiting=True):
         return self.snapshot.create(volume_name, snapshot_id, waiting)
 
+    def create_periodically(self, volume_name, interval, duration):
+        return self.snapshot.create_periodically(volume_name, interval, duration)
+
+    def get_snapshot_cr(self, snapshot_name):
+        return self.snapshot.get_snapshot_cr(snapshot_name)
+
     def get(self, volume_name, snapshot_id):
         return self.snapshot.get(volume_name, snapshot_id)
 
