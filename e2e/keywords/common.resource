@@ -120,6 +120,24 @@ Enable v2 data engine and add block disks
     IF    "${RUN_V2_INTERRUPT_MODE}" == "true"
         update_setting    data-engine-interrupt-mode-enabled    {"v2":"true"}
     END
+    ${v2_nvme_tcp_io_queue_count}=    Get Environment Variable    V2_NVME_TCP_NR_IO_QUEUES    ${EMPTY}
+    ${v2_data_engine_cpu_mask}=    Get Environment Variable    V2_DATA_ENGINE_CPU_MASK    ${EMPTY}
+    ${v2_instance_manager_cpu_guarantee}=    Get Environment Variable    V2_GUARANTEED_INSTANCE_MANAGER_CPU    ${EMPTY}
+    &{v2_settings}=    Create Dictionary
+    ...    default-nvme-tcp-nr-io-queues=${v2_nvme_tcp_io_queue_count}
+    ...    data-engine-cpu-mask=${v2_data_engine_cpu_mask}
+    ...    guaranteed-instance-manager-cpu=${v2_instance_manager_cpu_guarantee}
+    FOR    ${setting_name}    ${requested_value}    IN    &{v2_settings}
+        IF    $requested_value != ""
+            ${current_value}=    get_setting    ${setting_name}
+            ${setting_values}=    Evaluate    json.loads($current_value)    modules=json
+            IF    $setting_values.get("v2") != $requested_value
+                Set To Dictionary    ${setting_values}    v2=${requested_value}
+                ${updated_value}=    Evaluate    json.dumps($setting_values)    modules=json
+                update_setting    ${setting_name}    ${updated_value}
+            END
+        END
+    END
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"

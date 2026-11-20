@@ -31,6 +31,9 @@ def REGISTRY_URL = ""
 // parameter for v2 test
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : true
 def RUN_V2_INTERRUPT_MODE = params.RUN_V2_INTERRUPT_MODE ? params.RUN_V2_INTERRUPT_MODE : false
+def V2_NVME_TCP_NR_IO_QUEUES = params.V2_NVME_TCP_NR_IO_QUEUES ? params.V2_NVME_TCP_NR_IO_QUEUES : ""
+def V2_DATA_ENGINE_CPU_MASK = params.V2_DATA_ENGINE_CPU_MASK ? params.V2_DATA_ENGINE_CPU_MASK : ""
+def V2_GUARANTEED_INSTANCE_MANAGER_CPU = params.V2_GUARANTEED_INSTANCE_MANAGER_CPU ? params.V2_GUARANTEED_INSTANCE_MANAGER_CPU : ""
 
 // parameter for running test as a pod or a container
 def OUT_OF_CLUSTER = params.OUT_OF_CLUSTER ? params.OUT_OF_CLUSTER : false
@@ -126,6 +129,9 @@ node {
                                        --env TF_VAR_resources_owner="${RESOURCE_OWNER}" \
                                        --env TF_VAR_extra_block_device=${RUN_V2_TEST} \
                                        --env RUN_V2_INTERRUPT_MODE=${RUN_V2_INTERRUPT_MODE} \
+                                       --env V2_NVME_TCP_NR_IO_QUEUES="${V2_NVME_TCP_NR_IO_QUEUES}" \
+                                       --env V2_DATA_ENGINE_CPU_MASK="${V2_DATA_ENGINE_CPU_MASK}" \
+                                       --env V2_GUARANTEED_INSTANCE_MANAGER_CPU="${V2_GUARANTEED_INSTANCE_MANAGER_CPU}" \
                                        --env TF_VAR_lab_url=${LAB_URL} \
                                        --env TF_VAR_lab_access_key=${LAB_ACCESS_KEY} \
                                        --env TF_VAR_lab_secret_key=${LAB_SECRET_KEY} \

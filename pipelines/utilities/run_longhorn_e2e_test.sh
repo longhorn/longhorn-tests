@@ -74,6 +74,11 @@ run_longhorn_test(){
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "BLOCK_DEV_PATH", "value": "'${BLOCK_DEV_PATH}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "RUN_V2_INTERRUPT_MODE", "value": "'${RUN_V2_INTERRUPT_MODE}'"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
 
+  for setting_env in V2_NVME_TCP_NR_IO_QUEUES V2_DATA_ENGINE_CPU_MASK V2_GUARANTEED_INSTANCE_MANAGER_CPU; do
+    SETTING_ENV_NAME="${setting_env}" SETTING_ENV_VALUE="${!setting_env:-}" yq e -i \
+      'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": strenv(SETTING_ENV_NAME), "value": strenv(SETTING_ENV_VALUE)}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+  done
+
   # share instance mapping information between jenkins job agent and test pod for later use, e.g. power on/off nodes.
   if [[ -f /tmp/instance_mapping ]]; then
     kubectl create configmap instance-mapping --from-file=/tmp/instance_mapping
@@ -272,6 +277,9 @@ run_longhorn_test_out_of_cluster(){
              -e OS_DISTRO="${DISTRO}"\
              -e BLOCK_DEV_PATH="${BLOCK_DEV_PATH}"\
              -e RUN_V2_INTERRUPT_MODE="${RUN_V2_INTERRUPT_MODE}"\
+             -e V2_NVME_TCP_NR_IO_QUEUES="${V2_NVME_TCP_NR_IO_QUEUES:-}"\
+             -e V2_DATA_ENGINE_CPU_MASK="${V2_DATA_ENGINE_CPU_MASK:-}"\
+             -e V2_GUARANTEED_INSTANCE_MANAGER_CPU="${V2_GUARANTEED_INSTANCE_MANAGER_CPU:-}"\
              --mount source="vol-${IMAGE_NAME}",target=/tmp \
              --mount source="vol-${IMAGE_NAME}",target=/root/.ssh \
              "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"

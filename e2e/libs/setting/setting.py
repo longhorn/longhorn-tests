@@ -130,6 +130,14 @@ class Setting:
                         logging(f"Failed to set {setting_name}: {e}")
                     continue
 
+            v2_setting_envs = {
+                "default-nvme-tcp-nr-io-queues": "V2_NVME_TCP_NR_IO_QUEUES",
+                "data-engine-cpu-mask": "V2_DATA_ENGINE_CPU_MASK",
+                "guaranteed-instance-manager-cpu": "V2_GUARANTEED_INSTANCE_MANAGER_CPU",
+            }
+            if data_engine == "v2" and os.environ.get(v2_setting_envs.get(setting_name, ""), ""):
+                continue
+
             s = client.by_id_setting(setting_name)
             if s.value != setting_default_value and not setting_readonly:
                 for i in range(self.retry_count):
