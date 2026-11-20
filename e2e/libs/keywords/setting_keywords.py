@@ -16,8 +16,8 @@ class setting_keywords:
     def get_setting(self, key):
         return self.setting.get_setting(key)
 
-    def reset_settings(self, data_engine="v1"):
-        self.setting.reset_settings(data_engine)
+    def reset_settings(self, data_engine="v1", custom_v2_settings=None):
+        self.setting.reset_settings(data_engine, custom_v2_settings)
 
     def get_expected_rps_cpus_regex(self, node_name, isolation_enabled=True):
         if isinstance(isolation_enabled, str):

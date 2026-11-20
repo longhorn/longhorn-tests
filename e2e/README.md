@@ -124,6 +124,14 @@ pip install -r requirements.txt
 # to run all the test cases in test_basic.robot for v2 data engine, simply execute:
 ./run.sh -s test_basic -v DATA_ENGINE:v2
 
+# to run v2 data engine tests with custom settings, specify only the v2 values.
+# These settings are optional and can be adjusted based on the test environment.
+# If omitted, Longhorn defaults are used.
+./run.sh -s test_v2 -v DATA_ENGINE:v2 \
+    -v V2_NVME_TCP_NR_IO_QUEUES:4 \
+    -v V2_DATA_ENGINE_CPU_MASK:0x1 \
+    -v V2_GUARANTEED_INSTANCE_MANAGER_CPU:25
+
 # to run all regression test cases for v2 data engine, simply execute:
 ./run.sh -i "regression" -v DATA_ENGINE:v2
 
