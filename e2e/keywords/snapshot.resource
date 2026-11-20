@@ -120,6 +120,24 @@ Create ${snapshot_count} snapshot for volume ${volume_id}
         Create snapshot ${i} of volume ${volume_id}
     END
 
+Create snapshots of volume ${volume_id} every ${interval} seconds for ${duration} seconds
+    [Documentation]    Snapshots that fail to be created are skipped. The
+    ...    names of the snapshots that became ready are saved in
+    ...    \${ready_snapshots}. Each call overwrites the saved names.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${ready_snapshots} =    create_snapshots_periodically    ${volume_name}    ${interval}    ${duration}
+    Should Not Be Empty    ${ready_snapshots}    no snapshot of volume ${volume_name} became ready
+    Set Test Variable    ${ready_snapshots}
+
+Ready snapshots of volume ${volume_id} should still exist
+    [Documentation]    Checks the snapshots saved in \${ready_snapshots}.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    snapshots_should_exist    ${volume_name}    ${ready_snapshots}
+
+Longhorn manager should not log CR deletion for ready snapshots
+    [Documentation]    Checks the snapshots saved in \${ready_snapshots}.
+    longhorn_manager_should_not_log_snapshot_cr_deletion    ${ready_snapshots}
+
 Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is skipped for ${timeout} seconds
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     FOR    ${i}    IN RANGE    ${timeout}
