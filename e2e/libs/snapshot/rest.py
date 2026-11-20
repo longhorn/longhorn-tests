@@ -2,6 +2,8 @@ from snapshot.base import Base
 from utility.utility import logging
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+from utility.utility import get_cr
+import utility.constant as constant
 from node_exec import NodeExec
 from volume import Rest as RestVolume
 import time
@@ -40,6 +42,54 @@ class Rest(Base):
         logging(f"Created volume {volume_name} snapshot {snapshot_id} {snap_name}")
 
         return snapshot
+
+    def create_periodically(self, volume_name, interval, duration):
+        """Create a snapshot every `interval` seconds for `duration` seconds.
+
+        Return the names of the snapshots that became ready. Readiness is
+        checked while creating, because Longhorn may delete a snapshot
+        afterwards. A snapshot that fails to be created is logged and
+        skipped.
+        """
+        pending = {}
+        ready = []
+
+        def collect_ready():
+            for snap_name in list(pending):
+                cr = self.get_snapshot_cr(snap_name)
+                if cr is None:
+                    logging(f"Volume {volume_name} snapshot {snap_name} CR is gone before it was seen ready")
+                    del pending[snap_name]
+                elif cr.get("status", {}).get("readyToUse"):
+                    logging(f"Volume {volume_name} snapshot {snap_name} created at {pending[snap_name]:.1f}s is ready")
+                    ready.append(snap_name)
+                    del pending[snap_name]
+
+        start = time.time()
+        while (elapsed := time.time() - start) < duration:
+            try:
+                snap_name = self.volume.get(volume_name).snapshotCRCreate().name
+                pending[snap_name] = elapsed
+                logging(f"Created volume {volume_name} snapshot {snap_name} at {elapsed:.1f}s")
+            except Exception as e:
+                logging(f"Failed to create volume {volume_name} snapshot at {elapsed:.1f}s: {e}")
+            collect_ready()
+            time.sleep(max(0, interval - (time.time() - start - elapsed)))
+
+        collect_ready()
+        if pending:
+            logging(f"Volume {volume_name} snapshots {list(pending)} did not become ready")
+        return ready
+
+    def get_snapshot_cr(self, snapshot_name):
+        return get_cr(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace=constant.LONGHORN_NAMESPACE,
+            plural="snapshots",
+            name=snapshot_name,
+            wait=False
+        )
 
     def get(self, volume_name, snapshot_id):
         snapshots = self.list(volume_name)

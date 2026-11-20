@@ -3,6 +3,8 @@ from snapshot import Snapshot
 from utility.utility import logging
 from utility.utility import get_retry_count_and_interval
 from utility.utility import convert_size_to_bytes
+from utility.utility import subprocess_exec_cmd
+import utility.constant as constant
 import time
 
 
@@ -14,6 +16,35 @@ class snapshot_keywords:
 
     def create_snapshot(self, volume_name, snapshot_id, waiting=True):
         self.snapshot.create(volume_name, snapshot_id, waiting)
+
+    def create_snapshots_periodically(self, volume_name, interval, duration):
+        return self.snapshot.create_periodically(volume_name, float(interval), float(duration))
+
+    def snapshots_should_exist(self, volume_name, snapshot_names):
+        problems = []
+        for snapshot_name in snapshot_names:
+            cr = self.snapshot.get_snapshot_cr(snapshot_name)
+            if cr is None:
+                problems.append(f"{snapshot_name}: CR not found")
+            elif cr["metadata"].get("deletionTimestamp"):
+                problems.append(f"{snapshot_name}: CR is being deleted since {cr['metadata']['deletionTimestamp']}")
+
+            snapshot = self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
+            if snapshot is None:
+                problems.append(f"{snapshot_name}: not in the snapshot list")
+            elif snapshot.removed:
+                problems.append(f"{snapshot_name}: marked as removed in the snapshot list")
+        assert not problems, f"Expecting volume {volume_name} snapshots to exist, but: {problems}"
+
+    def longhorn_manager_should_not_log_snapshot_cr_deletion(self, snapshot_names):
+        # Match by snapshot name. Longhorn logs the same line when it removes
+        # the CR of a system generated snapshot, which is expected.
+        logs = subprocess_exec_cmd(
+            f"kubectl logs -l app=longhorn-manager -n {constant.LONGHORN_NAMESPACE} --tail=-1 --prefix",
+            verbose=False)
+        deleted = [snapshot_name for snapshot_name in snapshot_names
+                   if f"Deleting snapshot CR for the snapshot {snapshot_name}" in logs]
+        assert not deleted, f"Longhorn manager deleted the CR of snapshots {deleted}"
 
     def delete_snapshot(self, volume_name, snapshot_id):
         self.snapshot.delete(volume_name, snapshot_id)
