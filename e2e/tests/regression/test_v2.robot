@@ -1284,3 +1284,52 @@ Test V2 Volume Reattach With Deferred Remove DM Device
     And Volume deferred-remove should be attached to node 0
     And Mount volume deferred-remove on node 0
     And Check volume deferred-remove filesystem data on node 0 is intact
+
+Test V2 Snapshot Auto Deletion During Replica Rebuilding
+    [Tags]    regression    v2    snapshot    replica
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14596
+    ...
+    ...    Verify that on a v2 volume, a snapshot created shortly before
+    ...    a replica rebuild is not inadvertently deleted by longhorn-manager.
+    ...
+    ...    1. Create a v2 volume with 3 replicas and attach it.
+    ...    2. Write initial data to volume 0.
+    ...    3. Loop: create snapshot and immediately delete replica to trigger rebuild.
+    ...    4. Verify snapshot CR is not deleted and snapshot is retained in snapshot list.
+    ...    5. Revert to snapshot 0 and verify data integrity.
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validate on v2 data engine
+    END
+
+    ${loop_count} =    Set Variable If    '${LOOP_COUNT}' == '1'    30    ${LOOP_COUNT}
+
+    Given Create volume 0 with    dataEngine=v2
+    When Attach volume 0
+    And Wait for volume 0 healthy
+
+    And Write data 0 256 MB to volume 0
+
+    FOR    ${i}    IN RANGE    ${loop_count}
+        ${node_idx} =    Evaluate    ${i} % 2
+        And Create snapshot ${i} of volume 0
+        And Delete volume 0 replica on node ${node_idx}
+        And Wait until volume 0 replicas rebuilding completed
+
+        # Verify snapshot CR was not inadvertently deleted during rebuilding
+        Then Run command and not expect output
+        ...    kubectl logs -l app=longhorn-manager -n longhorn-system -c longhorn-manager --since=1m
+        ...    Deleting snapshot CR for the snapshot snap-
+        And Validate snapshot ${i} is in volume 0 snapshot list
+    END
+
+    When Detach volume 0
+    And Wait for volume 0 detached
+    And Attach volume 0 in maintenance mode
+    And Wait for volume 0 healthy
+    And Revert volume 0 to snapshot 0
+    And Detach volume 0
+    And Wait for volume 0 detached
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    Then Check volume 0 data is data 0
+    And Validate snapshot 0 is parent of volume-head in volume 0 snapshot list
