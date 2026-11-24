@@ -99,6 +99,8 @@ class Cifs(Base):
         backupstore_pod_name = get_workload_pod_names("longhorn-test-cifs")[0]
         cmd = ["kubectl", "cp", "./backupstore", f"{backupstore_pod_name}:/opt/backupstore"]
         subprocess_exec_cmd(cmd)
+        cmd = ["kubectl", "exec", backupstore_pod_name, "--", "chmod", "-R", "777", "/opt/backupstore"]
+        subprocess_exec_cmd(cmd)
         cmd = ["rm", "-rf", "./backupstore"]
         subprocess_exec_cmd(cmd)
         # wait for backup sync by sleeping for the poll interval

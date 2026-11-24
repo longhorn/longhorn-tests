@@ -97,8 +97,18 @@ class sharemanager_keywords:
         for i in range(self.retry_count):
             try:
                 sharemanager_pod = self.sharemanager.get(sharemanager_pod_name)
-                logging(f"Waiting for sharemanager for volume {name} running, currently {sharemanager_pod.status.phase} ... ({i})")
-                if sharemanager_pod.status.phase == "Running":
+                node_name = sharemanager_pod.spec.node_name
+                deletion_timestamp = sharemanager_pod.metadata.deletion_timestamp
+                logging(f"Waiting for sharemanager for volume {name} running, currently "
+                        f"{sharemanager_pod.status.phase} on node {node_name} "
+                        f"(deletion_timestamp={deletion_timestamp}) ... ({i})")
+                # A pod stuck on a powered-off/unreachable node keeps reporting a stale
+                # status.phase of "Running" (kubelet can no longer update it), even after
+                # it has been marked for deletion (metadata.deletion_timestamp set, shown
+                # as "Terminating" by kubectl). Only treat the pod as truly running if it
+                # is not being terminated, otherwise callers may proceed before failover
+                # has actually completed.
+                if sharemanager_pod.status.phase == "Running" and deletion_timestamp is None:
                     return sharemanager_pod.metadata.creation_timestamp
             except Exception as e:
                 logging(f"Waiting for sharemanager for volume {name} running error: {e}")
@@ -147,3 +157,21 @@ class sharemanager_keywords:
 
     def get_sharemanager_pod_container_image(self, volume_name):
         return self.sharemanager.get_pod_container_image(volume_name)
+
+    def get_sharemanager_pod_node_name(self, volume_name):
+        return self.sharemanager.get_pod_node_name(volume_name)
+
+    def wait_for_sharemanager_pod_running_on_node(self, volume_name, expected_node_name):
+        sharemanager_pod_name = "share-manager-" + volume_name
+        actual_node_name = None
+        for i in range(self.retry_count):
+            try:
+                actual_node_name = self.sharemanager.get_pod_node_name(volume_name)
+                logging(f"Waiting for sharemanager pod {sharemanager_pod_name} to be running on node {expected_node_name}, currently on {actual_node_name} ... ({i})")
+                if actual_node_name == expected_node_name:
+                    return
+            except Exception as e:
+                logging(f"Waiting for sharemanager pod {sharemanager_pod_name} to be running on node {expected_node_name} error: {e}")
+            time.sleep(self.retry_interval)
+
+        assert False, f"sharemanager pod {sharemanager_pod_name} is not running on node {expected_node_name}, currently on {actual_node_name}"

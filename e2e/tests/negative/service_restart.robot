@@ -95,7 +95,7 @@ Restart Volume Node Kubelet After Temporary Downtime
     And Write 100 MB data to file data in statefulset 1
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1    wait=False
+        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1
         And Wait for volume of statefulset 0 attached and unknown
         And Wait for volume of statefulset 1 attached and degraded
         And Wait for volume of statefulset 0 healthy
@@ -123,7 +123,7 @@ Restart Volume Node Kubelet After Temporary Downtime On Single Node Cluster
     And Write 100 MB data to file data in statefulset 1
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1    wait=False
+        When Stop volume nodes kubelet for 120 seconds    statefulset 0    statefulset 1
         And Wait for volume of statefulset 0 attached and unknown
         And Wait for volume of statefulset 1 detached
         And Wait for volume of statefulset 0 healthy
@@ -166,7 +166,7 @@ Restart Control Plane Kubelet While Workload Heavy Writing
         And Keep writing data to pod of statefulset 0
         And Keep writing data to pod of statefulset 1
 
-        When Stop control plane kubelet for 10 seconds
+        When Restart control plane kubelet
         And Wait for volume of statefulset 0 healthy
         And Wait for volume of statefulset 1 healthy
         And Wait for workloads pods stable    statefulset 0    statefulset 1

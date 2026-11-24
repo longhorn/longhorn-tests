@@ -24,6 +24,12 @@ if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "aws" ]]; then
     terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw instance_mapping | jq 'map({(.name | split(".")[0]): .id}) | add' | jq -s add > /tmp/instance_mapping
   fi
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw controlplane_public_ip > /tmp/controlplane_public_ip
+  # the airgap registry is created in the cluster's VPC, so its address is only known after apply
+  if [[ "${TF_VAR_airgap}" == true && "${DISTRO}" == "sles" ]]; then
+    terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw registry_url > test_framework/registry_url
+    terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw registry_username > test_framework/registry_username
+    terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw registry_password > test_framework/registry_password
+  fi
 elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kube_config > test_framework/kube_config.yaml
   terraform -chdir=test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw cluster_id > /tmp/cluster_id

@@ -18,6 +18,12 @@ class Snapshot(Base):
     def create(self, volume_name, snapshot_id, waiting=True):
         return self.snapshot.create(volume_name, snapshot_id, waiting)
 
+    def create_periodically(self, volume_name, interval, duration):
+        return self.snapshot.create_periodically(volume_name, interval, duration)
+
+    def get_snapshot_cr(self, snapshot_name):
+        return self.snapshot.get_snapshot_cr(snapshot_name)
+
     def get(self, volume_name, snapshot_id):
         return self.snapshot.get(volume_name, snapshot_id)
 
@@ -38,6 +44,9 @@ class Snapshot(Base):
 
     def delete(self, volume_name, snapshot_id):
         return self.snapshot.delete(volume_name, snapshot_id)
+
+    def delete_by_name(self, volume_name, snapshot_name):
+        return self.snapshot.delete_by_name(volume_name, snapshot_name)
 
     def delete_cr(self, volume_name, snapshot_id):
         return self.snapshot.delete_cr(volume_name, snapshot_id)

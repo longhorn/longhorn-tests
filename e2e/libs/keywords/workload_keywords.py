@@ -46,9 +46,11 @@ from workload.workload import run_commands_in_pod
 from workload.workload import get_workload_node_name
 from workload.workload import get_all_workload_node_names
 from workload.workload import check_workload_pods_not_restarted
+from workload.workload import wait_for_workload_pods_restarted
 from workload.workload import check_workload_pods_not_recreated
 from workload.workload import rollout_restart_workload
 from workload.workload import rollout_status_workload
+from workload.workload import get_workload_pod_name_not_on_node
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
@@ -176,10 +178,19 @@ class workload_keywords:
         )
         return pod_name
 
+    def get_workload_pod_names(self, workload_name, namespace="default"):
+        return get_workload_pod_names(workload_name, namespace)
+
     def get_workload_pod_node_name(self, workload_name, namespace="default"):
         pods = get_workload_pods(workload_name, namespace=namespace)
         assert len(pods) > 0, f"No pods found for workload {workload_name} in namespace {namespace}"
         return pods[0].spec.node_name
+
+    def get_all_workload_node_names(self, workload_name, namespace="default"):
+        return get_all_workload_node_names(workload_name, namespace=namespace)
+
+    def get_workload_pod_name_not_on_node(self, workload_name, node_name, namespace="default"):
+        return get_workload_pod_name_not_on_node(workload_name, node_name, namespace=namespace)
 
     def get_workload_persistent_volume_claim_name(self, workload_name):
         return get_workload_persistent_volume_claim_name(workload_name)
@@ -350,6 +361,10 @@ class workload_keywords:
 
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
+
+    def wait_for_workload_pods_restarted(self, workload_name, timeout=None, namespace="default"):
+        logging(f"Waiting for workload {workload_name} pods to restart")
+        return wait_for_workload_pods_restarted(workload_name, namespace=namespace, timeout=timeout)
 
     def wait_for_pod_kept_in_state(self, workload_name, expect_state, namespace="default"):
         assert expect_state in ["Terminating", "ContainerCreating", "Running", "CrashLoopBackOff"], f"Unknown expected pod state: {expect_state}: "

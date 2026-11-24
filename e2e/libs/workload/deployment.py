@@ -13,7 +13,7 @@ from utility.utility import logging
 from persistentvolumeclaim import PersistentVolumeClaim
 
 
-def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None, wait=True):
+def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness_probe=False, block_volume=False, args=None, node_selector=None, tolerations=None, wait=True):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -34,6 +34,10 @@ def create_deployment(name, claim_name, replicaset=1, enable_pvc_io_and_liveness
         # set nodeSelector if provided
         if node_selector:
             manifest_dict['spec']['template']['spec']['nodeSelector'] = node_selector
+
+        # set tolerations if provided
+        if tolerations:
+            manifest_dict['spec']['template']['spec']['tolerations'] = tolerations
 
         if block_volume:
             # remove volumeMounts for block volume

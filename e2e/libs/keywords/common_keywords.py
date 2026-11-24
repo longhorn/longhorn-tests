@@ -111,8 +111,8 @@ class common_keywords:
             time.sleep(retry_interval)
         assert False, f"'{output}' still found in command result: {res}"
 
-    def execute_command_in_pod(self, pod_name, namespace, cmd):
-        return pod_exec(pod_name, namespace, cmd)
+    def execute_command_in_pod(self, pod_name, namespace, cmd, container=None):
+        return pod_exec(pod_name, namespace, cmd, container=container)
 
     def execute_command_in_pod_and_expect_output(self, pod_name, namespace, cmd, expected_output):
         res = pod_exec(pod_name, namespace, cmd)

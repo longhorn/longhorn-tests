@@ -454,3 +454,9 @@ class CRD(Base):
         patch_json = json.dumps(patch_data)
         cmd = f"kubectl -n {constant.LONGHORN_NAMESPACE} patch recurringjob {job_name} --type merge -p '{patch_json}'"
         subprocess_exec_cmd(cmd)
+
+    def get_systembackups(self, job_name):
+        backups = filter_cr("longhorn.io", "v1beta2", constant.LONGHORN_NAMESPACE, "systembackups",
+                            label_selector=f"recurring-job.longhorn.io/system-backup={job_name}")
+        return sorted(backups['items'],
+                      key=lambda backup: backup['metadata']['creationTimestamp'])

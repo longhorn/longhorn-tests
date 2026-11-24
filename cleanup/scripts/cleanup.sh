@@ -1,10 +1,36 @@
 #!/usr/bin/env bash
 
 set -eo pipefail
+# CLEANUP_MODE:
+#   default-region-older-than-1-day (default): delete resources in the default region that run for more than 1 day
+#   non-default-regions-immediately: delete all resources in every region other than the default one, regardless of age
+CLEANUP_MODE="${CLEANUP_MODE:-default-region-older-than-1-day}"
+DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+if [[ "${CLEANUP_MODE}" == "non-default-regions-immediately" && "${CLEANUP_REGION_CHILD}" != true ]]; then
+  echo "Cleanup mode: delete all resources in regions other than ${DEFAULT_REGION} immediately"
+  REGIONS=$(aws ec2 describe-regions --region "${DEFAULT_REGION}" --query 'Regions[].RegionName' --output text)
+  FAILED_REGIONS=()
+  for REGION in ${REGIONS}; do
+    if [[ "${REGION}" == "${DEFAULT_REGION}" ]]; then continue; fi
+    echo "===== Region ${REGION} ====="
+    if ! CLEANUP_REGION_CHILD=true AWS_DEFAULT_REGION="${REGION}" "$0"; then
+      FAILED_REGIONS+=("${REGION}")
+    fi
+  done
+  if [[ ${#FAILED_REGIONS[@]} -gt 0 ]]; then
+    echo "Cleanup failed in regions: ${FAILED_REGIONS[*]}"
+    exit 1
+  fi
+  exit 0
+fi
+# In a per-region child run, every resource is deleted regardless of how long it has been running
+DELETE_IMMEDIATELY=false
+if [[ "${CLEANUP_REGION_CHILD}" == true ]]; then DELETE_IMMEDIATELY=true; fi
 
 CURRENT_TIMESTAMP=$(date -u +%s)
 echo "Current Time: $(date -u)"
 THRESHOLD_IN_SEC=$((86400)) # if an instance exists more than 1 day, delete it.
+if [[ "${DELETE_IMMEDIATELY}" == true ]]; then THRESHOLD_IN_SEC=-1; fi
 SUFFIX_ARR=()
 
 echo "[Step 1] Get all instances:"
@@ -169,49 +195,4 @@ if [[ -n "${INSTANCE_IDS}" ]]; then
     echo "Wait for instances terminated ..."
     sleep 5s
   done
-fi
-
-echo "[Step 5] List long-running resources with owner:"
-THRESHOLD_IN_SEC=$((86400 * 3))
-LONG_RUNNING_INSTANCES="/tmp/long-running-instances"
-ALL_INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[?not_null(Tags[?Key == `Owner`].Value)] | []' | jq '.[] | select(.State.Name != "terminated") | {LaunchTime: .LaunchTime, InstanceId: .InstanceId, Tags: .Tags}' | jq -c)
-for INSTANCE in ${ALL_INSTANCES[@]}; do
-  INSTANCE_ID=$(echo "${INSTANCE}" | jq '.InstanceId' | tr -d '"')
-  echo " * Instance ${INSTANCE_ID} ==>"
-  LAUNCH_TIME=$(echo "${INSTANCE}" | jq '.LaunchTime' | tr -d '"')
-  TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S+00:00" -d "${LAUNCH_TIME}" +%s)
-  TIME_DIFF=$((CURRENT_TIMESTAMP-TIMESTAMP))
-  echo "   Launch Time: ${LAUNCH_TIME} (${TIMESTAMP}), Diff: ${TIME_DIFF}"
-  if [[ $TIME_DIFF -gt $THRESHOLD_IN_SEC ]]; then
-    NAME=$(echo "${INSTANCE}" | jq '.Tags | map(select(.Key=="Name"))[] | .Value' | tr -d '"')
-    OWNER=$(echo "${INSTANCE}" | jq '.Tags | map(select(.Key=="Owner"))[] | .Value' | tr -d '"')
-    echo -e "${NAME} (${INSTANCE_ID}) owned by ${OWNER}\n" >> "${LONG_RUNNING_INSTANCES}"
-  fi
-done
-if [[ -e "${LONG_RUNNING_INSTANCES}" ]]; then
-  echo -e "\nEC2 instances running for more than 3 days:\n$(cat ${LONG_RUNNING_INSTANCES})" > "${LONG_RUNNING_INSTANCES}"
-fi
-
-if [[ "${DELETE_RESOURCES_WITH_OWNERS}" == true ]]; then
-  echo "[Step 6] Prepare to delete long-running resources with owner:"
-  THRESHOLD_IN_SEC=$((86400 * 7))
-  ALL_INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[?not_null(Tags[?Key == `Owner`].Value)] | []' | jq '.[] | select(.State.Name != "terminated") | {LaunchTime: .LaunchTime, InstanceId: .InstanceId, Tags: .Tags}' | jq -c)
-  INSTANCE_IDS=()
-  for INSTANCE in ${ALL_INSTANCES[@]}; do
-    INSTANCE_ID=$(echo "${INSTANCE}" | jq '.InstanceId' | tr -d '"')
-    echo " * Instance ${INSTANCE_ID} ==>"
-    LAUNCH_TIME=$(echo "${INSTANCE}" | jq '.LaunchTime' | tr -d '"')
-    TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S+00:00" -d "${LAUNCH_TIME}" +%s)
-    TIME_DIFF=$((CURRENT_TIMESTAMP-TIMESTAMP))
-    echo "   Launch Time: ${LAUNCH_TIME} (${TIMESTAMP}), Diff: ${TIME_DIFF}"
-    if [[ $TIME_DIFF -gt $THRESHOLD_IN_SEC ]]; then INSTANCE_IDS+=("$INSTANCE_ID"); fi
-  done
-  if [[ -n "${INSTANCE_IDS}" ]]; then
-    aws ec2 terminate-instances --instance-ids "${INSTANCE_IDS[@]}"
-    echo "   instance ${INSTANCE_IDS[*]} shutting-down"
-    while [[ -n $(aws ec2 describe-instances --instance-ids "${INSTANCE_IDS[@]}" | jq '.Reservations[].Instances[].State.Name' | grep -v "terminated") ]]; do
-      echo "Wait for instances terminated ..."
-      sleep 5s
-    done
-  fi
 fi

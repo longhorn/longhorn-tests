@@ -137,6 +137,8 @@ uninstall_longhorn(){
     sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   fi
 
+  kubectl -n "${LONGHORN_NAMESPACE}" patch -p '{"value": "true"}' --type=merge setting.longhorn.io/deleting-confirmation-flag
+
   sed -i "s/longhorn-system/${LONGHORN_NAMESPACE}/g" "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl create -f "${LONGHORN_UNINSTALL_MANIFEST_PATH}"
   kubectl patch job longhorn-uninstall -n "${LONGHORN_NAMESPACE}" --type=json -p='[{"op":"remove","path":"/spec/activeDeadlineSeconds"}]'

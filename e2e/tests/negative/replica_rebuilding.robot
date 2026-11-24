@@ -11,6 +11,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/longhorn.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -136,3 +137,34 @@ Delete Replicas One By One Regardless Of The Volume Health
     And Wait for deployment 0 pods stable
     And Check deployment 0 pod not restarted
     Then Check deployment 0 data in file data.txt is intact
+
+Kill Instance Manager Should Not Expand Volumes By Wrong Replica Rebuilding
+    [Tags]    instance-manager    expansion
+    [Documentation]    Verify that killing an instance manager does not trigger a replica rebuilding
+    ...                to a wrong replica, which would unexpectedly expand the volume.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/5709
+    ...
+    ...                1. Create 25 deployments that use RWO volumes of 512Mi.
+    ...                2. Create 25 deployments that use RWX volumes of 512Mi.
+    ...                3. Forcefully kill an instance manager.
+    ...                4. Verify that all volumes are healthy.
+    ...                5. Verify that all workload pods are running.
+    ...                6. Verify that engine.spec.volumeSize = engine.status.currentSize = 512Mi for all volumes.
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
+    FOR    ${i}    IN RANGE    25
+        And Create persistentvolumeclaim ${i}    volume_type=RWO    sc_name=longhorn-test    storage_size=512Mi
+        And Create deployment ${i} with persistentvolumeclaim ${i}
+    END
+    FOR    ${i}    IN RANGE    25    50
+        And Create persistentvolumeclaim ${i}    volume_type=RWX    sc_name=longhorn-test    storage_size=512Mi
+        And Create deployment ${i} with persistentvolumeclaim ${i}
+    END
+
+    When Delete ${DATA_ENGINE} instance manager on node 0
+
+    FOR    ${i}    IN RANGE    50
+        Then Wait for volume of deployment ${i} healthy
+        And Wait for deployment ${i} pods running
+        And Wait for volume engine of deployment ${i} size to be 512Mi
+    END

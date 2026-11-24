@@ -6,6 +6,7 @@ Library             OperatingSystem
 Library             String
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/deployment_keywords.py
+Library             ../libs/keywords/daemonset_keywords.py
 Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/recurringjob_keywords.py
 Library             ../libs/keywords/statefulset_keywords.py
@@ -67,8 +68,8 @@ Run command until output is absent
     execute_command_until_output_is_absent    ${command}    ${unexpected_output}
 
 Run command in pod ${namespace}/${pod_name}
-    [Arguments]    ${command}
-    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}
+    [Arguments]    ${command}    ${container}=${None}
+    ${result} =    execute_command_in_pod    ${pod_name}    ${namespace}    ${command}    container=${container}
     RETURN    ${result}
 
 Run command in pod ${namespace}/${pod_name} and expect output
@@ -122,11 +123,11 @@ Enable v2 data engine and add block disks
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
-    update_setting    data-engine-cpu-mask    {"v2": "0x1"}
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
+        ${block_disk_path}=    get_default_block_disk_path_on_node    ${worker_node}    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${block_disk_path}    wait=${wait}
     END
 
 Init worker node variables
@@ -180,6 +181,7 @@ Cleanup test resources
     cleanup_stress_helper
     cleanup_recurringjobs
     cleanup_deployments
+    cleanup_daemonsets
     cleanup_statefulsets
     cleanup_pods
     cleanup_csi_volume_snapshots

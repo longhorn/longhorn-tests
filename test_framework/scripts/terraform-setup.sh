@@ -14,6 +14,13 @@ terraform_setup(){
 
   if [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "aws" ]]; then
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw controlplane_public_ip > /tmp/controlplane_public_ip
+
+    # the airgap registry is created in the cluster's VPC, so its address is only known after apply
+    if [[ "${TF_VAR_airgap}" == true && "${DISTRO}" == "sles" ]]; then
+      terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw registry_url > ${TF_VAR_tf_workspace}/registry_url
+      terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw registry_username > ${TF_VAR_tf_workspace}/registry_username
+      terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw registry_password > ${TF_VAR_tf_workspace}/registry_password
+    fi
   elif [[ ${LONGHORN_TEST_CLOUDPROVIDER} == "harvester" ]]; then
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kube_config > ${TF_VAR_tf_workspace}/kube_config.yaml
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw cluster_id > /tmp/cluster_id

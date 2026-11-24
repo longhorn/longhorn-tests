@@ -38,6 +38,9 @@ def RESOURCE_OWNER = "longhorn-infra"
 
 def BLOCK_DEVICE_SIZE = params.BLOCK_DEVICE_SIZE ? params.BLOCK_DEVICE_SIZE : 80
 
+// extra CIDR range (a single IPv4 or IPv6 CIDR) allowed to access the test resources for debugging
+def DEBUG_CIDR = params.DEBUG_CIDR ? params.DEBUG_CIDR : ""
+
 node {
 
     withCredentials([
@@ -98,6 +101,7 @@ node {
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
                                        --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                        --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_debug_cidr="${DEBUG_CIDR}" \
                                        --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
                                        --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
                                        --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
@@ -169,13 +173,6 @@ node {
             throw e
         } finally {
             stage ('releasing resources') {
-                if (sh (script: "docker container inspect airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
-                    sh (script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/cleanup.sh", returnStatus: true)
-                    sh "docker stop airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                    sh "docker rm -v airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                    sh "docker rmi airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                }
-
                 if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
                     sh (script: "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/cleanup.sh", returnStatus: true)
                     sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"

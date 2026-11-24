@@ -164,3 +164,52 @@ Test Orphaned Replica Creation And Deletion
     When Cleanup orphans
     Then Wait for orphan count to be 0
     And Wait for ${DATA_ENGINE} replica ${orphaned_replica_name} deleted from instance manager on node 2
+
+Test Orphaned Replica Data And Instance Detection And Deletion
+    [Documentation]    Verify that replica data orphans, an orphaned engine instance,
+    ...    and an orphaned replica instance can all be detected as orphan CRs and
+    ...    removed by deleting the orphan CRs.
+    ...
+    ...    Note: this test only applies to the v1 data engine. According to
+    ...    https://github.com/longhorn/longhorn/wiki/V1-and-V2-Feature-Parities,
+    ...    orphaned engine instance and orphaned replica instance detection are
+    ...    not supported yet for the v2 data engine.
+    ...
+    ...    Manual test steps:
+    ...    1. Create a volume, and ssh into the instance manager pod on the replica's node.
+    ...       $ kubectl exec -it <instance-manager-pod> -n longhorn-system -- /bin/sh
+    ...    2. Under /host/var/lib/longhorn/replicas/, copy the existing replica folder
+    ...       with 3 different random names to create 3 replica data orphans.
+    ...       $ cp -r <replica-dir> <replica-dir>-copy-1
+    ...       $ cp -r <replica-dir> <replica-dir>-copy-2
+    ...       $ cp -r <replica-dir> <replica-dir>-copy-3
+    ...    3. Create an orphan engine instance directly on the instance manager,
+    ...       without creating an Engine CR, via:
+    ...       $ instance-manager process create --name orphan-engine-01-e-0 \
+    ...            --binary /engine-binaries/longhornio-longhorn-engine-master-head/longhorn \
+    ...            -- --engine-instance-name orphan-engine-01-e-0 controller orphan-engine-01-e-0 \
+    ...            --frontend tgt-blockdev --disableRevCounter --size 10485760 --current-size 10485760
+    ...    4. Create an orphan replica instance directly on the instance manager,
+    ...       without creating a Replica CR, via:
+    ...       $ mkdir -p /host/var/lib/longhorn/replicas/orphan-replica-01-r-0
+    ...       $ instance-manager process create --name orphan-replica-01-r-0 \
+    ...            --binary /engine-binaries/longhornio-longhorn-engine-master-head/longhorn \
+    ...            -- --volume-name orphan-test-01 replica /host/var/lib/longhorn/replicas/orphan-replica-01-r-0
+    ...    5. Verify the orphan CRs can be retrieved and deleted as expected.
+    IF    '${DATA_ENGINE}' == 'v2'
+        Skip    Orphaned engine instance and orphaned replica instance are not supported yet for the v2 data engine
+    END
+
+    Given Create volume 0 with    dataEngine=v1
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+
+    When Create v1 orphaned replica for volume 0 on node 2
+    And Create v1 orphaned replica for volume 0 on node 2
+    And Create v1 orphaned replica for volume 0 on node 2
+    And Create orphaned engine instance on node 2
+    And Create orphaned replica instance on node 2
+    Then Wait for orphan count to be 5
+
+    When Cleanup orphans
+    Then Wait for orphan count to be 0
