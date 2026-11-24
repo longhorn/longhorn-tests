@@ -717,87 +717,89 @@ Test System Managed Components Node Selector
     And Uninstall Longhorn
     And Check all Longhorn CRD removed
 
-    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
-    IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
-        Install Longhorn
-        ...    custom_cmd=yq -i '.defaultSettings.systemManagedComponentsNodeSelector = "kubernetes.io/hostname:${NODE_0}"' values.yaml
-    ELSE
-        ${manifest_cmd} =    Set Variable
-        ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}system-managed-components-node-selector: kubernetes.io/hostname:${NODE_0}" longhorn.yaml
-        Install Longhorn    custom_cmd=${manifest_cmd}
+    TRY
+        ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+        IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
+            Install Longhorn
+            ...    custom_cmd=yq -i '.defaultSettings.systemManagedComponentsNodeSelector = "kubernetes.io/hostname:${NODE_0}"' values.yaml
+        ELSE
+            ${manifest_cmd} =    Set Variable
+            ...    sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}system-managed-components-node-selector: kubernetes.io/hostname:${NODE_0}" longhorn.yaml
+            Install Longhorn    custom_cmd=${manifest_cmd}
+        END
+        And Enable v2 data engine and add block disks    wait=${False}
+
+        FOR    ${app}    IN    csi-attacher    csi-provisioner    csi-resizer    csi-snapshotter
+            Run command and wait for output
+            ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+            ...    ${NODE_0}\\b
+            Run command until output is absent
+            ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+            ...    ${NODE_1}\\b
+            Run command until output is absent
+            ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+            ...    ${NODE_2}\\b
+        END
+
+        When Check v1 instance manager is running on node 0
+        Then Check v1 instance manager is not running on node 1
+        And Check v1 instance manager is not running on node 2
+        And Check v2 instance manager is running on node 0
+        And Check v2 instance manager is not running on node 1
+        And Check v2 instance manager is not running on node 2
+        And Run command and wait for output
+        ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_0}\\b
+        And Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_1}\\b
+        And Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_2}\\b
+
+        When Setting system-managed-components-node-selector is set to kubernetes.io/hostname:${NODE_1}
+        FOR    ${app}    IN    csi-attacher    csi-provisioner    csi-resizer    csi-snapshotter
+            Run command and wait for output
+            ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+            ...    ${NODE_1}\\b
+            Run command until output is absent
+            ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+            ...    ${NODE_0}\\b
+            Run command until output is absent
+            ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
+            ...    ${NODE_2}\\b
+        END
+        And Check v1 instance manager is running on node 1
+        And Check v1 instance manager is not running on node 0
+        And Check v1 instance manager is not running on node 2
+        And Check v2 instance manager is running on node 1
+        And Check v2 instance manager is not running on node 0
+        And Check v2 instance manager is not running on node 2
+        And Run command and wait for output
+        ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_1}\\b
+        And Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_0}\\b
+        And Run command until output is absent
+        ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
+        ...    ${NODE_2}\\b
+
+        When Create volume 0 with    numberOfReplicas=1    dataEngine=v1
+        And Attach volume 0 to node 1
+        And Wait for volume 0 healthy
+        And Write data to volume 0
+        Then Check volume 0 data is intact
+
+        When Create volume 1 with    numberOfReplicas=1    dataEngine=v2
+        And Attach volume 1 to node 1
+        And Wait for volume 1 healthy
+        And Write data to volume 1
+        Then Check volume 1 data is intact
+    FINALLY
+        # Restore the test environment to the default state
+        Given Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+        And Install Longhorn
     END
-    And Enable v2 data engine and add block disks    wait=${False}
-
-    FOR    ${app}    IN    csi-attacher    csi-provisioner    csi-resizer    csi-snapshotter
-        Run command and wait for output
-        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
-        ...    ${NODE_0}
-        Run command until output is absent
-        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
-        ...    ${NODE_1}
-        Run command until output is absent
-        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
-        ...    ${NODE_2}
-    END
-
-    When Check v1 instance manager is running on node 0
-    Then Check v1 instance manager is not running on node 1
-    And Check v1 instance manager is not running on node 2
-    And Check v2 instance manager is running on node 0
-    And Check v2 instance manager is not running on node 1
-    And Check v2 instance manager is not running on node 2
-    And Run command and wait for output
-    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
-    ...    ${NODE_0}
-    And Run command until output is absent
-    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
-    ...    ${NODE_1}
-    And Run command until output is absent
-    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
-    ...    ${NODE_2}
-
-    When Setting system-managed-components-node-selector is set to kubernetes.io/hostname:${NODE_1}
-    FOR    ${app}    IN    csi-attacher    csi-provisioner    csi-resizer    csi-snapshotter
-        Run command and wait for output
-        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
-        ...    ${NODE_1}
-        Run command until output is absent
-        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
-        ...    ${NODE_0}
-        Run command until output is absent
-        ...    kubectl get pods -n longhorn-system -l app=${app} -o jsonpath='{.items[*].spec.nodeName}'
-        ...    ${NODE_2}
-    END
-    And Check v1 instance manager is running on node 1
-    And Check v1 instance manager is not running on node 0
-    And Check v1 instance manager is not running on node 2
-    And Check v2 instance manager is running on node 1
-    And Check v2 instance manager is not running on node 0
-    And Check v2 instance manager is not running on node 2
-    And Run command and wait for output
-    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
-    ...    ${NODE_1}
-    And Run command until output is absent
-    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
-    ...    ${NODE_0}
-    And Run command until output is absent
-    ...    kubectl get pods -n longhorn-system -l longhorn.io/component=engine-image -o jsonpath='{.items[*].spec.nodeName}'
-    ...    ${NODE_2}
-
-    When Create volume 0 with    numberOfReplicas=1    dataEngine=v1
-    And Attach volume 0 to node 1
-    And Wait for volume 0 healthy
-    And Write data to volume 0
-    Then Check volume 0 data is intact
-
-    When Create volume 1 with    numberOfReplicas=1    dataEngine=v2
-    And Attach volume 1 to node 1
-    And Wait for volume 1 healthy
-    And Write data to volume 1
-    Then Check volume 1 data is intact
-
-    # Restore the test environment to the default state
-    Given Setting deleting-confirmation-flag is set to true
-    And Uninstall Longhorn
-    And Check all Longhorn CRD removed
-    And Install Longhorn

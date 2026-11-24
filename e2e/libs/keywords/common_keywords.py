@@ -82,11 +82,15 @@ class common_keywords:
 
     def execute_command_and_wait_for_output(self, cmd, output):
         retry_count, retry_interval = get_retry_count_and_interval()
+        try:
+            expected_pattern = re.compile(output, re.DOTALL)
+        except re.error:
+            expected_pattern = re.compile(re.escape(output), re.DOTALL)
         for i in range(retry_count):
             logging(f"Waiting for command {cmd} returning output {output} ... ({i})")
             try:
                 res = subprocess_exec_cmd(cmd)
-                if output in res:
+                if expected_pattern.search(res):
                     return
             except Exception as e:
                 logging(f"Execute command {cmd} and wait for output {output} error: {e}")
@@ -103,10 +107,14 @@ class common_keywords:
 
     def execute_command_until_output_is_absent(self, cmd, output):
         retry_count, retry_interval = get_retry_count_and_interval()
+        try:
+            unexpected_pattern = re.compile(output, re.DOTALL)
+        except re.error:
+            unexpected_pattern = re.compile(re.escape(output), re.DOTALL)
         for i in range(retry_count):
             logging(f"Waiting for command {cmd} not returning output {output} ... ({i})")
             res = subprocess_exec_cmd(cmd)
-            if output not in res:
+            if not unexpected_pattern.search(res):
                 return res
             time.sleep(retry_interval)
         assert False, f"'{output}' still found in command result: {res}"
