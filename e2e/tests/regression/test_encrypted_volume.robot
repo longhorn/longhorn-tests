@@ -34,7 +34,7 @@ Test Encrypted Volume Basic
     ...
     ...                Expected sizes for a 512 Mi volume:
     ...                    - Replica backend file = 528 Mi (requested + 16 Mi pre-allocated).
-    ...                    - v2 data engine: Replica backend N/A (format differs, only device size is verified).
+    ...                    - v2 data engine: no replica backend file (format differs), the raw disk size (528 Mi) is verified instead.
     ...                    - dm-crypt device (RWO instance manager) = 512 Mi (full requested size).
     ...                    - dm-crypt device (RWX sharemanager pod) = 512 Mi (full requested size).
     ...                    - Mounted filesystem (workload pod, RWO/RWX) = ~512 Mi (accounting for filesystem overhead).
@@ -43,12 +43,15 @@ Test Encrypted Volume Basic
     And Create persistentvolumeclaim 0    volume_type=${volume_type}    sc_name=longhorn-crypto    storage_size=512Mi
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 0 in v2 instance manager pod to be 528Mi
     END
     # Verify sizes at different layers: backend replica → dm-crypt device → mounted filesystem
     IF    '${volume_type}' == 'RWO'
-        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+        And Wait for disk size for volume of deployment 0 in ${DATA_ENGINE} instance manager pod to be 512Mi
     ELSE IF    '${volume_type}' == 'RWX'
         And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
     END
@@ -60,12 +63,15 @@ Test Encrypted Volume Basic
     And Scale up deployment 0 to attach volume
     And Wait for volume of deployment 0 healthy
     And Wait for workloads pods stable    deployment 0
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 0 in v2 instance manager pod to be 528Mi
     END
     # Re-verify sizes after scale down/up cycle
     IF    '${volume_type}' == 'RWO'
-        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+        And Wait for disk size for volume of deployment 0 in ${DATA_ENGINE} instance manager pod to be 512Mi
     ELSE IF    '${volume_type}' == 'RWX'
         And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
     END
@@ -93,12 +99,15 @@ Test Encrypted Volume Cloning
     And Wait for volume of deployment cloned-deployment healthy
     And Wait for workloads pods stable    deployment cloned-deployment
 
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment cloned-deployment is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment cloned-deployment in v2 instance manager pod to be 528Mi
     END
     
     IF    '${volume_type}' == 'RWO'
-        And Assert disk size in instance manager for deployment cloned-deployment    expected_disk_size=512Mi
+        And Wait for disk size for volume of deployment cloned-deployment in ${DATA_ENGINE} instance manager pod to be 512Mi
     ELSE IF    '${volume_type}' == 'RWX'
         And Assert encrypted disk size in sharemanager pod for deployment cloned-deployment is 512Mi
     END
@@ -134,13 +143,16 @@ Test Encrypted Volume Expansion
     END
 
     IF    '${volume_type}' == 'RWO'
-        And Assert disk size in instance manager for deployment 0    expected_disk_size=768Mi
+        And Wait for disk size for volume of deployment 0 in ${DATA_ENGINE} instance manager pod to be 768Mi
     ELSE IF    '${volume_type}' == 'RWX'
         And Assert encrypted disk size in sharemanager pod for deployment 0 is 768Mi
     END
 
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 784Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 0 in v2 instance manager pod to be 784Mi
     END
     And Check deployment 0 data in file data.txt is intact
 
@@ -172,13 +184,16 @@ Test Encrypted Volume Replica Rebuild
     Then Wait for volume of deployment 0 healthy
 
     IF    '${volume_type}' == 'RWO'
-        And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+        And Wait for disk size for volume of deployment 0 in ${DATA_ENGINE} instance manager pod to be 512Mi
     ELSE IF    '${volume_type}' == 'RWX'
         And Assert encrypted disk size in sharemanager pod for deployment 0 is 512Mi
     END
 
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 0 in v2 instance manager pod to be 528Mi
     END
     And Check deployment 0 data in file data.txt is intact
 
@@ -214,11 +229,14 @@ Test Encrypted Volume Backup Restore To Encrypted Volume
     # Must use longhorn-crypto SC (with node-stage-secret-ref) so luksOpen is triggered.
     And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
     And Wait for volume of deployment 1 healthy
-    Then Assert disk size in instance manager for deployment 1    expected_disk_size=512Mi
+    Then Wait for disk size for volume of deployment 1 in ${DATA_ENGINE} instance manager pod to be 512Mi
 
     # v1 only: v2 replica backend uses a different format (no .img files)
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 1 is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 1 in v2 instance manager pod to be 528Mi
     END
     And Check deployment 1 file data.txt checksum matches checksum 0
 
@@ -302,9 +320,12 @@ Test Encrypted Volume Snapshot Clone
     And Record file data.txt checksum in deployment 0 as checksum 0
 
     # Verify source volume size
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=512Mi
+    And Wait for disk size for volume of deployment 0 in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 0 is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 0 in v2 instance manager pod to be 528Mi
     END
 
     # Create snapshot from source volume
@@ -322,9 +343,12 @@ Test Encrypted Volume Snapshot Clone
 
     # Verify cloned volume size and data integrity
     Then Check deployment 1 file data.txt checksum matches checksum 0
-    And Assert disk size in instance manager for deployment 1    expected_disk_size=512Mi
+    And Wait for disk size for volume of deployment 1 in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
         Assert replica file size of deployment 1 is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment 1 in v2 instance manager pod to be 528Mi
     END
 
 Test Encrypted RWO Volume Expansion
@@ -357,7 +381,7 @@ Test Encrypted RWO Block Volume Online Expansion
     # in the replica backend file (replica size = requested size + 16 Mi).
     # The dm-crypt device therefore presents the full requested size to the workload.
     # Therefore, after expansion to 768 Mi, the dm-crypt device shows 768 Mi.
-    And Assert disk size in instance manager for deployment 0    expected_disk_size=768Mi
+    And Wait for disk size for volume of deployment 0 in ${DATA_ENGINE} instance manager pod to be 768Mi
     And Assert block device size in deployment pod for deployment 0 is 768Mi
     When Scale down deployment 0 to detach volume
     And Scale up deployment 0 to attach volume
@@ -462,7 +486,7 @@ Test Encrypted DR Volume Activation
 
     And Create deployment 1 with volume 1    sc_name=longhorn-crypto    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
     And Wait for volume of deployment 1 healthy
-    Then Assert disk size in instance manager for deployment 1    expected_disk_size=512Mi
+    Then Wait for disk size for volume of deployment 1 in ${DATA_ENGINE} instance manager pod to be 512Mi
     And Check deployment 1 file data.txt checksum matches checksum 0
 
 Test Encrypted Volume With Encrypted Backing Image Clone
@@ -528,7 +552,7 @@ Test Encrypted Volume With Encrypted Backing Image Clone
     Skip    Implementation pending: encrypted clone backing image keyword not yet implemented
 
 Test Encrypted Volume Upgrade - Initial State Verification
-    [Tags]    rwo    rwx    block-volume    upgrade
+    [Tags]    rwo    rwx    block-volume    upgrade    engine-upgrade
     [Documentation]    Scenario A + E: Baseline verification covering Manager Upgrade
     ...                (old engine preserved) and a subsequent Live Engine Upgrade,
     ...                across 3 volume types (RWO Filesystem, RWX Filesystem, RWO Block).
@@ -536,24 +560,21 @@ Test Encrypted Volume Upgrade - Initial State Verification
     ...                  - init-rwx: RWX Filesystem, 512 Mi
     ...                  - init-block: RWO Block, 512 Mi
     ...
-    ...                Applies to BOTH v1 and v2 data engines, with different
-    ...                LONGHORN_STABLE_VERSION requirements:
-    ...                  - v1: LONGHORN_STABLE_VERSION must be v1.11.x
-    ...                  - v2: LONGHORN_STABLE_VERSION must be v1.11.x OR exactly v1.12.0
+    ...                Applies to BOTH v1 and v2 data engines.
     ...
     ...                Part A (Manager Upgrade Only, Old Engine Preserved):
-    ...                  - device = requested_size - 16 Mi
-    ...                  - replica = requested_size (v1 ONLY; not asserted for v2)
+    ...                  - device = requested_size
+    ...                  - replica = requested_size + 16 Mi (v1: replica file size, v2: raw disk size)
     ...                  - Verified both before AND after the Longhorn manager upgrade.
     ...
-    ...                v2 data engine has no live engine upgrade. All deployments are
-    ...                scaled down (detached) before "Upgrade Longhorn to custom version"
-    ...                and scaled back up (reattached) afterward, so each v2 volume
-    ...                adopts the upgraded v2 instance manager. This does NOT apply to v1.
+    ...                v2 data engine has no live engine upgrade, but supports instance
+    ...                manager live upgrade. All deployments stay attached during
+    ...                "Upgrade Longhorn to custom version". This does NOT apply to v1.
     ...
-    ...                Part E (Live Engine Upgrade, 512 Mi baseline) — v1 ONLY:
+    ...                Part E (Live Engine Upgrade for v1 / v2 live upgrade for v2, 512 Mi baseline):
     ...                  - device = 512 Mi (full size), replica = 528 Mi
-    ...                  - v2 has no equivalent step; Part E is skipped entirely for v2.
+    ...                  - v2 counterpart: enable v2 live upgrade so each attached v2 volume
+    ...                    adopts the upgraded v2 instance manager.
     ...
     ...                - Requires LONGHORN_STABLE_VERSION to be set.
     ...                - Part E requires CUSTOM_LONGHORN_ENGINE_IMAGE to be set; if not
@@ -568,15 +589,6 @@ Test Encrypted Volume Upgrade - Initial State Verification
         Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
-    IF    '${DATA_ENGINE}' == 'v1'
-        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
-            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    ELSE IF    '${DATA_ENGINE}' == 'v2'
-        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
-            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    END
 
     # ==================== Setup ====================
     Given Setting deleting-confirmation-flag is set to true
@@ -610,21 +622,28 @@ Test Encrypted Volume Upgrade - Initial State Verification
     And Check deployment init-rwx data in file data.txt is intact
 
     # ==================== Part A: Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    Then Wait for disk size for volume of deployment init-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi
-        And Assert replica file size of deployment init-rwo is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment init-rwo is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment init-rwo in v2 instance manager pod to be 528Mi
     END
 
-    And Assert encrypted disk size in sharemanager pod for deployment init-rwx is 496Mi
+    And Assert encrypted disk size in sharemanager pod for deployment init-rwx is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment init-rwx is 512Mi
+        Assert replica file size of deployment init-rwx is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment init-rwx in v2 instance manager pod to be 528Mi
     END
 
-    And Assert block device size in deployment pod for deployment init-block is 496Mi
+    And Assert block device size in deployment pod for deployment init-block is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment init-block is 512Mi
+        Assert replica file size of deployment init-block is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment init-block in v2 instance manager pod to be 528Mi
     END
 
     # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine) ====================
@@ -634,19 +653,7 @@ Test Encrypted Volume Upgrade - Initial State Verification
         Check volume endpoint on node of deployment ${name}
     END
 
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    init-rwo    init-rwx    init-block
-            Scale down deployment ${name} to detach volume
-        END
-    END
-
     When Upgrade Longhorn to custom version
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    init-rwo    init-rwx    init-block
-            Scale up deployment ${name} to attach volume
-        END
-    END
 
     And Wait for volume of deployment init-rwo healthy
     And Wait for volume of deployment init-rwx healthy
@@ -657,40 +664,69 @@ Test Encrypted Volume Upgrade - Initial State Verification
     END
 
     # ==================== Part A: Post-Upgrade Verification (Old Engine Preserved) ====================
+    Then Wait for disk size for volume of deployment init-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi
-        And Assert replica file size of deployment init-rwo is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment init-rwo is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment init-rwo in v2 instance manager pod to be 528Mi
     END
 
-    And Assert encrypted disk size in sharemanager pod for deployment init-rwx is 496Mi
+    And Assert encrypted disk size in sharemanager pod for deployment init-rwx is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment init-rwx is 512Mi
+        Assert replica file size of deployment init-rwx is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment init-rwx in v2 instance manager pod to be 528Mi
     END
 
-    And Assert block device size in deployment pod for deployment init-block is 496Mi
+    And Assert block device size in deployment pod for deployment init-block is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment init-block is 512Mi
+        Assert replica file size of deployment init-block is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment init-block in v2 instance manager pod to be 528Mi
     END
 
-    # ==================== Part E: Live Engine Upgrade (512 Mi Baseline, v1 ONLY) ====================
+    # ==================== Part E: Live Engine Upgrade (v1) / Live Upgrade (v2) (512 Mi Baseline) ====================
     IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
         Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
+    END
+
+    IF    ('${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != '') or '${DATA_ENGINE}' == 'v2'
         And Wait for volume of deployment init-rwo healthy
         And Wait for volume of deployment init-rwx healthy
         And Wait for volume of deployment init-block healthy
 
-        Then Assert disk size in instance manager for deployment init-rwo    expected_disk_size=512Mi
-        And Assert replica file size of deployment init-rwo is 528Mi
+        Then Wait for disk size for volume of deployment init-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment init-rwo is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment init-rwo in v2 instance manager pod to be 528Mi
+        END
         And Check deployment init-rwo data in file data.txt is intact
 
         Then Assert encrypted disk size in sharemanager pod for deployment init-rwx is 512Mi
-        And Assert replica file size of deployment init-rwx is 528Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment init-rwx is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment init-rwx in v2 instance manager pod to be 528Mi
+        END
         And Check deployment init-rwx data in file data.txt is intact
 
         Then Assert block device size in deployment pod for deployment init-block is 512Mi
-        And Assert replica file size of deployment init-block is 528Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment init-block is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment init-block in v2 instance manager pod to be 528Mi
+        END
     END
 
 Test Encrypted Volume Upgrade - Replica Rebuild
@@ -705,15 +741,15 @@ Test Encrypted Volume Upgrade - Replica Rebuild
     ...                  - rebuild-rwx: RWX Filesystem, 512 Mi
     ...
     ...                Round 1 — Replica Rebuild after Manager Upgrade:
-    ...                  - v1: Runs under the OLD engine (device = 496 Mi, rebuilt replica = 512 Mi).
-    ...                  - v2: Volumes MUST be detached before Manager Upgrade and reattached
+    ...                  - v1: Runs under the OLD engine (device = 512 Mi, rebuilt replica = 528 Mi).
+    ...                  - v2: Volumes stay attached during Manager Upgrade and are live-upgraded
     ...                        afterward. Thus, they run on the upgraded v2 instance manager
-    ...                        (encrypted device = 496 Mi, raw size = 512 Mi).
+    ...                        (encrypted device = 512 Mi, raw size = 528 Mi).
     ...
     ...                Round 2 — Replica Rebuild under NEW engine (after Live Engine Upgrade):
     ...                  - device = 512 Mi (full size), rebuilt replica = 528 Mi
     ...
-    ...                - Requires LONGHORN_STABLE_VERSION to be set (v1.11.x).
+    ...                - Requires LONGHORN_STABLE_VERSION to be set.
     ...                - Only applies to the v1 data engine.
     ...                - Round 2 requires CUSTOM_LONGHORN_ENGINE_IMAGE to be set; if not
     ...                  set, Round 2 is skipped but Round 1 still runs.
@@ -727,15 +763,6 @@ Test Encrypted Volume Upgrade - Replica Rebuild
         Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
-    IF    '${DATA_ENGINE}' == 'v1'
-        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
-            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    ELSE IF    '${DATA_ENGINE}' == 'v2'
-        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
-            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    END
 
     Given Setting deleting-confirmation-flag is set to true
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
@@ -766,19 +793,7 @@ Test Encrypted Volume Upgrade - Replica Rebuild
     Check volume endpoint on node of deployment rebuild-rwo
     Check volume endpoint on node of deployment rebuild-rwx
 
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    rebuild-rwo    rebuild-rwx
-            Scale down deployment ${name} to detach volume
-        END
-    END
-
     When Upgrade Longhorn to custom version
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    rebuild-rwo    rebuild-rwx
-            Scale up deployment ${name} to attach volume
-        END
-    END
 
 
     And Wait for volume of deployment rebuild-rwo healthy
@@ -791,11 +806,12 @@ Test Encrypted Volume Upgrade - Replica Rebuild
     Then Wait until volume of deployment rebuild-rwo replica rebuilding completed on replica node
     And Wait for volume of deployment rebuild-rwo healthy
 
+    Then Wait for disk size for volume of deployment rebuild-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=496Mi
-        And Assert replica file size of deployment rebuild-rwo is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment rebuild-rwo is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment rebuild-rwo in v2 instance manager pod to be 528Mi
     END
     And Check deployment rebuild-rwo data in file data.txt is intact
 
@@ -803,41 +819,71 @@ Test Encrypted Volume Upgrade - Replica Rebuild
     Then Wait until volume of deployment rebuild-rwx replica rebuilding completed on replica node
     And Wait for volume of deployment rebuild-rwx healthy
 
-    Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 496Mi
+    Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        And Assert replica file size of deployment rebuild-rwx is 512Mi
+        And Assert replica file size of deployment rebuild-rwx is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment rebuild-rwx in v2 instance manager pod to be 528Mi
     END
     And Check deployment rebuild-rwx data in file data.txt is intact
 
 
-    # ==================== Round 2: Replica Rebuild under NEW Engine , v1 only ====================
+    # ==================== Round 2: Replica Rebuild after Live Engine Upgrade (v1) / Live Upgrade (v2) ====================
     IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
         Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
+    END
+
+    IF    ('${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != '') or '${DATA_ENGINE}' == 'v2'
         And Wait for volume of deployment rebuild-rwo healthy
         And Wait for volume of deployment rebuild-rwx healthy
 
-        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=512Mi
-        And Assert replica file size of deployment rebuild-rwo is 528Mi
+        Then Wait for disk size for volume of deployment rebuild-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment rebuild-rwo is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment rebuild-rwo in v2 instance manager pod to be 528Mi
+        END
         Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 512Mi
-        And Assert replica file size of deployment rebuild-rwx is 528Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment rebuild-rwx is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment rebuild-rwx in v2 instance manager pod to be 528Mi
+        END
 
         When Delete replica of deployment rebuild-rwo volume on replica node
         Then Wait until volume of deployment rebuild-rwo replica rebuilding completed on replica node
         And Wait for volume of deployment rebuild-rwo healthy
-        Then Assert disk size in instance manager for deployment rebuild-rwo    expected_disk_size=512Mi
-        And Assert replica file size of deployment rebuild-rwo is 528Mi
+        Then Wait for disk size for volume of deployment rebuild-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment rebuild-rwo is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment rebuild-rwo in v2 instance manager pod to be 528Mi
+        END
         And Check deployment rebuild-rwo data in file data.txt is intact
 
         When Delete replica of deployment rebuild-rwx volume on replica node
         Then Wait until volume of deployment rebuild-rwx replica rebuilding completed on replica node
         And Wait for volume of deployment rebuild-rwx healthy
         Then Assert encrypted disk size in sharemanager pod for deployment rebuild-rwx is 512Mi
-        And Assert replica file size of deployment rebuild-rwx is 528Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment rebuild-rwx is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment rebuild-rwx in v2 instance manager pod to be 528Mi
+        END
         And Check deployment rebuild-rwx data in file data.txt is intact
     END
 
 Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
-    [Tags]    rwo    rwx    expansion    replica-rebuild    upgrade
+    [Tags]    rwo    rwx    expansion    replica-rebuild    upgrade    engine-upgrade
     [Documentation]    Scenario A + C + E + B (post-Expansion variant): Full lifecycle
     ...                verification — Manager Upgrade (old engine preserved) → Expansion
     ...                under OLD engine (512 Mi → 768 Mi) → Replica Rebuild verification
@@ -850,7 +896,7 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     ...                Expansion is verified TWICE, to confirm disk/replica size
     ...                calculation is correct under BOTH the old and the new engine:
     ...                  - Part C1 (v1: Old Engine, v2: Upgraded Manager, 512 Mi → 768 Mi):
-    ...                      device = 752 Mi, replica = 768 Mi (replica size checked on v1 only)
+    ...                      device = 768 Mi, replica = 784 Mi (v1: replica file size, v2: raw disk size)
     ...                  - Part C2 (New Engine, 768 Mi → 896 Mi):
     ...                      device = 896 Mi, replica = 912 Mi
     ...
@@ -859,20 +905,21 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     ...                change (distinct from the standalone "Replica Rebuild" case, which
     ...                covers rebuild on volumes at a STATIC size):
     ...                  - Part B1 (post-C1, v1: Old Engine, v2: Upgraded Manager, 768 Mi): rebuilt replica,
-    ...                    device = 752 Mi, replica = 768 Mi
+    ...                    device = 768 Mi, replica = 784 Mi
     ...                  - Part B2 (post-C2, New Engine, 896 Mi): rebuilt replica,
     ...                    device = 896 Mi, replica = 912 Mi
     ...
     ...                Part A (Manager Upgrade Only, Old Engine Preserved, 512 Mi):
-    ...                  - device = 496 Mi, replica = 512 Mi
+    ...                  - device = 512 Mi, replica = 528 Mi
     ...                  - Verified both before AND after the Longhorn manager upgrade.
     ...
     ...                Part E (Live Engine Upgrade, 768 Mi baseline):
     ...                  - device = 768 Mi (full size), replica = 784 Mi
     ...
-    ...                - Requires LONGHORN_STABLE_VERSION to be set (v1.11.x).
+    ...                - Requires LONGHORN_STABLE_VERSION to be set.
     ...                - Applies to BOTH v1 and v2 data engines.
-    ...                - Part E, Part C2, and Part B2 (Live Engine Upgrade and post-actions) are v1 ONLY.
+    ...                - Part E, Part C2, and Part B2 (Live Engine Upgrade and post-actions) run for v1 after the engine
+    ...                  upgrade and for v2 after the instance manager live upgrade (replica file size is checked on v1, raw disk size on v2).
     ...                - For v1, Part E / C2 / B2 require CUSTOM_LONGHORN_ENGINE_IMAGE to
     ...                  be set; if not set, they are skipped but Part A / C1 / B1 still run.
     ...
@@ -885,15 +932,6 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
         Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
-    IF    '${DATA_ENGINE}' == 'v1'
-        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
-            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    ELSE IF    '${DATA_ENGINE}' == 'v2'
-        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
-            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    END
 
     Given Setting deleting-confirmation-flag is set to true
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
@@ -919,15 +957,19 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     And Check deployment expand-rwx data in file data.txt is intact
 
     # ==================== Part A: Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    Then Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi
-        And Assert replica file size of deployment expand-rwo is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment expand-rwo is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 528Mi
     END
-    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 496Mi
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment expand-rwx is 512Mi
+        Assert replica file size of deployment expand-rwx is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 528Mi
     END
 
 
@@ -936,19 +978,7 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     And Check volume endpoint on node of deployment expand-rwo
     And Check volume endpoint on node of deployment expand-rwx
 
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    expand-rwo    expand-rwx
-            Scale down deployment ${name} to detach volume
-        END
-    END
-
     When Upgrade Longhorn to custom version
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    expand-rwo    expand-rwx
-            Scale up deployment ${name} to attach volume
-        END
-    END
 
 
     And Wait for volume of deployment expand-rwo healthy
@@ -957,15 +987,19 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     Check volume endpoint on node of deployment expand-rwx
 
     # ==================== Part A: Post-Upgrade Verification (Old Engine Preserved) ====================
+    Then Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi
-        And Assert replica file size of deployment expand-rwo is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment expand-rwo is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 528Mi
     END
-    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 496Mi
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        And Assert replica file size of deployment expand-rwx is 512Mi
+        And Assert replica file size of deployment expand-rwx is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 528Mi
     END
 
     # ==================== Part C1: Expansion after Manager Upgrade (v1: OLD Engine, v2: Upgraded Manager) (512 Mi → 768 Mi) ====================
@@ -975,15 +1009,19 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     And Wait for deployment expand-rwx volume size expanded
     And Check deployment expand-rwo pods did not restart
     And Check deployment expand-rwx pods did not restart
+    And Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 768Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        And Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi
-        And Assert replica file size of deployment expand-rwo is 768Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi    raw_size=768Mi
+        And Assert replica file size of deployment expand-rwo is 784Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 784Mi
     END
-    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 752Mi    
+    And Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 768Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Assert replica file size of deployment expand-rwx is 768Mi
+        Assert replica file size of deployment expand-rwx is 784Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 784Mi
     END
     And Check deployment expand-rwo data in file data.txt is intact
     And Check deployment expand-rwx data in file data.txt is intact
@@ -992,35 +1030,56 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
     When Delete replica of deployment expand-rwo volume on replica node
     Then Wait until volume of deployment expand-rwo replica rebuilding completed on replica node
     And Wait for volume of deployment expand-rwo healthy
+    Then Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 768Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi
-        And Assert replica file size of deployment expand-rwo is 768Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=752Mi    raw_size=768Mi
+        And Assert replica file size of deployment expand-rwo is 784Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 784Mi
     END
     And Check deployment expand-rwo data in file data.txt is intact
 
     When Delete replica of deployment expand-rwx volume on replica node
     Then Wait until volume of deployment expand-rwx replica rebuilding completed on replica node
     And Wait for volume of deployment expand-rwx healthy
-    Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 752Mi
+    Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 768Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        And Assert replica file size of deployment expand-rwx is 768Mi
+        And Assert replica file size of deployment expand-rwx is 784Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 784Mi
     END
     And Check deployment expand-rwx data in file data.txt is intact
 
-    # ==================== Part E: Live Engine Upgrade (768 Mi Baseline , v1 only) ====================
+    # ==================== Part E: Live Engine Upgrade (v1) / Live Upgrade (v2) (768 Mi Baseline) ====================
     IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
         Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
+    END
+
+    IF    ('${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != '') or '${DATA_ENGINE}' == 'v2'
         And Wait for volume of deployment expand-rwo healthy
         And Wait for volume of deployment expand-rwx healthy
 
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=768Mi
-        And Assert replica file size of deployment expand-rwo is 784Mi
+        Then Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 768Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment expand-rwo is 784Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 784Mi
+        END
         And Check deployment expand-rwo data in file data.txt is intact
 
         Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 768Mi
-        And Assert replica file size of deployment expand-rwx is 784Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment expand-rwx is 784Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 784Mi
+        END
         And Check deployment expand-rwx data in file data.txt is intact
 
         # ==================== Part C2: Expansion under NEW Engine (768 Mi → 896 Mi) ====================
@@ -1031,32 +1090,52 @@ Test Encrypted Volume Upgrade - Expansion And Engine Upgrade
         And Check deployment expand-rwo pods did not restart
         And Check deployment expand-rwx pods did not restart
 
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=896Mi
-        And Assert replica file size of deployment expand-rwo is 912Mi
+        Then Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 896Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment expand-rwo is 912Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 912Mi
+        END
         And Check deployment expand-rwo data in file data.txt is intact
 
         Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 896Mi
-        And Assert replica file size of deployment expand-rwx is 912Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment expand-rwx is 912Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 912Mi
+        END
         And Check deployment expand-rwx data in file data.txt is intact
 
         # ==================== Part B2: Replica Rebuild (Post-Expansion, NEW Engine, 896 Mi) ====================
         When Delete replica of deployment expand-rwo volume on replica node
         Then Wait until volume of deployment expand-rwo replica rebuilding completed on replica node
         And Wait for volume of deployment expand-rwo healthy
-        Then Assert disk size in instance manager for deployment expand-rwo    expected_disk_size=896Mi
-        And Assert replica file size of deployment expand-rwo is 912Mi
+        Then Wait for disk size for volume of deployment expand-rwo in ${DATA_ENGINE} instance manager pod to be 896Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment expand-rwo is 912Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment expand-rwo in v2 instance manager pod to be 912Mi
+        END
         And Check deployment expand-rwo data in file data.txt is intact
 
         When Delete replica of deployment expand-rwx volume on replica node
         Then Wait until volume of deployment expand-rwx replica rebuilding completed on replica node
         And Wait for volume of deployment expand-rwx healthy
         Then Assert encrypted disk size in sharemanager pod for deployment expand-rwx is 896Mi
-        And Assert replica file size of deployment expand-rwx is 912Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment expand-rwx is 912Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment expand-rwx in v2 instance manager pod to be 912Mi
+        END
         And Check deployment expand-rwx data in file data.txt is intact
     END
 
 Test Encrypted Volume Upgrade - Workload Reattach
-    [Tags]    rwo    rwx    reattach    upgrade
+    [Tags]    rwo    rwx    reattach    upgrade    engine-upgrade
     [Documentation]    Scenario F: Verifies that after Longhorn upgrade, volumes can be
     ...                correctly detached and reattached to a workload (e.g. via pod
     ...                deletion / rescheduling), and that data + encryption remain intact
@@ -1100,17 +1179,7 @@ Test Encrypted Volume Upgrade - Workload Reattach
     And Check volume endpoint on node of deployment reattach-rwo
     And Check volume endpoint on node of deployment reattach-rwx
 
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    reattach-rwo    reattach-rwx
-            Scale down deployment ${name} to detach volume
-        END
-    END
     And Upgrade Longhorn to custom version
-    IF    '${DATA_ENGINE}' == 'v2'
-        FOR    ${name}    IN    reattach-rwo    reattach-rwx
-            Scale up deployment ${name} to attach volume
-        END
-    END
     And Wait for volume of deployment reattach-rwo healthy
     And Wait for volume of deployment reattach-rwx healthy
 
@@ -1125,9 +1194,16 @@ Test Encrypted Volume Upgrade - Workload Reattach
     And Wait for volume of deployment reattach-rwx healthy
     And Check deployment reattach-rwx data in file data.txt is intact
 
-    # ==================== Reattach: Delete Workload Pod and Verify Reattach under NEW Engine , v1 only ====================
+    # ==================== Reattach: Delete Workload Pod and Verify Reattach after Live Engine Upgrade (v1) / Live Upgrade (v2) ====================
     IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
         Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
+    END
+
+    IF    ('${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != '') or '${DATA_ENGINE}' == 'v2'
         And Wait for volume of deployment reattach-rwo healthy
         And Wait for volume of deployment reattach-rwx healthy
 
@@ -1158,15 +1234,6 @@ Test Encrypted Volume Upgrade - Backup And Restore
         Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
-    IF    '${DATA_ENGINE}' == 'v1'
-        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
-            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    ELSE IF    '${DATA_ENGINE}' == 'v2'
-        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
-            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    END
 
     Given Setting deleting-confirmation-flag is set to true
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}    numberOfReplicas=3
@@ -1225,11 +1292,12 @@ Test Encrypted Volume Upgrade - Backup And Restore
     And Create deployment restore-rwo with volume restore-rwo    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
 
     And Wait for volume of deployment restore-rwo healthy
+    Then Wait for disk size for volume of deployment restore-rwo in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment restore-rwo    expected_disk_size=512Mi
         And Assert replica file size of deployment restore-rwo is 528Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment restore-rwo    expected_disk_size=496Mi    raw_size=512Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment restore-rwo in v2 instance manager pod to be 528Mi
     END
     And Check deployment restore-rwo file data.txt checksum matches checksum backup-src-rwo
 
@@ -1239,16 +1307,17 @@ Test Encrypted Volume Upgrade - Backup And Restore
     And Create deployment restore-rwx with volume restore-rwx    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
 
     And Wait for volume of deployment restore-rwx healthy
+    Then Wait for disk size for volume of deployment restore-rwx in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=512Mi
         And Assert replica file size of deployment restore-rwx is 528Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment restore-rwx    expected_disk_size=496Mi    raw_size=512Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment restore-rwx in v2 instance manager pod to be 528Mi
     END
     And Check deployment restore-rwx file data.txt checksum matches checksum backup-src-rwx
 
 Test Encrypted Volume Upgrade - DR Volume
-    [Tags]    rwo    dr-volume    expansion    replica-rebuild    backup    restore    upgrade
+    [Tags]    rwo    dr-volume    expansion    replica-rebuild    backup    restore    upgrade    engine-upgrade
     [Documentation]    Scenario H: DR (Standby) Volume behavior across a Longhorn upgrade.
     ...                Covers 3 gaps NOT addressed by the other upgrade test cases:
     ...                  1. Creating a DR volume AFTER upgrade from a backup taken BEFORE
@@ -1272,23 +1341,18 @@ Test Encrypted Volume Upgrade - DR Volume
     ...                    depend on CUSTOM_LONGHORN_ENGINE_IMAGE, which only controls
     ...                    the LIVE upgrade of an already-running volume like vol-a.
     ...                  - dr-b / bk-b: same roles as dr-a / bk-a, but for vol-b
-    ...                  - size assertions differ:
-    ...                  - old-engine: raw = PVC,        disk = PVC − 16Mi
-    ...                  - new-engine: raw = PVC + 16Mi, disk = PVC
+    ...                  - size assertions: raw = PVC + 16Mi, disk = PVC
     ...
-    ...                Applies to BOTH v1 and v2 data engines, with different
-    ...                LONGHORN_STABLE_VERSION requirements:
-    ...                  - v1: LONGHORN_STABLE_VERSION must be v1.11.x
-    ...                  - v2: LONGHORN_STABLE_VERSION must be v1.11.x OR exactly v1.12.0
+    ...                Applies to BOTH v1 and v2 data engines.
     ...
     ...                v2 has no live engine upgrade concept for either existing or new
-    ...                volumes. vol-a is scaled down (detached) before "Upgrade Longhorn
-    ...                to custom version" and scaled back up (reattached) afterward, so
-    ...                it adopts the upgraded v2 instance manager. This does NOT apply to v1.
+    ...                volumes. vol-a stays attached during "Upgrade Longhorn to custom
+    ...                version". This does NOT apply to v1.
     ...
-    ...                For v1 ONLY, a Live Engine Upgrade is additionally performed on
-    ...                vol-a (the pre-existing volume) right after Gap 3 completes, to
-    ...                verify a running volume can transition to the new engine live.
+    ...                A Live Engine Upgrade is additionally performed on vol-a (the
+    ...                pre-existing volume) right after Gap 3 completes, to verify a
+    ...                running volume can transition to the new engine live. For v2, the
+    ...                counterpart is enabling v2 live upgrade for the instance manager.
     ...                Requires CUSTOM_LONGHORN_ENGINE_IMAGE; if not set, this step is
     ...                skipped, but vol-a stays on the OLD engine for the rest of the test
     ...                while vol-b (created afterward) still runs on the NEW engine by
@@ -1304,15 +1368,6 @@ Test Encrypted Volume Upgrade - DR Volume
         Skip    Environment variable LONGHORN_STABLE_VERSION is not set
     END
 
-    IF    '${DATA_ENGINE}' == 'v1'
-        IF    not '${LONGHORN_STABLE_VERSION}'.startswith('v1.11.')
-            Skip    For DATA_ENGINE=v1, this test only applies to v1.11.x; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    ELSE IF    '${DATA_ENGINE}' == 'v2'
-        IF    not ('${LONGHORN_STABLE_VERSION}'.startswith('v1.11.') or '${LONGHORN_STABLE_VERSION}' == 'v1.12.0')
-            Skip    For DATA_ENGINE=v2, this test only applies to v1.11.x or exactly v1.12.0; got stable version ${LONGHORN_STABLE_VERSION}
-        END
-    END
 
     # ==================== Setup ====================
     Given Setting deleting-confirmation-flag is set to true
@@ -1337,48 +1392,53 @@ Test Encrypted Volume Upgrade - DR Volume
     Then Verify backup list contains backup no error for deployment vol-a volume
 
     # ==================== Pre-Upgrade Verification (Old Engine, 512 Mi) ====================
+    Then Wait for disk size for volume of deployment vol-a in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi
-        And Assert replica file size of deployment vol-a is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment vol-a is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment vol-a in v2 instance manager pod to be 528Mi
     END
 
     # ==================== Upgrade Longhorn (Manager Only, Keep Old Engine for v1) ====================
     When Setting concurrent-automatic-engine-upgrade-per-node-limit is set to 0
     And Check volume endpoint on node of deployment vol-a
 
-    IF    '${DATA_ENGINE}' == 'v2'
-        When Scale down deployment vol-a to detach volume
-        Then Wait for volume of deployment vol-a detached
-    END
-
     When Upgrade Longhorn to custom version
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        And Scale up deployment vol-a to attach volume
-    END
 
     And Wait for volume of deployment vol-a healthy
     And Check volume endpoint on node of deployment vol-a
     Then Check deployment vol-a data in file data.txt is intact
 
     # ==================== Post-Manager-Upgrade Verification (Old Engine Preserved for v1) ====================
+    Then Wait for disk size for volume of deployment vol-a in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi
-        And Assert replica file size of deployment vol-a is 512Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=496Mi    raw_size=512Mi
+        And Assert replica file size of deployment vol-a is 528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment vol-a in v2 instance manager pod to be 528Mi
     END
 
-    # ==================== Part E: Live Engine Upgrade of vol-a (v1 ONLY) ====================
+    # ==================== Part E: Live Engine Upgrade (v1) / Live Upgrade (v2) of vol-a ====================
     # Verifies an EXISTING, already-attached volume can transition to the new engine
     # live, without needing to be recreated.
     IF    '${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != ''
         Then Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
+    END
+
+    IF    ('${DATA_ENGINE}' == 'v1' and '${CUSTOM_LONGHORN_ENGINE_IMAGE}' != '') or '${DATA_ENGINE}' == 'v2'
         And Wait for volume of deployment vol-a healthy
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=512Mi
-        And Assert replica file size of deployment vol-a is 528Mi
+        Then Wait for disk size for volume of deployment vol-a in ${DATA_ENGINE} instance manager pod to be 512Mi
+        # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
+        IF    '${DATA_ENGINE}' == 'v1'
+            And Assert replica file size of deployment vol-a is 528Mi
+        ELSE IF    '${DATA_ENGINE}' == 'v2'
+            And Wait for raw disk size for volume of deployment vol-a in v2 instance manager pod to be 528Mi
+        END
         And Check deployment vol-a data in file data.txt is intact
     END
 
@@ -1401,11 +1461,12 @@ Test Encrypted Volume Upgrade - DR Volume
     Then Wait for deployment vol-a volume size expanded
     And Check deployment vol-a pods did not restart
 
+    Then Wait for disk size for volume of deployment vol-a in ${DATA_ENGINE} instance manager pod to be 768Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=768Mi
         And Assert replica file size of deployment vol-a is 784Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment vol-a    expected_disk_size=752Mi    raw_size=768Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment vol-a in v2 instance manager pod to be 784Mi
     END
     And Check deployment vol-a data in file data.txt is intact
 
@@ -1428,11 +1489,7 @@ Test Encrypted Volume Upgrade - DR Volume
     Then Wait for volume bk-a detached
     And Create deployment bk-a with volume bk-a    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
     And Wait for volume of deployment bk-a healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment bk-a    expected_disk_size=768Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment bk-a    expected_disk_size=752Mi    raw_size=768Mi
-    END
+    Then Wait for disk size for volume of deployment bk-a in ${DATA_ENGINE} instance manager pod to be 768Mi
     And Check deployment bk-a file data.txt checksum matches checksum vol-a-2
 
     # ==================== vol-b: Fully New Volume, Created AFTER the Manager Upgrade ====================
@@ -1447,14 +1504,14 @@ Test Encrypted Volume Upgrade - DR Volume
     Then Check deployment vol-b data in file data.txt is intact
     And Record file data.txt checksum in deployment vol-b as checksum vol-b-1
 
+    # vol-b was created by the NEW upgraded Longhorn manager.
+    # New-engine allocation: raw = PVC + 16Mi, disk = raw - 16Mi = PVC.
+    Then Wait for disk size for volume of deployment vol-b in ${DATA_ENGINE} instance manager pod to be 512Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi
         And Assert replica file size of deployment vol-b is 528Mi
-    ELSE
-        # vol-b was created by the NEW upgraded Longhorn manager.
-        # New-engine allocation:            raw = PVC + 16Mi, disk = raw - 16Mi = PVC.
-        # Contrast with vol-a (old engine): raw = PVC       , disk = raw - 16Mi = PVC - 16Mi.
-        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=512Mi    raw_size=528Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment vol-b in v2 instance manager pod to be 528Mi
     END
 
     # ---- DR-B from vol-b's first backup (both backup and DR created fully post-upgrade) ----
@@ -1476,11 +1533,12 @@ Test Encrypted Volume Upgrade - DR Volume
 
     When Expand deployment vol-b volume to 768Mi
     Then Wait for deployment vol-b volume size expanded
+    Then Wait for disk size for volume of deployment vol-b in ${DATA_ENGINE} instance manager pod to be 768Mi
+    # replica file size is only available on v1 (v2 replicas have no replica files), v2 checks the raw disk size instead
     IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi
         And Assert replica file size of deployment vol-b is 784Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment vol-b    expected_disk_size=768Mi    raw_size=784Mi
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for raw disk size for volume of deployment vol-b in v2 instance manager pod to be 784Mi
     END
     And Check deployment vol-b data in file data.txt is intact
 
@@ -1501,9 +1559,5 @@ Test Encrypted Volume Upgrade - DR Volume
     Then Wait for volume bk-b detached
     And Create deployment bk-b with volume bk-b    sc_name=longhorn-crypto-stable    node_stage_secret_name=longhorn-crypto    node_publish_secret_name=longhorn-crypto
     And Wait for volume of deployment bk-b healthy
-    IF    '${DATA_ENGINE}' == 'v1'
-        Then Assert disk size in instance manager for deployment bk-b    expected_disk_size=768Mi
-    ELSE
-        Then Assert disk size in instance manager for deployment bk-b    expected_disk_size=768Mi    raw_size=784Mi
-    END
+    Then Wait for disk size for volume of deployment bk-b in ${DATA_ENGINE} instance manager pod to be 768Mi
     And Check deployment bk-b file data.txt checksum matches checksum vol-b-2

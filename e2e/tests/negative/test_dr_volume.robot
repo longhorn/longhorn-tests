@@ -128,7 +128,7 @@ Sync Up With Backup Target During DR Volume Activation
     Then Check pod 0 file version-info.txt has checksum d51dc42f616b67126fd2aa1e1f43385b
 
 Test DR Volume Live Upgrade And Rebuild
-    [Tags]    expansion    upgrade
+    [Tags]    expansion    upgrade    engine-upgrade
     [Documentation]    - Test DR volume live upgrade and rebuild
     ...                Related Issue:
     ...                https://github.com/longhorn/longhorn/issues/1279
@@ -151,10 +151,6 @@ Test DR Volume Live Upgrade And Rebuild
     ...                - Launch a pod for the 2nd activated volume, and verify the restored data is correct.
     ...                - Crash one replica for the 2nd activated volume.
     ...                - Wait for the rebuild complete, then verify the volume still works fine by reading/writing more data.
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 volume doesn't support live upgrade
-    END
-
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' == ''
         Skip    Environment variable LONGHORN_STABLE_VERSION is not set
@@ -170,7 +166,7 @@ Test DR Volume Live Upgrade And Rebuild
     And Enable v2 data engine and add block disks
 
     # Scenario 1: Create initial deployment and backups
-    Given Create storageclass longhorn-test with    dataEngine=v1
+    Given Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
     And Create persistentvolumeclaim 0    volume_type=RWO    sc_name=longhorn-test    storage_size=1GiB
     And Create deployment 0 with persistentvolumeclaim 0
     And Wait for volume of deployment 0 healthy
@@ -179,8 +175,8 @@ Test DR Volume Live Upgrade And Rebuild
 
     When Create backup 0 for deployment 0 volume
     Then Wait for backup 0 of deployment 0 volume to exist in backup list
-    And Create DR volume 1 from backup 0 of deployment 0 volume
-    And Create DR volume 2 from backup 0 of deployment 0 volume
+    And Create DR volume 1 from backup 0 of deployment 0 volume    dataEngine=${DATA_ENGINE}
+    And Create DR volume 2 from backup 0 of deployment 0 volume    dataEngine=${DATA_ENGINE}
 
     # Scenario 2: Volume expansion and data restoration
     Given Scale deployment 0 to 0
@@ -213,7 +209,13 @@ Test DR Volume Live Upgrade And Rebuild
 
     # Scenario 4: Volume engines upgrade and data verification
     ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
-    When Upgrade volume 1 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    IF    '${DATA_ENGINE}' == 'v1'
+        When Upgrade volume 1 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    ELSE
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
+    END
     And Activate DR volume 1
     Then Wait for volume 1 detached
     And Create persistentvolume for volume 1
@@ -224,8 +226,10 @@ Test DR Volume Live Upgrade And Rebuild
     And Check pod 1 file data1 checksum matches checksum 1
     And Check pod 1 file data2 checksum matches checksum 2
 
-    When Upgrade volume deployment 0 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
-    And Upgrade volume 2 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    IF    '${DATA_ENGINE}' == 'v1'
+        When Upgrade volume deployment 0 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        And Upgrade volume 2 engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    END
 
     When Delete volume 2 replica on node 2
     Then Wait for volume 2 degraded
