@@ -23,3 +23,20 @@ class replica_keywords:
 
     def wait_for_replica_failed(self, volume_name, node_name):
         return self.replica.wait_for_replica_failed(volume_name, node_name)
+
+    def get_volume_replica_ip(self, volume_name, node_name):
+        return self._get_running_replica(volume_name, node_name)["status"]["ip"]
+
+    def get_volume_replica_port(self, volume_name, node_name):
+        return int(self._get_running_replica(volume_name, node_name)["status"]["port"])
+
+    def _get_running_replica(self, volume_name, node_name):
+        replicas = [
+            replica for replica in self.replica.get(volume_name, node_name)
+            if replica.get("status", {}).get("currentState") == "running"
+        ]
+        assert len(replicas) == 1, (
+            f"Expected one running replica for volume {volume_name} on "
+            f"node {node_name}, got {len(replicas)}"
+        )
+        return replicas[0]

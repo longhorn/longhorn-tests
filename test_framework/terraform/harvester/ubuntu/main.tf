@@ -7,6 +7,14 @@ terraform {
   }
 }
 
+locals {
+  ubuntu_images = {
+    "24.04" = "longhorn-qa/image-dxzp7"
+    "26.04" = "longhorn-qa/image-7kbt7"
+  }
+  image_name = lookup(local.ubuntu_images, var.os_distro_version, var.os_distro_version)
+}
+
 provider "rancher2" {
   api_url   = var.lab_url
   insecure  = true
@@ -50,7 +58,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-controlplane" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-zrzpd",
+            "imageName": "${local.image_name}",
             "size": ${var.block_device_size_controlplane},
             "bootOrder": 1
         }]
@@ -102,7 +110,7 @@ resource "rancher2_machine_config_v2" "e2e-machine-config-worker" {
     disk_info = <<EOF
     {
         "disks": [{
-            "imageName": "longhorn-qa/image-zrzpd",
+            "imageName": "${local.image_name}",
             "size": ${var.block_device_size_worker},
             "bootOrder": 1
         },
@@ -151,12 +159,14 @@ runcmd:
   - modprobe uio_pci_generic
   - modprobe vfio_pci
   - modprobe nvme-tcp
+  - modprobe ublk_drv || echo "ublk_drv is not available on $(uname -r), skipping"
   - modprobe dm_crypt
   - touch /etc/modules-load.d/modules.conf
   - echo uio >> /etc/modules-load.d/modules.conf
   - echo uio_pci_generic >> /etc/modules-load.d/modules.conf
   - echo vfio_pci >> /etc/modules-load.d/modules.conf
   - echo nvme-tcp >> /etc/modules-load.d/modules.conf
+  - echo ublk_drv >> /etc/modules-load.d/modules.conf
   - echo dm_crypt >> /etc/modules-load.d/modules.conf
   - echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
   - echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
