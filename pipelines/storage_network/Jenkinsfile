@@ -17,7 +17,6 @@ def REGISTRY_URL = ""
 
 def RUN_V2_TEST = params.RUN_V2_TEST ? params.RUN_V2_TEST : false
 def TEST_TYPE = params.TEST_TYPE ? params.TEST_TYPE : "pytest"
-def BLOCK_DEVICE_SIZE = params.TEST_TYPE == "robot" ? 80 : 40
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -90,7 +89,6 @@ node {
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                        --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
-                                       --env TF_VAR_block_device_size_worker=${BLOCK_DEVICE_SIZE} \
                                        --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
                                        --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
                                        --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \

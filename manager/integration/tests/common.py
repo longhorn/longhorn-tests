@@ -240,7 +240,6 @@ SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_V2_DATA_ENGINE = "v2-data-engine"
 SETTING_DATA_ENGINE_INTERRUPT_MODE = "data-engine-interrupt-mode-enabled"
-SETTING_DATA_ENGINE_CPU_MASK = "data-engine-cpu-mask"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
@@ -4131,17 +4130,6 @@ def reset_settings(client):
         if setting_name == "registry-secret":
             continue
 
-        if setting_name == SETTING_DATA_ENGINE_CPU_MASK:
-            if os.environ.get('RUN_V2_TEST') == "true":
-                setting = client.by_id_setting(setting_name)
-                try:
-                    client.update(setting, value='{"v2": "0x1"}')
-                except Exception as e:
-                    print(f"\nException setting {setting_name} to "
-                          "{\"v2\": \"0x1\"}")
-                    print(e)
-                continue
-
         if setting_name == "v2-data-engine":
             if v2_data_engine_cr_supported(client):
                 setting = client.by_id_setting(SETTING_V2_DATA_ENGINE)
@@ -4939,12 +4927,23 @@ def activate_standby_volume(client, volume_name,
     assert volume.standby is False
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
+    wait_for_volume_status(client, volume_name, "restoreRequired", False)
     wait_for_volume_detached(client, volume_name)
 
+    # Engine spec/status are reconciled separately from the volume state.
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastRestoredBackup == "" and \
+                engine.requestedBackupRestore == "":
+            break
+        time.sleep(RETRY_INTERVAL)
+
     volume = client.by_id_volume(volume_name)
+    assert volume.state == VOLUME_STATE_DETACHED
     engine = get_volume_engine(volume)
-    assert engine.lastRestoredBackup == ""
-    assert engine.requestedBackupRestore == ""
+    assert engine.lastRestoredBackup == "", f"engine = {engine}"
+    assert engine.requestedBackupRestore == "", f"engine = {engine}"
 
 
 def check_volume_last_backup(client, volume_name, last_backup):

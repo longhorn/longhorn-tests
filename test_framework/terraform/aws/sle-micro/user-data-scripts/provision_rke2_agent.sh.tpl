@@ -4,6 +4,7 @@ sudo modprobe uio
 sudo modprobe uio_pci_generic
 sudo modprobe vfio_pci
 sudo modprobe nvme-tcp
+sudo modprobe ublk_drv || echo "ublk_drv is not available on $(uname -r), skipping"
 sudo modprobe dm_crypt
 sudo touch /etc/modules-load.d/modules.conf
 sudo sh -c "cat > /etc/modules-load.d/modules.conf <<EOF
@@ -11,6 +12,7 @@ uio
 uio_pci_generic
 vfio_pci
 nvme-tcp
+ublk_drv
 dm_crypt
 EOF"
 

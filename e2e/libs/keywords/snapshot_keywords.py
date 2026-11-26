@@ -15,6 +15,25 @@ class snapshot_keywords:
     def create_snapshot(self, volume_name, snapshot_id, waiting=True):
         self.snapshot.create(volume_name, snapshot_id, waiting)
 
+    def create_snapshots_periodically(self, volume_name, interval, duration):
+        return self.snapshot.create_periodically(volume_name, float(interval), float(duration))
+
+    def snapshots_should_exist(self, volume_name, snapshot_names):
+        problems = []
+        for snapshot_name in snapshot_names:
+            cr = self.snapshot.get_snapshot_cr(snapshot_name)
+            if cr is None:
+                problems.append(f"{snapshot_name}: CR not found")
+            elif cr["metadata"].get("deletionTimestamp"):
+                problems.append(f"{snapshot_name}: CR is being deleted since {cr['metadata']['deletionTimestamp']}")
+
+            snapshot = self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
+            if snapshot is None:
+                problems.append(f"{snapshot_name}: not in the snapshot list")
+            elif snapshot.removed:
+                problems.append(f"{snapshot_name}: marked as removed in the snapshot list")
+        assert not problems, f"Expecting volume {volume_name} snapshots to exist, but: {problems}"
+
     def delete_snapshot(self, volume_name, snapshot_id):
         self.snapshot.delete(volume_name, snapshot_id)
 
