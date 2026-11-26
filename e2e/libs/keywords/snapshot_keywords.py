@@ -15,8 +15,30 @@ class snapshot_keywords:
     def create_snapshot(self, volume_name, snapshot_id, waiting=True):
         self.snapshot.create(volume_name, snapshot_id, waiting)
 
+    def create_snapshots_periodically(self, volume_name, interval, duration):
+        return self.snapshot.create_periodically(volume_name, float(interval), float(duration))
+
+    def snapshots_should_exist(self, volume_name, snapshot_names):
+        problems = []
+        for snapshot_name in snapshot_names:
+            cr = self.snapshot.get_snapshot_cr(snapshot_name)
+            if cr is None:
+                problems.append(f"{snapshot_name}: CR not found")
+            elif cr["metadata"].get("deletionTimestamp"):
+                problems.append(f"{snapshot_name}: CR is being deleted since {cr['metadata']['deletionTimestamp']}")
+
+            snapshot = self.snapshot.get_snapshot_by_name(volume_name, snapshot_name)
+            if snapshot is None:
+                problems.append(f"{snapshot_name}: not in the snapshot list")
+            elif snapshot.removed:
+                problems.append(f"{snapshot_name}: marked as removed in the snapshot list")
+        assert not problems, f"Expecting volume {volume_name} snapshots to exist, but: {problems}"
+
     def delete_snapshot(self, volume_name, snapshot_id):
         self.snapshot.delete(volume_name, snapshot_id)
+
+    def delete_snapshot_by_name(self, volume_name, snapshot_name):
+        self.snapshot.delete_by_name(volume_name, snapshot_name)
 
     def delete_snapshot_cr(self, volume_name, snapshot_id):
         self.snapshot.delete_cr(volume_name, snapshot_id)
@@ -133,7 +155,13 @@ class snapshot_keywords:
             time.sleep(self.retry_interval)
         assert False, f"Timed out waiting for volume {volume_name} snapshot {snapshot_id} to be ready"
 
-    def get_snapshot_name(self, volume_name, snapshot_id):
+    def get_snapshot_name(self, volume_name, snapshot_id=None):
+        if snapshot_id is None:
+            # return the first non-volume-head snapshot
+            for snapshot in self.snapshot.list(volume_name):
+                if snapshot.name != "volume-head":
+                    return snapshot.name
+            assert False, f"No non-volume-head snapshot found in volume {volume_name}"
         snapshot = self.snapshot.get(volume_name, snapshot_id)
         assert snapshot is not None, f"Snapshot {snapshot_id} not found in volume {volume_name}"
         logging(f"Got snapshot name {snapshot.name} for snapshot {snapshot_id} of volume {volume_name}")

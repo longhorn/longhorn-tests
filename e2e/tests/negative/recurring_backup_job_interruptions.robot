@@ -96,6 +96,12 @@ Recurring backup interruption by node down when cron job and volume on same node
     And Wait for statefulset 0 volume detached
     And Uncordon nodes
 
+    # The backup might have been created before the node was powered off,
+    # in which case no new recurring job pod will be created and there is nothing left to verify.
+    ${backup_created} =    Check statefulset 0 volume has created backup
+    Pass Execution If    ${backup_created}
+    ...    The backup was created before the node was powered off, skip the remaining steps
+
     When Wait until new pod for backup recurringjob 0 is created
     And Wait for backup recurringjob 0 complete
     And Wait for statefulset 0 volume detached

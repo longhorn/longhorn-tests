@@ -1,6 +1,7 @@
 from robot.libraries.BuiltIn import BuiltIn
 
 import os
+import re
 import threading
 import time
 
@@ -169,6 +170,27 @@ class host_keywords:
         logging(f"SSH into node {node_name} and run command: {cmd}")
         return ssh_exec(node_name, cmd)
 
+    def ssh_exec_on_node_and_wait_for_output(self, node_name, cmd, expected_output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+
+        try:
+            expected_pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            expected_pattern = re.compile(re.escape(expected_output), re.DOTALL)
+
+        res = None
+        for i in range(retry_count):
+            logging(f"Waiting for SSH command {cmd} on node {node_name} returning output {expected_output} ... ({i})")
+            try:
+                res = ssh_exec(node_name, cmd)
+                if expected_pattern.search(res):
+                    return res
+            except Exception as e:
+                logging(f"SSH command {cmd} on node {node_name} and wait for output {expected_output} error: {e}")
+            time.sleep(retry_interval)
+
+        assert False, f"Timeout waiting for output {expected_output} in SSH command {cmd} result on node {node_name}: {res}"
+
     def set_cpu_manager_policy_on_all_worker_nodes(self, policy):
         k8s_distro = os.environ.get("K8S_DISTRO", "k3s")
         if k8s_distro == "k3s":
@@ -181,36 +203,13 @@ class host_keywords:
             raise Exception(f"Unsupported K8S_DISTRO for cpu-manager-policy change: {k8s_distro}")
 
         worker_nodes = self.node.list_node_names_by_role("worker")
-        retry_count, retry_interval = get_retry_count_and_interval()
         for node_name in worker_nodes:
-            set = True
+            # ssh_exec already retries, so don't wrap it in another retry loop
             logging(f"Setting cpu-manager-policy to {policy} on node {node_name} via {config_file}")
             sed_cmd = f"sudo sed -i 's/cpu-manager-policy=[a-z]*/cpu-manager-policy={policy}/g' {config_file}"
-            for i in range(retry_count):
-                try:
-                    ssh_exec(node_name, sed_cmd)
-                    break
-                except Exception as e:
-                    logging(f"Failed to set cpu-manager-policy on node {node_name}: {e} ... ({i})")
-                    set = False
-                    time.sleep(retry_interval)
+            ssh_exec(node_name, sed_cmd)
             # Remove stale cpu-manager state file so kubelet accepts the new policy
             logging(f"Removing stale cpu_manager_state on node {node_name}")
-            for i in range(retry_count):
-                try:
-                    ssh_exec(node_name, "sudo rm -f /var/lib/kubelet/cpu_manager_state")
-                    break
-                except Exception as e:
-                    logging(f"Failed to remove stale cpu_manager_state on node {node_name}: {e} ... ({i})")
-                    set = False
-                    time.sleep(retry_interval)
+            ssh_exec(node_name, "sudo rm -f /var/lib/kubelet/cpu_manager_state")
             logging(f"Restarting {service_name} on node {node_name}")
-            for i in range(retry_count):
-                try:
-                    ssh_exec(node_name, f"sudo systemctl restart {service_name}")
-                    break
-                except Exception as e:
-                    logging(f"Failed to restart {service_name} on node {node_name}: {e} ... ({i})")
-                    set = False
-                    time.sleep(retry_interval)
-            assert set, f"Failed to set cpu-manager-policy to {policy} on node {node_name}"
+            ssh_exec(node_name, f"sudo systemctl restart {service_name}")
