@@ -501,6 +501,9 @@ class volume_keywords:
     def wait_for_volume_unknown(self, volume_name):
         self.volume.wait_for_volume_unknown(volume_name)
 
+    def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
+        self.volume.wait_for_volume_robustness_not(volume_name, not_desired_state)
+
     def wait_for_volume_deleted(self, volume_name):
         self.volume.wait_for_volume_deleted(volume_name)
 
