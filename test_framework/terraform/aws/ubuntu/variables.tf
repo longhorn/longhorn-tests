@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "24.04"
+  default     = "26.04"
 }
 
 variable "aws_ami_ubuntu_account_number" {
