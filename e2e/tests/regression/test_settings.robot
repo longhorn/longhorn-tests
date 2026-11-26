@@ -111,6 +111,26 @@ All engine image daemonset should have liveness probe settings
     END
 
 *** Test Cases ***
+Test Guaranteed Instance Manager CPU Maximum Value
+    [Documentation]    Verify the maximum instance manager CPU reservation for the selected data engine.
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13641
+    IF    '${DATA_ENGINE}' == 'v1'
+        ${valid_value} =    Set Variable    {"v1":"50","v2":"12"}
+        ${invalid_value} =    Set Variable    {"v1":"51","v2":"12"}
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        ${valid_value} =    Set Variable    {"v1":"12","v2":"50"}
+        ${invalid_value} =    Set Variable    {"v1":"12","v2":"51"}
+    END
+
+    When Setting guaranteed-instance-manager-cpu is set to ${valid_value}
+    IF    '${DATA_ENGINE}' == 'v2'
+        And Wait for v2 instance manager pods restarted
+        And Wait for longhorn ready
+    END
+    Then Wait Until Keyword Succeeds    ${RETRY_COUNT}s    ${RETRY_INTERVAL}s
+    ...    All ${DATA_ENGINE} instance manager pods should request 50 percent of allocatable CPU
+    And Set setting guaranteed-instance-manager-cpu to ${invalid_value} will fail
+
 Test Setting Update With Valid Value
     [Documentation]    Test that valid setting updates are applied correctly.
     [Template]    Update Setting To Valid Value And Verify

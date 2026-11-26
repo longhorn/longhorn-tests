@@ -25,6 +25,27 @@ Library             ../libs/keywords/engine_keywords.py
 ${LONGHORN_REPO_DIR}    /tmp/longhorn/longhorn
 
 *** Keywords ***
+Convert CPU Quantity To Millicores
+    [Arguments]    ${quantity}
+    ${millicores} =    Evaluate    int(kubernetes.utils.quantity.parse_quantity($quantity) * 1000)    modules=kubernetes.utils.quantity
+    RETURN    ${millicores}
+
+All ${data_engine} instance manager pods should request ${percentage} percent of allocatable CPU
+    ${pods} =    Run command
+    ...    kubectl -n ${LONGHORN_NAMESPACE} get pod -l longhorn.io/component=instance-manager,longhorn.io/data-engine=${data_engine} -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName,STATUS:.status.phase,CPU_REQUEST:.spec.containers[0].resources.requests.cpu --no-headers
+    @{pods} =    Split To Lines    ${pods}
+    Should Not Be Empty    ${pods}
+    FOR    ${pod}    IN    @{pods}
+        @{fields} =    Split String    ${pod}
+        Length Should Be    ${fields}    4
+        Should Be Equal    ${fields}[2]    Running
+        ${allocatable_cpu} =    Run command    kubectl get node ${fields}[1] -o jsonpath='{.status.allocatable.cpu}'
+        ${allocatable_millicpu} =    Convert CPU Quantity To Millicores    ${allocatable_cpu}
+        ${expected_millicpu} =    Evaluate    ($allocatable_millicpu * int($percentage) + 50) // 100
+        ${request_millicpu} =    Convert CPU Quantity To Millicores    ${fields}[3]
+        Should Be Equal As Integers    ${request_millicpu}    ${expected_millicpu}    CPU request mismatch for ${fields}[0] on ${fields}[1]
+    END
+
 Wait for longhorn ready
     wait_for_all_instance_manager_running
 
