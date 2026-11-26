@@ -27,6 +27,10 @@ class Node:
     control_plane_nodes = None
     worker_nodes = None
 
+    # node name -> resolved block disk path, shared across Node instances so
+    # the path is resolved only once per node for the whole test run
+    block_disk_paths = {}
+
     def __init__(self):
         if not Node.all_nodes:
             self.init_node_list()
@@ -678,6 +682,36 @@ class Node:
         node = get_longhorn_client().by_id_node(node_name)
         return node["disks"][disk_name]["conditions"]["Ready"]["reason"] == "DiskFilesystemChanged"
 
+    def get_disk_condition(self, node_name, disk_name, condition_type):
+        node = get_longhorn_client().by_id_node(node_name)
+        return node["disks"][disk_name]["conditions"][condition_type]
+
+    def wait_for_disk_condition(self, node_name, disk_name, condition_type, status, reason=None):
+        condition = None
+        for i in range(self.retry_count):
+            try:
+                condition = self.get_disk_condition(node_name, disk_name, condition_type)
+                if condition["status"] == status and (reason is None or condition["reason"] == reason):
+                    return
+            except Exception as e:
+                logging(f"Getting disk {disk_name} {condition_type} condition on node {node_name} failed: {e}")
+            logging(f"Waiting for disk {disk_name} on node {node_name} {condition_type} condition to be {status} "
+                    f"with reason {reason} ... ({i}), current condition: {condition}")
+            time.sleep(self.retry_interval)
+        assert False, f"Disk {disk_name} on node {node_name} {condition_type} condition did not become {status} with reason {reason}: {condition}"
+
+    def check_disk_uuid_unchanged(self, node_name, disk_name, expected_uuid):
+        uuid = self.get_disk_uuid(node_name, disk_name)
+        assert uuid == expected_uuid, f"Disk {disk_name} on node {node_name} uuid changed from {expected_uuid} to {uuid}"
+
+    def wait_for_disk_path_kept_empty(self, node_name, disk_path, keep_rounds=constant.DISK_UNSCHEDULABLE_KEEP_ROUNDS):
+        """Longhorn must not write a disk config or replicas directory into an unmounted data path."""
+        for i in range(keep_rounds):
+            content = NodeExec(node_name).issue_cmd(f"ls -A {disk_path}")
+            logging(f"Checking disk path {disk_path} on node {node_name} stays empty ... ({i}), content: '{content}'")
+            assert not content.strip(), f"Unexpected content in unmounted disk path {disk_path} on node {node_name}: {content}"
+            time.sleep(self.retry_interval)
+
     def is_disk_unschedulable(self, node_name, disk_name):
         node = get_longhorn_client().by_id_node(node_name)
         return node["disks"][disk_name]["conditions"]["Schedulable"]["status"] == "False"
@@ -774,6 +808,30 @@ class Node:
         logging(f"Removing directory {dir_path} on node {node_name}")
         cmd = f"rm -rf {dir_path}"
         NodeExec(node_name).issue_cmd(cmd)
+
+    def get_default_block_disk_path(self, node_name, disk_path):
+        # Prefer the /dev/disk/by-id symlink of the block device since it is stable.
+        # A BDF path is used as is. Fall back to disk_path if no valid symlink can be found.
+        if self.is_bdf_disk_path(disk_path):
+            return disk_path
+
+        cached_path = Node.block_disk_paths.get(node_name)
+        if cached_path:
+            logging(f"Using cached block disk path {cached_path} for node {node_name}")
+            return cached_path
+
+        cmd = (f'[ -d /dev/disk/by-id ] && for f in /dev/disk/by-id/*; do '
+               f'[ "$(readlink -f "$f")" = "$(readlink -f {disk_path})" ] && echo "$f" && break; done; true')
+        try:
+            by_id_path = str(NodeExec(node_name).issue_cmd(cmd)).strip()
+        except Exception as e:
+            logging(f"Failed to get by-id path of {disk_path} on node {node_name}: {e}")
+            by_id_path = ""
+
+        if not re.fullmatch(r"/dev/disk/by-id/\S+", by_id_path):
+            return disk_path
+        Node.block_disk_paths[node_name] = by_id_path
+        return by_id_path
 
     def is_bdf_disk_path(self, disk_path):
         return re.match(constant.BDF_PATTERN, str(disk_path)) is not None

@@ -24,17 +24,8 @@ class V1_InstanceManager(Base):
         cmd = f"sudo chattr -R +i /var/lib/longhorn/replicas/{replica_dir}"
         logging(f"Crashing replica {replica_name} (directory {replica_dir}) on node {node_name} by making it immutable")
 
-        last_error = None
-        for i in range(self.retry_count):
-            try:
-                ssh_exec(node_name, cmd)
-                logging(f"Crashed replica {replica_name} (directory {replica_dir}) on node {node_name}")
-                return
-            except Exception as e:
-                last_error = e
-                logging(f"Failed to crash replica {replica_name} on node {node_name} ... ({i}): {e}")
-            time.sleep(self.retry_interval)
-        assert False, f"Failed to crash replica {replica_name} (directory {replica_dir}) on node {node_name}: {last_error}"
+        ssh_exec(node_name, cmd)
+        logging(f"Crashed replica {replica_name} (directory {replica_dir}) on node {node_name}")
 
     def create_stale_stopped_engine_process(self, node_name, engine_name):
         # Reproduces the leaked `stopped` v1 engine process record from

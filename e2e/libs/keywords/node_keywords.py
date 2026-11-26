@@ -29,11 +29,17 @@ class node_keywords:
         }
         self.node.add_disk(node_name, disk, wait)
 
+    def get_default_block_disk_path_on_node(self, node_name, disk_path):
+        return self.node.get_default_block_disk_path(node_name, disk_path)
+
     def cleanup_disks(self, data_engine, default_block_disk_path=None):
         nodes = self.node.list_node_names_by_role("worker")
         for node_name in nodes:
             logging(f"Resetting node {node_name} disks to default")
-            self.node.reset_disks(node_name, data_engine, default_block_disk_path)
+            block_disk_path = default_block_disk_path
+            if data_engine == "v2":
+                block_disk_path = self.node.get_default_block_disk_path(node_name, default_block_disk_path)
+            self.node.reset_disks(node_name, data_engine, block_disk_path)
 
     def reset_node_disks_tags(self):
         nodes = self.node.list_node_names_by_role("worker")
@@ -201,6 +207,15 @@ class node_keywords:
 
     def wait_for_disk_device_released(self, node_name, bdf):
         self.node.wait_for_disk_device_released(node_name, bdf)
+
+    def wait_for_disk_condition(self, node_name, disk_name, condition_type, status, reason=None):
+        self.node.wait_for_disk_condition(node_name, disk_name, condition_type, status, reason or None)
+
+    def check_disk_uuid_unchanged(self, node_name, disk_name, expected_uuid):
+        self.node.check_disk_uuid_unchanged(node_name, disk_name, expected_uuid)
+
+    def wait_for_disk_path_kept_empty(self, node_name, disk_path):
+        self.node.wait_for_disk_path_kept_empty(node_name, disk_path)
 
     def wait_for_disk_schedulable(self, node_name, disk_name):
         self.node.wait_for_disk_schedulable(node_name, disk_name)

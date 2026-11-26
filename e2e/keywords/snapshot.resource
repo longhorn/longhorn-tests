@@ -20,6 +20,15 @@ Delete snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot    ${volume_name}    ${snapshot_id}
 
+Remove snapshot ${snapshot_name} by name from volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_snapshot_by_name    ${volume_name}    ${snapshot_name}
+
+Get snapshot of volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${snapshot_name} =    get_snapshot_name    ${volume_name}
+    RETURN    ${snapshot_name}
+
 Delete snapshot ${snapshot_id} CR of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot_cr    ${volume_name}    ${snapshot_id}
@@ -110,6 +119,20 @@ Create ${snapshot_count} snapshot for volume ${volume_id}
     FOR    ${i}    IN RANGE    ${snapshot_count}
         Create snapshot ${i} of volume ${volume_id}
     END
+
+Create snapshots of volume ${volume_id} every ${interval} seconds for ${duration} seconds
+    [Documentation]    Snapshots that fail to be created are skipped. The
+    ...    names of the snapshots that became ready are saved in
+    ...    \${ready_snapshots}. Each call overwrites the saved names.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${ready_snapshots} =    create_snapshots_periodically    ${volume_name}    ${interval}    ${duration}
+    Should Not Be Empty    ${ready_snapshots}    no snapshot of volume ${volume_name} became ready
+    Set Test Variable    ${ready_snapshots}
+
+Ready snapshots of volume ${volume_id} should still exist
+    [Documentation]    Checks the snapshots saved in \${ready_snapshots}.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    snapshots_should_exist    ${volume_name}    ${ready_snapshots}
 
 Validate snapshot ${snapshot_id} checksum of volume ${volume_id} is skipped for ${timeout} seconds
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

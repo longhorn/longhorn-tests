@@ -123,11 +123,11 @@ Enable v2 data engine and add block disks
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
     Return From Keyword If    "${V2_DATA_ENGINE_ENABLED}" == "true"
-    update_setting    data-engine-cpu-mask    {"v2": "0x1"}
     update_setting    v2-data-engine    true
     ${worker_nodes}=    get_worker_nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
-        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${DISK_PATH}    wait=${wait}
+        ${block_disk_path}=    get_default_block_disk_path_on_node    ${worker_node}    ${DISK_PATH}
+        add_disk    ${DEFAULT_BLOCK_DISK_NAME}    ${worker_node}    block    ${block_disk_path}    wait=${wait}
     END
 
 Init worker node variables

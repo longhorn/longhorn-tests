@@ -39,7 +39,7 @@ resource "aws_vpc" "lh_aws_vpc" {
 # Jenkins egress (public on OCI, private on HAL), the cluster's own subnet, and an optional user-specified debug range
 locals {
   allowed_cidrs = concat(
-    ["129.80.0.0/16", "10.115.0.0/16"],
+    ["129.80.0.0/16", "10.115.0.0/16", "195.135.0.0/16"],
     [aws_subnet.lh_aws_subnet.cidr_block],
     compact([var.debug_cidr])
   )
