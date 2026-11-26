@@ -13,8 +13,8 @@ class SystemBackup(Base):
         else:
             self.system_backup = Rest()
 
-    def create(self, backup_name, backup_policy):
-        return self.system_backup.create(backup_name, backup_policy)
+    def create(self, backup_name, backup_policy, wait=True):
+        return self.system_backup.create(backup_name, backup_policy, wait)
 
     def restore(self, backup_name):
         return self.system_backup.restore(backup_name)
