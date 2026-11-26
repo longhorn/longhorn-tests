@@ -66,3 +66,6 @@ class RecurringJob(Base):
 
     def update_recurringjob(self, job_name, groups, cron, concurrency, labels, parameters):
         self.recurringjob.update_recurringjob(job_name, groups, cron, concurrency, labels, parameters)
+
+    def get_systembackups(self, job_name):
+        return self.recurringjob.get_systembackups(job_name)

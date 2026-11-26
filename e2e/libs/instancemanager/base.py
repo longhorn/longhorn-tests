@@ -234,7 +234,7 @@ class Base:
         cmd = f"kubectl get instancemanager -l longhorn.io/node={node_name},longhorn.io/data-engine={engine_type} -n {constant.LONGHORN_NAMESPACE} -ojson"
         for i in range(self.retry_count):
             logging(f"Waiting for engine instances in {engine_type} instance manager on node {node_name} to be cleaned up ... ({i})")
-            cr = json.loads(subprocess_exec_cmd(cmd))['items'][0]
+            cr = json.loads(subprocess_exec_cmd(cmd, verbose=False))['items'][0]
             if "instanceEngines" in cr["status"] and cr['status']['instanceEngines']:
                 time.sleep(self.retry_interval)
             else:
@@ -243,5 +243,13 @@ class Base:
 
     def get_instance_manager_pod_on_node(self, node_name, engine_type):
         label_selector = f"longhorn.io/component=instance-manager,longhorn.io/data-engine={engine_type},longhorn.io/node={node_name}"
-        ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
-        return ims[0].metadata.name
+        for i in range(self.retry_count):
+            try:
+                ims = list_pods(constant.LONGHORN_NAMESPACE, label_selector)
+                for pod in ims:
+                    if pod.status.phase == "Running":
+                        return pod.metadata.name
+            except Exception as e:
+                logging(f"Getting {engine_type} instance manager pod on node {node_name} error: {e} ... ({i})")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to get running {engine_type} instance manager pod on node {node_name} after {self.retry_count} attempts"

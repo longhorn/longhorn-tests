@@ -20,6 +20,19 @@ Resource    ../keywords/replica.resource
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
 
+*** Keywords ***
+Recover crashed replica and cleanup test resources
+    [Documentation]    Undo "Permanently crash volume replica on node" so
+    ...    that Longhorn can delete the replica data, then clean up. A node
+    ...    still deleted is added back first so that it is reachable over SSH.
+    Add deleted node back
+    ${replica_dir} =    Get Variable Value    \${crashed_replica_dir}
+    IF    $replica_dir is not None
+        Run Keyword And Ignore Error    ssh_exec_on_node    ${crashed_replica_node}
+        ...    sudo chattr -R -i /var/lib/longhorn/replicas/${replica_dir}
+    END
+    Cleanup test resources
+
 *** Test Cases ***
 Test Replica Rebuilding Per Volume Limit
     [Tags]    coretest
@@ -370,7 +383,7 @@ Test Crashed Replica Not Reused After Node Back
     ...       directory for v1),
     ...    3. Directly remove that Kubernetes node.
     ...    4. Wait for the related replica failure (volume becomes degraded).
-    ...    5. Reboot the removed node to add it back to the cluster.
+    ...    5. Add the removed node back to the cluster.
     ...    6. Longhorn tries to reuse the failed replica, but fails since it
     ...       was crashed.
     ...    7. After the replica-replenishment-wait-interval, a new replica is
@@ -378,6 +391,7 @@ Test Crashed Replica Not Reused After Node Back
     ...    8. Verify the replica on the returned node was NOT reused (a new
     ...       replica was created instead of the original one).
     ...    9. Verify the data of the volume is intact.
+    [Teardown]    Recover crashed replica and cleanup test resources
     IF    '${DATA_ENGINE}' == 'v2'
         Skip    permanently crashing a v2 replica is not currently supported
     END
@@ -393,7 +407,7 @@ Test Crashed Replica Not Reused After Node Back
     When Delete node 1
     Then Wait for volume 0 degraded
 
-    When Reboot node 1
+    When Add deleted node back
     Then Wait for volume 0 healthy
     And Check volume 0 replica not reused on node 1
     And Check volume 0 data is intact
@@ -513,3 +527,41 @@ Test Large Volume Delta Replica Rebuilding Performance
     ${status}=    Evaluate    ${delta_rebuild_time} <= ${full_rebuild_time}
     Run Keyword If    not ${status}
     ...    Fail    The delta rebuild time ${delta_rebuild_time}s > full rebuild time ${full_rebuild_time}s
+
+Test Snapshot Not Deleted During Replica Rebuilding
+    [Documentation]    Test that a snapshot created around the start of a
+    ...    replica rebuild is not deleted by Longhorn.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14596
+    ...
+    ...    Longhorn used to delete a snapshot that was created just before a
+    ...    replica rebuild started. The exact timing is hard to hit, so this
+    ...    test creates one snapshot per second right after deleting a
+    ...    replica.
+    ...
+    ...    1. Enable auto-cleanup-system-generated-snapshot.
+    ...    2. Create a volume with 3 replicas, attach it and write data to it.
+    ...    3. Delete one replica to trigger a rebuild.
+    ...    4. Create one snapshot per second for 30 seconds. Keep the names of
+    ...       the snapshots that became ready.
+    ...    5. Wait for the rebuild to complete and the volume to be healthy.
+    ...    6. Every kept snapshot should still have its CR, without a deletion
+    ...       timestamp, and be in the volume snapshot list.
+    ...    7. Repeat steps 3 to 6 for the replica on each node.
+    ...    8. Check the volume data is intact.
+    Given Setting auto-cleanup-system-generated-snapshot is set to true
+    And Create volume 0 with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    FOR    ${node_id}    IN RANGE    3
+        When Delete volume 0 replica on node ${node_id}
+        And Create snapshots of volume 0 every 1 seconds for 30 seconds
+        And Wait until volume 0 replica rebuilding completed on node ${node_id}
+        And Wait for volume 0 healthy
+
+        Then Ready snapshots of volume 0 should still exist
+    END
+
+    And Check volume 0 data is intact

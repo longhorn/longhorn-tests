@@ -224,6 +224,59 @@ Test Replica Auto Balance Node Least Effort
     And Wait for volume 0 healthy
     And Check volume 0 data is intact
 
+Test Replica Auto Balance Zone Best Effort Rebalances Uneven Zones
+    [Tags]    auto-balance    zone
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14448
+    ...
+    ...    Requires 5 worker nodes: 3 in zone-a, 2 in zone-b.
+    ...
+    ...    A healthy 4-replica volume spread 3+1 across two zones should be
+    ...    rebalanced to 2+2 by best-effort auto-balance once the smaller zone
+    ...    gets a free schedulable node.
+    ...
+    ...    The issue reproduces this by power-cycling all nodes of one zone in a
+    ...    2x4 cluster. This test reaches the same 3+1 state directly: one
+    ...    zone-b node is kept unschedulable while the volume is created, then
+    ...    released.
+    ${worker_nodes} =    get_worker_nodes
+    ${worker_count} =    Get Length    ${worker_nodes}
+    IF    ${worker_count} < 5
+        Skip    Test case requires at least 5 worker nodes, found ${worker_count}
+    END
+
+    Given Setting replica-soft-anti-affinity is set to false
+    And Setting replica-zone-soft-anti-affinity is set to true
+    And Setting replica-auto-balance is set to best-effort
+    And Set k8s node 0 zone lh-zone-a
+    And Set k8s node 1 zone lh-zone-a
+    And Set k8s node 2 zone lh-zone-a
+    And Set k8s node 3 zone lh-zone-b
+    And Set k8s node 4 zone lh-zone-b
+    # hard node anti-affinity on 4 schedulable nodes forces one replica per node: 3+1
+    And Disable node 4 scheduling
+    And Create volume 0 with    numberOfReplicas=4    dataEngine=${DATA_ENGINE}
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+    And Volume 0 should have 1 running replicas on node 0
+    And Volume 0 should have 1 running replicas on node 1
+    And Volume 0 should have 1 running replicas on node 2
+    And Volume 0 should have 1 running replicas on node 3
+    And Volume 0 should have 0 running replicas on node 4
+
+    # releasing node 4 gives zone-b a candidate node without a replica
+    # best-effort zone balancing should add a replica there and remove one from zone-a
+    When Enable node 4 scheduling
+
+    Then Volume 0 should have running replicas on node 4
+    And Volume 0 should have 4 running replicas
+    And Volume 0 should have 1 running replicas on node 3
+    And Volume 0 should have 1 running replicas on node 4
+    # re-check the count for ~150 s to make sure the layout settles instead of looping add/remove
+    And Volume 0 should have 4 running replicas and no additional scheduling occurs
+    And Wait for volume 0 healthy
+    And Check volume 0 data is intact
+
 Test Data Locality
     [Tags]    single-replica
     [Documentation]    Test that Longhorn builds a local replica on the engine node
@@ -547,6 +600,95 @@ Test Longhorn UI Topology Spread Constraints Passthrough And Enforcement
     And Check all Longhorn CRD removed
     And Install Longhorn
     And Wait for longhorn ready
+
+Test Longhorn Global Manager Topology Spread Constraints Passthrough And Enforcement
+    [Tags]    setting    uninstall    helm
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14224
+    ...
+    ...                This test case is only applicable for helm installation method.
+    ...
+    ...                Manual test steps:
+    ...                1. Install Longhorn with
+    ...                   'longhornGlobalManager.topologySpreadConstraints=[{"maxSkew":1,
+    ...                   "topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway",
+    ...                   "labelSelector":{"matchLabels":{"app":"longhorn-global-manager"}}}]'
+    ...                2. kubectl -n longhorn-system get deploy longhorn-global-manager
+    ...                   -o jsonpath='{.spec.template.spec.topologySpreadConstraints}'
+    ...                3. Expected: the constraint appears verbatim on the pod spec, and
+    ...                   all 3 replicas are Running.
+    ...                4. Label node 0 and 1 with topology-test=zone-a, node 2 with
+    ...                   topology-test=zone-b, cordon node 2, and repeat with
+    ...                   topologyKey: topology-test, whenUnsatisfiable: DoNotSchedule.
+    ...                5. Expected: 1 replica Running, 2 Pending with a scheduling event
+    ...                   citing topology spread constraints.
+    ...                6. Uncordon node 2. Expected: all 3 replicas Running, with
+    ...                   1 on node 2 (zone-b) and 2 in zone-a.
+    ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
+    IF    '${LONGHORN_INSTALL_METHOD}' != 'helm'
+        Skip    Test case only applicable for helm installation method
+    END
+
+    TRY
+        Given Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+        When Install Longhorn
+        ...    custom_cmd=yq -i '.longhornGlobalManager.topologySpreadConstraints = [{"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway","labelSelector":{"matchLabels":{"app":"longhorn-global-manager"}}}]' values.yaml
+
+        Then Run command and expect output
+        ...    kubectl get deploy longhorn-global-manager -n ${LONGHORN_NAMESPACE} -ojsonpath='{.spec.template.spec.topologySpreadConstraints[*].whenUnsatisfiable}'
+        ...    ScheduleAnyway
+        And Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    3
+
+        # Label node 0 and node 1 as topology-test=zone-a and node 2 as zone-b, then
+        # cordon node 2. zone-b stays an empty domain, so with maxSkew=1 only 1 replica
+        # can be placed in zone-a and the other 2 must stay Pending. Without the
+        # constraint, all 3 replicas would run on nodes 0 and 1.
+        When Run command
+        ...    kubectl label node ${NODE_0} ${NODE_1} topology-test=zone-a --overwrite
+        And Run command
+        ...    kubectl label node ${NODE_2} topology-test=zone-b --overwrite
+        And Cordon node 2
+        And Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+
+        And Install Longhorn
+        ...    custom_cmd=yq -i '.longhornGlobalManager.topologySpreadConstraints = [{"maxSkew":1,"topologyKey":"topology-test","whenUnsatisfiable":"DoNotSchedule","labelSelector":{"matchLabels":{"app":"longhorn-global-manager"}}}]' values.yaml
+
+        Then Run command and expect output
+        ...    kubectl get deploy longhorn-global-manager -n ${LONGHORN_NAMESPACE} -ojsonpath='{.spec.template.spec.topologySpreadConstraints[*].topologyKey}'
+        ...    topology-test
+        And Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    1
+        And Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Pending --no-headers | wc -l
+        ...    2
+        And Run command and expect output
+        ...    kubectl get events -n ${LONGHORN_NAMESPACE} --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp'
+        ...    didn't match pod topology spread constraints
+
+        # uncordon node 2 so zone-b becomes schedulable, expect a 2/1 split
+        When Uncordon node 2
+        Then Run command and wait for output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=status.phase=Running --no-headers | wc -l
+        ...    3
+        And Run command and expect output
+        ...    kubectl get pods -n ${LONGHORN_NAMESPACE} -l app=longhorn-global-manager --field-selector=spec.nodeName=${NODE_2} --no-headers | wc -l
+        ...    1
+    FINALLY
+        And Uncordon node 2
+        And Run command
+        ...    kubectl label node ${NODE_0} ${NODE_1} ${NODE_2} topology-test-
+        And Setting deleting-confirmation-flag is set to true
+        And Uninstall Longhorn
+        And Check all Longhorn CRD removed
+        And Install Longhorn
+        And Wait for longhorn ready
+    END
 
 Test System Managed Components Node Selector
     [Tags]    uninstall

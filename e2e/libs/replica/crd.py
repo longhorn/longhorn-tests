@@ -40,9 +40,9 @@ class CRD(Base):
         for i in range(self.retry_count):
             logging(f"Waiting for volume {volume_name} having {count} replicas running on node {node_name} disk {disk_uuid} ... ({i})")
             current_count = len(self.get(volume_name, node_name, disk_uuid))
-            if not count and current_count > 0:
+            if count is None and current_count > 0:
                 return
-            elif count and int(count) == current_count:
+            elif count is not None and int(count) == current_count:
                 return
             time.sleep(self.retry_interval)
         assert False, f"Failed to wait for volume {volume_name} having {count} replicas running on node {node_name} disk {disk_uuid}"

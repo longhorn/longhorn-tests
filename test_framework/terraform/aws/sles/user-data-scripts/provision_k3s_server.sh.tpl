@@ -30,14 +30,12 @@ case "${network_stack}" in
   dual-stack-ipv6-first)
     k3s_server_public_ip="$ipv6_public_ip"
     dual_stack_node_ip="$ipv6_public_ip,$private_ipv4"
-    dual_stack_external_ip="$ipv6_public_ip,${control_plane_ipv4}"
     dual_stack_cluster_cidr="fd00:10::/56,10.42.0.0/16"
     dual_stack_service_cidr="fd00:20::/112,10.43.0.0/16"
     ;;
   dual-stack-ipv4-first)
     k3s_server_public_ip="${control_plane_ipv4}"
     dual_stack_node_ip="$private_ipv4,$ipv6_public_ip"
-    dual_stack_external_ip="${control_plane_ipv4},$ipv6_public_ip"
     dual_stack_cluster_cidr="10.42.0.0/16,fd00:10::/56"
     dual_stack_service_cidr="10.43.0.0/16,fd00:20::/112"
     ;;
@@ -63,7 +61,6 @@ elif [[ "${network_stack}" == dual-stack-* ]]; then
     --tls-san ${control_plane_ipv4} \
     --tls-san $ipv6_public_ip \
     --node-ip $dual_stack_node_ip \
-    --node-external-ip $dual_stack_external_ip \
     --flannel-ipv6-masq \
     --cluster-cidr=$dual_stack_cluster_cidr \
     --service-cidr=$dual_stack_service_cidr"
@@ -85,6 +82,19 @@ if [[ "${cni}" != "default" ]]; then
   K3S_EXEC="$K3S_EXEC \
     --flannel-backend=none \
     --disable-network-policy"
+fi
+
+if [[ -n "${registry_ip}" ]]; then
+  mkdir -p /etc/rancher/k3s
+  cat << EOF > /etc/rancher/k3s/registry-ca.crt
+${registry_ca}
+EOF
+  cat << EOF > /etc/rancher/k3s/registries.yaml
+configs:
+  "${registry_ip}":
+    tls:
+      ca_file: /etc/rancher/k3s/registry-ca.crt
+EOF
 fi
 
 until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="$K3S_EXEC" INSTALL_K3S_VERSION="${k3s_version}" sh -); do

@@ -61,6 +61,16 @@ Set node ${node_id} disks tags
     ${node_name} =    get_node_by_index    ${node_id}
     set_node_disks_tags   ${node_name}    @{tags}
 
+Set disk ${disk_name} tags on node ${node_id}
+    [Arguments]    @{tags}
+    ${node_name} =    get_node_by_index    ${node_id}
+    set_disk_tags   ${node_name}    ${disk_name}    @{tags}
+
+Get default disk name on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${disk_name} =    get_default_disk_name    ${node_name}    ${DATA_ENGINE}
+    RETURN    ${disk_name}
+
 Label node ${node_id} with ${label}
     ${node_name} =    get_node_by_index    ${node_id}
     label_node   ${node_name}    ${label}
@@ -242,3 +252,21 @@ Get by-id device path for ${disk_path} on node ${node_id}
     ${by_id_path} =    Run command on node    ${node_id}
     ...    printf '%s' "$(for f in /dev/disk/by-id/*; do [ "$(readlink -f "$f")" = "$(readlink -f ${disk_path})" ] && echo "$f" && break; done)"
     RETURN    ${by_id_path}
+
+Record disk ${disk_name} uuid on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${recorded_disk_uuid} =    get_disk_uuid    ${node_name}    ${disk_name}
+    Set Test Variable    ${recorded_disk_uuid}
+
+Wait for disk ${disk_name} on node ${node_id} ${condition_type} condition to be ${status}
+    [Arguments]    ${reason}=${EMPTY}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_disk_condition    ${node_name}    ${disk_name}    ${condition_type}    ${status}    ${reason}
+
+Check disk ${disk_name} on node ${node_id} still has the recorded uuid
+    ${node_name} =    get_node_by_index    ${node_id}
+    check_disk_uuid_unchanged    ${node_name}    ${disk_name}    ${recorded_disk_uuid}
+
+Check unmounted disk path ${disk_path} on node ${node_id} stays empty
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_disk_path_kept_empty    ${node_name}    ${disk_path}

@@ -39,3 +39,24 @@ output "resource_suffix" {
 
   value = random_string.random_suffix.id
 }
+
+output "registry_url" {
+  depends_on = [
+    null_resource.registry_post_setup
+  ]
+
+  value = local.registry_ip
+}
+
+output "registry_username" {
+  value = var.airgap ? local.registry_username : ""
+}
+
+output "registry_password" {
+  value     = var.airgap ? random_string.registry_password.id : ""
+  sensitive = true
+}
+
+output "registry_ca" {
+  value = var.airgap ? tls_self_signed_cert.registry_ca[0].cert_pem : ""
+}

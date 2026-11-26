@@ -6,8 +6,8 @@ class system_backup_keywords:
     def __init__(self):
         self.system_backup = SystemBackup()
 
-    def create_system_backup(self, backup_name, backup_policy='if-not-present'):
-        self.system_backup.create(backup_name, backup_policy)
+    def create_system_backup(self, backup_name, backup_policy='if-not-present', wait=True):
+        self.system_backup.create(backup_name, backup_policy, wait)
 
     def create_system_restore(self, backup_name):
         self.system_backup.restore(backup_name)
@@ -23,3 +23,12 @@ class system_backup_keywords:
 
     def cleanup_system_restores(self):
         self.system_backup.cleanup_system_restores()
+
+    def set_system_backup_status(self, backup_name, **status):
+        return self.system_backup.set_system_backup_status(backup_name, status)
+
+    def check_system_backup_created_at_empty(self, backup_name):
+        self.system_backup.check_system_backup_created_at_empty(backup_name)
+
+    def wait_for_system_backup_deleted(self, backup_name):
+        self.system_backup.wait_for_system_backup_deleted(backup_name)

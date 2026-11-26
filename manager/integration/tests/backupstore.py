@@ -15,8 +15,8 @@ from common import SETTING_BACKUP_TARGET
 from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
-from common import RETRY_COUNTS
 from common import RETRY_COUNTS_SHORT
+from common import RETRY_COUNTS_LONG
 from common import RETRY_INTERVAL
 from common import EXCEPTION_ERROR_REASON_NOT_FOUND
 from common import cleanup_all_volumes
@@ -331,7 +331,7 @@ def wait_for_default_backup_target_available(client):
             _version in version_doesnt_support):
         return
 
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         print(f"waiting for default backup target available ... ({i})")
         bt = client.by_id_backupTarget(DEFAULT_BACKUPTARGET)
         if bt.available:

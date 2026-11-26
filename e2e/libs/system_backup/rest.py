@@ -11,9 +11,11 @@ class Rest(Base):
     def __init__(self):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, backup_name, backup_policy):
+    def create(self, backup_name, backup_policy, wait=True):
         logging(f"Creating system backup {backup_name}")
         get_longhorn_client().create_system_backup(Name=backup_name, VolumeBackupPolicy=backup_policy)
+        if not wait:
+            return
         ready = False
         for i in range(self.retry_count):
             logging(f"Waiting for system backup {backup_name} to be ready ... ({i})")
@@ -102,3 +104,12 @@ class Rest(Base):
                 break
             time.sleep(self.retry_interval)
         assert deleted, f"Cleaning up system restores failed: {system_restores}"
+
+    def set_system_backup_status(self, backup_name, status):
+        return CRD().set_system_backup_status(backup_name, status)
+
+    def check_system_backup_created_at_empty(self, backup_name):
+        CRD().check_system_backup_created_at_empty(backup_name)
+
+    def wait_for_system_backup_deleted(self, backup_name):
+        CRD().wait_for_system_backup_deleted(backup_name)
