@@ -79,12 +79,23 @@ el.replaceWith(d);
     assert volume.standby is False
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
+    wait_for_volume_status(client, volume_name, &#34;restoreRequired&#34;, False)
     wait_for_volume_detached(client, volume_name)
 
+    # Engine spec/status are reconciled separately from the volume state.
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastRestoredBackup == &#34;&#34; and \
+                engine.requestedBackupRestore == &#34;&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+
     volume = client.by_id_volume(volume_name)
+    assert volume.state == VOLUME_STATE_DETACHED
     engine = get_volume_engine(volume)
-    assert engine.lastRestoredBackup == &#34;&#34;
-    assert engine.requestedBackupRestore == &#34;&#34;</code></pre>
+    assert engine.lastRestoredBackup == &#34;&#34;, f&#34;engine = {engine}&#34;
+    assert engine.requestedBackupRestore == &#34;&#34;, f&#34;engine = {engine}&#34;</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
