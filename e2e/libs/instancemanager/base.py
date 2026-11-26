@@ -234,7 +234,7 @@ class Base:
         cmd = f"kubectl get instancemanager -l longhorn.io/node={node_name},longhorn.io/data-engine={engine_type} -n {constant.LONGHORN_NAMESPACE} -ojson"
         for i in range(self.retry_count):
             logging(f"Waiting for engine instances in {engine_type} instance manager on node {node_name} to be cleaned up ... ({i})")
-            cr = json.loads(subprocess_exec_cmd(cmd))['items'][0]
+            cr = json.loads(subprocess_exec_cmd(cmd, verbose=False))['items'][0]
             if "instanceEngines" in cr["status"] and cr['status']['instanceEngines']:
                 time.sleep(self.retry_interval)
             else:

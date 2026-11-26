@@ -162,3 +162,44 @@ variable "cni" {
   type      = string
   default   = "default"
 }
+
+variable "debug_cidr" {
+  type        = string
+  description = "Extra CIDR range (IPv4 or IPv6) allowed to access the test resources for debugging, 0.0.0.0/0 and ::/0 are rejected"
+  default     = ""
+
+  validation {
+    condition     = var.debug_cidr == "" || (can(cidrhost(var.debug_cidr, 0)) && !contains(["0.0.0.0/0", "::/0"], var.debug_cidr))
+    error_message = "The debug_cidr value must be a single valid CIDR and must not be 0.0.0.0/0 or ::/0."
+  }
+}
+
+variable "airgap" {
+  type        = bool
+  description = "Create a private registry inside the cluster's VPC for airgap tests"
+  default     = false
+}
+
+variable "registry_aws_instance_type" {
+  type        = string
+  description = "Instance type of the private registry"
+  default     = "t2.micro"
+}
+
+variable "docker_hub_username" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "docker_hub_password" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "longhorn_version" {
+  type        = string
+  description = "Longhorn branch or tag whose images are loaded into the private registry"
+  default     = "master"
+}

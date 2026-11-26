@@ -35,6 +35,29 @@ Cleanup engine frontend test on node ${node_id}
     Clean enginefrontend files on node ${node_id}
     Cleanup test resources
 
+Cleanup mounted volume test
+    ${volume_id} =    Get Variable Value    \${mounted_volume_id}    ${EMPTY}
+    ${node_id} =    Get Variable Value    \${mounted_node_id}    ${EMPTY}
+    TRY
+        IF    $volume_id != ''
+            Should Not Be Empty    ${node_id}
+            Unmount volume ${volume_id} on node ${node_id}
+            ...    require_mounted=${False}    remove_directory=${True}
+        END
+    FINALLY
+        Cleanup test resources
+    END
+
+Mark dm device of volume ${volume_id} on node ${node_id} for deferred removal
+    ${volume_name} =    Generate Name With Suffix    volume    ${volume_id}
+    ${mount_path} =    Get mount path of volume ${volume_id}
+    ${command} =    Catenate    SEPARATOR=${SPACE}
+    ...    "findmnt -rn --mountpoint ${mount_path} &&
+    ...    sudo -n dmsetup remove --deferred ${volume_name} &&
+    ...    sudo -n dmsetup info ${volume_name}"
+    ${dm_output} =    SSH into node ${node_id} and run command    ${command}
+    Should Contain    ${dm_output}    ACTIVE (DEFERRED REMOVE)
+
 *** Test Cases ***
 Test V2 Volume Basic
     [Tags]    coretest
@@ -755,9 +778,8 @@ Test Create Default Disk On Labeled Nodes With V2 Data Engine
     ...       node.longhorn.io/create-default-disk=config
     ...    2. Annotate each worker node with
     ...       node.longhorn.io/default-disks-config='[{"name":"block-disk","path":"<disk-path>","diskType":"block","allowScheduling":true}]'
-    ...    3. Install Longhorn with defaultSettings.createDefaultDiskLabeledNodes=true,
-    ...       defaultSettings.v2DataEngine=true, and
-    ...       defaultSettings.dataEngineCPUMask={"v2":"0x1"}
+    ...    3. Install Longhorn with defaultSettings.createDefaultDiskLabeledNodes=true
+    ...       and defaultSettings.v2DataEngine=true
     ...    4. Verify a default disk named block-disk with path "<disk-path> and
     ...       diskType block is created on each node
     ...    5. Create a v2 volume, write data and verify data integrity
@@ -777,10 +799,10 @@ Test Create Default Disk On Labeled Nodes With V2 Data Engine
     ${LONGHORN_INSTALL_METHOD} =    Get Environment Variable    LONGHORN_INSTALL_METHOD    default=manifest
     IF    '${LONGHORN_INSTALL_METHOD}' == 'helm'
         When Install Longhorn
-        ...    custom_cmd=yq -i '.defaultSettings.createDefaultDiskLabeledNodes = true | .defaultSettings.v2DataEngine = true | .defaultSettings.dataEngineCPUMask = "{\\"v2\\": \\"0x1\\"}"' values.yaml
+        ...    custom_cmd=yq -i '.defaultSettings.createDefaultDiskLabeledNodes = true | .defaultSettings.v2DataEngine = true' values.yaml
     ELSE
         When Install Longhorn
-        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}create-default-disk-labeled-nodes: true\\n${SPACE * 4}v2-data-engine: true\\n${SPACE * 4}data-engine-cpu-mask: '{\\"v2\\":\\"0x1\\"}'" longhorn.yaml
+        ...    custom_cmd=sed -i "/default-setting\\.yaml: |-/a\\${SPACE * 4}create-default-disk-labeled-nodes: true\\n${SPACE * 4}v2-data-engine: true" longhorn.yaml
     END
 
     Then Wait for longhorn ready
@@ -1184,3 +1206,81 @@ Test V2 Data Engine Disable Uninstall And Reinstall Longhorn
     And Wait for volume 0 healthy
     And Write data to volume 0
     And Check volume 0 data is intact
+
+Test V2 Volume Reattach With Stale Mount
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify a reattached v2 volume remains attached after a stale filesystem is unmounted.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach the volume, create a filesystem, mount it, and write data.
+    ...    2. Detach without unmounting, then reattach to the same node.
+    ...    3. Unmount the stale filesystem.
+    ...    4. Confirm the volume is attached to the same node, then stays attached for 60 seconds.
+    ...    5. Remount the reattached device and verify filesystem data integrity.
+    [Teardown]    Cleanup mounted volume test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume 0 with    dataEngine=v2
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    Set Test Variable    ${mounted_volume_id}    0
+    Set Test Variable    ${mounted_node_id}    0
+    And Format filesystem of volume 0 on node 0
+    And Mount volume 0 on node 0
+    And Write filesystem data to volume 0 on node 0
+
+    When Detach volume 0 from node 0
+    And Wait for volume 0 detached
+    And Attach volume 0 to node 0
+    And Wait for volume 0 healthy
+    And Unmount volume 0 on node 0
+
+    Then Volume 0 should be attached to node 0
+    And Assert volume 0 remains attached for at least 60 seconds
+    And Mount volume 0 on node 0
+    And Check volume 0 filesystem data on node 0 is intact
+
+Test V2 Volume Reattach With Deferred Remove DM Device
+    [Tags]    volume    attach-detach
+    [Documentation]    Verify the volume returns to healthy after reusing a dm device marked for deferred removal.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/13314
+    ...
+    ...    1. Attach a v2 volume, create a filesystem, mount it, and write data.
+    ...    2. Detach without unmounting the stale filesystem.
+    ...    3. Mark the dm device for deferred removal and confirm it is ACTIVE (DEFERRED REMOVE).
+    ...    4. Reattach to the same node and verify the instance manager reuse warning.
+    ...    5. Unmount the stale filesystem and wait for volume robustness to become unknown.
+    ...    6. Confirm the volume returns to attached and healthy on the same node.
+    ...    7. Remount the recovered device and verify filesystem data integrity.
+    [Teardown]    Cleanup mounted volume test
+    IF    '${DATA_ENGINE}' == 'v1'
+        Skip    Test only validates the v2 data engine
+    END
+
+    Given Create volume deferred-remove with    dataEngine=v2
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    Set Test Variable    ${mounted_volume_id}    deferred-remove
+    Set Test Variable    ${mounted_node_id}    0
+    And Format filesystem of volume deferred-remove on node 0
+    And Mount volume deferred-remove on node 0
+    And Write filesystem data to volume deferred-remove on node 0
+
+    When Detach volume deferred-remove from node 0
+    And Wait for volume deferred-remove detached
+    And Mark dm device of volume deferred-remove on node 0 for deferred removal
+
+    And Get test start time
+    And Attach volume deferred-remove to node 0
+    And Wait for volume deferred-remove healthy
+    And Verify v2 instance manager log on node 0 contain Trying to reuse the linear dm device that has deferred-remove flag set after test start
+    And Unmount volume deferred-remove on node 0
+    Then Wait for volume deferred-remove unknown
+    And Wait for volume deferred-remove healthy
+    And Volume deferred-remove should be attached to node 0
+    And Mount volume deferred-remove on node 0
+    And Check volume deferred-remove filesystem data on node 0 is intact

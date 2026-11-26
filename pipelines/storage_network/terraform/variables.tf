@@ -130,3 +130,14 @@ variable "network_stack" {
     error_message = "network_stack must be one of ipv4, ipv6, dual-stack-ipv4-first or dual-stack-ipv6-first"
   }
 }
+
+variable "debug_cidr" {
+  type        = string
+  description = "Extra CIDR range (IPv4 or IPv6) allowed to access the test resources for debugging, 0.0.0.0/0 and ::/0 are rejected"
+  default     = ""
+
+  validation {
+    condition     = var.debug_cidr == "" || (can(cidrhost(var.debug_cidr, 0)) && !contains(["0.0.0.0/0", "::/0"], var.debug_cidr))
+    error_message = "The debug_cidr value must be a single valid CIDR and must not be 0.0.0.0/0 or ::/0."
+  }
+}

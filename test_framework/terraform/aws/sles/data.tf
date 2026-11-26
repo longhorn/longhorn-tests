@@ -4,9 +4,14 @@ locals {
   control_plane_ipv6 = aws_instance.lh_aws_instance_controlplane[0].ipv6_addresses[0]
   control_plane_ipv4 = aws_eip.lh_aws_eip_controlplane[0].public_ip
 
-  k3s_server_url = var.network_stack == "ipv6" ? format("https://[%s]:6443", local.control_plane_ipv6) : format("https://%s:6443", local.control_plane_ipv4)
+  # Agents join through the control plane's private IPv4 address: traffic from a worker to the control plane's
+  # public IP leaves the VPC through the internet gateway and arrives with the worker's public IP as the source,
+  # which the security group no longer allows
+  control_plane_private_ipv4 = aws_instance.lh_aws_instance_controlplane[0].private_ip
 
-  rke2_server_url = var.network_stack == "ipv6" ? format("https://[%s]:9345", local.control_plane_ipv6) : format("https://%s:9345", local.control_plane_ipv4)
+  k3s_server_url = var.network_stack == "ipv6" ? format("https://[%s]:6443", local.control_plane_ipv6) : format("https://%s:6443", local.control_plane_private_ipv4)
+
+  rke2_server_url = var.network_stack == "ipv6" ? format("https://[%s]:9345", local.control_plane_ipv6) : format("https://%s:9345", local.control_plane_private_ipv4)
 }
 
 data "aws_ami" "aws_ami_sles" {
@@ -25,6 +30,8 @@ data "template_file" "provision_k3s_server" {
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
     custom_ssh_public_key = var.custom_ssh_public_key
+    registry_ip = local.registry_ip
+    registry_ca = var.airgap ? tls_self_signed_cert.registry_ca[0].cert_pem : ""
   }
 }
 
@@ -37,6 +44,8 @@ data "template_file" "provision_k3s_agent" {
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
     custom_ssh_public_key = var.custom_ssh_public_key
+    registry_ip = local.registry_ip
+    registry_ca = var.airgap ? tls_self_signed_cert.registry_ca[0].cert_pem : ""
     extra_block_device = var.extra_block_device
   }
 }
@@ -52,6 +61,8 @@ data "template_file" "provision_rke2_server" {
     rke2_version =  var.k8s_distro_version
     cis_hardening = var.cis_hardening
     custom_ssh_public_key = var.custom_ssh_public_key
+    registry_ip = local.registry_ip
+    registry_ca = var.airgap ? tls_self_signed_cert.registry_ca[0].cert_pem : ""
   }
 }
 
@@ -65,6 +76,8 @@ data "template_file" "provision_rke2_agent" {
     rke2_version =  var.k8s_distro_version
     cis_hardening = var.cis_hardening
     custom_ssh_public_key = var.custom_ssh_public_key
+    registry_ip = local.registry_ip
+    registry_ca = var.airgap ? tls_self_signed_cert.registry_ca[0].cert_pem : ""
     extra_block_device = var.extra_block_device
   }
 }

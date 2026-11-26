@@ -3,6 +3,9 @@ def summary
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 def TF_VAR_tf_workspace="/src/longhorn-tests/build_engine_test_images"
 
+// extra CIDR range (a single IPv4 or IPv6 CIDR) allowed to access the test resources for debugging
+def DEBUG_CIDR = params.DEBUG_CIDR ? params.DEBUG_CIDR : ""
+
 node {
 
 	if(params.SEND_SLACK_NOTIFICATION){
@@ -21,6 +24,7 @@ node {
 
               sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                      --env TF_VAR_build_engine_aws_access_key=${AWS_ACCESS_KEY} \
+                                     --env TF_VAR_debug_cidr="${DEBUG_CIDR}" \
                                      --env TF_VAR_build_engine_aws_secret_key=${AWS_SECRET_KEY} \
                                      --env TF_VAR_docker_id="${DOCKER_USERNAME}" \
                                      --env TF_VAR_docker_password="${DOCKER_PASSWORD}" \
