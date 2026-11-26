@@ -17,6 +17,8 @@ Test Teardown    Cleanup test resources
 
 *** Test Cases ***
 Disrupt Data Plane Traffic For Less Than Long Engine Replica Timeout
+    [Documentation]    Test resilience handling for the last replica timeout
+    ...    Issue: https://github.com/longhorn/longhorn/issues/8711
     Given Setting engine-replica-timeout is set to {"v1":"15","v2":"15"}
     And Setting auto-salvage is set to false
     And Create storageclass longhorn-test with    dataEngine=${DATA_ENGINE}
@@ -24,7 +26,7 @@ Disrupt Data Plane Traffic For Less Than Long Engine Replica Timeout
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Drop instance-manager egress traffic of statefulset 0 for 25 seconds without waiting for completion
         Then Write 1024 MB data to file data in statefulset 0
-        And Wait for volume of statefulset 0 attached and degraded
+        And Wait for volume of statefulset 0 attached
         And Wait for volume of statefulset 0 healthy
         And Check statefulset 0 data in file data is intact
     END

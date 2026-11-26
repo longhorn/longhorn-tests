@@ -136,6 +136,12 @@ SSH into node ${node_id} and run command
     ${result} =    ssh_exec_on_node    ${node_name}    ${command}
     RETURN    ${result}
 
+SSH into node ${node_id} and run command and wait for output
+    [Arguments]    ${command}    ${expected_output}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${result} =    ssh_exec_on_node_and_wait_for_output    ${node_name}    ${command}    ${expected_output}
+    RETURN    ${result}
+
 Set cpu-manager-policy to ${policy} on all worker nodes
     set_cpu_manager_policy_on_all_worker_nodes    ${policy}
 

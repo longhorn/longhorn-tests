@@ -527,3 +527,41 @@ Test Large Volume Delta Replica Rebuilding Performance
     ${status}=    Evaluate    ${delta_rebuild_time} <= ${full_rebuild_time}
     Run Keyword If    not ${status}
     ...    Fail    The delta rebuild time ${delta_rebuild_time}s > full rebuild time ${full_rebuild_time}s
+
+Test Snapshot Not Deleted During Replica Rebuilding
+    [Documentation]    Test that a snapshot created around the start of a
+    ...    replica rebuild is not deleted by Longhorn.
+    ...
+    ...    Issue: https://github.com/longhorn/longhorn/issues/14596
+    ...
+    ...    Longhorn used to delete a snapshot that was created just before a
+    ...    replica rebuild started. The exact timing is hard to hit, so this
+    ...    test creates one snapshot per second right after deleting a
+    ...    replica.
+    ...
+    ...    1. Enable auto-cleanup-system-generated-snapshot.
+    ...    2. Create a volume with 3 replicas, attach it and write data to it.
+    ...    3. Delete one replica to trigger a rebuild.
+    ...    4. Create one snapshot per second for 30 seconds. Keep the names of
+    ...       the snapshots that became ready.
+    ...    5. Wait for the rebuild to complete and the volume to be healthy.
+    ...    6. Every kept snapshot should still have its CR, without a deletion
+    ...       timestamp, and be in the volume snapshot list.
+    ...    7. Repeat steps 3 to 6 for the replica on each node.
+    ...    8. Check the volume data is intact.
+    Given Setting auto-cleanup-system-generated-snapshot is set to true
+    And Create volume 0 with    numberOfReplicas=3    dataEngine=${DATA_ENGINE}
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
+
+    FOR    ${node_id}    IN RANGE    3
+        When Delete volume 0 replica on node ${node_id}
+        And Create snapshots of volume 0 every 1 seconds for 30 seconds
+        And Wait until volume 0 replica rebuilding completed on node ${node_id}
+        And Wait for volume 0 healthy
+
+        Then Ready snapshots of volume 0 should still exist
+    END
+
+    And Check volume 0 data is intact
