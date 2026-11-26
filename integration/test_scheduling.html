@@ -1851,14 +1851,14 @@ And volume-1 data should be the same as written.
 And volume-2 data should be the same as written.</p></div>
 </dd>
 <dt id="tests.test_scheduling.test_replica_auto_balance_disk_in_pressure"><code class="name flex">
-<span>def <span class="ident">test_replica_auto_balance_disk_in_pressure</span></span>(<span>client, core_api, apps_api, volume_name, statefulset, storage_class)</span>
+<span>def <span class="ident">test_replica_auto_balance_disk_in_pressure</span></span>(<span>client, core_api, apps_api, volume_name, statefulset, storage_class, request)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volume_name, statefulset, storage_class):  # NOQA
+<pre><code class="python">def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volume_name, statefulset, storage_class, request):  # NOQA
     &#34;&#34;&#34;
     Scenario: Test replica auto balance disk in pressure
 
@@ -2017,21 +2017,16 @@ And volume-2 data should be the same as written.</p></div>
             f&#34;Expected below {expected_avaiable_percentage}%.&#34; \
             f&#34;Actually used {actual_avaiable_percentage}%.&#34;
 
-    def _cleanup(client, volume_names, statefulset_names):
-        for _volume_name in volume_names:
-            cleanup_volume_by_name(client, _volume_name)
-
+    def _cleanup(client, statefulset_names):
+        # The statefulset fixture only cleans up the last statefulset created
+        # (its manifest is reused for all of them), so clean up every
+        # statefulset here. This is also registered as a finalizer so that
+        # a failure in the middle of the test doesn&#39;t leak statefulsets that
+        # break the next run with &#34;AlreadyExists&#34;.
         for _statefulset_name in statefulset_names:
-            _statefulset = {
-                &#39;metadata&#39;: {
-                    &#39;name&#39;: _statefulset_name,
-                    &#39;namespace&#39;: &#39;default&#39;
-                }
-            }
-            delete_statefulset(apps_api, _statefulset)
-
-        for _volume_name in volume_names:
-            wait_for_volume_delete(client, _volume_name)
+            _statefulset = copy.deepcopy(statefulset)
+            _statefulset[&#39;metadata&#39;][&#39;name&#39;] = _statefulset_name
+            common.delete_and_wait_statefulset(core_api, client, _statefulset)
 
         cleanup_disks_on_node(client, self_host_id, disk1_name, disk2_name)
 
@@ -2057,6 +2052,7 @@ And volume-2 data should be the same as written.</p></div>
 
     # Create 3 statefulsets with 1 replica each.
     statefulset_names = [f&#39;sts-{i}&#39; for i in range(expected_replica_count)]
+    request.addfinalizer(lambda: _cleanup(client, statefulset_names))
     for _statefulset_name in statefulset_names:
         _create_statefulset(statefulset, _statefulset_name,
                             storage_class, volume_size,
@@ -2159,9 +2155,7 @@ And volume-2 data should be the same as written.</p></div>
     for pod_name, md5sum in pod_md5sums.items():
         current_md5sum = get_pod_data_md5sum(core_api, pod_name, &#34;/data/test&#34;)
         assert md5sum == current_md5sum, \
-            f&#34;Data in pod {pod_name} doesn&#39;t match.&#34;
-
-    _cleanup(client, volume_names, statefulset_names)</code></pre>
+            f&#34;Data in pod {pod_name} doesn&#39;t match.&#34;</code></pre>
 </details>
 <div class="desc"><p>Scenario: Test replica auto balance disk in pressure</p>
 <p>Description: This test simulates a scenario where a disk reaches a certain
