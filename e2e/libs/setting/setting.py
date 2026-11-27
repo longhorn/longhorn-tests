@@ -73,7 +73,7 @@ class Setting:
         logging(f"Getting setting {key} value {res}")
         return res
 
-    def reset_settings(self, data_engine="v1"):
+    def reset_settings(self, data_engine="v1", custom_v2_settings=None):
         client = get_longhorn_client()
         for setting in client.list_setting():
             setting_name = setting.name
@@ -128,6 +128,16 @@ class Setting:
                         logging(f"Set {setting_name} to {{\"v2\":\"true\"}} because RUN_V2_INTERRUPT_MODE is true")
                     except Exception as e:
                         logging(f"Failed to set {setting_name}: {e}")
+                    continue
+
+            if data_engine == "v2" and custom_v2_settings:
+                requested_value = custom_v2_settings.get(setting_name)
+                if requested_value not in (None, ""):
+                    s = client.by_id_setting(setting_name)
+                    setting_values = json.loads(s.value)
+                    if setting_values.get("v2") != str(requested_value):
+                        setting_values["v2"] = str(requested_value)
+                        self.update_setting(setting_name, json.dumps(setting_values))
                     continue
 
             s = client.by_id_setting(setting_name)

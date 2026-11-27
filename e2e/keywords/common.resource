@@ -113,12 +113,34 @@ Set disk path based on host provider and architecture
         END
     END
 
+Get custom v2 settings
+    ${v2_nvme_tcp_io_queue_count}=    Get Variable Value    \${V2_NVME_TCP_NR_IO_QUEUES}    ${EMPTY}
+    ${v2_data_engine_cpu_mask}=    Get Variable Value    \${V2_DATA_ENGINE_CPU_MASK}    ${EMPTY}
+    ${v2_instance_manager_cpu_guarantee}=    Get Variable Value    \${V2_GUARANTEED_INSTANCE_MANAGER_CPU}    ${EMPTY}
+    &{custom_v2_settings}=    Create Dictionary
+    ...    default-nvme-tcp-nr-io-queues=${v2_nvme_tcp_io_queue_count}
+    ...    data-engine-cpu-mask=${v2_data_engine_cpu_mask}
+    ...    guaranteed-instance-manager-cpu=${v2_instance_manager_cpu_guarantee}
+    RETURN    ${custom_v2_settings}
+
 Enable v2 data engine and add block disks
     [Arguments]    ${wait}=${True}
     set_disk_path_based_on_host_provider_and_architecture
     ${RUN_V2_INTERRUPT_MODE}=    Get Environment Variable    RUN_V2_INTERRUPT_MODE    false
     IF    "${RUN_V2_INTERRUPT_MODE}" == "true"
         update_setting    data-engine-interrupt-mode-enabled    {"v2":"true"}
+    END
+    ${custom_v2_settings}=    Get custom v2 settings
+    FOR    ${setting_name}    ${requested_value}    IN    &{custom_v2_settings}
+        IF    $requested_value != ""
+            ${current_value}=    get_setting    ${setting_name}
+            ${setting_values}=    Evaluate    json.loads($current_value)    modules=json
+            IF    $setting_values.get("v2") != $requested_value
+                Set To Dictionary    ${setting_values}    v2=${requested_value}
+                ${updated_value}=    Evaluate    json.dumps($setting_values)    modules=json
+                update_setting    ${setting_name}    ${updated_value}
+            END
+        END
     END
     ${V2_DATA_ENGINE_ENABLED}=    get_setting    v2-data-engine
     # if it's already configured, no need to do it again
@@ -206,7 +228,8 @@ Cleanup test resources
     END
     cleanup_engine_images
     reset_backupstore
-    reset_settings    data_engine=${DATA_ENGINE}
+    ${custom_v2_settings}=    Get custom v2 settings
+    reset_settings    data_engine=${DATA_ENGINE}    custom_v2_settings=${custom_v2_settings}
     reset_node_tags
     reset_node_disks_tags
     cleanup_node_zone
