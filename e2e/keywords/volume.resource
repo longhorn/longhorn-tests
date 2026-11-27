@@ -344,21 +344,31 @@ Prefill volume ${volume_id} with fio
     ${checksum} =    prefill_volume_with_fio    ${volume_name}    ${size}
     Set To Dictionary    ${volume_checksums}    ${volume_id}    ${checksum}
 
-Write ${size_mb} MB data to volume ${volume_id} at offset ${offset_mb}
+Write ${size_mb} MB data to ${target_type} ${target_id} at offset ${offset_mb}
     [Documentation]    Write a data range, identified by an explicit offset and
     ...    size in MiB, and record its checksum for later verification.
-    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    ${checksum} =    write_volume_data_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
-    Set To Dictionary    ${volume_checksums}    ${volume_id}-offset-${offset_mb}    ${checksum}
+    ${target_type} =    Evaluate    $target_type.lower()
+    ${target_name} =    generate_name_with_suffix    ${target_type}    ${target_id}
+    IF    '${target_type}' == 'volume'
+        ${checksum} =    write_volume_data_at_offset    ${target_name}    ${offset_mb}    ${size_mb}
+        Set To Dictionary    ${volume_checksums}    ${target_id}-offset-${offset_mb}    ${checksum}
+    ELSE
+        write_block_range_with_md5    ${target_name}    ${offset_mb}    ${size_mb}
+    END
 
-Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} is intact
+Check ${size_mb} MB data of ${target_type} ${target_id} at offset ${offset_mb} is intact
     [Documentation]    Re-read the data range and compare it against the checksum
-    ...    recorded when that range was written to the same volume.
-    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    wait_for_volume_attached    ${volume_name}
-    ${actual_checksum} =    get_volume_checksum_at_offset    ${volume_name}    ${offset_mb}    ${size_mb}
-    ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${volume_id}-offset-${offset_mb}
-    Should Be Equal    ${actual_checksum}    ${expected_checksum}
+    ...    recorded when that range was written to the same volume or workload.
+    ${target_type} =    Evaluate    $target_type.lower()
+    ${target_name} =    generate_name_with_suffix    ${target_type}    ${target_id}
+    IF    '${target_type}' == 'volume'
+        wait_for_volume_attached    ${target_name}
+        ${actual_checksum} =    get_volume_checksum_at_offset    ${target_name}    ${offset_mb}    ${size_mb}
+        ${expected_checksum} =    Get From Dictionary    ${volume_checksums}    ${target_id}-offset-${offset_mb}
+        Should Be Equal    ${actual_checksum}    ${expected_checksum}
+    ELSE
+        check_block_range_md5    ${target_name}    ${offset_mb}    ${size_mb}
+    END
 
 Check ${size_mb} MB data of volume ${volume_id} at offset ${offset_mb} matches volume ${other_volume_id}
     [Documentation]    Compare the same data range of two attached volumes by
@@ -886,8 +896,9 @@ Record volume ${volume_id} replica names
     record_volume_replica_names    ${volume_name}
 
 Check volume ${volume_id} replica names are as recorded
+    [Arguments]    @{replica_names}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    check_volume_replica_names_recorded    ${volume_name}
+    check_volume_replica_names_recorded    ${volume_name}    @{replica_names}
 
 Upgrade volume ${volume_id} engine to compatible engine image
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

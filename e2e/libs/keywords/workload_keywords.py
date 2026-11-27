@@ -279,6 +279,37 @@ class workload_keywords:
         logging(f'Running commands {commands} in pod {pod_name}')
         run_commands_in_pod(pod_name, commands)
 
+    def write_block_range_with_md5(self, workload_name, offset_mb, size_mb):
+        """Record the source MD5 and write the requested MiB directly to a raw block PVC."""
+        offset_mb = int(offset_mb)
+        size_mb = int(size_mb)
+        assert size_mb > 0, "size_mb must be positive"
+        device = BLOCK_PVC_VOLUME_DEVICE_PATH
+        source = f"range-{offset_mb}"
+        run_commands_in_pod(
+            get_workload_pod_names(workload_name)[0],
+            f"set -eu; test -b {device}; "
+            f"dd if=/dev/urandom of=/tmp/{source} bs=1M count={size_mb} iflag=fullblock status=none; "
+            f"dd if=/tmp/{source} of={device} bs=1M seek={offset_mb} oflag=direct conv=notrunc,fsync status=none")
+        checksum = get_workload_pod_data_checksum(workload_name, source, data_directory="/tmp")
+        assert len(checksum) == 32 and all(c in "0123456789abcdef" for c in checksum), checksum
+        self.volume.set_data_checksum(get_workload_volume_name(workload_name), f"block-{offset_mb}", checksum)
+
+    def check_block_range_md5(self, workload_name, offset_mb, size_mb):
+        """Reject failed/short direct reads and verify the requested MiB using the stored MD5."""
+        offset_mb = int(offset_mb)
+        size_mb = int(size_mb)
+        assert size_mb > 0, "size_mb must be positive"
+        device = BLOCK_PVC_VOLUME_DEVICE_PATH
+        destination = f"read-{offset_mb}"
+        run_commands_in_pod(
+            get_workload_pod_names(workload_name)[0],
+            f"set -eu; test -b {device}; "
+            f"dd if={device} of=/tmp/{destination} bs=1M skip={offset_mb} count={size_mb} iflag=direct,fullblock status=none; "
+            f'test "$(stat -c %s /tmp/{destination})" = {size_mb * 1024 * 1024}')
+        expected = self.volume.get_data_checksum(get_workload_volume_name(workload_name), f"block-{offset_mb}")
+        check_workload_pod_data_checksum(expected, workload_name, destination, data_directory="/tmp")
+
     def wait_for_workload_pods_container_creating_or_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods container creating or running')
         wait_for_workload_pods_container_creating_or_running(workload_name, namespace=namespace)
