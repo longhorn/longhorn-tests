@@ -59,22 +59,50 @@ setup_azurite_backup_store(){
     RETRY=$((RETRY+1))
   done
 
-  CONTROL_PLANE_PUBLIC_IP=$(cat /tmp/controlplane_public_ip)
-  AZBLOB_ENDPOINT=$(echo -n "http://${CONTROL_PLANE_PUBLIC_IP}:31000/" | base64)
+  # The azurite NodePort is consumed from inside the cluster (longhorn-manager and the az-cli pod).
+  # Reaching the control plane through its public IPv4 address makes the source address the sender's
+  # public IP, which the security group does not allow (connection times out), so prefer the control
+  # plane node's internal IP.
+  # IPv6 addresses are routed without NAT and keep using the address from /tmp/controlplane_public_ip.
+  AZURITE_HOST=$(cat /tmp/controlplane_public_ip)
+  if [[ "${AZURITE_HOST}" != *:* ]]; then
+    CONTROL_PLANE_INTERNAL_IP=$(kubectl get nodes --selector=node-role.kubernetes.io/control-plane \
+      -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | awk '{print $1}')
+    if [[ -n "${CONTROL_PLANE_INTERNAL_IP}" && "${CONTROL_PLANE_INTERNAL_IP}" != *:* ]]; then
+      AZURITE_HOST="${CONTROL_PLANE_INTERNAL_IP}"
+    fi
+  fi
+
+  AZBLOB_ENDPOINT=$(echo -n "http://${AZURITE_HOST}:31000/" | base64)
   kubectl -n "${LONGHORN_NAMESPACE}" patch secret azblob-secret \
     --type=json \
     -p="[{'op': 'replace', 'path': '/data/AZBLOB_ENDPOINT', 'value': \"${AZBLOB_ENDPOINT}\"}]"
 
+  kubectl delete pod az-cli --ignore-not-found
   kubectl run az-cli \
   --image=mcr.microsoft.com/azure-cli \
   --restart=Never \
   -- az storage container create \
      -n longhorn-test-azurite \
      --connection-string \
-     "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://${CONTROL_PLANE_PUBLIC_IP}:31000/devstoreaccount1;"
-  kubectl wait --for=condition=Ready pod/az-cli --timeout=60s
-  kubectl logs az-cli
+     "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://${AZURITE_HOST}:31000/devstoreaccount1;"
+
+  # Ready only means the container started, wait for the one-shot command to finish and verify its result
+  AZ_CLI_PHASE=""
+  for _ in $(seq 1 60); do
+    AZ_CLI_PHASE=$(kubectl get pod az-cli -o jsonpath='{.status.phase}')
+    if [[ "${AZ_CLI_PHASE}" == "Succeeded" || "${AZ_CLI_PHASE}" == "Failed" ]]; then
+      break
+    fi
+    sleep 5
+  done
+  AZ_CLI_LOGS=$(kubectl logs az-cli)
+  echo "${AZ_CLI_LOGS}"
   kubectl delete pod az-cli --ignore-not-found
+  if [[ "${AZ_CLI_PHASE}" != "Succeeded" ]]; then
+    echo "Failed to create azurite container longhorn-test-azurite via ${AZURITE_HOST}:31000 (az-cli phase: ${AZ_CLI_PHASE})" >&2
+    return 1
+  fi
 }
 
 install_backupstores_networkpolicy(){
