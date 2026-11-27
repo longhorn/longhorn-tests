@@ -57,7 +57,8 @@ Run command and expect output
 
 Run command and wait for output
     [Arguments]    ${command}    ${expected_output}
-    execute_command_and_wait_for_output    ${command}    ${expected_output}
+    ${output} =    execute_command_and_wait_for_output    ${command}    ${expected_output}
+    RETURN    ${output}
 
 Run command and not expect output
     [Arguments]    ${command}    ${unexpected_output}
