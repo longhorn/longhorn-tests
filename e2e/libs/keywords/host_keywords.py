@@ -1,6 +1,7 @@
 from robot.libraries.BuiltIn import BuiltIn
 
 import os
+import re
 import threading
 import time
 
@@ -168,6 +169,27 @@ class host_keywords:
     def ssh_exec_on_node(self, node_name, cmd):
         logging(f"SSH into node {node_name} and run command: {cmd}")
         return ssh_exec(node_name, cmd)
+
+    def ssh_exec_on_node_and_wait_for_output(self, node_name, cmd, expected_output):
+        retry_count, retry_interval = get_retry_count_and_interval()
+
+        try:
+            expected_pattern = re.compile(expected_output, re.DOTALL)
+        except re.error:
+            expected_pattern = re.compile(re.escape(expected_output), re.DOTALL)
+
+        res = None
+        for i in range(retry_count):
+            logging(f"Waiting for SSH command {cmd} on node {node_name} returning output {expected_output} ... ({i})")
+            try:
+                res = ssh_exec(node_name, cmd)
+                if expected_pattern.search(res):
+                    return res
+            except Exception as e:
+                logging(f"SSH command {cmd} on node {node_name} and wait for output {expected_output} error: {e}")
+            time.sleep(retry_interval)
+
+        assert False, f"Timeout waiting for output {expected_output} in SSH command {cmd} result on node {node_name}: {res}"
 
     def set_cpu_manager_policy_on_all_worker_nodes(self, policy):
         k8s_distro = os.environ.get("K8S_DISTRO", "k3s")

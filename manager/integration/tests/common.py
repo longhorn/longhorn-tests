@@ -716,7 +716,7 @@ def delete_and_wait_statefulset(api, client, statefulset):
 
     # We need to generate the names for the PVCs on our own so we can
     # delete them.
-    pod_data = get_statefulset_pod_info(api, statefulset)
+    pod_data = get_statefulset_pod_info(api, statefulset, ignore_missing=True)
 
     try:
         apps_api.delete_namespaced_stateful_set(
@@ -774,11 +774,18 @@ def get_volume_name(api, pvc_name):
     return claim.spec.volume_name
 
 
-def get_statefulset_pod_info(api, s_set):
+def get_statefulset_pod_info(api, s_set, ignore_missing=False):
     pod_info = []
     for i in range(s_set['spec']['replicas']):
         pod_name = s_set['metadata']['name'] + '-' + str(i)
-        pod = api.read_namespaced_pod(name=pod_name, namespace='default')
+        try:
+            pod = api.read_namespaced_pod(name=pod_name, namespace='default')
+        except ApiException as e:
+            # During cleanup the pod may never have been created (e.g. an
+            # earlier pod never became ready) or is already gone.
+            if ignore_missing and e.status == 404:
+                continue
+            raise
         pvc_name = pod.spec.volumes[0].persistent_volume_claim.claim_name
         pv_name = get_volume_name(api, pvc_name)
         pod_info.append({
@@ -4920,12 +4927,23 @@ def activate_standby_volume(client, volume_name,
     assert volume.standby is False
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
+    wait_for_volume_status(client, volume_name, "restoreRequired", False)
     wait_for_volume_detached(client, volume_name)
 
+    # Engine spec/status are reconciled separately from the volume state.
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastRestoredBackup == "" and \
+                engine.requestedBackupRestore == "":
+            break
+        time.sleep(RETRY_INTERVAL)
+
     volume = client.by_id_volume(volume_name)
+    assert volume.state == VOLUME_STATE_DETACHED
     engine = get_volume_engine(volume)
-    assert engine.lastRestoredBackup == ""
-    assert engine.requestedBackupRestore == ""
+    assert engine.lastRestoredBackup == "", f"engine = {engine}"
+    assert engine.requestedBackupRestore == "", f"engine = {engine}"
 
 
 def check_volume_last_backup(client, volume_name, last_backup):
