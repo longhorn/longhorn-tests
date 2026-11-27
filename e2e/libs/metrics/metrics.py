@@ -34,6 +34,22 @@ def get_node_metrics(node_name, metrics_name):
     assert False, f"Failed to get node {node_name} metrics {metrics_name}"
 
 
+def get_metrics(metric_name, metric_label=None):
+    metrics = subprocess_exec_cmd("kubectl get --raw /metrics", timeout=30, verbose=False)
+    label_filter = json.loads(metric_label) if metric_label is not None else {}
+    samples = [
+        sample
+        for family in text_string_to_metric_families(metrics)
+        for sample in family.samples
+        if sample.name == metric_name
+        and all(sample.labels.get(key) == value for key, value in label_filter.items())
+    ]
+    assert samples, f"API server metrics contain no matching samples for {metric_name}: {metric_label}"
+    value = sum(sample.value for sample in samples)
+    logging(f"Got metric {metric_name}:{metric_label} = {value}")
+    return value
+
+
 def get_longhorn_metrics(node_name):
     core_api = client.CoreV1Api()
     pods = core_api.list_namespaced_pod(namespace=constant.LONGHORN_NAMESPACE, label_selector="app=longhorn-manager")

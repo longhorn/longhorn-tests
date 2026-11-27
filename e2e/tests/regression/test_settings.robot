@@ -5,6 +5,7 @@ Test Tags    regression    setting
 
 Resource    ../keywords/variables.resource
 Resource    ../keywords/common.resource
+Resource    ../keywords/node.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/setting.resource
 Resource    ../keywords/deployment.resource
@@ -17,6 +18,7 @@ Resource    ../keywords/storageclass.resource
 Resource    ../keywords/snapshot.resource
 Resource    ../keywords/engine_image.resource
 Resource    ../keywords/k8s.resource
+Resource    ../keywords/metrics.resource
 
 Test Setup    Set up test environment
 Test Teardown    Cleanup test resources
@@ -679,3 +681,31 @@ Test Longhorn UI PodDisruptionBudget
     And Uncordon node 1
     And Install Longhorn
     And Wait for longhorn ready
+
+Test Node Status Should Not Be Updated When Unchanged
+    [Documentation]    Issue: https://github.com/longhorn/longhorn/issues/14062
+    ...    1. Set snapshot-data-integrity to {"v1":"fast-check","v2":"fast-check"}.
+    ...    2. Enable the 1-minute cronjob to ensure that lastPeriodicCheckedAt (LAST_CHECK) is updated on all Longhorn nodes.
+    ...    3. Record each node's lastPeriodicCheckedAt and wait until it is newer, or populated if initially missing.
+    ...    4. Set snapshot-data-integrity-cronjob to {"v1":"0 0 1 1 *","v2":"0 0 1 1 *"} to prevent further checks.
+    ...    5. Wait 30 seconds for pending node status updates to settle.
+    ...    6. Record the sum of apiserver_request_total from the API server /metrics endpoint,
+    ...       filtered by group="longhorn.io", resource="nodes", and verb="PUT".
+    ...       Fail if metrics retrieval fails or no matching counter is available.
+    ...    7. Wait 60 seconds, then retrieve the same PUT request count again.
+    ...    8. Verify AFTER - BEFORE <= 3 for v1 or <= 6 for v2 to allow periodic disk health updates.
+    Given Setting snapshot-data-integrity is set to {"v1":"fast-check","v2":"fast-check"}
+    And Setting snapshot-data-integrity-cronjob is set to {"v1":"*/1 * * * *","v2":"*/1 * * * *"}
+    Then Wait for all nodes to have updated periodic snapshot check timestamps
+
+    When Setting snapshot-data-integrity-cronjob is set to {"v1":"0 0 1 1 *","v2":"0 0 1 1 *"}
+    # Wait for pending node status updates to complete before measuring PUT requests.
+    Sleep    30s
+    ${before}=    Get Metrics    apiserver_request_total    {"group": "longhorn.io", "resource": "nodes", "verb": "PUT"}
+    Sleep    60s
+    ${after}=    Get Metrics    apiserver_request_total    {"group": "longhorn.io", "resource": "nodes", "verb": "PUT"}
+    ${delta}=    Evaluate    $after - $before
+    # Periodic disk health checks may trigger legitimate Node status PUT requests every 10 minutes.
+    # Allow up to one PUT per disk in a 3-node cluster (v1: 3 filesystem disks; v2: 3 filesystem + 3 block disks).
+    ${allowed_delta}=    Set Variable If    '${DATA_ENGINE}' == 'v1'    ${3}    ${6}
+    Should Be True    ${delta} <= ${allowed_delta}    Longhorn Node PUT requests exceeded the allowance for periodic disk health updates

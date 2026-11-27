@@ -1,7 +1,7 @@
 import time
 
 from node import Node
-from metrics.metrics import get_node_metrics, check_longhorn_metric, find_longhorn_metric_samples
+from metrics.metrics import get_metrics, get_node_metrics, check_longhorn_metric, find_longhorn_metric_samples
 from metrics.metrics import get_longhorn_components_memory_cpu_usage
 from metrics.metrics import check_longhorn_components_memory_cpu_usage
 from utility.utility import get_retry_count_and_interval
@@ -13,6 +13,9 @@ class metrics_keywords:
     def __init__(self):
         self.node = Node()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    def get_metrics(self, metric_name, metric_label=None):
+        return get_metrics(metric_name, metric_label)
 
     def get_node_total_memory_in_mi(self, node_name):
         total_memory = self.node.get_node_total_memory(node_name)
