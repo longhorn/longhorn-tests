@@ -822,13 +822,21 @@ class Node:
 
         cmd = (f'[ -d /dev/disk/by-id ] && for f in /dev/disk/by-id/*; do '
                f'[ "$(readlink -f "$f")" = "$(readlink -f {disk_path})" ] && echo "$f" && break; done; true')
+        node_exec = NodeExec(node_name)
         try:
-            by_id_path = str(NodeExec(node_name).issue_cmd(cmd)).strip()
+            by_id_path = str(node_exec.issue_cmd(cmd)).strip()
         except Exception as e:
             logging(f"Failed to get by-id path of {disk_path} on node {node_name}: {e}")
             by_id_path = ""
+        finally:
+            # The helper pod is uncontrolled and named after the node; left running
+            # it blocks a later kubectl drain of the node.
+            node_exec.cleanup()
 
         if not re.fullmatch(r"/dev/disk/by-id/\S+", by_id_path):
+            # Cache the fallback too, so a disk without a by-id symlink does not
+            # rerun the lookup (and recreate the helper pod) on every call.
+            Node.block_disk_paths[node_name] = disk_path
             return disk_path
         Node.block_disk_paths[node_name] = by_id_path
         return by_id_path
