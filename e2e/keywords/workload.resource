@@ -234,10 +234,10 @@ Wait for volume of ${workload_kind} ${workload_id} attached and unknown
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_unknown    ${volume_name}
 
-Wait for volume of ${workload_kind} ${workload_id} robustness not ${not_desired_robustness}
+Wait for volume of ${workload_kind} ${workload_id} not healthy
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
-    wait_for_volume_robustness_not    ${volume_name}    ${not_desired_robustness}
+    wait_for_volume_robustness_not    ${volume_name}    healthy
 
 Wait for volume of ${workload_kind} ${workload_id} faulted
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

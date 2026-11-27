@@ -37,7 +37,7 @@ Delete Volume Node While Replica Rebuilding
         And Wait until volume of deployment 0 replica rebuilding started on volume node
         And Delete volume of deployment 0 volume node
 
-        Then Wait for volume of deployment 0 robustness not healthy
+        Then Wait for volume of deployment 0 not healthy
         And Add deleted node back
         And Wait for volume of deployment 0 attached and healthy
         And Wait for deployment 0 pods stable
@@ -47,7 +47,7 @@ Delete Volume Node While Replica Rebuilding
         And Wait until volume of deployment 1 replica rebuilding started on volume node
         And Delete volume of deployment 1 volume node
 
-        Then Wait for volume of deployment 1 robustness not healthy
+        Then Wait for volume of deployment 1 not healthy
         And Add deleted node back
         And Wait for volume of deployment 1 attached and healthy
         And Wait for deployment 1 pods stable
