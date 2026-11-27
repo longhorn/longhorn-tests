@@ -534,6 +534,66 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert rollback, f"Waiting for volume {volume_name} migration rollback failed: engines = {engines}, volume = {volume}"
 
+    def _get_migration_engine(self, volume_name):
+        migration_node = self.get(volume_name)['spec']['migrationNodeID']
+        assert migration_node, f"Volume {volume_name} is not migrating"
+        for engine in self.engine.get_engines(volume_name):
+            if engine['spec']['nodeID'] == migration_node:
+                return engine
+        return None
+
+    def get_migration_engine_address(self, volume_name):
+        engine = self._get_migration_engine(volume_name)
+        assert engine, f"Volume {volume_name} has no migration engine"
+        assert engine['status']['currentState'] == 'running', \
+            f"Volume {volume_name} migration engine {engine['metadata']['name']} is not running: {engine['status']}"
+        address = f"{engine['status']['storageIP']}:{engine['status']['port']}"
+        logging(f"Volume {volume_name} migration engine {engine['metadata']['name']} address is {address}", also_report=True)
+        return address
+
+    def wait_for_volume_migration_engine_restarted(self, volume_name, replica_count, previous_address):
+        engine = None
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} migration engine to be restarted with {replica_count} replicas ... ({i})")
+            try:
+                engine = self._get_migration_engine(volume_name)
+                # The migration engine only gets a changed replica address map
+                # after it has been stopped, so a running engine with the
+                # expected replica count has been restarted.
+                if engine and engine['status']['currentState'] == 'running' and \
+                        len(engine['spec']['replicaAddressMap']) == replica_count:
+                    address = f"{engine['status']['storageIP']}:{engine['status']['port']}"
+                    if address == previous_address:
+                        logging(f"Volume {volume_name} migration engine restarted on the same address {address}: the engine frontend does not have to connect to a new address in this run", also_report=True)
+                    else:
+                        logging(f"Volume {volume_name} migration engine address changed from {previous_address} to {address}", also_report=True)
+                    return
+            except Exception as e:
+                logging(f"Getting volume {volume_name} migration engine error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} migration engine to be restarted with {replica_count} replicas: engine = {engine}"
+
+    def wait_for_volume_migration_engine_frontend_connected(self, volume_name):
+        engine, enginefrontend = None, None
+        for i in range(self.retry_count):
+            try:
+                engine = self._get_migration_engine(volume_name)
+                engine_address = f"{engine['status']['storageIP']}:{engine['status']['port']}"
+
+                enginefrontend = next((ef for ef in self.enginefrontend.get_enginefrontends(volume_name)
+                                       if ef['spec']['nodeID'] == engine['spec']['nodeID']), None)
+                status = enginefrontend['status'] if enginefrontend else {}
+                target_address = f"{status.get('targetIP')}:{status.get('targetPort')}"
+
+                logging(f"Waiting for volume {volume_name} migration engine frontend to be connected to {engine_address}: state = {status.get('currentState')}, target = {target_address} ... ({i})")
+                if engine['status']['currentState'] == 'running' and status.get('currentState') == 'running' and \
+                        status.get('endpoint') and target_address == engine_address:
+                    return
+            except Exception as e:
+                logging(f"Getting volume {volume_name} migration engine frontend error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"Failed to wait for volume {volume_name} migration engine frontend to be connected to the migration engine: engine = {engine}, enginefrontend = {enginefrontend}"
+
     def wait_for_volume_restoration_to_complete(self, volume_name, backup_name):
         complete = False
         engines = None

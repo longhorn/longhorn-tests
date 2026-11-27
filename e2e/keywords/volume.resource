@@ -531,6 +531,19 @@ Wait for volume ${volume_id} migration to be ready
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_migration_to_be_ready    ${volume_name}
 
+Record volume ${volume_id} migration engine address
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${address} =    get_volume_migration_engine_address    ${volume_name}
+    Set Test Variable    ${recorded_migration_engine_address}    ${address}
+
+Wait for volume ${volume_id} migration engine to be restarted with ${replica_count} replicas
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_migration_engine_restarted    ${volume_name}    ${replica_count}    ${recorded_migration_engine_address}
+
+Wait for volume ${volume_id} migration engine frontend to be connected
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_migration_engine_frontend_connected    ${volume_name}
+
 Wait for volume ${volume_id} to migrate to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}

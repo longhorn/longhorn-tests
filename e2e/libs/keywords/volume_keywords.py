@@ -478,6 +478,17 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} migration to rollback to node {node_name}')
         self.volume.wait_for_volume_migration_to_rollback(volume_name, node_name)
 
+    def get_volume_migration_engine_address(self, volume_name):
+        return self.volume.get_migration_engine_address(volume_name)
+
+    def wait_for_volume_migration_engine_restarted(self, volume_name, replica_count, previous_address):
+        logging(f'Waiting for volume {volume_name} migration engine to be restarted with {replica_count} replicas')
+        self.volume.wait_for_volume_migration_engine_restarted(volume_name, int(replica_count), previous_address)
+
+    def wait_for_volume_migration_engine_frontend_connected(self, volume_name):
+        logging(f'Waiting for volume {volume_name} migration engine frontend to be connected')
+        self.volume.wait_for_volume_migration_engine_frontend_connected(volume_name)
+
     def wait_for_volume_restoration_to_complete(self, volume_name, backup_name=None):
         logging(f'Waiting for volume {volume_name} restoration to complete')
         self.volume.wait_for_volume_restoration_to_complete(volume_name, backup_name)
