@@ -555,6 +555,14 @@ Check volume of ${workload_kind} ${workload_id} kept in faulted
 Start fio write with crc32c verify in ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     start_fio_write_with_verify_in_workload    ${workload_name}
+    Wait Until Keyword Succeeds    1 minute    2 seconds    Check fio running in ${workload_kind} ${workload_id}
+
+Check fio running in ${workload_kind} ${workload_id}
+    ${workload_name}=    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pods}=    get_workload_pod_names    ${workload_name}
+    Run command and expect output
+    ...    kubectl exec ${pods}[0] -- sh -c 'pgrep -x fio >/dev/null && echo fio-running'
+    ...    fio-running
 
 Stop fio in ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
