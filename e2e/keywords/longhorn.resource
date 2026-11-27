@@ -205,34 +205,41 @@ Check longhorn manager pods not restarted after test start
 Check longhorn backing image manager image is ${expected_image}
     check_backing_image_manager_images    ${expected_image}
 
-Assert disk size in instance manager for ${resource_kind} ${resource_id}
-    [Documentation]    Single keyword for volume disk size checks.
-    ...                Required: expected_disk_size in all engines.
-    ...                raw_size is optional; if set, RAW device size is checked.
-    ...                For v1, raw_size must not be set.
-    [Arguments]    ${expected_disk_size}    ${raw_size}=${EMPTY}
-    Run Keyword If    '${expected_disk_size}' == '${EMPTY}'
-    ...    Fail    expected_disk_size is required
-    Run Keyword If    '${DATA_ENGINE}' == 'v1' and '${raw_size}' != '${EMPTY}'
-    ...    Fail    raw_size must not be set when DATA_ENGINE is v1
-
-    ${expected_disk_size_byte} =    convert_size_to_bytes    ${expected_disk_size}    to_str=True
-    ${resource_name}=    generate_name_with_suffix    ${resource_kind}    ${resource_id}
-    ${volume_name}=    Run Keyword If    '${resource_kind}' == 'volume'
-    ...        Set Variable    ${resource_name}
-    ...    ELSE
-    ...        get_workload_volume_name    ${resource_name}
+Wait for disk size for volume ${volume_id} in ${data_engine} instance manager pod to be ${size}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${size_byte} =    convert_size_to_bytes    ${size}    to_str=True
     ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
-    ${encrypted_device_name} =    Set Variable If    "${DATA_ENGINE}" == "v2"    ${volume_name}-encrypted    ${volume_name}
-    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${encrypted_device_name}    ${expected_disk_size_byte}
+    # v1 checks /dev/mapper/<volume>, v2 checks the encrypted device /dev/mapper/<volume>-encrypted
+    ${device_name} =    Set Variable If    "${data_engine}" == "v2"    ${volume_name}-encrypted    ${volume_name}
+    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${device_name}    ${size_byte}
 
-    Run Keyword If    '${DATA_ENGINE}' == 'v2' and '${raw_size}' != '${EMPTY}'
-    ...    Assert v2 raw disk size in instance manager    ${instance_manager_name}    ${volume_name}    ${raw_size}
+Wait for disk size for volume of ${workload_kind} ${workload_id} in ${data_engine} instance manager pod to be ${size}
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+    ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
+    # v1 checks /dev/mapper/<volume>, v2 checks the encrypted device /dev/mapper/<volume>-encrypted
+    ${device_name} =    Set Variable If    "${data_engine}" == "v2"    ${volume_name}-encrypted    ${volume_name}
+    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${device_name}    ${size_byte}
 
-Assert v2 raw disk size in instance manager
-    [Arguments]    ${instance_manager_name}    ${volume_name}    ${raw_size}
-    ${raw_size_byte} =    convert_size_to_bytes    ${raw_size}    to_str=True
-    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${volume_name}    ${raw_size_byte}
+Wait for raw disk size for volume ${volume_id} in v2 instance manager pod to be ${size}
+    [Documentation]    The v2 counterpart of "Assert replica file size". Check the raw device
+    ...                size of a v2 volume, which is the volume size + 16Mi header size.
+    ...                The expected raw size must be given explicitly.
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+    ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
+    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${volume_name}    ${size_byte}
+
+Wait for raw disk size for volume of ${workload_kind} ${workload_id} in v2 instance manager pod to be ${size}
+    [Documentation]    The v2 counterpart of "Assert replica file size". Check the raw device
+    ...                size of a v2 volume, which is the volume size + 16Mi header size.
+    ...                The expected raw size must be given explicitly.
+    ${workload_name} =    generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${size_byte} =    convert_size_to_bytes    ${size}    to_str=True
+    ${instance_manager_name} =    get_engine_instance_manager_name    ${volume_name}
+    wait_for_disk_size_in_instance_manager_pod    ${instance_manager_name}    ${volume_name}    ${size_byte}
 
 Patch Longhorn Manager Resources With
     [Arguments]    ${cpu_request}    ${memory_request}    ${cpu_limit}    ${memory_limit}

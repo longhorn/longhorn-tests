@@ -53,14 +53,11 @@ Test Replicas Not Accumulate During Engine Upgrade
     ...    3. Create 10 volumes
     ...    4. Set concurrent-automatic-engine-upgrade-per-node-limit = 10
     ...    5. Apply network latency to the control plane to produce etcd delays
-    ...    6. Upgrade Longhorn to custom version, engine image upgrade will be triggered for all volumes
+    ...    6. Upgrade Longhorn to custom version, engine image upgrade will be triggered for all v1 volumes.
+    ...       For v2 volumes, enable v2 live upgrade to trigger the instance manager live upgrade for all volumes
     ...    7. For all volumes, check there is no failed replicas accumulated due to etcd delays by
     ...       waiting for their replica count to be 3
-    [Tags]    coretest    upgrade    network
-
-    IF    '${DATA_ENGINE}' == 'v2'
-        Skip    v2 data engine does not support engine image upgrade
-    END
+    [Tags]    coretest    upgrade    network    engine-upgrade
 
     ${LONGHORN_STABLE_VERSION}=    Get Environment Variable    LONGHORN_STABLE_VERSION    default=''
     IF    '${LONGHORN_STABLE_VERSION}' != ''
@@ -73,9 +70,12 @@ Test Replicas Not Accumulate During Engine Upgrade
     And Uninstall Longhorn
 
     And Install Longhorn stable version
+    IF    '${DATA_ENGINE}' == 'v2'
+        And Enable v2 data engine and add block disks
+    END
 
     FOR    ${i}    IN RANGE    10
-        And Create volume ${i} with    dataEngine=v1
+        And Create volume ${i} with    dataEngine=${DATA_ENGINE}
         # staleReplicaTimeout needs to be set to a small value to make the failed replica quickly marked as stale after engine upgrade,
         # for dynamic provisioning by storageclass longhorn or longhorn-static, it's set to 30 (minutes)
         # for UI-created volume, Longhorn forontend automatically sets it to 20 (minutes)
@@ -91,8 +91,15 @@ Test Replicas Not Accumulate During Engine Upgrade
 
     And Upgrade Longhorn to custom version
 
-    FOR    ${i}    IN RANGE    10
-        And Wait for volume ${i} engine to be upgraded to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+    # v1 volumes engines are automatically upgraded, v2 volumes are live upgraded by instance manager live upgrade
+    IF    '${DATA_ENGINE}' == 'v1'
+        FOR    ${i}    IN RANGE    10
+            And Wait for volume ${i} engine to be upgraded to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        END
+    ELSE IF    '${DATA_ENGINE}' == 'v2'
+        When Setting allow-instance-manager-automatic-upgrade is set to true
+        Then Wait for all v2 instance managers running with default image
+        And Wait for all v2 instance manager upgrades completed
     END
 
     # remove control plane network latency to prevent it from

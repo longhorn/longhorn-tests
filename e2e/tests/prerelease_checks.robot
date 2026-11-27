@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Pre-release Checks Test Case
 
-Test Tags    2-stage-upgrade    upgrade    uninstall    pre-release    recurring-job    backing-image    non-default-namespace
+Test Tags    2-stage-upgrade    upgrade    engine-upgrade    uninstall    pre-release    recurring-job    backing-image    non-default-namespace
 
 Library    OperatingSystem
 
@@ -39,7 +39,7 @@ Pre-release Checks
     ...    1. Uninstall existing Longhorn
     ...    2. Install stable version of Longhorn
     ...    3. Create volumes and backups
-    ...    4. Upgrade Longhorn
+    ...    4. Upgrade Longhorn (v2 volumes stay attached) and enable v2 live upgrade
     ...    5. Upgrade volume engine images
     ...    6. Trigger replica rebuilding
     ...    7. Detach/Re-attach volumes
@@ -170,10 +170,6 @@ Pre-release Checks
 
     END
 
-    # use DATA_ENGINE to control whether to test v2 volumes in the test
-    # because v1.8.x v2 volumes aren't compatible with v1.7.x ones
-    # we have to manually decide whether to include v2 volumes
-    # based on what upgrade path we're testing
     IF    "${DATA_ENGINE}" == "v2"
 
         # (1) create a v2 volume that is never attached before upgrade
@@ -203,10 +199,7 @@ Pre-release Checks
         And Create v2 orphaned replica for volume v2 on node 1
         And Wait for orphan count to be 2
 
-        # upgrading Longhorn with attached v2 volumes is not allowed
-        And Detach volume v2
-        And Wait for volume v2 detached
-        And Scale down deployment deploy-v2-upgrade to detach volume
+        # v2 volumes stay attached during the upgrade since v2 supports live upgrade
 
     END
 
@@ -273,6 +266,12 @@ Pre-release Checks
     IF    '${LONGHORN_STABLE_VERSION}' != ''
         ${CUSTOM_LONGHORN_ENGINE_IMAGE}=    Get Environment Variable    CUSTOM_LONGHORN_ENGINE_IMAGE    default='undefined'
         When Upgrade v1 volumes engine to ${CUSTOM_LONGHORN_ENGINE_IMAGE}
+        # v2 counterpart of the engine upgrade: live upgrade the instance managers
+        IF    '${DATA_ENGINE}' == 'v2'
+            When Setting allow-instance-manager-automatic-upgrade is set to true
+            Then Wait for all v2 instance managers running with default image
+            And Wait for all v2 instance manager upgrades completed
+        END
     END
 
     # do post engine upgrade checks
@@ -403,15 +402,15 @@ Pre-release Checks
         And Wait for volume v2-vol-never-attach healthy
         And Check volume v2-vol-never-attach works
 
-        # (2) check the data integrity of a volume with data
-        When Attach volume v2
+        # (2) check the volume stayed attached and the data integrity of a volume with data
         Then Wait for volume v2 attached
         And Wait for volume v2 healthy
         And Check volume v2 data is intact
         And Check volume v2 works
 
-        # (3) check the data integrity of the volume used by a deployment
-        When Scale up deployment deploy-v2-upgrade to attach volume
+        # (3) check deployment pod didn't restart and the data integrity of the volume used by a deployment
+        When Wait for volume of deployment deploy-v2-upgrade attached and healthy
+        And Check deployment deploy-v2-upgrade pods did not restart
         And Check deployment deploy-v2-upgrade data in file data.txt is intact
         And Check deployment deploy-v2-upgrade works
 
