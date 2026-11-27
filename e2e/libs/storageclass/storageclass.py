@@ -12,7 +12,7 @@ class StorageClass():
     def __init__(self):
         self.api = client.StorageV1Api()
 
-    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, diskSelector, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None, nvmeTcpNrIoQueues=None):
+    def create(self, name, numberOfReplicas, migratable, dataLocality, fromBackup, nfsOptions, dataEngine, encrypted, recurringJobSelector, volumeBindingMode, allowedTopologies, backingImage, backingImageDataSourceType, backingImageDataSourceParameters, nodeSelector, diskSelector, volumeTopology=None, replicaZoneSoftAntiAffinity=None, dataLayout=None, fsType=None, replicaSoftAntiAffinity=None, nvmeTcpNrIoQueues=None, volumeAntiAffinity=None):
 
         filepath = "./templates/workload/storageclass.yaml"
 
@@ -89,6 +89,9 @@ class StorageClass():
 
             if nvmeTcpNrIoQueues:
                 manifest_dict['parameters']['nvmeTcpNrIoQueues'] = nvmeTcpNrIoQueues
+
+            if volumeAntiAffinity:
+                manifest_dict['parameters']['volumeAntiAffinity'] = volumeAntiAffinity
 
             if dataLayout:
                 # dataLayout is a nested config (e.g. {"type": "sharded", "mode": "erasureCoding",

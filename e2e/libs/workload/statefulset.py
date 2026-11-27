@@ -13,7 +13,29 @@ from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 
-def create_statefulset(statefulset_name, volume_type, sc_name, size, node_name):
+# Node-level spreading rules a statefulset can declare for its pods.
+POD_SPREADING_RULES = ["required", "preferred", "topology-spread", "zone"]
+
+
+def get_pod_spreading_rule(app, spread):
+    selector = {'matchLabels': {'app': app}}
+    hostname = "kubernetes.io/hostname"
+    if spread == "required":
+        return {'affinity': {'podAntiAffinity': {'requiredDuringSchedulingIgnoredDuringExecution': [
+            {'topologyKey': hostname, 'labelSelector': selector}]}}}
+    if spread == "preferred":
+        return {'affinity': {'podAntiAffinity': {'preferredDuringSchedulingIgnoredDuringExecution': [
+            {'weight': 100, 'podAffinityTerm': {'topologyKey': hostname, 'labelSelector': selector}}]}}}
+    if spread == "topology-spread":
+        return {'topologySpreadConstraints': [
+            {'maxSkew': 1, 'topologyKey': hostname, 'whenUnsatisfiable': 'DoNotSchedule', 'labelSelector': selector}]}
+    if spread == "zone":
+        return {'affinity': {'podAntiAffinity': {'preferredDuringSchedulingIgnoredDuringExecution': [
+            {'weight': 100, 'podAffinityTerm': {'topologyKey': "topology.kubernetes.io/zone", 'labelSelector': selector}}]}}}
+    assert False, f"Unknown pod spreading rule {spread}, must be one of {POD_SPREADING_RULES}"
+
+
+def create_statefulset(statefulset_name, volume_type, sc_name, size, node_name, spread=None):
     filepath = "./templates/workload/statefulset.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -42,6 +64,9 @@ def create_statefulset(statefulset_name, volume_type, sc_name, size, node_name):
         # run the workload on a specific node
         if node_name:
             manifest_dict['spec']['template']['spec'].setdefault('nodeSelector', {})['kubernetes.io/hostname'] = node_name
+
+        if spread:
+            manifest_dict['spec']['template']['spec'].update(get_pod_spreading_rule(statefulset_name, spread))
 
         api = client.AppsV1Api()
         statefulset = api.create_namespaced_stateful_set(
